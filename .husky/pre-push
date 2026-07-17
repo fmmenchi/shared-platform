@@ -1,0 +1,11 @@
+# Enforce semantic branch names: main or <type>/<description>.
+branch="$(git rev-parse --abbrev-ref HEAD)"
+pattern='^(main|(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)/[a-z0-9._/-]+)$'
+
+if ! printf '%s' "$branch" | grep -qE "$pattern"; then
+	echo "✖ Branch \"$branch\" is not semantic."
+	echo "  Use <type>/<short-description> (kebab-case), ending with the issue number when one exists,"
+	echo "  e.g. feat/prompt-registry-42, fix/api-client-timeout."
+	echo "  Allowed types: build chore ci docs feat fix perf refactor revert style test"
+	exit 1
+fi
