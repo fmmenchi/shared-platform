@@ -51,6 +51,8 @@ pnpm nx run-many -t typecheck build lint
   a PR autonomously. See [releases](./.agent/releases.md).
 - **Never release or publish autonomously.** `nx release` runs only on the user's explicit
   command; `--dry-run` is always allowed.
+- **ADRs:** foundational choices are recorded in `doc/adr/` — check the index before making
+  one; never contradict an accepted ADR, supersede it with a new one.
 - `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.
 
 ## Topic index (`.agent/`)
