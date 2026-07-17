@@ -11,12 +11,16 @@ layers, never project implementations.
 
 ```
 packages/
-  shared/           # isomorphic (no DOM, no Node APIs) — e.g. core, api-contracts
-  client/           # browser-only layers — e.g. api-client, design system (tokens + ui)
-  server/           # Node-only layers — e.g. config, data access, MCP
+  shared/           # isomorphic (no DOM, no Node APIs) — core, api-contracts
+  client/           # browser-only — api-client, tokens, ui-ports, ui (design system)
+  server/           # Node-only — config, …
   plugins/          # Nx plugins, consumed as devDeps by the other repos
   tools/            # scripts
 ```
+
+The design system (`@fmmenchi/tokens` + `@fmmenchi/ui-ports` + `@fmmenchi/ui`) is native-first,
+provider-agnostic, Tailwind-themed, with Storybook (MCP) and browser-mode component tests. See
+[ADR-0001](./doc/adr/0001-ui-library-foundations.md) and [.agent/ui.md](./.agent/ui.md).
 
 `client` and `server` may depend on `shared`, never on each other, and nothing depends on
 `plugins`/`tools` — enforced by ESLint module boundaries and by the workspace dependency graph. Details in [doc/architecture.md](./doc/architecture.md).
@@ -25,8 +29,10 @@ packages/
 
 ```bash
 pnpm install
-pnpm nx run-many -t typecheck build lint     # full local gate
-pnpm nx graph                                # explore the workspace
+pnpm exec playwright install chromium              # once, for browser-mode tests
+pnpm nx run-many -t typecheck build lint test build-storybook   # full local gate
+pnpm nx storybook @fmmenchi/ui                     # Storybook + MCP at :6006/mcp
+pnpm nx graph                                      # explore the workspace
 ```
 
 New package (official generator only):

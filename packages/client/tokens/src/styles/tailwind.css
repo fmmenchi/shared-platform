@@ -1,0 +1,37 @@
+/**
+ * Token skeleton as Tailwind v4 theme + the `base` reference preset.
+ *
+ * `@theme` declares the semantic tokens: this both generates utilities
+ * (`bg-primary`, `text-fg`, `rounded-md`, …) and exposes them as CSS custom
+ * properties. A preset is just an override of those `--fm-*` variables under a
+ * `[data-theme]` selector — see `./presets/alt.css`.
+ */
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #ffffff;
+  --color-fg: #111111;
+  --color-muted: #6b7280;
+  --color-primary: #0f62fe;
+  --color-primary-fg: #ffffff;
+  --color-border: #d0d5dd;
+  --color-ring: #0f62fe;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+/* Alias to the `--fm-*` contract names so consumers can reference either. */
+:root {
+  --fm-color-bg: var(--color-bg);
+  --fm-color-fg: var(--color-fg);
+  --fm-color-muted: var(--color-muted);
+  --fm-color-primary: var(--color-primary);
+  --fm-color-primary-fg: var(--color-primary-fg);
+  --fm-color-border: var(--color-border);
+  --fm-color-ring: var(--color-ring);
+  --fm-radius-sm: var(--radius-sm);
+  --fm-radius-md: var(--radius-md);
+  --fm-radius-lg: var(--radius-lg);
+}

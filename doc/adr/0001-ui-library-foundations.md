@@ -166,14 +166,29 @@ Names are proposals to bikeshed once the shape is validated, not locked.
 - **Provider:** single `UiProvider` with per-concern defaults (partial adoption) · per-concern
   contexts · props-only.
 
-## Current leaning (to be falsified by the spike)
+## Current direction (spike variant 1 — implemented)
 
-- **C → React Aria Components**: it natively externalizes locale, navigation and formatting and
-  ships overridable strings, collapsing much of the ports work. Risks to test: bundle size, its
-  built-in opinions, styling ergonomics with CSS variables. Radix is the à-la-carte fallback.
-- **D → zero-runtime CSS + CSS custom properties** (vanilla-extract or CSS Modules + a generated
-  vars file); avoid runtime CSS-in-JS for RSC.
-- **Provider → single `UiProvider` (D1)** with per-concern defaults, so an app can adopt partially.
+Chosen for the first spike, now built in `packages/client/{tokens,ui-ports,ui}`:
+
+- **C → native-first, lightweight a11y.** Build on native elements (`<button>`, `<dialog>`) and
+  add only accessible-name wiring; the platform gives role, focus trap, Escape and `::backdrop`
+  for free. No headless behavior lib. Polymorphism via Radix Slot (`asChild`) only.
+- **D → Tailwind v4 + CSS custom properties**, variants via `cva` + a `cn` helper. Tokens are the
+  Tailwind `@theme`; presets override `[data-theme]`. **Tailwind is a build-time authoring detail
+  only, never a consumer requirement:** the published package MUST emit a **precompiled** plain-CSS
+  stylesheet (`@fmmenchi/ui/styles.css`) so consumers import CSS, not run Tailwind — otherwise the
+  styling engine leaks across the provider boundary (the one real ports violation to avoid).
+  `cva`/`cn`/`tailwind-merge` stay bundled runtime internals, invisible to consumers. **Not yet
+  done in the spike** (styles currently resolve only via Storybook/tests) — an open item for
+  ADR-0002.
+- **Provider → single thin `UiProvider`** carrying the injected `UiAdapters`; DS labels
+  self-contained, `direction` derived.
+- **Testing → Vitest browser mode (Chromium)**, React Testing Library semantic queries + axe;
+  every component covers semantics, a11y, functionality and a snapshot.
+- **Storybook** with the MCP addon + a11y/docs, theme + locale toolbars.
+
+Open for a possible variant 2 / ADR-0002: whether a headless lib (React Aria/Radix) is worth it
+for richer widgets, and the bundle/RSC measurements. Names above may still bikeshed.
 
 ## Scouting plan
 

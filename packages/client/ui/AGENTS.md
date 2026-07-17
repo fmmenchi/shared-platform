@@ -1,0 +1,25 @@
+# AGENTS.md — @fmmenchi/ui
+
+Native-first, accessible, provider-agnostic React components (Tailwind + cva). Part of `shared-platform` — the workspace contract is
+[../../../AGENTS.md](../../../AGENTS.md); read it first. Scope `client`, type `ui`.
+
+## Commands
+
+```bash
+pnpm nx typecheck @fmmenchi/ui
+pnpm nx build @fmmenchi/ui
+pnpm nx lint @fmmenchi/ui
+pnpm nx test @fmmenchi/ui            # Vitest browser mode (Chromium)
+pnpm nx storybook @fmmenchi/ui       # Storybook + MCP at :6006/mcp
+```
+
+## Specifics
+
+- Native-first: build on native elements (`<button>`, `<dialog>`) + light a11y; do not pull a headless behavior lib.
+- Variants via `cva` + the `cn` helper; polymorphism via Radix Slot (`asChild`). Styling: Tailwind, token-driven (`bg-primary`, `outline-ring`…).
+- Provider-agnostic: no copy, no i18n engine, no router; the app injects adapters through the single `UiProvider`. DS internal labels are self-contained (`src/i18n/messages.ts`).
+- Every component MUST be tested for semantics, accessibility (axe) and functionality with React Testing Library (semantic queries, `user-event`) + a snapshot. Tests run in Vitest browser mode (Chromium).
+- Storybook (`.storybook/`) with the MCP addon (`/mcp`) and a11y/docs addons; a story per component, theme + locale toolbars.
+- Browser-only: DOM lib enabled in `tsconfig.lib.json`.
+
+`CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

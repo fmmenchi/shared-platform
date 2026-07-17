@@ -29,8 +29,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Browser-mode component tests (native <dialog>, real a11y) need Chromium.
+      - run: pnpm exec playwright install --with-deps chromium
+
       - run: pnpm nx sync:check
 
       - run: pnpm nx format:check --all
 
-      - run: pnpm nx run-many -t typecheck build lint
+      - run: pnpm nx run-many -t typecheck build lint test build-storybook

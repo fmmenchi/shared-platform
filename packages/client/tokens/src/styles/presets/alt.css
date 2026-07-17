@@ -1,0 +1,14 @@
+/**
+ * `alt` reference preset — a second brand, to prove multi-theme works by
+ * overriding the token variables under `[data-theme='alt']`. Concrete brand
+ * presets live in the consuming apps; this is only a reference.
+ */
+[data-theme='alt'] {
+  --color-bg: #0b0b0f;
+  --color-fg: #f5f5f7;
+  --color-muted: #9ca3af;
+  --color-primary: #d62828;
+  --color-primary-fg: #ffffff;
+  --color-border: #2a2a33;
+  --color-ring: #d62828;
+}

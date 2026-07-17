@@ -1,0 +1,32 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Dialog > matches the rendered snapshot when open 1`] = `
+<dialog
+  aria-labelledby="_r_6_"
+  class="rounded-lg border border-border bg-bg text-fg p-6 backdrop:bg-black/50"
+  open=""
+>
+  <div
+    class="flex items-start justify-between gap-6"
+  >
+    <h2
+      class="text-lg font-semibold"
+      id="_r_6_"
+    >
+      Delete item
+    </h2>
+    <button
+      aria-label="Close"
+      class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50 disabled:pointer-events-none bg-transparent text-fg hover:bg-muted/10 px-4 py-2"
+      type="button"
+    >
+      ✕
+    </button>
+  </div>
+  <div
+    class="mt-4"
+  >
+    Are you sure?
+  </div>
+</dialog>
+`;
