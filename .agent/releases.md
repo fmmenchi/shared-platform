@@ -19,8 +19,9 @@
 - Branch names: `<type>/<kebab-description>[-<issue-number>]` — enforced by the husky `pre-push`
   hook (`main` exempt).
 - **Consolidate before merging:** rework the branch into a few self-contained conventional
-  commits (`git reset --soft` + regrouped commits, or interactive rebase; force-push), then
-  **rebase-merge — never squash** (`nx release` reads the individual commits).
+  commits (`git reset --soft` + regrouped commits, or interactive rebase; force-push).
+- **Merge with a merge commit — never fast-forward, never rebase-merge, never squash**
+  (`gh pr merge --merge`; `nx release` reads the individual commits).
 - **Never merge a PR autonomously** — only on the user's explicit command.
 
 ## Release model — independent per package
