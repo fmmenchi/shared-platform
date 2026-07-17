@@ -3,15 +3,16 @@
 Private, versioned monorepo of the shared layers behind my services — UI, AI, data access,
 security, prompts, analytics, MCP — released independently per package.
 
-Apps live in their own repositories and consume these layers from **GitHub Packages** as
-`@fmmenchi/<name>`. This repo contains only libraries.
+Apps and services live in their own repositories and consume these layers from **GitHub
+Packages** as `@fmmenchi/<name>`. This repo contains only libraries — abstract, independent
+layers, never project implementations.
 
 ## Layout
 
 ```
 packages/
-  shared/           # isomorphic (no DOM, no Node APIs) — e.g. core, api-contracts, design-tokens
-  client/           # browser-only layers — e.g. api-client, ui
+  shared/           # isomorphic (no DOM, no Node APIs) — e.g. core, api-contracts
+  client/           # browser-only layers — e.g. api-client, design system (tokens + ui)
   server/           # Node-only layers — e.g. config, data access, MCP
   plugins/          # Nx plugins, consumed as devDeps by the other repos
   tools/            # scripts

@@ -1,9 +1,10 @@
 # Architecture
 
-`shared-platform` is the private monorepo holding the shared layers behind my services — UI, AI,
-data access, security, prompts, analytics, MCP. It contains **only libraries**: applications live
-in their own repositories and consume these packages from GitHub Packages as `@fmmenchi/<name>`
-(see [consuming-packages](./consuming-packages.md)).
+`shared-platform` is the private monorepo of shared layers — UI, AI, data access, security,
+prompts, analytics, MCP. It contains **only libraries**: no apps, no running services. Each
+package is an abstract, independent layer; applications and services live in their own
+repositories and consume these packages from GitHub Packages as `@fmmenchi/<name>` (see
+[consuming-packages](./consuming-packages.md)).
 
 ## Why this shape
 
@@ -21,11 +22,10 @@ in their own repositories and consume these packages from GitHub Packages as `@f
 packages/
   shared/            # isomorphic — runs anywhere, no DOM or Node APIs
     core/            # base utilities
-    api-contracts/   # DTOs and schemas shared between FE and BE
-    …                # design-tokens, prompts, …
+    api-contracts/   # generic contract envelopes shared between FE and BE
   client/            # browser-only layers for the frontends
     api-client/      # typed HTTP client over the contracts
-    …                # ui / design-system, analytics client, …
+    …                # design system (tokens + ui), analytics client, …
   server/            # Node-only layers for the backends
     config/          # configuration/env loading
     …                # data access, security, MCP, …
@@ -39,10 +39,15 @@ itself; `plugins` and `tools` are dev-time layers nothing else depends on. The r
 twice: structurally (a package can only import what its `package.json` declares) and by lint
 (`@nx/enforce-module-boundaries` over `scope:*`/`type:*` tags in each package's `nx.tags`).
 
-Two placement decisions worth recording: UI components live in `client` (SSR executes them in
-Node, but they target the DOM and belong to the frontends — they must stay SSR-safe), while
-design tokens live in `shared` as pure data, so the backend can use them too (emails, OG images,
-PDF rendering).
+The placement principle behind all of this: **a scope records who actually depends on a
+package, not what it conceptually "is"**. `shared` is not "the conceptually shared things" — it
+is the (costly) position a package is promoted to only when a `client` package _and_ a `server`
+package really import it. Every layer is born in the narrowest scope that contains it and moves
+up on the first real cross-side dependency, never preemptively — promotion later is a cheap
+`nx g move`. Two applications of the principle: UI components live in `client` even though SSR
+executes them in Node (they target the DOM and must stay SSR-safe), and the design system —
+token skeleton, components, reference preset — lives entirely in `client` today, because no
+server layer consumes token types; brand presets belong to the consuming apps either way.
 
 Within a scope, packages are classified by **type** — `util`, `data-access`, `ui`, `feature` —
 with the usual Nx hierarchy: `feature → ui/data-access → util`.
