@@ -29,6 +29,14 @@ export default [
               onlyDependOnLibsWithTags: ['scope:server', 'scope:shared'],
             },
             {
+              sourceTag: 'scope:plugins',
+              onlyDependOnLibsWithTags: ['scope:plugins', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:tools',
+              onlyDependOnLibsWithTags: ['scope:tools', 'scope:shared'],
+            },
+            {
               sourceTag: 'type:util',
               onlyDependOnLibsWithTags: ['type:util'],
             },

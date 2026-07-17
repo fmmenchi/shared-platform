@@ -4,14 +4,27 @@
 
 The first level under `packages/` is the **scope** — where the code is allowed to run:
 
-| Scope     | Runs in                                      | May depend on      |
-| --------- | -------------------------------------------- | ------------------ |
-| `shared/` | anywhere (isomorphic — no DOM, no Node APIs) | `shared` only      |
-| `client/` | browser only                                 | `client`, `shared` |
-| `server/` | Node only                                    | `server`, `shared` |
+| Scope      | Runs in                                      | May depend on       | Examples                                    |
+| ---------- | -------------------------------------------- | ------------------- | ------------------------------------------- |
+| `shared/`  | anywhere (isomorphic — no DOM, no Node APIs) | `shared` only       | design-tokens, api-contracts, core, prompts |
+| `client/`  | browser only                                 | `client`, `shared`  | ui / design-system, analytics client        |
+| `server/`  | Node only                                    | `server`, `shared`  | data access, security, MCP                  |
+| `plugins/` | Nx, dev-time                                 | `plugins`, `shared` | Nx plugins (generators, executors)          |
+| `tools/`   | Node, dev/ops-time                           | `tools`, `shared`   | scripts                                     |
 
-`client` and `server` never depend on each other, and `shared` never depends on either.
-Cross-cutting contracts (DTOs, schemas) belong in `shared/api-contracts`.
+`client` and `server` never depend on each other, and `shared` never depends on anything else.
+`plugins` and `tools` are build/dev-time layers: no runtime scope may depend on them (other
+workspaces consume `plugins` as devDependencies). Cross-cutting contracts (DTOs, schemas) belong
+in `shared/api-contracts`.
+
+Boundary judgment calls already settled — don't relitigate:
+
+- **UI components are `client`**, even though SSR executes them in Node: they target the DOM and
+  their consumers are frontends. They must stay SSR-safe (no `window`/`document` at module
+  top-level) — the boundaries cannot enforce this, reviewers must.
+- **Design tokens are `shared`, not part of the UI lib**: colors/spacing/typography are pure data
+  the server also needs (emails, OG images, PDFs). Burying them in `client/ui` would wall them
+  off from the backend.
 
 ## Tags and boundaries
 
@@ -32,6 +45,9 @@ pnpm nx g @nx/js:library packages/server/auth --linter=eslint --tags=scope:serve
 
 - The package name is derived from the directory basename (`@fmmenchi/auth`) — keep basenames
   unique across scopes.
+- Pick the generator by kind: plain TS → `@nx/js:library`; React UI (`client/ui`, when it
+  exists) → `@nx/react:library`; Nx plugins (`plugins/*`) → `@nx/plugin:plugin` (+
+  `@nx/plugin:generator` for each generator).
 - After generating, add the publish fields other packages have (`publishConfig` →
   `https://npm.pkg.github.com`, `repository` with `directory`, `files: ["dist"]`, no `private`)
   — the generator does not add them.

@@ -40,8 +40,9 @@ pnpm nx run-many -t typecheck build lint
 ## Conventions (essentials)
 
 - **Structure:** `packages/<scope>/<name>` with scopes `shared` (isomorphic), `client` (FE-only),
-  `server` (BE-only). Boundaries are enforced by ESLint + tags — `client` and `server` may depend
-  on `shared`, never on each other. See [architecture](./.agent/architecture.md).
+  `server` (BE-only), `plugins` (Nx plugins), `tools` (scripts). Boundaries are enforced by
+  ESLint + tags — `client` and `server` may depend on `shared`, never on each other; nothing
+  depends on `plugins`/`tools`. See [architecture](./.agent/architecture.md).
 - **Commits:** Conventional Commits are mandatory (they drive `nx release`) and enforced by
   commitlint via a husky `commit-msg` hook. Keep the subject lowercase. Humans use `git cz`;
   agents write the message directly. See [releases](./.agent/releases.md).

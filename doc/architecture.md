@@ -22,17 +22,27 @@ packages/
   shared/            # isomorphic — runs anywhere, no DOM or Node APIs
     core/            # base utilities
     api-contracts/   # DTOs and schemas shared between FE and BE
+    …                # design-tokens, prompts, …
   client/            # browser-only layers for the frontends
     api-client/      # typed HTTP client over the contracts
+    …                # ui / design-system, analytics client, …
   server/            # Node-only layers for the backends
     config/          # configuration/env loading
+    …                # data access, security, MCP, …
+  plugins/           # Nx plugins (generators/executors), consumed as devDeps by other repos
+  tools/             # scripts (dev/ops-time utilities)
 ```
 
 The first level is the **scope** — where the code may run — and it is also the dependency rule:
-`client` and `server` may depend on `shared`, never on each other, and `shared` depends only on
-itself. The rule is enforced twice: structurally (a package can only import what its
-`package.json` declares) and by lint (`@nx/enforce-module-boundaries` over `scope:*`/`type:*`
-tags in each package's `nx.tags`).
+`client` and `server` may depend on `shared`, never on each other; `shared` depends only on
+itself; `plugins` and `tools` are dev-time layers nothing else depends on. The rule is enforced
+twice: structurally (a package can only import what its `package.json` declares) and by lint
+(`@nx/enforce-module-boundaries` over `scope:*`/`type:*` tags in each package's `nx.tags`).
+
+Two placement decisions worth recording: UI components live in `client` (SSR executes them in
+Node, but they target the DOM and belong to the frontends — they must stay SSR-safe), while
+design tokens live in `shared` as pure data, so the backend can use them too (emails, OG images,
+PDF rendering).
 
 Within a scope, packages are classified by **type** — `util`, `data-access`, `ui`, `feature` —
 with the usual Nx hierarchy: `feature → ui/data-access → util`.
