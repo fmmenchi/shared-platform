@@ -10,13 +10,15 @@ Apps live in their own repositories and consume these layers from **GitHub Packa
 
 ```
 packages/
-  shared/           # isomorphic (no DOM, no Node APIs) — e.g. core, api-contracts
-  client/           # browser-only layers — e.g. api-client
-  server/           # Node-only layers — e.g. config
+  shared/           # isomorphic (no DOM, no Node APIs) — e.g. core, api-contracts, design-tokens
+  client/           # browser-only layers — e.g. api-client, ui
+  server/           # Node-only layers — e.g. config, data access, MCP
+  plugins/          # Nx plugins, consumed as devDeps by the other repos
+  tools/            # scripts
 ```
 
-`client` and `server` may depend on `shared`, never on each other — enforced by ESLint module
-boundaries and by the workspace dependency graph. Details in [doc/architecture.md](./doc/architecture.md).
+`client` and `server` may depend on `shared`, never on each other, and nothing depends on
+`plugins`/`tools` — enforced by ESLint module boundaries and by the workspace dependency graph. Details in [doc/architecture.md](./doc/architecture.md).
 
 ## Quickstart
 
