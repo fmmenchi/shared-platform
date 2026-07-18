@@ -78,6 +78,20 @@ function Button<As extends React.ElementType = 'button'>(
     'Button: an icon-only button has no discernible text — pass `aria-label`.',
   );
 
+  const loadingLabel = t('loading');
+
+  // Leading adornment: the spinner while loading, otherwise the icon (if any).
+  let adornment: React.ReactNode = null;
+  if (isLoading) {
+    adornment = <span aria-hidden="true" className={styles.spinner} />;
+  } else if (icon) {
+    adornment = (
+      <span aria-hidden={isIconOnly ? undefined : true} className={styles.icon}>
+        {icon}
+      </span>
+    );
+  }
+
   return (
     <Comp
       className={cn(buttonVariants({ variant, size }), className)}
@@ -86,25 +100,15 @@ function Button<As extends React.ElementType = 'button'>(
       aria-busy={isLoading || undefined}
       {...rest}
     >
-      {isLoading && <span aria-hidden="true" className={styles.spinner} />}
-      {icon && !isLoading && (
-        <span
-          aria-hidden={isIconOnly ? undefined : true}
-          className={styles.icon}
-        >
-          {icon}
-        </span>
+      {adornment}
+
+      {/* The caller's content, or the loading label when there's nothing else. */}
+      {children ?? (isLoading ? loadingLabel : null)}
+
+      {/* When loading over visible content, announce the status to AT only. */}
+      {isLoading && children != null && (
+        <span className={styles.srOnly}>{loadingLabel}</span>
       )}
-      {isLoading && !children ? (
-        // No visible label: surface the localized status text as the content.
-        <span>{t('loading')}</span>
-      ) : (
-        children
-      )}
-      {isLoading && children ? (
-        // Visible label present: keep it, and announce the status to AT only.
-        <span className={styles.srOnly}>{t('loading')}</span>
-      ) : null}
     </Comp>
   );
 }
