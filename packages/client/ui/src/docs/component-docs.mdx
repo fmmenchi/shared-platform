@@ -1,0 +1,64 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guidelines/Component docs" />
+
+# Component docs — standard format
+
+Every component ships a colocated `<name>.mdx` next to its stories, authored with
+`@storybook/addon-docs` blocks. Docs are **authored**, not just autodocs: they explain intent and
+_when_ to use each state; the stories are the live, canonical examples.
+
+## Required sections (in order)
+
+Omit a section that doesn't apply — never leave it empty. The order is fixed.
+
+1. `<Meta of={Stories} />` — attach the doc to the component's stories.
+2. `# <Name>` + a one-line **intent**: what it is and the native/accessibility baseline it builds
+   on.
+3. `## Anatomy` — _composite components only_: the sub-parts / slots.
+4. `## Props` — `<Controls of={Stories.<Default>} />` (the props table comes from the story args).
+5. `## Usage` — a `### <State>` per meaningful variant/state, each with **one line of "when to use
+   it"** followed by `<Canvas of={Stories.X} />`.
+6. `## Accessibility` — required roles/aria and keyboard, text direction (RTL/LTR), reduced-motion,
+   colour-contrast notes.
+7. `## Guidelines` — _optional_: short **Do / Don't**.
+8. `## i18n` — _only if the component has internal copy_: which labels, and the override keys.
+
+## Rules
+
+- **Prose stays tight.** The stories are the examples — don't restate them in words.
+- **Every shown state is a real story.** Use `<Canvas of={Stories.X} />`; never inline ad-hoc JSX,
+  so docs and tests share one source of truth.
+- **One doc per component**, colocated (`components/<name>/<name>.mdx`).
+
+## Skeleton
+
+```mdx
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as Stories from './<name>.stories';
+
+<Meta of={Stories} />
+
+# <Name>
+
+<One line: what it is + the platform/a11y baseline it builds on.>
+
+## Props
+
+<Controls of={Stories.Default} />
+
+## Usage
+
+### <State>
+
+<One line: when to use it.>
+
+<Canvas of={Stories.<State>} />
+
+## Accessibility
+
+- <roles / required aria / keyboard>
+- <direction (RTL/LTR), reduced-motion, contrast>
+```
+
+See **Components → Button → Docs** for a reference that follows this format.

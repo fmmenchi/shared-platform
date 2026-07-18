@@ -71,10 +71,9 @@ The lint isn't exhaustive (misses some `Intl` cases) — review too. Details in
 the preset (`data-theme`) and the DS locale. A story per component. Consult the Storybook MCP
 before building/changing a component (`pnpm nx storybook @fmmenchi/ui` → `http://localhost:6006/mcp`).
 
-**Docs: a colocated `<name>.mdx` per component** (authored, not just autodocs). Use the
-`@storybook/addon-docs/blocks`: `<Meta of={Stories} />`, one-line intent, `## Props` →
-`<Controls of={Stories.Basic} />`, `## Usage` with a `<Canvas of={Stories.X} />` per state, and a
-short **Accessibility** note. Keep prose tight; the stories are the live examples.
+**Component docs** follow a standard colocated `<name>.mdx` format — a **package convention**, kept
+with the code: see [`packages/client/ui/AGENTS.md`](../packages/client/ui/AGENTS.md) and Storybook →
+**Guidelines/Component docs**.
 
 ## tsconfig
 
