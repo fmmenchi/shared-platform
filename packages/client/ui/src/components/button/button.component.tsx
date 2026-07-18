@@ -1,47 +1,11 @@
 import * as React from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../util/cn.js';
-import type { PolymorphicProps } from '../../primitives/polymorphic.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useMessages } from '../../i18n/provider.js';
 import { buttonMessages } from './button.messages.js';
+import { buttonVariants } from './button.variants.js';
+import type { ButtonProps } from './button.types.js';
 import styles from './button.module.css';
-
-// `cva` maps the public variant API to CSS-module class names. The styling
-// lives in `button.module.css`; here we only compose.
-const buttonVariants = cva(styles.button, {
-  variants: {
-    variant: {
-      primary: styles.primary,
-      secondary: styles.secondary,
-      ghost: styles.ghost,
-      destructive: styles.destructive,
-    },
-    size: {
-      sm: styles.sm,
-      md: styles.md,
-      lg: styles.lg,
-    },
-  },
-  defaultVariants: { variant: 'primary', size: 'md' },
-});
-
-type ButtonVariants = VariantProps<typeof buttonVariants>;
-
-interface ButtonOwnProps extends ButtonVariants {
-  /** Decorative icon (hidden while loading). */
-  icon?: React.ReactNode;
-  /**
-   * Show a spinner + a localized "loading" status and block interaction.
-   * The status text is resolved from the active locale (DS-internal copy).
-   */
-  isLoading?: boolean;
-}
-
-type ButtonProps<As extends React.ElementType = 'button'> = PolymorphicProps<
-  As,
-  ButtonOwnProps
->;
 
 /**
  * Polymorphic, native-first button. Renders a `<button>` by default; pass `as`
@@ -113,5 +77,4 @@ function Button<As extends React.ElementType = 'button'>(
   );
 }
 
-export { Button, buttonVariants };
-export type { ButtonProps, ButtonVariants };
+export { Button };
