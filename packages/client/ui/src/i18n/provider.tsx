@@ -15,33 +15,36 @@ interface UiContextValue {
 
 const UiContext = createContext<UiContextValue | null>(null);
 
-const RTL_LANGS = new Set([
-  'ar',
-  'he',
-  'fa',
-  'ur',
-  'ps',
-  'sd',
-  'ug',
-  'yi',
-  'dv',
+/** Right-to-left writing systems, by ISO-15924 script code. */
+const RTL_SCRIPTS = new Set([
+  'Arab', // Arabic
+  'Hebr', // Hebrew
+  'Syrc', // Syriac
+  'Thaa', // Thaana (Dhivehi)
+  'Nkoo', // N'Ko
+  'Samr', // Samaritan
+  'Mand', // Mandaic
+  'Adlm', // Adlam (Fula)
+  'Rohg', // Hanifi Rohingya
+  'Yezi', // Yezidi
 ]);
 
-/** Derive text direction from the locale; never taken as injected data. */
+/**
+ * Derive text direction from the locale's *script*, never taken as injected
+ * data. Baseline-safe: it resolves the script via `Intl.Locale.maximize()`
+ * (Baseline: Widely available) rather than `Intl.Locale.prototype.getTextInfo`
+ * (not Baseline — Firefox shipped it late). Script-based, so `az-Arab` → rtl
+ * while `az` → ltr, which a language-only check gets wrong.
+ */
 function resolveDirection(locale: string, override?: Direction): Direction {
   if (override) return override;
   try {
-    const loc = new Intl.Locale(locale) as Intl.Locale & {
-      getTextInfo?: () => { direction: string };
-      textInfo?: { direction: string };
-    };
-    const dir = loc.getTextInfo?.().direction ?? loc.textInfo?.direction;
-    if (dir === 'rtl') return 'rtl';
-    if (dir === 'ltr') return 'ltr';
+    const script = new Intl.Locale(locale).maximize().script;
+    if (script && RTL_SCRIPTS.has(script)) return 'rtl';
   } catch {
-    /* fall through to the language-set fallback */
+    /* malformed locale → fall through to ltr */
   }
-  return RTL_LANGS.has(locale.split('-')[0]) ? 'rtl' : 'ltr';
+  return 'ltr';
 }
 
 /** Pick the DS's own label, falling back to the base locale. */

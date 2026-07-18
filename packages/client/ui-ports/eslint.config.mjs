@@ -1,7 +1,9 @@
 import baseConfig from '../../../eslint.config.mjs';
+import baselineConfig from '../../../eslint.baseline.mjs';
 
 export default [
   ...baseConfig,
+  ...baselineConfig,
   {
     files: ['**/*.json'],
     rules: {

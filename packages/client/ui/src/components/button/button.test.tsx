@@ -94,5 +94,20 @@ describe('Button', () => {
       const { container } = renderUi(<Button>حفظ</Button>, { locale: 'ar' });
       expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'rtl');
     });
+
+    it('is script-aware: az-Arab is RTL, az is LTR', () => {
+      // The direction comes from the resolved script, not the language — a
+      // language-only check would get az-Arab wrong.
+      const rtl = renderUi(<Button>t</Button>, { locale: 'az-Arab' });
+      expect(rtl.container.querySelector('[dir]')).toHaveAttribute(
+        'dir',
+        'rtl',
+      );
+      const ltr = renderUi(<Button>t</Button>, { locale: 'az' });
+      expect(ltr.container.querySelector('[dir]')).toHaveAttribute(
+        'dir',
+        'ltr',
+      );
+    });
   });
 });

@@ -47,6 +47,15 @@ that CSS; **Tailwind is NOT required** at the consumer. Do NOT ship source for t
 `@source`-compile (that would couple every consumer to Tailwind), and do NOT ship a raw utility
 sheet. Rationale + consumer recipes in [styling](../doc/styling.md).
 
+## Browser support — Baseline
+
+Target **Baseline: Widely available**. Enforced by `browserslist-config-baseline` (build target) +
+`eslint-plugin-baseline-js` (JS/Web-APIs on `**/src/**`) + `@eslint/css` `use-baseline` (plain
+shipped CSS) — wired per client package via `eslint.baseline.mjs`. Prefer widely-available APIs;
+e.g. derive direction from `Intl.Locale.maximize().script`, **not** `getTextInfo` (not Baseline).
+The lint isn't exhaustive (misses some `Intl` cases) — review too. Details in
+[styling](../doc/styling.md#browser-support--baseline).
+
 ## Storybook
 
 `.storybook/` with the **MCP addon** (`/mcp`) + a11y/docs addons; theme + locale toolbars wire
