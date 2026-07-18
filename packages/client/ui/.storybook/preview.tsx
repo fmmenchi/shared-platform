@@ -60,6 +60,20 @@ const preview = definePreview({
     backgrounds: { disable: true },
     // axe runs on every story; any WCAG violation fails the a11y check.
     a11y: { test: 'error' },
+    // The DS's declared viewports (mobile-first): preview each device class.
+    viewport: {
+      options: {
+        mobile: { name: 'Mobile', styles: { width: '375px', height: '812px' } },
+        tablet: {
+          name: 'Tablet (≥768)',
+          styles: { width: '768px', height: '1024px' },
+        },
+        desktop: {
+          name: 'Desktop (≥1024)',
+          styles: { width: '1280px', height: '800px' },
+        },
+      },
+    },
   },
 });
 

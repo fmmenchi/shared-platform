@@ -7,5 +7,9 @@
   (`primitives/polymorphic.ts`) — no Radix.
 - Build precompiles → `dist/index.css` = `@fmmenchi/ui/style.css`. Consumer imports CSS, no
   Tailwind. Never ship source-for-`@source` / raw utility sheet.
+- **Responsive: mobile-first.** Base = mobile; enhance with the `@variant` directive (NOT
+  `@apply tablet:…` — Tailwind v4 drops the query). Viewport: `@variant tablet {}` / `@variant
+desktop {}`. Prefer **container queries** (`@apply @container` on the root + `@variant @sm/@md
+{}`) so the component adapts to its container, not the screen.
 
 Why: [`doc/styling.md`](../../../../doc/styling.md).

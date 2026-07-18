@@ -9,6 +9,14 @@
 @import 'tailwindcss';
 
 @theme {
+  /* Declared viewports (mobile-first): mobile is the base — no query. `tablet`
+     and `desktop` are min-width breakpoints, giving `tablet:`/`desktop:`
+     variants. Reset Tailwind's default breakpoints so ONLY these exist — the
+     DS's supported viewports are explicit, not accidental (`xl:` etc.). */
+  --breakpoint-*: initial;
+  --breakpoint-tablet: 48rem; /* ≥ 768px */
+  --breakpoint-desktop: 64rem; /* ≥ 1024px */
+
   --color-bg: #ffffff;
   --color-fg: #111111;
   --color-muted: #6b7280;
