@@ -9,5 +9,4 @@ export {
   UI_SUPPORTED_LOCALES,
   UI_FALLBACK_LOCALE,
   type UiLocale,
-  type UiMessageKey,
 } from './i18n/messages.js';

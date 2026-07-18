@@ -2,7 +2,8 @@ import * as React from 'react';
 import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../util/cn.js';
-import { useUiT } from '../../i18n/provider.js';
+import { useMessages } from '../../i18n/provider.js';
+import { buttonMessages } from './button.messages.js';
 import styles from './button.module.css';
 
 // `cva` maps the public variant API to CSS-module class names (the andes-routes
@@ -54,7 +55,7 @@ function Button({
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
-  const t = useUiT();
+  const t = useMessages(buttonMessages);
   const isIconOnly = !!(!asChild && icon && !children);
 
   if (
@@ -87,13 +88,13 @@ function Button({
       )}
       {isLoading && !children ? (
         // No visible label: surface the localized status text as the content.
-        <span>{t('button.loading')}</span>
+        <span>{t('loading')}</span>
       ) : (
         <Slottable>{children}</Slottable>
       )}
       {isLoading && children ? (
         // Visible label present: keep it, and announce the status to AT only.
-        <span className={styles.srOnly}>{t('button.loading')}</span>
+        <span className={styles.srOnly}>{t('loading')}</span>
       ) : null}
     </Comp>
   );
