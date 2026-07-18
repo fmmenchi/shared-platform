@@ -1,45 +1,170 @@
 /**
- * Token skeleton as Tailwind v4 theme + the `base` reference preset.
+ * Tailwind BRIDGE over the token contract — names only, no values.
  *
- * `@theme` declares the semantic tokens: this both generates utilities
- * (`bg-primary`, `text-fg`, `rounded-md`, …) and exposes them as CSS custom
- * properties. A preset is just an override of those `--fm-*` variables under a
- * `[data-theme]` selector — see `./presets/dark.css`.
+ * `vars.css` is the single source of values (`--fm-*`). This file registers
+ * those roles with Tailwind (`@theme inline`) so utilities compile to
+ * `var(--fm-*)` — the precompiled component CSS stays themable at runtime.
+ * A role missing from the bridge produces a utility that silently does not
+ * compile (the andes-routes pitfall), so bridge coverage is enforced by
+ * `src/tokens.test.ts`.
+ *
+ * "La semantica vince su tutto": the default Tailwind palette is RESET
+ * (`--color-*: initial`), so `bg-red-500` fails the build — components can
+ * only use semantic roles. Font/radius/shadow/ease namespaces are reset the
+ * same way. Numeric spacing and text sizes stay (mechanical, not themed).
  */
 @import 'tailwindcss';
+@import './vars.css';
 
 @theme {
-  /* Declared viewports (mobile-first): mobile is the base — no query. `tablet`
-     and `desktop` are min-width breakpoints, giving `tablet:`/`desktop:`
-     variants. Reset Tailwind's default breakpoints so ONLY these exist — the
-     DS's supported viewports are explicit, not accidental (`xl:` etc.). */
+  /* Declared viewports (mobile-first): mobile is the base — no query. Reset
+     Tailwind's defaults so ONLY these exist. Literals: Tailwind cannot read
+     breakpoints from var() (build-time media queries). */
   --breakpoint-*: initial;
   --breakpoint-tablet: 48rem; /* ≥ 768px */
   --breakpoint-desktop: 64rem; /* ≥ 1024px */
-
-  --color-bg: #ffffff;
-  --color-fg: #111111;
-  --color-muted: #6b7280;
-  --color-primary: #0f62fe;
-  --color-primary-fg: #ffffff;
-  --color-border: #d0d5dd;
-  --color-ring: #0f62fe;
-
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
 }
 
-/* Alias to the `--fm-*` contract names so consumers can reference either. */
-:root {
-  --fm-color-bg: var(--color-bg);
-  --fm-color-fg: var(--color-fg);
-  --fm-color-muted: var(--color-muted);
-  --fm-color-primary: var(--color-primary);
-  --fm-color-primary-fg: var(--color-primary-fg);
-  --fm-color-border: var(--color-border);
-  --fm-color-ring: var(--color-ring);
-  --fm-radius-sm: var(--radius-sm);
-  --fm-radius-md: var(--radius-md);
-  --fm-radius-lg: var(--radius-lg);
+@theme inline {
+  /* ---- COLORS: wipe the default palette, register the roles ---- */
+  --color-*: initial;
+
+  --color-primary: var(--fm-color-primary);
+  --color-primary-foreground: var(--fm-color-primary-foreground);
+  --color-primary-hover: var(--fm-color-primary-hover);
+  --color-primary-active: var(--fm-color-primary-active);
+  --color-primary-subtle: var(--fm-color-primary-subtle);
+  --color-primary-subtle-foreground: var(--fm-color-primary-subtle-foreground);
+  --color-primary-disabled: var(--fm-color-primary-disabled);
+  --color-primary-disabled-foreground: var(
+    --fm-color-primary-disabled-foreground
+  );
+
+  --color-secondary: var(--fm-color-secondary);
+  --color-secondary-foreground: var(--fm-color-secondary-foreground);
+  --color-secondary-hover: var(--fm-color-secondary-hover);
+  --color-secondary-active: var(--fm-color-secondary-active);
+  --color-secondary-subtle: var(--fm-color-secondary-subtle);
+  --color-secondary-subtle-foreground: var(
+    --fm-color-secondary-subtle-foreground
+  );
+  --color-secondary-disabled: var(--fm-color-secondary-disabled);
+  --color-secondary-disabled-foreground: var(
+    --fm-color-secondary-disabled-foreground
+  );
+
+  --color-accent: var(--fm-color-accent);
+  --color-accent-foreground: var(--fm-color-accent-foreground);
+  --color-accent-hover: var(--fm-color-accent-hover);
+  --color-accent-active: var(--fm-color-accent-active);
+  --color-accent-subtle: var(--fm-color-accent-subtle);
+  --color-accent-subtle-foreground: var(--fm-color-accent-subtle-foreground);
+  --color-accent-disabled: var(--fm-color-accent-disabled);
+  --color-accent-disabled-foreground: var(
+    --fm-color-accent-disabled-foreground
+  );
+
+  --color-destructive: var(--fm-color-destructive);
+  --color-destructive-foreground: var(--fm-color-destructive-foreground);
+  --color-destructive-hover: var(--fm-color-destructive-hover);
+  --color-destructive-active: var(--fm-color-destructive-active);
+  --color-destructive-subtle: var(--fm-color-destructive-subtle);
+  --color-destructive-subtle-foreground: var(
+    --fm-color-destructive-subtle-foreground
+  );
+  --color-destructive-disabled: var(--fm-color-destructive-disabled);
+  --color-destructive-disabled-foreground: var(
+    --fm-color-destructive-disabled-foreground
+  );
+
+  --color-success: var(--fm-color-success);
+  --color-success-foreground: var(--fm-color-success-foreground);
+  --color-success-subtle: var(--fm-color-success-subtle);
+  --color-success-subtle-foreground: var(--fm-color-success-subtle-foreground);
+
+  --color-warning: var(--fm-color-warning);
+  --color-warning-foreground: var(--fm-color-warning-foreground);
+  --color-warning-subtle: var(--fm-color-warning-subtle);
+  --color-warning-subtle-foreground: var(--fm-color-warning-subtle-foreground);
+
+  --color-info: var(--fm-color-info);
+  --color-info-foreground: var(--fm-color-info-foreground);
+  --color-info-subtle: var(--fm-color-info-subtle);
+  --color-info-subtle-foreground: var(--fm-color-info-subtle-foreground);
+
+  --color-neutral: var(--fm-color-neutral);
+  --color-neutral-foreground: var(--fm-color-neutral-foreground);
+  --color-neutral-subtle: var(--fm-color-neutral-subtle);
+  --color-neutral-subtle-foreground: var(--fm-color-neutral-subtle-foreground);
+
+  --color-disabled: var(--fm-color-disabled);
+  --color-disabled-foreground: var(--fm-color-disabled-foreground);
+
+  --color-background: var(--fm-color-background);
+  --color-foreground: var(--fm-color-foreground);
+  --color-card: var(--fm-color-card);
+  --color-card-foreground: var(--fm-color-card-foreground);
+  --color-popover: var(--fm-color-popover);
+  --color-popover-foreground: var(--fm-color-popover-foreground);
+  --color-muted: var(--fm-color-muted);
+  --color-muted-foreground: var(--fm-color-muted-foreground);
+  --color-border: var(--fm-color-border);
+  --color-ring: var(--fm-color-ring);
+  --color-scrim: var(--fm-color-scrim);
+
+  --color-input: var(--fm-color-input);
+  --color-input-foreground: var(--fm-color-input-foreground);
+  --color-input-hover: var(--fm-color-input-hover);
+  --color-input-active: var(--fm-color-input-active);
+  --color-input-invalid: var(--fm-color-input-invalid);
+  --color-input-disabled: var(--fm-color-input-disabled);
+
+  /* ---- RADIUS ---- */
+  --radius-*: initial;
+  --radius-sm: var(--fm-radius-sm);
+  --radius-md: var(--fm-radius-md);
+  --radius-lg: var(--fm-radius-lg);
+  --radius-xl: var(--fm-radius-xl);
+
+  /* ---- SEMANTIC SPACING (named values usable in gap/p/m utilities) ---- */
+  --spacing-internal-xs: var(--fm-space-internal-xs);
+  --spacing-internal-s: var(--fm-space-internal-s);
+  --spacing-internal-m: var(--fm-space-internal-m);
+  --spacing-inline-s: var(--fm-space-inline-s);
+  --spacing-inline-m: var(--fm-space-inline-m);
+  --spacing-inline-l: var(--fm-space-inline-l);
+  --spacing-stack-s: var(--fm-space-stack-s);
+  --spacing-stack-m: var(--fm-space-stack-m);
+  --spacing-stack-l: var(--fm-space-stack-l);
+  --spacing-inset-s: var(--fm-space-inset-s);
+  --spacing-inset-m: var(--fm-space-inset-m);
+  --spacing-inset-l: var(--fm-space-inset-l);
+
+  /* ---- TYPOGRAPHY: families + weights (text sizes stay Tailwind default
+          until a Text/Heading component settles the pairing) ---- */
+  --font-*: initial;
+  --font-sans: var(--fm-font-sans);
+  --font-heading: var(--fm-font-heading);
+  --font-mono: var(--fm-font-mono);
+  --font-weight-light: var(--fm-font-weight-light);
+  --font-weight-regular: var(--fm-font-weight-regular);
+  --font-weight-medium: var(--fm-font-weight-medium);
+  --font-weight-semibold: var(--fm-font-weight-semibold);
+  --font-weight-bold: var(--fm-font-weight-bold);
+  --font-weight-extrabold: var(--fm-font-weight-extrabold);
+
+  /* ---- SHADOWS ---- */
+  --shadow-*: initial;
+  --shadow-sm: var(--fm-shadow-sm);
+  --shadow-md: var(--fm-shadow-md);
+  --shadow-lg: var(--fm-shadow-lg);
+
+  /* ---- MOTION: eases by intent + coherent bare `transition-*` defaults ---- */
+  --ease-*: initial;
+  --ease-standard: var(--fm-ease-standard);
+  --ease-enter: var(--fm-ease-enter);
+  --ease-exit: var(--fm-ease-exit);
+  --ease-linear: var(--fm-ease-linear);
+  --default-transition-duration: var(--fm-duration-s);
+  --default-transition-timing-function: var(--fm-ease-standard);
 }

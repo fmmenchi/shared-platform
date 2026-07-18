@@ -1,37 +1,242 @@
-/*
- * Plain-CSS token variables — the agnostic distribution of the theme.
+/**
+ * THE TOKEN CONTRACT — single source of values (plain CSS, Baseline-safe).
  *
- * `tailwind.css` is Tailwind *source* (`@theme` + `@import 'tailwindcss'`): only
- * a Tailwind build understands it. This file is the same token values as plain
- * custom properties, so a consumer WITHOUT Tailwind can `@import` it and the
- * precompiled component CSS (which reads `var(--fm-*)`) resolves. Presets stay
- * plain CSS too — see `./presets/dark.css` — and work in both lanes.
+ * Every platform token is a `--fm-*` custom property defined here with the
+ * reference (light) values; `presets/dark.css` overrides exactly the COLOR
+ * roles. `tailwind.css` adds only the Tailwind name-bridge on top of this file
+ * — it defines no values, so the two shapes cannot drift.
  *
- * Keep the values in sync with `tailwind.css`. (Follow-up: generate this from
- * the same source to remove the drift risk.)
+ * Rules of the contract (validated by `src/tokens.test.ts`):
+ * - Components consume ONLY semantic roles ("la semantica vince su tutto").
+ *   There are no primitive ramps here: values are STATIC oklch literals,
+ *   resolved at authoring time from the andes-routes ramp methodology
+ *   (base ± lightness, scaled chroma). No runtime relative-color syntax and
+ *   no @property — neither is Baseline: Widely available yet.
+ * - A THEME is a complete assignment of every color role (`ThemeColors` in
+ *   `src/index.ts`). Non-color tokens inherit unless a preset overrides them.
+ * - Contrast is enforced by test: every declared pair is WCAG AA (4.5:1 text,
+ *   3:1 focus ring); `-disabled` pairs are exempt (WCAG 1.4.3 exception).
+ * - This file is side-effect-free: variables only, no selectors beyond `:root`.
+ *
+ * Namespacing: the `--fm-` prefix IS the public API — it cannot collide with a
+ * consumer's own Tailwind theme (`--color-*`).
  */
 :root {
-  --color-bg: #ffffff;
-  --color-fg: #111111;
-  --color-muted: #6b7280;
-  --color-primary: #0f62fe;
-  --color-primary-fg: #ffffff;
-  --color-border: #d0d5dd;
-  --color-ring: #0f62fe;
+  /* ==========================================================
+     COLOR — action families (primary · secondary · accent · destructive)
+     X                      → solid fill (buttons, solid badges)
+     X-foreground           → text/icon ON the solid fill
+     X-hover / X-active     → fill hover / pressed states
+     X-subtle               → soft background (chips, alerts, soft badges)
+     X-subtle-foreground    → text ON the soft background
+     X-disabled(-foreground)→ disabled fill / its text (AA-exempt)
+     ========================================================== */
+  --fm-color-primary: oklch(41% 0.187 255);
+  --fm-color-primary-foreground: oklch(100% 0 0);
+  --fm-color-primary-hover: oklch(31% 0.168 255);
+  --fm-color-primary-active: oklch(22% 0.14 255);
+  --fm-color-primary-subtle: oklch(90% 0.088 255);
+  --fm-color-primary-subtle-foreground: oklch(31% 0.168 255);
+  --fm-color-primary-disabled: oklch(80% 0.121 255);
+  --fm-color-primary-disabled-foreground: oklch(90% 0.088 255);
 
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
+  --fm-color-secondary: oklch(43% 0.035 256);
+  --fm-color-secondary-foreground: oklch(100% 0 0);
+  --fm-color-secondary-hover: oklch(34% 0.034 256);
+  --fm-color-secondary-active: oklch(24% 0.03 256);
+  --fm-color-secondary-subtle: oklch(83% 0.016 256);
+  --fm-color-secondary-subtle-foreground: oklch(24% 0.03 256);
+  --fm-color-secondary-disabled: oklch(73% 0.022 256);
+  --fm-color-secondary-disabled-foreground: oklch(83% 0.016 256);
 
-  /* `--fm-*` contract aliases (what components reference). */
-  --fm-color-bg: var(--color-bg);
-  --fm-color-fg: var(--color-fg);
-  --fm-color-muted: var(--color-muted);
-  --fm-color-primary: var(--color-primary);
-  --fm-color-primary-fg: var(--color-primary-fg);
-  --fm-color-border: var(--color-border);
-  --fm-color-ring: var(--color-ring);
-  --fm-radius-sm: var(--radius-sm);
-  --fm-radius-md: var(--radius-md);
-  --fm-radius-lg: var(--radius-lg);
+  --fm-color-accent: oklch(40% 0.125 195);
+  --fm-color-accent-foreground: oklch(100% 0 0);
+  --fm-color-accent-hover: oklch(30% 0.112 195);
+  --fm-color-accent-active: oklch(21% 0.094 195);
+  --fm-color-accent-subtle: oklch(89% 0.059 195);
+  --fm-color-accent-subtle-foreground: oklch(30% 0.112 195);
+  --fm-color-accent-disabled: oklch(79% 0.081 195);
+  --fm-color-accent-disabled-foreground: oklch(89% 0.059 195);
+
+  --fm-color-destructive: oklch(43% 0.192 27);
+  --fm-color-destructive-foreground: oklch(100% 0 0);
+  --fm-color-destructive-hover: oklch(33% 0.172 27);
+  --fm-color-destructive-active: oklch(24% 0.144 27);
+  --fm-color-destructive-subtle: oklch(92% 0.09 27);
+  --fm-color-destructive-subtle-foreground: oklch(33% 0.172 27);
+  --fm-color-destructive-disabled: oklch(82% 0.124 27);
+  --fm-color-destructive-disabled-foreground: oklch(92% 0.09 27);
+
+  /* ==========================================================
+     COLOR — status vocabulary (success · warning · info · neutral)
+     Lifecycle/feedback roles, DISTINCT from the brand families.
+     ========================================================== */
+  --fm-color-success: oklch(41% 0.144 150);
+  --fm-color-success-foreground: oklch(100% 0 0);
+  --fm-color-success-subtle: oklch(90% 0.068 150);
+  --fm-color-success-subtle-foreground: oklch(31% 0.129 150);
+
+  --fm-color-warning: oklch(46% 0.125 78);
+  --fm-color-warning-foreground: oklch(100% 0 0);
+  --fm-color-warning-subtle: oklch(95% 0.059 78);
+  --fm-color-warning-subtle-foreground: oklch(36% 0.112 78);
+
+  --fm-color-info: oklch(42% 0.154 245);
+  --fm-color-info-foreground: oklch(100% 0 0);
+  --fm-color-info-subtle: oklch(91% 0.072 245);
+  --fm-color-info-subtle-foreground: oklch(32% 0.138 245);
+
+  --fm-color-neutral: oklch(46% 0.02 256);
+  --fm-color-neutral-foreground: oklch(100% 0 0);
+  --fm-color-neutral-subtle: oklch(95% 0.007 256);
+  --fm-color-neutral-subtle-foreground: oklch(38% 0.02 256);
+
+  /* Generic disabled, for controls not tied to a colour family (AA-exempt). */
+  --fm-color-disabled: oklch(96.5% 0.006 256);
+  --fm-color-disabled-foreground: oklch(60% 0.016 256);
+
+  /* ==========================================================
+     COLOR — surfaces & text
+     background/foreground → page and main text
+     card / popover        → raised surfaces (+ their foregrounds)
+     muted(-foreground)    → soft fill / secondary text (AA on background AND muted)
+     border                → borders and dividers (decorative)
+     ring                  → :focus-visible ring (≥3:1 vs background)
+     scrim                 → full-screen modal backdrop (alpha; no pair checked)
+     ========================================================== */
+  --fm-color-background: oklch(98.5% 0.004 256);
+  --fm-color-foreground: oklch(24% 0.02 256);
+  --fm-color-card: oklch(100% 0 0);
+  --fm-color-card-foreground: oklch(24% 0.02 256);
+  --fm-color-popover: oklch(100% 0 0);
+  --fm-color-popover-foreground: oklch(24% 0.02 256);
+  --fm-color-muted: oklch(96.5% 0.006 256);
+  --fm-color-muted-foreground: oklch(38% 0.02 256);
+  --fm-color-border: oklch(91% 0.008 256);
+  --fm-color-ring: oklch(50% 0.195 255);
+  --fm-color-scrim: oklch(14% 0.02 256 / 0.92);
+
+  /* ==========================================================
+     COLOR — form inputs (filled-style: bg, text, states)
+     ========================================================== */
+  --fm-color-input: oklch(91% 0.008 256);
+  --fm-color-input-foreground: oklch(24% 0.02 256);
+  --fm-color-input-hover: oklch(95% 0.007 256);
+  --fm-color-input-active: oklch(91% 0.008 256);
+  --fm-color-input-invalid: oklch(72% 0.16 27);
+  --fm-color-input-disabled: oklch(96.5% 0.006 256);
+
+  /* ==========================================================
+     RADIUS
+     ========================================================== */
+  --fm-radius-sm: 0.25rem;
+  --fm-radius-md: 0.375rem;
+  --fm-radius-lg: 0.5rem;
+  --fm-radius-xl: 0.75rem;
+
+  /* ==========================================================
+     SPACING — semantic rhythm (never raw numbers in components)
+     internal → inside a component (icon↔label in a button)
+     inline   → between siblings in a row (two buttons)
+     stack    → between stacked siblings (list items)
+     inset    → container padding (Card, Modal)
+     ========================================================== */
+  --fm-space-internal-xs: 0.25rem;
+  --fm-space-internal-s: 0.5rem;
+  --fm-space-internal-m: 0.75rem;
+  --fm-space-inline-s: 0.5rem;
+  --fm-space-inline-m: 1rem;
+  --fm-space-inline-l: 2rem;
+  --fm-space-stack-s: 0.5rem;
+  --fm-space-stack-m: 0.75rem;
+  --fm-space-stack-l: 1.5rem;
+  --fm-space-inset-s: 1rem;
+  --fm-space-inset-m: 1.5rem;
+  --fm-space-inset-l: 2rem;
+
+  /* ==========================================================
+     TYPOGRAPHY — scales (no shipped fonts: system stacks; apps override)
+     ========================================================== */
+  --fm-font-sans: ui-sans-serif, system-ui, sans-serif;
+  --fm-font-heading: var(--fm-font-sans);
+  --fm-font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --fm-text-2xs: 0.75rem;
+  --fm-text-xs: 0.875rem;
+  --fm-text-sm: 0.9375rem;
+  --fm-text-base: 1rem;
+  --fm-text-lg: 1.125rem;
+  --fm-text-xl: 1.25rem;
+  --fm-text-2xl: 1.5rem;
+  --fm-text-3xl: 1.875rem;
+  --fm-text-4xl: 2.25rem;
+  --fm-text-5xl: 3rem;
+
+  --fm-font-weight-light: 300;
+  --fm-font-weight-regular: 400;
+  --fm-font-weight-medium: 500;
+  --fm-font-weight-semibold: 600;
+  --fm-font-weight-bold: 700;
+  --fm-font-weight-extrabold: 800;
+
+  --fm-leading-tight: 1.2;
+  --fm-leading-normal: 1.5;
+  --fm-leading-relaxed: 1.75;
+
+  /* ==========================================================
+     BORDERS · SHADOWS · SIZES
+     ========================================================== */
+  --fm-border-width-default: 1px;
+  --fm-border-width-emphasis: 2px;
+  --fm-border-width-divider: 1px;
+
+  --fm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --fm-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --fm-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.12);
+
+  --fm-size-container: 80rem;
+  --fm-size-prose: 42rem;
+
+  /* ==========================================================
+     MOTION — by intent, not by value
+     ========================================================== */
+  --fm-duration-none: 0ms;
+  --fm-duration-xs: 100ms; /* micro-feedback: hover, button press */
+  --fm-duration-s: 200ms; /* small state changes: switch, colour, icons */
+  --fm-duration-m: 350ms; /* common elements: dropdown, tooltip, banner */
+  --fm-duration-l: 500ms; /* large surfaces: modal, overlay, drawer */
+
+  --fm-ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* between visible points */
+  --fm-ease-enter: cubic-bezier(
+    0,
+    0,
+    0.2,
+    1
+  ); /* appears: fast then decelerate */
+  --fm-ease-exit: cubic-bezier(0.4, 0, 1, 1); /* leaves: slow then accelerate */
+  --fm-ease-linear: cubic-bezier(0, 0, 1, 1); /* continuous, constant speed */
+
+  --fm-transition-color:
+    background-color var(--fm-duration-s) var(--fm-ease-enter),
+    color var(--fm-duration-s) var(--fm-ease-enter),
+    border-color var(--fm-duration-s) var(--fm-ease-enter);
+  --fm-transition-transform: transform var(--fm-duration-m)
+    var(--fm-ease-standard);
+  --fm-transition-shadow: box-shadow var(--fm-duration-m)
+    var(--fm-ease-standard);
+  --fm-transition-opacity: opacity var(--fm-duration-m) var(--fm-ease-standard);
+  --fm-transition-size:
+    width var(--fm-duration-m) var(--fm-ease-standard),
+    height var(--fm-duration-m) var(--fm-ease-standard);
+  --fm-transition-press: transform var(--fm-duration-xs) var(--fm-ease-enter);
+
+  /* ==========================================================
+     Z-INDEX — stacking layers
+     ========================================================== */
+  --fm-z-dropdown: 10;
+  --fm-z-sticky: 20;
+  --fm-z-drawer: 30;
+  --fm-z-modal-backdrop: 40;
+  --fm-z-modal-content: 50;
+  --fm-z-tooltip: 60;
 }
