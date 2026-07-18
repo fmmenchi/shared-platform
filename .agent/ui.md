@@ -1,88 +1,42 @@
-# UI & design system — agent rules
+# UI & design system — agent doctrine
 
 The design system lives in `client/` as three packages (settled in
-[ADR-0001](../doc/adr/0001-ui-library-foundations.md)): `@fmmenchi/tokens`,
-`@fmmenchi/ui-ports`, `@fmmenchi/ui`.
+[ADR-0001](../doc/adr/0001-ui-library-foundations.md)): `@fmmenchi/tokens` (design tokens),
+`@fmmenchi/ui-ports` (injection contracts), `@fmmenchi/ui` (components). Dependencies point
+downward: `ui → ui-ports`, `ui → tokens`.
 
-## Components
+This spoke is the **cross-package doctrine** (the why/what). For **how to author in `@fmmenchi/ui`**
+— styling, primitives, tests, i18n, component docs, build/packaging — open the package's own hub and
+`.agent/` spokes: [`packages/client/ui/AGENTS.md`](../packages/client/ui/AGENTS.md).
 
-- **Native-first.** Build on native elements (`<button>`, `<dialog>`, popover, `<details>`…) +
-  light accessibility. Do NOT pull a headless behavior lib. Keep components SSR-safe (no
-  `window`/`document` at module top-level).
-- **Structure:** folder-per-component, one concern per file: `<name>.component.tsx` (**component
-  only** — React Fast Refresh needs the file to export just the component), `<name>.types.ts` (**all
-  types**), `<name>.variants.ts` (`cva`), `<name>.messages.ts` (i18n copy), `<name>.module.css`,
-  `<name>.stories.tsx`, `<name>.test.tsx`, `<name>.mdx`, `index.ts` (barrel). Types always live in
-  `.types.ts`, never scattered.
-- **Variants:** `cva` (in `.variants.ts`) mapping to **CSS-module class names** (`styles.primary`) +
-  the `cn` helper. Polymorphism via the `as` prop (hand-rolled `PolymorphicProps`, no headless lib).
-- **Responsive:** **mobile-first** — base styles target mobile; enhance up. In the module CSS use
-  the `@variant` directive (NOT `@apply tablet:…`, which drops the query): `@variant tablet {}` /
-  `@variant desktop {}` for **viewport**, and prefer **container queries** (`@apply @container` on
-  the root + `@variant @sm/@md {}`) so a component adapts to **its container**, not the screen.
-- **Styling:** one CSS Module per component (`<name>.module.css`), authored with Tailwind `@apply`
-  (structural utilities) + `var(--fm-*)` (themeable colors), with `@reference
-'@fmmenchi/tokens/styles/tailwind.css'` at the top so `@apply` resolves. **No utility strings in
-  JSX** (they don't survive precompilation — put them in the module as a class). No hardcoded
-  colors. See [styling](../doc/styling.md).
-- **Provider-agnostic:** no copy, no i18n engine, no router. The app injects adapters
-  (`@fmmenchi/ui-ports`) through the single `UiProvider`. DS internal labels are **colocated** per
-  component in `<name>.messages.ts` via `defineMessages('<ns>', {…})`, read with
-  `useMessages(catalog)` — typed keys, all locales required, app can override by `"<ns>.<key>"`. No
-  central catalog, no i18n engine. `direction` is derived (`Intl.Locale.maximize().script`), never
-  injected.
+## Principles
 
-## Tests — split by kind (logic vs component)
+- **Native-first, no headless behavior lib.** Build on native elements (`<button>`, `<dialog>`,
+  popover, `<details>`…) + light accessible-name wiring. SSR-safe (no `window`/`document` at module
+  top-level).
+- **Provider-agnostic via ports.** The lib bundles no i18n engine, router, icon set or app copy; the
+  app injects adapters (`@fmmenchi/ui-ports`) through one thin `UiProvider`. DS micro-copy is
+  self-contained and colocated; `direction` is derived from the locale
+  (`Intl.Locale.maximize().script`), never injected. Port design in
+  [ADR-0001](../doc/adr/0001-ui-library-foundations.md).
+- **Structure.** Folder-per-component, one concern per file; component files export **only** the
+  component (Fast Refresh), types always in `<name>.types.ts`.
+- **Tests split by kind.** Component behaviour (semantics, interaction, a11y via axe, snapshot) vs
+  pure logic/hooks (tested where they live, generically). Vitest browser mode.
+- **Responsive: mobile-first, container-first.** Base = mobile; a component adapts to **its
+  container** (container queries) before the viewport.
+- **Browser support = Baseline: Widely available**, enforced in tooling —
+  [styling](../doc/styling.md#browser-support--baseline).
 
-Two files, one axis — never mix:
+## Tokens (`@fmmenchi/tokens`)
 
-- **Component** (`<name>.test.tsx`): the rendered component — semantics, interaction, a11y (axe via
-  `test/axe.ts`), snapshot. React Testing Library, **semantic queries only** (role/label/text,
-  never test-id), `user-event`.
-- **Logic** (`<name>.test.ts` next to the code it tests, e.g. `i18n/provider.test.tsx`): pure
-  functions/hooks with no component under test (direction resolution, message resolution, …). Test
-  them where they live, generically — not through a component.
-
-Runner is Vitest **browser mode** (Chromium) so native focus/keyboard behave for real — use
-`@vitest/browser/context` `userEvent` when a test needs real browser input. Every component covers
-semantics · a11y · functionality · a snapshot.
-
-## Tokens
-
-Skeleton (types + CSS-var names) in `@fmmenchi/tokens/src/index.ts`; values in `src/styles/`, two
-shapes of the SAME tokens: `tailwind.css` (Tailwind `@theme` source, for a Tailwind consumer) and
-`vars.css` (plain `:root` custom properties, for a non-Tailwind consumer). Presets are plain
-`[data-theme]` CSS (`presets/*.css`), valid in both. Components read `var(--fm-*)`. Brand presets
-live in apps; only reference presets ship here.
+Skeleton (TS types + CSS-var names) + values in two shapes of the SAME tokens: `tailwind.css`
+(`@theme` source) and `vars.css` (plain `:root` custom properties, for non-Tailwind consumers).
+Presets are plain `[data-theme]` CSS; declared viewports (mobile/tablet/desktop) are `@theme`
+breakpoints. Components read `var(--fm-*)`; brand presets live in apps.
 
 ## Styling distribution — precompiled, agnostic
 
-`@fmmenchi/ui` **precompiles** its CSS Modules to `dist/index.css` (hashed classes, no Tailwind
-preflight) as part of the Vite lib build — exported as `@fmmenchi/ui/style.css`. Consumers import
-that CSS; **Tailwind is NOT required** at the consumer. Do NOT ship source for the consumer to
-`@source`-compile (that would couple every consumer to Tailwind), and do NOT ship a raw utility
-sheet. Rationale + consumer recipes in [styling](../doc/styling.md).
-
-## Browser support — Baseline
-
-Target **Baseline: Widely available**. Enforced by `browserslist-config-baseline` (build target) +
-`eslint-plugin-baseline-js` (JS/Web-APIs on `**/src/**`) + `@eslint/css` `use-baseline` (plain
-shipped CSS) — wired per client package via `eslint.baseline.mjs`. Prefer widely-available APIs;
-e.g. derive direction from `Intl.Locale.maximize().script`, **not** `getTextInfo` (not Baseline).
-The lint isn't exhaustive (misses some `Intl` cases) — review too. Details in
-[styling](../doc/styling.md#browser-support--baseline).
-
-## Storybook & docs
-
-`.storybook/` with the **MCP addon** (`/mcp`) + a11y/docs addons; theme + locale toolbars wire
-the preset (`data-theme`) and the DS locale. A story per component. Consult the Storybook MCP
-before building/changing a component (`pnpm nx storybook @fmmenchi/ui` → `http://localhost:6006/mcp`).
-
-**Component docs** follow a standard colocated `<name>.mdx` format — a **package convention**, kept
-with the code: see [`packages/client/ui/AGENTS.md`](../packages/client/ui/AGENTS.md) and Storybook →
-**Guidelines/Component docs**.
-
-## tsconfig
-
-Browser packages enable the DOM lib in their own `tsconfig.lib.json`
-(`"lib": ["es2023", "dom", "dom.iterable"]`).
+`@fmmenchi/ui` is authored with CSS Modules + Tailwind `@apply` + `cva` and **precompiled** to
+scoped CSS (`@fmmenchi/ui/style.css`) so consumers import CSS and **never run Tailwind**. Rationale,
+the adversarial review, and consumer recipes: [styling](../doc/styling.md).
