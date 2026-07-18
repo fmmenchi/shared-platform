@@ -8,7 +8,7 @@ import * as ButtonStories from './button.stories';
 
 A native `<button>` with token-driven styling. Accessible by default — role, focus, `Enter`/`Space`
 activation and the disabled state come from the platform; we only add the visual variants and, via
-`asChild`, polymorphism. No behaviour is re-implemented.
+the `as` prop, polymorphism. No behaviour is re-implemented.
 
 ## Props
 
@@ -39,10 +39,11 @@ With no children the localized label becomes the button's content.
 <Canvas of={ButtonStories.Loading} />
 <Canvas of={ButtonStories.LoadingLabelOnly} />
 
-### As a link (`asChild`)
+### As a link (`as`)
 
-Render as any element while keeping the button's look: the child (e.g. an `<a>`) receives the
-classes via Radix `Slot`. `disabled` is not forwarded to non-`<button>` elements.
+Render as any element or component while keeping the button's look: `as="a"` (or `as={Link}`). The
+props of the `as` element are typed (`href` is allowed here, not on a plain button); button-only
+attributes (`type`, `disabled`) are not applied to non-`<button>` elements.
 
 <Canvas of={ButtonStories.AsLink} />
 

@@ -30,16 +30,15 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
   });
 
-  it('composes with asChild (polymorphism)', () => {
+  it('renders as another element via `as` (polymorphism)', () => {
     render(
-      <Button asChild>
-        <a href="/next">Go</a>
+      <Button as="a" href="/next">
+        Go
       </Button>,
     );
-    expect(screen.getByRole('link', { name: 'Go' })).toHaveAttribute(
-      'href',
-      '/next',
-    );
+    const link = screen.getByRole('link', { name: 'Go' });
+    expect(link).toHaveAttribute('href', '/next');
+    expect(link).not.toHaveAttribute('type'); // no button-only attrs leak
   });
 
   it('matches the rendered snapshot', () => {
