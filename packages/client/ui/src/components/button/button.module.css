@@ -1,58 +1,60 @@
 /*
- * Button styles — CSS Modules authored with Tailwind.
+ * Button styles — CSS Modules authored with Tailwind, colours ONLY through
+ * semantic roles ("la semantica vince su tutto": the token bridge resets the
+ * default palette, so a raw `bg-red-600` would not even compile).
  *
- * `@reference` pulls in the token theme so `@apply` (structural utilities) and
- * the `--fm-*` custom properties (themeable colours) resolve at THIS library's
- * build. The build precompiles these modules to `dist/style.css` with hashed
- * class names, so consumers `import '@fmmenchi/ui/style.css'` and need no
- * Tailwind of their own. Colours go through `var(--fm-*)` so `[data-theme]`
- * presets re-theme at runtime even in the precompiled output.
+ * `@reference` pulls in the token theme so `@apply` resolves at THIS library's
+ * build; the output references `var(--fm-*)`, so `[data-theme]` presets
+ * re-theme the precompiled CSS at runtime. Each colour variant maps 1:1 to an
+ * action family of the contract: fill/foreground + hover/active/disabled roles
+ * (no opacity hacks, no hardcoded colours).
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 .button {
-  @apply inline-flex items-center justify-center gap-2;
+  @apply gap-internal-s inline-flex items-center justify-center;
   @apply rounded-md text-sm font-medium transition;
-  @apply focus-visible:outline-2 focus-visible:outline-offset-2;
-}
-.button:focus-visible {
-  outline-color: var(--fm-color-ring);
+  @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
 }
 .button:disabled {
-  @apply pointer-events-none opacity-50;
+  @apply pointer-events-none;
+}
+/* Press feedback is the transform, not a colour (the andes pattern) — colour
+   alone can't distinguish pressed for the ghost treatment. */
+.button:active {
+  transform: scale(0.97);
+  transition: var(--fm-transition-press);
+}
+@media (prefers-reduced-motion: reduce) {
+  .button:active {
+    transform: none;
+  }
 }
 
-/* Colour role — token-driven so presets re-theme at runtime. */
+/* --- Colour variants: one action family each --- */
 .primary {
-  background: var(--fm-color-primary);
-  color: var(--fm-color-primary-fg);
-}
-.primary:hover {
-  opacity: 0.9;
+  @apply bg-primary text-primary-foreground;
+  @apply hover:bg-primary-hover active:bg-primary-active;
+  @apply disabled:bg-primary-disabled disabled:text-primary-disabled-foreground;
 }
 
 .secondary {
-  background: color-mix(in srgb, var(--fm-color-muted) 15%, transparent);
-  color: var(--fm-color-fg);
-}
-.secondary:hover {
-  background: color-mix(in srgb, var(--fm-color-muted) 25%, transparent);
+  @apply bg-secondary text-secondary-foreground;
+  @apply hover:bg-secondary-hover active:bg-secondary-active;
+  @apply disabled:bg-secondary-disabled disabled:text-secondary-disabled-foreground;
 }
 
+/* Ghost is a treatment, not a family: quiet on the surface roles. */
 .ghost {
-  background: transparent;
-  color: var(--fm-color-fg);
-}
-.ghost:hover {
-  background: color-mix(in srgb, var(--fm-color-muted) 10%, transparent);
+  @apply text-foreground bg-transparent;
+  @apply hover:bg-muted active:bg-neutral-subtle;
+  @apply disabled:text-disabled-foreground disabled:bg-transparent;
 }
 
 .destructive {
-  background: #dc2626;
-  color: #ffffff;
-}
-.destructive:hover {
-  opacity: 0.9;
+  @apply bg-destructive text-destructive-foreground;
+  @apply hover:bg-destructive-hover active:bg-destructive-active;
+  @apply disabled:bg-destructive-disabled disabled:text-destructive-disabled-foreground;
 }
 
 /* Size. */

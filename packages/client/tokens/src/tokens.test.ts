@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { parse as parseColor, wcagContrast } from 'culori';
 import {
   ACTION_FAMILIES,
+  BREAKPOINTS,
   COLOR_ROLES,
+  RADIUS_TOKENS,
+  SPACE_TOKENS,
   STATUS_FAMILIES,
   TOKEN_VARS,
   colorVar,
@@ -86,6 +89,28 @@ describe('tailwind bridge', () => {
       ).toBe(true);
     }
   });
+
+  it('bridges radius and semantic spacing', () => {
+    for (const t of RADIUS_TOKENS) {
+      expect(
+        bridge.includes(`--radius-${t}:var(--fm-radius-${t})`),
+        `bridge is missing --radius-${t}`,
+      ).toBe(true);
+    }
+    for (const t of SPACE_TOKENS) {
+      expect(
+        bridge.includes(`--spacing-${t}:var(--fm-space-${t})`),
+        `bridge is missing --spacing-${t}`,
+      ).toBe(true);
+    }
+  });
+
+  it('declares exactly the TS breakpoints (no drift, no Tailwind defaults)', () => {
+    expect(bridge).toContain('--breakpoint-*:initial;');
+    for (const [name, value] of Object.entries(BREAKPOINTS)) {
+      expect(bridge).toContain(`--breakpoint-${name}:${value}`);
+    }
+  });
 });
 
 describe('WCAG contrast (AA) — the allowed-themes gate', () => {
@@ -107,6 +132,7 @@ describe('WCAG contrast (AA) — the allowed-themes gate', () => {
     ['background', 'muted-foreground', 4.5],
     ['input', 'input-foreground', 4.5],
     ['background', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
+    ['input', 'input-invalid', 3], // non-text invalid signal on the field
   );
   // `-disabled` pairs are deliberately absent: WCAG 1.4.3 exempts disabled
   // controls, and dimmed fills cannot meet AA by design.

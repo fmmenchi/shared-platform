@@ -82,8 +82,8 @@ describe('Button', () => {
           const { container } = renderUi(
             <div
               style={{
-                backgroundColor: 'var(--fm-color-bg)',
-                color: 'var(--fm-color-fg)',
+                backgroundColor: 'var(--fm-color-background)',
+                color: 'var(--fm-color-foreground)',
               }}
             >
               <Button variant={variant}>Save</Button>

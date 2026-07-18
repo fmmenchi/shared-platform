@@ -123,7 +123,7 @@
   --fm-color-input-foreground: oklch(24% 0.02 256);
   --fm-color-input-hover: oklch(95% 0.007 256);
   --fm-color-input-active: oklch(91% 0.008 256);
-  --fm-color-input-invalid: oklch(72% 0.16 27);
+  --fm-color-input-invalid: oklch(57% 0.2 27);
   --fm-color-input-disabled: oklch(96.5% 0.006 256);
 
   /* ==========================================================

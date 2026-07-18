@@ -28,12 +28,15 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
 - **Browser support = Baseline: Widely available**, enforced in tooling —
   [styling](../doc/styling.md#browser-support--baseline).
 
-## Tokens (`@fmmenchi/tokens`)
+## Tokens (`@fmmenchi/tokens`) — the theme contract
 
-Skeleton (TS types + CSS-var names) + values in two shapes of the SAME tokens: `tailwind.css`
-(`@theme` source) and `vars.css` (plain `:root` custom properties, for non-Tailwind consumers).
-Presets are plain `[data-theme]` CSS; declared viewports (mobile/tablet/desktop) are `@theme`
-breakpoints. Components read `var(--fm-*)`; brand presets live in apps.
+**Semantics wins over everything**: components consume ONLY semantic roles (`--fm-*`); the bridge
+resets Tailwind's default palette so a raw colour utility does not compile. Single source of values
+= `vars.css` (static, Baseline-safe literals); `tailwind.css` is a names-only `@theme inline`
+bridge; presets are plain `[data-theme]` CSS overriding EXACTLY every color role. A theme =
+complete color-role assignment (`ThemeColors`), enforced with WCAG-contrast by
+`tokens.test.ts`. Declared viewports are the `@theme` breakpoints. Brand presets live in apps.
+Rules: [`packages/client/tokens/AGENTS.md`](../packages/client/tokens/AGENTS.md).
 
 ## Styling distribution — precompiled, agnostic
 
