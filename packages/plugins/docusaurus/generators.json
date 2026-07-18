@@ -4,6 +4,11 @@
       "factory": "./dist/generators/site/site",
       "schema": "./dist/generators/site/schema.json",
       "description": "site generator"
+    },
+    "project-doc": {
+      "factory": "./dist/generators/project-doc/project-doc",
+      "schema": "./dist/generators/project-doc/schema.json",
+      "description": "Scaffold a project documentation page inside the docs tree."
     }
   }
 }

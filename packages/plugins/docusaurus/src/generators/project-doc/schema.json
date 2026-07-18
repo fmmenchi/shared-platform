@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "ProjectDoc",
+  "title": "Scaffold a project's documentation page in the docs tree",
+  "description": "Creates <docPath>/<section>/<project>.md pre-filled from the project's package.json — project docs LIVE in the curated docs tree (no aggregation), this just makes starting one consistent.",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "The project to document.",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "Which project do you want to document?"
+    },
+    "docPath": {
+      "type": "string",
+      "description": "Workspace-relative docs folder the site serves.",
+      "default": "doc"
+    },
+    "section": {
+      "type": "string",
+      "description": "Sub-folder (sidebar category) for project pages.",
+      "default": "packages"
+    }
+  },
+  "required": ["project"]
+}
