@@ -54,8 +54,26 @@ import { UiProvider, Button } from '@fmmenchi/ui';
 Switch preset at runtime with `data-theme` on a root element (`<html data-theme="dark">`); the
 token variables re-theme the components, no rebuild. If your app already uses Tailwind you may
 instead consume the token `@theme` (`@fmmenchi/tokens/styles/tailwind.css`) in your own build —
-but the components' styles always come from the precompiled `@fmmenchi/ui/style.css`, never from
-your Tailwind scanning the library.
+but the components' styles always come from the precompiled CSS, never from your Tailwind scanning
+the library.
+
+#### Importing only what you use
+
+The package is tree-shakeable (`sideEffects` are CSS only), so the barrel import above already drops
+unused components from your JS bundle. For **guaranteed** isolation — and to load only one
+component's CSS — import the component subpath and its stylesheet:
+
+```tsx
+import { Button } from '@fmmenchi/ui/button';
+```
+
+```css
+@import '@fmmenchi/tokens/styles/vars.css';
+@import '@fmmenchi/ui/button/style.css'; /* just the Button's styles */
+```
+
+`@fmmenchi/ui/style.css` bundles every component's styles (simplest); `@fmmenchi/ui/<name>/style.css`
+loads only that component's.
 
 Versions follow each package's own changelog (`packages/<scope>/<name>/CHANGELOG.md` in this
 repo) and the git tags `@fmmenchi/<name>@<version>`; releases also appear as GitHub Releases.
