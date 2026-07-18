@@ -206,6 +206,45 @@ Notes and honest limits:
 
 Run it with the normal `pnpm nx lint`; a non-Baseline feature fails the lint (and CI).
 
+## Responsive — mobile-first, container-first
+
+The DS **declares its viewports** as tokens (mobile is the base; `tablet` ≥ 768px, `desktop` ≥
+1024px) and resets Tailwind's default breakpoints so only those exist. Author **mobile-first**: base
+styles target the smallest screen, and you enhance up.
+
+Two gotchas make this concrete:
+
+1. **`@apply tablet:…` does not work.** Tailwind v4 can't inline a media query into a flat rule, so
+   `@apply tablet:flex` silently drops the query and just applies `flex`. Use the **`@variant`**
+   directive instead, which wraps the nested rules:
+
+   ```css
+   .toolbar {
+     display: block; /* mobile */
+     @variant tablet {
+       display: flex;
+     } /* ≥768px */
+   }
+   ```
+
+2. **Prefer container queries over viewport queries.** A reusable component should respond to _its
+   container_, not the screen — the same Card behaves right in a sidebar and in a wide main column.
+   Mark the root a container and query its size:
+
+   ```css
+   .card {
+     @apply @container;
+     display: block;
+     @variant @md {
+       display: grid;
+     } /* container ≥ md */
+   }
+   ```
+
+   Reserve viewport queries (`@variant tablet/desktop`) for genuine page-layout decisions.
+
+Storybook has a **viewport toolbar** (Mobile / Tablet / Desktop) to preview each device class.
+
 ## Rules of thumb (recap)
 
 - One `*.module.css` per component; `@reference` the token theme at the top.
