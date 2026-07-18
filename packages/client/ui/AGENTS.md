@@ -19,6 +19,7 @@ pnpm nx storybook @fmmenchi/ui    # Storybook + MCP at :6006/mcp
 | Spoke                                        | When                                        |
 | -------------------------------------------- | ------------------------------------------- |
 | [styling](./.agent/styling.md)               | CSS Modules, `@apply`, cva, precompiled CSS |
+| [primitives](./.agent/primitives.md)         | `as` polymorphism, mergeRefs, useControlled |
 | [testing](./.agent/testing.md)               | component vs logic tests, axe               |
 | [i18n](./.agent/i18n.md)                     | colocated messages, direction/RTL           |
 | [component-docs](./.agent/component-docs.md) | authoring a component's `.mdx`              |

@@ -37,8 +37,8 @@ export const LoadingLabelOnly: Story = {
 
 export const AsLink: Story = {
   render: (args) => (
-    <Button {...args} asChild>
-      <a href="/next">Link that looks like a button</a>
+    <Button {...args} as="a" href="/next">
+      Link that looks like a button
     </Button>
   ),
 };

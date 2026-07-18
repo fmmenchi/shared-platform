@@ -12,7 +12,7 @@ The design system lives in `client/` as three packages (settled in
 - **Structure:** folder-per-component, `components/<name>/<name>.component.tsx` (+ `.test.tsx`,
   `.stories.tsx`).
 - **Variants:** `cva` mapping to **CSS-module class names** (`styles.primary`) + the `cn` helper.
-  Polymorphism via Radix Slot (`asChild`).
+  Polymorphism via the `as` prop (hand-rolled `PolymorphicProps`, no headless lib).
 - **Styling:** one CSS Module per component (`<name>.module.css`), authored with Tailwind `@apply`
   (structural utilities) + `var(--fm-*)` (themeable colors), with `@reference
 '@fmmenchi/tokens/styles/tailwind.css'` at the top so `@apply` resolves. **No utility strings in
