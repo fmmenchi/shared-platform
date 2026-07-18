@@ -2,9 +2,12 @@
 
 - One `<name>.module.css` per component; `@reference '@fmmenchi/tokens/styles/tailwind.css'` on top.
 - Author with `@apply` (structure) + **semantic role utilities** for colour (`bg-primary`,
-  `text-foreground`, `hover:bg-primary-hover`…). The token bridge resets the default palette:
-  `bg-red-500` or a hex literal does not compile. Variants map 1:1 to an action family
+  `text-foreground`, `hover:bg-primary-hover`…). The token bridge resets the default palette
+  (`bg-red-500` fails the build) and `src/test/color-literals.test.ts` forbids raw colour
+  literals (`#hex`, `oklch(`…) in module CSS. Variants map 1:1 to an action family
   (fill/foreground/hover/active/disabled roles) — no opacity hacks.
+- **Pair roles only as declared**: a foreground goes on a background only if the pairing is in
+  `CONTRAST_PAIRS` (`tokens/src/validate.ts`); a new pairing must be added there first.
 - **No utility strings in JSX** — put them in the module (won't survive precompile).
 - `cva` → module class names; `cn` composes; polymorphism via the **`as` prop**
   (`primitives/polymorphic.ts`) — no Radix.

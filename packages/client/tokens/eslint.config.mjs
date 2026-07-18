@@ -14,8 +14,8 @@ export default [
             '{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}',
             '{projectRoot}/vitest.config.mts',
           ],
-          // Validation-only tooling (contract tests) — never shipped.
-          ignoredDependencies: ['vitest', 'culori'],
+          // Test-only tooling — never shipped (culori IS shipped, via ./validate).
+          ignoredDependencies: ['vitest'],
         },
       ],
     },
