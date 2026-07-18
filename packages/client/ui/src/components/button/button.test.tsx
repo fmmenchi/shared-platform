@@ -17,11 +17,6 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
   });
 
-  it('has no accessibility violations', async () => {
-    const { container } = render(<Button>Save</Button>);
-    await expectNoA11yViolations(container);
-  });
-
   it('calls onClick when activated', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -69,8 +64,20 @@ describe('Button', () => {
         screen.getByRole('button', { name: 'Caricamento' }),
       ).toBeInTheDocument();
     });
+  });
 
-    it('has no accessibility violations while loading', async () => {
+  // axe runs in real Chromium, so color-contrast is checked against the actual
+  // token values — and each colour role is a distinct contrast pair.
+  describe('accessibility (axe)', () => {
+    const variants = ['primary', 'secondary', 'ghost', 'destructive'] as const;
+    for (const variant of variants) {
+      it(`has no violations — ${variant}`, async () => {
+        const { container } = render(<Button variant={variant}>Save</Button>);
+        await expectNoA11yViolations(container);
+      });
+    }
+
+    it('has no violations while loading', async () => {
       const { container } = renderUi(<Button isLoading>Save</Button>);
       await expectNoA11yViolations(container);
     });
