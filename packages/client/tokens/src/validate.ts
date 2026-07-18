@@ -13,7 +13,7 @@
  * Subpath entry (`@fmmenchi/tokens/validate`) so the browser import graph of
  * the main entry never pulls the color math in.
  */
-import { parse as parseColor, wcagContrast } from 'culori';
+import { displayable, parse as parseColor, wcagContrast } from 'culori';
 import {
   ACTION_FAMILIES,
   COLOR_ROLES,
@@ -56,7 +56,12 @@ export const CONTRAST_PAIRS: ReadonlyArray<
 ] as ReadonlyArray<readonly [ColorRole, ColorRole, number]>;
 
 export interface ThemeViolation {
-  kind: 'missing-role' | 'unknown-role' | 'unparsable-color' | 'contrast';
+  kind:
+    | 'missing-role'
+    | 'unknown-role'
+    | 'unparsable-color'
+    | 'out-of-gamut'
+    | 'contrast';
   role?: string;
   pair?: readonly [string, string];
   ratio?: number;
@@ -108,6 +113,16 @@ export function validateTheme(
         role,
         message: `"${role}" is not a parsable color: ${value}`,
       });
+    } else if (!displayable(parsed)) {
+      // Out-of-sRGB values render differently per browser (each gamut-maps
+      // its own way) and silently falsify contrast math — a theme must ship
+      // sRGB-displayable literals (clamp chroma at constant lightness).
+      violations.push({
+        kind: 'out-of-gamut',
+        role,
+        message: `"${role}" is outside the sRGB gamut: ${value}`,
+      });
+      parsable.set(role, parsed); // still contrast-check with the parsed value
     } else {
       parsable.set(role, parsed);
     }
