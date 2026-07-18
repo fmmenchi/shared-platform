@@ -27,7 +27,8 @@
       "default": "./dist/index.js"
     },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
-    "./styles/presets/alt.css": "./src/styles/presets/alt.css"
+    "./styles/vars.css": "./src/styles/vars.css",
+    "./styles/presets/dark.css": "./src/styles/presets/dark.css"
   },
   "nx": {
     "tags": [

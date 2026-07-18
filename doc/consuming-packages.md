@@ -30,6 +30,33 @@ grants it access (Package settings → Manage Actions access), otherwise use the
 pnpm add @fmmenchi/core
 ```
 
+### Design system
+
+`@fmmenchi/ui` ships **precompiled CSS** — you import a stylesheet, you do **not** need Tailwind.
+It is authored with Tailwind + CSS Modules and compiled to scoped classes at publish; how and why
+is in [styling](./styling.md). Import the component stylesheet plus the token variables:
+
+```css
+/* app.css */
+@import '@fmmenchi/tokens/styles/vars.css'; /* the --fm-* token variables (plain CSS) */
+@import '@fmmenchi/tokens/styles/presets/dark.css'; /* optional [data-theme='dark'] preset */
+@import '@fmmenchi/ui/style.css'; /* precompiled component styles */
+```
+
+```tsx
+import { UiProvider, Button } from '@fmmenchi/ui';
+
+<UiProvider adapters={{ i18n: { locale: 'en' } }} theme="base">
+  <Button variant="primary">Save</Button>
+</UiProvider>;
+```
+
+Switch preset at runtime with `data-theme` on a root element (`<html data-theme="dark">`); the
+token variables re-theme the components, no rebuild. If your app already uses Tailwind you may
+instead consume the token `@theme` (`@fmmenchi/tokens/styles/tailwind.css`) in your own build —
+but the components' styles always come from the precompiled `@fmmenchi/ui/style.css`, never from
+your Tailwind scanning the library.
+
 Versions follow each package's own changelog (`packages/<scope>/<name>/CHANGELOG.md` in this
 repo) and the git tags `@fmmenchi/<name>@<version>`; releases also appear as GitHub Releases.
 

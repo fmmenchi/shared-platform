@@ -173,14 +173,36 @@ Chosen for the first spike, now built in `packages/client/{tokens,ui-ports,ui}`:
 - **C → native-first, lightweight a11y.** Build on native elements (`<button>`, `<dialog>`) and
   add only accessible-name wiring; the platform gives role, focus trap, Escape and `::backdrop`
   for free. No headless behavior lib. Polymorphism via Radix Slot (`asChild`) only.
-- **D → Tailwind v4 + CSS custom properties**, variants via `cva` + a `cn` helper. Tokens are the
-  Tailwind `@theme`; presets override `[data-theme]`. **Tailwind is a build-time authoring detail
-  only, never a consumer requirement:** the published package MUST emit a **precompiled** plain-CSS
-  stylesheet (`@fmmenchi/ui/styles.css`) so consumers import CSS, not run Tailwind — otherwise the
-  styling engine leaks across the provider boundary (the one real ports violation to avoid).
-  `cva`/`cn`/`tailwind-merge` stay bundled runtime internals, invisible to consumers. **Not yet
-  done in the spike** (styles currently resolve only via Storybook/tests) — an open item for
-  ADR-0002.
+- **D → CSS Modules authored with Tailwind, variants via `cva`.** Each component has a
+  `<name>.module.css` written with Tailwind `@apply` (structural utilities) + `var(--fm-*)`
+  (themeable colors), with `@reference` to the token theme so `@apply` resolves. `cva` maps the
+  variant API to the module's class names; `cn` composes. Tokens are the Tailwind `@theme` for
+  authoring; presets override `[data-theme]`.
+
+### Styling distribution — precompiled, agnostic
+
+Decision: the lib is **published to external repos**, so it must not impose a styling engine on
+consumers (Driver 1). It therefore **precompiles**:
+
+- `@fmmenchi/ui`'s Vite build compiles the CSS Modules to `dist/index.css` — hashed, scoped
+  classes, **no Tailwind preflight** — with the JS referencing the same hashes. Exported as
+  `@fmmenchi/ui/style.css`. Consumers `import` it; **no Tailwind required**. `cva`/`cn` are
+  bundled runtime internals, invisible to consumers.
+- `@fmmenchi/tokens` ships the tokens in two shapes: `tailwind.css` (`@theme` source, for a
+  Tailwind consumer or the lib's own authoring) and `vars.css` (plain `:root` custom properties,
+  for the agnostic import). Colors resolve through `var(--fm-*)`, so `[data-theme]` presets
+  re-theme the precompiled CSS at runtime.
+- Storybook and the browser tests act as a Tailwind host that compiles the modules, so the dev
+  loop and the published artifact share one authoring source.
+
+This is the andes-routes authoring pattern (CSS Modules + `@apply` + `cva`) **plus** a precompile
+step that andes-routes omits — its `libs/ui` is _internal_, so its app compiles the source via
+`@source '…/libs/ui/src'`. Rejected alternatives: shipping source for the consumer to
+`@source`-compile (couples every consumer to Tailwind and the exact toolchain, with silent-failure
+footguns when a bundler skips `node_modules` CSS), and a precompiled **raw utility** sheet (global
+utilities that collide with the app's and override poorly). Full rationale + adversarial review in
+[styling](../styling.md).
+
 - **Provider → single thin `UiProvider`** carrying the injected `UiAdapters`; DS labels
   self-contained, `direction` derived.
 - **Testing → Vitest browser mode (Chromium)**, React Testing Library semantic queries + axe;

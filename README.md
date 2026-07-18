@@ -55,6 +55,7 @@ pnpm nx release               # version + changelog + tag + publish
 ## Documentation
 
 - **Humans** — [doc/](./doc): [architecture](./doc/architecture.md) ·
+  [styling the design system](./doc/styling.md) ·
   [consuming packages from an app](./doc/consuming-packages.md) ·
   [architecture decision records](./doc/adr)
 - **AI agents** — [AGENTS.md](./AGENTS.md) (hub) + [.agent/](./.agent) topic spokes

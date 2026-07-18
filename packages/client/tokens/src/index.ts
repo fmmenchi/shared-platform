@@ -24,5 +24,5 @@ export const colorVar = (t: ColorToken): string => `--fm-color-${t}`;
 export const radiusVar = (t: RadiusToken): string => `--fm-radius-${t}`;
 
 /** Presets the platform ships as reference themes (bikeshed later). */
-export const REFERENCE_PRESETS = ['base', 'alt'] as const;
+export const REFERENCE_PRESETS = ['base', 'dark'] as const;
 export type ReferencePreset = (typeof REFERENCE_PRESETS)[number];

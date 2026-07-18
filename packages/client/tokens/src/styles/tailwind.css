@@ -4,7 +4,7 @@
  * `@theme` declares the semantic tokens: this both generates utilities
  * (`bg-primary`, `text-fg`, `rounded-md`, …) and exposes them as CSS custom
  * properties. A preset is just an override of those `--fm-*` variables under a
- * `[data-theme]` selector — see `./presets/alt.css`.
+ * `[data-theme]` selector — see `./presets/dark.css`.
  */
 @import 'tailwindcss';
 
