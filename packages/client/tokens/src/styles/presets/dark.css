@@ -1,0 +1,15 @@
+/*
+ * `dark` reference preset — overrides the token variables under
+ * `[data-theme='dark']`. A real dark theme, tuned so the primary button keeps
+ * WCAG-AA text contrast and the focus ring stays visible on a dark surface.
+ * Concrete brand presets live in the consuming apps; this is only a reference.
+ */
+[data-theme='dark'] {
+  --color-bg: #0b0b0f;
+  --color-fg: #f5f5f7;
+  --color-muted: #9ca3af;
+  --color-primary: #2563eb; /* white text ≈ 5.3:1 → AA */
+  --color-primary-fg: #ffffff;
+  --color-border: #2a2a33;
+  --color-ring: #6ea8ff; /* lighter blue: visible ring on dark */
+}

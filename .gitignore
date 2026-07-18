@@ -48,3 +48,10 @@ Thumbs.db
 .nx/polygraph
 .nx/self-healing
 .nx/migrate-runs
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+
+storybook-static
+# vitest browser-mode artifacts
+.vitest-attachments/
+**/__screenshots__/

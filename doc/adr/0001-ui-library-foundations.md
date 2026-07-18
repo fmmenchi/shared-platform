@@ -166,14 +166,51 @@ Names are proposals to bikeshed once the shape is validated, not locked.
 - **Provider:** single `UiProvider` with per-concern defaults (partial adoption) · per-concern
   contexts · props-only.
 
-## Current leaning (to be falsified by the spike)
+## Current direction (spike variant 1 — implemented)
 
-- **C → React Aria Components**: it natively externalizes locale, navigation and formatting and
-  ships overridable strings, collapsing much of the ports work. Risks to test: bundle size, its
-  built-in opinions, styling ergonomics with CSS variables. Radix is the à-la-carte fallback.
-- **D → zero-runtime CSS + CSS custom properties** (vanilla-extract or CSS Modules + a generated
-  vars file); avoid runtime CSS-in-JS for RSC.
-- **Provider → single `UiProvider` (D1)** with per-concern defaults, so an app can adopt partially.
+Chosen for the first spike, now built in `packages/client/{tokens,ui-ports,ui}`:
+
+- **C → native-first, lightweight a11y.** Build on native elements (`<button>`, `<dialog>`) and
+  add only accessible-name wiring; the platform gives role, focus trap, Escape and `::backdrop`
+  for free. No headless behavior lib. Polymorphism via Radix Slot (`asChild`) only.
+- **D → CSS Modules authored with Tailwind, variants via `cva`.** Each component has a
+  `<name>.module.css` written with Tailwind `@apply` (structural utilities) + `var(--fm-*)`
+  (themeable colors), with `@reference` to the token theme so `@apply` resolves. `cva` maps the
+  variant API to the module's class names; `cn` composes. Tokens are the Tailwind `@theme` for
+  authoring; presets override `[data-theme]`.
+
+### Styling distribution — precompiled, agnostic
+
+Decision: the lib is **published to external repos**, so it must not impose a styling engine on
+consumers (Driver 1). It therefore **precompiles**:
+
+- `@fmmenchi/ui`'s Vite build compiles the CSS Modules to `dist/index.css` — hashed, scoped
+  classes, **no Tailwind preflight** — with the JS referencing the same hashes. Exported as
+  `@fmmenchi/ui/style.css`. Consumers `import` it; **no Tailwind required**. `cva`/`cn` are
+  bundled runtime internals, invisible to consumers.
+- `@fmmenchi/tokens` ships the tokens in two shapes: `tailwind.css` (`@theme` source, for a
+  Tailwind consumer or the lib's own authoring) and `vars.css` (plain `:root` custom properties,
+  for the agnostic import). Colors resolve through `var(--fm-*)`, so `[data-theme]` presets
+  re-theme the precompiled CSS at runtime.
+- Storybook and the browser tests act as a Tailwind host that compiles the modules, so the dev
+  loop and the published artifact share one authoring source.
+
+This is the andes-routes authoring pattern (CSS Modules + `@apply` + `cva`) **plus** a precompile
+step that andes-routes omits — its `libs/ui` is _internal_, so its app compiles the source via
+`@source '…/libs/ui/src'`. Rejected alternatives: shipping source for the consumer to
+`@source`-compile (couples every consumer to Tailwind and the exact toolchain, with silent-failure
+footguns when a bundler skips `node_modules` CSS), and a precompiled **raw utility** sheet (global
+utilities that collide with the app's and override poorly). Full rationale + adversarial review in
+[styling](../styling.md).
+
+- **Provider → single thin `UiProvider`** carrying the injected `UiAdapters`; DS labels
+  self-contained, `direction` derived.
+- **Testing → Vitest browser mode (Chromium)**, React Testing Library semantic queries + axe;
+  every component covers semantics, a11y, functionality and a snapshot.
+- **Storybook** with the MCP addon + a11y/docs, theme + locale toolbars.
+
+Open for a possible variant 2 / ADR-0002: whether a headless lib (React Aria/Radix) is worth it
+for richer widgets, and the bundle/RSC measurements. Names above may still bikeshed.
 
 ## Scouting plan
 

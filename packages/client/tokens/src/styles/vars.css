@@ -1,0 +1,37 @@
+/*
+ * Plain-CSS token variables — the agnostic distribution of the theme.
+ *
+ * `tailwind.css` is Tailwind *source* (`@theme` + `@import 'tailwindcss'`): only
+ * a Tailwind build understands it. This file is the same token values as plain
+ * custom properties, so a consumer WITHOUT Tailwind can `@import` it and the
+ * precompiled component CSS (which reads `var(--fm-*)`) resolves. Presets stay
+ * plain CSS too — see `./presets/dark.css` — and work in both lanes.
+ *
+ * Keep the values in sync with `tailwind.css`. (Follow-up: generate this from
+ * the same source to remove the drift risk.)
+ */
+:root {
+  --color-bg: #ffffff;
+  --color-fg: #111111;
+  --color-muted: #6b7280;
+  --color-primary: #0f62fe;
+  --color-primary-fg: #ffffff;
+  --color-border: #d0d5dd;
+  --color-ring: #0f62fe;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* `--fm-*` contract aliases (what components reference). */
+  --fm-color-bg: var(--color-bg);
+  --fm-color-fg: var(--color-fg);
+  --fm-color-muted: var(--color-muted);
+  --fm-color-primary: var(--color-primary);
+  --fm-color-primary-fg: var(--color-primary-fg);
+  --fm-color-border: var(--color-border);
+  --fm-color-ring: var(--color-ring);
+  --fm-radius-sm: var(--radius-sm);
+  --fm-radius-md: var(--radius-md);
+  --fm-radius-lg: var(--radius-lg);
+}

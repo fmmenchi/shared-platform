@@ -34,8 +34,10 @@ if Nx reports the workspace is out of sync).
 ## Definition of done — must be green before committing
 
 ```bash
-pnpm nx run-many -t typecheck build lint
+pnpm nx run-many -t typecheck build lint test build-storybook
 ```
+
+Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`.
 
 ## Conventions (essentials)
 
@@ -51,15 +53,20 @@ pnpm nx run-many -t typecheck build lint
   a PR autonomously. See [releases](./.agent/releases.md).
 - **Never release or publish autonomously.** `nx release` runs only on the user's explicit
   command; `--dry-run` is always allowed.
+- **UI & tests:** native-first accessible components, and every component tested for semantics,
+  a11y and functionality. See [ui](./.agent/ui.md).
 - **ADRs:** foundational choices are recorded in `doc/adr/` — check the index before making
   one; never contradict an accepted ADR, supersede it with a new one.
-- `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.
+- **Per-package docs:** every non-trivial package has its own `AGENTS.md` (+ `CLAUDE.md` symlink)
+  and a README, kept current; simple stubs keep just a README. `CLAUDE.md` is a symlink to
+  `AGENTS.md` at every level — edit `AGENTS.md` only.
 
 ## Topic index (`.agent/`)
 
 | Spoke                                    | Open when the task touches…                                  |
 | ---------------------------------------- | ------------------------------------------------------------ |
 | [architecture](./.agent/architecture.md) | creating/moving libraries, scopes, tags, module boundaries   |
+| [ui](./.agent/ui.md)                     | building/testing components, tokens, Storybook, i18n ports   |
 | [releases](./.agent/releases.md)         | versioning, changelogs, publishing, commit format, branching |
 
 <!-- nx configuration start-->
