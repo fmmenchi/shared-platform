@@ -53,6 +53,14 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['input', 'input-foreground', 4.5],
   ['background', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
   ['input', 'input-invalid', 3], // non-text invalid signal on the field
+  ['background', 'link', 4.5],
+  ['background', 'link-hover', 4.5],
+  ['selection', 'selection-foreground', 4.5],
+  ['tooltip', 'tooltip-foreground', 4.5],
+  ['input', 'input-placeholder', 4.5], // placeholder is text
+  ...(['success', 'warning', 'info', 'neutral'] as const).map(
+    (f) => [`${f}-subtle`, `${f}-border`, 3] as const, // tinted alert border
+  ),
 ] as ReadonlyArray<readonly [ColorRole, ColorRole, number]>;
 
 export interface ThemeViolation {

@@ -6,6 +6,7 @@ import { converter, parse as parseColor } from 'culori';
 import { APCAcontrast, sRGBtoY } from 'apca-w3';
 import {
   BREAKPOINTS,
+  CONTAINER_BREAKPOINTS,
   COLOR_ROLES,
   RADIUS_TOKENS,
   SPACE_TOKENS,
@@ -109,6 +110,10 @@ describe('tailwind bridge', () => {
     expect(bridge).toContain('--breakpoint-*:initial;');
     for (const [name, value] of Object.entries(BREAKPOINTS)) {
       expect(bridge).toContain(`--breakpoint-${name}:${value}`);
+    }
+    expect(bridge).toContain('--container-*:initial;');
+    for (const [name, value] of Object.entries(CONTAINER_BREAKPOINTS)) {
+      expect(bridge).toContain(`--container-${name}:${value}`);
     }
   });
 });

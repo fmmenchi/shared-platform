@@ -4,7 +4,7 @@ title: '@fmmenchi/tokens'
 
 # @fmmenchi/tokens
 
-The **semantic token contract** — the single vocabulary every theme must satisfy: 67 color roles
+The **semantic token contract** — the single vocabulary every theme must satisfy: 78 color roles
 (action families, status, surfaces, inputs, focus ring), semantic spacing, type scales, radius,
 borders, shadows, motion-by-intent and z-layers. Components consume **only** these roles;
 "semantics wins over everything".
