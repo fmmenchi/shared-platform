@@ -13,6 +13,9 @@
   "files": [
     "dist"
   ],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -25,7 +28,14 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./style.css": "./dist/index.css"
+    "./button": {
+      "@fmmenchi/source": "./src/components/button/index.ts",
+      "types": "./dist/components/button/index.d.ts",
+      "import": "./dist/button.js",
+      "default": "./dist/button.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./button/style.css": "./dist/button.css"
   },
   "nx": {
     "tags": [
