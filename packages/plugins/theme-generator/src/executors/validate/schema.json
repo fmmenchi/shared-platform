@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Validate @fmmenchi/ui themes",
+  "description": "Validates [data-theme] CSS files against the INSTALLED @fmmenchi/tokens contract (completeness, parsable colors, sRGB gamut, WCAG contrast on every declared pair).",
+  "type": "object",
+  "properties": {
+    "themes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Workspace-relative paths of the theme CSS files to validate."
+    },
+    "tokensPath": {
+      "type": "string",
+      "description": "Advanced: explicit path to @fmmenchi/tokens' validate module (when it cannot be resolved from the workspace root)."
+    }
+  },
+  "required": ["themes"]
+}

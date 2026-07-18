@@ -1,0 +1,14 @@
+{
+  "generators": {
+    "theme": {
+      "factory": "./dist/generators/theme/theme",
+      "schema": "./dist/generators/theme/schema.json",
+      "description": "Scaffold a complete @fmmenchi/ui brand theme from the installed tokens contract and wire its CI validation."
+    },
+    "validation": {
+      "factory": "./dist/generators/validation/validation",
+      "schema": "./dist/generators/validation/schema.json",
+      "description": "Add or update the validate-themes target (the validate executor) on a project."
+    }
+  }
+}

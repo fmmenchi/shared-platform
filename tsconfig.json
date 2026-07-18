@@ -23,6 +23,9 @@
     },
     {
       "path": "./packages/client/ui"
+    },
+    {
+      "path": "./packages/plugins/theme-generator"
     }
   ],
   "compilerOptions": {}

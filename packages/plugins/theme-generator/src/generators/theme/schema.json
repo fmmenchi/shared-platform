@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "Theme",
+  "title": "Generate a brand theme for @fmmenchi/ui",
+  "description": "Scaffolds a complete [data-theme] preset instantiated from the INSTALLED @fmmenchi/tokens contract (always in sync with your tokens version) and wires the validate-themes target so the theme is gated in CI.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Theme name — becomes the `data-theme` attribute value.",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "What is the theme name (data-theme value)?"
+    },
+    "project": {
+      "type": "string",
+      "description": "The project the theme belongs to (gets the validate-themes target).",
+      "x-prompt": "Which project owns the theme?"
+    },
+    "directory": {
+      "type": "string",
+      "description": "Directory for the theme file, relative to the project root.",
+      "default": "src/themes"
+    },
+    "skipValidation": {
+      "type": "boolean",
+      "description": "Do not wire the validate-themes target.",
+      "default": false
+    },
+    "tokensPath": {
+      "type": "string",
+      "description": "Advanced: explicit path to @fmmenchi/tokens' vars.css (when it cannot be resolved from the workspace root)."
+    }
+  },
+  "required": ["name", "project"]
+}

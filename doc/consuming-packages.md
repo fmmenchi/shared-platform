@@ -78,19 +78,33 @@ loads only that component's.
 #### Shipping a brand theme
 
 A theme is a complete assignment of every color role under a `[data-theme='<name>']` selector
-(same shape as the built-in `dark` preset). Validate it in your CI with the public validator —
-completeness, parsable colors, and WCAG AA on every pairing the design system uses:
+(same shape as the built-in `dark` preset). Don't write it by hand — **generate it**, so the
+scaffold always matches the tokens version you have installed, and validation is wired from day
+one:
+
+```bash
+pnpm add -D @fmmenchi/theme-generator
+pnpm nx g @fmmenchi/theme-generator:theme acme --project=web
+```
+
+This creates `apps/web/src/themes/acme.css` (every color role, starting from the light reference
+values — edit the values, never remove a role) and adds a `validate-themes` target to the project:
+
+```bash
+pnpm nx run web:validate-themes
+```
+
+The executor validates each theme with the **installed** `@fmmenchi/tokens` contract —
+completeness, parsable colors, sRGB gamut, and WCAG contrast on every pairing the design system
+uses — reporting exact ratios on failure (e.g. `primary × primary-foreground: 3.9 < 4.5`): fix the
+value, don't lower the bar. Import the CSS and apply with `<html data-theme="acme">`.
+
+Under the hood it's the public validator, also usable directly in any test runner:
 
 ```ts
 import { validateTheme } from '@fmmenchi/tokens/validate';
-
-test('our brand theme is allowed', () => {
-  expect(validateTheme(brandColors)).toEqual([]); // role -> resolved color literal
-});
+expect(validateTheme(brandColors)).toEqual([]); // role -> resolved color literal
 ```
-
-A failing pair is reported with its exact ratio (e.g. `primary × primary-foreground: 3.9 < 4.5`) —
-fix the value, don't lower the bar.
 
 Versions follow each package's own changelog (`packages/<scope>/<name>/CHANGELOG.md` in this
 repo) and the git tags `@fmmenchi/<name>@<version>`; releases also appear as GitHub Releases.

@@ -1,0 +1,9 @@
+{
+  "executors": {
+    "validate": {
+      "implementation": "./dist/executors/validate/validate",
+      "schema": "./dist/executors/validate/schema.json",
+      "description": "validate executor"
+    }
+  }
+}
