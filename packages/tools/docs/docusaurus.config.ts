@@ -7,8 +7,8 @@ import type { Config } from '@docusaurus/types';
  */
 const config: Config = {
   title: 'shared-platform',
-  url: 'http://localhost:3000',
-  baseUrl: '/',
+  url: 'https://fmmenchi.github.io',
+  baseUrl: '/shared-platform/',
   // Repo-relative links that point outside the docs tree (AGENTS.md, package
   // sources…) are useful in the repository — warn, don't fail.
   onBrokenLinks: 'warn',

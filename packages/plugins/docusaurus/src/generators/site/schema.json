@@ -36,6 +36,11 @@
       "description": "Production URL of the site.",
       "default": "http://localhost:3000"
     },
+    "baseUrl": {
+      "type": "string",
+      "description": "Base URL path (GitHub Pages project sites need '/<repo>/').",
+      "default": "/"
+    },
     "repoUrl": {
       "type": "string",
       "description": "Repository URL for the navbar GitHub link.",
