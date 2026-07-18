@@ -32,6 +32,12 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   `presets/dark.css` + the bridge in `tailwind.css` — `tokens.test.ts` fails until all four agree,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
   exempt). New values: derive with the andes-routes ramp methodology, ship the resolved literal.
+- **Values must be sRGB-displayable** (validator kind `out-of-gamut`): out-of-gamut oklch renders
+  differently per browser and falsifies contrast math — clamp chroma at constant lightness and
+  verify the FORMATTED string (rounding can push a boundary value back out).
+- **Contrast policy:** hard gate = WCAG AA + an APCA floor (|Lc| ≥ 45) on text pairs; |Lc| < 60
+  (body-text guideline) is logged as advisory, not failed. Dark hover/active are GRADED from the
+  fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
 - **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
   system stacks (apps override `--fm-font-*`).
 - Weight utilities are `font-regular` (not `font-normal`); breakpoints are build-time literals in

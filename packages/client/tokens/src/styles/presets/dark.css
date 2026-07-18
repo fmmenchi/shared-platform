@@ -9,19 +9,19 @@
  */
 [data-theme='dark'] {
   /* Action families */
-  --fm-color-primary: oklch(77% 0.141 256);
+  --fm-color-primary: oklch(77% 0.118 256);
   --fm-color-primary-foreground: oklch(24% 0.02 256);
-  --fm-color-primary-hover: oklch(87% 0.12 256);
-  --fm-color-primary-active: oklch(97% 0.093 256);
+  --fm-color-primary-hover: oklch(82% 0.091 256);
+  --fm-color-primary-active: oklch(87% 0.064 256);
   --fm-color-primary-subtle: oklch(39% 0.108 256);
-  --fm-color-primary-subtle-foreground: oklch(97% 0.093 256);
+  --fm-color-primary-subtle-foreground: oklch(97% 0.014 256);
   --fm-color-primary-disabled: oklch(48% 0.129 256);
   --fm-color-primary-disabled-foreground: oklch(39% 0.108 256);
 
   --fm-color-secondary: oklch(75% 0.028 256);
   --fm-color-secondary-foreground: oklch(24% 0.02 256);
-  --fm-color-secondary-hover: oklch(85% 0.024 256);
-  --fm-color-secondary-active: oklch(95% 0.019 256);
+  --fm-color-secondary-hover: oklch(80% 0.026 256);
+  --fm-color-secondary-active: oklch(85% 0.024 256);
   --fm-color-secondary-subtle: oklch(37% 0.022 256);
   --fm-color-secondary-subtle-foreground: oklch(95% 0.019 256);
   --fm-color-secondary-disabled: oklch(46% 0.026 256);
@@ -30,36 +30,36 @@
   --fm-color-accent: oklch(74% 0.11 195);
   --fm-color-accent-foreground: oklch(24% 0.02 256);
   --fm-color-accent-hover: oklch(79% 0.103 195);
-  --fm-color-accent-active: oklch(89% 0.088 195);
-  --fm-color-accent-subtle: oklch(41% 0.079 195);
-  --fm-color-accent-subtle-foreground: oklch(99% 0.068 195);
-  --fm-color-accent-disabled: oklch(50% 0.095 195);
-  --fm-color-accent-disabled-foreground: oklch(41% 0.079 195);
+  --fm-color-accent-active: oklch(84% 0.096 195);
+  --fm-color-accent-subtle: oklch(41% 0.069 195);
+  --fm-color-accent-subtle-foreground: oklch(99% 0.014 195);
+  --fm-color-accent-disabled: oklch(50% 0.085 195);
+  --fm-color-accent-disabled-foreground: oklch(41% 0.069 195);
 
-  --fm-color-destructive: oklch(85% 0.152 27);
+  --fm-color-destructive: oklch(85% 0.081 27);
   --fm-color-destructive-foreground: oklch(24% 0.02 256);
-  --fm-color-destructive-hover: oklch(95% 0.118 27);
-  --fm-color-destructive-active: oklch(100% 0.086 27);
+  --fm-color-destructive-hover: oklch(90% 0.052 27);
+  --fm-color-destructive-active: oklch(95% 0.024 27);
   --fm-color-destructive-subtle: oklch(37% 0.137 27);
-  --fm-color-destructive-subtle-foreground: oklch(95% 0.118 27);
+  --fm-color-destructive-subtle-foreground: oklch(95% 0.024 27);
   --fm-color-destructive-disabled: oklch(46% 0.163 27);
   --fm-color-destructive-disabled-foreground: oklch(37% 0.137 27);
 
   /* Status vocabulary */
   --fm-color-success: oklch(77% 0.141 150);
   --fm-color-success-foreground: oklch(24% 0.02 256);
-  --fm-color-success-subtle: oklch(39% 0.108 150);
-  --fm-color-success-subtle-foreground: oklch(97% 0.093 150);
+  --fm-color-success-subtle: oklch(39% 0.107 150);
+  --fm-color-success-subtle-foreground: oklch(97% 0.048 150);
 
   --fm-color-warning: oklch(81% 0.132 82);
   --fm-color-warning-foreground: oklch(24% 0.02 256);
-  --fm-color-warning-subtle: oklch(43% 0.101 82);
-  --fm-color-warning-subtle-foreground: oklch(100% 0.087 82);
+  --fm-color-warning-subtle: oklch(43% 0.088 82);
+  --fm-color-warning-subtle-foreground: oklch(100% 0 82);
 
-  --fm-color-info: oklch(77% 0.141 245);
+  --fm-color-info: oklch(77% 0.125 245);
   --fm-color-info-foreground: oklch(24% 0.02 256);
-  --fm-color-info-subtle: oklch(39% 0.108 245);
-  --fm-color-info-subtle-foreground: oklch(97% 0.093 245);
+  --fm-color-info-subtle: oklch(39% 0.098 245);
+  --fm-color-info-subtle-foreground: oklch(97% 0.015 245);
 
   --fm-color-neutral: oklch(74% 0.014 256);
   --fm-color-neutral-foreground: oklch(24% 0.02 256);
@@ -79,7 +79,7 @@
   --fm-color-muted: oklch(31% 0.02 256);
   --fm-color-muted-foreground: oklch(74% 0.014 256);
   --fm-color-border: oklch(34% 0.02 256);
-  --fm-color-ring: oklch(77% 0.141 256);
+  --fm-color-ring: oklch(77% 0.118 256);
   --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
 
   /* Inputs */

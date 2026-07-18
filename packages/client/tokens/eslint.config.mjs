@@ -15,7 +15,7 @@ export default [
             '{projectRoot}/vitest.config.mts',
           ],
           // Test-only tooling — never shipped (culori IS shipped, via ./validate).
-          ignoredDependencies: ['vitest'],
+          ignoredDependencies: ['vitest', 'apca-w3'],
         },
       ],
     },

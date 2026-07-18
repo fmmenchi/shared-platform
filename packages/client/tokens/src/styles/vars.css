@@ -31,14 +31,14 @@
      X-subtle-foreground    → text ON the soft background
      X-disabled(-foreground)→ disabled fill / its text (AA-exempt)
      ========================================================== */
-  --fm-color-primary: oklch(41% 0.187 255);
+  --fm-color-primary: oklch(41% 0.135 255);
   --fm-color-primary-foreground: oklch(100% 0 0);
-  --fm-color-primary-hover: oklch(31% 0.168 255);
-  --fm-color-primary-active: oklch(22% 0.14 255);
-  --fm-color-primary-subtle: oklch(90% 0.088 255);
-  --fm-color-primary-subtle-foreground: oklch(31% 0.168 255);
-  --fm-color-primary-disabled: oklch(80% 0.121 255);
-  --fm-color-primary-disabled-foreground: oklch(90% 0.088 255);
+  --fm-color-primary-hover: oklch(31% 0.102 255);
+  --fm-color-primary-active: oklch(22% 0.072 255);
+  --fm-color-primary-subtle: oklch(90% 0.049 255);
+  --fm-color-primary-subtle-foreground: oklch(31% 0.102 255);
+  --fm-color-primary-disabled: oklch(80% 0.102 255);
+  --fm-color-primary-disabled-foreground: oklch(90% 0.049 255);
 
   --fm-color-secondary: oklch(43% 0.035 256);
   --fm-color-secondary-foreground: oklch(100% 0 0);
@@ -49,42 +49,42 @@
   --fm-color-secondary-disabled: oklch(73% 0.022 256);
   --fm-color-secondary-disabled-foreground: oklch(83% 0.016 256);
 
-  --fm-color-accent: oklch(40% 0.125 195);
+  --fm-color-accent: oklch(40% 0.068 195);
   --fm-color-accent-foreground: oklch(100% 0 0);
-  --fm-color-accent-hover: oklch(30% 0.112 195);
-  --fm-color-accent-active: oklch(21% 0.094 195);
+  --fm-color-accent-hover: oklch(30% 0.051 195);
+  --fm-color-accent-active: oklch(21% 0.035 195);
   --fm-color-accent-subtle: oklch(89% 0.059 195);
-  --fm-color-accent-subtle-foreground: oklch(30% 0.112 195);
+  --fm-color-accent-subtle-foreground: oklch(30% 0.051 195);
   --fm-color-accent-disabled: oklch(79% 0.081 195);
   --fm-color-accent-disabled-foreground: oklch(89% 0.059 195);
 
-  --fm-color-destructive: oklch(43% 0.192 27);
+  --fm-color-destructive: oklch(43% 0.175 27);
   --fm-color-destructive-foreground: oklch(100% 0 0);
-  --fm-color-destructive-hover: oklch(33% 0.172 27);
-  --fm-color-destructive-active: oklch(24% 0.144 27);
-  --fm-color-destructive-subtle: oklch(92% 0.09 27);
-  --fm-color-destructive-subtle-foreground: oklch(33% 0.172 27);
-  --fm-color-destructive-disabled: oklch(82% 0.124 27);
-  --fm-color-destructive-disabled-foreground: oklch(92% 0.09 27);
+  --fm-color-destructive-hover: oklch(33% 0.134 27);
+  --fm-color-destructive-active: oklch(24% 0.097 27);
+  --fm-color-destructive-subtle: oklch(92% 0.04 27);
+  --fm-color-destructive-subtle-foreground: oklch(33% 0.134 27);
+  --fm-color-destructive-disabled: oklch(82% 0.1 27);
+  --fm-color-destructive-disabled-foreground: oklch(92% 0.04 27);
 
   /* ==========================================================
      COLOR — status vocabulary (success · warning · info · neutral)
      Lifecycle/feedback roles, DISTINCT from the brand families.
      ========================================================== */
-  --fm-color-success: oklch(41% 0.144 150);
+  --fm-color-success: oklch(41% 0.112 150);
   --fm-color-success-foreground: oklch(100% 0 0);
   --fm-color-success-subtle: oklch(90% 0.068 150);
-  --fm-color-success-subtle-foreground: oklch(31% 0.129 150);
+  --fm-color-success-subtle-foreground: oklch(31% 0.085 150);
 
-  --fm-color-warning: oklch(46% 0.125 78);
+  --fm-color-warning: oklch(46% 0.095 78);
   --fm-color-warning-foreground: oklch(100% 0 0);
-  --fm-color-warning-subtle: oklch(95% 0.059 78);
-  --fm-color-warning-subtle-foreground: oklch(36% 0.112 78);
+  --fm-color-warning-subtle: oklch(95% 0.043 78);
+  --fm-color-warning-subtle-foreground: oklch(36% 0.075 78);
 
-  --fm-color-info: oklch(42% 0.154 245);
+  --fm-color-info: oklch(42% 0.105 245);
   --fm-color-info-foreground: oklch(100% 0 0);
-  --fm-color-info-subtle: oklch(91% 0.072 245);
-  --fm-color-info-subtle-foreground: oklch(32% 0.138 245);
+  --fm-color-info-subtle: oklch(91% 0.046 245);
+  --fm-color-info-subtle-foreground: oklch(32% 0.08 245);
 
   --fm-color-neutral: oklch(46% 0.02 256);
   --fm-color-neutral-foreground: oklch(100% 0 0);
@@ -113,7 +113,7 @@
   --fm-color-muted: oklch(96.5% 0.006 256);
   --fm-color-muted-foreground: oklch(38% 0.02 256);
   --fm-color-border: oklch(91% 0.008 256);
-  --fm-color-ring: oklch(50% 0.195 255);
+  --fm-color-ring: oklch(50% 0.164 255);
   --fm-color-scrim: oklch(14% 0.02 256 / 0.92);
 
   /* ==========================================================
