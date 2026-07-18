@@ -174,6 +174,38 @@ utilities (do it through the token variables, or with a higher-specificity rule)
 build-time `@apply` dependency on Tailwind. Both are contained inside the library and invisible at
 its boundary.
 
+## Browser support — Baseline
+
+The platform targets **Web Platform Baseline: Widely available** — features supported across the
+core browser set (Chrome, Edge, Firefox, Safari) for **30+ months**. We don't hand-maintain a
+browser matrix; Baseline is the moving target and the tooling below enforces it.
+
+Three tools, each covering a different layer:
+
+| Tool                               | Enforces                                                                                                                       | Where                                               |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| **`browserslist-config-baseline`** | the **build target** — the compiler (Tailwind/Lightning CSS, esbuild) emits CSS/JS for Baseline (fallbacks, no too-new output) | root `package.json` `browserslist`                  |
+| **`eslint-plugin-baseline-js`**    | non-Baseline **JS syntax / builtins / Web APIs** in shippable source                                                           | `eslint.baseline.mjs`, on `**/src/**` (client only) |
+| **`@eslint/css` `use-baseline`**   | non-Baseline **CSS features** in the **plain** stylesheets we ship (`vars.css`, presets)                                       | same config                                         |
+
+Notes and honest limits:
+
+- **The browserslist target is the real lever for CSS.** Our component CSS is Tailwind-authored
+  and precompiled, so `@eslint/css` can't source-lint it (its parser rejects `@apply`/`@reference`);
+  what keeps the _compiled_ CSS Baseline is the compiler honoring the browserslist target. The CSS
+  lint therefore only guards the plain hand-written token stylesheets.
+- **The JS lint runs on `src/**` only** — not Node tooling (eslint/vite configs) or dev-only
+  test/story files, whose runtime never reaches a consumer's browser. It's wired **per client
+  package** (each imports `eslint.baseline.mjs`); it deliberately does not live in the root config,
+  which also covers Node-targeted `server`/`shared` code.
+- **The linter is not omniscient.** It flags what `web-features` maps (e.g. `Promise.withResolvers`,
+  `structuredClone`) but misses some `Intl` edge cases — the reason we caught
+  `Intl.Locale.prototype.getTextInfo` (not Baseline; Firefox shipped it late) by review and switched
+  the direction logic to `Intl.Locale.maximize().script` (Baseline). Tooling + review, not tooling
+  alone.
+
+Run it with the normal `pnpm nx lint`; a non-Baseline feature fails the lint (and CI).
+
 ## Rules of thumb (recap)
 
 - One `*.module.css` per component; `@reference` the token theme at the top.
