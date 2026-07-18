@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "Site",
+  "title": "Generate a Docusaurus docs site for the repo's human docs",
+  "description": "Single-instance site that reads the repository's docs folder DIRECTLY (no copying, no sync, no aggregation): the site tree IS the docs folder you already edit.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project directory basename.",
+      "default": "docs",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
+    },
+    "directory": {
+      "type": "string",
+      "description": "Workspace-relative directory of the site project. Default: packages/tools/<name>."
+    },
+    "docPath": {
+      "type": "string",
+      "description": "Workspace-relative folder holding the human docs the site serves.",
+      "default": "doc"
+    },
+    "packageName": {
+      "type": "string",
+      "description": "package.json name of the site project. Default: <name>."
+    },
+    "title": {
+      "type": "string",
+      "description": "Site title (navbar/browser). Default: <name>."
+    },
+    "url": {
+      "type": "string",
+      "description": "Production URL of the site.",
+      "default": "http://localhost:3000"
+    },
+    "repoUrl": {
+      "type": "string",
+      "description": "Repository URL for the navbar GitHub link.",
+      "default": "https://github.com"
+    }
+  },
+  "required": ["name"]
+}

@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "site": {
+      "factory": "./dist/generators/site/site",
+      "schema": "./dist/generators/site/schema.json",
+      "description": "site generator"
+    }
+  }
+}

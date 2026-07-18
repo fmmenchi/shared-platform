@@ -26,6 +26,9 @@
     },
     {
       "path": "./packages/plugins/theme-generator"
+    },
+    {
+      "path": "./packages/plugins/docusaurus"
     }
   ],
   "compilerOptions": {}
