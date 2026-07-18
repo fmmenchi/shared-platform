@@ -2,17 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse as parseColor, wcagContrast } from 'culori';
+import { parse as parseColor } from 'culori';
 import {
-  ACTION_FAMILIES,
   BREAKPOINTS,
   COLOR_ROLES,
   RADIUS_TOKENS,
   SPACE_TOKENS,
-  STATUS_FAMILIES,
   TOKEN_VARS,
   colorVar,
 } from './index.js';
+import { validateTheme } from './validate.js';
 
 /**
  * Validation of the token contract — this is what makes a theme "allowed":
@@ -113,45 +112,35 @@ describe('tailwind bridge', () => {
   });
 });
 
-describe('WCAG contrast (AA) — the allowed-themes gate', () => {
-  // [background-role, foreground-role, minimum ratio]
-  const pairs: Array<[string, string, number]> = [];
-  for (const f of [...ACTION_FAMILIES, ...STATUS_FAMILIES, 'neutral']) {
-    pairs.push([f, `${f}-foreground`, 4.5]);
-    pairs.push([`${f}-subtle`, `${f}-subtle-foreground`, 4.5]);
-  }
-  for (const f of ACTION_FAMILIES) {
-    pairs.push([`${f}-hover`, `${f}-foreground`, 4.5]);
-    pairs.push([`${f}-active`, `${f}-foreground`, 4.5]);
-  }
-  pairs.push(
-    ['background', 'foreground', 4.5],
-    ['card', 'card-foreground', 4.5],
-    ['popover', 'popover-foreground', 4.5],
-    ['muted', 'muted-foreground', 4.5],
-    ['background', 'muted-foreground', 4.5],
-    ['input', 'input-foreground', 4.5],
-    ['background', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
-    ['input', 'input-invalid', 3], // non-text invalid signal on the field
-  );
-  // `-disabled` pairs are deliberately absent: WCAG 1.4.3 exempts disabled
-  // controls, and dimmed fills cannot meet AA by design.
+describe('reference presets pass the PUBLIC validator (allowed-themes gate)', () => {
+  // The exact validator apps run on their brand presets — completeness,
+  // parseability and every CONTRAST_PAIR (AA text 4.5:1, ring/invalid 3:1;
+  // `-disabled` pairs exempt per WCAG 1.4.3). Single source: validate.ts.
+  const toTheme = (vars: Map<string, string>): Record<string, string> => {
+    const theme: Record<string, string> = {};
+    for (const role of COLOR_ROLES) {
+      const raw = vars.get(colorVar(role));
+      if (raw !== undefined) theme[role] = resolve(vars, raw);
+    }
+    return theme;
+  };
 
-  for (const [theme, name] of [
-    [light, 'light'],
-    [new Map([...light, ...dark]), 'dark'],
-  ] as const) {
-    it(`every declared pair passes in ${name}`, () => {
-      const failures: string[] = [];
-      for (const [bg, fg, min] of pairs) {
-        const b = resolve(theme, theme.get(colorVar(bg as never)) ?? '');
-        const f = resolve(theme, theme.get(colorVar(fg as never)) ?? '');
-        const ratio = wcagContrast(b, f);
-        if (ratio < min) {
-          failures.push(`${bg} × ${fg}: ${ratio.toFixed(2)} < ${min}`);
-        }
-      }
-      expect(failures, failures.join('\n')).toEqual([]);
-    });
-  }
+  it('light (vars.css) is an allowed theme', () => {
+    expect(validateTheme(toTheme(light))).toEqual([]);
+  });
+
+  it('dark preset is an allowed theme on its own (complete)', () => {
+    expect(validateTheme(toTheme(dark))).toEqual([]);
+  });
+
+  it('the validator reports a broken theme (self-check)', () => {
+    const broken = { ...toTheme(light) };
+    broken['primary'] = broken['background']; // near-white fill on white text
+    delete broken['ring'];
+    (broken as Record<string, string>)['not-a-role'] = 'oklch(50% 0 0)';
+    const kinds = validateTheme(broken).map((v) => v.kind);
+    expect(kinds).toContain('contrast');
+    expect(kinds).toContain('missing-role');
+    expect(kinds).toContain('unknown-role');
+  });
 });

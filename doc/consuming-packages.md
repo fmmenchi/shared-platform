@@ -75,6 +75,23 @@ import { Button } from '@fmmenchi/ui/button';
 `@fmmenchi/ui/style.css` bundles every component's styles (simplest); `@fmmenchi/ui/<name>/style.css`
 loads only that component's.
 
+#### Shipping a brand theme
+
+A theme is a complete assignment of every color role under a `[data-theme='<name>']` selector
+(same shape as the built-in `dark` preset). Validate it in your CI with the public validator —
+completeness, parsable colors, and WCAG AA on every pairing the design system uses:
+
+```ts
+import { validateTheme } from '@fmmenchi/tokens/validate';
+
+test('our brand theme is allowed', () => {
+  expect(validateTheme(brandColors)).toEqual([]); // role -> resolved color literal
+});
+```
+
+A failing pair is reported with its exact ratio (e.g. `primary × primary-foreground: 3.9 < 4.5`) —
+fix the value, don't lower the bar.
+
 Versions follow each package's own changelog (`packages/<scope>/<name>/CHANGELOG.md` in this
 repo) and the git tags `@fmmenchi/<name>@<version>`; releases also appear as GitHub Releases.
 

@@ -22,7 +22,12 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   no runtime relative-color, no `@property`). `styles/tailwind.css` is a names-only `@theme inline`
   bridge (no values → no drift). `presets/dark.css` overrides EXACTLY every color role.
 - **A theme = a complete assignment of every color role** (`ThemeColors` in `src/index.ts`).
-  Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape.
+  Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape — apps
+  validate theirs with the PUBLIC `validateTheme()` (`@fmmenchi/tokens/validate`): completeness +
+  parseability + every `CONTRAST_PAIR`. The reference presets pass the same validator.
+- **Declared pairs are the usage contract.** A component may put a foreground on a background ONLY
+  in a pairing declared in `CONTRAST_PAIRS` (`src/validate.ts`); a component introducing a new
+  pairing MUST add it there (all themes re-validate automatically).
 - **Changing the contract:** adding a role = update `src/index.ts` (types) + `vars.css` +
   `presets/dark.css` + the bridge in `tailwind.css` — `tokens.test.ts` fails until all four agree,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`

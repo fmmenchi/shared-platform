@@ -14,6 +14,9 @@
     "dist",
     "src/styles"
   ],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -26,6 +29,12 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./validate": {
+      "@fmmenchi/source": "./src/validate.ts",
+      "types": "./dist/validate.d.ts",
+      "import": "./dist/validate.js",
+      "default": "./dist/validate.js"
+    },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
     "./styles/presets/dark.css": "./src/styles/presets/dark.css"
@@ -37,6 +46,7 @@
     ]
   },
   "dependencies": {
+    "culori": "^4.0.2",
     "tslib": "^2.3.0"
   }
 }
