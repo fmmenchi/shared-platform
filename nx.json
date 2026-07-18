@@ -76,7 +76,8 @@
     },
     "version": {
       "conventionalCommits": true,
-      "preVersionCommand": "pnpm nx run-many -t build"
+      "preVersionCommand": "pnpm nx run-many -t build",
+      "fallbackCurrentVersionResolver": "disk"
     },
     "changelog": {
       "workspaceChangelog": false,
