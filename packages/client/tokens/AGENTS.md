@@ -1,7 +1,8 @@
 # AGENTS.md — @fmmenchi/tokens
 
-Design-token skeleton (contract) + reference presets, exposed as CSS. Part of `shared-platform` — the workspace contract is
-[../../../AGENTS.md](../../../AGENTS.md); read it first. Scope `client`, type `util`.
+The semantic token CONTRACT — the most delicate package of the platform: it defines the allowed
+themes. Part of `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md).
+Scope `client`, type `util`.
 
 ## Commands
 
@@ -9,13 +10,26 @@ Design-token skeleton (contract) + reference presets, exposed as CSS. Part of `s
 pnpm nx typecheck @fmmenchi/tokens
 pnpm nx build @fmmenchi/tokens
 pnpm nx lint @fmmenchi/tokens
+pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCAG contrast)
 ```
 
-## Specifics
+## Rules
 
-- Skeleton in `src/index.ts` (types + CSS-var names); values in `src/styles/` twice: `tailwind.css` (Tailwind v4 `@theme` source) and `vars.css` (same tokens as plain `:root` custom properties, for non-Tailwind consumers). Presets are plain `[data-theme]` CSS (`presets/*.css`), valid for both.
-- Consumers reference `var(--fm-*)`; import `tailwind.css` (Tailwind build) or `vars.css` (agnostic) — never import values from TS. Keep the two files in sync.
-- Brand presets live in the apps; only reference presets ship here.
-- **Declared viewports** (`@theme`): mobile = base (no query), `--breakpoint-tablet` (48rem), `--breakpoint-desktop` (64rem); Tailwind's default breakpoints are reset (`--breakpoint-*: initial`) so only these exist. Build-time only (media queries) — NOT in `vars.css`.
+- **Semantics wins over everything.** Components consume ONLY semantic roles (`--fm-color-primary`,
+  `--fm-space-inset-m`, …) — never raw values, never a palette. The Tailwind bridge RESETS the
+  default palette, so `bg-red-500` fails the build.
+- **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
+  no runtime relative-color, no `@property`). `styles/tailwind.css` is a names-only `@theme inline`
+  bridge (no values → no drift). `presets/dark.css` overrides EXACTLY every color role.
+- **A theme = a complete assignment of every color role** (`ThemeColors` in `src/index.ts`).
+  Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape.
+- **Changing the contract:** adding a role = update `src/index.ts` (types) + `vars.css` +
+  `presets/dark.css` + the bridge in `tailwind.css` — `tokens.test.ts` fails until all four agree,
+  and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
+  exempt). New values: derive with the andes-routes ramp methodology, ship the resolved literal.
+- **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
+  system stacks (apps override `--fm-font-*`).
+- Weight utilities are `font-regular` (not `font-normal`); breakpoints are build-time literals in
+  `tailwind.css`, asserted against `BREAKPOINTS` in TS.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

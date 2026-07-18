@@ -89,7 +89,7 @@ const buttonVariants = cva(styles.button, {
 }
 .primary {
   background: var(--fm-color-primary); /* themeable → preset re-colours it */
-  color: var(--fm-color-primary-fg);
+  color: var(--fm-color-primary-foreground);
 }
 .md {
   @apply px-4 py-2;
@@ -120,7 +120,7 @@ are covered by the _same_ variables:
 
 - `@fmmenchi/tokens/styles/tailwind.css` — the Tailwind `@theme` source (authoring, or a Tailwind
   consumer that wants the tokens in its own build).
-- `@fmmenchi/tokens/styles/vars.css` — the identical tokens as plain `:root` custom properties, for
+- `@fmmenchi/tokens/styles/vars.css` — the SAME tokens as plain `:root` custom properties (single source — the Tailwind file is a names-only bridge over it), for
   a consumer with no Tailwind.
 - `@fmmenchi/tokens/styles/presets/*.css` — plain `[data-theme]` overrides, valid in both lanes.
 

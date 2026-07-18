@@ -46,8 +46,8 @@ const preview = definePreview({
       const locale = (context.globals['locale'] as string) ?? 'en';
       if (typeof document !== 'undefined') {
         document.documentElement.setAttribute('data-theme', theme);
-        document.body.style.backgroundColor = 'var(--fm-color-bg)';
-        document.body.style.color = 'var(--fm-color-fg)';
+        document.body.style.backgroundColor = 'var(--fm-color-background)';
+        document.body.style.color = 'var(--fm-color-foreground)';
       }
       return (
         <UiProvider adapters={{ i18n: { locale } }}>
