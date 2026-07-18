@@ -67,14 +67,33 @@ describe('Button', () => {
   });
 
   // axe runs in real Chromium, so color-contrast is checked against the actual
-  // token values — and each colour role is a distinct contrast pair.
+  // token values — each colour role is a distinct contrast pair, in each theme.
   describe('accessibility (axe)', () => {
     const variants = ['primary', 'secondary', 'ghost', 'destructive'] as const;
-    for (const variant of variants) {
-      it(`has no violations — ${variant}`, async () => {
-        const { container } = render(<Button variant={variant}>Save</Button>);
-        await expectNoA11yViolations(container);
-      });
+    const themes = [
+      { name: 'light', theme: undefined },
+      { name: 'dark', theme: 'dark' },
+    ] as const;
+
+    for (const { name, theme } of themes) {
+      for (const variant of variants) {
+        it(`has no violations — ${variant} / ${name}`, async () => {
+          // Paint the surface with the theme's bg/fg so axe resolves contrast
+          // for transparent variants (e.g. ghost) against the real background.
+          const { container } = renderUi(
+            <div
+              style={{
+                backgroundColor: 'var(--fm-color-bg)',
+                color: 'var(--fm-color-fg)',
+              }}
+            >
+              <Button variant={variant}>Save</Button>
+            </div>,
+            { theme },
+          );
+          await expectNoA11yViolations(container);
+        });
+      }
     }
 
     it('has no violations while loading', async () => {
