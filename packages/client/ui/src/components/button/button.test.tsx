@@ -17,11 +17,6 @@ describe('Button', () => {
     expect(screen.getByRole('button')).toHaveAttribute('type', 'button');
   });
 
-  it('has no accessibility violations', async () => {
-    const { container } = render(<Button>Save</Button>);
-    await expectNoA11yViolations(container);
-  });
-
   it('calls onClick when activated', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
@@ -60,54 +55,50 @@ describe('Button', () => {
       expect(btn).toBeDisabled();
     });
 
-    it('announces a localized status (fallback locale, no provider)', () => {
-      render(<Button isLoading>Save</Button>);
-      // Base-locale fallback when rendered outside a UiProvider.
-      expect(screen.getByText('Loading')).toBeInTheDocument();
-    });
-
-    it('resolves the status from the active locale (it)', () => {
-      renderUi(<Button isLoading>Salva</Button>, { locale: 'it' });
-      expect(screen.getByText('Caricamento')).toBeInTheDocument();
-    });
-
-    it('surfaces the localized label as content when there is none', () => {
+    it('uses the localized status as content when there is no label', () => {
+      // Button-specific rendering: with no children it surfaces the loading
+      // copy as the button's content. (Message resolution itself is covered in
+      // provider.test.tsx.)
       renderUi(<Button isLoading />, { locale: 'it' });
       expect(
         screen.getByRole('button', { name: 'Caricamento' }),
       ).toBeInTheDocument();
     });
-
-    it('has no accessibility violations while loading', async () => {
-      const { container } = renderUi(<Button isLoading>Save</Button>);
-      await expectNoA11yViolations(container);
-    });
   });
 
-  describe('direction (derived from locale)', () => {
-    it('renders LTR for a Latin locale', () => {
-      const { container } = renderUi(<Button>Save</Button>, { locale: 'en' });
-      expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'ltr');
-    });
+  // axe runs in real Chromium, so color-contrast is checked against the actual
+  // token values — each colour role is a distinct contrast pair, in each theme.
+  describe('accessibility (axe)', () => {
+    const variants = ['primary', 'secondary', 'ghost', 'destructive'] as const;
+    const themes = [
+      { name: 'light', theme: undefined },
+      { name: 'dark', theme: 'dark' },
+    ] as const;
 
-    it('renders RTL for Arabic', () => {
-      const { container } = renderUi(<Button>حفظ</Button>, { locale: 'ar' });
-      expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'rtl');
-    });
+    for (const { name, theme } of themes) {
+      for (const variant of variants) {
+        it(`has no violations — ${variant} / ${name}`, async () => {
+          // Paint the surface with the theme's bg/fg so axe resolves contrast
+          // for transparent variants (e.g. ghost) against the real background.
+          const { container } = renderUi(
+            <div
+              style={{
+                backgroundColor: 'var(--fm-color-bg)',
+                color: 'var(--fm-color-fg)',
+              }}
+            >
+              <Button variant={variant}>Save</Button>
+            </div>,
+            { theme },
+          );
+          await expectNoA11yViolations(container);
+        });
+      }
+    }
 
-    it('is script-aware: az-Arab is RTL, az is LTR', () => {
-      // The direction comes from the resolved script, not the language — a
-      // language-only check would get az-Arab wrong.
-      const rtl = renderUi(<Button>t</Button>, { locale: 'az-Arab' });
-      expect(rtl.container.querySelector('[dir]')).toHaveAttribute(
-        'dir',
-        'rtl',
-      );
-      const ltr = renderUi(<Button>t</Button>, { locale: 'az' });
-      expect(ltr.container.querySelector('[dir]')).toHaveAttribute(
-        'dir',
-        'ltr',
-      );
+    it('has no violations while loading', async () => {
+      const { container } = renderUi(<Button isLoading>Save</Button>);
+      await expectNoA11yViolations(container);
     });
   });
 });

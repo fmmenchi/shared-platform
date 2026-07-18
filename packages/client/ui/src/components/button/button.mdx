@@ -1,0 +1,55 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ButtonStories from './button.stories';
+
+<Meta of={ButtonStories} />
+
+# Button
+
+A native `<button>` with token-driven styling. Accessible by default — role, focus, `Enter`/`Space`
+activation and the disabled state come from the platform; we only add the visual variants and, via
+`asChild`, polymorphism. No behaviour is re-implemented.
+
+## Props
+
+<Controls of={ButtonStories.Primary} />
+
+## Usage
+
+### Variants
+
+The colour role is the `variant` axis; `size` is orthogonal.
+
+<Canvas of={ButtonStories.Primary} />
+<Canvas of={ButtonStories.Secondary} />
+<Canvas of={ButtonStories.Ghost} />
+<Canvas of={ButtonStories.Destructive} />
+
+### Disabled
+
+Native `disabled` — the platform blocks focus and activation.
+
+<Canvas of={ButtonStories.Disabled} />
+
+### Loading
+
+`isLoading` sets `aria-busy`, blocks interaction, and shows a spinner plus a **localized** status.
+With no children the localized label becomes the button's content.
+
+<Canvas of={ButtonStories.Loading} />
+<Canvas of={ButtonStories.LoadingLabelOnly} />
+
+### As a link (`asChild`)
+
+Render as any element while keeping the button's look: the child (e.g. an `<a>`) receives the
+classes via Radix `Slot`. `disabled` is not forwarded to non-`<button>` elements.
+
+<Canvas of={ButtonStories.AsLink} />
+
+## Accessibility
+
+- **Icon-only** buttons need an `aria-label` — a dev warning fires if it is missing.
+- The **loading** status is exposed to assistive tech (`aria-busy` + a visually-hidden localized
+  text); the spinner is decorative (`aria-hidden`) and respects `prefers-reduced-motion`.
+- **Direction** follows the active locale (RTL/LTR). Styling uses CSS logical properties, so the
+  layout mirrors automatically — try the Locale toolbar (`العربية`).
