@@ -1,6 +1,7 @@
 /// <reference types='vitest' />
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
+import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import dts from 'vite-plugin-dts';
 import { playwright } from '@vitest/browser-playwright';
@@ -11,6 +12,12 @@ export default defineConfig(() => ({
   cacheDir: '../../../node_modules/.vite/packages/client/ui',
   plugins: [
     react(),
+    // React Compiler auto-memoizes components/hooks. On rolldown-vite it runs
+    // via @rolldown/plugin-babel + reactCompilerPreset (the `react({ babel })`
+    // path doesn't apply here). Applied at the library build, so the published
+    // output ships already memoized (`react/compiler-runtime`, present in the
+    // React 19 peer dep) — every consumer benefits, compiler or not.
+    babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
     dts({
       entryRoot: 'src',
