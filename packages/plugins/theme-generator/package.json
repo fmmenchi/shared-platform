@@ -1,0 +1,71 @@
+{
+  "name": "@fmmenchi/theme-generator",
+  "version": "0.0.1",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/plugins/theme-generator"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "packages/plugins/theme-generator/dist",
+          "main": "packages/plugins/theme-generator/src/index.ts",
+          "tsConfig": "packages/plugins/theme-generator/tsconfig.lib.json",
+          "rootDir": "packages/plugins/theme-generator/src",
+          "generatePackageJson": false,
+          "assets": [
+            {
+              "input": "./packages/plugins/theme-generator/src",
+              "glob": "**/!(*.ts)",
+              "output": "."
+            },
+            {
+              "input": "./packages/plugins/theme-generator/src",
+              "glob": "**/*.d.ts",
+              "output": "."
+            }
+          ]
+        }
+      }
+    },
+    "tags": [
+      "scope:plugins",
+      "type:plugin"
+    ]
+  },
+  "dependencies": {
+    "@nx/devkit": "23.1.0",
+    "tslib": "^2.3.0"
+  },
+  "generators": "./generators.json",
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo",
+    "generators.json",
+    "executors.json"
+  ],
+  "executors": "./executors.json"
+}

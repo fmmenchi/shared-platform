@@ -5,3 +5,4 @@ allowBuilds:
   nx: true
   '@swc/core': true
   esbuild: true
+  unrs-resolver: false
