@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from './button.component.js';
+import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
 describe('Button', () => {
@@ -49,5 +50,49 @@ describe('Button', () => {
   it('matches the rendered snapshot', () => {
     const { container } = render(<Button variant="primary">Save</Button>);
     expect(container.firstChild).toMatchSnapshot();
+  });
+
+  describe('loading state', () => {
+    it('is busy and disabled while loading', () => {
+      render(<Button isLoading>Save</Button>);
+      const btn = screen.getByRole('button', { name: /save/i });
+      expect(btn).toHaveAttribute('aria-busy', 'true');
+      expect(btn).toBeDisabled();
+    });
+
+    it('announces a localized status (fallback locale, no provider)', () => {
+      render(<Button isLoading>Save</Button>);
+      // Base-locale fallback when rendered outside a UiProvider.
+      expect(screen.getByText('Loading')).toBeInTheDocument();
+    });
+
+    it('resolves the status from the active locale (it)', () => {
+      renderUi(<Button isLoading>Salva</Button>, { locale: 'it' });
+      expect(screen.getByText('Caricamento')).toBeInTheDocument();
+    });
+
+    it('surfaces the localized label as content when there is none', () => {
+      renderUi(<Button isLoading />, { locale: 'it' });
+      expect(
+        screen.getByRole('button', { name: 'Caricamento' }),
+      ).toBeInTheDocument();
+    });
+
+    it('has no accessibility violations while loading', async () => {
+      const { container } = renderUi(<Button isLoading>Save</Button>);
+      await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('direction (derived from locale)', () => {
+    it('renders LTR for a Latin locale', () => {
+      const { container } = renderUi(<Button>Save</Button>, { locale: 'en' });
+      expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'ltr');
+    });
+
+    it('renders RTL for Arabic', () => {
+      const { container } = renderUi(<Button>حفظ</Button>, { locale: 'ar' });
+      expect(container.querySelector('[dir]')).toHaveAttribute('dir', 'rtl');
+    });
   });
 });

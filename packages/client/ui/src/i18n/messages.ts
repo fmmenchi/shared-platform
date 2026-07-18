@@ -3,13 +3,16 @@
  * strings; components resolve them from the active locale. The app may override
  * a subset once, via the `messages` field of the i18n port.
  */
-export const UI_SUPPORTED_LOCALES = ['en', 'it'] as const;
+export const UI_SUPPORTED_LOCALES = ['en', 'it', 'ar'] as const;
 export type UiLocale = (typeof UI_SUPPORTED_LOCALES)[number];
 export const UI_FALLBACK_LOCALE: UiLocale = 'en';
 
-export type UiMessageKey = 'dialog.close';
+export type UiMessageKey = 'button.loading';
 
+// `ar` (Arabic) is included so the direction seam is exercised: the provider
+// derives `dir="rtl"` from it via `Intl.Locale`, with no extra input.
 export const UI_CATALOGS: Record<UiLocale, Record<UiMessageKey, string>> = {
-  en: { 'dialog.close': 'Close' },
-  it: { 'dialog.close': 'Chiudi' },
+  en: { 'button.loading': 'Loading' },
+  it: { 'button.loading': 'Caricamento' },
+  ar: { 'button.loading': 'جارٍ التحميل' },
 };

@@ -23,6 +23,18 @@ export const Ghost: Story = { args: { variant: 'ghost' } };
 export const Destructive: Story = { args: { variant: 'destructive' } };
 export const Disabled: Story = { args: { disabled: true } };
 
+/** Spinner + your label; the localized status is announced to screen readers. */
+export const Loading: Story = { args: { isLoading: true, children: 'Save' } };
+
+/**
+ * Loading with no visible label: the localized status text becomes the content.
+ * Switch the Locale toolbar (English / Italiano / العربية) to see it change —
+ * `ar` also flips the layout to RTL.
+ */
+export const LoadingLabelOnly: Story = {
+  args: { isLoading: true, children: undefined },
+};
+
 export const AsLink: Story = {
   render: (args) => (
     <Button {...args} asChild>

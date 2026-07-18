@@ -86,3 +86,15 @@ export function useUi(): UiContextValue {
   if (!ctx) throw new Error('useUi must be used within <UiProvider>');
   return ctx;
 }
+
+/**
+ * Resolve a DS-internal label. Unlike `useUi`, this does NOT require a provider:
+ * outside one it falls back to the base-locale catalog, so a component (e.g. a
+ * standalone `Button`) still renders sensible copy. Inside a provider it uses
+ * the active locale and honors the app's `messages` override.
+ */
+export function useUiT(): (key: UiMessageKey) => string {
+  const ctx = useContext(UiContext);
+  if (ctx) return ctx.t;
+  return (key) => UI_CATALOGS[UI_FALLBACK_LOCALE][key];
+}

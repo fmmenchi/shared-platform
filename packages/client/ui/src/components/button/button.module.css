@@ -1,0 +1,99 @@
+/*
+ * Button styles — CSS Modules authored with Tailwind.
+ *
+ * `@reference` pulls in the token theme so `@apply` (structural utilities) and
+ * the `--fm-*` custom properties (themeable colours) resolve at THIS library's
+ * build. The build precompiles these modules to `dist/style.css` with hashed
+ * class names, so consumers `import '@fmmenchi/ui/style.css'` and need no
+ * Tailwind of their own. Colours go through `var(--fm-*)` so `[data-theme]`
+ * presets re-theme at runtime even in the precompiled output.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+.button {
+  @apply inline-flex items-center justify-center gap-2;
+  @apply rounded-md text-sm font-medium transition;
+  @apply focus-visible:outline-2 focus-visible:outline-offset-2;
+}
+.button:focus-visible {
+  outline-color: var(--fm-color-ring);
+}
+.button:disabled {
+  @apply pointer-events-none opacity-50;
+}
+
+/* Colour role — token-driven so presets re-theme at runtime. */
+.primary {
+  background: var(--fm-color-primary);
+  color: var(--fm-color-primary-fg);
+}
+.primary:hover {
+  opacity: 0.9;
+}
+
+.secondary {
+  background: color-mix(in srgb, var(--fm-color-muted) 15%, transparent);
+  color: var(--fm-color-fg);
+}
+.secondary:hover {
+  background: color-mix(in srgb, var(--fm-color-muted) 25%, transparent);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--fm-color-fg);
+}
+.ghost:hover {
+  background: color-mix(in srgb, var(--fm-color-muted) 10%, transparent);
+}
+
+.destructive {
+  background: #dc2626;
+  color: #ffffff;
+}
+.destructive:hover {
+  opacity: 0.9;
+}
+
+/* Size. */
+.sm {
+  @apply px-3 py-1.5 text-xs;
+}
+.md {
+  @apply px-4 py-2;
+}
+.lg {
+  @apply px-5 py-2.5 text-base;
+}
+
+/* Decorative icon slot (was an inline utility string — moved here so it
+   survives precompilation instead of relying on a consumer Tailwind scan). */
+.icon {
+  @apply inline-flex shrink-0 items-center justify-center;
+}
+
+/* Loading spinner — decorative (aria-hidden); the accessible status is the
+   localized `.srOnly` text + `aria-busy`. Respects reduced-motion. */
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 9999px;
+  animation: fm-button-spin 0.6s linear infinite;
+}
+@keyframes fm-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+/* Visually hidden but exposed to assistive tech. */
+.srOnly {
+  @apply sr-only;
+}

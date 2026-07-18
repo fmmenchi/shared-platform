@@ -6,10 +6,6 @@ export {
   type ButtonVariants,
 } from './components/button/button.component.js';
 export {
-  Dialog,
-  type DialogProps,
-} from './components/dialog/dialog.component.js';
-export {
   UI_SUPPORTED_LOCALES,
   UI_FALLBACK_LOCALE,
   type UiLocale,

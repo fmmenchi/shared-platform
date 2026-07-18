@@ -2,37 +2,38 @@ import * as React from 'react';
 import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../../util/cn.js';
+import { useUiT } from '../../i18n/provider.js';
+import styles from './button.module.css';
 
-const buttonVariants = cva(
-  [
-    'inline-flex items-center justify-center gap-2',
-    'rounded-md text-sm font-medium transition',
-    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-    'disabled:opacity-50 disabled:pointer-events-none',
-  ].join(' '),
-  {
-    variants: {
-      variant: {
-        primary: 'bg-primary text-primary-fg hover:opacity-90',
-        secondary: 'bg-muted/15 text-fg hover:bg-muted/25',
-        ghost: 'bg-transparent text-fg hover:bg-muted/10',
-        destructive: 'bg-red-600 text-white hover:opacity-90',
-      },
-      size: {
-        sm: 'px-3 py-1.5 text-xs',
-        md: 'px-4 py-2',
-        lg: 'px-5 py-2.5 text-base',
-      },
+// `cva` maps the public variant API to CSS-module class names (the andes-routes
+// pattern). The styling lives in `button.module.css`; here we only compose.
+const buttonVariants = cva(styles.button, {
+  variants: {
+    variant: {
+      primary: styles.primary,
+      secondary: styles.secondary,
+      ghost: styles.ghost,
+      destructive: styles.destructive,
     },
-    defaultVariants: { variant: 'primary', size: 'md' },
+    size: {
+      sm: styles.sm,
+      md: styles.md,
+      lg: styles.lg,
+    },
   },
-);
+  defaultVariants: { variant: 'primary', size: 'md' },
+});
 
 type ButtonVariants = VariantProps<typeof buttonVariants>;
 
 interface ButtonProps extends React.ComponentProps<'button'>, ButtonVariants {
   asChild?: boolean;
   icon?: React.ReactNode;
+  /**
+   * Show a spinner + a localized "loading" status and block interaction.
+   * The status text is resolved from the active locale (DS-internal copy).
+   */
+  isLoading?: boolean;
 }
 
 /**
@@ -46,11 +47,14 @@ function Button({
   variant,
   size,
   icon,
+  isLoading = false,
   type,
+  disabled,
   children,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
+  const t = useUiT();
   const isIconOnly = !!(!asChild && icon && !children);
 
   if (
@@ -68,17 +72,29 @@ function Button({
     <Comp
       className={cn(buttonVariants({ variant, size }), className)}
       type={asChild ? undefined : (type ?? 'button')}
+      disabled={asChild ? undefined : disabled || isLoading}
+      aria-busy={isLoading || undefined}
       {...props}
     >
-      {icon && (
+      {isLoading && <span aria-hidden="true" className={styles.spinner} />}
+      {icon && !isLoading && (
         <span
           aria-hidden={isIconOnly ? undefined : true}
-          className="inline-flex shrink-0 items-center justify-center"
+          className={styles.icon}
         >
           {icon}
         </span>
       )}
-      <Slottable>{children}</Slottable>
+      {isLoading && !children ? (
+        // No visible label: surface the localized status text as the content.
+        <span>{t('button.loading')}</span>
+      ) : (
+        <Slottable>{children}</Slottable>
+      )}
+      {isLoading && children ? (
+        // Visible label present: keep it, and announce the status to AT only.
+        <span className={styles.srOnly}>{t('button.loading')}</span>
+      ) : null}
     </Comp>
   );
 }
