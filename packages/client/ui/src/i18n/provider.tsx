@@ -1,16 +1,15 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Direction, UiAdapters } from '@fmmenchi/ui-ports';
 import {
-  UI_CATALOGS,
   UI_FALLBACK_LOCALE,
+  isSupportedLocale,
+  type MessageCatalog,
   type UiLocale,
-  type UiMessageKey,
 } from './messages.js';
 
 interface UiContextValue {
   adapters: UiAdapters;
   direction: Direction;
-  t: (key: UiMessageKey) => string;
 }
 
 const UiContext = createContext<UiContextValue | null>(null);
@@ -47,10 +46,10 @@ function resolveDirection(locale: string, override?: Direction): Direction {
   return 'ltr';
 }
 
-/** Pick the DS's own label, falling back to the base locale. */
+/** Pick the DS copy locale (base subtag), falling back to the base locale. */
 function resolveLocale(locale: string): UiLocale {
-  const base = locale.split('-')[0] as UiLocale;
-  return base in UI_CATALOGS ? base : UI_FALLBACK_LOCALE;
+  const base = locale.split('-')[0];
+  return isSupportedLocale(base) ? base : UI_FALLBACK_LOCALE;
 }
 
 export interface UiProviderProps {
@@ -69,10 +68,7 @@ export function UiProvider({ adapters, theme, children }: UiProviderProps) {
   const { i18n } = adapters;
   const value = useMemo<UiContextValue>(() => {
     const direction = resolveDirection(i18n.locale, i18n.directionOverride);
-    const uiLocale = resolveLocale(i18n.locale);
-    const t = (key: UiMessageKey): string =>
-      i18n.messages?.[key] ?? UI_CATALOGS[uiLocale][key];
-    return { adapters, direction, t };
+    return { adapters, direction };
   }, [adapters, i18n]);
 
   return (
@@ -91,13 +87,17 @@ export function useUi(): UiContextValue {
 }
 
 /**
- * Resolve a DS-internal label. Unlike `useUi`, this does NOT require a provider:
- * outside one it falls back to the base-locale catalog, so a component (e.g. a
- * standalone `Button`) still renders sensible copy. Inside a provider it uses
- * the active locale and honors the app's `messages` override.
+ * Resolve a component's colocated messages against the active locale. Returns a
+ * `t` typed to the catalog's own keys. Safe outside a provider (falls back to
+ * the base locale), and honors the app's set-once `messages` override, keyed by
+ * `"<namespace>.<key>"`.
  */
-export function useUiT(): (key: UiMessageKey) => string {
+export function useMessages<K extends string>(
+  catalog: MessageCatalog<K>,
+): (key: K) => string {
   const ctx = useContext(UiContext);
-  if (ctx) return ctx.t;
-  return (key) => UI_CATALOGS[UI_FALLBACK_LOCALE][key];
+  const locale = resolveLocale(ctx?.adapters.i18n.locale ?? UI_FALLBACK_LOCALE);
+  const overrides = ctx?.adapters.i18n.messages;
+  return (key) =>
+    overrides?.[`${catalog.namespace}.${key}`] ?? catalog.entries[locale][key];
 }

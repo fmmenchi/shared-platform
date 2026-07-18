@@ -19,9 +19,11 @@ The design system lives in `client/` as three packages (settled in
   JSX** (they don't survive precompilation — put them in the module as a class). No hardcoded
   colors. See [styling](../doc/styling.md).
 - **Provider-agnostic:** no copy, no i18n engine, no router. The app injects adapters
-  (`@fmmenchi/ui-ports`) through the single `UiProvider`. DS internal labels are self-contained
-  (`src/i18n/messages.ts`), resolved from the active locale; `direction` is derived
-  (`Intl.Locale`), never injected.
+  (`@fmmenchi/ui-ports`) through the single `UiProvider`. DS internal labels are **colocated** per
+  component in `<name>.messages.ts` via `defineMessages('<ns>', {…})`, read with
+  `useMessages(catalog)` — typed keys, all locales required, app can override by `"<ns>.<key>"`. No
+  central catalog, no i18n engine. `direction` is derived (`Intl.Locale.maximize().script`), never
+  injected.
 
 ## Tests — mandatory per component
 
