@@ -25,13 +25,20 @@ The design system lives in `client/` as three packages (settled in
   central catalog, no i18n engine. `direction` is derived (`Intl.Locale.maximize().script`), never
   injected.
 
-## Tests — mandatory per component
+## Tests — split by kind (logic vs component)
 
-React Testing Library, **semantic queries only** (by role/label/text, never test-id), `user-event`
-for interaction. Every component covers: **semantics** · **accessibility** (axe, via
-`test/axe.ts`) · **functionality** · a **snapshot**. Runner is Vitest **browser mode** (Chromium),
-so native `<dialog>`/focus/`cancel` behave for real — use `@vitest/browser/context` `userEvent`
-when a test needs real browser input (e.g. Escape).
+Two files, one axis — never mix:
+
+- **Component** (`<name>.test.tsx`): the rendered component — semantics, interaction, a11y (axe via
+  `test/axe.ts`), snapshot. React Testing Library, **semantic queries only** (role/label/text,
+  never test-id), `user-event`.
+- **Logic** (`<name>.test.ts` next to the code it tests, e.g. `i18n/provider.test.tsx`): pure
+  functions/hooks with no component under test (direction resolution, message resolution, …). Test
+  them where they live, generically — not through a component.
+
+Runner is Vitest **browser mode** (Chromium) so native focus/keyboard behave for real — use
+`@vitest/browser/context` `userEvent` when a test needs real browser input. Every component covers
+semantics · a11y · functionality · a snapshot.
 
 ## Tokens
 
@@ -58,11 +65,16 @@ e.g. derive direction from `Intl.Locale.maximize().script`, **not** `getTextInfo
 The lint isn't exhaustive (misses some `Intl` cases) — review too. Details in
 [styling](../doc/styling.md#browser-support--baseline).
 
-## Storybook
+## Storybook & docs
 
 `.storybook/` with the **MCP addon** (`/mcp`) + a11y/docs addons; theme + locale toolbars wire
 the preset (`data-theme`) and the DS locale. A story per component. Consult the Storybook MCP
 before building/changing a component (`pnpm nx storybook @fmmenchi/ui` → `http://localhost:6006/mcp`).
+
+**Docs: a colocated `<name>.mdx` per component** (authored, not just autodocs). Use the
+`@storybook/addon-docs/blocks`: `<Meta of={Stories} />`, one-line intent, `## Props` →
+`<Controls of={Stories.Basic} />`, `## Usage` with a `<Canvas of={Stories.X} />` per state, and a
+short **Accessibility** note. Keep prose tight; the stories are the live examples.
 
 ## tsconfig
 
