@@ -23,6 +23,15 @@
   --breakpoint-*: initial;
   --breakpoint-tablet: 48rem; /* ≥ 768px */
   --breakpoint-desktop: 64rem; /* ≥ 1024px */
+
+  /* Declared CONTAINER-query breakpoints (component-width classes, used with
+     `@variant @sm/@md/@lg` after `@apply @container`). Reset the defaults so
+     only the declared ones exist — same doctrine as the viewports. Also
+     powers max-w-sm/md/lg. */
+  --container-*: initial;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
 }
 
 @theme inline {
@@ -81,21 +90,25 @@
   --color-success-foreground: var(--fm-color-success-foreground);
   --color-success-subtle: var(--fm-color-success-subtle);
   --color-success-subtle-foreground: var(--fm-color-success-subtle-foreground);
+  --color-success-border: var(--fm-color-success-border);
 
   --color-warning: var(--fm-color-warning);
   --color-warning-foreground: var(--fm-color-warning-foreground);
   --color-warning-subtle: var(--fm-color-warning-subtle);
   --color-warning-subtle-foreground: var(--fm-color-warning-subtle-foreground);
+  --color-warning-border: var(--fm-color-warning-border);
 
   --color-info: var(--fm-color-info);
   --color-info-foreground: var(--fm-color-info-foreground);
   --color-info-subtle: var(--fm-color-info-subtle);
   --color-info-subtle-foreground: var(--fm-color-info-subtle-foreground);
+  --color-info-border: var(--fm-color-info-border);
 
   --color-neutral: var(--fm-color-neutral);
   --color-neutral-foreground: var(--fm-color-neutral-foreground);
   --color-neutral-subtle: var(--fm-color-neutral-subtle);
   --color-neutral-subtle-foreground: var(--fm-color-neutral-subtle-foreground);
+  --color-neutral-border: var(--fm-color-neutral-border);
 
   --color-disabled: var(--fm-color-disabled);
   --color-disabled-foreground: var(--fm-color-disabled-foreground);
@@ -111,6 +124,12 @@
   --color-border: var(--fm-color-border);
   --color-ring: var(--fm-color-ring);
   --color-scrim: var(--fm-color-scrim);
+  --color-link: var(--fm-color-link);
+  --color-link-hover: var(--fm-color-link-hover);
+  --color-selection: var(--fm-color-selection);
+  --color-selection-foreground: var(--fm-color-selection-foreground);
+  --color-tooltip: var(--fm-color-tooltip);
+  --color-tooltip-foreground: var(--fm-color-tooltip-foreground);
 
   --color-input: var(--fm-color-input);
   --color-input-foreground: var(--fm-color-input-foreground);
@@ -118,6 +137,7 @@
   --color-input-active: var(--fm-color-input-active);
   --color-input-invalid: var(--fm-color-input-invalid);
   --color-input-disabled: var(--fm-color-input-disabled);
+  --color-input-placeholder: var(--fm-color-input-placeholder);
 
   /* ---- RADIUS ---- */
   --radius-*: initial;

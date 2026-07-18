@@ -39,6 +39,7 @@ const STATUS_SUFFIXES = [
   '-foreground',
   '-subtle',
   '-subtle-foreground',
+  '-border',
 ] as const;
 type StatusSuffix = (typeof STATUS_SUFFIXES)[number];
 
@@ -47,6 +48,7 @@ const NEUTRAL_ROLES = [
   'neutral-foreground',
   'neutral-subtle',
   'neutral-subtle-foreground',
+  'neutral-border',
   'disabled',
   'disabled-foreground',
 ] as const;
@@ -63,6 +65,12 @@ const SURFACE_ROLES = [
   'border',
   'ring',
   'scrim',
+  'link',
+  'link-hover',
+  'selection',
+  'selection-foreground',
+  'tooltip',
+  'tooltip-foreground',
 ] as const;
 
 const INPUT_ROLES = [
@@ -72,6 +80,7 @@ const INPUT_ROLES = [
   'input-active',
   'input-invalid',
   'input-disabled',
+  'input-placeholder',
 ] as const;
 
 export type ColorRole =
@@ -187,6 +196,13 @@ export const TOKEN_VARS: readonly string[] = [
 
 /** Mobile is the base (no query); these are the min-width breakpoints. */
 export const BREAKPOINTS = { tablet: '48rem', desktop: '64rem' } as const;
+
+/** Declared CONTAINER-query breakpoints (component-width classes). */
+export const CONTAINER_BREAKPOINTS = {
+  sm: '24rem',
+  md: '28rem',
+  lg: '32rem',
+} as const;
 
 /** Presets the platform ships as reference themes. `base` is `:root`. */
 export const REFERENCE_PRESETS = ['base', 'dark'] as const;

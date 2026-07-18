@@ -50,21 +50,25 @@
   --fm-color-success-foreground: oklch(24% 0.02 256);
   --fm-color-success-subtle: oklch(39% 0.107 150);
   --fm-color-success-subtle-foreground: oklch(97% 0.048 150);
+  --fm-color-success-border: oklch(77% 0.141 150);
 
   --fm-color-warning: oklch(81% 0.132 82);
   --fm-color-warning-foreground: oklch(24% 0.02 256);
   --fm-color-warning-subtle: oklch(43% 0.088 82);
   --fm-color-warning-subtle-foreground: oklch(100% 0 82);
+  --fm-color-warning-border: oklch(81% 0.132 82);
 
   --fm-color-info: oklch(77% 0.125 245);
   --fm-color-info-foreground: oklch(24% 0.02 256);
   --fm-color-info-subtle: oklch(39% 0.098 245);
   --fm-color-info-subtle-foreground: oklch(97% 0.015 245);
+  --fm-color-info-border: oklch(77% 0.125 245);
 
   --fm-color-neutral: oklch(74% 0.014 256);
   --fm-color-neutral-foreground: oklch(24% 0.02 256);
   --fm-color-neutral-subtle: oklch(31% 0.02 256);
   --fm-color-neutral-subtle-foreground: oklch(82% 0.012 256);
+  --fm-color-neutral-border: oklch(74% 0.014 256);
 
   --fm-color-disabled: oklch(31% 0.02 256);
   --fm-color-disabled-foreground: oklch(60% 0.016 256);
@@ -81,6 +85,12 @@
   --fm-color-border: oklch(34% 0.02 256);
   --fm-color-ring: oklch(77% 0.118 256);
   --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
+  --fm-color-link: oklch(77% 0.118 256);
+  --fm-color-link-hover: oklch(82% 0.091 256);
+  --fm-color-selection: oklch(39% 0.108 256);
+  --fm-color-selection-foreground: oklch(97% 0.014 256);
+  --fm-color-tooltip: oklch(95% 0.007 256);
+  --fm-color-tooltip-foreground: oklch(24% 0.02 256);
 
   /* Inputs */
   --fm-color-input: oklch(31% 0.02 256);
@@ -89,4 +99,5 @@
   --fm-color-input-active: oklch(38% 0.02 256);
   --fm-color-input-invalid: oklch(70% 0.19 27);
   --fm-color-input-disabled: oklch(26% 0.02 256);
+  --fm-color-input-placeholder: oklch(74% 0.014 256);
 }

@@ -75,21 +75,25 @@
   --fm-color-success-foreground: oklch(100% 0 0);
   --fm-color-success-subtle: oklch(90% 0.068 150);
   --fm-color-success-subtle-foreground: oklch(31% 0.085 150);
+  --fm-color-success-border: oklch(41% 0.112 150);
 
   --fm-color-warning: oklch(46% 0.095 78);
   --fm-color-warning-foreground: oklch(100% 0 0);
   --fm-color-warning-subtle: oklch(95% 0.043 78);
   --fm-color-warning-subtle-foreground: oklch(36% 0.075 78);
+  --fm-color-warning-border: oklch(46% 0.095 78);
 
   --fm-color-info: oklch(42% 0.105 245);
   --fm-color-info-foreground: oklch(100% 0 0);
   --fm-color-info-subtle: oklch(91% 0.046 245);
   --fm-color-info-subtle-foreground: oklch(32% 0.08 245);
+  --fm-color-info-border: oklch(42% 0.105 245);
 
   --fm-color-neutral: oklch(46% 0.02 256);
   --fm-color-neutral-foreground: oklch(100% 0 0);
   --fm-color-neutral-subtle: oklch(95% 0.007 256);
   --fm-color-neutral-subtle-foreground: oklch(38% 0.02 256);
+  --fm-color-neutral-border: oklch(46% 0.02 256);
 
   /* Generic disabled, for controls not tied to a colour family (AA-exempt). */
   --fm-color-disabled: oklch(96.5% 0.006 256);
@@ -115,6 +119,15 @@
   --fm-color-border: oklch(91% 0.008 256);
   --fm-color-ring: oklch(50% 0.164 255);
   --fm-color-scrim: oklch(14% 0.02 256 / 0.92);
+  /* Prose links (NOT button-primary: a distinct role brands may diverge). */
+  --fm-color-link: oklch(41% 0.135 255);
+  --fm-color-link-hover: oklch(31% 0.102 255);
+  /* Selected item (menus, tabs, listboxes). */
+  --fm-color-selection: oklch(90% 0.049 255);
+  --fm-color-selection-foreground: oklch(31% 0.102 255);
+  /* Tooltip is the INVERTED surface by convention. */
+  --fm-color-tooltip: oklch(24% 0.02 256);
+  --fm-color-tooltip-foreground: oklch(96.5% 0.006 256);
 
   /* ==========================================================
      COLOR — form inputs (filled-style: bg, text, states)
@@ -125,6 +138,7 @@
   --fm-color-input-active: oklch(91% 0.008 256);
   --fm-color-input-invalid: oklch(57% 0.2 27);
   --fm-color-input-disabled: oklch(96.5% 0.006 256);
+  --fm-color-input-placeholder: oklch(38% 0.02 256);
 
   /* ==========================================================
      RADIUS
