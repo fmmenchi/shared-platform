@@ -30,6 +30,7 @@ export async function siteGenerator(tree: Tree, options: SiteGeneratorSchema) {
     packageName: options.packageName ?? name,
     title: options.title ?? name,
     url: options.url ?? 'http://localhost:3000',
+    baseUrl: options.baseUrl ?? '/',
     repoUrl: options.repoUrl ?? 'https://github.com',
     docPath,
     offsetToDocs: joinPathFragments(offsetFromRoot(directory), docPath),

@@ -11,6 +11,8 @@ export interface SiteGeneratorSchema {
   title?: string;
   /** Production URL of the site. */
   url?: string;
+  /** Base URL path (GitHub Pages project sites need '/<repo>/'). */
+  baseUrl?: string;
   /** Repository URL for the navbar GitHub link. */
   repoUrl?: string;
 }
