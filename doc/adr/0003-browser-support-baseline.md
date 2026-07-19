@@ -1,12 +1,13 @@
 # ADR 0003 — Browser support target: Web Platform Baseline
 
-- **Status:** proposed
+- **Status:** accepted (2026-07-18)
 - **Date:** 2026-07-18
 - **Deciders:** Fabio Menchicchi
 
-> Proposed, not accepted. The tooling described here already landed (PR #7) as an implementation
-> of this proposal so it could be validated in CI, but the _policy_ is still open: if this ADR is
-> rejected, the tooling is reverted. This is the draft under review.
+> Accepted after a deliberation period during which the tooling ran in CI. The policy proved
+> itself three times before acceptance: the `getTextInfo` incident that motivated it, and — via
+> the token-contract work — rejecting runtime relative color syntax and `@property` (which in
+> turn surfaced 47 out-of-gamut values the browsers were silently re-mapping).
 
 ## Context and problem statement
 
@@ -91,13 +92,19 @@ silence.
   drifts from "what's actually safe," and doesn't map to the JS/Web-API lint the way Baseline does.
 - **No policy (status quo).** Rejected: unenforceable; the `getTextInfo` incident is the evidence.
 
-## Open questions
+## Resolved questions (at acceptance)
 
-- Should any package target **Newly** instead of Widely (known-modern consumers)?
-- Cadence for revisiting the tier as Baseline advances.
-- Should the escape hatch require an ADR-style note for anything load-bearing, or is an inline
-  comment enough?
+- **Newly vs Widely per package:** no — Widely everywhere for now; revisit only on a concrete,
+  named consumer need.
+- **Review cadence:** every January, plus event-driven when a feature we deliberately avoided
+  crosses into Widely (tracked as dated reminder issues).
+- **Escape hatch rigor:** an inline `eslint-disable` + comment is enough; a load-bearing exception
+  (one a component's design depends on) also gets a note in the relevant ADR.
 
-## Status note
+## Revisit reminders
 
-If accepted: update to `accepted`, keep the tooling. If rejected: revert PR #7 and record why.
+| When          | What to re-evaluate                                                                                                                                                               |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~Jan 2027     | `@property` reaches Widely → registered custom properties for the tokens (type safety, animatable roles).                                                                         |
+| ~Jan 2027     | Relative color syntax (`oklch(from …)`) reaches Widely → reconsider runtime ramp derivation vs the current static literals (likely keep static: gamut + validation stay simpler). |
+| Every January | General tier review: what did Baseline unlock this year; is Widely still the right bar.                                                                                           |
