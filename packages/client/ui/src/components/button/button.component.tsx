@@ -8,10 +8,9 @@ import type { ButtonProps } from './button.types.js';
 import styles from './button.module.css';
 
 /**
- * Polymorphic, native-first button. Renders a `<button>` by default; pass `as`
- * to render another element/component (`as="a"`, `as={Link}`) while keeping the
- * button's look. Accessibility comes from the underlying native element — no
- * behaviour is re-implemented.
+ * Lets the user trigger an action — submit, confirm, delete — or, with the
+ * `as` prop, navigate with the look of a button (`as="a"`, `as={Link}`).
+ * Built on the native `<button>`: accessible and themable out of the box.
  */
 function Button<As extends React.ElementType = 'button'>(
   props: ButtonProps<As>,
@@ -42,8 +41,6 @@ function Button<As extends React.ElementType = 'button'>(
     'Button: an icon-only button has no discernible text — pass `aria-label`.',
   );
 
-  const loadingLabel = t('loading');
-
   // Leading adornment: the spinner while loading, otherwise the icon (if any).
   let adornment: React.ReactNode = null;
   if (isLoading) {
@@ -65,14 +62,14 @@ function Button<As extends React.ElementType = 'button'>(
       {...rest}
     >
       {adornment}
+      {children}
 
-      {/* The caller's content, or the loading label when there's nothing else. */}
-      {children ?? (isLoading ? loadingLabel : null)}
-
-      {/* When loading over visible content, announce the status to AT only. */}
-      {isLoading && children != null && (
-        <span className={styles.srOnly}>{loadingLabel}</span>
-      )}
+      {/* Loading status for ASSISTIVE TECH only: `aria-busy` alone is
+          unreliable across screen readers, so a visually-hidden text carries
+          the state — in the user's language, owned by the DS (the ports
+          doctrine forbids asking the app for strings). Never visible: it must
+          not change the button's size or wording. */}
+      {isLoading && <span className={styles.srOnly}>{t('loading')}</span>}
     </Comp>
   );
 }

@@ -13,10 +13,19 @@ _when_ to use each state; the stories are the live, canonical examples.
 Omit a section that doesn't apply — never leave it empty. The order is fixed.
 
 1. `<Meta of={Stories} />` — attach the doc to the component's stories.
-2. `# <Name>` + a one-line **intent**: what it is and the native/accessibility baseline it builds
-   on.
+2. `# <Name>` + the **intent: TWO sentences, max**, written for the consumer:
+   **(1) what/when** — what the user does with it, in usage terms ("Lets the user trigger an
+   action — submit, confirm, delete"); **(2) the guarantee** — accessibility/theming as a
+   one-clause promise. Do **NOT** list capabilities here (axes, states, slots — that's what
+   `## Props` and `## Usage` are for; repeating them makes a laundry list). Implementation
+   philosophy (native-first, what the platform provides) does not belong here either — that lives
+   in the styling guide and ADRs.
 3. `## Anatomy` — _composite components only_: the sub-parts / slots.
-4. `## Props` — `<Controls of={Stories.<Default>} />` (the props table comes from the story args).
+4. `## Props` — `<Controls of={Stories.<Default>} />`. **The table is CURATED in the story's
+   `argTypes`**: the polymorphic `as` signature defeats react-docgen, so union types, defaults
+   (`table.defaultValue`) and descriptions must be declared explicitly — and every own prop
+   (`isLoading`, `icon`, `as`, …) must appear. A prop the table doesn't show doesn't exist for
+   the reader.
 5. `## Usage` — a `### <State>` per meaningful variant/state, each with **one line of "when to use
    it"** followed by `<Canvas of={Stories.X} />`.
 6. `## Accessibility` — required roles/aria and keyboard, text direction (RTL/LTR), reduced-motion,
