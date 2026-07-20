@@ -7,9 +7,9 @@ Colocated `<name>.mdx`, standard format — fixed order, omit N/A:
 
 Every shown state is a real story (`<Canvas of>`, never ad-hoc JSX).
 
-- **Intent = consumer-first, 3 moves**: (a) what/when in usage terms, (b) 2–4 key capabilities,
-  (c) one-clause a11y/theming guarantee. NO implementation philosophy (native-first etc. → styling
-  guide/ADR). Same voice in the component's JSDoc.
+- **Intent = TWO sentences max**: (1) what the user does with it, in usage terms; (2) one-clause
+  a11y/theming guarantee. NO capability list (that's Props/Usage) and NO implementation philosophy
+  (→ styling guide/ADR). Same voice in the component's JSDoc.
 - **Props table is curated in story `argTypes`** (docgen can't read the polymorphic signature):
   union types, `table.defaultValue`, descriptions, and EVERY own prop must appear.
 - A claimed a11y behavior (e.g. icon-only needs aria-label) must have the story that demonstrates

@@ -8,10 +8,9 @@ import type { ButtonProps } from './button.types.js';
 import styles from './button.module.css';
 
 /**
- * The action trigger: submit, confirm, delete, open. Colour roles × sizes, an
- * icon slot, a localized loading state, and an `as` prop to render as a link
- * (`as="a"`, `as={Link}`) when the "button" is really navigation. Built on the
- * native `<button>`: forms, keyboard and assistive tech work out of the box.
+ * Lets the user trigger an action — submit, confirm, delete — or, with the
+ * `as` prop, navigate with the look of a button (`as="a"`, `as={Link}`).
+ * Built on the native `<button>`: accessible and themable out of the box.
  */
 function Button<As extends React.ElementType = 'button'>(
   props: ButtonProps<As>,
