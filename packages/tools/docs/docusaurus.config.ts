@@ -38,6 +38,12 @@ const config: Config = {
       title: 'shared-platform',
       items: [
         {
+          // Deployed alongside the site by the Docs workflow (build/storybook).
+          href: 'https://fmmenchi.github.io/shared-platform/storybook/',
+          label: 'Storybook',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/fmmenchi/shared-platform',
           label: 'GitHub',
           position: 'right',
