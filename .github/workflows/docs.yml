@@ -1,7 +1,8 @@
 name: Docs
 
 # Deploy the documentation site (packages/tools/docs, serving doc/ directly)
-# to GitHub Pages on every push to main that touches the docs or the site.
+# WITH the component Storybook under /storybook/ to GitHub Pages, on every
+# push to main that touches the docs, the site, or the design system.
 on:
   push:
     branches:
@@ -9,6 +10,7 @@ on:
     paths:
       - 'doc/**'
       - 'packages/tools/docs/**'
+      - 'packages/client/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
@@ -41,6 +43,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm nx run @fmmenchi/docs:build
+
+      # Storybook rides along under /storybook/ (its static build uses
+      # relative asset paths, so any subpath works).
+      - run: pnpm nx run @fmmenchi/ui:build-storybook
+      - run: cp -r packages/client/ui/storybook-static packages/tools/docs/build/storybook
 
       - uses: actions/configure-pages@v5
         with:
