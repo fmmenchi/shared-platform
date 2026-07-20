@@ -8,10 +8,10 @@ import type { ButtonProps } from './button.types.js';
 import styles from './button.module.css';
 
 /**
- * Polymorphic, native-first button. Renders a `<button>` by default; pass `as`
- * to render another element/component (`as="a"`, `as={Link}`) while keeping the
- * button's look. Accessibility comes from the underlying native element — no
- * behaviour is re-implemented.
+ * The action trigger: submit, confirm, delete, open. Colour roles × sizes, an
+ * icon slot, a localized loading state, and an `as` prop to render as a link
+ * (`as="a"`, `as={Link}`) when the "button" is really navigation. Built on the
+ * native `<button>`: forms, keyboard and assistive tech work out of the box.
  */
 function Button<As extends React.ElementType = 'button'>(
   props: ButtonProps<As>,

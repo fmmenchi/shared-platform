@@ -6,11 +6,15 @@ import * as ButtonStories from './button.stories';
 
 # Button
 
-A native `<button>` with token-driven styling. Accessible by default — role, focus, `Enter`/`Space`
-activation and the disabled state come from the platform; we only add the visual variants and, via
-the `as` prop, polymorphism. No behaviour is re-implemented.
+The action trigger of the design system — use it to run an action: submit, confirm, delete, open.
+Four colour roles × three sizes, an icon slot, a built-in localized loading state, and an `as`
+prop to render it as a link (or your router's `Link`) when the "button" is really navigation.
+Built on the native `<button>`, so forms, keyboard and assistive tech work out of the box, in
+every theme.
 
 ## Props
+
+Defaults: `variant="primary"`, `size="md"`, `type="button"` (on the native element).
 
 <Controls of={ButtonStories.Primary} />
 
@@ -18,23 +22,39 @@ the `as` prop, polymorphism. No behaviour is re-implemented.
 
 ### Variants
 
-The colour role is the `variant` axis; `size` is orthogonal.
+The colour role is the `variant` axis — each maps 1:1 to a token action family, so every variant
+has real hover/active/disabled colours in both themes (try the **Theme** toolbar).
 
-<Canvas of={ButtonStories.Primary} />
-<Canvas of={ButtonStories.Secondary} />
-<Canvas of={ButtonStories.Ghost} />
-<Canvas of={ButtonStories.Destructive} />
+<Canvas of={ButtonStories.Gallery} />
+
+### Sizes
+
+`size` is orthogonal to the colour role.
+
+<Canvas of={ButtonStories.Sizes} />
+
+### With an icon
+
+The `icon` slot is decorative (`aria-hidden`) next to a visible label:
+
+<Canvas of={ButtonStories.WithIcon} />
+
+**Icon-only** buttons have no discernible text, so `aria-label` is **required** — a dev warning
+fires without it:
+
+<Canvas of={ButtonStories.IconOnly} />
 
 ### Disabled
 
-Native `disabled` — the platform blocks focus and activation.
+Native `disabled` — the platform blocks focus and activation; each variant uses its family's
+disabled colours (no opacity hack).
 
 <Canvas of={ButtonStories.Disabled} />
 
 ### Loading
 
 `isLoading` sets `aria-busy`, blocks interaction, and shows a spinner plus a **localized** status.
-With no children the localized label becomes the button's content.
+With no children the localized label becomes the button's content (switch the **Locale** toolbar).
 
 <Canvas of={ButtonStories.Loading} />
 <Canvas of={ButtonStories.LoadingLabelOnly} />
@@ -49,8 +69,11 @@ attributes (`type`, `disabled`) are not applied to non-`<button>` elements.
 
 ## Accessibility
 
-- **Icon-only** buttons need an `aria-label` — a dev warning fires if it is missing.
+- **Icon-only** buttons need an `aria-label` — a dev warning fires if it is missing (see the
+  icon-only story above).
 - The **loading** status is exposed to assistive tech (`aria-busy` + a visually-hidden localized
   text); the spinner is decorative (`aria-hidden`) and respects `prefers-reduced-motion`.
 - **Direction** follows the active locale (RTL/LTR). Styling uses CSS logical properties, so the
   layout mirrors automatically — try the Locale toolbar (`العربية`).
+- Contrast of every variant is enforced twice: at token level (WCAG AA pairs per theme) and on the
+  rendered component (axe, light and dark).
