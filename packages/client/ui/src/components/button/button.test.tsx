@@ -54,14 +54,12 @@ describe('Button', () => {
       expect(btn).toBeDisabled();
     });
 
-    it('uses the localized status as content when there is no label', () => {
-      // Button-specific rendering: with no children it surfaces the loading
-      // copy as the button's content. (Message resolution itself is covered in
-      // provider.test.tsx.)
-      renderUi(<Button isLoading />, { locale: 'it' });
-      expect(
-        screen.getByRole('button', { name: 'Caricamento' }),
-      ).toBeInTheDocument();
+    it('keeps the visible label unchanged (status is sr-only)', () => {
+      // The localized status must never alter the visible wording or size.
+      renderUi(<Button isLoading>Salva</Button>, { locale: 'it' });
+      const status = screen.getByText('Caricamento');
+      expect(status.className).toMatch(/srOnly/);
+      expect(screen.getByRole('button', { name: /Salva/ })).toBeInTheDocument();
     });
   });
 

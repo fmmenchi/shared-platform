@@ -53,11 +53,12 @@ disabled colours (no opacity hack).
 
 ### Loading
 
-`isLoading` sets `aria-busy`, blocks interaction, and shows a spinner plus a **localized** status.
-With no children the localized label becomes the button's content (switch the **Locale** toolbar).
+`isLoading` blocks interaction and shows a spinner. Nothing visible changes beyond that — but
+screen-reader users are told the action is in progress: `aria-busy` plus a **visually-hidden
+status text in the user's language** (the design system owns this copy, since it never asks the
+app for strings).
 
 <Canvas of={ButtonStories.Loading} />
-<Canvas of={ButtonStories.LoadingLabelOnly} />
 
 ### As a link (`as`)
 

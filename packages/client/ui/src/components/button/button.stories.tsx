@@ -126,17 +126,12 @@ export const IconOnly: Story = {
   args: { icon: PlusIcon, children: undefined, 'aria-label': 'Add item' },
 };
 
-/** Spinner + your label; the localized status is announced to screen readers. */
-export const Loading: Story = { args: { isLoading: true, children: 'Save' } };
-
 /**
- * Loading with no visible label: the localized status text becomes the content.
- * Switch the Locale toolbar (English / Italiano / العربية) to see it change —
- * `ar` also flips the layout to RTL.
+ * Spinner + your label. The state is also announced to screen readers via a
+ * visually-hidden, DS-localized status (switch the Locale toolbar and inspect
+ * the DOM: `aria-busy` + sr-only text follow the locale; `ar` flips to RTL).
  */
-export const LoadingLabelOnly: Story = {
-  args: { isLoading: true, children: undefined },
-};
+export const Loading: Story = { args: { isLoading: true, children: 'Save' } };
 
 export const AsLink: Story = {
   render: (args) => (

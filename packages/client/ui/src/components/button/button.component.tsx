@@ -42,8 +42,6 @@ function Button<As extends React.ElementType = 'button'>(
     'Button: an icon-only button has no discernible text — pass `aria-label`.',
   );
 
-  const loadingLabel = t('loading');
-
   // Leading adornment: the spinner while loading, otherwise the icon (if any).
   let adornment: React.ReactNode = null;
   if (isLoading) {
@@ -65,14 +63,14 @@ function Button<As extends React.ElementType = 'button'>(
       {...rest}
     >
       {adornment}
+      {children}
 
-      {/* The caller's content, or the loading label when there's nothing else. */}
-      {children ?? (isLoading ? loadingLabel : null)}
-
-      {/* When loading over visible content, announce the status to AT only. */}
-      {isLoading && children != null && (
-        <span className={styles.srOnly}>{loadingLabel}</span>
-      )}
+      {/* Loading status for ASSISTIVE TECH only: `aria-busy` alone is
+          unreliable across screen readers, so a visually-hidden text carries
+          the state — in the user's language, owned by the DS (the ports
+          doctrine forbids asking the app for strings). Never visible: it must
+          not change the button's size or wording. */}
+      {isLoading && <span className={styles.srOnly}>{t('loading')}</span>}
     </Comp>
   );
 }
