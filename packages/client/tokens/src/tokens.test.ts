@@ -22,7 +22,7 @@ import { CONTRAST_PAIRS, validateTheme } from './validate.js';
  *    color assignment; non-color tokens inherit).
  * 3. every color value actually parses as a color (typo guard).
  * 4. the Tailwind bridge covers every color role (a role outside the bridge
- *    yields a silently-missing utility — the andes-routes pitfall).
+ *    yields a silently-missing utility — the bridge-coverage pitfall).
  * 5. every declared pair meets WCAG AA in BOTH themes (text 4.5:1, focus ring
  *    3:1). `-disabled` pairs are exempt (WCAG 1.4.3 exception).
  */

@@ -5,7 +5,7 @@
  * those roles with Tailwind (`@theme inline`) so utilities compile to
  * `var(--fm-*)` — the precompiled component CSS stays themable at runtime.
  * A role missing from the bridge produces a utility that silently does not
- * compile (the andes-routes pitfall), so bridge coverage is enforced by
+ * compile (a silent-failure pitfall), so bridge coverage is enforced by
  * `src/tokens.test.ts`.
  *
  * "La semantica vince su tutto": the default Tailwind palette is RESET

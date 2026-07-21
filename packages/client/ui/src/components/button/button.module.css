@@ -19,7 +19,7 @@
 .button:disabled {
   @apply pointer-events-none;
 }
-/* Press feedback is the transform, not a colour (the andes pattern) — colour
+/* Press feedback is the transform, not a colour — colour
    alone can't distinguish pressed for the ghost treatment. */
 .button:active {
   transform: scale(0.97);

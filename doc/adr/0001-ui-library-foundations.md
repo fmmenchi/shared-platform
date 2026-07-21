@@ -195,9 +195,10 @@ consumers (Driver 1). It therefore **precompiles**:
 - Storybook and the browser tests act as a Tailwind host that compiles the modules, so the dev
   loop and the published artifact share one authoring source.
 
-This is the andes-routes authoring pattern (CSS Modules + `@apply` + `cva`) **plus** a precompile
-step that andes-routes omits — its `libs/ui` is _internal_, so its app compiles the source via
-`@source '…/libs/ui/src'`. Rejected alternatives: shipping source for the consumer to
+This is a CSS Modules + `@apply` + `cva` authoring pattern **plus** a precompile step: an
+_internal_ UI library could ship source and let the consuming app compile it via
+`@source '…/libs/ui/src'`, but a **published** package can't assume the consumer runs Tailwind, so
+we compile the artifact ourselves. Rejected alternatives: shipping source for the consumer to
 `@source`-compile (couples every consumer to Tailwind and the exact toolchain, with silent-failure
 footguns when a bundler skips `node_modules` CSS), and a precompiled **raw utility** sheet (global
 utilities that collide with the app's and override poorly). Full rationale + adversarial review in

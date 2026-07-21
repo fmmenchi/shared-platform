@@ -9,7 +9,7 @@
  * Rules of the contract (validated by `src/tokens.test.ts`):
  * - Components consume ONLY semantic roles ("la semantica vince su tutto").
  *   There are no primitive ramps here: values are STATIC oklch literals,
- *   resolved at authoring time from the andes-routes ramp methodology
+ *   resolved at authoring time from the ramp methodology
  *   (base ± lightness, scaled chroma). No runtime relative-color syntax and
  *   no @property — neither is Baseline: Widely available yet.
  * - A THEME is a complete assignment of every color role (`ThemeColors` in
@@ -40,14 +40,14 @@
   --fm-color-primary-disabled: oklch(80% 0.102 255);
   --fm-color-primary-disabled-foreground: oklch(90% 0.049 255);
 
-  --fm-color-secondary: oklch(43% 0.035 256);
+  --fm-color-secondary: oklch(43% 0.05 256);
   --fm-color-secondary-foreground: oklch(100% 0 0);
-  --fm-color-secondary-hover: oklch(34% 0.034 256);
-  --fm-color-secondary-active: oklch(24% 0.03 256);
-  --fm-color-secondary-subtle: oklch(83% 0.016 256);
-  --fm-color-secondary-subtle-foreground: oklch(24% 0.03 256);
-  --fm-color-secondary-disabled: oklch(73% 0.022 256);
-  --fm-color-secondary-disabled-foreground: oklch(83% 0.016 256);
+  --fm-color-secondary-hover: oklch(34% 0.048 256);
+  --fm-color-secondary-active: oklch(24% 0.043 256);
+  --fm-color-secondary-subtle: oklch(83% 0.023 256);
+  --fm-color-secondary-subtle-foreground: oklch(24% 0.043 256);
+  --fm-color-secondary-disabled: oklch(73% 0.032 256);
+  --fm-color-secondary-disabled-foreground: oklch(83% 0.023 256);
 
   --fm-color-accent: oklch(40% 0.068 195);
   --fm-color-accent-foreground: oklch(100% 0 0);

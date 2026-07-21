@@ -1,7 +1,7 @@
 /**
  * `dark` reference preset — a complete assignment of every COLOR role under
  * `[data-theme='dark']` (non-color tokens inherit). Values are static oklch
- * literals resolved from the andes-routes dark ramp methodology: bright fills
+ * literals resolved from the dark ramp methodology: bright fills
  * on dark ink (foreground = near-black), hover/active LIGHTEN, subtle flips to
  * a dark wash with a light text. The completeness and the AA contrast of every
  * declared pair are enforced by `src/tokens.test.ts` — a preset that misses a
@@ -18,14 +18,14 @@
   --fm-color-primary-disabled: oklch(48% 0.129 256);
   --fm-color-primary-disabled-foreground: oklch(39% 0.108 256);
 
-  --fm-color-secondary: oklch(75% 0.028 256);
-  --fm-color-secondary-foreground: oklch(24% 0.02 256);
-  --fm-color-secondary-hover: oklch(80% 0.026 256);
-  --fm-color-secondary-active: oklch(85% 0.024 256);
-  --fm-color-secondary-subtle: oklch(37% 0.022 256);
-  --fm-color-secondary-subtle-foreground: oklch(95% 0.019 256);
-  --fm-color-secondary-disabled: oklch(46% 0.026 256);
-  --fm-color-secondary-disabled-foreground: oklch(37% 0.022 256);
+  --fm-color-secondary: oklch(75% 0.04 256);
+  --fm-color-secondary-foreground: oklch(24% 0.028 256);
+  --fm-color-secondary-hover: oklch(80% 0.038 256);
+  --fm-color-secondary-active: oklch(85% 0.035 256);
+  --fm-color-secondary-subtle: oklch(37% 0.03 256);
+  --fm-color-secondary-subtle-foreground: oklch(95% 0.02 256);
+  --fm-color-secondary-disabled: oklch(46% 0.036 256);
+  --fm-color-secondary-disabled-foreground: oklch(37% 0.03 256);
 
   --fm-color-accent: oklch(74% 0.11 195);
   --fm-color-accent-foreground: oklch(24% 0.02 256);
