@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Release notification",
+  "description": "Announces a freshly cut release to Slack, with a Wishew-style changelog. Secrets come from the environment (SLACK_BOT_TOKEN, SLACK_CHANNEL_ID) — never options, so a token never lands in the project graph. The version, URL and changelog range fall back to RELEASE_VERSION / RELEASE_URL / RELEASE_FROM / RELEASE_TO, which the release job knows.",
+  "type": "object",
+  "properties": {
+    "appName": {
+      "type": "string",
+      "description": "Project name shown in the message, e.g. dev-blog."
+    },
+    "version": {
+      "type": "string",
+      "description": "Version without the leading v. Falls back to RELEASE_VERSION. Empty means nothing to announce."
+    },
+    "url": {
+      "type": "string",
+      "description": "Link the 'View release' button points at. Falls back to RELEASE_URL."
+    },
+    "from": {
+      "type": "string",
+      "description": "Changelog range start (sha or tag). Falls back to RELEASE_FROM."
+    },
+    "to": {
+      "type": "string",
+      "description": "Changelog range end (sha or tag). Falls back to RELEASE_TO."
+    },
+    "includeMerges": {
+      "type": "boolean",
+      "description": "Include merge commits in the changelog.",
+      "default": true
+    }
+  },
+  "required": ["appName"]
+}

@@ -29,6 +29,12 @@
     },
     {
       "path": "./packages/plugins/docusaurus"
+    },
+    {
+      "path": "./packages/shared/notify"
+    },
+    {
+      "path": "./packages/plugins/notify"
     }
   ],
   "compilerOptions": {}
