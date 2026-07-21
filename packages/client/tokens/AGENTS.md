@@ -31,7 +31,8 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
 - **Changing the contract:** adding a role = update `src/index.ts` (types) + `vars.css` +
   `presets/dark.css` + the bridge in `tailwind.css` — `tokens.test.ts` fails until all four agree,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
-  exempt). New values: derive with the andes-routes ramp methodology, ship the resolved literal.
+  exempt). New values: derive with the ramp methodology (base ± lightness, scaled chroma), ship the
+  resolved literal.
 - **Values must be sRGB-displayable** (validator kind `out-of-gamut`): out-of-gamut oklch renders
   differently per browser and falsifies contrast math — clamp chroma at constant lightness and
   verify the FORMATTED string (rounding can push a boundary value back out).

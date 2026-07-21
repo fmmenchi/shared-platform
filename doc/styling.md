@@ -143,21 +143,19 @@ import { UiProvider, Button } from '@fmmenchi/ui';
 Set `data-theme="dark"` on a root element to switch preset at runtime — the variables re-theme the
 precompiled components, no rebuild.
 
-## Relationship to andes-routes, and what we changed
+## Authoring vs distribution — and why we precompile
 
-The **authoring** pattern is andes-routes': CSS Modules + `@apply` + `cva`, colours via CSS
-variables. We kept it wholesale.
+The **authoring** pattern is CSS Modules + `@apply` + `cva`, colours via CSS variables.
 
-The **distribution** is where we diverge, on purpose. andes-routes' `libs/ui` is an _internal_
-library: its app compiles the library's source and registers it with
-`@source '…/libs/ui/src'`, so Tailwind runs once, over app + library together. That's the right
-call for an internal library — but it requires the consumer to run Tailwind. Because
-`@fmmenchi/ui` is **published to external repos**, we add the one step andes-routes doesn't need:
-**precompilation**. Same authoring, compiled artifact instead of source.
+The **distribution** is where the design decision lives. An _internal_ UI library can let the
+consuming app compile its source and register it with `@source '…/libs/ui/src'`, so Tailwind runs
+once, over app + library together — but that requires the consumer to run Tailwind. Because
+`@fmmenchi/ui` is **published to external repos**, we add one step an internal library doesn't
+need: **precompilation**. Same authoring, compiled artifact instead of source.
 
 ### Alternatives we rejected (adversarial review)
 
-- **Ship source, let the consumer `@source`-compile it** (the andes-routes model, applied to a
+- **Ship source, let the consumer `@source`-compile it** (the internal-library model, applied to a
   published package). Rejected: it exports our toolchain as a consumer requirement — Tailwind v4,
   CSS-Modules processing, PostCSS over `node_modules` — and Tailwind v4 skips `node_modules` by
   design, so a forgotten `@source` yields **unstyled components with no error**. It also
