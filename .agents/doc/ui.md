@@ -7,7 +7,7 @@ downward: `ui → ui-ports`, `ui → tokens`.
 
 This spoke is the **cross-package doctrine** (the why/what). For **how to author in `@fmmenchi/ui`**
 — styling, primitives, tests, i18n, component docs, build/packaging — open the package's own hub and
-`.agent/` spokes: [`packages/client/ui/AGENTS.md`](../packages/client/ui/AGENTS.md).
+`.agents/doc/` spokes: [`packages/client/ui/AGENTS.md`](../packages/client/ui/AGENTS.md).
 
 ## Principles
 
