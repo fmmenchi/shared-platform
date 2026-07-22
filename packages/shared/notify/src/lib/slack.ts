@@ -38,8 +38,18 @@ export interface Changelog {
   commits: Commit[];
 }
 
+/**
+ * A release's changes, either **structured** (commits this library renders) or a
+ * **pre-rendered** markdown body (e.g. the notes `nx release` already wrote into a GitHub
+ * Release) that only needs light conversion to Slack mrkdwn.
+ */
+export type ReleaseChangelog = Changelog | { body: string };
+
 /** How many commit lines a changelog section shows before it collapses to `+N more`. */
 const MAX_COMMITS = 15;
+
+/** Slack's per-section text ceiling is 3000 chars; leave room for the trailing note. */
+const MAX_BODY = 2800;
 
 /**
  * Posts to Slack, and fails loudly when Slack refuses.
@@ -141,6 +151,28 @@ export function formatChangelog({ fromRef, toRef, commits }: Changelog): string 
 }
 
 /**
+ * Turns a GitHub-flavoured markdown release body (the notes `nx release` writes) into
+ * Slack mrkdwn: `**bold**` → `*bold*`, `[text](url)` → `<url|text>`, `#` headings and
+ * `-`/`*` bullets normalized. Capped at {@link MAX_BODY} with a stated truncation, so it
+ * stays under Slack's per-section limit instead of being rejected whole.
+ */
+export function formatReleaseBody(markdown: string): string {
+  let out = markdown
+    .replace(/\r\n/g, '\n')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<$2|$1>') // links, before bold
+    .replace(/\*\*(.+?)\*\*/g, '*$1*') // **bold** → *bold*
+    .replace(/__(.+?)__/g, '*$1*')
+    .replace(/^#{1,6}\s+(.*)$/gm, '*$1*') // headings → a bold line
+    .replace(/^\s*[-*]\s+/gm, '• ') // bullets
+    .trim();
+
+  if (out.length > MAX_BODY) {
+    out = `${out.slice(0, MAX_BODY).trimEnd()}\n… _(truncated — see the release)_`;
+  }
+  return out;
+}
+
+/**
  * Announces a release, with a link to its notes and — when a changelog is given — the
  * commits it shipped.
  *
@@ -157,7 +189,7 @@ export function releaseBlocks(
   appName: string,
   version: string,
   url: string,
-  changelog?: Changelog,
+  changelog?: ReleaseChangelog,
 ): SlackBlock[] {
   const blocks: SlackBlock[] = [
     {
@@ -170,10 +202,11 @@ export function releaseBlocks(
   ];
 
   if (changelog) {
-    blocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: formatChangelog(changelog) },
-    });
+    const text =
+      'body' in changelog
+        ? formatReleaseBody(changelog.body)
+        : formatChangelog(changelog);
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text } });
   }
 
   blocks.push({

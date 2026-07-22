@@ -1,0 +1,44 @@
+name: Notify release
+
+# Per-package Slack notification. Independent `nx release` creates ONE GitHub Release per
+# package, so each published release fires this workflow once — every package announces
+# itself, with the changelog nx already wrote in the release body.
+#
+# Decoupled from how the release is cut on purpose: whether a maintainer runs `nx release`
+# locally or a CI job does it, the GitHub Release it publishes is the single trigger.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build the brick so the script below can import @fmmenchi/notify from dist.
+      - run: pnpm nx build @fmmenchi/notify
+
+      - name: Announce the release to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: node .github/scripts/notify-release.mjs

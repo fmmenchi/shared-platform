@@ -29,6 +29,10 @@
       "type": "boolean",
       "description": "Include merge commits in the changelog.",
       "default": true
+    },
+    "body": {
+      "type": "string",
+      "description": "Pre-rendered markdown notes (e.g. a GitHub Release body). When set, used as the changelog verbatim and the git range is ignored. Falls back to RELEASE_BODY."
     }
   },
   "required": ["appName"]

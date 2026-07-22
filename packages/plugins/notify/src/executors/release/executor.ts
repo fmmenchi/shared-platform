@@ -1,5 +1,5 @@
 import type { PromiseExecutor } from '@nx/devkit';
-import type { Changelog } from '@fmmenchi/notify';
+import type { ReleaseChangelog } from '@fmmenchi/notify';
 import type { ReleaseExecutorSchema } from './schema';
 import { collectCommits } from '../../lib/git';
 
@@ -37,11 +37,15 @@ const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (options) => {
   }
 
   const url = options.url ?? process.env['RELEASE_URL'] ?? '';
+  const body = options.body ?? process.env['RELEASE_BODY'];
   const from = options.from ?? process.env['RELEASE_FROM'];
   const to = options.to ?? process.env['RELEASE_TO'];
 
-  let changelog: Changelog | undefined;
-  if (from && to) {
+  let changelog: ReleaseChangelog | undefined;
+  if (body) {
+    /* Pre-rendered notes (e.g. a GitHub Release body) win over recomputing from git. */
+    changelog = { body };
+  } else if (from && to) {
     try {
       changelog = {
         fromRef: from,

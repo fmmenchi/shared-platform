@@ -1,6 +1,7 @@
 import {
   errorBlocks,
   formatChangelog,
+  formatReleaseBody,
   postToSlack,
   releaseBlocks,
   type Changelog,
@@ -122,6 +123,39 @@ describe('releaseBlocks', () => {
     expect(section).toContain('e99cade');
     expect(section).toContain('7a831c7');
     expect(section).toContain('565fee8');
+  });
+
+  it('accepts a pre-rendered markdown body (the notes nx release already wrote)', () => {
+    const blocks = releaseBlocks('@fmmenchi/notify', '0.0.2', 'https://gh', {
+      body: '### Features\n\n- **notify:** add [changelog](https://x) support',
+    });
+
+    expect(blocks).toHaveLength(3);
+    const section = (blocks[1] as { text: { text: string } }).text.text;
+    /* GitHub markdown converted to Slack mrkdwn. */
+    expect(section).toContain('*Features*');
+    expect(section).toContain('*notify:*');
+    expect(section).toContain('<https://x|changelog>');
+  });
+});
+
+describe('formatReleaseBody', () => {
+  it('converts GitHub markdown to Slack mrkdwn', () => {
+    const out = formatReleaseBody(
+      '## What changed\n- **bold** and a [link](https://ex.com)\n* second',
+    );
+    expect(out).toContain('*What changed*');
+    expect(out).toContain('*bold*');
+    expect(out).toContain('<https://ex.com|link>');
+    expect(out).toContain('• *bold*'); // bullet normalized, bold preserved
+    expect(out).toContain('• second');
+    expect(out).not.toContain('**');
+  });
+
+  it('caps an oversized body with a stated truncation', () => {
+    const out = formatReleaseBody('x'.repeat(5000));
+    expect(out.length).toBeLessThan(5000);
+    expect(out).toContain('truncated');
   });
 });
 

@@ -11,4 +11,10 @@ export interface ReleaseExecutorSchema {
   to?: string;
   /** Include merge commits in the changelog (default true). */
   includeMerges?: boolean;
+  /**
+   * Pre-rendered markdown notes (e.g. a GitHub Release body). When set, it is used as the
+   * changelog verbatim (converted to Slack mrkdwn) and the git range is ignored. Falls
+   * back to `RELEASE_BODY`.
+   */
+  body?: string;
 }
