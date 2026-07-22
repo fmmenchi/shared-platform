@@ -45,6 +45,10 @@ Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`.
   `server` (BE-only), `plugins` (Nx plugins), `tools` (scripts). Boundaries are enforced by
   ESLint + tags — `client` and `server` may depend on `shared`, never on each other; nothing
   depends on `plugins`/`tools`. See [architecture](./.agent/architecture.md).
+- **File layout:** every `index.ts` is a **barrel — re-exports only**, never implementation or
+  inline declarations. Implementation lives in `<name>.ts`; **types always in a separate
+  `<name>.types.ts`**. Structure the code into proper files and let `index.ts` just re-export the
+  public surface.
 - **Commits:** Conventional Commits are mandatory (they drive `nx release`) and enforced by
   commitlint via a husky `commit-msg` hook. Keep the subject lowercase. Humans use `git cz`;
   agents write the message directly. See [releases](./.agent/releases.md).
