@@ -1,6 +1,6 @@
 export interface ReleaseExecutorSchema {
-  /** The project name shown in the message, e.g. `dev-blog`. */
-  appName: string;
+  /** Name shown in the message. Defaults to the project the target runs on. */
+  appName?: string;
   /** Version without the leading `v`. Falls back to `RELEASE_VERSION`. Empty → skip. */
   version?: string;
   /** Link the "View release" button points at. Falls back to `RELEASE_URL`. */

@@ -9,7 +9,10 @@ import type { ErrorExecutorSchema } from './schema';
  * success rather than failing a job over a notification that was never set up. The
  * message and run URL fall back to `ERROR_MESSAGE` / `ERROR_URL`.
  */
-const runExecutor: PromiseExecutor<ErrorExecutorSchema> = async (options) => {
+const runExecutor: PromiseExecutor<ErrorExecutorSchema> = async (
+  options,
+  context,
+) => {
   const token = process.env['SLACK_BOT_TOKEN'];
   const channel = process.env['SLACK_CHANNEL_ID'];
 
@@ -19,6 +22,9 @@ const runExecutor: PromiseExecutor<ErrorExecutorSchema> = async (options) => {
     );
     return { success: true };
   }
+
+  /* appName defaults to the project the target runs on — the common case in CI. */
+  const appName = options.appName ?? context.projectName ?? '';
 
   const message = options.message ?? process.env['ERROR_MESSAGE'] ?? '';
   if (!message) {
@@ -34,10 +40,10 @@ const runExecutor: PromiseExecutor<ErrorExecutorSchema> = async (options) => {
   try {
     await notify(
       slack({ token, channel }),
-      errorNotification(options.appName, message, url),
+      errorNotification(appName, message, url),
     );
 
-    console.log(`Sent an alert for ${options.appName} to Slack.`);
+    console.log(`Sent an alert for ${appName} to Slack.`);
     return { success: true };
   } catch (error) {
     console.error(String(error));

@@ -19,7 +19,10 @@ import { collectCommits } from '../../lib/git';
  * curl and jq — because the failure that actually happens is Slack answering 200 while
  * refusing the message, and only a unit test pins that down.
  */
-const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (options) => {
+const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (
+  options,
+  context,
+) => {
   const token = process.env['SLACK_BOT_TOKEN'];
   const channel = process.env['SLACK_CHANNEL_ID'];
 
@@ -29,6 +32,9 @@ const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (options) => {
     );
     return { success: true };
   }
+
+  /* appName defaults to the project the target runs on — the common case in CI. */
+  const appName = options.appName ?? context.projectName ?? '';
 
   const version = options.version ?? process.env['RELEASE_VERSION'] ?? '';
   if (!version) {
@@ -67,10 +73,10 @@ const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (options) => {
   try {
     await notify(
       slack({ token, channel }),
-      releaseNotification(options.appName, version, url, changelog),
+      releaseNotification(appName, version, url, changelog),
     );
 
-    console.log(`Announced ${options.appName} v${version} to Slack.`);
+    console.log(`Announced ${appName} v${version} to Slack.`);
     return { success: true };
   } catch (error) {
     /* A notification that silently did not arrive is worse than one that failed loudly. */

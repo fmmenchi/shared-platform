@@ -1,7 +1,16 @@
 {
   "name": "@fmmenchi/ci",
   "version": "0.0.1",
-  "private": true,
+  "description": "CI helper scripts for an Nx release monorepo — prints the releasable projects Nx marks affected between two refs.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/tools/ci"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -22,7 +31,10 @@
     ]
   },
   "dependencies": {
-    "tslib": "^2.3.0",
-    "@fmmenchi/notify": "workspace:*"
-  }
+    "tslib": "^2.3.0"
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ]
 }

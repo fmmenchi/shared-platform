@@ -5,7 +5,8 @@ title: '@fmmenchi/nx-notify'
 # @fmmenchi/nx-notify
 
 Nx **executors that fire notifications from CI**, wrapping the
-[@fmmenchi/notify](../../libraries/notify/index.md) brick. Two events today — `release` and `error` — and room for more.
+[@fmmenchi/notify](../../libraries/notify/index.md) brick. Two events today — `announce-release` and
+`announce-error` — and room for more.
 Secrets come from the environment (never options, so a token never lands in the project graph);
 missing config skips green.
 
@@ -18,10 +19,9 @@ pnpm add -D @fmmenchi/nx-notify @fmmenchi/notify
 ## Usage
 
 ```jsonc
-// a target on the consuming project
-"notify-release": {
-  "executor": "@fmmenchi/nx-notify:release",
-  "options": { "appName": "myapp" }
+// a target on the consuming project — appName defaults to the project
+"announce-release": {
+  "executor": "@fmmenchi/nx-notify:announce-release"
 }
 ```
 
@@ -29,12 +29,12 @@ pnpm add -D @fmmenchi/nx-notify @fmmenchi/notify
 # CI passes the secrets + the release facts as env / options:
 SLACK_BOT_TOKEN=… SLACK_CHANNEL_ID=… \
 RELEASE_VERSION=1.2.0 RELEASE_URL=… RELEASE_FROM=<sha> RELEASE_TO=<sha> \
-  pnpm nx run myapp:notify-release
+  pnpm nx run myapp:announce-release
 ```
 
-The `release` executor collects the commits in `from..to` via `git log`, builds a Wishew-style
-changelog and announces it; pass a pre-rendered `body` (e.g. a GitHub Release body) to use that
-verbatim instead. The `error` executor sends an alert with a link back to the run.
+The `announce-release` executor collects the commits in `from..to` via `git log`, builds a
+Wishew-style changelog and announces it; pass a pre-rendered `body` (e.g. a GitHub Release body) to
+use that verbatim instead. The `announce-error` executor sends an alert with a link back to the run.
 
 | Input                                  | From                                                    |
 | -------------------------------------- | ------------------------------------------------------- |

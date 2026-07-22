@@ -1,18 +1,17 @@
 # @fmmenchi/nx-notify
 
 Nx executors that fire notifications from CI, wrapping the [`@fmmenchi/notify`](../../shared/notify)
-brick. Two events today — `release` and `error` — and room for more.
+brick. Two events today — `announce-release` and `announce-error` — and room for more.
 
-## `release`
+## `announce-release`
 
 Announces a freshly cut release to Slack, with a Wishew-style changelog (the commit range plus the
 commits it shipped).
 
 ```jsonc
-// a target on the consuming project
-"notify-release": {
-  "executor": "@fmmenchi/nx-notify:release",
-  "options": { "appName": "dev-blog" }
+// a target on the consuming project — appName defaults to the project
+"announce-release": {
+  "executor": "@fmmenchi/nx-notify:announce-release"
 }
 ```
 
@@ -20,7 +19,7 @@ commits it shipped).
 | ------------------ | ----------------------------- | ------------------------------------------------ |
 | `SLACK_BOT_TOKEN`  | **env**                       | `xoxb-…` with `chat:write`. Absent → skips.      |
 | `SLACK_CHANNEL_ID` | **env**                       | `C…` (the ID). Absent → skips.                   |
-| `appName`          | option                        | Shown in the message.                            |
+| `appName`          | option                        | Shown in the message. Defaults to the project.   |
 | `version`          | option / `RELEASE_VERSION`    | Bare tag (no `v`). Empty → nothing to announce.  |
 | `url`              | option / `RELEASE_URL`        | "View release" button.                           |
 | `from` / `to`      | option / `RELEASE_FROM`/`_TO` | Changelog range. Absent → message without a log. |
@@ -28,14 +27,13 @@ commits it shipped).
 
 Secrets are read from the environment, never options — a token must not land in the project graph.
 
-## `error`
+## `announce-error`
 
 An alert with a link back to the run.
 
 ```jsonc
-"notify-error": {
-  "executor": "@fmmenchi/nx-notify:error",
-  "options": { "appName": "dev-blog" }
+"announce-error": {
+  "executor": "@fmmenchi/nx-notify:announce-error"
 }
 ```
 

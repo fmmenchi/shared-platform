@@ -1,14 +1,14 @@
 {
   "executors": {
-    "release": {
-      "implementation": "./dist/executors/release/executor",
-      "schema": "./dist/executors/release/schema.json",
+    "announce-release": {
+      "implementation": "./dist/executors/announce-release/executor",
+      "schema": "./dist/executors/announce-release/schema.json",
       "description": "Announce a freshly cut release to Slack, with a changelog."
     },
-    "error": {
-      "implementation": "./dist/executors/error/executor",
-      "schema": "./dist/executors/error/schema.json",
-      "description": "Send an error/alert to Slack with a link back to the run."
+    "announce-error": {
+      "implementation": "./dist/executors/announce-error/executor",
+      "schema": "./dist/executors/announce-error/schema.json",
+      "description": "Announce an error/alert to Slack with a link back to the run."
     }
   }
 }
