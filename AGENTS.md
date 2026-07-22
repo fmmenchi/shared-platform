@@ -51,9 +51,9 @@ Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`.
 - **Branching: trunk-based.** `main` + short-lived semantic feature branches
   (`<type>/<kebab-description>[-<issue>]`, enforced by a husky `pre-push` hook) merged via PR. Never merge
   a PR autonomously. See [releases](./.agent/releases.md).
-- **Releases are automated in CI.** Every green push to `main` runs `nx release` (versions each
-  package from its commits, tags `{projectName}@{version}`, creates the per-project GitHub Release,
-  publishes to GitHub Packages), and each Release announces itself on Slack via `notify-release.yml`.
+- **Releases are automated in CI.** Every green push to `main` runs `nx release` for the projects
+  whose own files changed (tags `{projectName}@{version}`, per-project GitHub Release, publish to
+  GitHub Packages), then announces each newly cut package on Slack inline from the release job.
   Merging a PR is still never autonomous; a local `nx release` is a maintainer action and `--dry-run`
   is always allowed. See [releases](./.agent/releases.md).
 - **UI & tests:** native-first accessible components, and every component tested for semantics,

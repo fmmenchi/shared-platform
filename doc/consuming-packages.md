@@ -27,7 +27,7 @@ grants it access (Package settings → Manage Actions access), otherwise use the
 ## 3. Install
 
 ```bash
-pnpm add @fmmenchi/core
+pnpm add @fmmenchi/ui
 ```
 
 ### Design system
@@ -115,4 +115,4 @@ repo) and the git tags `@fmmenchi/<name>@<version>`; releases also appear as Git
 - **404 on install** — the package has never been published, or the `.npmrc` scope mapping is
   missing so npmjs.org is being queried instead.
 - **Types not found** — the published tarball only ships `dist/`; make sure you import the
-  package root (`@fmmenchi/core`), not deep paths.
+  package root (`@fmmenchi/ui`), not deep paths.
