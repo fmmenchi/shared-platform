@@ -1,0 +1,11 @@
+---
+slug: /
+title: <%= title %>
+sidebar_position: 0
+---
+
+# <%= title %>
+
+Documentation home. Workspace-level docs (architecture, ADRs, guides) are authored here in
+`docs/`; each package's docs live beside its code in the package's own `docs/` folder and are
+assembled into this site under **Libraries** / **Plugins** at build time.

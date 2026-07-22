@@ -1,2 +1,6 @@
 .docusaurus
 build
+
+# config-generator writes this manifest; sync-docs assembles docs/{libraries,plugins}/*
+# and writes docs/.gitignore for those folders.
+nx-doc-projects.json

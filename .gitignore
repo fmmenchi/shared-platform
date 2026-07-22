@@ -55,7 +55,3 @@ storybook-static
 # vitest browser-mode artifacts
 .vitest-attachments/
 **/__screenshots__/
-
-# Docs aggregation: config-generator writes this manifest; sync-docs writes the assembled
-# docs/.gitignore for the per-package folders it copies in.
-/apps/docusaurus/nx-doc-projects.json
