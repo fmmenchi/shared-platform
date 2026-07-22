@@ -1,15 +1,10 @@
 name: Notify release
 
-# Per-package Slack notification. Independent `nx release` creates ONE GitHub Release per
-# package, so each published release fires this workflow once — every package announces
-# itself, with the changelog nx already wrote in the release body.
-#
-# Decoupled from how the release is cut on purpose: whether a maintainer runs `nx release`
-# locally or a CI job does it, the GitHub Release it publishes is the single trigger.
+# Manual Slack test only. The automated per-package announcement lives inline in the CI
+# `release` job — a GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger
+# `on: release` workflows (GitHub blocks recursive runs), so this workflow can't be the
+# automatic path. It stays for firing a one-off test message without cutting a release.
 on:
-  release:
-    types: [published]
-  # Manual test: fire a Slack message without cutting a release.
   workflow_dispatch:
     inputs:
       tag:
