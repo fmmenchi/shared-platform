@@ -29,15 +29,13 @@ const runExecutor: PromiseExecutor<ErrorExecutorSchema> = async (options) => {
   const url = options.url ?? process.env['ERROR_URL'] ?? '';
 
   /* Dynamic import: this executor is CommonJS and the notify library is ESM. */
-  const { postToSlack, errorBlocks } = await import('@fmmenchi/notify');
+  const { notify, slack, errorNotification } = await import('@fmmenchi/notify');
 
   try {
-    await postToSlack({
-      token,
-      channel,
-      text: `${options.appName}: ${message}`,
-      blocks: errorBlocks(options.appName, message, url),
-    });
+    await notify(
+      slack({ token, channel }),
+      errorNotification(options.appName, message, url),
+    );
 
     console.log(`Sent an alert for ${options.appName} to Slack.`);
     return { success: true };

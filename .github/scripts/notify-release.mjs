@@ -8,8 +8,9 @@
 // A bare specifier wouldn't resolve: this script is not a workspace package, so
 // @fmmenchi/notify is not in a node_modules on its resolution path.
 import {
-  postToSlack,
-  releaseBlocks,
+  notify,
+  slack,
+  releaseNotification,
 } from '../../packages/shared/notify/dist/index.js';
 
 const token = process.env.SLACK_BOT_TOKEN;
@@ -34,13 +35,10 @@ if (!version) {
 }
 
 try {
-  await postToSlack({
-    token,
-    channel,
-    // Fallback text — what the phone notification shows.
-    text: `${appName} v${version} released`,
-    blocks: releaseBlocks(appName, version, url, body ? { body } : undefined),
-  });
+  await notify(
+    slack({ token, channel }),
+    releaseNotification(appName, version, url, body ? { body } : undefined),
+  );
   console.log(`Announced ${appName} v${version} to Slack.`);
 } catch (error) {
   console.error(String(error));

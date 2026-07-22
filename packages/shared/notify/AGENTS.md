@@ -1,8 +1,10 @@
 # AGENTS.md — @fmmenchi/notify
 
-The notification **brick**: a channel client + message builders, callable from anywhere (app,
-server, Worker, a CI step). Part of `shared-platform`; workspace contract in
-[../../../AGENTS.md](../../../AGENTS.md). Scope `shared`, type `util`.
+The notification **brick**: channel-agnostic notifications, callable from anywhere (app, server,
+Worker, a CI step). A neutral `Notification` is built once and delivered by one or more
+**transports** (Slack today; email/webhook are future transports, not future packages). Part of
+`shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md). Scope `shared`,
+type `util`.
 
 ## Commands
 
@@ -15,21 +17,29 @@ pnpm nx test @fmmenchi/notify    # node vitest, fetch stubbed via vi.stubGlobal
 
 ## Shape
 
-- `postToSlack({ token, channel, text, blocks })` — the reason this is TS, not `curl`: **Slack
-  answers HTTP 200 even when it refuses the message** (`{ ok: false, error }`). It parses the body
-  and **throws** on refusal (`invalid_auth`, `not_in_channel`, …). Only a unit test pins that down.
-- `releaseBlocks(appName, version, url, changelog?)` — release announcement. `version` is the bare
-  tag (no `v`; the heading adds it). `changelog` optional → omit for a thin message.
-- `errorBlocks(appName, message, url)` — an alert with a "See the run" button.
-- `formatChangelog({ fromRef, toRef, commits })` — the pure mrkdwn changelog: `from → to` + one
-  bullet per commit, **capped** at 15 with an explicit `+N more` (never a silent cut).
+Three layers — build a neutral notification, pick transport(s), send:
+
+- **`notify(transport | transport[], notification)`** — the facade. Fans out concurrently; if any
+  transport throws it rejects (silence is worse than a loud failure).
+- **`Notification`** (neutral) + builders `releaseNotification(appName, version, url, changelog?)`
+  and `errorNotification(appName, message, url)`. `version` is the bare tag (no `v`; the title adds
+  it). `body` is plain markdown; transports convert it. `formatChangelog({ fromRef, toRef, commits })`
+  → markdown changelog, **capped** at 15 commits with an explicit `+N more` (never a silent cut).
+- **`Transport`** interface + **`slack({ token, channel })`** — the first/only transport today. Its
+  internals (`slackBlocks`, `toMrkdwn`, the `fetch`) are Slack-specific and live behind it. The
+  reason it is TS, not `curl`: **Slack answers HTTP 200 even when it refuses** (`{ ok: false }`) — it
+  parses the body and **throws** (`invalid_auth`, `not_in_channel`, …); only a unit test pins that down.
 
 ## Rules
 
-- **Pure — no git, no `child_process`, no side effects** beyond `fetch` in `postToSlack`. It
-  receives already-collected commits, which is what makes it a reusable brick. Commit collection
+- **Adding a channel = a new `Transport`, not a new package** (`email(...)`, `webhook(...)`). The
+  neutral `Notification` is the seam; keep channel formatting inside its transport.
+- **Pure — no git, no `child_process`, no side effects** beyond `fetch` inside a transport. Builders
+  receive already-collected commits, which is what makes it a reusable brick. Commit collection
   (git) lives in the consumer, e.g. `@fmmenchi/nx-notify`.
-- `text` is never optional even with blocks: it is the phone-notification / screen-reader fallback.
+- `text` is never optional: it is the phone-notification / screen-reader fallback.
 - `appName` is a parameter, never hardcoded — one channel can carry many projects.
+- **Types in `*.types.ts`** (`notification.types.ts`, `transport.types.ts`, `slack.types.ts`),
+  never inline.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

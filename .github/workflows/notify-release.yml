@@ -9,6 +9,20 @@ name: Notify release
 on:
   release:
     types: [published]
+  # Manual test: fire a Slack message without cutting a release.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, {projectName}@{version}'
+        default: '@fmmenchi/notify@0.0.1'
+      url:
+        description: 'Release URL'
+        default: 'https://github.com/fmmenchi/shared-platform'
+      body:
+        description: 'Release notes (markdown)'
+        default: |
+          ### Test
+          - **notify:** manual test from workflow_dispatch
 
 permissions:
   contents: read

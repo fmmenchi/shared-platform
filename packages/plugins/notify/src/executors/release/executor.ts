@@ -61,16 +61,13 @@ const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (options) => {
   }
 
   /* Dynamic import: this executor is CommonJS and the notify library is ESM. */
-  const { postToSlack, releaseBlocks } = await import('@fmmenchi/notify');
+  const { notify, slack, releaseNotification } = await import('@fmmenchi/notify');
 
   try {
-    await postToSlack({
-      token,
-      channel,
-      /* The fallback: it is what the phone notification shows. */
-      text: `${options.appName} v${version} released`,
-      blocks: releaseBlocks(options.appName, version, url, changelog),
-    });
+    await notify(
+      slack({ token, channel }),
+      releaseNotification(options.appName, version, url, changelog),
+    );
 
     console.log(`Announced ${options.appName} v${version} to Slack.`);
     return { success: true };
