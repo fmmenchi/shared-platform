@@ -64,8 +64,8 @@ jobs:
 
   # Trunk-based release: every green push to main versions each package from its
   # conventional commits, tags {projectName}@{version}, creates the per-project GitHub
-  # Release, and publishes to GitHub Packages. Each Release fires notify-release.yml, so
-  # every published package announces itself on Slack. Auth is the built-in GITHUB_TOKEN
+  # Release, publishes to GitHub Packages, and announces each newly cut package on Slack
+  # (inline — see the Release/Announce steps). Auth is the built-in GITHUB_TOKEN
   # (contents:write for tags/releases, packages:write to publish) — no PAT.
   release:
     needs: main
@@ -98,7 +98,33 @@ jobs:
         # No --first-release needed: fallbackCurrentVersionResolver=disk resolves the
         # version and changelog.automaticFromRef starts the changelog from the first
         # commit when no {projectName}@{version} tag exists yet.
-        run: pnpm nx release --yes
+        run: |
+          before=$(git tag -l '*@*' | sort)
+          pnpm nx release --yes
+          comm -13 <(printf '%s\n' "$before") <(git tag -l '*@*' | sort) \
+            | sed '/^$/d' > "$RUNNER_TEMP/new_tags.txt"
+          echo "Newly released tags:"; cat "$RUNNER_TEMP/new_tags.txt"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
+      # workflows (no recursive runs), so a `release: published` listener never fires from
+      # here. Announce inline instead: one Slack message per newly cut tag, built from the
+      # notes nx wrote into each GitHub Release. Missing Slack secrets skip green.
+      - name: Announce releases to Slack
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm nx build @fmmenchi/notify
+          failed=0
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            body=$(gh release view "$tag" --json body --jq .body 2>/dev/null || true)
+            url=$(gh release view "$tag" --json url --jq .url 2>/dev/null || true)
+            RELEASE_TAG="$tag" RELEASE_URL="$url" RELEASE_BODY="$body" \
+              node .github/scripts/notify-release.mjs || failed=1
+          done < "$RUNNER_TEMP/new_tags.txt"
+          exit $failed
