@@ -10,7 +10,7 @@ export const VALIDATE_TARGET = 'validate-themes';
 
 /**
  * Wires theme validation on a project: adds (or updates) a `validate-themes`
- * target running the `@fmmenchi/theme-generator:validate` executor, and
+ * target running the `@fmmenchi/nx-theme-generator:validate` executor, and
  * registers the given theme CSS files in its options. Idempotent — re-running
  * merges and dedupes the theme list.
  */
@@ -31,7 +31,7 @@ export async function validationGenerator(
     ...projectConfig.targets,
     [VALIDATE_TARGET]: {
       ...existing,
-      executor: '@fmmenchi/theme-generator:validate',
+      executor: '@fmmenchi/nx-theme-generator:validate',
       options: { ...existing?.options, themes },
     },
   };

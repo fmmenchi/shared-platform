@@ -49,7 +49,7 @@ describe('theme generator', () => {
     const target = readProjectConfiguration(tree, 'web').targets?.[
       'validate-themes'
     ];
-    expect(target?.executor).toBe('@fmmenchi/theme-generator:validate');
+    expect(target?.executor).toBe('@fmmenchi/nx-theme-generator:validate');
     expect(target?.options.themes).toEqual(['apps/web/src/themes/acme.css']);
   });
 

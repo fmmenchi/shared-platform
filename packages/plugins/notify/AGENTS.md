@@ -30,7 +30,7 @@ pnpm nx test @fmmenchi/nx-notify   # node vitest (git parser + executor skip-pat
 - **Skip = success**: missing secrets, or an empty version/message, return `{ success: true }` — a
   fork or a no-op push must not go red over a notification it was never set up to send.
 - **Dynamic import of `@fmmenchi/notify`** (`await import(...)`): this plugin is CommonJS and the
-  brick is ESM — the same pattern `@fmmenchi/theme-generator` uses for the ESM `@fmmenchi/tokens`.
+  brick is ESM — the same pattern `@fmmenchi/nx-theme-generator` uses for the ESM `@fmmenchi/tokens`.
 - Message formatting is **not** tested here — it lives (and is tested) in `@fmmenchi/notify`; this
   package tests only the git parsing and the skip-paths.
 

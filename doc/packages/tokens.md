@@ -44,7 +44,7 @@ expect(validateTheme(brandColors)).toEqual([]);
 
 Checks: completeness · parsable colors · sRGB gamut · WCAG contrast on every declared pair
 (exact ratios on failure). Prefer scaffolding themes with
-[`@fmmenchi/theme-generator`](./theme-generator.md).
+[`@fmmenchi/nx-theme-generator`](./nx-theme-generator.md).
 
 ## Reference
 

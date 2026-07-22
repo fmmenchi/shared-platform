@@ -1,4 +1,4 @@
-# AGENTS.md — @fmmenchi/theme-generator
+# AGENTS.md — @fmmenchi/nx-theme-generator
 
 Nx plugin: brand-theme scaffolding + CI validation for the design system. Part of
 `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md). Scope
@@ -7,10 +7,10 @@ Nx plugin: brand-theme scaffolding + CI validation for the design system. Part o
 ## Commands
 
 ```bash
-pnpm nx typecheck @fmmenchi/theme-generator
-pnpm nx build @fmmenchi/theme-generator
-pnpm nx lint @fmmenchi/theme-generator
-pnpm nx test @fmmenchi/theme-generator   # node vitest (Tree-based generator + executor specs)
+pnpm nx typecheck @fmmenchi/nx-theme-generator
+pnpm nx build @fmmenchi/nx-theme-generator
+pnpm nx lint @fmmenchi/nx-theme-generator
+pnpm nx test @fmmenchi/nx-theme-generator   # node vitest (Tree-based generator + executor specs)
 ```
 
 ## Shape (composition)

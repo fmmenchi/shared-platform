@@ -1,4 +1,4 @@
-# @fmmenchi/theme-generator
+# @fmmenchi/nx-theme-generator
 
 Nx plugin for `@fmmenchi/ui` brand themes: **scaffold a complete theme from the tokens contract
 you have installed, and gate it in CI** — one command wires both.
@@ -13,7 +13,7 @@ re-validates every theme on each CI run.
 ## Install
 
 ```bash
-pnpm add -D @fmmenchi/theme-generator
+pnpm add -D @fmmenchi/nx-theme-generator
 ```
 
 Requires `@fmmenchi/tokens` in the workspace (resolved at run time — the plugin bundles nothing).
@@ -22,7 +22,7 @@ Requires `@fmmenchi/tokens` in the workspace (resolved at run time — the plugi
 
 ```bash
 # Scaffold a theme into an existing project and wire its validation
-pnpm nx g @fmmenchi/theme-generator:theme acme --project=web
+pnpm nx g @fmmenchi/nx-theme-generator:theme acme --project=web
 
 # Validate (this is what CI runs)
 pnpm nx run web:validate-themes
@@ -41,7 +41,7 @@ reference values — then calls the `validation` generator to register it in the
 `validate-themes` target.
 
 ```bash
-pnpm nx g @fmmenchi/theme-generator:theme <name> --project=<project> [options]
+pnpm nx g @fmmenchi/nx-theme-generator:theme <name> --project=<project> [options]
 ```
 
 | Option             | Type      | Default      | Description                                                               |
@@ -62,7 +62,7 @@ Wires (or updates) the `validate-themes` target on a project. Called automatical
 use it directly to register hand-written theme files:
 
 ```bash
-pnpm nx g @fmmenchi/theme-generator:validation web --themes=apps/web/src/themes/legacy.css
+pnpm nx g @fmmenchi/nx-theme-generator:validation web --themes=apps/web/src/themes/legacy.css
 ```
 
 Idempotent: re-running merges and dedupes the theme list.
@@ -72,7 +72,7 @@ Idempotent: re-running merges and dedupes the theme list.
 ```jsonc
 // added to the project automatically
 "validate-themes": {
-  "executor": "@fmmenchi/theme-generator:validate",
+  "executor": "@fmmenchi/nx-theme-generator:validate",
   "options": { "themes": ["apps/web/src/themes/acme.css"] }
 }
 ```
