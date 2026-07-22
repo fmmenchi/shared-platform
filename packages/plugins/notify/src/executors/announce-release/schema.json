@@ -7,7 +7,7 @@
   "properties": {
     "appName": {
       "type": "string",
-      "description": "Project name shown in the message, e.g. dev-blog."
+      "description": "Name shown in the message. Defaults to the project the target runs on."
     },
     "version": {
       "type": "string",
@@ -34,6 +34,5 @@
       "type": "string",
       "description": "Pre-rendered markdown notes (e.g. a GitHub Release body). When set, used as the changelog verbatim and the git range is ignored. Falls back to RELEASE_BODY."
     }
-  },
-  "required": ["appName"]
+  }
 }

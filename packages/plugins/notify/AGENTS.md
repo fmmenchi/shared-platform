@@ -15,10 +15,12 @@ pnpm nx test @fmmenchi/nx-notify   # node vitest (git parser + executor skip-pat
 
 ## Shape
 
-- **executor `release`** — announces a cut release to Slack with a changelog. Collects the commits
-  for the range via `src/lib/git.ts` (`git log from..to`), then hands them to
-  `releaseBlocks`. Options `appName` (required), `version`/`url`/`from`/`to`/`includeMerges`.
-- **executor `error`** — an alert with a link back to the run. Options `appName`, `message`, `url`.
+- **executor `announce-release`** — announces a cut release to Slack with a changelog. Collects the
+  commits for the range via `src/lib/git.ts` (`git log from..to`), then hands them to
+  `releaseBlocks`. Options `appName` (defaults to the project the target runs on),
+  `version`/`url`/`from`/`to`/`includeMerges`.
+- **executor `announce-error`** — an alert with a link back to the run. Options `appName`
+  (same default), `message`, `url`.
 - **`src/lib/git.ts`** — `parseCommits` (pure, unit-tested) + `collectCommits` (the `git log` shim).
 
 ## Rules
@@ -37,13 +39,14 @@ pnpm nx test @fmmenchi/nx-notify   # node vitest (git parser + executor skip-pat
 ## Use from a consumer
 
 ```jsonc
-// project.json target
-"notify-release": {
-  "executor": "@fmmenchi/nx-notify:release",
-  "options": { "appName": "dev-blog" }
+// project.json target — appName defaults to the project, so options are optional
+"announce-release": {
+  "executor": "@fmmenchi/nx-notify:announce-release"
 }
 ```
 
-CI passes `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` + `RELEASE_VERSION`/`RELEASE_URL`/`RELEASE_FROM`/`RELEASE_TO`.
+Then `nx run <project>:announce-release`, with CI passing `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` +
+`RELEASE_VERSION`/`RELEASE_URL`/`RELEASE_FROM`/`RELEASE_TO`. shared-platform itself dogfoods this in
+the CI release job (invoked per newly cut tag with `--appName`).
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

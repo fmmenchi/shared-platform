@@ -42,8 +42,9 @@
 - `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
   the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
 - **Slack, inline.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger `on: release`
-  workflows, so the release job announces each newly cut tag itself (one Slack message per package,
-  from the release body, via `@fmmenchi/notify`). Secrets `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID`
+  workflows, so the release job announces each newly cut tag itself — dogfooding the
+  `@fmmenchi/nx-notify` plugin (`nx run @fmmenchi/nx-notify:announce-release --appName=<pkg>` per
+  tag, with the release body as the changelog). Secrets `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID`
   absent → skips green. `notify-release.yml` is a `workflow_dispatch` manual test only.
 
 ## Publishing — GitHub Packages

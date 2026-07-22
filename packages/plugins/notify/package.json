@@ -26,6 +26,18 @@
   },
   "nx": {
     "targets": {
+      "announce-release": {
+        "executor": "@fmmenchi/nx-notify:announce-release",
+        "dependsOn": [
+          "build"
+        ]
+      },
+      "announce-error": {
+        "executor": "@fmmenchi/nx-notify:announce-error",
+        "dependsOn": [
+          "build"
+        ]
+      },
       "build": {
         "executor": "@nx/js:tsc",
         "outputs": [

@@ -94,8 +94,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # The release/announce steps run the built @fmmenchi/ci scripts (and it depends on
-      # @fmmenchi/notify, built via ^build).
+      # The release step runs the built @fmmenchi/ci affected-releasable script; the
+      # announce step dogfoods the @fmmenchi/nx-notify plugin (built on demand via its
+      # target's dependsOn).
       - run: pnpm nx build @fmmenchi/ci
 
       - name: Configure git author
@@ -129,8 +130,9 @@ jobs:
 
       # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
       # workflows (no recursive runs), so a `release: published` listener never fires from
-      # here. Announce inline instead: one Slack message per newly cut tag, built from the
-      # notes nx wrote into each GitHub Release. Missing Slack secrets skip green.
+      # here. Announce inline instead, dogfooding the @fmmenchi/nx-notify plugin: one Slack
+      # message per newly cut tag, with the notes nx wrote into each GitHub Release as the
+      # changelog. Missing Slack secrets skip green.
       - name: Announce releases to Slack
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -140,9 +142,11 @@ jobs:
           failed=0
           while IFS= read -r tag; do
             [ -z "$tag" ] && continue
+            pkg=${tag%@*}       # {projectName}@{version} → strip the trailing @version
+            version=${tag##*@}
             body=$(gh release view "$tag" --json body --jq .body 2>/dev/null || true)
             url=$(gh release view "$tag" --json url --jq .url 2>/dev/null || true)
-            RELEASE_TAG="$tag" RELEASE_URL="$url" RELEASE_BODY="$body" \
-              node packages/tools/ci/dist/notify-release.js || failed=1
+            RELEASE_VERSION="$version" RELEASE_URL="$url" RELEASE_BODY="$body" \
+              pnpm nx run @fmmenchi/nx-notify:announce-release --appName="$pkg" || failed=1
           done < "$RUNNER_TEMP/new_tags.txt"
           exit $failed

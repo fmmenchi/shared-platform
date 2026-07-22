@@ -40,14 +40,15 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Build the @fmmenchi/ci scripts (depends on @fmmenchi/notify, built via ^build).
-      - run: pnpm nx build @fmmenchi/ci
-
+      # Dogfoods the @fmmenchi/nx-notify plugin (built on demand via the target's
+      # dependsOn); appName / version come from the {projectName}@{version} tag input.
       - name: Announce the release to Slack
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-          RELEASE_TAG: ${{ github.event.inputs.tag }}
           RELEASE_URL: ${{ github.event.inputs.url }}
           RELEASE_BODY: ${{ github.event.inputs.body }}
-        run: node packages/tools/ci/dist/notify-release.js
+        run: |
+          tag='${{ github.event.inputs.tag }}'
+          RELEASE_VERSION="${tag##*@}" \
+            pnpm nx run @fmmenchi/nx-notify:announce-release --appName="${tag%@*}"
