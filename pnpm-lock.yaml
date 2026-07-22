@@ -362,6 +362,9 @@ importers:
       '@docusaurus/types':
         specifier: ^3.10.2
         version: 3.10.2(@swc/core@1.15.8(@swc/helpers@0.5.18))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.19))(esbuild@0.28.1)(html-minifier-terser@7.2.0)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@fmmenchi/nx-docusaurus':
+        specifier: workspace:*
+        version: link:../../plugins/docusaurus
       react:
         specifier: ^19.0.0
         version: 19.2.7

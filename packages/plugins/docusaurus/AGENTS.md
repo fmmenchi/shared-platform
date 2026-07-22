@@ -1,6 +1,6 @@
 # AGENTS.md — @fmmenchi/nx-docusaurus
 
-Nx plugin: scaffold a Docusaurus site that serves the repo's human docs (`doc/`) DIRECTLY. Part of
+Nx plugin: scaffold a Docusaurus site AND aggregate per-package docs into it. Part of
 `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md). Scope
 `plugins`, type `plugin`.
 
@@ -13,20 +13,30 @@ pnpm nx lint @fmmenchi/nx-docusaurus
 pnpm nx test @fmmenchi/nx-docusaurus   # node vitest (Tree-based generator specs)
 ```
 
-## Design (deliberate, from experience)
+## Design — docs live in the packages, the site aggregates them
 
-- **Single content-docs instance reading the source folder directly** (`docs.path` → `doc/`,
-  `routeBasePath: '/'`). NO multi-instance (per-package silos: split sidebars, broken cross links,
-  config explosion) and NO copy/sync aggregation (terrible dev-loop performance, tree held hostage
-  by the repo layout). The site tree IS `doc/` — curated by editing the docs themselves
-  (`_category_.json` for labels/order).
-- **No nx project graph** anywhere: discovery is not needed when the docs are already centralized.
-- Targets are plain `nx:run-commands` around the Docusaurus CLI (start/build/serve) — no custom
-  executors, no CLI flag-mapping to maintain.
-- `markdown.format: 'detect'` — `.md` stays CommonMark (prose with `<placeholders>`/braces must not
-  parse as JSX); `.mdx` opts in. Broken repo-relative links (AGENTS.md, sources) warn, not fail.
-- The generated site is `private: true`, excluded from `nx release` (`!packages/tools/docs` in
-  nx.json), with `.docusaurus`/`build` gitignored.
-- The generator writes a `doc/index.md` landing ONLY if the docs folder has no index/README.
+Per-package docs live in each project's `docs/` folder (with the code); workspace docs (ADRs,
+architecture, styling…) live at the `doc/` root. The site is assembled by two executors, so
+`build`/`serve` depend on them (see [ADR-0004](../../../doc/adr/0004-docs-aggregation.md)).
+
+- **`config-generator`** — scans the workspace for projects that ship a `docs/` folder (with a
+  `.md`/`.mdx` or `_category_.json`) and writes `nx-doc-projects.json` in the docs app root,
+  categorized into `libraries` / `plugins` (a `scope:plugins` tag → plugin). The docs app is
+  skipped; applications too (there are none here). Reads `context.projectsConfigurations` — the
+  project graph IS the discovery.
+- **`sync-docs`** — reads the manifest and copies each project's `docs/` into
+  `<targetPath>/{libraries,plugins}/<unscoped-name>` (e.g. `doc/libraries/notify`), replacing what
+  was there. A continuous **watch** mode (`--watch`, async-generator executor) re-syncs on change
+  for the dev server. `node:fs` only — no `fs-extra`; a JSON manifest — no runtime `.ts` import.
+- **generator `project-doc`** — scaffolds `<projectRoot>/docs/index.md` from the project's
+  package.json (the consistent starting point for a new page).
+- **generator `site`** — scaffolds the Docusaurus site itself.
+
+Conventions: destination folder = the **unscoped** package name (`@fmmenchi/notify` → `notify`) so
+it is unique and collision-free. Cross-package links resolve within the assembled tree
+(`../../plugins/nx-notify/index.md`) and **`onBrokenLinks: 'throw'`** fails the build on any dead
+link. `_category_.json` at `doc/libraries` / `doc/plugins` labels the sidebar groups (committed;
+the synced `*/` subfolders and `nx-doc-projects.json` are gitignored). The site is `private: true`,
+excluded from `nx release`.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

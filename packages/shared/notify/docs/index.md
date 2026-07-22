@@ -55,5 +55,5 @@ behaviour a shell script can't guarantee and a unit test can.
 
 ## Reference
 
-- Fire these from CI on release: [@fmmenchi/nx-notify](./nx-notify.md)
+- Fire these from CI on release: [@fmmenchi/nx-notify](../../plugins/nx-notify/index.md)
 - Source: `packages/shared/notify`

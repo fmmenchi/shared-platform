@@ -1,0 +1,14 @@
+{
+  "executors": {
+    "config-generator": {
+      "implementation": "./dist/executors/config-generator/executor",
+      "schema": "./dist/executors/config-generator/schema.json",
+      "description": "Scan the workspace for projects with a docs/ folder and write the manifest."
+    },
+    "sync-docs": {
+      "implementation": "./dist/executors/sync-docs/executor",
+      "schema": "./dist/executors/sync-docs/schema.json",
+      "description": "Assemble the docs site from each project's docs/ folder (watchable)."
+    }
+  }
+}

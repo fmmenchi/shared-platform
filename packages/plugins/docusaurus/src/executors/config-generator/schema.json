@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Docusaurus config generator",
+  "description": "Scans the workspace for projects that ship a docs/ folder and writes nx-doc-projects.json in the docs app root, categorized into libraries and plugins. sync-docs reads it.",
+  "type": "object",
+  "properties": {},
+  "required": []
+}

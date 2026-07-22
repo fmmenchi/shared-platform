@@ -5,7 +5,7 @@ title: '@fmmenchi/nx-notify'
 # @fmmenchi/nx-notify
 
 Nx **executors that fire notifications from CI**, wrapping the
-[@fmmenchi/notify](./notify.md) brick. Two events today — `release` and `error` — and room for more.
+[@fmmenchi/notify](../../libraries/notify/index.md) brick. Two events today — `release` and `error` — and room for more.
 Secrets come from the environment (never options, so a token never lands in the project graph);
 missing config skips green.
 
@@ -45,5 +45,5 @@ verbatim instead. The `error` executor sends an alert with a link back to the ru
 
 ## Reference
 
-- The notification brick it wraps: [@fmmenchi/notify](./notify.md)
+- The notification brick it wraps: [@fmmenchi/notify](../../libraries/notify/index.md)
 - Source: `packages/plugins/notify`

@@ -36,5 +36,5 @@ executor `validate` (runs the installed `@fmmenchi/tokens/validate`).
 
 ## Reference
 
-- What a theme must satisfy: [@fmmenchi/tokens](./tokens.md)
+- What a theme must satisfy: [@fmmenchi/tokens](../../libraries/tokens/index.md)
 - Source: `packages/plugins/theme-generator`
