@@ -4,7 +4,7 @@
   "private": true,
   "nx": {
     "tags": [
-      "scope:tools",
+      "scope:app",
       "type:site"
     ],
     "targets": {
@@ -20,22 +20,22 @@
         "dependsOn": [
           "config-generator"
         ],
+        "cache": false,
         "options": {
-          "targetPath": "doc"
-        },
-        "cache": false
+          "targetPath": "apps/docusaurus/docs"
+        }
       },
       "watch-sync-docs": {
         "executor": "@fmmenchi/nx-docusaurus:sync-docs",
         "dependsOn": [
           "config-generator"
         ],
-        "options": {
-          "targetPath": "doc",
-          "watch": true
-        },
         "continuous": true,
-        "cache": false
+        "cache": false,
+        "options": {
+          "targetPath": "apps/docusaurus/docs",
+          "watch": true
+        }
       },
       "start": {
         "executor": "nx:run-commands",
@@ -52,18 +52,17 @@
         "dependsOn": [
           "sync-docs"
         ],
-        "options": {
-          "command": "docusaurus build",
-          "cwd": "{projectRoot}"
-        },
         "outputs": [
           "{projectRoot}/build"
         ],
         "cache": true,
         "inputs": [
-          "{projectRoot}/**/*",
-          "{workspaceRoot}/doc/**/*"
-        ]
+          "{projectRoot}/**/*"
+        ],
+        "options": {
+          "command": "docusaurus build",
+          "cwd": "{projectRoot}"
+        }
       },
       "serve": {
         "executor": "nx:run-commands",

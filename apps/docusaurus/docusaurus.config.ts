@@ -1,9 +1,9 @@
 import type { Config } from '@docusaurus/types';
 
 /**
- * Single-instance docs site over `doc/`. Workspace docs (ADRs, architecture,
- * styling…) are edited here directly; per-package docs live in each package's
- * `docs/` folder and are assembled under `doc/{libraries,plugins}/` by the
+ * Single-instance docs site over the co-located `docs/`. Workspace docs (ADRs,
+ * architecture, styling…) are edited here directly; per-package docs live in each
+ * package's `docs/` folder and are assembled under `docs/{libraries,plugins}/` by the
  * `@fmmenchi/nx-docusaurus` sync-docs executor (build/serve depend on it).
  */
 const config: Config = {
@@ -24,7 +24,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          path: '../../../doc',
+          path: 'docs',
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
         },

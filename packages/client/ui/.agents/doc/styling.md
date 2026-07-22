@@ -18,4 +18,4 @@
 desktop {}`. Prefer **container queries** (`@apply @container` on the root + `@variant @sm/@md
 {}`) so the component adapts to its container, not the screen.
 
-Why: [`doc/styling.md`](../../../../doc/styling.md).
+Why: [`doc/styling.md`](../../../../apps/docusaurus/docs/styling.md).

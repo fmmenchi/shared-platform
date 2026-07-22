@@ -10,7 +10,7 @@ import css from '@eslint/css';
  * available — e.g. `Intl.Locale.prototype.getTextInfo`. Imported only by
  * `scope:client` packages (server/shared code targets Node, not browsers).
  *
- * @see ../doc/styling.md#browser-support-baseline
+ * @see ./apps/docusaurus/docs/styling.md#browser-support-baseline
  */
 export default [
   // JS syntax, builtins and Web APIs (web-features "javascript" group).

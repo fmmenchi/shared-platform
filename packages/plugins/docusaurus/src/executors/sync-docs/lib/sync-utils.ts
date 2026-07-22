@@ -1,4 +1,11 @@
-import { cpSync, existsSync, rmSync, watch, type FSWatcher } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  rmSync,
+  watch,
+  writeFileSync,
+  type FSWatcher,
+} from 'node:fs';
 import { join } from 'node:path';
 import { logger } from '@nx/devkit';
 
@@ -9,6 +16,25 @@ import type {
 } from '../../../shared/types';
 
 export type Category = 'libraries' | 'plugins';
+
+/**
+ * Writes the `.gitignore` that keeps the assembled per-package folders out of git — they are
+ * rebuilt from each package's `docs/` on every sync, so committing them would duplicate the
+ * source. The `_category_.json` sidebar markers live one level up and stay tracked. Owning
+ * this here means the ignore travels with the tool, not a hand-edited root `.gitignore`.
+ */
+export function writeAggregationGitignore(targetRoot: string): void {
+  writeFileSync(
+    join(targetRoot, '.gitignore'),
+    [
+      '# Assembled at build time by @fmmenchi/nx-docusaurus (sync-docs) — not committed.',
+      '# Each package folder is a copy of that package’s docs/; the _category_.json markers stay.',
+      'libraries/*/',
+      'plugins/*/',
+      '',
+    ].join('\n'),
+  );
+}
 
 /**
  * Copies one project's `docs/` into `<targetRoot>/<category>/<folder>`, replacing whatever

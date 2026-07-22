@@ -4,9 +4,9 @@ title: '@fmmenchi/nx-docusaurus'
 
 # @fmmenchi/nx-docusaurus
 
-Nx plugin that generates a Docusaurus site serving the repository's human docs **directly from
-their source folder** — single instance, no copying, no sync, no multi-instance silos. The site
-tree IS the `doc/` folder you already edit (this very site is generated with it).
+Nx plugin that builds a single Docusaurus site which **aggregates per-package docs**. Each package's
+docs live beside its code in a `docs/` folder; the plugin discovers them and assembles them into the
+site at build time — no second copy to maintain, no drift between a package's README and its site page.
 
 ## Install
 
@@ -14,23 +14,25 @@ tree IS the `doc/` folder you already edit (this very site is generated with it)
 pnpm add -D @fmmenchi/nx-docusaurus
 ```
 
-## Usage
+## How it works
+
+Two executors run before the Docusaurus build (the site's `build`/`serve` depend on them):
+
+- **`config-generator`** — scans the workspace for projects that ship a `docs/` folder and writes a
+  manifest, categorising each as a library or a plugin (a `scope:plugins` tag → plugin).
+- **`sync-docs`** — copies each package's `docs/` into the site's `docs/{libraries,plugins}/<name>`,
+  and writes the `.gitignore` that keeps those assembled folders out of git (they are rebuilt on
+  every sync, so committing them would duplicate the source). A `--watch` mode re-syncs for the dev
+  server.
+
+Workspace-level docs (ADRs, architecture, styling) are authored directly in the site's co-located
+`docs/`. The site is a non-published app under `apps/`.
+
+## Scaffold a package's docs page
 
 ```bash
-# Scaffold the site (default: packages/tools/docs, serving doc/)
-pnpm nx g @fmmenchi/nx-docusaurus:site docs --title=my-repo --repoUrl=https://github.com/me/my-repo
-
-pnpm nx run docs:start   # dev server on the live doc/ folder
-pnpm nx run docs:build   # static site (CI-friendly)
+pnpm nx g @fmmenchi/nx-docusaurus:project-doc @scope/my-lib   # writes <project>/docs/index.md
 ```
-
-```bash
-# Scaffold a project's documentation page inside the docs tree
-pnpm nx g @fmmenchi/nx-docusaurus:project-doc @scope/my-lib
-```
-
-The sidebar is the docs tree: order and labels are controlled by the folder structure and
-`_category_.json` files — by editing the docs, not the tool.
 
 ## Reference
 

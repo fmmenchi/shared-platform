@@ -56,7 +56,6 @@ storybook-static
 .vitest-attachments/
 **/__screenshots__/
 
-# Docs aggregation: sync-docs assembles package docs here (config-generator manifest too)
-/doc/libraries/*/
-/doc/plugins/*/
-/packages/tools/docs/nx-doc-projects.json
+# Docs aggregation: config-generator writes this manifest; sync-docs writes the assembled
+# docs/.gitignore for the per-package folders it copies in.
+/apps/docusaurus/nx-doc-projects.json

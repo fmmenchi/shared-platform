@@ -92,7 +92,7 @@
         "createRelease": "github"
       }
     },
-    "projects": ["packages/*/*", "!packages/tools/docs"]
+    "projects": ["packages/*/*"]
   },
   "analytics": false,
   "pluginsConfig": {
