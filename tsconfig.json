@@ -23,6 +23,9 @@
     },
     {
       "path": "./packages/plugins/notify"
+    },
+    {
+      "path": "./packages/tools/ci"
     }
   ],
   "compilerOptions": {}

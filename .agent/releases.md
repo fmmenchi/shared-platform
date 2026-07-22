@@ -32,7 +32,7 @@
   (serialized by a `concurrency` group). Auth is the built-in `GITHUB_TOKEN`
   (`contents:write` + `packages:write`) — no PAT.
 - **Scoped to affected projects.** The job versions only the projects nx marks **affected** by the
-  push — computed by `.github/scripts/affected-releasable.mjs` (`nx show projects --affected --base
+  push — computed by `packages/tools/ci (affected-releasable)` (`nx show projects --affected --base
 <before> --head <sha>`, intersected with the non-private packages) — and runs
   `nx release --projects=<those>`. `nx affected` is **input-aware** (root files like `AGENTS.md` /
   workflows aren't project inputs, so they don't cascade) and **dependency-aware** (dependents are
