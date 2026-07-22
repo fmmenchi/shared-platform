@@ -33,9 +33,10 @@ is assembled by two executors, so `build`/`serve` depend on them (see
   the dev server. `node:fs` only — no `fs-extra`; a JSON manifest — no runtime `.ts` import.
 - **generator `project-doc`** — scaffolds `<projectRoot>/docs/index.md` from the project's
   package.json (the consistent starting point for a new page).
-- **generator `site`** — scaffolds a Docusaurus site. ⚠️ It predates the aggregation model above
-  (still scaffolds a direct-serve site under `packages/tools/`); refreshing it to emit the
-  co-located `apps/` layout with the two executors is a tracked follow-up.
+- **generator `site`** — scaffolds the aggregating site itself under `apps/<name>` (`scope:app`,
+  default `apps/docs`): the `docusaurus.config` with `path: 'docs'`, the `config-generator` +
+  `sync-docs` targets wired into `build`/`serve`, a co-located `docs/` with a landing page and the
+  Libraries/Plugins `_category_.json` markers, and a `.gitignore` for the manifest.
 
 Conventions: destination folder = the **unscoped** package name (`@fmmenchi/notify` → `notify`) so
 it is unique and collision-free. Cross-package links resolve within the assembled tree

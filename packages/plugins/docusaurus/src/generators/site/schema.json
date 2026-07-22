@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/schema",
   "$id": "Site",
-  "title": "Generate a Docusaurus docs site for the repo's human docs",
-  "description": "Single-instance site that reads the repository's docs folder DIRECTLY (no copying, no sync, no aggregation): the site tree IS the docs folder you already edit.",
+  "title": "Generate a Docusaurus docs site that aggregates per-package docs",
+  "description": "Scaffolds a non-published docs site under apps/ (scope:app). Workspace docs are authored in the site's co-located docs/; each package's own docs/ folder is assembled in at build time by the config-generator + sync-docs executors.",
   "type": "object",
   "properties": {
     "name": {
@@ -16,12 +16,7 @@
     },
     "directory": {
       "type": "string",
-      "description": "Workspace-relative directory of the site project. Default: packages/tools/<name>."
-    },
-    "docPath": {
-      "type": "string",
-      "description": "Workspace-relative folder holding the human docs the site serves.",
-      "default": "doc"
+      "description": "Workspace-relative directory of the site project. Default: apps/<name>."
     },
     "packageName": {
       "type": "string",

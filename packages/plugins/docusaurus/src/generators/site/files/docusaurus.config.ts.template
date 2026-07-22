@@ -1,17 +1,19 @@
 import type { Config } from '@docusaurus/types';
 
 /**
- * Single-instance docs site reading the repo's human docs DIRECTLY from
- * `<%= docPath %>/` — no copying, no sync, no aggregation: the tree you see is
- * the tree you edit, and the dev server watches the source natively.
+ * Single-instance docs site over the co-located `docs/`. Workspace docs are
+ * authored there directly; per-package docs live in each package's `docs/`
+ * folder and are assembled under `docs/{libraries,plugins}/` by the
+ * `@fmmenchi/nx-docusaurus` config-generator + sync-docs executors (the
+ * `build`/`serve` targets depend on them).
  */
 const config: Config = {
   title: '<%= title %>',
   url: '<%= url %>',
   baseUrl: '<%= baseUrl %>',
-  // Repo-relative links that point outside the docs tree (AGENTS.md, package
-  // sources…) are useful in the repository — warn, don't fail.
-  onBrokenLinks: 'warn',
+  // The assembled tree is self-contained: every in-site link must resolve —
+  // a broken cross-package link fails the build.
+  onBrokenLinks: 'throw',
   markdown: {
     // .md stays CommonMark (docs prose with <placeholders> and {braces} must
     // not be parsed as JSX); .mdx opts into MDX explicitly.
@@ -24,7 +26,7 @@ const config: Config = {
       'classic',
       {
         docs: {
-          path: '<%= offsetToDocs %>',
+          path: 'docs',
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
         },
