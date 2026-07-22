@@ -32,8 +32,10 @@ Three layers — build a neutral notification, pick transport(s), send:
 
 ## Rules
 
-- **Adding a channel = a new `Transport`, not a new package** (`email(...)`, `webhook(...)`). The
-  neutral `Notification` is the seam; keep channel formatting inside its transport.
+- **Adding a channel = a new `Transport`, not a new package** (`email(...)`, `webhook(...)`). Each
+  transport implementation lives in its **own folder** under `lib/transports/<name>/` (Slack is
+  `lib/transports/slack/`); the core (`notification`, `transport.types`, `notify`) stays channel-free.
+  The neutral `Notification` is the seam; keep channel formatting inside its transport.
 - **Pure — no git, no `child_process`, no side effects** beyond `fetch` inside a transport. Builders
   receive already-collected commits, which is what makes it a reusable brick. Commit collection
   (git) lives in the consumer, e.g. `@fmmenchi/nx-notify`.

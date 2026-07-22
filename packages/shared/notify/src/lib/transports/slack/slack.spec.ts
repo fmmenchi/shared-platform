@@ -1,5 +1,8 @@
 import { slack, slackBlocks, toMrkdwn } from './slack.js';
-import { errorNotification, releaseNotification } from './notification.js';
+import {
+  errorNotification,
+  releaseNotification,
+} from '../../notification.js';
 
 /** Slack's shape: a status code, and the truth somewhere else entirely. */
 function slackReplies(body: unknown, status = 200) {

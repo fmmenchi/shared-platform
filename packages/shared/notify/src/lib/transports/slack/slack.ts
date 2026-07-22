@@ -1,5 +1,8 @@
-import type { Notification, NotificationKind } from './notification.types.js';
-import type { Transport } from './transport.types.js';
+import type {
+  Notification,
+  NotificationKind,
+} from '../../notification.types.js';
+import type { Transport } from '../../transport.types.js';
 import type { SlackBlock, SlackConfig } from './slack.types.js';
 
 const ENDPOINT = 'https://slack.com/api/chat.postMessage';
