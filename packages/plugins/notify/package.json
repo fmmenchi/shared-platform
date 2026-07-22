@@ -1,6 +1,7 @@
 {
   "name": "@fmmenchi/nx-notify",
   "version": "0.0.1",
+  "description": "Nx executors that announce releases (with changelog) and errors on Slack from CI, wrapping @fmmenchi/notify.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",

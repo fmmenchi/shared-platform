@@ -1,6 +1,7 @@
 {
   "name": "@fmmenchi/notify",
   "version": "0.0.1",
+  "description": "Channel-agnostic notifications — build a notification once and deliver it to one or many transports (Slack today, email/webhook tomorrow).",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
