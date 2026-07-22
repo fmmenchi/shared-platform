@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Sync project docs",
+  "description": "Copies each doc-enabled project's docs/ folder into the docs app under libraries/ or plugins/, from the manifest config-generator wrote. Supports a continuous watch mode for the dev server.",
+  "type": "object",
+  "properties": {
+    "targetPath": {
+      "type": "string",
+      "description": "Where to assemble the docs, relative to the workspace root."
+    },
+    "watch": {
+      "type": "boolean",
+      "description": "Keep running and re-sync on changes.",
+      "default": false
+    }
+  },
+  "required": ["targetPath"]
+}
