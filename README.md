@@ -20,7 +20,7 @@ packages/
 
 The design system (`@fmmenchi/tokens` + `@fmmenchi/ui-ports` + `@fmmenchi/ui`) is native-first,
 provider-agnostic, Tailwind-themed, with Storybook (MCP) and browser-mode component tests. See
-[ADR-0001](./doc/adr/0001-ui-library-foundations.md) and [.agent/ui.md](./.agent/ui.md).
+[ADR-0001](./doc/adr/0001-ui-library-foundations.md) and [.agents/doc/ui.md](./.agents/doc/ui.md).
 
 `client` and `server` may depend on `shared`, never on each other, and nothing depends on
 `plugins`/`tools` — enforced by ESLint module boundaries and by the workspace dependency graph. Details in [doc/architecture.md](./doc/architecture.md).
@@ -58,5 +58,5 @@ pnpm nx release               # version + changelog + tag + publish
   [styling the design system](./doc/styling.md) ·
   [consuming packages from an app](./doc/consuming-packages.md) ·
   [architecture decision records](./doc/adr)
-- **AI agents** — [AGENTS.md](./AGENTS.md) (hub) + [.agent/](./.agent) topic spokes
+- **AI agents** — [AGENTS.md](./AGENTS.md) (hub) + [.agents/doc/](./.agent) topic spokes
   (`CLAUDE.md` is a symlink to `AGENTS.md`)

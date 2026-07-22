@@ -4,7 +4,7 @@ How `@fmmenchi/ui` is styled, why it is done this way, and what a consumer has t
 version: **we author with Tailwind and CSS Modules, model variants with `cva`, and publish
 precompiled CSS so consumers need no Tailwind of their own.**
 
-> Agent rules (the terse checklist) live in `.agent/ui.md` in the repo. This file is the
+> Agent rules (the terse checklist) live in `.agents/doc/ui.md` in the repo. This file is the
 > human explanation and the rationale behind those rules.
 
 ## The three tools and what each is for
