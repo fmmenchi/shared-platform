@@ -95,6 +95,11 @@
     "projects": ["packages/*/*", "!packages/tools/docs"]
   },
   "analytics": false,
+  "pluginsConfig": {
+    "@nx/js": {
+      "projectsAffectedByDependencyUpdates": "auto"
+    }
+  },
   "targetDefaults": {
     "test": {
       "dependsOn": ["^build"]

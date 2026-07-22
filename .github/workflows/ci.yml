@@ -100,31 +100,22 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Release
-        # Scope the release to projects whose OWN files changed since their last tag.
-        # nx's independent + conventionalCommits attributes root-file changes
-        # (pnpm-lock.yaml, workflows) to ALL projects and bumps every one (nx #34542),
-        # so we compute the changed set with per-project `git log -- <root>` and pass
-        # --projects. A push that touched no project (e.g. only workflows) releases
-        # nothing — which also avoids the empty-release push race. nx still bumps
-        # dependents of the changed set via updateDependents.
+        # Version only the projects nx marks AFFECTED by this push — input-aware (root
+        # files like AGENTS.md / workflows aren't project inputs, so they don't cascade)
+        # and dependency-aware (dependents are affected; `auto` diffs the lockfile). See
+        # .github/scripts/affected-releasable.mjs. This replaces nx release's built-in
+        # "root files apply to ALL projects" cascade (nx #34542). A push affecting no
+        # releasable project releases nothing (which also avoids the empty-release race).
         run: |
           before=$(git tag -l '*@*' | sort)
-          changed=()
-          for dir in packages/*/*; do
-            [ -f "$dir/package.json" ] || continue
-            node -e "process.exit(require('./$dir/package.json').private ? 1 : 0)" || continue
-            name=$(node -p "require('./$dir/package.json').name")
-            tag=$(git tag -l "$name@*" | sort -V | tail -1)
-            if [ -z "$tag" ] || [ -n "$(git log "$tag..HEAD" --oneline -- "$dir")" ]; then
-              changed+=("$name")
-            fi
-          done
-          if [ ${#changed[@]} -eq 0 ]; then
-            echo "No project source changes since the last release — nothing to release."
+          base='${{ github.event.before }}'
+          case "$base" in *[!0]*) ;; *) base='' ;; esac  # all-zero before-sha → consider all
+          projects=$(BASE="$base" HEAD='${{ github.sha }}' node .github/scripts/affected-releasable.mjs)
+          if [ -z "$projects" ]; then
+            echo "No releasable project affected — nothing to release."
           else
-            joined=$(IFS=,; echo "${changed[*]}")
-            echo "Releasing changed projects: $joined"
-            pnpm nx release --yes --projects="$joined"
+            echo "Releasing affected projects: $projects"
+            pnpm nx release --yes --projects="$projects"
           fi
           comm -13 <(printf '%s\n' "$before") <(git tag -l '*@*' | sort) \
             | sed '/^$/d' > "$RUNNER_TEMP/new_tags.txt"
