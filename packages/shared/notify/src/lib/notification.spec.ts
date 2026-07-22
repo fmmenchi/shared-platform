@@ -15,7 +15,9 @@ describe('releaseNotification', () => {
     expect(n.title).toContain('`v1.0.0`');
     expect(n.title).not.toContain('vv');
     expect(n.body).toBeUndefined(); // no changelog → thin
-    expect(n.actions).toEqual([{ label: 'View release', url: 'https://gh/tag/v1.0.0' }]);
+    expect(n.actions).toEqual([
+      { label: 'View release', url: 'https://gh/tag/v1.0.0' },
+    ]);
   });
 
   it('renders structured commits into the markdown body', () => {
@@ -40,10 +42,17 @@ describe('releaseNotification', () => {
 
 describe('errorNotification', () => {
   it('names the source and links back to the run', () => {
-    const n = errorNotification('dev-blog', 'the scan went red', 'https://ci/run/1');
+    const n = errorNotification(
+      'dev-blog',
+      'the scan went red',
+      'https://ci/run/1',
+    );
     expect(n.kind).toBe('error');
     expect(n.title).toContain('dev-blog');
-    expect(n.actions?.[0]).toEqual({ label: 'See the run', url: 'https://ci/run/1' });
+    expect(n.actions?.[0]).toEqual({
+      label: 'See the run',
+      url: 'https://ci/run/1',
+    });
   });
 });
 
@@ -63,9 +72,9 @@ describe('formatChangelog', () => {
   });
 
   it('states an empty range rather than a bare header', () => {
-    expect(formatChangelog({ fromRef: 'a', toRef: 'b', commits: [] })).toContain(
-      'no commits',
-    );
+    expect(
+      formatChangelog({ fromRef: 'a', toRef: 'b', commits: [] }),
+    ).toContain('no commits');
   });
 
   it('caps a long history with an explicit +N more — never a silent cut', () => {

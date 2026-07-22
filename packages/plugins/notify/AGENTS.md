@@ -43,6 +43,7 @@ pnpm nx test @fmmenchi/nx-notify   # node vitest (git parser + executor skip-pat
   "options": { "appName": "dev-blog" }
 }
 ```
+
 CI passes `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` + `RELEASE_VERSION`/`RELEASE_URL`/`RELEASE_FROM`/`RELEASE_TO`.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

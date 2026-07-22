@@ -61,7 +61,8 @@ const runExecutor: PromiseExecutor<ReleaseExecutorSchema> = async (options) => {
   }
 
   /* Dynamic import: this executor is CommonJS and the notify library is ESM. */
-  const { notify, slack, releaseNotification } = await import('@fmmenchi/notify');
+  const { notify, slack, releaseNotification } =
+    await import('@fmmenchi/notify');
 
   try {
     await notify(

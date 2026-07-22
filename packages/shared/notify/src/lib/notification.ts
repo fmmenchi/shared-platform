@@ -12,7 +12,11 @@ const MAX_COMMITS = 15;
  * histories are **capped** at {@link MAX_COMMITS} with an explicit `+N more` — the cut is
  * stated, never silent. Transports convert this markdown to their own format.
  */
-export function formatChangelog({ fromRef, toRef, commits }: Changelog): string {
+export function formatChangelog({
+  fromRef,
+  toRef,
+  commits,
+}: Changelog): string {
   const header = `**Changes:** \`${fromRef}\` → \`${toRef}\``;
   if (commits.length === 0) return `${header}\n_no commits_`;
 

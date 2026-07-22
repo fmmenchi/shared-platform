@@ -14,11 +14,16 @@ const channel = slack({
 
 await notify(
   channel,
-  releaseNotification('myapp', '1.2.0', 'https://github.com/…/releases/tag/v1.2.0', {
-    fromRef: 'e99cade',
-    toRef: '7a831c7',
-    commits: [{ sha: '565fee8', subject: 'fix: …' }],
-  }),
+  releaseNotification(
+    'myapp',
+    '1.2.0',
+    'https://github.com/…/releases/tag/v1.2.0',
+    {
+      fromRef: 'e99cade',
+      toRef: '7a831c7',
+      commits: [{ sha: '565fee8', subject: 'fix: …' }],
+    },
+  ),
 );
 
 // One notification, many channels — the point of the abstraction:
@@ -40,12 +45,12 @@ behaviour a shell script can't guarantee and a unit test can.
 
 ## API
 
-| Export                                             | Purpose                                                       |
-| -------------------------------------------------- | ------------------------------------------------------------- |
-| `notify(transport \| transport[], notification)`   | Fan a notification out to one or many transports.             |
-| `slack({ token, channel })`                        | The Slack `Transport`. Throws on transport error or `ok:false`. |
-| `releaseNotification(appName, version, url, changelog?)` | Neutral release notification; `version` is bare (no `v`). |
-| `errorNotification(appName, message, url)`         | Neutral error alert.                                          |
-| `formatChangelog({fromRef, toRef, commits})`       | Markdown changelog: `from → to` + bullets, capped at 15.     |
+| Export                                                   | Purpose                                                         |
+| -------------------------------------------------------- | --------------------------------------------------------------- |
+| `notify(transport \| transport[], notification)`         | Fan a notification out to one or many transports.               |
+| `slack({ token, channel })`                              | The Slack `Transport`. Throws on transport error or `ok:false`. |
+| `releaseNotification(appName, version, url, changelog?)` | Neutral release notification; `version` is bare (no `v`).       |
+| `errorNotification(appName, message, url)`               | Neutral error alert.                                            |
+| `formatChangelog({fromRef, toRef, commits})`             | Markdown changelog: `from → to` + bullets, capped at 15.        |
 
 For firing these from CI on release, see **`@fmmenchi/nx-notify`** (the Nx executors that wrap this).

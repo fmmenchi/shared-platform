@@ -36,12 +36,12 @@ The `release` executor collects the commits in `from..to` via `git log`, builds 
 changelog and announces it; pass a pre-rendered `body` (e.g. a GitHub Release body) to use that
 verbatim instead. The `error` executor sends an alert with a link back to the run.
 
-| Input                              | From                          |
-| ---------------------------------- | ----------------------------- |
-| `SLACK_BOT_TOKEN` / `SLACK_CHANNEL_ID` | **env** (absent → skips)  |
-| `appName`                          | option                        |
-| `version` / `url`                  | option / `RELEASE_VERSION` · `RELEASE_URL` |
-| `from` / `to` / `body`             | option / `RELEASE_FROM` · `RELEASE_TO` · `RELEASE_BODY` |
+| Input                                  | From                                                    |
+| -------------------------------------- | ------------------------------------------------------- |
+| `SLACK_BOT_TOKEN` / `SLACK_CHANNEL_ID` | **env** (absent → skips)                                |
+| `appName`                              | option                                                  |
+| `version` / `url`                      | option / `RELEASE_VERSION` · `RELEASE_URL`              |
+| `from` / `to` / `body`                 | option / `RELEASE_FROM` · `RELEASE_TO` · `RELEASE_BODY` |
 
 ## Reference
 

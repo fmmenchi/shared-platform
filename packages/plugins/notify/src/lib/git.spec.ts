@@ -2,7 +2,8 @@ import { parseCommits } from './git';
 
 describe('parseCommits', () => {
   it('splits each line into short sha and subject on the first tab', () => {
-    const raw = '565fee8\tfix(mobile): restore stack semantics\n24be908\trefactor: fold goBackOr';
+    const raw =
+      '565fee8\tfix(mobile): restore stack semantics\n24be908\trefactor: fold goBackOr';
 
     expect(parseCommits(raw)).toEqual([
       { sha: '565fee8', subject: 'fix(mobile): restore stack semantics' },
@@ -15,7 +16,10 @@ describe('parseCommits', () => {
 
     /* Only the FIRST tab delimits — the rest belongs to the subject. */
     expect(parseCommits(raw)).toEqual([
-      { sha: '7a831c7', subject: 'Merge pull request #3504 from Wishew/fix\ta\tb' },
+      {
+        sha: '7a831c7',
+        subject: 'Merge pull request #3504 from Wishew/fix\ta\tb',
+      },
     ]);
   });
 

@@ -1,8 +1,5 @@
 import { slack, slackBlocks, toMrkdwn } from './slack.js';
-import {
-  errorNotification,
-  releaseNotification,
-} from '../../notification.js';
+import { errorNotification, releaseNotification } from '../../notification.js';
 
 /** Slack's shape: a status code, and the truth somewhere else entirely. */
 function slackReplies(body: unknown, status = 200) {
@@ -23,7 +20,9 @@ describe('slack transport — send', () => {
   it('posts the notification with the bot token, blocks and fallback text', async () => {
     const fetchMock = slackReplies({ ok: true });
 
-    await slack(config).send(releaseNotification('dev-blog', '1.0.0', 'https://x'));
+    await slack(config).send(
+      releaseNotification('dev-blog', '1.0.0', 'https://x'),
+    );
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://slack.com/api/chat.postMessage');
@@ -68,13 +67,17 @@ describe('slackBlocks', () => {
     );
 
     expect(blocks).toHaveLength(3); // heading + body + actions
-    expect((blocks[0] as { text: { text: string } }).text.text).toContain(':rocket:');
+    expect((blocks[0] as { text: { text: string } }).text.text).toContain(
+      ':rocket:',
+    );
     const button = (blocks[2] as { elements: { url: string }[] }).elements[0];
     expect(button.url).toBe('https://gh');
   });
 
   it('omits the body section when there is none', () => {
-    const blocks = slackBlocks(releaseNotification('app', '1.0.0', 'https://gh'));
+    const blocks = slackBlocks(
+      releaseNotification('app', '1.0.0', 'https://gh'),
+    );
     expect(blocks).toHaveLength(2); // heading + actions only
   });
 

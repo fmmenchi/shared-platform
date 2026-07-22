@@ -26,9 +26,14 @@ const channel = slack({
 
 await notify(
   channel,
-  releaseNotification('myapp', '1.2.0', 'https://github.com/…/releases/tag/v1.2.0', {
-    body: '### Features\n- **auth:** passkeys', // or { fromRef, toRef, commits }
-  }),
+  releaseNotification(
+    'myapp',
+    '1.2.0',
+    'https://github.com/…/releases/tag/v1.2.0',
+    {
+      body: '### Features\n- **auth:** passkeys', // or { fromRef, toRef, commits }
+    },
+  ),
 );
 
 // One notification, many channels — the point of the abstraction:

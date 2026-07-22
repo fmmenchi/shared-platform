@@ -16,15 +16,15 @@ commits it shipped).
 }
 ```
 
-| Input             | From                          | Notes                                           |
-| ----------------- | ----------------------------- | ----------------------------------------------- |
-| `SLACK_BOT_TOKEN` | **env**                       | `xoxb-…` with `chat:write`. Absent → skips.     |
-| `SLACK_CHANNEL_ID`| **env**                       | `C…` (the ID). Absent → skips.                  |
-| `appName`         | option                        | Shown in the message.                           |
-| `version`         | option / `RELEASE_VERSION`    | Bare tag (no `v`). Empty → nothing to announce. |
-| `url`             | option / `RELEASE_URL`        | "View release" button.                          |
-| `from` / `to`     | option / `RELEASE_FROM`/`_TO` | Changelog range. Absent → message without a log.|
-| `includeMerges`   | option (default `true`)       | Keep merge commits in the changelog.            |
+| Input              | From                          | Notes                                            |
+| ------------------ | ----------------------------- | ------------------------------------------------ |
+| `SLACK_BOT_TOKEN`  | **env**                       | `xoxb-…` with `chat:write`. Absent → skips.      |
+| `SLACK_CHANNEL_ID` | **env**                       | `C…` (the ID). Absent → skips.                   |
+| `appName`          | option                        | Shown in the message.                            |
+| `version`          | option / `RELEASE_VERSION`    | Bare tag (no `v`). Empty → nothing to announce.  |
+| `url`              | option / `RELEASE_URL`        | "View release" button.                           |
+| `from` / `to`      | option / `RELEASE_FROM`/`_TO` | Changelog range. Absent → message without a log. |
+| `includeMerges`    | option (default `true`)       | Keep merge commits in the changelog.             |
 
 Secrets are read from the environment, never options — a token must not land in the project graph.
 
@@ -38,6 +38,7 @@ An alert with a link back to the run.
   "options": { "appName": "dev-blog" }
 }
 ```
+
 Inputs: `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` (env), `appName` (option), `message` (option /
 `ERROR_MESSAGE`), `url` (option / `ERROR_URL`).
 
