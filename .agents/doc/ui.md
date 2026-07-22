@@ -1,7 +1,7 @@
 # UI & design system — agent doctrine
 
 The design system lives in `client/` as three packages (settled in
-[ADR-0001](../doc/adr/0001-ui-library-foundations.md)): `@fmmenchi/tokens` (design tokens),
+[ADR-0001](../../apps/docusaurus/docs/adr/0001-ui-library-foundations.md)): `@fmmenchi/tokens` (design tokens),
 `@fmmenchi/ui-ports` (injection contracts), `@fmmenchi/ui` (components). Dependencies point
 downward: `ui → ui-ports`, `ui → tokens`.
 
@@ -18,7 +18,7 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
   app injects adapters (`@fmmenchi/ui-ports`) through one thin `UiProvider`. DS micro-copy is
   self-contained and colocated; `direction` is derived from the locale
   (`Intl.Locale.maximize().script`), never injected. Port design in
-  [ADR-0001](../doc/adr/0001-ui-library-foundations.md).
+  [ADR-0001](../../apps/docusaurus/docs/adr/0001-ui-library-foundations.md).
 - **Structure.** Folder-per-component, one concern per file; component files export **only** the
   component (Fast Refresh), types always in `<name>.types.ts`.
 - **Tests split by kind.** Component behaviour (semantics, interaction, a11y via axe, snapshot) vs
@@ -26,7 +26,7 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
 - **Responsive: mobile-first, container-first.** Base = mobile; a component adapts to **its
   container** (container queries) before the viewport.
 - **Browser support = Baseline: Widely available**, enforced in tooling —
-  [styling](../doc/styling.md#browser-support--baseline).
+  [styling](../../apps/docusaurus/docs/styling.md#browser-support--baseline).
 
 ## Tokens (`@fmmenchi/tokens`) — the theme contract
 
@@ -42,4 +42,4 @@ Rules: [`packages/client/tokens/AGENTS.md`](../packages/client/tokens/AGENTS.md)
 
 `@fmmenchi/ui` is authored with CSS Modules + Tailwind `@apply` + `cva` and **precompiled** to
 scoped CSS (`@fmmenchi/ui/style.css`) so consumers import CSS and **never run Tailwind**. Rationale,
-the adversarial review, and consumer recipes: [styling](../doc/styling.md).
+the adversarial review, and consumer recipes: [styling](../../apps/docusaurus/docs/styling.md).

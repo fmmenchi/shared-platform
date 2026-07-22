@@ -243,6 +243,30 @@ importers:
         specifier: ~4.1.0
         version: 4.1.10(@types/node@24.13.3)(@vitest/browser-playwright@4.1.10)(@vitest/coverage-v8@4.1.10)(@vitest/ui@4.1.10)(jsdom@27.4.0)(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.4.2)(terser@5.49.0)(yaml@2.9.0))
 
+  apps/docusaurus:
+    dependencies:
+      '@docusaurus/core':
+        specifier: ^3.10.2
+        version: 3.10.2(@mdx-js/react@3.1.1(@types/react@19.2.17)(react@19.2.7))(@swc/core@1.15.8(@swc/helpers@0.5.18))(esbuild@0.28.1)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
+      '@docusaurus/plugin-content-docs':
+        specifier: ^3.10.2
+        version: 3.10.2(@mdx-js/react@3.1.1(@types/react@19.2.17)(react@19.2.7))(@swc/core@1.15.8(@swc/helpers@0.5.18))(esbuild@0.28.1)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
+      '@docusaurus/preset-classic':
+        specifier: ^3.10.2
+        version: 3.10.2(@algolia/client-search@5.56.0)(@mdx-js/react@3.1.1(@types/react@19.2.17)(react@19.2.7))(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/react@19.2.17)(esbuild@0.28.1)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(search-insights@2.17.3)(typescript@6.0.3)
+      '@docusaurus/types':
+        specifier: ^3.10.2
+        version: 3.10.2(@swc/core@1.15.8(@swc/helpers@0.5.18))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.19))(esbuild@0.28.1)(html-minifier-terser@7.2.0)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@fmmenchi/nx-docusaurus':
+        specifier: workspace:*
+        version: link:../../packages/plugins/docusaurus
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.7(react@19.2.7)
+
   packages/client/tokens:
     dependencies:
       culori:
@@ -329,30 +353,6 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
-
-  packages/tools/docs:
-    dependencies:
-      '@docusaurus/core':
-        specifier: ^3.10.2
-        version: 3.10.2(@mdx-js/react@3.1.1(@types/react@19.2.17)(react@19.2.7))(@swc/core@1.15.8(@swc/helpers@0.5.18))(esbuild@0.28.1)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
-      '@docusaurus/plugin-content-docs':
-        specifier: ^3.10.2
-        version: 3.10.2(@mdx-js/react@3.1.1(@types/react@19.2.17)(react@19.2.7))(@swc/core@1.15.8(@swc/helpers@0.5.18))(esbuild@0.28.1)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3)
-      '@docusaurus/preset-classic':
-        specifier: ^3.10.2
-        version: 3.10.2(@algolia/client-search@5.56.0)(@mdx-js/react@3.1.1(@types/react@19.2.17)(react@19.2.7))(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/react@19.2.17)(esbuild@0.28.1)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(search-insights@2.17.3)(typescript@6.0.3)
-      '@docusaurus/types':
-        specifier: ^3.10.2
-        version: 3.10.2(@swc/core@1.15.8(@swc/helpers@0.5.18))(clean-css@5.3.3)(cssnano@6.1.2(postcss@8.5.19))(esbuild@0.28.1)(html-minifier-terser@7.2.0)(postcss@8.5.19)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@fmmenchi/nx-docusaurus':
-        specifier: workspace:*
-        version: link:../../plugins/docusaurus
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.7(react@19.2.7)
 
 packages:
   '@11ty/gray-matter@1.0.0':
@@ -23113,7 +23113,7 @@ snapshots:
 
   compressible@2.0.18:
     dependencies:
-      mime-db: 1.52.0
+      mime-db: 1.54.0
 
   compression@1.8.1:
     dependencies:
@@ -24231,7 +24231,7 @@ snapshots:
 
   ext-list@2.2.2:
     dependencies:
-      mime-db: 1.52.0
+      mime-db: 1.54.0
 
   ext-name@5.0.0:
     dependencies:

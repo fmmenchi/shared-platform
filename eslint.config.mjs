@@ -43,6 +43,19 @@ export default [
               onlyDependOnLibsWithTags: ['scope:tools', 'scope:shared'],
             },
             {
+              // Apps are the top of the graph (the docs site); nothing depends on
+              // them and they may consume any layer they need.
+              sourceTag: 'scope:app',
+              onlyDependOnLibsWithTags: [
+                'scope:app',
+                'scope:client',
+                'scope:server',
+                'scope:shared',
+                'scope:plugins',
+                'scope:tools',
+              ],
+            },
+            {
               sourceTag: 'type:util',
               onlyDependOnLibsWithTags: ['type:util'],
             },

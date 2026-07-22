@@ -1,20 +1,24 @@
 # Architecture — agent rules
 
-**Abstract layers only.** No apps, no services, no project implementations. Ship the
-contract/skeleton/mechanism; concretions (brand values, tenant/env config, app wiring) belong to
-the consuming repos. Human rationale: `doc/architecture.md`.
+**Abstract layers only** for the published surface. No product apps, no services, no project
+implementations under `packages/` — ship the contract/skeleton/mechanism; concretions (brand
+values, tenant/env config, app wiring) belong to the consuming repos. The lone non-published
+exception is the internal docs site under `apps/` (see the `apps/` row). Human rationale:
+`../../apps/docusaurus/docs/architecture.md`.
 
-## Layout: `packages/<scope>/<name>`
+## Layout: `packages/<scope>/<name>` (+ `apps/<name>`)
 
-| Scope      | Runs in                         | May depend on       | Examples                                      |
-| ---------- | ------------------------------- | ------------------- | --------------------------------------------- |
-| `shared/`  | anywhere (no DOM, no Node APIs) | `shared` only       | core, api-contracts                           |
-| `client/`  | browser                         | `client`, `shared`  | design system (tokens + ui), analytics client |
-| `server/`  | Node                            | `server`, `shared`  | data access, security, MCP                    |
-| `plugins/` | Nx, dev-time                    | `plugins`, `shared` | Nx plugins (generators, executors)            |
-| `tools/`   | Node, dev/ops-time              | `tools`, `shared`   | scripts                                       |
+| Scope      | Runs in                         | May depend on       | Examples                                               |
+| ---------- | ------------------------------- | ------------------- | ------------------------------------------------------ |
+| `shared/`  | anywhere (no DOM, no Node APIs) | `shared` only       | core, api-contracts                                    |
+| `client/`  | browser                         | `client`, `shared`  | design system (tokens + ui), analytics client          |
+| `server/`  | Node                            | `server`, `shared`  | data access, security, MCP                             |
+| `plugins/` | Nx, dev-time                    | `plugins`, `shared` | Nx plugins (generators, executors)                     |
+| `tools/`   | Node, dev/ops-time              | `tools`, `shared`   | scripts                                                |
+| `apps/`    | the docs site (dev-time)        | any layer           | Docusaurus site (`@fmmenchi/docs`) — **not published** |
 
-No runtime scope depends on `plugins`/`tools`.
+No runtime scope depends on `plugins`/`tools`; nothing depends on `apps/`. `apps/` is **excluded
+from `nx release`** (`nx.json` `release.projects` is `packages/*/*`).
 
 Settled placement calls — don't relitigate:
 
@@ -56,5 +60,6 @@ for `client/*`).
 
 ## pnpm
 
-- Workspace globs: `packages/*` + `packages/*/*` — a new grouping level requires updating them.
+- Workspace globs (`pnpm-workspace.yaml`): `packages/*` + `packages/*/*` + `apps/*` — a new
+  grouping level requires updating them.
 - `allowBuilds` in `pnpm-workspace.yaml` must keep `nx: true` and `@swc/core: true`.

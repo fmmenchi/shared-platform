@@ -1,10 +1,11 @@
 # Architecture
 
 `shared-platform` is the private monorepo of shared layers — UI, AI, data access, security,
-prompts, analytics, MCP. It contains **only libraries**: no apps, no running services. Each
-package is an abstract, independent layer; applications and services live in their own
-repositories and consume these packages from GitHub Packages as `@fmmenchi/<name>` (see
-[consuming-packages](./consuming-packages.md)).
+prompts, analytics, MCP. Under `packages/` it contains **only libraries**: no product apps, no
+running services. Each package is an abstract, independent layer; applications and services live in
+their own repositories and consume these packages from GitHub Packages as `@fmmenchi/<name>` (see
+[consuming-packages](./consuming-packages.md)). The single exception is this very docs site, which
+lives under `apps/` (`scope:app`) and is **not published** — `apps/` is excluded from `nx release`.
 
 ## Why this shape
 

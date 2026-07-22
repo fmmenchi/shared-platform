@@ -1,15 +1,15 @@
 name: Docs
 
-# Deploy the documentation site (packages/tools/docs, serving doc/ directly)
+# Deploy the documentation site (apps/docusaurus, serving its co-located docs/)
 # WITH the component Storybook under /storybook/ to GitHub Pages, on every
-# push to main that touches the docs, the site, or the design system.
+# push to main that touches the site, a package's docs, or the design system.
 on:
   push:
     branches:
       - main
     paths:
-      - 'doc/**'
-      - 'packages/tools/docs/**'
+      - 'apps/docusaurus/**'
+      - 'packages/**/docs/**'
       - 'packages/client/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
@@ -49,7 +49,7 @@ jobs:
       # Storybook rides along under /storybook/ (its static build uses
       # relative asset paths, so any subpath works).
       - run: pnpm nx run @fmmenchi/ui:build-storybook
-      - run: cp -r packages/client/ui/storybook-static packages/tools/docs/build/storybook
+      - run: cp -r packages/client/ui/storybook-static apps/docusaurus/build/storybook
 
       - uses: actions/configure-pages@v5
         with:
@@ -57,7 +57,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v4
         with:
-          path: packages/tools/docs/build
+          path: apps/docusaurus/build
 
   deploy:
     needs: build

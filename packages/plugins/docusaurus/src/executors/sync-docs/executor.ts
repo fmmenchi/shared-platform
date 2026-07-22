@@ -5,7 +5,11 @@ import { join } from 'node:path';
 
 import { configFileName } from '../../shared/constants';
 import type { DocusaurusProjectsConfig } from '../../shared/types';
-import { syncAllProjects, watchAllProjects } from './lib/sync-utils';
+import {
+  syncAllProjects,
+  watchAllProjects,
+  writeAggregationGitignore,
+} from './lib/sync-utils';
 import type { SyncDocsExecutorSchema } from './schema';
 
 /**
@@ -13,7 +17,8 @@ import type { SyncDocsExecutorSchema } from './schema';
  *
  * Reads the manifest `config-generator` wrote, copies every listed project's docs into
  * `<targetPath>/{libraries,plugins}/<folder>`, then yields success to unblock the build.
- * A continuous **watch** mode (for the dev server) keeps running and re-syncs on change.
+ * Also writes the `.gitignore` that keeps those assembled folders out of git — they are
+ * rebuilt on every sync. A continuous **watch** mode (for the dev server) re-syncs on change.
  *
  * An async generator so it works as an Nx continuous executor (`yield { success }`).
  */
@@ -39,6 +44,7 @@ export default async function* syncDocsExecutor(
 
   const targetRoot = join(workspaceRoot, options.targetPath);
   mkdirSync(targetRoot, { recursive: true });
+  writeAggregationGitignore(targetRoot);
 
   syncAllProjects(workspaceRoot, targetRoot, config);
   yield { success: true };

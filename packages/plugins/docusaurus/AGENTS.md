@@ -16,27 +16,33 @@ pnpm nx test @fmmenchi/nx-docusaurus   # node vitest (Tree-based generator specs
 ## Design — docs live in the packages, the site aggregates them
 
 Per-package docs live in each project's `docs/` folder (with the code); workspace docs (ADRs,
-architecture, styling…) live at the `doc/` root. The site is assembled by two executors, so
-`build`/`serve` depend on them (see [ADR-0004](../../../doc/adr/0004-docs-aggregation.md)).
+architecture, styling…) live in the site's own co-located `docs/` (`apps/docusaurus/docs`). The site
+is assembled by two executors, so `build`/`serve` depend on them (see
+[ADR-0004](../../../apps/docusaurus/docs/adr/0004-docs-aggregation.md)).
 
 - **`config-generator`** — scans the workspace for projects that ship a `docs/` folder (with a
   `.md`/`.mdx` or `_category_.json`) and writes `nx-doc-projects.json` in the docs app root,
   categorized into `libraries` / `plugins` (a `scope:plugins` tag → plugin). The docs app is
-  skipped; applications too (there are none here). Reads `context.projectsConfigurations` — the
-  project graph IS the discovery.
+  skipped; applications too. Reads `context.projectsConfigurations` — the project graph IS the
+  discovery.
 - **`sync-docs`** — reads the manifest and copies each project's `docs/` into
-  `<targetPath>/{libraries,plugins}/<unscoped-name>` (e.g. `doc/libraries/notify`), replacing what
-  was there. A continuous **watch** mode (`--watch`, async-generator executor) re-syncs on change
-  for the dev server. `node:fs` only — no `fs-extra`; a JSON manifest — no runtime `.ts` import.
+  `<targetPath>/{libraries,plugins}/<unscoped-name>` (e.g. `apps/docusaurus/docs/libraries/notify`),
+  replacing what was there, and writes the `<targetPath>/.gitignore` that keeps those assembled
+  folders out of git — they are rebuilt on every sync, so committing them would duplicate the
+  source. A continuous **watch** mode (`--watch`, async-generator executor) re-syncs on change for
+  the dev server. `node:fs` only — no `fs-extra`; a JSON manifest — no runtime `.ts` import.
 - **generator `project-doc`** — scaffolds `<projectRoot>/docs/index.md` from the project's
   package.json (the consistent starting point for a new page).
-- **generator `site`** — scaffolds the Docusaurus site itself.
+- **generator `site`** — scaffolds a Docusaurus site. ⚠️ It predates the aggregation model above
+  (still scaffolds a direct-serve site under `packages/tools/`); refreshing it to emit the
+  co-located `apps/` layout with the two executors is a tracked follow-up.
 
 Conventions: destination folder = the **unscoped** package name (`@fmmenchi/notify` → `notify`) so
 it is unique and collision-free. Cross-package links resolve within the assembled tree
 (`../../plugins/nx-notify/index.md`) and **`onBrokenLinks: 'throw'`** fails the build on any dead
-link. `_category_.json` at `doc/libraries` / `doc/plugins` labels the sidebar groups (committed;
-the synced `*/` subfolders and `nx-doc-projects.json` are gitignored). The site is `private: true`,
-excluded from `nx release`.
+link. The `_category_.json` sidebar markers (`docs/libraries`, `docs/plugins`) are committed; the
+assembled `*/` subfolders — kept out of git by the `.gitignore` sync-docs writes — and
+`nx-doc-projects.json` are not. The site lives in `apps/` (`scope:app`), stays `private: true`, and
+`apps/` is excluded from `nx release`.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.
