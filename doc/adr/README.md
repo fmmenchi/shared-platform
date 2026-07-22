@@ -16,3 +16,4 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 | [0001](./0001-ui-library-foundations.md)   | UI library foundations                                 | draft (scouting) |
 | 0002                                       | _reserved_ — UI foundations decision (supersedes 0001) | pending          |
 | [0003](./0003-browser-support-baseline.md) | Browser support: Baseline                              | accepted         |
+| [0004](./0004-docs-aggregation.md)         | Docs live in packages; the site aggregates them        | accepted         |

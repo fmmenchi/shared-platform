@@ -44,10 +44,10 @@ expect(validateTheme(brandColors)).toEqual([]);
 
 Checks: completeness · parsable colors · sRGB gamut · WCAG contrast on every declared pair
 (exact ratios on failure). Prefer scaffolding themes with
-[`@fmmenchi/nx-theme-generator`](./nx-theme-generator.md).
+[`@fmmenchi/nx-theme-generator`](../../plugins/nx-theme-generator/index.md).
 
 ## Reference
 
-- Deep dive: [Styling the design system](../styling.md)
-- Consumer recipes: [Consuming packages](../consuming-packages.md)
+- Deep dive: [Styling the design system](../../styling.md)
+- Consumer recipes: [Consuming packages](../../consuming-packages.md)
 - Source: `packages/client/tokens`

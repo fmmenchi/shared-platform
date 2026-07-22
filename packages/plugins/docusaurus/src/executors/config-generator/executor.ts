@@ -33,13 +33,15 @@ const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
 
   for (const [name, cfg] of Object.entries(projects)) {
     if (cfg.root === docRoot) continue; // never sync the docs app into itself
-    if (cfg.projectType !== 'library') continue; // no apps in this monorepo
+    if (cfg.projectType === 'application') continue; // no apps here, but be explicit
 
     const docsPath = join(root, cfg.root, docsFolder);
     if (!existsSync(docsPath)) continue;
     const hasContent =
       existsSync(join(docsPath, '_category_.json')) ||
-      readdirSync(docsPath).some((f) => f.endsWith('.md') || f.endsWith('.mdx'));
+      readdirSync(docsPath).some(
+        (f) => f.endsWith('.md') || f.endsWith('.mdx'),
+      );
     if (!hasContent) continue;
 
     const isPlugin = cfg.tags?.includes('scope:plugins') ?? false;

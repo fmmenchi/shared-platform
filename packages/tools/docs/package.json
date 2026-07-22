@@ -8,8 +8,37 @@
       "type:site"
     ],
     "targets": {
+      "config-generator": {
+        "executor": "@fmmenchi/nx-docusaurus:config-generator",
+        "cache": false
+      },
+      "sync-docs": {
+        "executor": "@fmmenchi/nx-docusaurus:sync-docs",
+        "dependsOn": [
+          "config-generator"
+        ],
+        "options": {
+          "targetPath": "doc"
+        },
+        "cache": false
+      },
+      "watch-sync-docs": {
+        "executor": "@fmmenchi/nx-docusaurus:sync-docs",
+        "dependsOn": [
+          "config-generator"
+        ],
+        "options": {
+          "targetPath": "doc",
+          "watch": true
+        },
+        "continuous": true,
+        "cache": false
+      },
       "start": {
         "executor": "nx:run-commands",
+        "dependsOn": [
+          "watch-sync-docs"
+        ],
         "options": {
           "command": "docusaurus start",
           "cwd": "{projectRoot}"
@@ -17,6 +46,9 @@
       },
       "build": {
         "executor": "nx:run-commands",
+        "dependsOn": [
+          "sync-docs"
+        ],
         "options": {
           "command": "docusaurus build",
           "cwd": "{projectRoot}"
@@ -45,6 +77,7 @@
     "@docusaurus/plugin-content-docs": "^3.10.2",
     "@docusaurus/types": "^3.10.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@fmmenchi/nx-docusaurus": "workspace:*"
   }
 }

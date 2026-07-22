@@ -1,17 +1,17 @@
 import type { Config } from '@docusaurus/types';
 
 /**
- * Single-instance docs site reading the repo's human docs DIRECTLY from
- * `doc/` — no copying, no sync, no aggregation: the tree you see is
- * the tree you edit, and the dev server watches the source natively.
+ * Single-instance docs site over `doc/`. Workspace docs (ADRs, architecture,
+ * styling…) are edited here directly; per-package docs live in each package's
+ * `docs/` folder and are assembled under `doc/{libraries,plugins}/` by the
+ * `@fmmenchi/nx-docusaurus` sync-docs executor (build/serve depend on it).
  */
 const config: Config = {
   title: 'shared-platform',
   url: 'https://fmmenchi.github.io',
   baseUrl: '/shared-platform/',
-  // Repo-relative links that point outside the docs tree (AGENTS.md, package
-  // sources…) are useful in the repository — warn, don't fail.
-  onBrokenLinks: 'warn',
+  // Every in-site link must resolve — a broken cross-package link fails the build.
+  onBrokenLinks: 'throw',
   markdown: {
     // .md stays CommonMark (docs prose with <placeholders> and {braces} must
     // not be parsed as JSX); .mdx opts into MDX explicitly.

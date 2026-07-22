@@ -32,5 +32,5 @@ adapters against this package without importing the component library.
 
 ## Reference
 
-- Port design and i18n ownership: [ADR 0001 — UI library foundations](../adr/0001-ui-library-foundations.md)
+- Port design and i18n ownership: [ADR 0001 — UI library foundations](../../adr/0001-ui-library-foundations.md)
 - Source: `packages/client/ui-ports`

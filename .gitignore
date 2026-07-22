@@ -55,3 +55,8 @@ storybook-static
 # vitest browser-mode artifacts
 .vitest-attachments/
 **/__screenshots__/
+
+# Docs aggregation: sync-docs assembles package docs here (config-generator manifest too)
+/doc/libraries/*/
+/doc/plugins/*/
+/packages/tools/docs/nx-doc-projects.json
