@@ -10,6 +10,9 @@
     "targets": {
       "config-generator": {
         "executor": "@fmmenchi/nx-docusaurus:config-generator",
+        "dependsOn": [
+          "^build"
+        ],
         "cache": false
       },
       "sync-docs": {
