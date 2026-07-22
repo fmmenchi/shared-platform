@@ -1,0 +1,71 @@
+{
+  "name": "@fmmenchi/nx-notify",
+  "version": "0.0.1",
+  "description": "Nx executors that announce releases (with changelog) and errors on Slack from CI, wrapping @fmmenchi/notify.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/plugins/notify"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "packages/plugins/notify/dist",
+          "main": "packages/plugins/notify/src/index.ts",
+          "tsConfig": "packages/plugins/notify/tsconfig.lib.json",
+          "rootDir": "packages/plugins/notify/src",
+          "generatePackageJson": false,
+          "assets": [
+            {
+              "input": "./packages/plugins/notify/src",
+              "glob": "**/!(*.ts)",
+              "output": "."
+            },
+            {
+              "input": "./packages/plugins/notify/src",
+              "glob": "**/*.d.ts",
+              "output": "."
+            }
+          ]
+        }
+      }
+    },
+    "tags": [
+      "scope:plugins",
+      "type:plugin"
+    ]
+  },
+  "dependencies": {
+    "@nx/devkit": "23.1.0",
+    "tslib": "^2.3.0",
+    "@fmmenchi/notify": "workspace:*"
+  },
+  "executors": "./executors.json",
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo",
+    "executors.json"
+  ]
+}

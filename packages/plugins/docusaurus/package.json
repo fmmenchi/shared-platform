@@ -1,5 +1,5 @@
 {
-  "name": "@fmmenchi/docusaurus",
+  "name": "@fmmenchi/nx-docusaurus",
   "version": "0.0.1",
   "type": "commonjs",
   "main": "./dist/index.js",

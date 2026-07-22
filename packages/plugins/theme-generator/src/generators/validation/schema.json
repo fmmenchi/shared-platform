@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/schema",
   "$id": "ThemeValidation",
   "title": "Wire theme validation on a project",
-  "description": "Adds (or updates) a `validate-themes` target running the @fmmenchi/theme-generator:validate executor, registering the given theme CSS files.",
+  "description": "Adds (or updates) a `validate-themes` target running the @fmmenchi/nx-theme-generator:validate executor, registering the given theme CSS files.",
   "type": "object",
   "properties": {
     "project": {

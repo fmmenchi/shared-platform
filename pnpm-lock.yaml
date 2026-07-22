@@ -303,6 +303,18 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  packages/plugins/notify:
+    dependencies:
+      '@fmmenchi/notify':
+        specifier: workspace:*
+        version: link:../../shared/notify
+      '@nx/devkit':
+        specifier: 23.1.0
+        version: 23.1.0(nx@23.1.0(@swc-node/register@1.11.1(@swc/core@1.15.8(@swc/helpers@0.5.18))(@swc/types@0.1.27)(typescript@6.0.3))(@swc/core@1.15.8(@swc/helpers@0.5.18)))
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   packages/plugins/theme-generator:
     dependencies:
       '@nx/devkit':
@@ -325,6 +337,12 @@ importers:
         version: 2.8.1
 
   packages/shared/core:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
+  packages/shared/notify:
     dependencies:
       tslib:
         specifier: ^2.3.0

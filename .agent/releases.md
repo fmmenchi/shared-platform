@@ -24,10 +24,18 @@
   (`gh pr merge --merge`; `nx release` reads the individual commits).
 - **Never merge a PR autonomously** — only on the user's explicit command.
 
-## Release model — independent per package
+## Release model — independent per package, automated in CI
 
 - `projectsRelationship: "independent"`; tags `{projectName}@{version}`; per-project
   `CHANGELOG.md` + GitHub Release; `preVersionCommand` builds all.
+- **Automated:** every green push to `main` runs the `release` job in `.github/workflows/ci.yml`,
+  which versions each package from its commits, tags, creates the GitHub Release and publishes.
+  Auth is the built-in `GITHUB_TOKEN` (`contents:write` + `packages:write`) — no PAT.
+- `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
+  the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
+- Each GitHub Release fires `.github/workflows/notify-release.yml` → one Slack message per package,
+  built from the release body by `@fmmenchi/notify`. Needs repo secrets `SLACK_BOT_TOKEN` +
+  `SLACK_CHANNEL_ID`; absent → the notify step skips green.
 
 ## Publishing — GitHub Packages
 
@@ -40,7 +48,8 @@
 ## Commands
 
 ```bash
-pnpm nx release --dry-run            # always allowed
-pnpm nx release --first-release      # first ever release
-pnpm nx release                      # only on the user's explicit command
+pnpm nx release --dry-run            # always allowed (preview)
+pnpm nx release --first-release      # first ever release (no {projectName}@{version} tag yet)
+pnpm nx release                      # a maintainer's local release; CI does this automatically on
+                                     # every push to main, so rarely needed by hand
 ```

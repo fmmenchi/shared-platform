@@ -83,8 +83,8 @@ scaffold always matches the tokens version you have installed, and validation is
 one:
 
 ```bash
-pnpm add -D @fmmenchi/theme-generator
-pnpm nx g @fmmenchi/theme-generator:theme acme --project=web
+pnpm add -D @fmmenchi/nx-theme-generator
+pnpm nx g @fmmenchi/nx-theme-generator:theme acme --project=web
 ```
 
 This creates `apps/web/src/themes/acme.css` (every color role, starting from the light reference

@@ -1,8 +1,8 @@
 ---
-title: '@fmmenchi/theme-generator'
+title: '@fmmenchi/nx-theme-generator'
 ---
 
-# @fmmenchi/theme-generator
+# @fmmenchi/nx-theme-generator
 
 Nx plugin for brand themes: **scaffold a complete theme from the tokens contract you have
 installed, and gate it in CI** — one command wires both. The scaffold is instantiated at
@@ -11,14 +11,14 @@ generation time from your installed `@fmmenchi/tokens`, so it cannot drift from 
 ## Install
 
 ```bash
-pnpm add -D @fmmenchi/theme-generator
+pnpm add -D @fmmenchi/nx-theme-generator
 ```
 
 ## Usage
 
 ```bash
 # Scaffold apps/web/src/themes/acme.css + wire the validate-themes target
-pnpm nx g @fmmenchi/theme-generator:theme acme --project=web
+pnpm nx g @fmmenchi/nx-theme-generator:theme acme --project=web
 
 # The CI gate: completeness, sRGB gamut, WCAG contrast with exact ratios
 pnpm nx run web:validate-themes

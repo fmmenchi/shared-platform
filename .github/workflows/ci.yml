@@ -38,12 +38,10 @@ jobs:
 
       - run: pnpm nx run-many -t typecheck build lint test build-storybook
 
-  # Preview of what `nx release` would publish from the current main — versions,
-  # changelogs, GitHub releases. Dry-run ONLY: it never versions, tags or
-  # publishes. Informational (does not gate); a real release is still a manual,
-  # explicit `nx release` by a maintainer.
+  # Preview on PRs: what `nx release` WOULD publish — versions, changelogs, GitHub
+  # releases. Dry-run only, never versions/tags/publishes. Informational.
   release-preview:
-    if: github.event_name == 'push'
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -63,3 +61,44 @@ jobs:
         run: pnpm nx release --dry-run --skip-publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Trunk-based release: every green push to main versions each package from its
+  # conventional commits, tags {projectName}@{version}, creates the per-project GitHub
+  # Release, and publishes to GitHub Packages. Each Release fires notify-release.yml, so
+  # every published package announces itself on Slack. Auth is the built-in GITHUB_TOKEN
+  # (contents:write for tags/releases, packages:write to publish) — no PAT.
+  release:
+    needs: main
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          registry-url: 'https://npm.pkg.github.com'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Release
+        # No --first-release needed: fallbackCurrentVersionResolver=disk resolves the
+        # version and changelog.automaticFromRef starts the changelog from the first
+        # commit when no {projectName}@{version} tag exists yet.
+        run: pnpm nx release --yes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

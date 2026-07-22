@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 // Node-environment tests for the generators (Tree-based) and the executor.
 export default defineConfig({
   test: {
-    name: '@fmmenchi/docusaurus',
+    name: '@fmmenchi/nx-docusaurus',
     watch: false,
     globals: true,
     environment: 'node',

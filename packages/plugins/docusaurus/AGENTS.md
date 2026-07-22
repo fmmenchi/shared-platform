@@ -1,4 +1,4 @@
-# AGENTS.md — @fmmenchi/docusaurus
+# AGENTS.md — @fmmenchi/nx-docusaurus
 
 Nx plugin: scaffold a Docusaurus site that serves the repo's human docs (`doc/`) DIRECTLY. Part of
 `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md). Scope
@@ -7,10 +7,10 @@ Nx plugin: scaffold a Docusaurus site that serves the repo's human docs (`doc/`)
 ## Commands
 
 ```bash
-pnpm nx typecheck @fmmenchi/docusaurus
-pnpm nx build @fmmenchi/docusaurus
-pnpm nx lint @fmmenchi/docusaurus
-pnpm nx test @fmmenchi/docusaurus   # node vitest (Tree-based generator specs)
+pnpm nx typecheck @fmmenchi/nx-docusaurus
+pnpm nx build @fmmenchi/nx-docusaurus
+pnpm nx lint @fmmenchi/nx-docusaurus
+pnpm nx test @fmmenchi/nx-docusaurus   # node vitest (Tree-based generator specs)
 ```
 
 ## Design (deliberate, from experience)
