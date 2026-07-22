@@ -94,6 +94,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The release/announce steps run the built @fmmenchi/ci scripts (and it depends on
+      # @fmmenchi/notify, built via ^build).
+      - run: pnpm nx build @fmmenchi/ci
+
       - name: Configure git author
         run: |
           git config user.name "github-actions[bot]"
@@ -102,15 +106,14 @@ jobs:
       - name: Release
         # Version only the projects nx marks AFFECTED by this push — input-aware (root
         # files like AGENTS.md / workflows aren't project inputs, so they don't cascade)
-        # and dependency-aware (dependents are affected; `auto` diffs the lockfile). See
-        # .github/scripts/affected-releasable.mjs. This replaces nx release's built-in
-        # "root files apply to ALL projects" cascade (nx #34542). A push affecting no
-        # releasable project releases nothing (which also avoids the empty-release race).
+        # and dependency-aware (dependents are affected; `auto` diffs the lockfile). The
+        # CI-only part (resolving the base) lives here; the logic is packages/tools/ci.
+        # This replaces nx release's "root files apply to ALL projects" cascade (nx #34542).
         run: |
           before=$(git tag -l '*@*' | sort)
           base='${{ github.event.before }}'
-          case "$base" in *[!0]*) ;; *) base='' ;; esac  # all-zero before-sha → consider all
-          projects=$(BASE="$base" HEAD='${{ github.sha }}' node .github/scripts/affected-releasable.mjs)
+          case "$base" in *[!0]*) ;; *) base=$(git rev-parse HEAD~1) ;; esac  # merge's first parent
+          projects=$(BASE="$base" HEAD='${{ github.sha }}' node packages/tools/ci/dist/affected-releasable.js)
           if [ -z "$projects" ]; then
             echo "No releasable project affected — nothing to release."
           else
@@ -134,13 +137,12 @@ jobs:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pnpm nx build @fmmenchi/notify
           failed=0
           while IFS= read -r tag; do
             [ -z "$tag" ] && continue
             body=$(gh release view "$tag" --json body --jq .body 2>/dev/null || true)
             url=$(gh release view "$tag" --json url --jq .url 2>/dev/null || true)
             RELEASE_TAG="$tag" RELEASE_URL="$url" RELEASE_BODY="$body" \
-              node .github/scripts/notify-release.mjs || failed=1
+              node packages/tools/ci/dist/notify-release.js || failed=1
           done < "$RUNNER_TEMP/new_tags.txt"
           exit $failed

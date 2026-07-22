@@ -40,14 +40,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Build the brick so the script below can import @fmmenchi/notify from dist.
-      - run: pnpm nx build @fmmenchi/notify
+      # Build the @fmmenchi/ci scripts (depends on @fmmenchi/notify, built via ^build).
+      - run: pnpm nx build @fmmenchi/ci
 
       - name: Announce the release to Slack
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-          RELEASE_URL: ${{ github.event.release.html_url }}
-          RELEASE_BODY: ${{ github.event.release.body }}
-        run: node .github/scripts/notify-release.mjs
+          RELEASE_TAG: ${{ github.event.inputs.tag }}
+          RELEASE_URL: ${{ github.event.inputs.url }}
+          RELEASE_BODY: ${{ github.event.inputs.body }}
+        run: node packages/tools/ci/dist/notify-release.js
