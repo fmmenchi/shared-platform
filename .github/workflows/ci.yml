@@ -71,6 +71,11 @@ jobs:
     needs: main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # Serialize releases: two quick merges must not run `nx release` (tag + push)
+    # concurrently and race on the push.
+    concurrency:
+      group: release
+      cancel-in-progress: false
     permissions:
       contents: write
       packages: write
@@ -95,12 +100,32 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Release
-        # No --first-release needed: fallbackCurrentVersionResolver=disk resolves the
-        # version and changelog.automaticFromRef starts the changelog from the first
-        # commit when no {projectName}@{version} tag exists yet.
+        # Scope the release to projects whose OWN files changed since their last tag.
+        # nx's independent + conventionalCommits attributes root-file changes
+        # (pnpm-lock.yaml, workflows) to ALL projects and bumps every one (nx #34542),
+        # so we compute the changed set with per-project `git log -- <root>` and pass
+        # --projects. A push that touched no project (e.g. only workflows) releases
+        # nothing — which also avoids the empty-release push race. nx still bumps
+        # dependents of the changed set via updateDependents.
         run: |
           before=$(git tag -l '*@*' | sort)
-          pnpm nx release --yes
+          changed=()
+          for dir in packages/*/*; do
+            [ -f "$dir/package.json" ] || continue
+            node -e "process.exit(require('./$dir/package.json').private ? 1 : 0)" || continue
+            name=$(node -p "require('./$dir/package.json').name")
+            tag=$(git tag -l "$name@*" | sort -V | tail -1)
+            if [ -z "$tag" ] || [ -n "$(git log "$tag..HEAD" --oneline -- "$dir")" ]; then
+              changed+=("$name")
+            fi
+          done
+          if [ ${#changed[@]} -eq 0 ]; then
+            echo "No project source changes since the last release — nothing to release."
+          else
+            joined=$(IFS=,; echo "${changed[*]}")
+            echo "Releasing changed projects: $joined"
+            pnpm nx release --yes --projects="$joined"
+          fi
           comm -13 <(printf '%s\n' "$before") <(git tag -l '*@*' | sort) \
             | sed '/^$/d' > "$RUNNER_TEMP/new_tags.txt"
           echo "Newly released tags:"; cat "$RUNNER_TEMP/new_tags.txt"

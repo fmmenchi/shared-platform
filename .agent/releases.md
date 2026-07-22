@@ -28,14 +28,20 @@
 
 - `projectsRelationship: "independent"`; tags `{projectName}@{version}`; per-project
   `CHANGELOG.md` + GitHub Release; `preVersionCommand` builds all.
-- **Automated:** every green push to `main` runs the `release` job in `.github/workflows/ci.yml`,
-  which versions each package from its commits, tags, creates the GitHub Release and publishes.
-  Auth is the built-in `GITHUB_TOKEN` (`contents:write` + `packages:write`) — no PAT.
+- **Automated:** every green push to `main` runs the `release` job in `.github/workflows/ci.yml`
+  (serialized by a `concurrency` group). Auth is the built-in `GITHUB_TOKEN`
+  (`contents:write` + `packages:write`) — no PAT.
+- **Scoped to changed projects.** The job computes the projects whose OWN files changed since their
+  last tag (`git log <tag>..HEAD -- <root>`) and runs `nx release --projects=<those>`. This is a
+  workaround for [nx #34542](https://github.com/nrwl/nx/issues/34542): independent +
+  conventionalCommits attributes root-file changes (`pnpm-lock.yaml`, workflows) to ALL projects and
+  would bump every one. nx still bumps dependents of the changed set (`updateDependents`).
 - `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
   the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
-- Each GitHub Release fires `.github/workflows/notify-release.yml` → one Slack message per package,
-  built from the release body by `@fmmenchi/notify`. Needs repo secrets `SLACK_BOT_TOKEN` +
-  `SLACK_CHANNEL_ID`; absent → the notify step skips green.
+- **Slack, inline.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger `on: release`
+  workflows, so the release job announces each newly cut tag itself (one Slack message per package,
+  from the release body, via `@fmmenchi/notify`). Secrets `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID`
+  absent → skips green. `notify-release.yml` is a `workflow_dispatch` manual test only.
 
 ## Publishing — GitHub Packages
 

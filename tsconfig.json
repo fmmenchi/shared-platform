@@ -4,18 +4,6 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/shared/api-contracts"
-    },
-    {
-      "path": "./packages/client/api-client"
-    },
-    {
-      "path": "./packages/server/config"
-    },
-    {
-      "path": "./packages/shared/core"
-    },
-    {
       "path": "./packages/client/tokens"
     },
     {
