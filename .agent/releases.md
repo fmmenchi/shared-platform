@@ -31,11 +31,14 @@
 - **Automated:** every green push to `main` runs the `release` job in `.github/workflows/ci.yml`
   (serialized by a `concurrency` group). Auth is the built-in `GITHUB_TOKEN`
   (`contents:write` + `packages:write`) — no PAT.
-- **Scoped to changed projects.** The job computes the projects whose OWN files changed since their
-  last tag (`git log <tag>..HEAD -- <root>`) and runs `nx release --projects=<those>`. This is a
-  workaround for [nx #34542](https://github.com/nrwl/nx/issues/34542): independent +
-  conventionalCommits attributes root-file changes (`pnpm-lock.yaml`, workflows) to ALL projects and
-  would bump every one. nx still bumps dependents of the changed set (`updateDependents`).
+- **Scoped to affected projects.** The job versions only the projects nx marks **affected** by the
+  push — computed by `.github/scripts/affected-releasable.mjs` (`nx show projects --affected --base
+<before> --head <sha>`, intersected with the non-private packages) — and runs
+  `nx release --projects=<those>`. `nx affected` is **input-aware** (root files like `AGENTS.md` /
+  workflows aren't project inputs, so they don't cascade) and **dependency-aware** (dependents are
+  affected too). `pluginsConfig.@nx/js.projectsAffectedByDependencyUpdates: "auto"` makes a
+  `pnpm-lock.yaml` change affect only the projects whose resolved deps changed. This replaces nx
+  release's built-in "root files apply to ALL projects" cascade ([nx #34542](https://github.com/nrwl/nx/issues/34542)).
 - `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
   the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
 - **Slack, inline.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger `on: release`
