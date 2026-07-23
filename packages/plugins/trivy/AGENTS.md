@@ -47,9 +47,11 @@ pnpm nx run @fmmenchi/nx-trivy:scan-docker # same, via the aquasec/trivy Docker 
 ```
 
 A `.trivyignore.yaml` at the scan root is picked up automatically. shared-platform's own CI dogfoods
-this (`.github/workflows/security.yml`): `nx run @fmmenchi/nx-trivy:scan-docker --cacheDir=<dir>`
-with `<dir>` persisted by `actions/cache` — on push/PR **and a weekly schedule** (a fresh DB catches
-newly-disclosed CVEs). On findings it alerts Slack via `@fmmenchi/nx-notify`. For a local CLI:
-`brew install trivy`.
+this (`.github/workflows/security.yml`): `nx run @fmmenchi/nx-trivy:scan-docker` on **dep changes
+and a weekly schedule** (a fresh DB catches newly-disclosed CVEs); the weekly run's findings alert
+Slack via `@fmmenchi/nx-notify`. The DB is **not** cached there — at a weekly cadence its ~1-day TTL
+makes any restored cache stale, so trivy re-pulls it regardless. `cacheDir` (a host bind-mount for
+`actions/cache`) exists for consumers that scan frequently enough to benefit. Local CLI: `brew
+install trivy`.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

@@ -1,17 +1,31 @@
 name: Security
 
-# Workspace-wide dependency-vulnerability scan, dogfooding @fmmenchi/nx-trivy. Runs as a gate
-# on push/PR AND as a weekly audit — re-checking main against the latest vuln DB catches
-# newly-disclosed CVEs with no code change. Workspace-level by design (single root lockfile)
-# — see ADR-0007.
+# A vulnerability scan is not a test. A test goes red because the CODE changed; a scan goes
+# red because the WORLD changed — a CVE was published against a dependency nobody touched.
+# So it runs on two triggers: when the dependencies change (that is when WE introduce
+# something), and every Monday (that is when the world does). Running it on every push would
+# repeat the same result forty times a week and train us to stop reading it. Dogfoods
+# @fmmenchi/nx-trivy; workspace-level by design (single root lockfile) — see ADR-0007.
 on:
-  push:
-    branches:
-      - main
   pull_request:
+    paths:
+      - 'pnpm-lock.yaml'
+      - '**/package.json'
+      - 'packages/plugins/trivy/**'
+  push:
+    branches: [main]
+    paths:
+      - 'pnpm-lock.yaml'
+      - '**/package.json'
+      - 'packages/plugins/trivy/**'
   schedule:
     - cron: '0 6 * * 1' # weekly audit — Monday 06:00 UTC
   workflow_dispatch:
+    inputs:
+      test_notification:
+        description: 'Post a test message to Slack instead of scanning'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -21,6 +35,7 @@ env:
 
 jobs:
   trivy:
+    name: Dependency vulnerabilities
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -34,33 +49,33 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Trivy DB cache key (daily)
-        id: cachekey
-        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
-
-      # The Trivy vuln DB refreshes ~daily; cache it so it is not re-downloaded each run. The
-      # nx-trivy docker runner bind-mounts this dir when passed as --cacheDir.
-      - uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/trivy-cache
-          key: trivy-db-${{ steps.cachekey.outputs.date }}
-          restore-keys: trivy-db-
-
-      # Dogfood the plugin: docker runner (aquasec/trivy image — no trivy install on the
-      # runner), DB persisted via --cacheDir. .trivyignore.yaml at the root is auto-detected.
-      - name: Trivy dependency-vulnerability scan (workspace-wide)
-        run: |
-          mkdir -p "${{ runner.temp }}/trivy-cache"
-          pnpm nx run @fmmenchi/nx-trivy:scan-docker --cacheDir="${{ runner.temp }}/trivy-cache"
-
-      # On findings, alert Slack — dogfooding @fmmenchi/nx-notify. Skipped on PRs (the
-      # developer sees the red check) and when the Slack secrets are absent. Essential for the
-      # weekly audit, which nobody is watching.
-      - name: Alert Slack on findings
-        if: ${{ failure() && github.event_name != 'pull_request' }}
+      # A notification you cannot test is one you do not have: without this, the Slack path
+      # first runs for real on the Monday it matters — the day you learn the bot was never
+      # invited to the channel. Dogfoods @fmmenchi/nx-notify like the real alert below.
+      - name: Test the Slack wiring
+        if: ${{ inputs.test_notification }}
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-          ERROR_MESSAGE: 'Trivy found CRITICAL/HIGH dependency vulnerabilities. Remediate via a pnpm-workspace.yaml override or suppress in .trivyignore.yaml.'
+          ERROR_MESSAGE: 'Security Slack wiring test — if you can read this, the weekly audit can reach you.'
+          ERROR_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName=shared-platform
+
+      # Dogfood the plugin: docker runner (aquasec/trivy image — no trivy install on the
+      # runner). The DB is NOT cached: its TTL is ~1 day but these runs are a week apart, so a
+      # restored cache is always stale and trivy re-pulls the fresh layer regardless.
+      # .trivyignore.yaml at the repo root is auto-detected.
+      - name: Scan
+        if: ${{ !inputs.test_notification }}
+        run: pnpm nx run @fmmenchi/nx-trivy:scan-docker
+
+      # Only on the weekly run, and only when it broke: a PR already shows a red check, and a
+      # weekly message that arrives regardless is one nobody opens. Missing secrets skip green.
+      - name: Alert Slack on findings
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          ERROR_MESSAGE: 'The weekly Trivy audit found CRITICAL/HIGH dependency vulnerabilities. Remediate via a pnpm-workspace.yaml override or suppress in .trivyignore.yaml.'
           ERROR_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName=shared-platform
