@@ -11,14 +11,15 @@ layers, never project implementations.
 
 ```
 packages/
-  shared/           # isomorphic (no DOM, no Node APIs) — core, api-contracts
-  client/           # browser-only — api-client, tokens, ui-ports, ui (design system)
-  server/           # Node-only — config, …
-  plugins/          # Nx plugins, consumed as devDeps by the other repos
-  tools/            # scripts
+  shared/           # isomorphic (no DOM, no Node APIs) — notify
+  client/           # browser-only — tokens, ui (the design system)
+  server/           # Node-only — (scope reserved; empty)
+  plugins/          # Nx plugins, consumed as devDeps by the other repos — notify, theme-generator, docusaurus
+  tools/            # scripts — ci
+apps/               # non-published — docusaurus (the docs site)
 ```
 
-The design system (`@fmmenchi/tokens` + `@fmmenchi/ui-ports` + `@fmmenchi/ui`) is native-first,
+The design system (`@fmmenchi/tokens` + `@fmmenchi/ui`) is native-first,
 provider-agnostic, Tailwind-themed, with Storybook (MCP) and browser-mode component tests. See
 [ADR-0001](./apps/docusaurus/docs/adr/0001-ui-library-foundations.md) and [.agents/doc/ui.md](./.agents/doc/ui.md).
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
-import type { Direction, UiAdapters } from '@fmmenchi/ui-ports';
+import type { Direction, UiAdapters } from './ports.types.js';
 import {
   UI_FALLBACK_LOCALE,
   isSupportedLocale,
