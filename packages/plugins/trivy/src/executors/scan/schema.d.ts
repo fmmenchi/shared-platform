@@ -3,6 +3,9 @@ export interface ScanExecutorSchema {
   runner?: 'local' | 'docker';
   /** Docker image used when `runner` is `docker`. Default `aquasec/trivy:latest`. */
   dockerImage?: string;
+  /** Host dir to bind-mount as the Trivy DB cache (`runner: docker`) so CI can persist it
+   * via actions/cache. Without it a named volume caches locally. */
+  cacheDir?: string;
   /** Trivy scan target subcommand. `fs` scans a filesystem path. Default `fs`. */
   scanType?: 'fs' | 'repo' | 'config';
   /** Path to scan, relative to the workspace root. Default `.` (the whole workspace). */

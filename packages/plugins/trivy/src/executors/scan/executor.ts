@@ -36,14 +36,20 @@ const DOCKER_IMAGE = 'aquasec/trivy:latest';
 
 /**
  * Wraps the trivy args in a `docker run` that mounts the workspace at `/workspace`
- * and persists the vuln DB in a named volume (so it is not re-downloaded each run).
- * Lets a machine with no local `trivy` still scan — only Docker is required.
+ * and persists the vuln DB (so it is not re-downloaded each run). Lets a machine with no
+ * local `trivy` still scan — only Docker is required. `cacheDir` bind-mounts a host path
+ * for the DB (so CI can persist it via actions/cache); without it a named volume is the
+ * zero-config local default.
  */
 export function buildDockerArgs(
   root: string,
   image: string,
   trivyArgs: string[],
+  cacheDir?: string,
 ): string[] {
+  const cacheMount = cacheDir
+    ? `${cacheDir}:/root/.cache/trivy`
+    : 'trivy-cache:/root/.cache/trivy';
   return [
     'run',
     '--rm',
@@ -52,7 +58,7 @@ export function buildDockerArgs(
     '-w',
     '/workspace',
     '-v',
-    'trivy-cache:/root/.cache/trivy',
+    cacheMount,
     image,
     ...trivyArgs,
   ];
@@ -79,6 +85,7 @@ const runExecutor: PromiseExecutor<ScanExecutorSchema> = async (
             context.root,
             options.dockerImage ?? DOCKER_IMAGE,
             trivyArgs,
+            options.cacheDir,
           ),
         ] as const)
       : (['trivy', trivyArgs] as const);

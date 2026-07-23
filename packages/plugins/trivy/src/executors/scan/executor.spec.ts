@@ -66,4 +66,13 @@ describe('buildDockerArgs', () => {
       '.',
     ]);
   });
+
+  it('bind-mounts a cacheDir when given (CI DB caching), else a named volume', () => {
+    expect(
+      buildDockerArgs('/repo', 'aquasec/trivy:latest', ['fs', '.'], '/tmp/tc'),
+    ).toContain('/tmp/tc:/root/.cache/trivy');
+    expect(
+      buildDockerArgs('/repo', 'aquasec/trivy:latest', ['fs', '.']),
+    ).toContain('trivy-cache:/root/.cache/trivy');
+  });
 });

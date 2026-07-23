@@ -22,8 +22,9 @@ pnpm nx run @fmmenchi/nx-trivy:scan-docker # same, via the aquasec/trivy Docker 
   lockfile, failing on CRITICAL/HIGH. Options mirror Trivy's own flags (`scanType`, `path`,
   `scanners`, `severity`, `failOnFindings`, `format`, `ignorefile`, `extraArgs`).
 - **Two runners** (`runner`): `local` (the `trivy` CLI, default) or `docker` (the `aquasec/trivy`
-  image — mounts the workspace at `/workspace`, caches the vuln DB in a named volume, needs only
-  Docker). The `scan-docker` target is the docker runner pre-set.
+  image — mounts the workspace at `/workspace`, needs only Docker). The `scan-docker` target is the
+  docker runner pre-set. The vuln DB caches in a named volume by default; pass `cacheDir` to
+  bind-mount a host dir instead so **CI can persist it via `actions/cache`**.
 - **`buildTrivyArgs` / `buildDockerArgs`** — the pure arg-vector builders (unit-tested); the
   shell-out itself needs no test.
 
@@ -45,8 +46,10 @@ pnpm nx run @fmmenchi/nx-trivy:scan-docker # same, via the aquasec/trivy Docker 
 "scan": { "executor": "@fmmenchi/nx-trivy:scan" }
 ```
 
-A `.trivyignore.yaml` at the scan root is picked up automatically. In CI, prefer `runner: docker` (the
-`scan-docker` target) — no `trivy` install step, only Docker (which runners already have). For a
-local CLI: `brew install trivy` (or the `aquasecurity/setup-trivy` action).
+A `.trivyignore.yaml` at the scan root is picked up automatically. shared-platform's own CI dogfoods
+this (`.github/workflows/security.yml`): `nx run @fmmenchi/nx-trivy:scan-docker --cacheDir=<dir>`
+with `<dir>` persisted by `actions/cache` — on push/PR **and a weekly schedule** (a fresh DB catches
+newly-disclosed CVEs). On findings it alerts Slack via `@fmmenchi/nx-notify`. For a local CLI:
+`brew install trivy`.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

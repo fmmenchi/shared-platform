@@ -32,14 +32,15 @@ pnpm nx run <project>:scan --runner=docker
 ## Runners
 
 - **`local`** (default) — the `trivy` CLI must be on PATH (`brew install trivy`).
-- **`docker`** — runs the `aquasec/trivy` image, mounting the workspace at `/workspace` and caching
-  the vuln DB in a named volume. Only Docker is required — ideal for CI.
+- **`docker`** — runs the `aquasec/trivy` image, mounting the workspace at `/workspace`. Only Docker
+  is required — ideal for CI. The vuln DB caches in a named volume; pass `cacheDir` to bind-mount a
+  host dir instead so CI can persist it via `actions/cache`.
 
 ## Options
 
 Trivy's own flag vocabulary: `scanners` (default `vuln`), `severity` (default `CRITICAL,HIGH`),
 `failOnFindings` (default `true`), `format`, `ignorefile`, `scanType`, `path`, `extraArgs`; plus
-`runner` and `dockerImage`.
+`runner`, `dockerImage` and `cacheDir` (docker DB cache).
 
 ## Reference
 
