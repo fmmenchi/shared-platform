@@ -1,40 +1,39 @@
 ---
 title: '@fmmenchi/nx-theme-generator'
+sidebar_label: Theme Generator
+sidebar_position: 0
 ---
 
 # @fmmenchi/nx-theme-generator
 
-Nx plugin for brand themes: **scaffold a complete theme from the tokens contract you have
-installed, and gate it in CI** — one command wires both. The scaffold is instantiated at
-generation time from your installed `@fmmenchi/tokens`, so it cannot drift from the contract.
+Scaffold a complete brand theme from the `@fmmenchi/tokens` contract you have installed, and gate
+it in CI — one command wires both.
 
-## Install
+## Prerequisites
 
-```bash
-pnpm add -D @fmmenchi/nx-theme-generator
-```
+- An existing Nx workspace.
+- `@fmmenchi/tokens` installed in that workspace. The plugin bundles nothing: the scaffold source
+  (`vars.css`) and the validator (`validateTheme`) are both resolved **at run time** from your
+  installed tokens version, so themes can never drift from the contract.
+- An **existing** project (app or library) to own the theme. The generator writes into a project;
+  it never creates one.
 
-## Usage
+## 🚀 Guides
 
-```bash
-# Scaffold apps/web/src/themes/acme.css + wire the validate-themes target
-pnpm nx g @fmmenchi/nx-theme-generator:theme acme --project=web
+Quick start:
 
-# The CI gate: completeness, sRGB gamut, WCAG contrast with exact ratios
-pnpm nx run web:validate-themes
-```
+1. [Scaffold a theme](./guides/scaffold-a-theme) — generate a complete `[data-theme]` preset into a
+   project and wire its CI gate.
+2. [Gate themes in CI](./guides/gate-themes-in-ci) — run `validate-themes` on every push.
+3. [Register a hand-written theme](./guides/register-existing-theme) — add a CSS file you authored
+   by hand to the gate.
 
-Edit the generated values, never remove a role, re-run the gate. Failure output is actionable:
+## 📚 Reference
 
-```
-✗ apps/web/src/themes/acme.css is NOT an allowed theme:
-  primary × primary-foreground: 3.91 < 4.5
-```
+- [Generators & executor](./reference/cli) — every generator, the executor, and their real
+  arguments, options and defaults.
 
-Pieces: generator `theme` (scaffold) → generator `validation` (wires the target, idempotent) →
-executor `validate` (runs the installed `@fmmenchi/tokens/validate`).
+## 🏗 Concepts
 
-## Reference
-
-- What a theme must satisfy: [@fmmenchi/tokens](../../libraries/tokens/index.md)
-- Source: `packages/plugins/theme-generator`
+- [Core concepts](./concepts) — why a theme is a complete role assignment, and how run-time
+  resolution keeps the scaffold and the gate in sync with your tokens contract.

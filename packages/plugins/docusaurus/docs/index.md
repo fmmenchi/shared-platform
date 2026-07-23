@@ -1,39 +1,48 @@
 ---
 title: '@fmmenchi/nx-docusaurus'
+sidebar_label: nx-docusaurus
+sidebar_position: 0
 ---
 
 # @fmmenchi/nx-docusaurus
 
-Nx plugin that builds a single Docusaurus site which **aggregates per-package docs**. Each package's
-docs live beside its code in a `docs/` folder; the plugin discovers them and assembles them into the
-site at build time — no second copy to maintain, no drift between a package's README and its site page.
+Nx plugin that builds **one** Docusaurus site by aggregating the `docs/` folders that already live
+beside each package's code — discovered from the Nx project graph, assembled at build time, never
+committed twice.
 
-## Install
+## Prerequisites
 
-```bash
-pnpm add -D @fmmenchi/nx-docusaurus
-```
+- **An Nx workspace.** Every target here runs through Nx (`pnpm nx …`); discovery reads the project
+  graph, so each documented project must be a resolvable Nx project.
+- **The plugin installed as a dev dependency** of the workspace:
 
-## How it works
+  ```bash
+  pnpm add -D @fmmenchi/nx-docusaurus
+  ```
 
-Two executors run before the Docusaurus build (the site's `build`/`serve` depend on them):
+- **The `scope:plugins` tag convention.** A doc-enabled project tagged `scope:plugins` is grouped
+  under _Plugins_; everything else is grouped under _Libraries_. No extra config — the tag is the
+  signal.
+- **Nothing else.** The `site` generator adds Docusaurus 3 + React 19 to the generated site's
+  `package.json`; there is no external service, CLI, or secret to provision.
 
-- **`config-generator`** — scans the workspace for projects that ship a `docs/` folder and writes a
-  manifest, categorising each as a library or a plugin (a `scope:plugins` tag → plugin).
-- **`sync-docs`** — copies each package's `docs/` into the site's `docs/{libraries,plugins}/<name>`,
-  and writes the `.gitignore` that keeps those assembled folders out of git (they are rebuilt on
-  every sync, so committing them would duplicate the source). A `--watch` mode re-syncs for the dev
-  server.
+## 🚀 Guides
 
-Workspace-level docs (ADRs, architecture, styling) are authored directly in the site's co-located
-`docs/`. The site is a non-published app under `apps/`.
+Task recipes, start to finish:
 
-## Scaffold a package's docs page
+1. [Scaffold the docs site](./guides/scaffold-the-site.md) — generate the aggregating site under
+   `apps/`.
+2. [Document a package](./guides/document-a-package.md) — add a `docs/` page to any library or
+   plugin so it feeds the site.
+3. [Build & serve the site](./guides/build-and-serve.md) — the assembly pipeline, the watch dev
+   server, and CI.
 
-```bash
-pnpm nx g @fmmenchi/nx-docusaurus:project-doc @scope/my-lib   # writes <project>/docs/index.md
-```
+## 📚 Reference
 
-## Reference
+- [Executors & generators](./reference/index.md) — `config-generator`, `sync-docs`, `site`,
+  `project-doc`: usage, arguments, options and defaults.
 
-- Source: `packages/plugins/docusaurus`
+## 🏗 Concepts
+
+- [Concepts](./concepts/index.md) — why docs live in the packages, and how the two-executor
+  pipeline turns scattered `docs/` folders into one site.
