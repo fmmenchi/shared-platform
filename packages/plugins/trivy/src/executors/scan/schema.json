@@ -16,6 +16,10 @@
       "description": "Docker image used when runner is docker.",
       "default": "aquasec/trivy:latest"
     },
+    "cacheDir": {
+      "type": "string",
+      "description": "Host dir to bind-mount as the Trivy DB cache (runner: docker) so CI can persist it via actions/cache. Without it a named volume caches locally."
+    },
     "scanType": {
       "type": "string",
       "enum": ["fs", "repo", "config"],

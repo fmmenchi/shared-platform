@@ -38,26 +38,6 @@ jobs:
 
       - run: pnpm nx run-many -t typecheck build lint test build-storybook
 
-  # Workspace-wide security scan (@fmmenchi/nx-trivy): dependency vulnerabilities via the
-  # aquasec/trivy Docker image — no trivy install on the runner, just Docker. Fails on
-  # CRITICAL/HIGH. Workspace-level by design (single root lockfile) — see ADR-0007.
-  security:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Trivy dependency-vulnerability scan (workspace-wide)
-        run: pnpm nx run @fmmenchi/nx-trivy:scan-docker
-
   # Preview on PRs: what `nx release` WOULD publish — versions, changelogs, GitHub
   # releases. Dry-run only, never versions/tags/publishes. Informational.
   release-preview:

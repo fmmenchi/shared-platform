@@ -1,0 +1,81 @@
+name: Security
+
+# A vulnerability scan is not a test. A test goes red because the CODE changed; a scan goes
+# red because the WORLD changed — a CVE was published against a dependency nobody touched.
+# So it runs on two triggers: when the dependencies change (that is when WE introduce
+# something), and every Monday (that is when the world does). Running it on every push would
+# repeat the same result forty times a week and train us to stop reading it. Dogfoods
+# @fmmenchi/nx-trivy; workspace-level by design (single root lockfile) — see ADR-0007.
+on:
+  pull_request:
+    paths:
+      - 'pnpm-lock.yaml'
+      - '**/package.json'
+      - 'packages/plugins/trivy/**'
+  push:
+    branches: [main]
+    paths:
+      - 'pnpm-lock.yaml'
+      - '**/package.json'
+      - 'packages/plugins/trivy/**'
+  schedule:
+    - cron: '0 6 * * 1' # weekly audit — Monday 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      test_notification:
+        description: 'Post a test message to Slack instead of scanning'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0
+
+jobs:
+  trivy:
+    name: Dependency vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      # A notification you cannot test is one you do not have: without this, the Slack path
+      # first runs for real on the Monday it matters — the day you learn the bot was never
+      # invited to the channel. Dogfoods @fmmenchi/nx-notify like the real alert below.
+      - name: Test the Slack wiring
+        if: ${{ inputs.test_notification }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          ERROR_MESSAGE: 'Security Slack wiring test — if you can read this, the weekly audit can reach you.'
+          ERROR_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName=shared-platform
+
+      # Dogfood the plugin: docker runner (aquasec/trivy image — no trivy install on the
+      # runner). The DB is NOT cached: its TTL is ~1 day but these runs are a week apart, so a
+      # restored cache is always stale and trivy re-pulls the fresh layer regardless.
+      # .trivyignore.yaml at the repo root is auto-detected.
+      - name: Scan
+        if: ${{ !inputs.test_notification }}
+        run: pnpm nx run @fmmenchi/nx-trivy:scan-docker
+
+      # Only on the weekly run, and only when it broke: a PR already shows a red check, and a
+      # weekly message that arrives regardless is one nobody opens. Missing secrets skip green.
+      - name: Alert Slack on findings
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          ERROR_MESSAGE: 'The weekly Trivy audit found CRITICAL/HIGH dependency vulnerabilities. Remediate via a pnpm-workspace.yaml override or suppress in .trivyignore.yaml.'
+          ERROR_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName=shared-platform
