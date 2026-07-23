@@ -281,9 +281,6 @@ importers:
       '@fmmenchi/tokens':
         specifier: workspace:*
         version: link:../tokens
-      '@fmmenchi/ui-ports':
-        specifier: workspace:*
-        version: link:../ui-ports
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -299,15 +296,6 @@ importers:
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
-
-  packages/client/ui-ports:
-    dependencies:
-      react:
-        specifier: ^19.0.0
-        version: 19.2.7
       tslib:
         specifier: ^2.3.0
         version: 2.8.1

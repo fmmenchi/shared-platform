@@ -18,3 +18,4 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 | [0003](./0003-browser-support-baseline.md) | Browser support: Baseline                              | accepted         |
 | [0004](./0004-docs-aggregation.md)         | Docs live in packages; the site aggregates them        | accepted         |
 | [0005](./0005-apps-layer-not-published.md) | `apps/` hosts non-published sites; the docs site there | accepted         |
+| [0006](./0006-absorb-ui-ports.md)          | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`        | accepted         |

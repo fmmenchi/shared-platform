@@ -168,6 +168,10 @@ Names are proposals to bikeshed once the shape is validated, not locked.
 
 ## Current direction (spike variant 1 — implemented)
 
+> **Superseded in part by [ADR-0006](./0006-absorb-ui-ports.md):** the `@fmmenchi/ui-ports` package
+> was later absorbed into `@fmmenchi/ui`, so the design system is now two packages (`tokens` + `ui`),
+> not three. The three-package description below is the original spike's record.
+
 Chosen for the first spike, now built in `packages/client/{tokens,ui-ports,ui}`:
 
 - **C → native-first, lightweight a11y.** Build on native elements (`<button>`, `<dialog>`) and

@@ -1,9 +1,10 @@
 # UI & design system — agent doctrine
 
-The design system lives in `client/` as three packages (settled in
-[ADR-0001](../../apps/docusaurus/docs/adr/0001-ui-library-foundations.md)): `@fmmenchi/tokens` (design tokens),
-`@fmmenchi/ui-ports` (injection contracts), `@fmmenchi/ui` (components). Dependencies point
-downward: `ui → ui-ports`, `ui → tokens`.
+The design system lives in `client/` as two packages (foundations in
+[ADR-0001](../../apps/docusaurus/docs/adr/0001-ui-library-foundations.md); the port package was later
+absorbed, [ADR-0006](../../apps/docusaurus/docs/adr/0006-absorb-ui-ports.md)): `@fmmenchi/tokens`
+(design tokens), `@fmmenchi/ui` (components + the injection-port types it re-exports). Dependencies
+point downward: `ui → tokens`.
 
 This spoke is the **cross-package doctrine** (the why/what). For **how to author in `@fmmenchi/ui`**
 — styling, primitives, tests, i18n, component docs, build/packaging — open the package's own hub and
@@ -15,7 +16,8 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
   popover, `<details>`…) + light accessible-name wiring. SSR-safe (no `window`/`document` at module
   top-level).
 - **Provider-agnostic via ports.** The lib bundles no i18n engine, router, icon set or app copy; the
-  app injects adapters (`@fmmenchi/ui-ports`) through one thin `UiProvider`. DS micro-copy is
+  app injects adapters (typed by the injection ports `@fmmenchi/ui` re-exports) through one thin
+  `UiProvider`. DS micro-copy is
   self-contained and colocated; `direction` is derived from the locale
   (`Intl.Locale.maximize().script`), never injected. Port design in
   [ADR-0001](../../apps/docusaurus/docs/adr/0001-ui-library-foundations.md).

@@ -1,7 +1,8 @@
 /**
  * Injection ports — the contracts the app implements so the UI stays
- * provider-agnostic. Zero runtime: interfaces only, so an app can write
- * adapters without importing the component library.
+ * provider-agnostic. Interfaces only (zero runtime): re-exported from the
+ * package barrel, and because an app imports them with `import type`, wiring an
+ * adapter never pulls in the component runtime.
  */
 import type { ComponentType, ReactNode } from 'react';
 

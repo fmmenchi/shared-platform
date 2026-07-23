@@ -7,9 +7,6 @@
       "path": "./packages/client/tokens"
     },
     {
-      "path": "./packages/client/ui-ports"
-    },
-    {
       "path": "./packages/client/ui"
     },
     {
