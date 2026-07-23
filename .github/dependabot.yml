@@ -1,0 +1,49 @@
+version: 2
+
+# Automated dependency-update PRs. Weekly (Monday), aligned with the Trivy weekly audit —
+# every dep-change PR Dependabot opens re-triggers the path-filtered Security workflow, so a
+# bump that introduces a CRITICAL/HIGH vulnerability is caught before it lands.
+#
+# Commit messages are Conventional Commits (`chore(deps)` / `chore(deps-dev)` / `ci(deps)`) so
+# `nx release` parses them without versioning the packages (a dep bump is not a feat/fix).
+updates:
+  # JS/TS dependencies — one root pnpm lockfile drives the whole workspace.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      include: scope
+    labels:
+      - dependencies
+    groups:
+      # Collapse the routine minor/patch churn into a single weekly PR; majors stay separate
+      # so their (potentially breaking) review is not buried.
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # The actions the workflows pin (checkout, setup-node, cache, …).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Etc/UTC
+    commit-message:
+      prefix: ci
+      include: scope
+    labels:
+      - dependencies
+      - ci
+    groups:
+      github-actions:
+        patterns:
+          - '*'
