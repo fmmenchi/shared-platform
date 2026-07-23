@@ -1,47 +1,31 @@
 ---
 title: '@fmmenchi/nx-trivy'
+sidebar_label: nx-trivy
+sidebar_position: 0
 ---
 
 # @fmmenchi/nx-trivy
 
-Nx executor that runs [Trivy](https://trivy.dev) security scans as an Nx target. Defaults to a
-**workspace-wide dependency-vulnerability scan** that fails on CRITICAL/HIGH — the right level for a
-monorepo, where deps resolve through a single root lockfile.
+Nx executor that runs [Trivy](https://trivy.dev) security scans as an Nx target — a
+**workspace-wide dependency-vulnerability scan** that fails on CRITICAL/HIGH by default.
 
-## Install
+## Prerequisites
 
-```bash
-pnpm add -D @fmmenchi/nx-trivy
-```
+- An existing **Nx workspace** (the executor scans from `context.root`, the workspace root).
+- **One** of the two runners:
+  - **local** (default) — the `trivy` CLI on PATH (`brew install trivy`), or
+  - **docker** — Docker on PATH; the scan runs inside the `aquasec/trivy` image, so no local
+    `trivy` install is needed.
 
-## Usage
+## 🚀 Guides
 
-Add the target to any project — it scans the workspace root either way:
+- [Run a scan](./guides/run-a-scan.md) — add the target, pick a runner, tune severity and scanners.
+- [Scan in CI](./guides/scan-in-ci.md) — wire `scan-docker` into a workflow and cache the vuln DB.
 
-```jsonc
-"scan": { "executor": "@fmmenchi/nx-trivy:scan" }
-```
+## 📚 Reference
 
-```bash
-# trivy fs --scanners vuln --severity CRITICAL,HIGH --exit-code 1 .
-pnpm nx run <project>:scan
-# same, via the aquasec/trivy Docker image — no local trivy needed
-pnpm nx run <project>:scan --runner=docker
-```
+- [Executors](./reference/executors.md) — the `scan` executor and both targets, with every option.
 
-## Runners
+## 🏗 Concepts
 
-- **`local`** (default) — the `trivy` CLI must be on PATH (`brew install trivy`).
-- **`docker`** — runs the `aquasec/trivy` image, mounting the workspace at `/workspace`. Only Docker
-  is required — ideal for CI. The vuln DB caches in a named volume; pass `cacheDir` to bind-mount a
-  host dir instead so CI can persist it via `actions/cache`.
-
-## Options
-
-Trivy's own flag vocabulary: `scanners` (default `vuln`), `severity` (default `CRITICAL,HIGH`),
-`failOnFindings` (default `true`), `format`, `ignorefile`, `scanType`, `path`, `extraArgs`; plus
-`runner`, `dockerImage` and `cacheDir` (docker DB cache).
-
-## Reference
-
-- Source: `packages/plugins/trivy`
+- [Concepts](./concepts/index.md) — why the scan is workspace-level, and how the runners work inside.

@@ -1,49 +1,37 @@
 ---
 title: '@fmmenchi/nx-notify'
+sidebar_label: Notify
+sidebar_position: 0
 ---
 
 # @fmmenchi/nx-notify
 
-Nx **executors that fire notifications from CI**, wrapping the
-[@fmmenchi/notify](../../libraries/notify/index.md) brick. Two events today — `announce-release` and
-`announce-error` — and room for more.
-Secrets come from the environment (never options, so a token never lands in the project graph);
-missing config skips green.
+Nx executors that fire Slack notifications from CI — a freshly cut release with its changelog, or
+an error alert — wrapping the `@fmmenchi/notify` brick.
 
-## Install
+## Prerequisites
 
-```bash
-pnpm add -D @fmmenchi/nx-notify @fmmenchi/notify
-```
+- An existing **Nx workspace**. This plugin ships two executors and no generators.
+- **`@fmmenchi/notify`** installed alongside it — the plugin dynamic-imports this ESM brick to
+  build and send the Slack message.
+- A **Slack bot token and channel id** in the environment as `SLACK_BOT_TOKEN` and
+  `SLACK_CHANNEL_ID`. They never travel as options; a missing pair skips green.
+- **git** on the runner for `announce-release`'s changelog range (`from..to` via `git log`) — not
+  needed when you pass a pre-rendered `body`.
 
-## Usage
+## 🚀 Guides
 
-```jsonc
-// a target on the consuming project — appName defaults to the project
-"announce-release": {
-  "executor": "@fmmenchi/nx-notify:announce-release"
-}
-```
+- [Announce a release](./guides/announce-a-release) — wire `announce-release` into a release job
+  and send a changelog to Slack.
+- [Announce an error](./guides/announce-an-error) — fire `announce-error` as a CI alert with a link
+  back to the run.
 
-```bash
-# CI passes the secrets + the release facts as env / options:
-SLACK_BOT_TOKEN=… SLACK_CHANNEL_ID=… \
-RELEASE_VERSION=1.2.0 RELEASE_URL=… RELEASE_FROM=<sha> RELEASE_TO=<sha> \
-  pnpm nx run myapp:announce-release
-```
+## 📚 Reference
 
-The `announce-release` executor collects the commits in `from..to` via `git log`, builds a
-Wishew-style changelog and announces it; pass a pre-rendered `body` (e.g. a GitHub Release body) to
-use that verbatim instead. The `announce-error` executor sends an alert with a link back to the run.
+- [Executors](./reference/executors) — every option of `announce-release` and `announce-error`,
+  their env fallbacks, and defaults.
 
-| Input                                  | From                                                    |
-| -------------------------------------- | ------------------------------------------------------- |
-| `SLACK_BOT_TOKEN` / `SLACK_CHANNEL_ID` | **env** (absent → skips)                                |
-| `appName`                              | option                                                  |
-| `version` / `url`                      | option / `RELEASE_VERSION` · `RELEASE_URL`              |
-| `from` / `to` / `body`                 | option / `RELEASE_FROM` · `RELEASE_TO` · `RELEASE_BODY` |
+## 🏗 Concepts
 
-## Reference
-
-- The notification brick it wraps: [@fmmenchi/notify](../../libraries/notify/index.md)
-- Source: `packages/plugins/notify`
+- [Concepts](./concepts) — why secrets stay out of options, why a missing config skips green, and
+  how a CommonJS plugin sends through an ESM brick.
