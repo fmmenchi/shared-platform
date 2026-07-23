@@ -1,0 +1,9 @@
+{
+  "executors": {
+    "scan": {
+      "implementation": "./dist/executors/scan/executor",
+      "schema": "./dist/executors/scan/schema.json",
+      "description": "Run a Trivy security scan (default: workspace-wide dependency vulnerabilities)"
+    }
+  }
+}

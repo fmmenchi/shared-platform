@@ -23,6 +23,9 @@
     },
     {
       "path": "./packages/tools/ci"
+    },
+    {
+      "path": "./packages/plugins/trivy"
     }
   ],
   "compilerOptions": {}

@@ -1,0 +1,18 @@
+# Trivy vulnerability suppressions (structured). The workspace is scanned by
+# @fmmenchi/nx-trivy; this file lives at the scan root so Trivy auto-detects it (both the
+# local and the docker runner, where the workspace mounts at /workspace).
+#
+# POLICY — prefer FIXING over ignoring:
+#   1. Bump the dependency. For a TRANSITIVE dep, add an `overrides` entry in
+#      pnpm-workspace.yaml (scope it to the vulnerable version line to avoid breaking other
+#      consumers), then re-scan.
+#   2. Add an entry below ONLY when there is no fix, or the risk is formally accepted —
+#      always with a `statement` (why) AND `expired_at` (so it is re-reviewed), e.g.:
+#
+#        - id: CVE-2026-16221
+#          statement: "Vulnerable code path not reached in our usage."
+#          expired_at: 2026-12-31
+#
+# Currently empty: every finding so far was remediated via pnpm-workspace.yaml `overrides`
+# (axios, brace-expansion, fast-uri, serialize-javascript), not suppressed.
+vulnerabilities: []

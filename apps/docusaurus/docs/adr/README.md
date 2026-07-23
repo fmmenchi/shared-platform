@@ -11,11 +11,12 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## Index
 
-| ADR                                        | Title                                                  | Status           |
-| ------------------------------------------ | ------------------------------------------------------ | ---------------- |
-| [0001](./0001-ui-library-foundations.md)   | UI library foundations                                 | draft (scouting) |
-| 0002                                       | _reserved_ — UI foundations decision (supersedes 0001) | pending          |
-| [0003](./0003-browser-support-baseline.md) | Browser support: Baseline                              | accepted         |
-| [0004](./0004-docs-aggregation.md)         | Docs live in packages; the site aggregates them        | accepted         |
-| [0005](./0005-apps-layer-not-published.md) | `apps/` hosts non-published sites; the docs site there | accepted         |
-| [0006](./0006-absorb-ui-ports.md)          | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`        | accepted         |
+| ADR                                                 | Title                                                  | Status           |
+| --------------------------------------------------- | ------------------------------------------------------ | ---------------- |
+| [0001](./0001-ui-library-foundations.md)            | UI library foundations                                 | draft (scouting) |
+| 0002                                                | _reserved_ — UI foundations decision (supersedes 0001) | pending          |
+| [0003](./0003-browser-support-baseline.md)          | Browser support: Baseline                              | accepted         |
+| [0004](./0004-docs-aggregation.md)                  | Docs live in packages; the site aggregates them        | accepted         |
+| [0005](./0005-apps-layer-not-published.md)          | `apps/` hosts non-published sites; the docs site there | accepted         |
+| [0006](./0006-absorb-ui-ports.md)                   | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`        | accepted         |
+| [0007](./0007-security-scanning-workspace-level.md) | Security scanning is workspace-level                   | accepted         |
