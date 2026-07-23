@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "Trivy scan",
+  "description": "Runs a Trivy security scan from the workspace root. Defaults to a workspace-wide dependency-vulnerability scan that fails on CRITICAL/HIGH findings.",
+  "type": "object",
+  "properties": {
+    "runner": {
+      "type": "string",
+      "enum": ["local", "docker"],
+      "description": "How to run Trivy: the local `trivy` CLI, or the aquasec/trivy Docker image.",
+      "default": "local"
+    },
+    "dockerImage": {
+      "type": "string",
+      "description": "Docker image used when runner is docker.",
+      "default": "aquasec/trivy:latest"
+    },
+    "scanType": {
+      "type": "string",
+      "enum": ["fs", "repo", "config"],
+      "description": "Trivy scan target subcommand. `fs` scans a filesystem path.",
+      "default": "fs"
+    },
+    "path": {
+      "type": "string",
+      "description": "Path to scan, relative to the workspace root.",
+      "default": "."
+    },
+    "scanners": {
+      "type": "string",
+      "description": "Trivy --scanners (comma-separated), e.g. vuln,secret,misconfig.",
+      "default": "vuln"
+    },
+    "severity": {
+      "type": "string",
+      "description": "Trivy --severity — the levels that count.",
+      "default": "CRITICAL,HIGH"
+    },
+    "failOnFindings": {
+      "type": "boolean",
+      "description": "Fail the target when findings at/above `severity` exist (--exit-code 1).",
+      "default": true
+    },
+    "format": {
+      "type": "string",
+      "description": "Trivy --format (table, json, sarif, …).",
+      "default": "table"
+    },
+    "ignorefile": {
+      "type": "string",
+      "description": "Trivy --ignorefile; a .trivyignore at the scan root is picked up automatically."
+    },
+    "extraArgs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Extra raw arguments appended to the trivy invocation."
+    }
+  },
+  "required": []
+}

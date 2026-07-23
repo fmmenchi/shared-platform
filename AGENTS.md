@@ -40,6 +40,12 @@ pnpm nx run-many -t typecheck build lint test build-storybook
 
 Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`.
 
+CI also runs a **workspace security scan** (`@fmmenchi/nx-trivy`, Trivy) that fails on CRITICAL/HIGH
+dependency vulnerabilities. Run it locally with `pnpm nx run @fmmenchi/nx-trivy:scan` (needs the
+`trivy` CLI) or `:scan-docker` (needs only Docker). Remediate by bumping the dep — a
+`pnpm-workspace.yaml` `overrides` entry for a transitive one (scope it to the vulnerable version
+line) — and suppress only unfixable findings in the root `.trivyignore.yaml`.
+
 ## Conventions (essentials)
 
 - **Structure:** `packages/<scope>/<name>` with scopes `shared` (isomorphic), `client` (FE-only),
