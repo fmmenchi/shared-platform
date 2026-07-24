@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "version": 2,
+  "title": "SBOM",
+  "description": "Generates a CycloneDX SBOM for a project's production dependency closure, using an nx-pruned lockfile so Trivy can resolve the package's own deps in a pnpm monorepo. The right supply-chain artifact to attach to a published package's release.",
+  "type": "object",
+  "properties": {
+    "projectName": {
+      "type": "string",
+      "description": "Project to describe. Defaults to the project the target runs on (`project` is reserved by nx)."
+    },
+    "format": {
+      "type": "string",
+      "enum": ["cyclonedx", "spdx-json", "spdx", "github"],
+      "description": "Trivy SBOM output format.",
+      "default": "cyclonedx"
+    },
+    "output": {
+      "type": "string",
+      "description": "Output file, relative to the workspace root. Default: <projectRoot>/sbom.cdx.json."
+    },
+    "runner": {
+      "type": "string",
+      "enum": ["local", "docker"],
+      "description": "How to run Trivy: the local trivy CLI, or the aquasec/trivy Docker image.",
+      "default": "local"
+    },
+    "dockerImage": {
+      "type": "string",
+      "description": "Docker image used when runner is docker.",
+      "default": "aquasec/trivy:latest"
+    }
+  },
+  "required": []
+}

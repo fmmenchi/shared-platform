@@ -6,8 +6,8 @@ sidebar_position: 1
 
 # Executors
 
-Every executor and pre-configured target in `@fmmenchi/nx-trivy`. The plugin ships **one executor**
-(`scan`) and **no generators**.
+Every executor and pre-configured target in `@fmmenchi/nx-trivy`. The plugin ships **two executors**
+(`scan`, `sbom`) and **no generators**.
 
 ---
 
@@ -53,9 +53,42 @@ trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .
 
 ---
 
+## `sbom`
+
+Generates a **CycloneDX SBOM** (software bill of materials) for one project's production dependency
+closure — the artifact to attach to that package's published release.
+
+**Usage**
+
+```bash
+pnpm nx run <project>:sbom --projectName=@fmmenchi/ui [options]
+```
+
+### Options
+
+| Option        | Type     | Default                       | Description                                                                                                        |
+| :------------ | :------- | :---------------------------- | :----------------------------------------------------------------------------------------------------------------- |
+| `projectName` | `string` | the host project              | Project to describe. (`project` is reserved by nx — it redirects the target — so this option is `projectName`.)    |
+| `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                        |
+| `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path). |
+| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image).                                                 |
+| `dockerImage` | `string` | `aquasec/trivy:latest`        | Docker image used when `runner` is `docker`.                                                                       |
+
+### Behaviour
+
+- A pnpm monorepo has **no per-package lockfile**, so Trivy can't read a package's deps by scanning
+  its directory. The executor reconstructs them: nx's `createPackageJson` prunes the project's
+  `package.json` to its real dependency closure and `createLockFile` emits the matching pnpm lock;
+  Trivy reads **that pruned lock** — exactly what a consumer installs.
+- For `cyclonedx`, the SBOM's root component is renamed to the package name and version (Trivy would
+  otherwise root it at the scan path).
+- Same failure contract as `scan`: a missing `trivy`/`docker` binary fails loudly.
+
+---
+
 ## Targets
 
-The plugin's own `nx` config defines two ready-made targets. Both depend on `build`.
+The plugin's own `nx` config defines the ready-made targets below. All depend on `build`.
 
 ### `scan`
 
@@ -85,6 +118,16 @@ rather than dependency vulnerabilities. It skips `node_modules`, `dist`, `build`
 ```bash
 pnpm nx run <project>:scan-secrets         # local
 pnpm nx run <project>:scan-secrets-docker  # via the aquasec/trivy image
+```
+
+### `sbom`
+
+The `sbom` executor with defaults. Pass `--projectName` to describe a package other than the host,
+and `--runner=docker` where no local `trivy` is available (as CI does when attaching SBOMs to
+releases).
+
+```bash
+pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui
 ```
 
 ---
