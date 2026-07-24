@@ -84,6 +84,12 @@
           ]
         }
       },
+      "sbom": {
+        "executor": "@fmmenchi/nx-trivy:sbom",
+        "dependsOn": [
+          "build"
+        ]
+      },
       "build": {
         "executor": "@nx/js:tsc",
         "outputs": [
@@ -117,6 +123,7 @@
   },
   "dependencies": {
     "@nx/devkit": "23.1.0",
+    "@nx/js": "23.1.0",
     "tslib": "^2.3.0"
   },
   "executors": "./executors.json",
