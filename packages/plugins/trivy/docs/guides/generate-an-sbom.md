@@ -44,21 +44,23 @@ project. The SBOM lands at `<projectRoot>/sbom.cdx.json` unless you pass `--outp
 
 :::
 
-With the local runner the `trivy` CLI must be on PATH (`brew install trivy`). No local install? Use
-the Docker runner — it needs only Docker:
+With the local runner the `trivy` CLI must be on PATH (`brew install trivy`). No local install? The
+target ships a **`docker`** configuration that runs the `aquasec/trivy` image — select it with
+`--configuration=docker` (nx reserves `--runner` for its own tasks-runner, so it can't be a CLI
+flag):
 
 ```bash
-pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui --runner=docker
+pnpm nx run @fmmenchi/ui:sbom --configuration=docker
 ```
 
 ## Step 2: Choose the output and format
 
 ```bash
 # a specific path — RELATIVE to the workspace root (it is joined with the root)
-pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui --output=dist/ui.cdx.json
+pnpm nx run @fmmenchi/ui:sbom --output=dist/ui.cdx.json
 
 # SPDX instead of CycloneDX
-pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui --format=spdx-json
+pnpm nx run @fmmenchi/ui:sbom --format=spdx-json
 ```
 
 :::warning[`output` is relative]
@@ -71,7 +73,7 @@ mangled by the join.
 ## In CI
 
 The `release` job in `.github/workflows/ci.yml` attaches an SBOM to every newly published GitHub
-Release: for each new `{project}@{version}` tag it runs `nx run <project>:sbom --runner=docker`
+Release: for each new `{project}@{version}` tag it runs `nx run <project>:sbom --configuration=docker`
 (the runner has Docker but no `trivy`) and uploads the file with `gh release upload`. The step is
 **non-fatal** — the release is already out, so a failed SBOM never fails the job.
 

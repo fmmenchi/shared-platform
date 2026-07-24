@@ -21,12 +21,18 @@ export function isPublishable(pkg: PackageJson): boolean {
  * (the executor runs from the plugin's `dist`, not the host project's). Uncached:
  * the SBOM tracks the whole dependency closure (the lockfile), which a project's
  * own file inputs don't capture — a cache hit could serve a stale bill of materials.
+ *
+ * A `docker` configuration flips the executor to the aquasec/trivy image. It is set
+ * here (not via a CLI `--runner=docker`) because nx reserves `--runner` for its
+ * tasks-runner selection — passing it on the CLI never reaches the executor. Select
+ * it with `--configuration=docker` (what CI does, where there is no local trivy).
  */
 export function sbomTarget(): NonNullable<ProjectNode['targets']>[string] {
   return {
     executor: `${PLUGIN}:${SBOM_TARGET}`,
     cache: false,
     dependsOn: [{ projects: [PLUGIN], target: 'build' }],
+    configurations: { docker: { runner: 'docker' } },
     metadata: {
       description:
         'Generate a CycloneDX SBOM for this package (inferred by @fmmenchi/nx-trivy).',
