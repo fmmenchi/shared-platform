@@ -41,6 +41,49 @@
           "runner": "docker"
         }
       },
+      "scan-secrets": {
+        "executor": "@fmmenchi/nx-trivy:scan",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "scanners": "secret",
+          "extraArgs": [
+            "--skip-dirs",
+            "**/node_modules",
+            "--skip-dirs",
+            "**/dist",
+            "--skip-dirs",
+            "**/build",
+            "--skip-dirs",
+            "**/.nx",
+            "--skip-dirs",
+            ".git"
+          ]
+        }
+      },
+      "scan-secrets-docker": {
+        "executor": "@fmmenchi/nx-trivy:scan",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "runner": "docker",
+          "scanners": "secret",
+          "extraArgs": [
+            "--skip-dirs",
+            "**/node_modules",
+            "--skip-dirs",
+            "**/dist",
+            "--skip-dirs",
+            "**/build",
+            "--skip-dirs",
+            "**/.nx",
+            "--skip-dirs",
+            ".git"
+          ]
+        }
+      },
       "build": {
         "executor": "@nx/js:tsc",
         "outputs": [
