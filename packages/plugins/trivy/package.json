@@ -84,12 +84,6 @@
           ]
         }
       },
-      "sbom": {
-        "executor": "@fmmenchi/nx-trivy:sbom",
-        "dependsOn": [
-          "build"
-        ]
-      },
       "build": {
         "executor": "@nx/js:tsc",
         "outputs": [

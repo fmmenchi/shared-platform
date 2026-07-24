@@ -16,6 +16,7 @@
     "sharedGlobals": []
   },
   "plugins": [
+    "@fmmenchi/nx-trivy",
     {
       "plugin": "@nx/js/typescript",
       "options": {

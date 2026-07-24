@@ -129,9 +129,10 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Attach a per-package CycloneDX SBOM to each release — supply-chain transparency for
-      # the deployable projects that consume these packages. @fmmenchi/nx-trivy builds it
-      # (docker runner, no trivy install) from an nx-pruned lockfile. Non-fatal: the release
-      # is already out, so a failed SBOM must not fail the job.
+      # the deployable projects that consume these packages. The `sbom` target is inferred
+      # onto every publishable package by @fmmenchi/nx-trivy, which builds the SBOM (docker
+      # runner, no trivy install) from an nx-pruned lockfile. Non-fatal: the release is
+      # already out, so a failed SBOM must not fail the job.
       - name: Attach SBOMs to the releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -140,7 +141,7 @@ jobs:
             [ -z "$tag" ] && continue
             pkg=${tag%@*}
             out="sbom/$(basename "$pkg").cdx.json"
-            if pnpm nx run @fmmenchi/nx-trivy:sbom --projectName="$pkg" --runner=docker --output="$out"; then
+            if pnpm nx run "$pkg:sbom" --runner=docker --output="$out"; then
               gh release upload "$tag" "$out" --clobber || echo "SBOM upload failed for $tag."
             else
               echo "SBOM generation failed for $pkg — skipping."
