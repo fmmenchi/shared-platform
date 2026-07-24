@@ -33,7 +33,7 @@ trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .
 | Option           | Type       | Default                | Description                                                                                                                      |
 | :--------------- | :--------- | :--------------------- | :------------------------------------------------------------------------------------------------------------------------------- |
 | `runner`         | `string`   | `local`                | How to run Trivy: `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image).                                             |
-| `dockerImage`    | `string`   | `aquasec/trivy:latest` | Docker image used when `runner` is `docker`.                                                                                     |
+| `dockerImage`    | `string`   | `aquasec/trivy:0.72.0` | Docker image used when `runner` is `docker`.                                                                                     |
 | `cacheDir`       | `string`   | –                      | Host dir to bind-mount as the Trivy DB cache (`runner: docker`) so CI can persist it. Without it, a named volume caches locally. |
 | `scanType`       | `string`   | `fs`                   | Trivy scan target subcommand: `fs`, `repo`, or `config`. `fs` scans a filesystem path.                                           |
 | `path`           | `string`   | `.`                    | Path to scan, relative to the workspace root.                                                                                    |
@@ -75,7 +75,7 @@ pnpm nx run @fmmenchi/ui:sbom [options]
 | `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                                                                                                         |
 | `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path).                                                                                  |
 | `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image). Select docker via the target's **`docker` configuration** (`--configuration=docker`) — nx reserves `--runner` as a CLI flag.     |
-| `dockerImage` | `string` | `aquasec/trivy:latest`        | Docker image used when `runner` is `docker`.                                                                                                                                                        |
+| `dockerImage` | `string` | `aquasec/trivy:0.72.0`        | Docker image used when `runner` is `docker`.                                                                                                                                                        |
 
 ### Behaviour
 
@@ -110,7 +110,9 @@ local `trivy` CLI is required.
 pnpm nx run <project>:scan-docker
 ```
 
-Equivalent to `pnpm nx run <project>:scan --runner=docker`.
+This is the `scan` executor with `runner: docker` in its **options**. nx reserves the `--runner`
+CLI flag for tasks-runner selection, so the docker runner is picked via a target (like this one) or
+a configuration — not `--runner=docker` on the command line.
 
 ### `scan-secrets` / `scan-secrets-docker`
 

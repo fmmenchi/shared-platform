@@ -61,13 +61,38 @@ jobs:
           ERROR_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName=shared-platform
 
+      # Cache the Trivy vulnerability DB. This job also runs on every dependency change (not
+      # only weekly), and those runs cluster — re-downloading ~100 MiB each time is waste. Key
+      # it per day: the first run of a day refreshes the DB, the rest reuse it, and Trivy
+      # re-validates freshness against its own TTL, so a restored DB is never used past its
+      # shelf life. The secret scan below needs no DB (built-in rules); the SBOM doesn't either.
+      - name: Resolve the day (DB cache key)
+        if: ${{ !inputs.test_notification }}
+        id: day
+        run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the Trivy vulnerability DB
+        if: ${{ !inputs.test_notification }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/trivy-cache
+          key: trivy-db-${{ steps.day.outputs.date }}
+          restore-keys: trivy-db-
+
       # Dogfood the plugin: docker runner (aquasec/trivy image — no trivy install on the
-      # runner). The DB is NOT cached: its TTL is ~1 day but these runs are a week apart, so a
-      # restored cache is always stale and trivy re-pulls the fresh layer regardless.
+      # runner). `cacheDir` bind-mounts the cached DB dir into the container.
       # .trivyignore.yaml at the repo root is auto-detected.
       - name: Vulnerability scan
         if: ${{ !inputs.test_notification }}
-        run: pnpm nx run @fmmenchi/nx-trivy:scan-docker
+        run: |
+          mkdir -p "$RUNNER_TEMP/trivy-cache"
+          pnpm nx run @fmmenchi/nx-trivy:scan-docker --cacheDir="$RUNNER_TEMP/trivy-cache"
+
+      # The docker runner writes the DB as root; hand it back to the runner user so the
+      # post-job cache save can archive it. Best-effort — a failure here must not fail the scan.
+      - name: Reclaim the cache dir
+        if: ${{ !inputs.test_notification }}
+        run: sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/trivy-cache" || true
 
       # Secrets can be committed anywhere in the tree, so this is a workspace scan too. Skips
       # node_modules/dist/build/.nx/.git (see the target's extraArgs) to avoid noise.

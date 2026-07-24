@@ -32,7 +32,7 @@ export function buildTrivyArgs(options: ScanExecutorSchema): string[] {
   ];
 }
 
-const DOCKER_IMAGE = 'aquasec/trivy:latest';
+const DOCKER_IMAGE = 'aquasec/trivy:0.72.0';
 
 /**
  * Wraps the trivy args in a `docker run` that mounts the workspace at `/workspace`

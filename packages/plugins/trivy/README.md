@@ -9,8 +9,8 @@ Nx executor that runs [Trivy](https://trivy.dev) security scans as an Nx target.
 ```
 
 ```bash
-pnpm nx run <project>:scan                  # trivy fs --scanners vuln --severity CRITICAL,HIGH --exit-code 1 .
-pnpm nx run <project>:scan --runner=docker  # via the aquasec/trivy image — no local trivy needed
+pnpm nx run <project>:scan         # trivy fs --scanners vuln --severity CRITICAL,HIGH --exit-code 1 .
+pnpm nx run <project>:scan-docker  # via the aquasec/trivy image — no local trivy (a target with runner: docker)
 ```
 
 ## Runners
