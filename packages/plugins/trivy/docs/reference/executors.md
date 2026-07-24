@@ -76,6 +76,17 @@ pnpm nx run <project>:scan-docker
 
 Equivalent to `pnpm nx run <project>:scan --runner=docker`.
 
+### `scan-secrets` / `scan-secrets-docker`
+
+The `scan` executor with `scanners: secret` — scans the tree for committed secrets (tokens, keys)
+rather than dependency vulnerabilities. It skips `node_modules`, `dist`, `build`, `.nx` and `.git`
+(via `extraArgs`) to avoid noise. `-docker` uses the image.
+
+```bash
+pnpm nx run <project>:scan-secrets         # local
+pnpm nx run <project>:scan-secrets-docker  # via the aquasec/trivy image
+```
+
 ---
 
 ## Related

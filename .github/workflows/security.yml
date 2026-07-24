@@ -35,7 +35,7 @@ env:
 
 jobs:
   trivy:
-    name: Dependency vulnerabilities
+    name: Vulnerabilities & secrets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -65,9 +65,15 @@ jobs:
       # runner). The DB is NOT cached: its TTL is ~1 day but these runs are a week apart, so a
       # restored cache is always stale and trivy re-pulls the fresh layer regardless.
       # .trivyignore.yaml at the repo root is auto-detected.
-      - name: Scan
+      - name: Vulnerability scan
         if: ${{ !inputs.test_notification }}
         run: pnpm nx run @fmmenchi/nx-trivy:scan-docker
+
+      # Secrets can be committed anywhere in the tree, so this is a workspace scan too. Skips
+      # node_modules/dist/build/.nx/.git (see the target's extraArgs) to avoid noise.
+      - name: Secret scan
+        if: ${{ !inputs.test_notification }}
+        run: pnpm nx run @fmmenchi/nx-trivy:scan-secrets-docker
 
       # Only on the weekly run, and only when it broke: a PR already shows a red check, and a
       # weekly message that arrives regardless is one nobody opens. Missing secrets skip green.

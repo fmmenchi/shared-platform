@@ -13,8 +13,10 @@ pnpm nx typecheck @fmmenchi/nx-trivy
 pnpm nx build @fmmenchi/nx-trivy
 pnpm nx lint @fmmenchi/nx-trivy
 pnpm nx test @fmmenchi/nx-trivy          # node vitest (arg builders)
-pnpm nx run @fmmenchi/nx-trivy:scan        # dogfood: scan THIS workspace (local trivy CLI)
-pnpm nx run @fmmenchi/nx-trivy:scan-docker # same, via the aquasec/trivy Docker image (no local CLI)
+pnpm nx run @fmmenchi/nx-trivy:scan            # vuln scan (local trivy CLI)
+pnpm nx run @fmmenchi/nx-trivy:scan-docker     # vuln scan via the aquasec/trivy image (no local CLI)
+pnpm nx run @fmmenchi/nx-trivy:scan-secrets        # secret scan (local)
+pnpm nx run @fmmenchi/nx-trivy:scan-secrets-docker # secret scan via the image
 ```
 
 ## Shape
@@ -29,8 +31,10 @@ pnpm nx run @fmmenchi/nx-trivy:scan-docker # same, via the aquasec/trivy Docker 
   image — mounts the workspace at `/workspace`, needs only Docker). The vuln DB caches in a named
   volume by default; pass `cacheDir` to bind-mount a host dir instead so CI can persist it via
   `actions/cache`.
-- **Two targets** on the plugin's own project — `scan` and `scan-docker` (the docker runner
-  pre-set) — both `dependsOn: build`.
+- **Targets** on the plugin's own project — `scan`/`scan-docker` (vuln) and
+  `scan-secrets`/`scan-secrets-docker` (the same executor with `scanners: secret`, skipping
+  `node_modules`/`dist`/`build`/`.nx`/`.git` via `extraArgs` to avoid noise) — all `dependsOn: build`.
+  The CI `security` job runs both the vuln and secret docker targets.
 - **`buildTrivyArgs` / `buildDockerArgs`** — the pure arg-vector builders (unit-tested); the
   shell-out itself needs no test.
 
