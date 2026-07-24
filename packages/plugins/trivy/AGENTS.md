@@ -17,7 +17,7 @@ pnpm nx run @fmmenchi/nx-trivy:scan            # vuln scan (local trivy CLI)
 pnpm nx run @fmmenchi/nx-trivy:scan-docker     # vuln scan via the aquasec/trivy image (no local CLI)
 pnpm nx run @fmmenchi/nx-trivy:scan-secrets        # secret scan (local)
 pnpm nx run @fmmenchi/nx-trivy:scan-secrets-docker # secret scan via the image
-pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui  # CycloneDX SBOM for a package
+pnpm nx run @fmmenchi/ui:sbom                  # CycloneDX SBOM (target inferred on every publishable package)
 ```
 
 ## Shape
@@ -28,10 +28,13 @@ pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui  # CycloneDX SBOM
   Options mirror Trivy's own flags (`runner`, `dockerImage`, `cacheDir`, `scanType`, `path`,
   `scanners`, `severity`, `failOnFindings`, `format`, `ignorefile`, `extraArgs`) — full table in
   [reference/executors.md](./docs/reference/executors.md).
-- **`sbom`** emits a per-project **CycloneDX SBOM** (`--projectName`). A pnpm monorepo has no
-  per-package lockfile, so it reconstructs one — nx's `createPackageJson` + `createLockFile` prune
-  the project to its real dependency closure and Trivy reads that pruned lock. CI attaches one to
-  each published GitHub Release (docker runner). See [reference/executors.md](./docs/reference/executors.md).
+- **`sbom`** emits a per-project **CycloneDX SBOM**. A pnpm monorepo has no per-package lockfile, so
+  it reconstructs one — nx's `createPackageJson` + `createLockFile` prune the project to its real
+  dependency closure and Trivy reads that pruned lock. Unlike `scan`, the SBOM **is** a per-package
+  artifact, so the plugin's `createNodesV2` **infers a `sbom` target onto every publishable package**
+  (`packages/<scope>/<name>` with a `name`, not `private`) — run it as `nx run <pkg>:sbom`, no
+  `--projectName` needed. CI attaches one to each published GitHub Release (docker runner). See
+  [reference/executors.md](./docs/reference/executors.md).
 - **Two runners** (`runner`): `local` (the `trivy` CLI, default) or `docker` (the `aquasec/trivy`
   image — mounts the workspace at `/workspace`, needs only Docker). The vuln DB caches in a named
   volume by default; pass `cacheDir` to bind-mount a host dir instead so CI can persist it via
@@ -52,8 +55,11 @@ pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui  # CycloneDX SBOM
   loudly with an install hint — never a silent pass; a non-zero exit (findings at/above `severity`
   when `failOnFindings` is on) fails the target.
 - **Standard names.** Options are Trivy's own flag vocabulary — no bespoke aliases.
-- **Executor-only, nothing inferred.** The plugin infers no targets onto consumers; `scan-docker`
-  exists only on the plugin's own project — consumers must define their own to invoke it by name.
+- **Inference tracks the artifact's level.** `scan` is **workspace-level** — inferring it onto every
+  project would mean N redundant identical root scans, so it is not inferred (consumers define their
+  own `scan`/`scan-docker` target to invoke it by name). `sbom` is **project-level** — every
+  publishable package wants exactly one — so `createNodesV2` **does** infer a `sbom` target onto each.
+  The plugin is registered in the root `nx.json` `plugins` for that inference to run.
 
 ## Use from a consumer
 

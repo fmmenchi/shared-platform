@@ -26,13 +26,23 @@ reads. The result is exactly what a consumer installs.
 
 ## Step 1: Run it
 
+The `sbom` target is **inferred onto every publishable package**, so run it on the project itself:
+
 ```bash
-pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui
+pnpm nx run @fmmenchi/ui:sbom       # a single package
+pnpm nx run-many -t sbom            # all publishable packages at once
 ```
 
-`--projectName` is required to describe a package other than the plugin itself. (`project` is
-reserved by nx — it redirects the target — so the option is `projectName`.) The SBOM lands at
-`<projectRoot>/sbom.cdx.json` unless you pass `--output`.
+No target to declare per-package, and no `--projectName` — the target already runs on its own
+project. The SBOM lands at `<projectRoot>/sbom.cdx.json` unless you pass `--output`.
+
+:::note[How the target gets there]
+
+`@fmmenchi/nx-trivy` is registered in the root `nx.json` `plugins`; its `createNodesV2` infers a
+`sbom` target onto every project under `packages/<scope>/<name>` that has a `name` and is not
+`private`. New publishable packages get it for free.
+
+:::
 
 With the local runner the `trivy` CLI must be on PATH (`brew install trivy`). No local install? Use
 the Docker runner — it needs only Docker:
@@ -61,7 +71,7 @@ mangled by the join.
 ## In CI
 
 The `release` job in `.github/workflows/ci.yml` attaches an SBOM to every newly published GitHub
-Release: for each new `{project}@{version}` tag it runs the `sbom` target with `--runner=docker`
+Release: for each new `{project}@{version}` tag it runs `nx run <project>:sbom --runner=docker`
 (the runner has Docker but no `trivy`) and uploads the file with `gh release upload`. The step is
 **non-fatal** — the release is already out, so a failed SBOM never fails the job.
 

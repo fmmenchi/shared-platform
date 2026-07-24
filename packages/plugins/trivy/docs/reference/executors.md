@@ -60,19 +60,22 @@ closure — the artifact to attach to that package's published release.
 
 **Usage**
 
+The `sbom` target is **inferred onto every publishable package** (see [Targets](#sbom-1)), so you
+normally run it on the project itself — no `--projectName`:
+
 ```bash
-pnpm nx run <project>:sbom --projectName=@fmmenchi/ui [options]
+pnpm nx run @fmmenchi/ui:sbom [options]
 ```
 
 ### Options
 
-| Option        | Type     | Default                       | Description                                                                                                        |
-| :------------ | :------- | :---------------------------- | :----------------------------------------------------------------------------------------------------------------- |
-| `projectName` | `string` | the host project              | Project to describe. (`project` is reserved by nx — it redirects the target — so this option is `projectName`.)    |
-| `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                        |
-| `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path). |
-| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image).                                                 |
-| `dockerImage` | `string` | `aquasec/trivy:latest`        | Docker image used when `runner` is `docker`.                                                                       |
+| Option        | Type     | Default                       | Description                                                                                                                                                                                         |
+| :------------ | :------- | :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `projectName` | `string` | the host project              | Override which project to describe. Rarely needed — the inferred target already runs on its own project. (`project` is reserved by nx — it redirects the target — so this option is `projectName`.) |
+| `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                                                                                                         |
+| `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path).                                                                                  |
+| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image).                                                                                                                                  |
+| `dockerImage` | `string` | `aquasec/trivy:latest`        | Docker image used when `runner` is `docker`.                                                                                                                                                        |
 
 ### Behaviour
 
@@ -122,12 +125,19 @@ pnpm nx run <project>:scan-secrets-docker  # via the aquasec/trivy image
 
 ### `sbom`
 
-The `sbom` executor with defaults. Pass `--projectName` to describe a package other than the host,
-and `--runner=docker` where no local `trivy` is available (as CI does when attaching SBOMs to
-releases).
+**Inferred, not hand-declared.** The plugin's `createNodesV2` adds a `sbom` target to **every
+publishable package** — a project under `packages/<scope>/<name>` with a `name` and no
+`private: true`. New publishable packages get it automatically; nothing to wire per-package. The
+plugin must be listed in the root `nx.json` `plugins` for the inference to run.
+
+The inferred target `dependsOn` the **plugin's own `build`** (the executor runs from the plugin's
+`dist`) and is **uncached** (the SBOM tracks the whole dependency closure, which a project's own file
+inputs don't capture — a cache hit could serve a stale bill of materials).
 
 ```bash
-pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui
+pnpm nx run @fmmenchi/ui:sbom                 # any publishable package
+pnpm nx run-many -t sbom                       # all of them
+pnpm nx run @fmmenchi/ui:sbom --runner=docker  # where no local trivy (as CI does)
 ```
 
 ---
