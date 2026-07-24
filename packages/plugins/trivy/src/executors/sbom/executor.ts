@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
 import type { SbomExecutorSchema } from './schema';
 
-const DOCKER_IMAGE = 'aquasec/trivy:latest';
+const DOCKER_IMAGE = 'aquasec/trivy:0.72.0';
 
 /** The `trivy fs` argument vector that emits the SBOM. Pure — unit-tested. */
 export function buildSbomArgs(

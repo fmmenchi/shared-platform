@@ -6,8 +6,8 @@ sidebar_position: 2
 
 # Scan in CI
 
-Run the Trivy scan in continuous integration with the Docker runner, and decide whether to cache
-the vulnerability database.
+Run the Trivy scan in continuous integration with the Docker runner, and cache the vulnerability
+database so frequent runs don't re-download it.
 
 ## Intent
 
@@ -17,24 +17,23 @@ install step.
 
 ## Step 1: Run the scan with the Docker runner
 
-```bash
-pnpm nx run <project>:scan --runner=docker
-```
-
-The `--runner=docker` flag runs the `scan` executor inside the `aquasec/trivy` image. It mounts the
-workspace at `/workspace` and runs the same default scan: `trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .`.
-A CRITICAL or HIGH finding exits non-zero and fails the job.
-
-Want to invoke it by name (`<project>:scan-docker`) instead of passing the flag? The plugin is
-executor-only — it does **not** infer a `scan-docker` target onto your project, so define one
+nx reserves the `--runner` CLI flag (for tasks-runner selection), so the docker runner is selected
+via a **target** with `runner: docker` in its options — not `--runner=docker` on the command line.
+The plugin is executor-only and does **not** infer such a target onto your project, so define one
 yourself alongside `scan`:
 
 ```jsonc
 "scan-docker": { "executor": "@fmmenchi/nx-trivy:scan", "options": { "runner": "docker" } }
 ```
 
-(That's exactly what `shared-platform` does to dogfood the plugin — the target lives in the plugin's
-own project config.)
+```bash
+pnpm nx run <project>:scan-docker
+```
+
+It runs the `scan` executor inside the `aquasec/trivy` image, mounts the workspace at `/workspace`,
+and runs the same default scan (`trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .`).
+A CRITICAL or HIGH finding exits non-zero and fails the job. That's exactly what `shared-platform`
+does to dogfood the plugin — the target lives in the plugin's own project config.
 
 ## Step 2: Choose a trigger cadence
 
@@ -44,26 +43,30 @@ good pattern is **on dependency changes plus a periodic schedule**. This is exac
 changes and on a weekly schedule, and the weekly run's findings are announced to Slack via the
 `@fmmenchi/nx-notify` plugin.
 
-## Step 3: Decide on DB caching
+## Step 3: Cache the vulnerability DB
 
 By default the docker runner caches the vuln DB in a **named volume** (`trivy-cache`) — persistent
-locally, but not across ephemeral CI runners. To persist it in CI, bind-mount a host directory with
-`cacheDir` so a cache action can save and restore it:
+locally, but lost on ephemeral CI runners. To persist it across runs, bind-mount a host directory
+with `cacheDir` (a normal CLI option — unlike `--runner`, it isn't reserved) and cache that directory
+with your CI's cache action:
 
 ```bash
-pnpm nx run <project>:scan --runner=docker --cacheDir=$PWD/.trivy-cache
+pnpm nx run <project>:scan-docker --cacheDir="$RUNNER_TEMP/trivy-cache"
 ```
 
 `cacheDir` must be an **absolute host path** — it becomes the source of a Docker bind-mount
-(`-v <cacheDir>:/root/.cache/trivy`), and Docker rejects a relative source like `.trivy-cache`. Then
-cache that directory (e.g. `$GITHUB_WORKSPACE/.trivy-cache`) with your CI's cache step, such as
-`actions/cache`.
+(`-v <cacheDir>:/root/.cache/trivy`), and Docker rejects a relative source.
 
-:::tip[When caching is worth it]
+`shared-platform` does exactly this in `security.yml`: an `actions/cache` step keyed **per day**
+(`trivy-db-<date>`, with a `trivy-db-` restore-key) wraps the scan, so the frequent dependency-change
+runs reuse the DB instead of re-downloading ~100 MiB each time. Trivy re-validates the DB against its
+own TTL, so a restored copy is never used past its shelf life. The docker runner writes the DB as
+root, so a best-effort `chown` back to the runner user before the post-job save keeps it archivable.
 
-At a **weekly** cadence the DB's roughly one-day TTL makes any restored cache stale — Trivy
-re-pulls the DB regardless, so `shared-platform` does **not** cache it. `cacheDir` pays off for
-consumers that scan frequently enough that a warm DB actually saves a download.
+:::note[Only the vuln scan needs the DB]
+
+Secret scanning uses built-in rules and an SBOM is just a component listing — neither downloads the
+DB, so `cacheDir` does nothing for them.
 
 :::
 

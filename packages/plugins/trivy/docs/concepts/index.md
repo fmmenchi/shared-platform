@@ -60,7 +60,7 @@ The `runner` option selects how that argument vector is executed:
 
 - **`local`** — spawns `trivy` directly, with the workspace root as the working directory.
 - **`docker`** — wraps the same args in a `docker run --rm` of the `dockerImage` (default
-  `aquasec/trivy:latest`). `buildDockerArgs` bind-mounts the workspace root at `/workspace`
+  `aquasec/trivy:0.72.0`). `buildDockerArgs` bind-mounts the workspace root at `/workspace`
   (working directory `/workspace`) and mounts a cache for the vulnerability DB so it is not
   re-downloaded every run. With `cacheDir` set, that cache is a **host bind-mount**
   (`<cacheDir>:/root/.cache/trivy`) that CI can persist via `actions/cache`; without it, a

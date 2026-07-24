@@ -38,18 +38,19 @@ brew install trivy
 
 :::tip[No local install?]
 
-Use the Docker runner instead — it runs the `aquasec/trivy` image and needs only Docker:
-
-```bash
-pnpm nx run <project>:scan --runner=docker
-```
-
-Prefer running it by name? Add your own `scan-docker` target — the plugin does **not** infer one
-onto your project (it's executor-only), so `<project>:scan-docker` won't exist until you define it:
+Use the Docker runner instead — it runs the `aquasec/trivy` image and needs only Docker. Because nx
+reserves the `--runner` CLI flag (for tasks-runner selection), the docker runner is selected via a
+**target** with `runner: docker` in its options, not `--runner=docker` on the command line. The
+plugin does **not** infer one onto your project (it's executor-only), so define your own alongside
+`scan`:
 
 ```jsonc
 // alongside your `scan` target — the runner baked in
 "scan-docker": { "executor": "@fmmenchi/nx-trivy:scan", "options": { "runner": "docker" } }
+```
+
+```bash
+pnpm nx run <project>:scan-docker
 ```
 
 :::
