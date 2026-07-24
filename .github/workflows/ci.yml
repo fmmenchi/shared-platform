@@ -141,7 +141,7 @@ jobs:
             [ -z "$tag" ] && continue
             pkg=${tag%@*}
             out="sbom/$(basename "$pkg").cdx.json"
-            if pnpm nx run "$pkg:sbom" --runner=docker --output="$out"; then
+            if pnpm nx run "$pkg:sbom" --configuration=docker --output="$out"; then
               gh release upload "$tag" "$out" --clobber || echo "SBOM upload failed for $tag."
             else
               echo "SBOM generation failed for $pkg — skipping."

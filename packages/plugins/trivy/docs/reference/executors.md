@@ -74,7 +74,7 @@ pnpm nx run @fmmenchi/ui:sbom [options]
 | `projectName` | `string` | the host project              | Override which project to describe. Rarely needed — the inferred target already runs on its own project. (`project` is reserved by nx — it redirects the target — so this option is `projectName`.) |
 | `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                                                                                                         |
 | `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path).                                                                                  |
-| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image).                                                                                                                                  |
+| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image). Select docker via the target's **`docker` configuration** (`--configuration=docker`) — nx reserves `--runner` as a CLI flag.     |
 | `dockerImage` | `string` | `aquasec/trivy:latest`        | Docker image used when `runner` is `docker`.                                                                                                                                                        |
 
 ### Behaviour
@@ -135,9 +135,9 @@ The inferred target `dependsOn` the **plugin's own `build`** (the executor runs 
 inputs don't capture — a cache hit could serve a stale bill of materials).
 
 ```bash
-pnpm nx run @fmmenchi/ui:sbom                 # any publishable package
-pnpm nx run-many -t sbom                       # all of them
-pnpm nx run @fmmenchi/ui:sbom --runner=docker  # where no local trivy (as CI does)
+pnpm nx run @fmmenchi/ui:sbom                        # any publishable package
+pnpm nx run-many -t sbom                              # all of them
+pnpm nx run @fmmenchi/ui:sbom --configuration=docker  # aquasec/trivy image (as CI does)
 ```
 
 ---

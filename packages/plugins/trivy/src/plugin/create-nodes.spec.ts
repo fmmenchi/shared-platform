@@ -31,4 +31,8 @@ describe('sbomTarget', () => {
   it('is uncached — the dependency closure is not a project file input', () => {
     expect(sbomTarget().cache).toBe(false);
   });
+
+  it('exposes a docker configuration (nx reserves the --runner CLI flag)', () => {
+    expect(sbomTarget().configurations?.docker).toEqual({ runner: 'docker' });
+  });
 });
