@@ -17,16 +17,21 @@ pnpm nx run @fmmenchi/nx-trivy:scan            # vuln scan (local trivy CLI)
 pnpm nx run @fmmenchi/nx-trivy:scan-docker     # vuln scan via the aquasec/trivy image (no local CLI)
 pnpm nx run @fmmenchi/nx-trivy:scan-secrets        # secret scan (local)
 pnpm nx run @fmmenchi/nx-trivy:scan-secrets-docker # secret scan via the image
+pnpm nx run @fmmenchi/nx-trivy:sbom --projectName=@fmmenchi/ui  # CycloneDX SBOM for a package
 ```
 
 ## Shape
 
-- **One executor `scan`, no generators.** Runs `trivy <scanType> …` from the **workspace root**
-  (`context.root`), so it is a workspace-wide scan regardless of the host project. Default vector:
-  `trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .`. Options mirror
-  Trivy's own flags (`runner`, `dockerImage`, `cacheDir`, `scanType`, `path`, `scanners`,
-  `severity`, `failOnFindings`, `format`, `ignorefile`, `extraArgs`) — full table in
+- **Two executors (`scan`, `sbom`), no generators.** `scan` runs `trivy <scanType> …` from the
+  **workspace root** (`context.root`), so it is a workspace-wide scan regardless of the host project.
+  Default vector: `trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .`.
+  Options mirror Trivy's own flags (`runner`, `dockerImage`, `cacheDir`, `scanType`, `path`,
+  `scanners`, `severity`, `failOnFindings`, `format`, `ignorefile`, `extraArgs`) — full table in
   [reference/executors.md](./docs/reference/executors.md).
+- **`sbom`** emits a per-project **CycloneDX SBOM** (`--projectName`). A pnpm monorepo has no
+  per-package lockfile, so it reconstructs one — nx's `createPackageJson` + `createLockFile` prune
+  the project to its real dependency closure and Trivy reads that pruned lock. CI attaches one to
+  each published GitHub Release (docker runner). See [reference/executors.md](./docs/reference/executors.md).
 - **Two runners** (`runner`): `local` (the `trivy` CLI, default) or `docker` (the `aquasec/trivy`
   image — mounts the workspace at `/workspace`, needs only Docker). The vuln DB caches in a named
   volume by default; pass `cacheDir` to bind-mount a host dir instead so CI can persist it via
