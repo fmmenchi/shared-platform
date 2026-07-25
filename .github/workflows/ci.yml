@@ -140,7 +140,8 @@ jobs:
           while IFS= read -r tag; do
             [ -z "$tag" ] && continue
             pkg=${tag%@*}
-            out="sbom/$(basename "$pkg").cdx.json"
+            # The release names the package; the asset just needs to say what it is.
+            out="sbom.cdx.json"
             if pnpm nx run "$pkg:sbom" --configuration=docker --output="$out"; then
               gh release upload "$tag" "$out" --clobber || echo "SBOM upload failed for $tag."
             else
