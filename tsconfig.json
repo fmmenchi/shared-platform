@@ -22,10 +22,13 @@
       "path": "./packages/plugins/notify"
     },
     {
-      "path": "./packages/tools/ci"
+      "path": "./packages/plugins/trivy"
     },
     {
-      "path": "./packages/plugins/trivy"
+      "path": "./packages/ops/gh-actions"
+    },
+    {
+      "path": "./packages/ops/ci"
     }
   ],
   "compilerOptions": {}

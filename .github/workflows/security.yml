@@ -40,14 +40,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: ./.github/actions/setup
+      - uses: ./packages/ops/gh-actions/actions/setup
 
       # A notification you cannot test is one you do not have: without this, the Slack path
       # first runs for real on the Monday it matters — the day you learn the bot was never
       # invited to the channel. Dogfoods the slack-notify brick, like the alert below.
       - name: Test the Slack wiring
         if: ${{ inputs.test_notification }}
-        uses: ./.github/actions/slack-notify
+        uses: ./packages/ops/gh-actions/actions/slack-notify
         with:
           type: error
           app-name: shared-platform
@@ -59,13 +59,13 @@ jobs:
       # Vuln + secret scan with the per-day-keyed DB cache — all in the trivy-scan brick.
       - name: Scan
         if: ${{ !inputs.test_notification }}
-        uses: ./.github/actions/trivy-scan
+        uses: ./packages/ops/gh-actions/actions/trivy-scan
 
       # Only on the weekly run, and only when it broke: a PR already shows a red check, and a
       # weekly message that arrives regardless is one nobody opens. Missing secrets skip green.
       - name: Alert Slack on findings
         if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: ./.github/actions/slack-notify
+        uses: ./packages/ops/gh-actions/actions/slack-notify
         with:
           type: error
           app-name: shared-platform

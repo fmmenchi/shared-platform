@@ -24,8 +24,13 @@ for (const scope of readdirSync('packages')) {
     const p = JSON.parse(readFileSync(pkg, 'utf8')) as {
       name?: string;
       private?: boolean;
+      nx?: { tags?: string[] };
     };
-    if (p.name && !p.private) releasable.add(p.name);
+    // Releasable = a published package (non-private), OR a `scope:ops` toolkit:
+    // ops libs (e.g. the gh-actions reusable CI) are versioned + tagged but NOT
+    // published to npm, so they are `private` yet still take part in `nx release`.
+    const isOpsToolkit = (p.nx?.tags ?? []).includes('scope:ops');
+    if (p.name && (!p.private || isOpsToolkit)) releasable.add(p.name);
   }
 }
 
