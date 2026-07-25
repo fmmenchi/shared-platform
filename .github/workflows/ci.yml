@@ -20,14 +20,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # Browser-mode component tests (native <dialog>, real a11y) need Chromium.
       - run: pnpm exec playwright install --with-deps chromium
@@ -48,14 +41,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       - name: nx release --dry-run (preview — never publishes)
         run: pnpm nx release --dry-run --skip-publish
@@ -84,15 +70,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
+      - uses: ./.github/actions/setup
         with:
-          node-version: 24
-          cache: 'pnpm'
           registry-url: 'https://npm.pkg.github.com'
-
-      - run: pnpm install --frozen-lockfile
 
       # The release step runs the built @fmmenchi/ci affected-releasable script; the
       # announce step dogfoods the @fmmenchi/nx-notify plugin (built on demand via its
@@ -129,25 +109,14 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Attach a per-package CycloneDX SBOM to each release — supply-chain transparency for
-      # the deployable projects that consume these packages. The `sbom` target is inferred
-      # onto every publishable package by @fmmenchi/nx-trivy, which builds the SBOM (docker
-      # runner, no trivy install) from an nx-pruned lockfile. Non-fatal: the release is
-      # already out, so a failed SBOM must not fail the job.
+      # the deployable projects that consume these packages. The attach-sbom brick generates
+      # each (docker runner, from an nx-pruned lockfile) and uploads it as sbom.cdx.json.
+      # Non-fatal per tag: the release is already out, so a failed SBOM must not fail the job.
       - name: Attach SBOMs to the releases
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          while IFS= read -r tag; do
-            [ -z "$tag" ] && continue
-            pkg=${tag%@*}
-            # The release names the package; the asset just needs to say what it is.
-            out="sbom.cdx.json"
-            if pnpm nx run "$pkg:sbom" --configuration=docker --output="$out"; then
-              gh release upload "$tag" "$out" --clobber || echo "SBOM upload failed for $tag."
-            else
-              echo "SBOM generation failed for $pkg — skipping."
-            fi
-          done < "$RUNNER_TEMP/new_tags.txt"
+        uses: ./.github/actions/attach-sbom
+        with:
+          tags-file: ${{ runner.temp }}/new_tags.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
       # workflows (no recursive runs), so a `release: published` listener never fires from
