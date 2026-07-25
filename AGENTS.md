@@ -49,10 +49,14 @@ line) — and suppress only unfixable findings in the root `.trivyignore.yaml`.
 ## Conventions (essentials)
 
 - **Structure:** `packages/<scope>/<name>` with scopes `shared` (isomorphic), `client` (FE-only),
-  `server` (BE-only), `plugins` (Nx plugins), `tools` (scripts) — plus `apps/<name>` (`scope:app`)
-  for the non-published docs site. Boundaries are enforced by ESLint + tags — `client` and `server`
-  may depend on `shared`, never on each other; nothing depends on `plugins`/`tools`; nothing depends
-  on `apps`. `apps/` is excluded from `nx release`. See [architecture](./.agents/doc/architecture.md).
+  `server` (BE-only), `plugins` (Nx plugins), `tools` (dev/build scripts), `ops` (CI/CD & release
+  automation — the `@fmmenchi/gh-actions` reusable toolkit, `@fmmenchi/ci`) — plus `apps/<name>`
+  (`scope:app`) for the non-published docs site. Boundaries are enforced by ESLint + tags — `client`
+  and `server` may depend on `shared`, never on each other; nothing depends on
+  `plugins`/`tools`/`ops`; nothing depends on `apps`. `apps/` is excluded from `nx release`. An `ops`
+  toolkit may be `private` (versioned + tagged by `nx release`, not published to npm — e.g.
+  `gh-actions`, tagged `gh-actions/v{version}` in its own release group). See
+  [architecture](./.agents/doc/architecture.md).
 - **File layout:** every `index.ts` is a **barrel — re-exports only**, never implementation or
   inline declarations. Implementation lives in `<name>.ts`; **types always in a separate
   `<name>.types.ts`**. Structure the code into proper files and let `index.ts` just re-export the

@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup
+      - uses: ./packages/ops/gh-actions/actions/setup
 
       # Browser-mode component tests (native <dialog>, real a11y) need Chromium.
       - run: pnpm exec playwright install --with-deps chromium
@@ -41,7 +41,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup
+      - uses: ./packages/ops/gh-actions/actions/setup
 
       - name: nx release --dry-run (preview — never publishes)
         run: pnpm nx release --dry-run --skip-publish
@@ -70,7 +70,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/setup
+      - uses: ./packages/ops/gh-actions/actions/setup
         with:
           registry-url: 'https://npm.pkg.github.com'
 
@@ -88,13 +88,13 @@ jobs:
         # Version only the projects nx marks AFFECTED by this push — input-aware (root
         # files like AGENTS.md / workflows aren't project inputs, so they don't cascade)
         # and dependency-aware (dependents are affected; `auto` diffs the lockfile). The
-        # CI-only part (resolving the base) lives here; the logic is packages/tools/ci.
+        # CI-only part (resolving the base) lives here; the logic is packages/ops/ci.
         # This replaces nx release's "root files apply to ALL projects" cascade (nx #34542).
         run: |
           before=$(git tag -l '*@*' | sort)
           base='${{ github.event.before }}'
           case "$base" in *[!0]*) ;; *) base=$(git rev-parse HEAD~1) ;; esac  # merge's first parent
-          projects=$(BASE="$base" HEAD='${{ github.sha }}' node packages/tools/ci/dist/affected-releasable.js)
+          projects=$(BASE="$base" HEAD='${{ github.sha }}' node packages/ops/ci/dist/affected-releasable.js)
           if [ -z "$projects" ]; then
             echo "No releasable project affected — nothing to release."
           else
@@ -108,12 +108,30 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # nx tags the @fmmenchi/gh-actions toolkit as `gh-actions/v{version}` (its own release
+      # group). Consumers pin the moving major `gh-actions/v1`; nx doesn't maintain that alias,
+      # so move it here. Idempotent: it always points the major at the latest exact tag, whether
+      # or not this run released the toolkit — a no-op when nothing changed.
+      - name: Move the gh-actions major alias
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          latest=$(git tag -l 'gh-actions/v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1)
+          [ -z "$latest" ] && { echo "No gh-actions release tag yet."; exit 0; }
+          major=${latest#gh-actions/v}; major="gh-actions/v${major%%.*}"
+          if [ "$(git rev-parse -q --verify "refs/tags/$major" 2>/dev/null)" = "$(git rev-parse "$latest")" ]; then
+            echo "$major already at $latest."; exit 0
+          fi
+          git tag -f "$major" "$latest"
+          git push -f origin "$major"
+          echo "Moved $major → $latest"
+
       # Attach a per-package CycloneDX SBOM to each release — supply-chain transparency for
       # the deployable projects that consume these packages. The attach-sbom brick generates
       # each (docker runner, from an nx-pruned lockfile) and uploads it as sbom.cdx.json.
       # Non-fatal per tag: the release is already out, so a failed SBOM must not fail the job.
       - name: Attach SBOMs to the releases
-        uses: ./.github/actions/attach-sbom
+        uses: ./packages/ops/gh-actions/actions/attach-sbom
         with:
           tags-file: ${{ runner.temp }}/new_tags.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}

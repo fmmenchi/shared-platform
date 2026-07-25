@@ -43,6 +43,12 @@ export default [
               onlyDependOnLibsWithTags: ['scope:tools', 'scope:shared'],
             },
             {
+              // Ops: CI/CD & release automation (the gh-actions reusable toolkit,
+              // the @fmmenchi/ci release helper). Nothing depends on it.
+              sourceTag: 'scope:ops',
+              onlyDependOnLibsWithTags: ['scope:ops', 'scope:shared'],
+            },
+            {
               // Apps are the top of the graph (the docs site); nothing depends on
               // them and they may consume any layer they need.
               sourceTag: 'scope:app',

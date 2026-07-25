@@ -93,7 +93,17 @@
         "createRelease": "github"
       }
     },
-    "projects": ["packages/*/*"]
+    "groups": {
+      "packages": {
+        "projects": ["packages/*/*", "!packages/ops/gh-actions"]
+      },
+      "gh-actions": {
+        "projects": ["packages/ops/gh-actions"],
+        "releaseTag": {
+          "pattern": "gh-actions/v{version}"
+        }
+      }
+    }
   },
   "analytics": false,
   "pluginsConfig": {
