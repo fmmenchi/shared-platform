@@ -17,7 +17,15 @@
     "tags": [
       "scope:ops",
       "type:util"
-    ]
+    ],
+    "targets": {
+      "nx-release-publish": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "echo \"skip npm publish — private ops toolkit (versioned + tagged only)\""
+        }
+      }
+    }
   },
   "dependencies": {}
 }
