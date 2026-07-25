@@ -1,0 +1,32 @@
+name: Attach SBOMs to releases
+description: >-
+  For each {project}@{version} tag in `tags-file`, generate a CycloneDX SBOM via @fmmenchi/nx-trivy
+  (docker runner) and upload it to that GitHub Release as sbom.cdx.json. Non-fatal per tag.
+  Requires a prior `setup` (nx + the plugin installed).
+
+inputs:
+  tags-file:
+    description: Path to a file with one {project}@{version} tag per line.
+    required: true
+  github-token:
+    description: A token with contents:write, to upload the release asset.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      run: |
+        while IFS= read -r tag; do
+          [ -z "$tag" ] && continue
+          pkg=${tag%@*}
+          # The release names the package; the asset just needs to say what it is.
+          out="sbom.cdx.json"
+          if pnpm nx run "$pkg:sbom" --configuration=docker --output="$out"; then
+            gh release upload "$tag" "$out" --clobber || echo "SBOM upload failed for $tag."
+          else
+            echo "SBOM generation failed for $pkg — skipping."
+          fi
+        done < "${{ inputs.tags-file }}"

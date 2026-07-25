@@ -1,0 +1,42 @@
+name: Trivy scan
+description: >-
+  Run the @fmmenchi/nx-trivy vulnerability (and optionally secret) scan via the docker runner,
+  caching the vulnerability DB per day. Requires a prior `setup` (nx + the plugin installed).
+
+inputs:
+  secret-scan:
+    description: Also run the secret scan after the vulnerability scan.
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the day (DB cache key)
+      id: day
+      shell: bash
+      run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache the Trivy vulnerability DB
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/trivy-cache
+        key: trivy-db-${{ steps.day.outputs.date }}
+        restore-keys: trivy-db-
+
+    # Only the vulnerability scan downloads the DB (secret scan uses built-in rules).
+    - name: Vulnerability scan
+      shell: bash
+      run: |
+        mkdir -p "$RUNNER_TEMP/trivy-cache"
+        pnpm nx run @fmmenchi/nx-trivy:scan-docker --cacheDir="$RUNNER_TEMP/trivy-cache"
+
+    # The docker runner writes the DB as root; hand it back so the post-job cache save can archive it.
+    - name: Reclaim the cache dir
+      shell: bash
+      run: sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/trivy-cache" || true
+
+    - name: Secret scan
+      if: ${{ inputs.secret-scan == 'true' }}
+      shell: bash
+      run: pnpm nx run @fmmenchi/nx-trivy:scan-secrets-docker

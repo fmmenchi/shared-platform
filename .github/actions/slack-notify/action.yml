@@ -1,0 +1,66 @@
+name: Slack notify
+description: >-
+  Announce a release or an error to Slack via @fmmenchi/nx-notify. Skips green when the Slack
+  secrets are absent. Requires a prior `setup` (nx + the plugin installed).
+
+inputs:
+  type:
+    description: "'release' or 'error'."
+    required: true
+  app-name:
+    description: The package/app name the message is about.
+    required: true
+  bot-token:
+    description: Slack bot token (SLACK_BOT_TOKEN). Absent → the announce skips green.
+    required: false
+    default: ''
+  channel-id:
+    description: Slack channel id (SLACK_CHANNEL_ID).
+    required: false
+    default: ''
+  # error mode
+  message:
+    description: 'error: the message body.'
+    required: false
+    default: ''
+  url:
+    description: 'error: a link to the run.'
+    required: false
+    default: ''
+  # release mode
+  version:
+    description: 'release: the version.'
+    required: false
+    default: ''
+  release-url:
+    description: 'release: the GitHub Release URL.'
+    required: false
+    default: ''
+  body:
+    description: 'release: the changelog body.'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Announce release
+      if: ${{ inputs.type == 'release' }}
+      shell: bash
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.bot-token }}
+        SLACK_CHANNEL_ID: ${{ inputs.channel-id }}
+        RELEASE_VERSION: ${{ inputs.version }}
+        RELEASE_URL: ${{ inputs.release-url }}
+        RELEASE_BODY: ${{ inputs.body }}
+      run: pnpm nx run @fmmenchi/nx-notify:announce-release --appName="${{ inputs.app-name }}"
+
+    - name: Announce error
+      if: ${{ inputs.type == 'error' }}
+      shell: bash
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.bot-token }}
+        SLACK_CHANNEL_ID: ${{ inputs.channel-id }}
+        ERROR_MESSAGE: ${{ inputs.message }}
+        ERROR_URL: ${{ inputs.url }}
+      run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName="${{ inputs.app-name }}"

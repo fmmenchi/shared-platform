@@ -1,0 +1,80 @@
+name: Security (reusable)
+
+# Turnkey security pipeline for any @fmmenchi consumer (an nx workspace with the plugins
+# installed). Call it from your own workflow — one job, one line:
+#
+#   jobs:
+#     security:
+#       uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@v1
+#       secrets: inherit
+#
+# The caller owns the triggers (dep-change paths + a weekly schedule is the recommended pair)
+# and decides when to alert (e.g. alert-on-failure only on the scheduled run).
+on:
+  workflow_call:
+    inputs:
+      secret-scan:
+        description: Also run the secret scan.
+        type: boolean
+        required: false
+        default: true
+      alert-on-failure:
+        description: Post a Slack alert if the scan fails. Let the caller gate this (e.g. only on schedule).
+        type: boolean
+        required: false
+        default: false
+      test-notification:
+        description: Post a Slack wiring test instead of scanning.
+        type: boolean
+        required: false
+        default: false
+      app-name:
+        description: Name used in Slack messages (defaults to the repo name).
+        type: string
+        required: false
+        default: ''
+    secrets:
+      SLACK_BOT_TOKEN:
+        required: false
+      SLACK_CHANNEL_ID:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Vulnerabilities & secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: fmmenchi/shared-platform/.github/actions/setup@v1
+
+      - name: Test the Slack wiring
+        if: ${{ inputs.test-notification }}
+        uses: fmmenchi/shared-platform/.github/actions/slack-notify@v1
+        with:
+          type: error
+          app-name: ${{ inputs.app-name || github.event.repository.name }}
+          message: 'Security Slack wiring test — if you can read this, the audit can reach you.'
+          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+
+      - name: Scan
+        if: ${{ !inputs.test-notification }}
+        uses: fmmenchi/shared-platform/.github/actions/trivy-scan@v1
+        with:
+          secret-scan: ${{ inputs.secret-scan }}
+
+      - name: Alert Slack on findings
+        if: ${{ failure() && inputs.alert-on-failure }}
+        uses: fmmenchi/shared-platform/.github/actions/slack-notify@v1
+        with:
+          type: error
+          app-name: ${{ inputs.app-name || github.event.repository.name }}
+          message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
+          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
