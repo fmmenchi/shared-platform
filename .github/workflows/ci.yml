@@ -84,27 +84,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # Release only the projects nx marks AFFECTED by this push, and record the new
+      # package tags for the SBOM/announce steps. All the logic — base resolution,
+      # affected-releasable filtering, the before/after tag diff, and the package-vs-toolkit
+      # tag split — lives in @fmmenchi/ci (src/release.ts), unit-tested, not inline here.
+      # This sidesteps nx release's "root files apply to ALL projects" cascade (nx #34542).
       - name: Release
-        # Version only the projects nx marks AFFECTED by this push — input-aware (root
-        # files like AGENTS.md / workflows aren't project inputs, so they don't cascade)
-        # and dependency-aware (dependents are affected; `auto` diffs the lockfile). The
-        # CI-only part (resolving the base) lives here; the logic is packages/ops/ci.
-        # This replaces nx release's "root files apply to ALL projects" cascade (nx #34542).
-        run: |
-          before=$(git tag -l '*@*' | sort)
-          base='${{ github.event.before }}'
-          case "$base" in *[!0]*) ;; *) base=$(git rev-parse HEAD~1) ;; esac  # merge's first parent
-          projects=$(BASE="$base" HEAD='${{ github.sha }}' node packages/ops/ci/dist/affected-releasable.js)
-          if [ -z "$projects" ]; then
-            echo "No releasable project affected — nothing to release."
-          else
-            echo "Releasing affected projects: $projects"
-            pnpm nx release --yes --projects="$projects"
-          fi
-          comm -13 <(printf '%s\n' "$before") <(git tag -l '*@*' | sort) \
-            | sed '/^$/d' > "$RUNNER_TEMP/new_tags.txt"
-          echo "Newly released tags:"; cat "$RUNNER_TEMP/new_tags.txt"
+        run: node packages/ops/ci/dist/release.js
         env:
+          BASE_REF: ${{ github.event.before }}
+          HEAD: ${{ github.sha }}
+          NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
