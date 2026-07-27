@@ -1,28 +1,25 @@
 # @fmmenchi/ci
 
-CI helper scripts for an Nx release monorepo with **independent, per-package** versioning.
+Release helper scripts for the CI job of an Nx release monorepo. Small, tested, importable — the
+CI-only shell wiring stays in `.github/workflows/ci.yml`.
 
-## `affected-releasable`
+## What it does
 
-Prints the comma-separated **releasable** projects (non-private packages under `packages/*/*`) that
-Nx marks **affected** between two refs — the set to pass to `nx release --projects=<…>`.
+`nx release` already versions only the projects with releasing conventional commits — a docs- or
+config-only push releases nothing, and a change that legitimately affects everything (nx.json, the
+lockfile) releases everything. No affected pre-filter is needed; nx does the right thing on its own.
+These scripts wrap the two bits nx doesn't give you:
 
-```bash
-BASE=<before-sha> HEAD=<sha> node dist/affected-releasable.js
-# → @fmmenchi/tokens,@fmmenchi/ui
-```
+- **`release.js`** — runs `nx release`, then diffs the git tags before/after and writes the
+  newly-cut **package** tags to `NEW_TAGS_FILE`, for the downstream SBOM + announce steps. Toolkit
+  tags (e.g. `gh-actions/v*`) are logged but kept out (see `isPackageTag`).
+- **`move-major-alias.js`** — moves a moving-major tag alias (`ALIAS_PREFIX`, default `gh-actions/v`)
+  to the latest exact `<prefix>X.Y.Z`. nx doesn't maintain such aliases; consumers pin them.
 
-`nx affected` is **input-aware** (root files like `AGENTS.md` or workflows aren't project inputs, so
-they don't cascade to every project) and **dependency-aware** (a dependent of a changed project is
-affected too). This sidesteps `nx release`'s built-in "root-file change applies to ALL projects"
-cascade ([nx #34542](https://github.com/nrwl/nx/issues/34542)), so a docs-only or config-only push
-releases nothing.
+## API (tested)
 
-The **caller** resolves `BASE` (the CI workflow, from the push); with no `BASE` the script falls back
-to the full project list.
+`isPackageTag` / `newTags` (tag classification + diff) and `majorAlias` (semver-ordered alias target)
+are the pure, unit-tested pieces behind the scripts.
 
-## Why a package
-
-The reusable logic lives here (tested, importable); the CI-only orchestration — resolving the base
-ref, looping the cut tags — stays in `.github/workflows/ci.yml`. Notifications are **not** here: the
-release job dogfoods the [`@fmmenchi/nx-notify`](../../plugins/notify) plugin.
+Notifications are **not** here: the release job dogfoods the
+[`@fmmenchi/nx-notify`](../../plugins/notify) plugin.

@@ -31,14 +31,14 @@
 - **Automated:** every green push to `main` runs the `release` job in `.github/workflows/ci.yml`
   (serialized by a `concurrency` group). Auth is the built-in `GITHUB_TOKEN`
   (`contents:write` + `packages:write`) — no PAT.
-- **Scoped to affected projects.** The job versions only the projects nx marks **affected** by the
-  push — computed by `packages/tools/ci (affected-releasable)` (`nx show projects --affected --base
-<before> --head <sha>`, intersected with the non-private packages) — and runs
-  `nx release --projects=<those>`. `nx affected` is **input-aware** (root files like `AGENTS.md` /
-  workflows aren't project inputs, so they don't cascade) and **dependency-aware** (dependents are
-  affected too). `pluginsConfig.@nx/js.projectsAffectedByDependencyUpdates: "auto"` makes a
-  `pnpm-lock.yaml` change affect only the projects whose resolved deps changed. This replaces nx
-  release's built-in "root files apply to ALL projects" cascade ([nx #34542](https://github.com/nrwl/nx/issues/34542)).
+- **`nx release` scopes itself — no affected pre-filter.** The job runs plain `nx release` (via
+  `packages/ops/ci` `release.js`), which versions **only the projects with releasing conventional
+  commits** since their last tag: a docs- or workflow-only push releases nothing (verified — those
+  files aren't project inputs), while a change that legitimately affects everything (`nx.json`, the
+  lockfile) releases everything. An earlier `affected-releasable` pre-filter (guarding a since-fixed
+  nx cascade) was **removed** — it was redundant and could have suppressed legitimate releases.
+  `release.js` only adds what nx doesn't: the before/after tag diff that feeds the SBOM/announce
+  steps the newly-cut package tags.
 - `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
   the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
 - **Slack, inline.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger `on: release`
