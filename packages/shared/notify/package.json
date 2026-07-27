@@ -30,7 +30,8 @@
   "nx": {
     "tags": [
       "scope:shared",
-      "type:util"
+      "type:util",
+      "doc:shared"
     ]
   },
   "dependencies": {

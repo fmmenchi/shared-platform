@@ -3,13 +3,14 @@ import type { Config } from '@docusaurus/types';
 /**
  * Single-instance docs site over the co-located `docs/`. Workspace docs (ADRs,
  * architecture, styling…) are edited here directly; per-package docs live in each
- * package's `docs/` folder and are assembled under `docs/{libraries,plugins}/` by the
- * `@fmmenchi/nx-docusaurus` sync-docs executor (build/serve depend on it).
+ * package's `docs/` folder and are assembled under `docs/<category>/` (one folder per
+ * `doc:` tag) by the `@fmmenchi/nx-docusaurus` sync-docs executor (build/serve depend on it).
  */
 const config: Config = {
   title: 'shared-platform',
   url: 'https://fmmenchi.github.io',
   baseUrl: '/shared-platform/',
+  favicon: 'img/favicon.svg',
   // Every in-site link must resolve — a broken cross-package link fails the build.
   onBrokenLinks: 'throw',
   markdown: {
@@ -34,8 +35,11 @@ const config: Config = {
     ],
   ],
   themeConfig: {
+    // Default follows the OS; the toggle stays and the visitor's choice is persisted.
+    colorMode: { respectPrefersColorScheme: true },
     navbar: {
       title: 'shared-platform',
+      logo: { alt: 'shared-platform', src: 'img/favicon.svg' },
       items: [
         {
           // Deployed alongside the site by the Docs workflow (build/storybook).
