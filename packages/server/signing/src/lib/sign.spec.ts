@@ -41,6 +41,16 @@ describe('sign / verify', () => {
     expect(await verify('not-a-token', SECRET)).toBeNull();
   });
 
+  it('rejects an oversized token before doing any HMAC work', async () => {
+    const token = await sign('x', SECRET);
+    expect(await verify(token + 'A'.repeat(9000), SECRET)).toBeNull();
+  });
+
+  it('throws on an empty secret (sign and verify)', async () => {
+    await expect(sign('x', '')).rejects.toThrow(/non-empty/);
+    await expect(verify('a.b', '')).rejects.toThrow(/non-empty/);
+  });
+
   it('honours expiry: valid before, null after', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
