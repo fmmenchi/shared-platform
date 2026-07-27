@@ -1,0 +1,83 @@
+name: Docs (reusable)
+
+# Turnkey docs-site deploy for an @fmmenchi consumer: build an nx docs project (Docusaurus
+# via @fmmenchi/nx-docusaurus) and deploy it to GitHub Pages, optionally with a Storybook
+# under /storybook/. Call it on push to your main:
+#
+#   jobs:
+#     docs:
+#       uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0
+#       with:
+#         docs-project: '@myorg/docs'
+#         docs-output: apps/docs/build
+#       permissions: { contents: read, pages: write, id-token: write }
+on:
+  workflow_call:
+    inputs:
+      docs-project:
+        description: The nx project that builds the site (its `build` target).
+        type: string
+        required: true
+      docs-output:
+        description: The built site directory to deploy (e.g. apps/docusaurus/build).
+        type: string
+        required: true
+      storybook-project:
+        description: Optional nx project with a `build-storybook` target — its static build rides under /storybook/.
+        type: string
+        required: false
+        default: ''
+      storybook-static:
+        description: The storybook static output dir (required when storybook-project is set).
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; let an in-flight deploy finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  HUSKY: 0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+
+      - run: pnpm nx run ${{ inputs.docs-project }}:build
+
+      # Storybook (optional) rides along under /storybook/ — its static build uses relative
+      # asset paths, so any subpath works.
+      - name: Build Storybook under /storybook/
+        if: ${{ inputs.storybook-project != '' }}
+        run: |
+          pnpm nx run ${{ inputs.storybook-project }}:build-storybook
+          cp -r "${{ inputs.storybook-static }}" "${{ inputs.docs-output }}/storybook"
+
+      - uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ inputs.docs-output }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

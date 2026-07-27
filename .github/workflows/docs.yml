@@ -1,8 +1,8 @@
 name: Docs
 
-# Deploy the documentation site (apps/docusaurus, serving its co-located docs/)
-# WITH the component Storybook under /storybook/ to GitHub Pages, on every
-# push to main that touches the site, a package's docs, or the design system.
+# Deploy the documentation site (apps/docusaurus, serving its co-located docs/) WITH the
+# component Storybook under /storybook/ to GitHub Pages, on every push to main that touches
+# the site, a package's docs, or the design system. Dogfoods the reusable docs workflow.
 on:
   push:
     branches:
@@ -12,6 +12,7 @@ on:
       - 'packages/**/docs/**'
       - 'packages/client/**'
       - '.github/workflows/docs.yml'
+      - '.github/workflows/docs.reusable.yml'
   workflow_dispatch:
 
 permissions:
@@ -19,52 +20,11 @@ permissions:
   pages: write
   id-token: write
 
-# One deploy at a time; let an in-flight deploy finish.
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
-env:
-  HUSKY: 0
-
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: pnpm/action-setup@v6
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - run: pnpm install --frozen-lockfile
-
-      # Builds the nx-docusaurus plugin first (via ^build on the config-generator target),
-      # then config-generator → sync-docs → docusaurus build.
-      - run: pnpm nx run @fmmenchi/docs:build
-
-      # Storybook rides along under /storybook/ (its static build uses
-      # relative asset paths, so any subpath works).
-      - run: pnpm nx run @fmmenchi/ui:build-storybook
-      - run: cp -r packages/client/ui/storybook-static apps/docusaurus/build/storybook
-
-      - uses: actions/configure-pages@v6
-        with:
-          enablement: true
-
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: apps/docusaurus/build
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v5
+  docs:
+    uses: ./.github/workflows/docs.reusable.yml
+    with:
+      docs-project: '@fmmenchi/docs'
+      docs-output: apps/docusaurus/build
+      storybook-project: '@fmmenchi/ui'
+      storybook-static: packages/client/ui/storybook-static
