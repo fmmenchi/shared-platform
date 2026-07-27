@@ -33,6 +33,13 @@ on:
         type: string
         required: false
         default: ''
+      announce-project:
+        description: >-
+          Any publishable nx project — the workspace-level Slack announce runs its inferred
+          `announce-*` target. Required when `test-notification` or `alert-on-failure` is used.
+        type: string
+        required: false
+        default: ''
     secrets:
       SLACK_BOT_TOKEN:
         required: false
@@ -61,6 +68,7 @@ jobs:
         with:
           type: error
           app-name: ${{ inputs.app-name || github.event.repository.name }}
+          project: ${{ inputs.announce-project }}
           message: 'Security Slack wiring test — if you can read this, the audit can reach you.'
           url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -78,6 +86,7 @@ jobs:
         with:
           type: error
           app-name: ${{ inputs.app-name || github.event.repository.name }}
+          project: ${{ inputs.announce-project }}
           message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
           url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
