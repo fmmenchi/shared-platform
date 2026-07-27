@@ -21,6 +21,13 @@ updates:
       include: scope
     labels:
       - dependencies
+    ignore:
+      # TypeScript is coupled to Nx's tooling: Nx needs the programmatic compiler API, which TS 7.0
+      # dropped (expected back, in a new form, in TS 7.1). Adopt majors via `nx migrate` / Nx's TS7
+      # side-by-side guide, not a standalone bump. See nrwl/nx#36306.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
     groups:
       # Collapse the routine minor/patch churn into a single weekly PR; majors stay separate
       # so their (potentially breaking) review is not buried.
