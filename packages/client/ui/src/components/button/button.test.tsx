@@ -54,6 +54,43 @@ describe('Button', () => {
       expect(btn).toBeDisabled();
     });
 
+    it('blocks activation on a non-native polymorph (as="a")', () => {
+      // A link can't be `disabled`: loading must still block it — via
+      // aria-disabled + a click guard (keyboard Enter fires click too).
+      const onClick = vi.fn();
+      render(
+        <Button as="a" href="/next" isLoading onClick={onClick}>
+          Go
+        </Button>,
+      );
+      const link = screen.getByRole('link', { name: /go/i });
+      expect(link).toHaveAttribute('aria-disabled', 'true');
+      expect(link).toHaveAttribute('aria-busy', 'true');
+      // pointer-events is none, so dispatch directly: the guard must both
+      // swallow the handler and prevent the default (href navigation).
+      const event = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+      });
+      link.dispatchEvent(event);
+      expect(onClick).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('a non-loading polymorph still fires onClick', async () => {
+      const user = userEvent.setup();
+      const onClick = vi.fn((e: { preventDefault(): void }) =>
+        e.preventDefault(),
+      );
+      render(
+        <Button as="a" href="/next" onClick={onClick}>
+          Go
+        </Button>,
+      );
+      await user.click(screen.getByRole('link', { name: 'Go' }));
+      expect(onClick).toHaveBeenCalledOnce();
+    });
+
     it('keeps the visible label unchanged (status is sr-only)', () => {
       // The localized status must never alter the visible wording or size.
       renderUi(<Button isLoading>Salva</Button>, { locale: 'it' });

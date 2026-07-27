@@ -16,7 +16,11 @@
   @apply rounded-md text-sm font-medium transition;
   @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
 }
-.button:disabled {
+/* `:disabled` only exists on form elements; a loading `as="a"`/custom
+   polymorph is marked `aria-disabled` instead (the component also guards the
+   click, since keyboard activation bypasses pointer-events). */
+.button:disabled,
+.button[aria-disabled='true'] {
   @apply pointer-events-none;
 }
 /* Press feedback is the transform, not a colour — colour
