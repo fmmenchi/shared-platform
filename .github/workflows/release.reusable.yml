@@ -1,0 +1,76 @@
+name: Release (reusable)
+
+# Turnkey release pipeline for an @fmmenchi consumer (an nx workspace that installs
+# @fmmenchi/ci and uses the same nx release setup). Call it on push to your main:
+#
+#   jobs:
+#     release:
+#       uses: fmmenchi/shared-platform/.github/workflows/release.reusable.yml@gh-actions/v0
+#       secrets: inherit
+#
+# It versions + tags the affected releasable projects, attaches a CycloneDX SBOM to each
+# release, and announces each to Slack. The release logic lives in @fmmenchi/ci (installed
+# from GitHub Packages, run from node_modules) — not duplicated here.
+on:
+  workflow_call:
+    inputs:
+      registry-url:
+        description: npm registry to publish to.
+        type: string
+        required: false
+        default: 'https://npm.pkg.github.com'
+    secrets:
+      SLACK_BOT_TOKEN:
+        required: false
+      SLACK_CHANNEL_ID:
+        required: false
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  HUSKY: 0
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Serialize releases: two quick merges must not run `nx release` concurrently.
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+        with:
+          registry-url: ${{ inputs.registry-url }}
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Version + tag the affected releasable projects and record the new package tags.
+      - name: Release
+        run: node node_modules/@fmmenchi/ci/dist/release.js
+        env:
+          BASE_REF: ${{ github.event.before }}
+          HEAD: ${{ github.sha }}
+          NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
+        with:
+          tags-file: ${{ runner.temp }}/new_tags.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/announce-releases@gh-actions/v0
+        with:
+          tags-file: ${{ runner.temp }}/new_tags.txt
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

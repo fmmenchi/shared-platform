@@ -128,23 +128,12 @@ jobs:
 
       # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
       # workflows (no recursive runs), so a `release: published` listener never fires from
-      # here. Announce inline instead, dogfooding the @fmmenchi/nx-notify plugin: one Slack
-      # message per newly cut tag, with the notes nx wrote into each GitHub Release as the
-      # changelog. Missing Slack secrets skip green.
+      # here. Announce inline instead via the announce-releases brick: one Slack message per
+      # newly cut package tag, with the notes nx wrote into each Release. Missing secrets skip green.
       - name: Announce releases to Slack
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          failed=0
-          while IFS= read -r tag; do
-            [ -z "$tag" ] && continue
-            pkg=${tag%@*}       # {projectName}@{version} → strip the trailing @version
-            version=${tag##*@}
-            body=$(gh release view "$tag" --json body --jq .body 2>/dev/null || true)
-            url=$(gh release view "$tag" --json url --jq .url 2>/dev/null || true)
-            RELEASE_VERSION="$version" RELEASE_URL="$url" RELEASE_BODY="$body" \
-              pnpm nx run @fmmenchi/nx-notify:announce-release --appName="$pkg" || failed=1
-          done < "$RUNNER_TEMP/new_tags.txt"
-          exit $failed
+        uses: ./packages/ops/gh-actions/actions/announce-releases
+        with:
+          tags-file: ${{ runner.temp }}/new_tags.txt
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

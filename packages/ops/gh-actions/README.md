@@ -31,17 +31,35 @@ jobs:
     secrets: inherit
 ```
 
+## Turnkey: the reusable release workflow
+
+Version + tag the affected projects, attach an SBOM to each release, and announce each to Slack —
+on push to your main (needs `@fmmenchi/ci` installed and the same nx release setup):
+
+```yaml
+# .github/workflows/release.yml in a consumer repo
+name: Release
+on:
+  push:
+    branches: [main]
+jobs:
+  release:
+    uses: fmmenchi/shared-platform/.github/workflows/release.reusable.yml@gh-actions/v0
+    secrets: inherit
+```
+
 ## Building blocks (composite actions)
 
 Weave these into your own jobs when the turnkey workflow isn't enough. Run `setup` first — the others
 shell out to nx.
 
-| Action                                                                         | Does                                                                                           |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0` | pnpm + Node + frozen install (`registry-url` input for publishing jobs)                        |
-| `.../gh-actions/actions/trivy-scan@gh-actions/v0`                              | vuln + secret scan via `@fmmenchi/nx-trivy`, per-day DB cache                                  |
-| `.../gh-actions/actions/attach-sbom@gh-actions/v0`                             | per-tag CycloneDX SBOM (`tags-file` input) → uploaded to each Release as `sbom.cdx.json`       |
-| `.../gh-actions/actions/slack-notify@gh-actions/v0`                            | `@fmmenchi/nx-notify` release/error announce (`type` input); skips green without Slack secrets |
+| Action                                                                         | Does                                                                                                           |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0` | pnpm + Node + frozen install (`registry-url` input for publishing jobs)                                        |
+| `.../gh-actions/actions/trivy-scan@gh-actions/v0`                              | vuln + secret scan via `@fmmenchi/nx-trivy`, per-day DB cache                                                  |
+| `.../gh-actions/actions/attach-sbom@gh-actions/v0`                             | per-tag CycloneDX SBOM (`tags-file` input) → uploaded to each Release as `sbom.cdx.json`                       |
+| `.../gh-actions/actions/announce-releases@gh-actions/v0`                       | announce every newly-released package (`tags-file`) to Slack via `@fmmenchi/nx-notify`                         |
+| `.../gh-actions/actions/slack-notify@gh-actions/v0`                            | `@fmmenchi/nx-notify` release/error announce for one message (`type` input); skips green without Slack secrets |
 
 ## Versioning
 

@@ -10,6 +10,12 @@ inputs:
   app-name:
     description: The package/app name the message is about.
     required: true
+  project:
+    description: >-
+      The nx project whose inferred `announce-*` target to run (any publishable project — the
+      message content comes from the inputs, not the project). Defaults to the first project.
+    required: false
+    default: ''
   bot-token:
     description: Slack bot token (SLACK_BOT_TOKEN). Absent → the announce skips green.
     required: false
@@ -44,6 +50,9 @@ inputs:
 runs:
   using: composite
   steps:
+    # `<project>:announce-*` is the target @fmmenchi/nx-notify infers onto each publishable
+    # package — generic to any nx workspace. The announce is workspace-level (its content is
+    # in the inputs), so any project hosts it; default to the first if none is given.
     - name: Announce release
       if: ${{ inputs.type == 'release' }}
       shell: bash
@@ -53,7 +62,10 @@ runs:
         RELEASE_VERSION: ${{ inputs.version }}
         RELEASE_URL: ${{ inputs.release-url }}
         RELEASE_BODY: ${{ inputs.body }}
-      run: pnpm nx run @fmmenchi/nx-notify:announce-release --appName="${{ inputs.app-name }}"
+      run: |
+        proj="${{ inputs.project }}"
+        [ -z "$proj" ] && proj=$(pnpm nx show projects 2>/dev/null | sort | head -1)
+        pnpm nx run "$proj:announce-release" --appName="${{ inputs.app-name }}"
 
     - name: Announce error
       if: ${{ inputs.type == 'error' }}
@@ -63,4 +75,7 @@ runs:
         SLACK_CHANNEL_ID: ${{ inputs.channel-id }}
         ERROR_MESSAGE: ${{ inputs.message }}
         ERROR_URL: ${{ inputs.url }}
-      run: pnpm nx run @fmmenchi/nx-notify:announce-error --appName="${{ inputs.app-name }}"
+      run: |
+        proj="${{ inputs.project }}"
+        [ -z "$proj" ] && proj=$(pnpm nx show projects 2>/dev/null | sort | head -1)
+        pnpm nx run "$proj:announce-error" --appName="${{ inputs.app-name }}"
