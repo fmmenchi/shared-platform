@@ -42,7 +42,32 @@
       "scope:client",
       "type:ui",
       "doc:client"
-    ]
+    ],
+    "targets": {
+      "generate-manager-theme": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "node .storybook/generate-manager-theme.mjs",
+          "cwd": "{projectRoot}"
+        }
+      },
+      "build-storybook": {
+        "dependsOn": [
+          "generate-manager-theme"
+        ]
+      },
+      "storybook": {
+        "dependsOn": [
+          "generate-manager-theme"
+        ]
+      },
+      "static-storybook": {
+        "dependsOn": [
+          "generate-manager-theme"
+        ]
+      }
+    }
   },
   "peerDependencies": {
     "react": "^19.0.0",
