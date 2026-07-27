@@ -26,12 +26,12 @@ categorisation, and assembly. The site is a thin non-published app under `apps/`
 to render the assembled tree — so it renders with plain Docusaurus: native sidebar behaviour, no
 custom rendering layer.
 
-### 3. One site, libraries and plugins side by side
+### 3. One site, every category side by side
 
 Workspace-wide docs (architecture, ADRs, styling) are authored directly in the site's own
-co-located `docs/`. Per-package docs are assembled in beside them under **Libraries** and
-**Plugins**. A reader never has to know whether something is a library or a plugin to find it —
-it is one navigation tree.
+co-located `docs/`. Per-package docs are assembled in beside them, each under the sidebar group
+named by its `doc:<category>` tag (here **Client**, **Shared**, **Plugins**, **Ops**). A reader
+navigates one tree; the categories are the workspace's own, not a taxonomy the plugin imposes.
 
 ### 4. Assemble, never duplicate in git
 
@@ -53,13 +53,15 @@ site's `build` and `start` targets. The Nx project graph is the discovery mechan
    `context.projectsConfigurations.projects`. For every project it skips the docs site itself and
    any `application`, then keeps the ones that ship a `docs/` folder containing at least one
    `.md`/`.mdx` file or a `_category_.json`. Each kept project becomes a manifest entry — its Nx
-   `name`, `root`, an unscoped destination `folder` (`@fmmenchi/notify` → `notify`), and a `type`
-   of `plugin` (tag `scope:plugins`) or `library`. The manifest, `nx-doc-projects.json`, is written
+   `name`, `root`, and an unscoped destination `folder` (`@fmmenchi/notify` → `notify`) — filed under
+   the category from its `doc:<category>` tag (a project with `docs/` but no `doc:` tag is skipped
+   with a warning). The manifest, `nx-doc-projects.json`, is a `category → projects` map, written
    into the site project's root.
 
 2. **`sync-docs` — the worker.** Reads `nx-doc-projects.json` and copies each project's `docs/` into
-   `<targetPath>/{libraries,plugins}/<folder>`, replacing whatever was there. It also writes
-   `<targetPath>/.gitignore` (`libraries/*/`, `plugins/*/`) so the assembled copies stay out of git.
+   `<targetPath>/<category>/<folder>`, replacing whatever was there. It also writes
+   `<targetPath>/.gitignore` (one sorted `<category>/*/` line per category) so the assembled copies
+   stay out of git.
    With `watch: true` it stays running as a continuous executor, watching every source `docs/`
    folder and re-syncing the changed project — this is what the dev server depends on for hot
    reload.
@@ -78,7 +80,7 @@ silently. Destination folders use the **unscoped** package name to stay unique a
 ### Where the pieces live
 
 - Source of truth: each package's own `docs/` folder (tracked).
-- Workspace docs + sidebar markers: the site's co-located `docs/` and its `docs/{libraries,plugins}/_category_.json` (tracked).
+- Workspace docs + sidebar markers: the site's co-located `docs/` and its `docs/<category>/_category_.json` (tracked).
 - Assembled per-package folders + `nx-doc-projects.json`: generated, git-ignored.
 
 See the [reference](../reference/index.md) for the exact options, and the

@@ -16,7 +16,8 @@
   "nx": {
     "tags": [
       "scope:ops",
-      "type:util"
+      "type:util",
+      "doc:ops"
     ],
     "targets": {
       "nx-release-publish": {

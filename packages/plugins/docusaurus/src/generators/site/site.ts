@@ -24,6 +24,27 @@ export async function siteGenerator(tree: Tree, options: SiteGeneratorSchema) {
     directory,
   });
 
+  // One sidebar-group marker per docs category — these mirror the `doc:<category>`
+  // tags packages carry (see the project-doc generator). Positioned high so the
+  // aggregated groups sit at the bottom of the sidebar, after the hand-authored pages.
+  const categories =
+    options.categories && options.categories.length > 0
+      ? options.categories
+      : ['libraries', 'plugins'];
+  categories.forEach((category, i) => {
+    tree.write(
+      path.join(directory, 'docs', category, '_category_.json'),
+      `${JSON.stringify(
+        {
+          label: category.charAt(0).toUpperCase() + category.slice(1),
+          position: 90 + i,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+  });
+
   // Keep the build artifacts out of workspace-wide formatting too.
   if (tree.exists('.prettierignore')) {
     const ignore = tree.read('.prettierignore', 'utf-8') ?? '';

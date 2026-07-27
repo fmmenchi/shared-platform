@@ -16,7 +16,8 @@ import type { SyncDocsExecutorSchema } from './schema';
  * Assembles the docs site from each project's `docs/` folder.
  *
  * Reads the manifest `config-generator` wrote, copies every listed project's docs into
- * `<targetPath>/{libraries,plugins}/<folder>`, then yields success to unblock the build.
+ * `<targetPath>/<category>/<folder>` (category = each project's `doc:` tag), then yields success
+ * to unblock the build.
  * Also writes the `.gitignore` that keeps those assembled folders out of git — they are
  * rebuilt on every sync. A continuous **watch** mode (for the dev server) re-syncs on change.
  *
@@ -44,7 +45,7 @@ export default async function* syncDocsExecutor(
 
   const targetRoot = join(workspaceRoot, options.targetPath);
   mkdirSync(targetRoot, { recursive: true });
-  writeAggregationGitignore(targetRoot);
+  writeAggregationGitignore(targetRoot, Object.keys(config));
 
   syncAllProjects(workspaceRoot, targetRoot, config);
   yield { success: true };

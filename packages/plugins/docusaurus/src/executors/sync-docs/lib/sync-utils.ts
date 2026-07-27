@@ -15,22 +15,26 @@ import type {
   NxProjectDocEntry,
 } from '../../../shared/types';
 
-export type Category = 'libraries' | 'plugins';
+/** A docs category — the value of a project's `doc:<category>` tag. Free-form by design. */
+export type Category = string;
 
 /**
  * Writes the `.gitignore` that keeps the assembled per-package folders out of git — they are
  * rebuilt from each package's `docs/` on every sync, so committing them would duplicate the
- * source. The `_category_.json` sidebar markers live one level up and stay tracked. Owning
- * this here means the ignore travels with the tool, not a hand-edited root `.gitignore`.
+ * source. The `_category_.json` sidebar markers live one level up and stay tracked. The ignored
+ * folders are exactly the categories present in the manifest, so the ignore stays in step with
+ * whatever taxonomy the workspace declares.
  */
-export function writeAggregationGitignore(targetRoot: string): void {
+export function writeAggregationGitignore(
+  targetRoot: string,
+  categories: readonly Category[],
+): void {
   writeFileSync(
     join(targetRoot, '.gitignore'),
     [
       '# Assembled at build time by @fmmenchi/nx-docusaurus (sync-docs) — not committed.',
       '# Each package folder is a copy of that package’s docs/; the _category_.json markers stay.',
-      'libraries/*/',
-      'plugins/*/',
+      ...[...categories].sort().map((category) => `${category}/*/`),
       '',
     ].join('\n'),
   );
@@ -64,12 +68,11 @@ export function syncAllProjects(
   targetRoot: string,
   config: DocusaurusProjectsConfig,
 ): void {
-  config.libraries.forEach((p) =>
-    syncSingleProject(workspaceRoot, targetRoot, 'libraries', p),
-  );
-  config.plugins.forEach((p) =>
-    syncSingleProject(workspaceRoot, targetRoot, 'plugins', p),
-  );
+  for (const [category, projects] of Object.entries(config)) {
+    projects.forEach((p) =>
+      syncSingleProject(workspaceRoot, targetRoot, category, p),
+    );
+  }
 }
 
 function watchProject(
@@ -91,12 +94,9 @@ export function watchAllProjects(
   targetRoot: string,
   config: DocusaurusProjectsConfig,
 ): FSWatcher[] {
-  const forCategory = (category: Category, projects: NxProjectDocEntry[]) =>
+  return Object.entries(config).flatMap(([category, projects]) =>
     projects
       .map((p) => watchProject(workspaceRoot, targetRoot, category, p))
-      .filter((w): w is FSWatcher => w !== undefined);
-  return [
-    ...forCategory('libraries', config.libraries),
-    ...forCategory('plugins', config.plugins),
-  ];
+      .filter((w): w is FSWatcher => w !== undefined),
+  );
 }

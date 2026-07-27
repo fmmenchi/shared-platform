@@ -2,6 +2,7 @@ import {
   formatFiles,
   joinPathFragments,
   readProjectConfiguration,
+  updateProjectConfiguration,
   type Tree,
 } from '@nx/devkit';
 import type { ProjectDocGeneratorSchema } from './schema';
@@ -10,7 +11,8 @@ import type { ProjectDocGeneratorSchema } from './schema';
  * Scaffolds a project's **in-package** documentation at `<projectRoot>/docs/index.md`,
  * pre-filled from the project's package.json. Docs live with the code; `config-generator`
  * + `sync-docs` discover and assemble every `docs/` folder into the site. This generator
- * only makes starting a page consistent.
+ * only makes starting a page consistent — and, given `--category`, tags the project with
+ * `doc:<category>` so it lands in the right sidebar group.
  */
 export async function projectDocGenerator(
   tree: Tree,
@@ -61,6 +63,17 @@ pnpm add ${packageName}
 - Source: \`${project.root}\`
 `,
   );
+
+  if (options.category) {
+    const tag = `doc:${options.category}`;
+    const tags = project.tags ?? [];
+    if (!tags.includes(tag)) {
+      updateProjectConfiguration(tree, options.project, {
+        ...project,
+        tags: [...tags, tag],
+      });
+    }
+  }
 
   await formatFiles(tree);
 }

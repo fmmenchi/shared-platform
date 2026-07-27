@@ -40,7 +40,8 @@
   "nx": {
     "tags": [
       "scope:client",
-      "type:ui"
+      "type:ui",
+      "doc:client"
     ]
   },
   "peerDependencies": {
