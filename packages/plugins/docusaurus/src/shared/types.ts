@@ -1,5 +1,5 @@
 /** The doc categories the site groups projects under. No apps in this monorepo. */
-export const documentationTypes = ['library', 'plugin'] as const;
+export const documentationTypes = ['library', 'plugin', 'ops'] as const;
 export type DocumentationType = (typeof documentationTypes)[number];
 
 /** One doc-enabled project: its Nx name, root, unscoped folder, and category. */
@@ -17,4 +17,5 @@ export interface NxProjectDocEntry {
 export interface DocusaurusProjectsConfig {
   libraries: NxProjectDocEntry[];
   plugins: NxProjectDocEntry[];
+  ops: NxProjectDocEntry[];
 }

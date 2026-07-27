@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { configFileName, docsFolder } from '../../shared/constants';
 import type {
+  DocumentationType,
   DocusaurusProjectsConfig,
   NxProjectDocEntry,
 } from '../../shared/types';
@@ -14,9 +15,9 @@ import type { ConfigGeneratorExecutorSchema } from './schema';
  * with at least one `.md`/`.mdx` (or a `_category_.json`) — and writes the manifest
  * `nx-doc-projects.json` in the docs app root. `sync-docs` reads it to know what to copy.
  *
- * Categorization: every project here is an Nx `library`; a `scope:plugins` tag makes it a
- * plugin, otherwise a library. The docs app itself is skipped. The destination folder is
- * the unscoped project name (`@fmmenchi/notify` → `notify`) so it is unique and clean.
+ * Categorization by tag: `scope:plugins` → plugin, `scope:ops` → ops, otherwise a library.
+ * The docs app itself is skipped. The destination folder is the unscoped project name
+ * (`@fmmenchi/notify` → `notify`) so it is unique and clean.
  */
 const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
   _options,
@@ -29,7 +30,11 @@ const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
   const projects = projectsConfigurations.projects;
   const docRoot = projects[docProject].root;
 
-  const result: DocusaurusProjectsConfig = { libraries: [], plugins: [] };
+  const result: DocusaurusProjectsConfig = {
+    libraries: [],
+    plugins: [],
+    ops: [],
+  };
 
   for (const [name, cfg] of Object.entries(projects)) {
     if (cfg.root === docRoot) continue; // never sync the docs app into itself
@@ -44,20 +49,31 @@ const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
       );
     if (!hasContent) continue;
 
-    const isPlugin = cfg.tags?.includes('scope:plugins') ?? false;
+    const tags = cfg.tags ?? [];
+    const type: DocumentationType = tags.includes('scope:plugins')
+      ? 'plugin'
+      : tags.includes('scope:ops')
+        ? 'ops'
+        : 'library';
     const entry: NxProjectDocEntry = {
       name,
       root: cfg.root,
       folder: name.split('/').pop() as string,
-      type: isPlugin ? 'plugin' : 'library',
+      type,
     };
-    (isPlugin ? result.plugins : result.libraries).push(entry);
+    const bucket =
+      type === 'plugin'
+        ? result.plugins
+        : type === 'ops'
+          ? result.ops
+          : result.libraries;
+    bucket.push(entry);
   }
 
   const outputPath = join(root, docRoot, configFileName);
   writeFileSync(outputPath, `${JSON.stringify(result, null, 2)}\n`, 'utf-8');
   console.log(
-    `Wrote ${configFileName}: ${result.libraries.length} libraries, ${result.plugins.length} plugins.`,
+    `Wrote ${configFileName}: ${result.libraries.length} libraries, ${result.plugins.length} plugins, ${result.ops.length} ops.`,
   );
 
   return { success: true };

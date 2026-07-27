@@ -15,7 +15,7 @@ import type {
   NxProjectDocEntry,
 } from '../../../shared/types';
 
-export type Category = 'libraries' | 'plugins';
+export type Category = 'libraries' | 'plugins' | 'ops';
 
 /**
  * Writes the `.gitignore` that keeps the assembled per-package folders out of git — they are
@@ -31,6 +31,7 @@ export function writeAggregationGitignore(targetRoot: string): void {
       '# Each package folder is a copy of that package’s docs/; the _category_.json markers stay.',
       'libraries/*/',
       'plugins/*/',
+      'ops/*/',
       '',
     ].join('\n'),
   );
@@ -70,6 +71,9 @@ export function syncAllProjects(
   config.plugins.forEach((p) =>
     syncSingleProject(workspaceRoot, targetRoot, 'plugins', p),
   );
+  config.ops.forEach((p) =>
+    syncSingleProject(workspaceRoot, targetRoot, 'ops', p),
+  );
 }
 
 function watchProject(
@@ -98,5 +102,6 @@ export function watchAllProjects(
   return [
     ...forCategory('libraries', config.libraries),
     ...forCategory('plugins', config.plugins),
+    ...forCategory('ops', config.ops),
   ];
 }

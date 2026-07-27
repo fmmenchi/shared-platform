@@ -2,3 +2,4 @@
 # Each package folder is a copy of that package’s docs/; the _category_.json markers stay.
 libraries/*/
 plugins/*/
+ops/*/
