@@ -31,8 +31,9 @@ jobs:
 
       - run: pnpm nx run-many -t typecheck build lint test build-storybook
 
-  # Preview on PRs: what `nx release` WOULD publish — versions, changelogs, GitHub
-  # releases. Dry-run only, never versions/tags/publishes. Informational.
+  # Preview on PRs: EXACTLY what the release job below would cut if this PR merged —
+  # same affected scoping, run through the same @fmmenchi/ci orchestrator in DRY_RUN.
+  # Never versions/tags/publishes. Informational, and trustworthy (mirrors the real job).
   release-preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -43,9 +44,14 @@ jobs:
 
       - uses: ./packages/ops/gh-actions/actions/setup
 
-      - name: nx release --dry-run (preview — never publishes)
-        run: pnpm nx release --dry-run --skip-publish
+      - run: pnpm nx build @fmmenchi/ci
+
+      - name: Preview the release (dry-run of the real job — never publishes)
+        run: node packages/ops/ci/dist/release.js
         env:
+          DRY_RUN: '1'
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Trunk-based release: every green push to main versions each package from its
