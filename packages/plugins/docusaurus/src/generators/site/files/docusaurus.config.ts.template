@@ -3,7 +3,7 @@ import type { Config } from '@docusaurus/types';
 /**
  * Single-instance docs site over the co-located `docs/`. Workspace docs are
  * authored there directly; per-package docs live in each package's `docs/`
- * folder and are assembled under `docs/{libraries,plugins}/` by the
+ * folder and are assembled under `docs/<category>/` (one folder per `doc:` tag) by the
  * `@fmmenchi/nx-docusaurus` config-generator + sync-docs executors (the
  * `build`/`serve` targets depend on them).
  */

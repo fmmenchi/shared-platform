@@ -45,7 +45,7 @@
   workflows, so the release job announces each newly cut tag itself — dogfooding the
   `@fmmenchi/nx-notify` plugin (`nx run @fmmenchi/nx-notify:announce-release --appName=<pkg>` per
   tag, with the release body as the changelog). Secrets `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID`
-  absent → skips green. `notify-release.yml` is a `workflow_dispatch` manual test only.
+  absent → skips green.
 
 ## Publishing — GitHub Packages
 

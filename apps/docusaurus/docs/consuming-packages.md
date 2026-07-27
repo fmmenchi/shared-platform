@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # Consuming `@fmmenchi/*` packages from an app
 
 The packages are published to **GitHub Packages** (npm registry `npm.pkg.github.com`), private to

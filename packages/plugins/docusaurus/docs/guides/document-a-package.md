@@ -8,21 +8,31 @@ sidebar_position: 2
 
 ## Intent
 
-Give any library or plugin a `docs/` folder so `config-generator` discovers it and `sync-docs`
-assembles it into the site — under **Plugins** if the project is tagged `scope:plugins`, otherwise
-under **Libraries**.
+Give any package a `docs/` folder so `config-generator` discovers it and `sync-docs` assembles it
+into the site, under the sidebar group named by the project's `doc:<category>` tag (a project with
+`docs/` but no `doc:` tag is skipped with a warning).
 
 ## Step 1: Scaffold the entry page
 
 ```bash
-pnpm nx g @fmmenchi/nx-docusaurus:project-doc @scope/my-lib
+pnpm nx g @fmmenchi/nx-docusaurus:project-doc @scope/my-lib --category=client
 ```
 
 This writes `<projectRoot>/docs/index.md`, pre-filled from the project's `package.json` (`name` and
-`description`). If `docs/index.md` already exists the generator **throws** rather than overwrite it —
-edit the existing page instead.
+`description`), and adds the `doc:client` tag to the project — the tag is the sidebar group the page
+lands in. If `docs/index.md` already exists the generator **throws** rather than overwrite it — edit
+the existing page instead.
 
 👉 [`project-doc` reference](../reference/index.md#project-doc)
+
+:::note The `doc:` tag is what files the page
+
+Without a `doc:<category>` tag the package is discovered but **skipped** with a warning. `--category`
+adds it for you; you can also set it by hand in the project's `nx.tags`. The category must have a
+matching `docs/<category>/_category_.json` marker in the site (the `site` generator scaffolds one per
+`--categories` entry).
+
+:::
 
 ### What the page looks like
 
@@ -64,17 +74,17 @@ naming a file `.mdx`.
 ## Step 3: Keep links inside the assembled tree
 
 Every link is checked at build time (`onBrokenLinks: 'throw'`). A link to another package must point
-into the **assembled** path, not the source path — for example, from a plugin page to a library
-page:
+into the **assembled** path, not the source path — `../../<category>/<folder>/…` — for example,
+from a plugin page to a shared-package page:
 
 ```markdown
-See [@scope/other-lib](../../libraries/other-lib/index.md).
+See [@scope/other-lib](../../shared/other-lib/index.md).
 ```
 
 ## Step 4: Verify it is picked up
 
 ```bash
-pnpm nx run docs:config-generator   # logs "N libraries, M plugins"
+pnpm nx run docs:config-generator   # logs the per-category counts, e.g. "2 client, 1 shared, 4 plugins"
 pnpm nx run docs:build              # assembles and builds
 ```
 

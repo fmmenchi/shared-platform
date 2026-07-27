@@ -112,7 +112,8 @@
     },
     "tags": [
       "scope:plugins",
-      "type:plugin"
+      "type:plugin",
+      "doc:plugins"
     ]
   },
   "dependencies": {

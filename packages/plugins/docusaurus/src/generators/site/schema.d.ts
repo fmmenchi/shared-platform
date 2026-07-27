@@ -13,4 +13,9 @@ export interface SiteGeneratorSchema {
   baseUrl?: string;
   /** Repository URL for the navbar GitHub link. */
   repoUrl?: string;
+  /**
+   * Docs categories to scaffold sidebar-group markers for (one `docs/<category>/_category_.json`
+   * each). Mirror the `doc:<category>` tags your packages carry. Default `['libraries', 'plugins']`.
+   */
+  categories?: string[];
 }

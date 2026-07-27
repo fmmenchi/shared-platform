@@ -1,3 +1,7 @@
+---
+sidebar_position: 1
+---
+
 # Architecture
 
 `shared-platform` is the private monorepo of shared layers — UI, AI, data access, security,

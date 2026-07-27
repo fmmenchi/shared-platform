@@ -40,6 +40,12 @@
       "type": "string",
       "description": "Repository URL for the navbar GitHub link.",
       "default": "https://github.com"
+    },
+    "categories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Docs categories to scaffold sidebar-group markers for (one docs/<category>/_category_.json each). Mirror the doc:<category> tags your packages carry.",
+      "default": ["libraries", "plugins"]
     }
   },
   "required": ["name"]

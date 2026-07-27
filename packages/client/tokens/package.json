@@ -42,7 +42,8 @@
   "nx": {
     "tags": [
       "scope:client",
-      "type:util"
+      "type:util",
+      "doc:client"
     ]
   },
   "dependencies": {
