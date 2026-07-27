@@ -2,7 +2,9 @@
 
 Reusable GitHub Actions toolkit for `@fmmenchi` consumers (all nx workspaces). Part of
 `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md). Scope `ops`,
-`private` (versioned + tagged, **not** published to npm). Consumer usage — [README](./README.md).
+`private` (versioned + tagged, **not** published to npm). Consumer usage — [README](./README.md);
+long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
+[reference](./docs/reference/workflows.md) live in [`docs/`](./docs/index.md).
 
 ## Shape
 

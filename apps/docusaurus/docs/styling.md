@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Styling the design system — Tailwind + CSS Modules + `cva`
 
 How `@fmmenchi/ui` is styled, why it is done this way, and what a consumer has to do. The short
