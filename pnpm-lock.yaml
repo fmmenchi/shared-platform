@@ -259,6 +259,9 @@ importers:
       '@fmmenchi/nx-docusaurus':
         specifier: workspace:*
         version: link:../../packages/plugins/docusaurus
+      '@fmmenchi/tokens':
+        specifier: workspace:*
+        version: link:../../packages/client/tokens
       react:
         specifier: 19.2.8
         version: 19.2.8

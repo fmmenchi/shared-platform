@@ -1,62 +1,59 @@
 /*
- * Site theme — roughly the @dev-blog look: a cool slate ramp (hue 256) with a
- * single yellow accent, Space Grotesk for prose and JetBrains Mono for code.
- *
- * Both themes ship: the default follows the OS (respectPrefersColorScheme) and
- * the visitor's toggle choice is persisted by Docusaurus. Fonts are shared on
- * :root; the accent + surfaces differ per theme (bright yellow reads on dark, a
- * deeper amber keeps contrast on the light ground).
+ * Site theme — dogfoods the design system's own generated tokens (@fmmenchi/tokens)
+ * instead of hand-picked values. `vars.css` defines the light `--fm-*` roles on :root;
+ * `presets/dark.css` overrides the colour roles under [data-theme='dark']. Docusaurus
+ * stamps data-theme on <html> (default follows the OS, choice persisted), so the tokens
+ * switch themselves — we map Infima's variables onto the `--fm-*` roles exactly once.
  */
 
-:root {
-  /* Type — self-hosted faces aren't shipped; fall back cleanly to system UI. */
-  --ifm-font-family-base:
-    'Space Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --ifm-font-family-monospace:
-    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+@import '@fmmenchi/tokens/styles/vars.css';
+@import '@fmmenchi/tokens/styles/presets/dark.css';
+
+/*
+ * Dual selector so the mapping wins in BOTH themes: in light `:root` beats Infima's
+ * `:root` defaults (we load last); in dark `[data-theme='dark']` beats Infima's dark
+ * defaults. The values are `var(--fm-*)`, which already resolve per theme.
+ */
+:root,
+:root[data-theme='dark'] {
+  /* Brand — the primary action family + its states. */
+  --ifm-color-primary: var(--fm-color-primary);
+  --ifm-color-primary-dark: var(--fm-color-primary-hover);
+  --ifm-color-primary-darker: var(--fm-color-primary-hover);
+  --ifm-color-primary-darkest: var(--fm-color-primary-active);
+  --ifm-color-primary-light: var(--fm-color-primary-subtle);
+  --ifm-color-primary-lighter: var(--fm-color-primary-subtle);
+  --ifm-color-primary-lightest: var(--fm-color-primary-subtle);
+
+  /* Surfaces — page, raised surfaces, navbar/footer. */
+  --ifm-background-color: var(--fm-color-background);
+  --ifm-background-surface-color: var(--fm-color-card);
+  --ifm-navbar-background-color: var(--fm-color-card);
+  --ifm-footer-background-color: var(--fm-color-card);
+
+  /* Text. */
+  --ifm-font-color-base: var(--fm-color-foreground);
+  --ifm-heading-color: var(--fm-color-foreground);
+
+  /* Links follow the token link role. */
+  --ifm-link-color: var(--fm-color-link);
+  --ifm-link-hover-color: var(--fm-color-link-hover);
+  --ifm-menu-color-active: var(--fm-color-primary);
+  --ifm-navbar-link-hover-color: var(--fm-color-link);
+
+  /* Muted / borders / code. */
+  --ifm-color-emphasis-200: var(--fm-color-muted);
+  --ifm-color-emphasis-300: var(--fm-color-border);
+  --ifm-toc-border-color: var(--fm-color-border);
+  --ifm-blockquote-color: var(--fm-color-muted-foreground);
+  --ifm-code-background: var(--fm-color-muted);
+  --ifm-pre-background: var(--fm-color-muted);
+
+  /* Type + radius from the token contract. */
+  --ifm-font-family-base: var(--fm-font-sans);
+  --ifm-heading-font-family: var(--fm-font-heading);
+  --ifm-font-family-monospace: var(--fm-font-mono);
+  --ifm-heading-font-weight: var(--fm-font-weight-bold, 700);
+  --ifm-global-radius: var(--fm-radius-md);
   --ifm-code-font-size: 0.9em;
-  --ifm-heading-font-weight: 700;
-
-  /* Accent for LIGHT — a deeper amber so links/buttons stay legible on white. */
-  --ifm-color-primary: oklch(58% 0.13 80);
-  --ifm-color-primary-dark: oklch(53% 0.13 80);
-  --ifm-color-primary-darker: oklch(50% 0.13 80);
-  --ifm-color-primary-darkest: oklch(42% 0.12 80);
-  --ifm-color-primary-light: oklch(64% 0.13 82);
-  --ifm-color-primary-lighter: oklch(70% 0.12 84);
-  --ifm-color-primary-lightest: oklch(80% 0.1 88);
-
-  /* A faint slate wash so light mode isn't clinical white. */
-  --ifm-background-color: oklch(98.5% 0.004 256);
-  --ifm-background-surface-color: oklch(100% 0 0);
-}
-
-[data-theme='dark'] {
-  /* Accent for DARK — the bright dev-blog yellow. */
-  --ifm-color-primary: oklch(86% 0.16 95);
-  --ifm-color-primary-dark: oklch(80% 0.16 95);
-  --ifm-color-primary-darker: oklch(76% 0.16 95);
-  --ifm-color-primary-darkest: oklch(66% 0.15 95);
-  --ifm-color-primary-light: oklch(90% 0.14 95);
-  --ifm-color-primary-lighter: oklch(93% 0.12 95);
-  --ifm-color-primary-lightest: oklch(96% 0.08 95);
-
-  /* Surfaces — page darker than cards, code/navbar darker than the page. */
-  --ifm-background-color: oklch(21% 0.02 256); /* neutral-950 */
-  --ifm-background-surface-color: oklch(26% 0.02 256); /* neutral-850 */
-  --ifm-navbar-background-color: oklch(17% 0.015 256); /* neutral-1000 */
-  --ifm-footer-background-color: oklch(17% 0.015 256);
-  --ifm-code-background: oklch(17% 0.015 256);
-  --ifm-pre-background: oklch(17% 0.015 256);
-
-  /* Text */
-  --ifm-font-color-base: oklch(95% 0.007 256); /* neutral-100 */
-  --ifm-heading-color: oklch(95% 0.007 256);
-
-  /* Borders / separators — cool slate, felt rather than seen. */
-  --ifm-toc-border-color: oklch(31% 0.02 256); /* neutral-800 */
-  --ifm-color-emphasis-200: oklch(26% 0.02 256);
-  --ifm-color-emphasis-300: oklch(31% 0.02 256);
-
-  --ifm-blockquote-color: oklch(74% 0.014 256);
 }
