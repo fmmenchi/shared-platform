@@ -13,9 +13,9 @@ layers, never project implementations.
 packages/
   shared/           # isomorphic (no DOM, no Node APIs) — notify
   client/           # browser-only — tokens, ui (the design system)
-  server/           # Node-only — (scope reserved; empty)
-  plugins/          # Nx plugins, consumed as devDeps by the other repos — notify, theme-generator, docusaurus
-  tools/            # scripts — ci
+  server/           # server-side only (secrets; never a client bundle) — signing
+  plugins/          # Nx plugins, consumed as devDeps by other repos — nx-notify, nx-theme-generator, nx-docusaurus, nx-trivy
+  ops/              # CI/CD & release automation — ci, gh-actions
 apps/               # non-published — docusaurus (the docs site)
 ```
 
@@ -24,7 +24,7 @@ provider-agnostic, Tailwind-themed, with Storybook (MCP) and browser-mode compon
 [ADR-0001](./apps/docusaurus/docs/adr/0001-ui-library-foundations.md) and [.agents/doc/ui.md](./.agents/doc/ui.md).
 
 `client` and `server` may depend on `shared`, never on each other, and nothing depends on
-`plugins`/`tools` — enforced by ESLint module boundaries and by the workspace dependency graph. Details in [doc/architecture.md](./apps/docusaurus/docs/architecture.md).
+`plugins`/`ops` — enforced by ESLint module boundaries and by the workspace dependency graph. Details in [doc/architecture.md](./apps/docusaurus/docs/architecture.md).
 
 ## Quickstart
 
