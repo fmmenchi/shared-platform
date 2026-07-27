@@ -82,11 +82,12 @@ line) — and suppress only unfixable findings in the root `.trivyignore.yaml`.
 
 ## Topic index (`.agents/doc/`)
 
-| Spoke                                         | Open when the task touches…                                  |
-| --------------------------------------------- | ------------------------------------------------------------ |
-| [architecture](./.agents/doc/architecture.md) | creating/moving libraries, scopes, tags, module boundaries   |
-| [ui](./.agents/doc/ui.md)                     | building/testing components, tokens, Storybook, i18n ports   |
-| [releases](./.agents/doc/releases.md)         | versioning, changelogs, publishing, commit format, branching |
+| Spoke                                         | Open when the task touches…                                             |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| [architecture](./.agents/doc/architecture.md) | creating/moving libraries, scopes, tags, module boundaries              |
+| [ui](./.agents/doc/ui.md)                     | building/testing components, tokens, Storybook, i18n ports              |
+| [releases](./.agents/doc/releases.md)         | versioning, changelogs, publishing, commit format, branching            |
+| [known-issues](./.agents/doc/known-issues.md) | upgrading deps, a tool/version that won't bump, an odd build/CI failure |
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
