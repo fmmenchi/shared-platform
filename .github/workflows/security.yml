@@ -20,24 +20,17 @@ on:
   schedule:
     - cron: '0 6 * * 1' # weekly audit — Monday 06:00 UTC
   workflow_dispatch:
-    inputs:
-      test_notification:
-        description: 'Post a test message to Slack instead of scanning'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
 jobs:
   # Dogfood the turnkey pipeline (the reusable, not just the bricks). The caller owns the
-  # triggers above and the gating: alert only on the weekly run (a PR already shows a red
-  # check), and the wiring test only on a manual dispatch.
+  # triggers above and the gating: alert only on the weekly run (a PR already shows a red check).
   security:
     uses: ./.github/workflows/security.reusable.yml
     with:
       app-name: shared-platform
       announce-project: '@fmmenchi/ci'
       alert-on-failure: ${{ github.event_name == 'schedule' }}
-      test-notification: ${{ github.event_name == 'workflow_dispatch' && inputs.test_notification }}
     secrets: inherit
