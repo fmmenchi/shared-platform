@@ -27,6 +27,7 @@ function Button<As extends React.ElementType = 'button'>(
     type,
     disabled,
     children,
+    onClick,
     ...rest
   } = props as ButtonProps<'button'> & { as?: As };
 
@@ -40,6 +41,16 @@ function Button<As extends React.ElementType = 'button'>(
     isIconOnly && !attrs['aria-label'] && !attrs['aria-labelledby'],
     'Button: an icon-only button has no discernible text — pass `aria-label`.',
   );
+
+  // Loading must block activation on EVERY polymorph. A native button gets
+  // `disabled`; an anchor/custom component can't, so it gets `aria-disabled`
+  // plus a click guard — the guard (not pointer-events) is the real gate,
+  // because keyboard activation on a link fires `click` too, and the
+  // `preventDefault` stops the `href` navigation.
+  const blocksAsNonNative = !isNativeButton && isLoading;
+  const handleClick = blocksAsNonNative
+    ? (event: React.MouseEvent) => event.preventDefault()
+    : onClick;
 
   // Leading adornment: the spinner while loading, otherwise the icon (if any).
   let adornment: React.ReactNode = null;
@@ -60,6 +71,12 @@ function Button<As extends React.ElementType = 'button'>(
       disabled={isNativeButton ? disabled || isLoading : undefined}
       aria-busy={isLoading || undefined}
       {...rest}
+      aria-disabled={
+        blocksAsNonNative
+          ? true
+          : (attrs['aria-disabled'] as React.AriaAttributes['aria-disabled'])
+      }
+      onClick={handleClick}
     >
       {adornment}
       {children}
