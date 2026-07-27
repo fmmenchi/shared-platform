@@ -35,10 +35,11 @@ if Nx reports the workspace is out of sync).
 ## Definition of done — must be green before committing
 
 ```bash
-pnpm nx run-many -t typecheck build lint test build-storybook
+pnpm nx run-many -t typecheck build lint lint-css test build-storybook
 ```
 
-Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`.
+Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`. `lint-css`
+(Stylelint) enforces design-token values in the UI's CSS Modules — see [ui](./.agents/doc/ui.md).
 
 CI also runs a **workspace security scan** (`@fmmenchi/nx-trivy`, Trivy) that fails on CRITICAL/HIGH
 dependency vulnerabilities. Run it locally with `pnpm nx run @fmmenchi/nx-trivy:scan` (needs the
