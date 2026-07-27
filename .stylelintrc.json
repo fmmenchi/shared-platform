@@ -1,0 +1,83 @@
+{
+  "extends": ["stylelint-config-recommended"],
+  "plugins": ["stylelint-declaration-strict-value"],
+  "rules": {
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwind",
+          "apply",
+          "layer",
+          "config",
+          "theme",
+          "screen",
+          "variants",
+          "responsive",
+          "reference",
+          "custom-variant",
+          "plugin",
+          "utility",
+          "variant",
+          "source"
+        ]
+      }
+    ],
+    "import-notation": null
+  },
+  "overrides": [
+    {
+      "files": ["packages/client/ui/src/**/*.module.css"],
+      "rules": {
+        "color-no-hex": true,
+        "function-disallowed-list": [
+          [
+            "rgb",
+            "rgba",
+            "hsl",
+            "hsla",
+            "hwb",
+            "lab",
+            "lch",
+            "oklab",
+            "oklch",
+            "color"
+          ],
+          {
+            "message": "Use a semantic colour token var(--fm-color-…), not a raw colour function"
+          }
+        ],
+        "scale-unlimited/declaration-strict-value": [
+          [
+            "/color$/",
+            "fill",
+            "stroke",
+            "font-family",
+            "font-size",
+            "font-weight"
+          ],
+          {
+            "ignoreValues": [
+              "transparent",
+              "currentColor",
+              "inherit",
+              "initial",
+              "unset",
+              "none"
+            ],
+            "ignoreFunctions": true,
+            "message": "Use a semantic design token (var(--fm-color-…) / var(--fm-font-…)), not a hardcoded value"
+          }
+        ],
+        "declaration-property-value-disallowed-list": [
+          {
+            "/^(transition|animation)/": ["/[0-9]+m?s/", "/cubic-bezier/"]
+          },
+          {
+            "message": "Motion: no raw durations (ms/s) or curves (cubic-bezier). Use the tokens var(--fm-duration-*) / var(--fm-ease-*) or the transition/animation utilities. See @fmmenchi/tokens"
+          }
+        ]
+      }
+    }
+  ]
+}

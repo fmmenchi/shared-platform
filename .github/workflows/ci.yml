@@ -29,7 +29,7 @@ jobs:
 
       - run: pnpm nx format:check --all
 
-      - run: pnpm nx run-many -t typecheck build lint test build-storybook
+      - run: pnpm nx run-many -t typecheck build lint lint-css test build-storybook
 
   # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
   # only the projects with releasing conventional commits, so a plain dry-run is already
