@@ -13,6 +13,14 @@
 #          statement: "Vulnerable code path not reached in our usage."
 #          expired_at: 2026-12-31
 #
-# Currently empty: every finding so far was remediated via pnpm-workspace.yaml `overrides`
-# (axios, brace-expansion, fast-uri, serialize-javascript), not suppressed.
-vulnerabilities: []
+# The 5.x line is fixed via the pnpm-workspace.yaml override (>=5.0.8); the entry below covers
+# only the 1.x/2.x instances, which have no upstream patch.
+vulnerabilities:
+  - id: CVE-2026-14257
+    # brace-expansion DoS (unbounded expansion). Fixed only in 5.0.8 — no patch exists for the
+    # 1.x/2.x lines, and forcing them to 5.x breaks the CJS `require('brace-expansion')()` call
+    # (5.x is ESM-only). The 1.1.16 instances are transitive, reached only by build-time tooling
+    # (minimatch/glob) on our own trusted patterns — never runtime input. The fixable 5.x line is
+    # bumped to >=5.0.8 in pnpm-workspace.yaml; this suppresses only the unfixable older lines.
+    statement: 'No patch for brace-expansion 1.x/2.x; build-time-only, trusted input; 5.x is fixed via override.'
+    expired_at: 2026-12-31
