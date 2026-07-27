@@ -32,3 +32,15 @@ Add an entry whenever a change is blocked by something a future agent would othe
 - **What we do now.** Babel presets/plugins stay on 7.x; Dependabot ignores `@babel/*` **major** bumps
   (`.github/dependabot.yml`). Don't force core 8 into `@nx/js` via `pnpm.overrides` (untested, risky).
 - **What unblocks it.** Nx moving its Babel toolchain to 8, via `nx migrate`.
+
+## ESLint 10 — not adoptable (flat-config plugins cap at eslint 9)
+
+- **What breaks.** Bumping `eslint` 9.x → 10.x fails lint: `react/no-direct-mutation-state:
+contextOrFilename.getFilename is not a function` (ESLint 10 changed the rule-context API).
+- **Why.** `eslint-plugin-react`/`jsx-a11y`/`import` still use the old context API and peer-cap at
+  `eslint ≤ 9` — and we're already on their latest, so nothing to bump to. Plugin-ecosystem lag, not
+  an Nx coupling (`typescript-eslint` already supports 10; the React/a11y/import plugins don't).
+- **Reliable locally.** Unlike the Babel case, the peer/API mismatch is the same locally and in CI, so
+  the local `lint` gate does catch it.
+- **What we do now.** `eslint` stays on 9.x; Dependabot ignores `eslint` **major** bumps.
+- **What unblocks it.** eslint-plugin-react / jsx-a11y / import shipping eslint-10 support.

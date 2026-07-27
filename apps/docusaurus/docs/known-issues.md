@@ -67,3 +67,26 @@ bumps** (`.github/dependabot.yml`). Forcing `@babel/core@8` into `@nx/js` via `p
 untested against Nx's declared range and could break the build — don't.
 
 **What unblocks it.** Nx moving its Babel toolchain to 8, adopted via `nx migrate`.
+
+## ESLint 10 is not adoptable yet (flat-config plugins cap at eslint 9)
+
+**Status:** blocked upstream · **Since:** 2026-07 · **Applies to:** `eslint` major 10
+
+Bumping `eslint` from 9.x to 10.x breaks linting:
+
+```
+TypeError: Error while loading rule 'react/no-direct-mutation-state':
+  contextOrFilename.getFilename is not a function
+```
+
+**Why.** ESLint 10 changed the rule-context API (e.g. removed `context.getFilename()`).
+`eslint-plugin-react`, `eslint-plugin-jsx-a11y`, and `eslint-plugin-import` still use the old API and
+declare an `eslint` peer of **`≤ 9`** — and we are already on their latest versions, so there's no
+newer plugin to move to. This is plugin-ecosystem lag, not an Nx coupling; `typescript-eslint` already
+supports eslint 10, but the React/a11y/import plugins don't.
+
+**What we do today.** `eslint` stays on **9.x**; Dependabot **ignores `eslint` major bumps**
+(`.github/dependabot.yml`).
+
+**What unblocks it.** `eslint-plugin-react` / `jsx-a11y` / `import` shipping eslint-10 support (their
+peer ranges widening to include `^10`).
