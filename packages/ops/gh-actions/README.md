@@ -48,6 +48,28 @@ jobs:
     secrets: inherit
 ```
 
+## Turnkey: the reusable docs workflow
+
+Build an nx docs site (Docusaurus via `@fmmenchi/nx-docusaurus`) and deploy it to GitHub Pages,
+optionally with a Storybook under `/storybook/`:
+
+```yaml
+# .github/workflows/docs.yml in a consumer repo
+name: Docs
+on:
+  push: { branches: [main] }
+permissions: { contents: read, pages: write, id-token: write }
+jobs:
+  docs:
+    uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0
+    with:
+      docs-project: '@myorg/docs'
+      docs-output: apps/docs/build
+      # optional Storybook:
+      storybook-project: '@myorg/ui'
+      storybook-static: packages/ui/storybook-static
+```
+
 ## Building blocks (composite actions)
 
 Weave these into your own jobs when the turnkey workflow isn't enough. Run `setup` first — the others
