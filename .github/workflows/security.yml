@@ -51,6 +51,7 @@ jobs:
         with:
           type: error
           app-name: shared-platform
+          project: '@fmmenchi/ci'
           message: 'Security Slack wiring test — if you can read this, the weekly audit can reach you.'
           url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -69,6 +70,7 @@ jobs:
         with:
           type: error
           app-name: shared-platform
+          project: '@fmmenchi/ci'
           message: 'The weekly Trivy audit found CRITICAL/HIGH dependency vulnerabilities. Remediate via a pnpm-workspace.yaml override or suppress in .trivyignore.yaml.'
           url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}

@@ -1,6 +1,10 @@
 import type { PromiseExecutor } from '@nx/devkit';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { ScanExecutorSchema } from './schema';
+
+const IGNOREFILE = '.trivyignore.yaml';
 
 const DEFAULTS = {
   scanType: 'fs' as const,
@@ -75,7 +79,12 @@ const runExecutor: PromiseExecutor<ScanExecutorSchema> = async (
   options,
   context,
 ) => {
-  const trivyArgs = buildTrivyArgs(options);
+  // Trivy auto-detects a plain `.trivyignore` but NOT the structured `.trivyignore.yaml`,
+  // so pass it explicitly when present (unless the caller supplied their own ignorefile).
+  const ignorefile =
+    options.ignorefile ??
+    (existsSync(join(context.root, IGNOREFILE)) ? IGNOREFILE : undefined);
+  const trivyArgs = buildTrivyArgs({ ...options, ignorefile });
   const runner = options.runner ?? 'local';
   const [bin, args] =
     runner === 'docker'

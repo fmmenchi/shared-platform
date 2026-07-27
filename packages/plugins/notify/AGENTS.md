@@ -40,16 +40,21 @@ pnpm nx test @fmmenchi/nx-notify   # node vitest (git parser + executor skip-pat
 - **Message formatting is not tested here** — it lives (and is tested) in `@fmmenchi/notify`; this
   package tests only git parsing and the skip-paths.
 
+## Inference
+
+Registered in the root `nx.json` `plugins`, a `createNodesV2` (`src/plugin/create-nodes.ts`) infers
+**`announce-release` + `announce-error`** onto **every publishable package** (any layout — matched by
+`**/package.json`, filtered by `name && !private`, not a hardcoded path). So a consumer registers the
+plugin once and gets the targets free — no per-project boilerplate. The targets `dependsOn` the
+plugin's own `build` and are **uncached** (they post to Slack; never serve a cached "sent"). This is
+the reusable-CI path: the `announce-releases`/`slack-notify` bricks run `<project>:announce-*`, which
+works in any nx workspace, not `@fmmenchi/nx-notify:announce-*` (a target that exists only where the
+plugin is itself a project).
+
 ## Use from a consumer
 
-```jsonc
-// project.json target — appName defaults to the project, so options are optional
-"announce-release": {
-  "executor": "@fmmenchi/nx-notify:announce-release"
-}
-```
-
-Then `nx run <project>:announce-release`, with CI passing `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` +
+Inferred, so nothing to declare — just `nx run <project>:announce-release`, with CI passing
+`SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` +
 `RELEASE_VERSION`/`RELEASE_URL` and either `RELEASE_BODY` (pre-rendered notes) or
 `RELEASE_FROM`/`RELEASE_TO` (a git range). shared-platform itself dogfoods this in the CI release
 job, invoked per newly cut tag with `--appName` and feeding each GitHub Release body as

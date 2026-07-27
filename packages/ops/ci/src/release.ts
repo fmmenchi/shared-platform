@@ -2,6 +2,10 @@
 // the affected releasable projects, and writes the newly-created PACKAGE tags to
 // NEW_TAGS_FILE for the downstream SBOM + announce steps. Toolkit tags (e.g.
 // gh-actions/v*) are logged but kept out — the toolkit has its own alias handling.
+//
+// DRY_RUN=1 makes it the release PREVIEW: same base + affected scoping, but `nx release
+// --dry-run --skip-publish` and no tag bookkeeping. One source of truth, so the PR preview
+// shows EXACTLY what the merge would release.
 import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { affectedReleasable } from './releasable.js';
@@ -18,6 +22,7 @@ function resolveBase(): string {
   return /[^0]/.test(before) ? before : git('rev-parse HEAD~1').trim();
 }
 
+const dryRun = process.env['DRY_RUN'] === '1';
 const base = resolveBase();
 const head = process.env['HEAD'] ?? 'HEAD';
 const projects = affectedReleasable(base, head);
@@ -26,19 +31,25 @@ const before = allTags();
 if (projects.length === 0) {
   console.log('No releasable project affected — nothing to release.');
 } else {
-  console.log(`Releasing affected projects: ${projects.join(',')}`);
-  execSync(`pnpm nx release --yes --projects="${projects.join(',')}"`, {
-    stdio: 'inherit',
-  });
+  console.log(
+    `${dryRun ? 'Previewing' : 'Releasing'} affected projects: ${projects.join(',')}`,
+  );
+  execSync(
+    `pnpm nx release ${dryRun ? '--dry-run --skip-publish' : '--yes'} --projects="${projects.join(',')}"`,
+    { stdio: 'inherit' },
+  );
 }
 
-const created = newTags(before, allTags());
-const packageTags = created.filter(isPackageTag);
-const toolkitTags = created.filter((t) => !isPackageTag(t));
+// Dry-run creates no tags, so there is nothing to record for the downstream steps.
+if (!dryRun) {
+  const created = newTags(before, allTags());
+  const packageTags = created.filter(isPackageTag);
+  const toolkitTags = created.filter((t) => !isPackageTag(t));
 
-writeFileSync(
-  process.env['NEW_TAGS_FILE'] ?? 'new_tags.txt',
-  packageTags.length ? `${packageTags.join('\n')}\n` : '',
-);
-console.log(`New package tags: ${packageTags.join(', ') || '(none)'}`);
-console.log(`Other new tags: ${toolkitTags.join(', ') || '(none)'}`);
+  writeFileSync(
+    process.env['NEW_TAGS_FILE'] ?? 'new_tags.txt',
+    packageTags.length ? `${packageTags.join('\n')}\n` : '',
+  );
+  console.log(`New package tags: ${packageTags.join(', ') || '(none)'}`);
+  console.log(`Other new tags: ${toolkitTags.join(', ') || '(none)'}`);
+}

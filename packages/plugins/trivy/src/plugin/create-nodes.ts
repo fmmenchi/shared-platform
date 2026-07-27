@@ -42,16 +42,19 @@ export function sbomTarget(): NonNullable<ProjectNode['targets']>[string] {
 }
 
 /**
- * Infers a `sbom` target onto every **publishable** package — a project under
- * `packages/<scope>/<name>` with a `name` and no `private: true`. An SBOM is a
- * per-package artifact, so the target belongs on each project rather than being
- * invoked centrally.
+ * Infers a `sbom` target onto every **publishable** package, in ANY workspace layout
+ * (`packages/`, `libs/`, flat …) — matched by `**\/package.json` and filtered by
+ * publishability, not a hardcoded path. An SBOM is a per-package artifact, so the
+ * target belongs on each project rather than being invoked centrally.
  */
 export const createNodesV2: CreateNodesV2 = [
-  'packages/*/*/package.json',
+  '**/package.json',
   (configFiles, options, context) =>
     createNodesFromFiles(
       (configFile) => {
+        const projectRoot = dirname(configFile);
+        // Skip the workspace-root package.json — it isn't a project.
+        if (projectRoot === '.' || projectRoot === '') return {};
         let pkg: PackageJson;
         try {
           pkg = JSON.parse(
@@ -64,7 +67,7 @@ export const createNodesV2: CreateNodesV2 = [
 
         return {
           projects: {
-            [dirname(configFile)]: { targets: { [SBOM_TARGET]: sbomTarget() } },
+            [projectRoot]: { targets: { [SBOM_TARGET]: sbomTarget() } },
           },
         };
       },
