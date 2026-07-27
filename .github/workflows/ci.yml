@@ -111,16 +111,8 @@ jobs:
       - name: Move the gh-actions major alias
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          latest=$(git tag -l 'gh-actions/v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1)
-          [ -z "$latest" ] && { echo "No gh-actions release tag yet."; exit 0; }
-          major=${latest#gh-actions/v}; major="gh-actions/v${major%%.*}"
-          if [ "$(git rev-parse -q --verify "refs/tags/$major" 2>/dev/null)" = "$(git rev-parse "$latest")" ]; then
-            echo "$major already at $latest."; exit 0
-          fi
-          git tag -f "$major" "$latest"
-          git push -f origin "$major"
-          echo "Moved $major → $latest"
+          ALIAS_PREFIX: gh-actions/v
+        run: node packages/ops/ci/dist/move-major-alias.js
 
       # Attach a per-package CycloneDX SBOM to each release — supply-chain transparency for
       # the deployable projects that consume these packages. The attach-sbom brick generates
