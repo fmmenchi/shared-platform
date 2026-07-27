@@ -4,20 +4,22 @@ import { join } from 'node:path';
 
 import { configFileName, docsFolder } from '../../shared/constants';
 import type {
-  DocumentationType,
   DocusaurusProjectsConfig,
   NxProjectDocEntry,
 } from '../../shared/types';
 import type { ConfigGeneratorExecutorSchema } from './schema';
 
+const DOC_TAG = 'doc:';
+
 /**
- * Discovers which projects opt into the docs site — those that ship a `docs/` folder
- * with at least one `.md`/`.mdx` (or a `_category_.json`) — and writes the manifest
- * `nx-doc-projects.json` in the docs app root. `sync-docs` reads it to know what to copy.
+ * Discovers which projects opt into the docs site — those that ship a `docs/` folder with at
+ * least one `.md`/`.mdx` (or a `_category_.json`) — and writes the manifest `nx-doc-projects.json`
+ * in the docs app root. `sync-docs` reads it to know what to copy.
  *
- * Categorization by tag: `scope:plugins` → plugin, `scope:ops` → ops, otherwise a library.
- * The docs app itself is skipped. The destination folder is the unscoped project name
- * (`@fmmenchi/notify` → `notify`) so it is unique and clean.
+ * Categorization is **taxonomy-agnostic**: the category is the value of the project's `doc:<x>`
+ * tag (a dedicated docs tag, kept separate from `scope:` module boundaries). A project with a
+ * `docs/` folder but no `doc:` tag is skipped with a warning. The destination folder is the
+ * unscoped project name (`@fmmenchi/notify` → `notify`) so it is unique and clean.
  */
 const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
   _options,
@@ -30,11 +32,7 @@ const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
   const projects = projectsConfigurations.projects;
   const docRoot = projects[docProject].root;
 
-  const result: DocusaurusProjectsConfig = {
-    libraries: [],
-    plugins: [],
-    ops: [],
-  };
+  const result: DocusaurusProjectsConfig = {};
 
   for (const [name, cfg] of Object.entries(projects)) {
     if (cfg.root === docRoot) continue; // never sync the docs app into itself
@@ -49,32 +47,29 @@ const runExecutor: PromiseExecutor<ConfigGeneratorExecutorSchema> = async (
       );
     if (!hasContent) continue;
 
-    const tags = cfg.tags ?? [];
-    const type: DocumentationType = tags.includes('scope:plugins')
-      ? 'plugin'
-      : tags.includes('scope:ops')
-        ? 'ops'
-        : 'library';
+    const docTag = (cfg.tags ?? []).find((t) => t.startsWith(DOC_TAG));
+    if (!docTag) {
+      console.warn(
+        `${name} ships docs/ but has no \`${DOC_TAG}<category>\` tag — skipping. Add e.g. "${DOC_TAG}libraries".`,
+      );
+      continue;
+    }
+    const category = docTag.slice(DOC_TAG.length);
     const entry: NxProjectDocEntry = {
       name,
       root: cfg.root,
       folder: name.split('/').pop() as string,
-      type,
     };
-    const bucket =
-      type === 'plugin'
-        ? result.plugins
-        : type === 'ops'
-          ? result.ops
-          : result.libraries;
-    bucket.push(entry);
+    (result[category] ??= []).push(entry);
   }
 
   const outputPath = join(root, docRoot, configFileName);
   writeFileSync(outputPath, `${JSON.stringify(result, null, 2)}\n`, 'utf-8');
-  console.log(
-    `Wrote ${configFileName}: ${result.libraries.length} libraries, ${result.plugins.length} plugins, ${result.ops.length} ops.`,
-  );
+  const summary =
+    Object.entries(result)
+      .map(([category, entries]) => `${entries.length} ${category}`)
+      .join(', ') || 'nothing';
+  console.log(`Wrote ${configFileName}: ${summary}.`);
 
   return { success: true };
 };

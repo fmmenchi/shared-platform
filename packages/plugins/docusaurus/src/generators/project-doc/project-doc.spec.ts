@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
-import { addProjectConfiguration, type Tree } from '@nx/devkit';
+import {
+  addProjectConfiguration,
+  readProjectConfiguration,
+  type Tree,
+} from '@nx/devkit';
 import { projectDocGenerator } from './project-doc';
 
 describe('project-doc generator', () => {
@@ -33,5 +37,22 @@ describe('project-doc generator', () => {
     await expect(
       projectDocGenerator(tree, { project: '@acme/ui' }),
     ).rejects.toThrow(/already exists/);
+  });
+
+  it('tags the project with doc:<category> when a category is given', async () => {
+    await projectDocGenerator(tree, {
+      project: '@acme/ui',
+      category: 'client',
+    });
+    expect(readProjectConfiguration(tree, '@acme/ui').tags).toContain(
+      'doc:client',
+    );
+  });
+
+  it('leaves tags untouched when no category is given', async () => {
+    await projectDocGenerator(tree, { project: '@acme/ui' });
+    expect(readProjectConfiguration(tree, '@acme/ui').tags ?? []).not.toContain(
+      'doc:client',
+    );
   });
 });

@@ -20,9 +20,10 @@ committed twice.
   pnpm add -D @fmmenchi/nx-docusaurus
   ```
 
-- **The `scope:plugins` tag convention.** A doc-enabled project tagged `scope:plugins` is grouped
-  under _Plugins_; everything else is grouped under _Libraries_. No extra config — the tag is the
-  signal.
+- **The `doc:<category>` tag convention.** A doc-enabled project is grouped by its `doc:<category>`
+  tag — the category is whatever follows `doc:` (here `client`, `shared`, `plugins`, `ops`). The
+  plugin hardcodes no taxonomy; a project with `docs/` but no `doc:` tag is skipped with a warning.
+  `doc:` is a dedicated docs tag, deliberately separate from the `scope:` module boundaries.
 - **Nothing else.** The `site` generator adds Docusaurus 3 + React 19 to the generated site's
   `package.json`; there is no external service, CLI, or secret to provision.
 

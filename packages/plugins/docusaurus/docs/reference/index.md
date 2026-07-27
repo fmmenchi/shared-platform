@@ -32,18 +32,20 @@ pnpm nx g @fmmenchi/nx-docusaurus:site <name> [options]
 
 #### Options
 
-| Option          | Type     | Default                 | Description                                                 |
-| :-------------- | :------- | :---------------------- | :---------------------------------------------------------- |
-| `--directory`   | `string` | `apps/<name>`           | Workspace-relative directory of the site project.           |
-| `--packageName` | `string` | `<name>`                | `package.json` name of the site project.                    |
-| `--title`       | `string` | `<name>`                | Site title (navbar / browser).                              |
-| `--url`         | `string` | `http://localhost:3000` | Production URL of the site.                                 |
-| `--baseUrl`     | `string` | `/`                     | Base URL path (GitHub Pages project sites need `/<repo>/`). |
-| `--repoUrl`     | `string` | `https://github.com`    | Repository URL for the navbar GitHub link.                  |
+| Option          | Type     | Default                 | Description                                                                           |
+| :-------------- | :------- | :---------------------- | :------------------------------------------------------------------------------------ |
+| `--directory`   | `string` | `apps/<name>`           | Workspace-relative directory of the site project.                                     |
+| `--packageName` | `string` | `<name>`                | `package.json` name of the site project.                                              |
+| `--title`       | `string` | `<name>`                | Site title (navbar / browser).                                                        |
+| `--url`         | `string` | `http://localhost:3000` | Production URL of the site.                                                           |
+| `--baseUrl`     | `string` | `/`                     | Base URL path (GitHub Pages project sites need `/<repo>/`).                           |
+| `--repoUrl`     | `string` | `https://github.com`    | Repository URL for the navbar GitHub link.                                            |
+| `--categories`  | `array`  | `[libraries, plugins]`  | Categories to scaffold sidebar-group markers for — mirror your `doc:<category>` tags. |
 
 **Generates** `docusaurus.config.ts`, `sidebars.ts`, `package.json` (tagged `scope:app`,
-`type:site`, `private: true`), `src/css/custom.css`, a co-located `docs/` with `index.md` and the
-`libraries` / `plugins` `_category_.json` markers, and a `.gitignore`. It also appends `build` and
+`type:site`, `private: true`), `src/css/custom.css`, a co-located `docs/` with `index.md` and
+starter `libraries` / `plugins` `_category_.json` markers (rename/add to match your own
+`doc:<category>` tags), and a `.gitignore`. It also appends `build` and
 `.docusaurus` to the workspace `.prettierignore` when present. The generated `package.json` wires
 these targets: `config-generator`, `sync-docs`, `watch-sync-docs`, `start` (`docusaurus start`),
 `build` (`docusaurus build`), `serve` (`docusaurus serve`).
@@ -61,11 +63,12 @@ pre-filled from that project's `package.json`.
 pnpm nx g @fmmenchi/nx-docusaurus:project-doc <project>
 ```
 
-#### Arguments
+#### Arguments & options
 
-| Argument  | Type     | Description                                                               |
-| :-------- | :------- | :------------------------------------------------------------------------ |
-| `project` | `string` | **Required.** The project to document (argv index 0; prompts if omitted). |
+| Name         | Type     | Description                                                                                                                                    |
+| :----------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project`    | `string` | **Required.** The project to document (argv index 0; prompts if omitted).                                                                      |
+| `--category` | `string` | Docs category (sidebar group). Adds a `doc:<category>` tag to the project so `config-generator` files it there. Omit to tag it yourself later. |
 
 Throws if `<projectRoot>/docs/index.md` already exists — edit the page instead of regenerating.
 
@@ -91,9 +94,11 @@ pnpm nx run <site>:config-generator
   type `application`.
 - Keeps a project only if `<root>/docs/` exists and contains a `_category_.json` **or** at least one
   `.md`/`.mdx` file.
-- Categorises: tag `scope:plugins` → `plugins`, otherwise `libraries`. Destination `folder` is the
-  unscoped project name (`@fmmenchi/notify` → `notify`).
-- Writes `nx-doc-projects.json` in the site project's root and logs the library/plugin counts.
+- Categorises by the project's `doc:<category>` tag (taxonomy-agnostic — the category is whatever
+  follows `doc:`); a project with `docs/` but no `doc:` tag is skipped with a warning. Destination
+  `folder` is the unscoped project name (`@fmmenchi/notify` → `notify`).
+- Writes `nx-doc-projects.json` (a `category → projects` map) in the site project's root and logs the
+  per-category counts.
 
 ### `sync-docs`
 
@@ -116,9 +121,9 @@ pnpm nx run <site>:sync-docs --targetPath=apps/docs/docs
 **Behaviour**
 
 - Errors if `nx-doc-projects.json` is missing (_"run config-generator first"_).
-- Creates `<targetPath>` and writes `<targetPath>/.gitignore` (`libraries/*/`, `plugins/*/`).
-- Copies each project's `docs/` into `<targetPath>/{libraries,plugins}/<folder>`, replacing what was
-  there.
+- Creates `<targetPath>` and writes `<targetPath>/.gitignore` (one sorted `<category>/*/` line per
+  category present in the manifest).
+- Copies each project's `docs/` into `<targetPath>/<category>/<folder>`, replacing what was there.
 - With `--watch`, watches each source `docs/` folder recursively and re-syncs the changed project
   until `SIGINT`/`SIGTERM`.
 
@@ -126,24 +131,23 @@ pnpm nx run <site>:sync-docs --targetPath=apps/docs/docs
 
 ## The manifest — `nx-doc-projects.json`
 
-`config-generator` writes it; `sync-docs` reads it. Shape:
+`config-generator` writes it; `sync-docs` reads it. A `category → projects` map, where each
+category is the value of a project's `doc:<category>` tag:
 
 ```json
 {
-  "libraries": [
+  "shared": [
     {
       "name": "@fmmenchi/notify",
       "root": "packages/shared/notify",
-      "folder": "notify",
-      "type": "library"
+      "folder": "notify"
     }
   ],
   "plugins": [
     {
       "name": "@fmmenchi/nx-docusaurus",
       "root": "packages/plugins/docusaurus",
-      "folder": "nx-docusaurus",
-      "type": "plugin"
+      "folder": "nx-docusaurus"
     }
   ]
 }

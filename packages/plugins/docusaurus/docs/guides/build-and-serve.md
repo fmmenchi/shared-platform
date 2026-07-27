@@ -17,7 +17,7 @@ in as dependencies.
 ```
 config-generator  →  writes nx-doc-projects.json
         ↓
-sync-docs         →  copies each docs/ into docs/{libraries,plugins}/<name>
+sync-docs         →  copies each docs/ into docs/<category>/<name>
         ↓                              + writes docs/.gitignore
 docusaurus        →  build / start over the assembled tree
 ```

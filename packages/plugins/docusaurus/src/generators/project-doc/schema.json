@@ -13,6 +13,11 @@
         "index": 0
       },
       "x-prompt": "Which project do you want to document?"
+    },
+    "category": {
+      "type": "string",
+      "description": "Docs category (sidebar group). Adds a `doc:<category>` tag to the project so config-generator files its docs under that group. Omit to tag it yourself later.",
+      "x-prompt": "Which docs category? (sidebar group, e.g. client, shared, plugins, ops)"
     }
   },
   "required": ["project"]

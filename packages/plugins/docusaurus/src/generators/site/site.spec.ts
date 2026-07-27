@@ -70,6 +70,26 @@ describe('site generator', () => {
     ).toBe('Plugins');
   });
 
+  it('scaffolds a marker per category when categories are given', async () => {
+    await siteGenerator(tree, {
+      name: 'docs',
+      categories: ['client', 'shared', 'plugins', 'ops'],
+    });
+
+    for (const category of ['client', 'shared', 'plugins', 'ops']) {
+      expect(tree.exists(`apps/docs/docs/${category}/_category_.json`)).toBe(
+        true,
+      );
+    }
+    // The default starter markers are gone when categories are overridden.
+    expect(tree.exists('apps/docs/docs/libraries/_category_.json')).toBe(false);
+    expect(
+      JSON.parse(
+        tree.read('apps/docs/docs/client/_category_.json', 'utf-8') as string,
+      ).label,
+    ).toBe('Client');
+  });
+
   it('gitignores the manifest so the scaffold is self-contained', async () => {
     await siteGenerator(tree, { name: 'docs' });
     const gitignore = tree.read('apps/docs/.gitignore', 'utf-8') as string;
