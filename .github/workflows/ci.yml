@@ -31,9 +31,9 @@ jobs:
 
       - run: pnpm nx run-many -t typecheck build lint test build-storybook
 
-  # Preview on PRs: EXACTLY what the release job below would cut if this PR merged —
-  # same affected scoping, run through the same @fmmenchi/ci orchestrator in DRY_RUN.
-  # Never versions/tags/publishes. Informational, and trustworthy (mirrors the real job).
+  # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
+  # only the projects with releasing conventional commits, so a plain dry-run is already
+  # accurate — no affected pre-filter to mirror. Never versions/tags/publishes.
   release-preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -44,14 +44,9 @@ jobs:
 
       - uses: ./packages/ops/gh-actions/actions/setup
 
-      - run: pnpm nx build @fmmenchi/ci
-
-      - name: Preview the release (dry-run of the real job — never publishes)
-        run: node packages/ops/ci/dist/release.js
+      - name: nx release --dry-run (preview — never publishes)
+        run: pnpm nx release --dry-run --skip-publish
         env:
-          DRY_RUN: '1'
-          BASE_REF: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # Trunk-based release: every green push to main versions each package from its
@@ -90,16 +85,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Release only the projects nx marks AFFECTED by this push, and record the new
-      # package tags for the SBOM/announce steps. All the logic — base resolution,
-      # affected-releasable filtering, the before/after tag diff, and the package-vs-toolkit
-      # tag split — lives in @fmmenchi/ci (src/release.ts), unit-tested, not inline here.
-      # This sidesteps nx release's "root files apply to ALL projects" cascade (nx #34542).
+      # Run `nx release` (it versions only the projects with releasing conventional commits —
+      # a root-file-only change releases nothing) and record the new package tags for the
+      # SBOM/announce steps. The tag diff + package-vs-toolkit split lives in @fmmenchi/ci
+      # (src/release.ts), unit-tested, not inline here.
       - name: Release
         run: node packages/ops/ci/dist/release.js
         env:
-          BASE_REF: ${{ github.event.before }}
-          HEAD: ${{ github.sha }}
           NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

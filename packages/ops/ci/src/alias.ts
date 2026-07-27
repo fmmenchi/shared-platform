@@ -14,11 +14,16 @@ export function majorAlias(
     .filter(
       (x) => x.parts.length === 3 && x.parts.every((p) => /^\d+$/.test(p)),
     )
-    .map((x) => ({ tag: x.tag, v: x.parts.map(Number) as [number, number, number] }));
+    .map((x) => ({
+      tag: x.tag,
+      v: x.parts.map(Number) as [number, number, number],
+    }));
 
   if (versioned.length === 0) return null;
 
-  versioned.sort((a, b) => a.v[0] - b.v[0] || a.v[1] - b.v[1] || a.v[2] - b.v[2]);
+  versioned.sort(
+    (a, b) => a.v[0] - b.v[0] || a.v[1] - b.v[1] || a.v[2] - b.v[2],
+  );
   const latest = versioned[versioned.length - 1];
   return { alias: `${prefix}${latest.v[0]}`, target: latest.tag };
 }
