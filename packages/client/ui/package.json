@@ -52,6 +52,11 @@
           "cwd": "{projectRoot}"
         }
       },
+      "typecheck": {
+        "dependsOn": [
+          "generate-manager-theme"
+        ]
+      },
       "build-storybook": {
         "dependsOn": [
           "generate-manager-theme"
