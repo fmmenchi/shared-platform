@@ -30,6 +30,13 @@ Settled placement calls — don't relitigate:
   consuming apps, never here.
 - UI components → `client`, even under SSR. Keep them SSR-safe (no `window`/`document` at module
   top-level; lint can't catch this).
+- **What earns a package** ([ADR-0008](../../apps/docusaurus/docs/adr/0008-cross-app-framework-agnostic-layers.md)):
+  it must be **cross-app reusable** (a second app uses the same code as-is — not per-app content) **and
+  framework-agnostic** (no React Router/Express/SSR-host import). Split by **concept, one per package**
+  — never a category umbrella like `security` (junk drawer); also never _below_ the concept. For
+  framework-coupled behaviour, prefer a **pure function taking extracted values**; add a port
+  (interface, plain types) + framework **adapter** package only for an ongoing runtime capability, and
+  only when >1 app shares the binding.
 
 ## Tags and boundaries
 
