@@ -28,6 +28,12 @@ updates:
       - dependency-name: typescript
         update-types:
           - version-update:semver-major
+      # Babel 8 presets/plugins peer-require @babel/core@^8, but @nx/js@23.x hard-pins
+      # @babel/core@^7 for the Storybook/React build toolchain — so a Babel major breaks CI.
+      # Moves with Nx (nx migrate), not a standalone bump. See docs/known-issues.
+      - dependency-name: '@babel/*'
+        update-types:
+          - version-update:semver-major
     groups:
       # Collapse the routine minor/patch churn into a single weekly PR; majors stay separate
       # so their (potentially breaking) review is not buried.
