@@ -23,11 +23,6 @@ on:
         type: boolean
         required: false
         default: false
-      test-notification:
-        description: Post a Slack wiring test instead of scanning.
-        type: boolean
-        required: false
-        default: false
       app-name:
         description: Name used in Slack messages (defaults to the repo name).
         type: string
@@ -35,8 +30,8 @@ on:
         default: ''
       announce-project:
         description: >-
-          Any publishable nx project — the workspace-level Slack announce runs its inferred
-          `announce-*` target. Required when `test-notification` or `alert-on-failure` is used.
+          Any publishable nx project — the workspace-level Slack alert runs its inferred
+          `announce-*` target. Required when `alert-on-failure` is used.
         type: string
         required: false
         default: ''
@@ -62,20 +57,7 @@ jobs:
 
       - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
 
-      - name: Test the Slack wiring
-        if: ${{ inputs.test-notification }}
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/slack-notify@gh-actions/v0
-        with:
-          type: error
-          app-name: ${{ inputs.app-name || github.event.repository.name }}
-          project: ${{ inputs.announce-project }}
-          message: 'Security Slack wiring test — if you can read this, the audit can reach you.'
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-
       - name: Scan
-        if: ${{ !inputs.test-notification }}
         uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0
         with:
           secret-scan: ${{ inputs.secret-scan }}

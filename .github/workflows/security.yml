@@ -3,9 +3,8 @@ name: Security
 # A vulnerability scan is not a test. A test goes red because the CODE changed; a scan goes
 # red because the WORLD changed — a CVE was published against a dependency nobody touched.
 # So it runs on two triggers: when the dependencies change (that is when WE introduce
-# something), and every Monday (that is when the world does). Running it on every push would
-# repeat the same result forty times a week and train us to stop reading it. Dogfoods
-# @fmmenchi/nx-trivy; workspace-level by design (single root lockfile) — see ADR-0007.
+# something), and every Monday (that is when the world does). This repo consumes its own
+# reusable security workflow exactly like an external @fmmenchi consumer would — see ADR-0007.
 on:
   pull_request:
     paths:
@@ -21,57 +20,17 @@ on:
   schedule:
     - cron: '0 6 * * 1' # weekly audit — Monday 06:00 UTC
   workflow_dispatch:
-    inputs:
-      test_notification:
-        description: 'Post a test message to Slack instead of scanning'
-        type: boolean
-        default: false
 
 permissions:
   contents: read
 
-env:
-  HUSKY: 0
-
 jobs:
-  trivy:
-    name: Vulnerabilities & secrets
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: ./packages/ops/gh-actions/actions/setup
-
-      # A notification you cannot test is one you do not have: without this, the Slack path
-      # first runs for real on the Monday it matters — the day you learn the bot was never
-      # invited to the channel. Dogfoods the slack-notify brick, like the alert below.
-      - name: Test the Slack wiring
-        if: ${{ inputs.test_notification }}
-        uses: ./packages/ops/gh-actions/actions/slack-notify
-        with:
-          type: error
-          app-name: shared-platform
-          project: '@fmmenchi/ci'
-          message: 'Security Slack wiring test — if you can read this, the weekly audit can reach you.'
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-
-      # Vuln + secret scan with the per-day-keyed DB cache — all in the trivy-scan brick.
-      - name: Scan
-        if: ${{ !inputs.test_notification }}
-        uses: ./packages/ops/gh-actions/actions/trivy-scan
-
-      # Only on the weekly run, and only when it broke: a PR already shows a red check, and a
-      # weekly message that arrives regardless is one nobody opens. Missing secrets skip green.
-      - name: Alert Slack on findings
-        if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: ./packages/ops/gh-actions/actions/slack-notify
-        with:
-          type: error
-          app-name: shared-platform
-          project: '@fmmenchi/ci'
-          message: 'The weekly Trivy audit found CRITICAL/HIGH dependency vulnerabilities. Remediate via a pnpm-workspace.yaml override or suppress in .trivyignore.yaml.'
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+  # Dogfood the turnkey pipeline (the reusable, not just the bricks). The caller owns the
+  # triggers above and the gating: alert only on the weekly run (a PR already shows a red check).
+  security:
+    uses: ./.github/workflows/security.reusable.yml
+    with:
+      app-name: shared-platform
+      announce-project: '@fmmenchi/ci'
+      alert-on-failure: ${{ github.event_name == 'schedule' }}
+    secrets: inherit
