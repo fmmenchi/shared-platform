@@ -9,6 +9,19 @@ interface Payload {
 }
 
 /**
+ * Upper bound on a token `verify` will even look at. A signed token is small (a value + a 64-char
+ * HMAC); refusing anything larger up front stops an attacker from making us HMAC megabytes of
+ * attacker-controlled input. Comfortably above a 4 KB cookie.
+ */
+const MAX_TOKEN_LENGTH = 8192;
+
+function requireSecret(secret: string): void {
+  if (!secret) {
+    throw new Error('@fmmenchi/signing: `secret` must be a non-empty string');
+  }
+}
+
+/**
  * Sign `value` into an opaque `"<payload>.<hmac>"` token — tamper-proof, and self-expiring
  * when `expiresIn` is given. The value is encoded internally, so callers pass **any** string
  * (no "must base64url first" footgun). Verify it back with {@link verify}.
@@ -21,6 +34,7 @@ export async function sign(
   secret: string,
   opts: SignOptions = {},
 ): Promise<string> {
+  requireSecret(secret);
   const payload: Payload = { v: value };
   if (opts.expiresIn != null) payload.exp = Date.now() + opts.expiresIn;
   const encoded = base64UrlEncode(JSON.stringify(payload));
@@ -31,12 +45,16 @@ export async function sign(
 /**
  * Verify a token from {@link sign} and return the original value, or `null` if the signature
  * is missing/invalid or the token has expired. Signature and expiry are checked together, so
- * a caller can never act on a tampered or stale token.
+ * a caller can never act on a tampered or stale token. Oversized input is rejected before any
+ * HMAC work.
  */
 export async function verify(
   token: string,
   secret: string,
 ): Promise<string | null> {
+  requireSecret(secret);
+  if (token.length > MAX_TOKEN_LENGTH) return null;
+
   const dot = token.lastIndexOf('.');
   if (dot === -1) return null;
   const encoded = token.slice(0, dot);
