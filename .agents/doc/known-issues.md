@@ -19,3 +19,16 @@ Add an entry whenever a change is blocked by something a future agent would othe
   (`typescript@6` for tooling, `typescript@7` for typecheck) — never a standalone bump.
 - **Ref.** [nrwl/nx#36306](https://github.com/nrwl/nx/issues/36306). Related: [[releases]] (Dependabot,
   `nx release`).
+
+## Babel 8 presets — not adoptable (Nx pins `@babel/core@7`)
+
+- **What breaks.** Bumping `@babel/preset-react` (or a peer Babel preset/plugin) to 8.x fails the
+  Storybook build: `[BABEL] @babel/preset-react: Since v8 … requires @babel/core@^8` (found 7.x).
+- **Why.** `@nx/js@23.1.0` hard-depends on `@babel/core@^7.23.2`; the whole `@nx/*` toolchain pulls
+  that nested copy. Babel 8 presets peer-require `@babel/core@^8`, so they clash inside Nx's builds.
+- **⚠️ CI-only failure.** Passes the local gate (pnpm resolves core 8 locally) but fails a clean CI
+  install (uses the core 7 nested under `@nx/js`). **For Babel-preset bumps, trust CI, not the local
+  gate.** Root `@babel/core` is on 8 and harmless; it's the presets that need 8 everywhere.
+- **What we do now.** Babel presets/plugins stay on 7.x; Dependabot ignores `@babel/*` **major** bumps
+  (`.github/dependabot.yml`). Don't force core 8 into `@nx/js` via `pnpm.overrides` (untested, risky).
+- **What unblocks it.** Nx moving its Babel toolchain to 8, via `nx migrate`.
