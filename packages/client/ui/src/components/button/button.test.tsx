@@ -47,11 +47,47 @@ describe('Button', () => {
   });
 
   describe('loading state', () => {
-    it('is busy and disabled while loading', () => {
+    it('is pending, not disabled: busy, aria-disabled, and still focusable', () => {
       render(<Button isLoading>Save</Button>);
       const btn = screen.getByRole('button', { name: /save/i });
       expect(btn).toHaveAttribute('aria-busy', 'true');
-      expect(btn).toBeDisabled();
+      expect(btn).toHaveAttribute('aria-disabled', 'true');
+      // Never native `disabled` while loading — that would drop focus to the
+      // page mid-interaction (WCAG 2.4.3) and read as a dead control.
+      expect(btn).not.toBeDisabled();
+      btn.focus();
+      expect(btn).toHaveFocus();
+    });
+
+    it('blocks activation on the native button (mouse and keyboard)', async () => {
+      const user = userEvent.setup();
+      const onClick = vi.fn();
+      render(
+        <Button isLoading onClick={onClick}>
+          Save
+        </Button>,
+      );
+      const btn = screen.getByRole('button', { name: /save/i });
+      // pointer-events is none; keyboard is the path that must be guarded
+      // (Enter/Space on a focusable pending button still fires click).
+      btn.focus();
+      await user.keyboard('{Enter}');
+      await user.keyboard(' ');
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('announces the transition via a status region', () => {
+      renderUi(<Button isLoading>Save</Button>, { locale: 'en' });
+      expect(screen.getByRole('status')).toHaveTextContent('Loading');
+    });
+
+    it('a deliberately disabled button stays natively disabled while loading', () => {
+      render(
+        <Button disabled isLoading>
+          Save
+        </Button>,
+      );
+      expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
     });
 
     it('blocks activation on a non-native polymorph (as="a")', () => {
