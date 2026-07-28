@@ -69,7 +69,11 @@ function Button<As extends React.ElementType = 'button'>(
 
   return (
     <Comp
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(
+        buttonVariants({ variant, size }),
+        isIconOnly && styles.iconOnly,
+        className,
+      )}
       type={isNativeButton ? (type ?? 'button') : type}
       disabled={isNativeButton ? disabled : undefined}
       aria-busy={isLoading || undefined}

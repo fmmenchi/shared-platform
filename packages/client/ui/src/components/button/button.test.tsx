@@ -136,6 +136,45 @@ describe('Button', () => {
     });
   });
 
+  // Real Chromium: computed styles are the actual layout, so geometry is
+  // asserted deterministically — the DS promise is exact control heights.
+  describe('sizing', () => {
+    const heights = { sm: 32, md: 36, lg: 44 } as const;
+    for (const [size, px] of Object.entries(heights)) {
+      it(`${size} is exactly ${px}px tall`, () => {
+        render(<Button size={size as keyof typeof heights}>Save</Button>);
+        const btn = screen.getByRole('button', { name: 'Save' });
+        expect(btn.getBoundingClientRect().height).toBe(px);
+      });
+    }
+
+    it('an icon-only button is square', () => {
+      render(<Button aria-label="Add" icon={<svg viewBox="0 0 16 16" />} />);
+      const rect = screen
+        .getByRole('button', { name: 'Add' })
+        .getBoundingClientRect();
+      expect(rect.width).toBe(rect.height);
+    });
+
+    it('an icon-bearing button keeps its width when loading starts', () => {
+      const { rerender } = render(
+        <Button icon={<svg viewBox="0 0 16 16" />}>Save</Button>,
+      );
+      const before = screen
+        .getByRole('button', { name: 'Save' })
+        .getBoundingClientRect().width;
+      rerender(
+        <Button icon={<svg viewBox="0 0 16 16" />} isLoading>
+          Save
+        </Button>,
+      );
+      const after = screen
+        .getByRole('button', { name: /save/i })
+        .getBoundingClientRect().width;
+      expect(after).toBe(before);
+    });
+  });
+
   // axe runs in real Chromium, so color-contrast is checked against the actual
   // token values — each colour role is a distinct contrast pair, in each theme.
   describe('accessibility (axe)', () => {
