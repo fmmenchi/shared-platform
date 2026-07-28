@@ -42,6 +42,11 @@ shift matters.
 
 <Canvas of={ButtonStories.WithIcon} />
 
+A **trailing** icon (`iconEnd` — chevron, external link…) stays visible while loading, since the
+leading spinner carries the state:
+
+<Canvas of={ButtonStories.WithIconEnd} />
+
 **Icon-only** buttons are **square** (width = the size's height) and have no discernible text, so
 `aria-label` is **required** — a dev warning fires without it:
 

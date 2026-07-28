@@ -23,6 +23,7 @@ function Button<As extends React.ElementType = 'button'>(
     variant,
     size,
     icon,
+    iconEnd,
     isLoading = false,
     type,
     disabled,
@@ -34,7 +35,7 @@ function Button<As extends React.ElementType = 'button'>(
   const Comp = (as ?? 'button') as React.ElementType;
   const isNativeButton = Comp === 'button';
   const t = useMessages(buttonMessages);
-  const isIconOnly = !!(icon && !children);
+  const isIconOnly = !!((icon || iconEnd) && !children);
   const attrs = rest as Record<string, unknown>;
 
   useDevWarning(
@@ -87,6 +88,17 @@ function Button<As extends React.ElementType = 'button'>(
     >
       {adornment}
       {children}
+
+      {/* Trailing icon: stays while loading (the leading spinner carries the
+          state; removing it would shift the layout). */}
+      {iconEnd && (
+        <span
+          aria-hidden={isIconOnly ? undefined : true}
+          className={styles.icon}
+        >
+          {iconEnd}
+        </span>
+      )}
 
       {/* Loading status for ASSISTIVE TECH only: `aria-busy` alone is
           unreliable across screen readers, so a visually-hidden text carries
