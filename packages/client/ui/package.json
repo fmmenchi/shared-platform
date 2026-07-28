@@ -55,33 +55,13 @@
           "command": "stylelint \"{projectRoot}/src/**/*.module.css\""
         }
       },
-      "generate-manager-theme": {
+      "codegen": {
         "executor": "nx:run-commands",
         "cache": false,
         "options": {
           "command": "node .storybook/generate-manager-theme.mjs",
           "cwd": "{projectRoot}"
         }
-      },
-      "typecheck": {
-        "dependsOn": [
-          "generate-manager-theme"
-        ]
-      },
-      "build-storybook": {
-        "dependsOn": [
-          "generate-manager-theme"
-        ]
-      },
-      "storybook": {
-        "dependsOn": [
-          "generate-manager-theme"
-        ]
-      },
-      "static-storybook": {
-        "dependsOn": [
-          "generate-manager-theme"
-        ]
       }
     }
   },
