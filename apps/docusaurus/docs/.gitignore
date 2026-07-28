@@ -3,4 +3,5 @@
 client/*/
 ops/*/
 plugins/*/
+server/*/
 shared/*/

@@ -10,8 +10,10 @@ the workspace [../../../AGENTS.md](../../../AGENTS.md) and the UI doctrine
 pnpm nx typecheck @fmmenchi/ui
 pnpm nx build @fmmenchi/ui
 pnpm nx lint @fmmenchi/ui
+pnpm nx lint-css @fmmenchi/ui     # Stylelint: design-token values in *.module.css
 pnpm nx test @fmmenchi/ui         # Vitest browser mode (Chromium)
 pnpm nx storybook @fmmenchi/ui    # Storybook + MCP at :6006/mcp
+pnpm nx g @fmmenchi/nx-ui:component <name>   # scaffold a new component (the Button archetype)
 ```
 
 ## Rules — open the `.agents/doc/` spoke for your topic

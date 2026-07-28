@@ -16,7 +16,11 @@
   @apply rounded-md text-sm font-medium transition;
   @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
 }
-.button:disabled {
+/* `:disabled` only exists on form elements; a loading `as="a"`/custom
+   polymorph is marked `aria-disabled` instead (the component also guards the
+   click, since keyboard activation bypasses pointer-events). */
+.button:disabled,
+.button[aria-disabled='true'] {
   @apply pointer-events-none;
 }
 /* Press feedback is the transform, not a colour — colour
@@ -44,6 +48,12 @@
   @apply disabled:bg-secondary-disabled disabled:text-secondary-disabled-foreground;
 }
 
+.accent {
+  @apply bg-accent text-accent-foreground;
+  @apply hover:bg-accent-hover active:bg-accent-active;
+  @apply disabled:bg-accent-disabled disabled:text-accent-disabled-foreground;
+}
+
 /* Ghost is a treatment, not a family: quiet on the surface roles. */
 .ghost {
   @apply text-foreground bg-transparent;
@@ -57,21 +67,41 @@
   @apply disabled:bg-destructive-disabled disabled:text-destructive-disabled-foreground;
 }
 
-/* Size. */
+/* Size — explicit heights (32/36/44px), not padding-derived: the control's
+   height must not drift with the font tokens' line-height, and toolbars need
+   buttons that align deterministically. `lg` (44px) meets the AAA touch
+   target; `sm` (32px) clears the WCAG 2.5.8 minimum (24px) but is not for
+   touch-primary surfaces — see the docs. Vertical centering is the flex row. */
 .sm {
-  @apply px-3 py-1.5 text-xs;
+  @apply h-8 px-3 text-xs;
 }
 .md {
-  @apply px-4 py-2;
+  @apply h-9 px-4;
 }
 .lg {
-  @apply px-5 py-2.5 text-base;
+  @apply h-11 px-5 text-base;
+}
+
+/* Icon-only buttons are square: the fixed height defines the width
+   (aspect-ratio), horizontal padding would only skew the glyph. */
+.iconOnly {
+  @apply aspect-square justify-center p-0;
 }
 
 /* Decorative icon slot (was an inline utility string — moved here so it
-   survives precompilation instead of relying on a consumer Tailwind scan). */
+   survives precompilation instead of relying on a consumer Tailwind scan).
+   The SLOT owns the size (1em, like the spinner it swaps with — so loading
+   never shifts layout): an unsized svg would fall back to its 300×150
+   intrinsic default, so the slot sizes its child per the injected-icon
+   contract (`IconRenderer`). */
 .icon {
   @apply inline-flex shrink-0 items-center justify-center;
+  width: 1em;
+  height: 1em;
+}
+.icon > :where(*) {
+  width: 100%;
+  height: 100%;
 }
 
 /* Loading spinner — decorative (aria-hidden); the accessible status is the
@@ -82,7 +112,7 @@
   border: 2px solid currentColor;
   border-inline-end-color: transparent;
   border-radius: 9999px;
-  animation: fm-button-spin 0.6s linear infinite;
+  animation: fm-button-spin var(--fm-duration-l) linear infinite;
 }
 @keyframes fm-button-spin {
   to {

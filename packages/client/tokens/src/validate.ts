@@ -46,6 +46,11 @@ export const CONTRAST_PAIRS: ReadonlyArray<
       ] as const,
   ),
   ['background', 'foreground', 4.5],
+  // Ghost treatment (quiet on surface roles): default text stays `foreground`
+  // while the hover/active surfaces are the soft washes — so these pairings
+  // are part of the guarantee, not incidental.
+  ['muted', 'foreground', 4.5],
+  ['neutral-subtle', 'foreground', 4.5],
   ['card', 'card-foreground', 4.5],
   ['popover', 'popover-foreground', 4.5],
   ['muted', 'muted-foreground', 4.5],

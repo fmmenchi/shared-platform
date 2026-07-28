@@ -29,6 +29,15 @@
     },
     {
       "path": "./packages/ops/ci"
+    },
+    {
+      "path": "./packages/server/signing"
+    },
+    {
+      "path": "./packages/shared/analytics"
+    },
+    {
+      "path": "./packages/plugins/ui"
     }
   ],
   "compilerOptions": {}

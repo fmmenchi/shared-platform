@@ -34,6 +34,12 @@ updates:
       - dependency-name: '@babel/*'
         update-types:
           - version-update:semver-major
+      # ESLint 10 changed the rule-context API; eslint-plugin-react/jsx-a11y/import still peer-cap
+      # at eslint 9 (even on their latest) and break under 10. Moves when those plugins ship eslint-10
+      # support. See docs/known-issues.
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
     groups:
       # Collapse the routine minor/patch churn into a single weekly PR; majors stay separate
       # so their (potentially breaking) review is not buried.

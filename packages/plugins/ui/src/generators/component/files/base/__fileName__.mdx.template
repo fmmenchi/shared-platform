@@ -1,0 +1,27 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as <%= className %>Stories from './<%= fileName %>.stories.tsx';
+
+<Meta of={<%= className %>Stories} />
+
+# <%= className %>
+
+TODO: one sentence — what the user does with <%= className %>, and the native
+element it builds on.
+
+## Props
+
+<Controls of={<%= className %>Stories.Primary} />
+
+## Usage
+
+### Variants
+
+Each variant maps to a token role/treatment — real colours in both themes (try
+the **Theme** toolbar).
+
+<Canvas of={<%= className %>Stories.Gallery} />
+
+## Accessibility
+
+- TODO: state the semantics (role, name computation) and every claimed a11y
+  behaviour — each claim needs the story that demonstrates it.

@@ -42,7 +42,28 @@
       "scope:client",
       "type:ui",
       "doc:client"
-    ]
+    ],
+    "targets": {
+      "lint-css": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "inputs": [
+          "default",
+          "{workspaceRoot}/.stylelintrc.json"
+        ],
+        "options": {
+          "command": "stylelint \"{projectRoot}/src/**/*.module.css\""
+        }
+      },
+      "codegen": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "node .storybook/generate-manager-theme.mjs",
+          "cwd": "{projectRoot}"
+        }
+      }
+    }
   },
   "peerDependencies": {
     "react": "^19.0.0",

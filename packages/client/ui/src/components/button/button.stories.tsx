@@ -31,11 +31,14 @@ const meta: Meta<typeof Button> = {
     },
     variant: {
       control: 'inline-radio',
-      options: ['primary', 'secondary', 'ghost', 'destructive'],
+      options: ['primary', 'secondary', 'accent', 'ghost', 'destructive'],
       description:
         'Colour role — maps 1:1 to a token action family (fill/hover/active/disabled).',
       table: {
-        type: { summary: "'primary' | 'secondary' | 'ghost' | 'destructive'" },
+        type: {
+          summary:
+            "'primary' | 'secondary' | 'accent' | 'ghost' | 'destructive'",
+        },
         defaultValue: { summary: "'primary'" },
       },
     },
@@ -51,7 +54,7 @@ const meta: Meta<typeof Button> = {
     isLoading: {
       control: 'boolean',
       description:
-        'Spinner + localized status; blocks interaction (`aria-busy`, disabled).',
+        'Spinner + localized status; pending, not disabled — blocks activation (`aria-disabled` + click guard) while keeping focus.',
       table: {
         type: { summary: 'boolean' },
         defaultValue: { summary: 'false' },
@@ -60,7 +63,13 @@ const meta: Meta<typeof Button> = {
     icon: {
       control: false,
       description:
-        'Decorative icon slot (hidden while loading). Icon-only usage requires `aria-label`.',
+        'Decorative leading icon (the spinner takes its slot while loading). Icon-only usage requires `aria-label`.',
+      table: { type: { summary: 'ReactNode' } },
+    },
+    iconEnd: {
+      control: false,
+      description:
+        'Decorative trailing icon (chevron, external link…). Stays visible while loading.',
       table: { type: { summary: 'ReactNode' } },
     },
     as: {
@@ -84,6 +93,7 @@ export const Gallery: Story = {
     <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
       <Button variant="primary">Primary</Button>
       <Button variant="secondary">Secondary</Button>
+      <Button variant="accent">Accent</Button>
       <Button variant="ghost">Ghost</Button>
       <Button variant="destructive">Destructive</Button>
     </div>
@@ -109,6 +119,7 @@ export const Sizes: Story = {
 
 export const Primary: Story = { args: { variant: 'primary' } };
 export const Secondary: Story = { args: { variant: 'secondary' } };
+export const Accent: Story = { args: { variant: 'accent' } };
 export const Ghost: Story = { args: { variant: 'ghost' } };
 export const Destructive: Story = { args: { variant: 'destructive' } };
 export const Disabled: Story = { args: { disabled: true } };
@@ -116,6 +127,11 @@ export const Disabled: Story = { args: { disabled: true } };
 /** Icon next to the label: the icon is decorative (aria-hidden). */
 export const WithIcon: Story = {
   args: { icon: PlusIcon, children: 'Add item' },
+};
+
+/** Trailing icon (chevron, external link…) — stays put while loading. */
+export const WithIconEnd: Story = {
+  args: { iconEnd: PlusIcon, children: 'Next' },
 };
 
 /**

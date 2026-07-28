@@ -26,18 +26,29 @@ has real hover/active/disabled colours in both themes (try the **Theme** toolbar
 
 ### Sizes
 
-`size` is orthogonal to the colour role.
+`size` is orthogonal to the colour role. Heights are **explicit** — `sm` 32px, `md` 36px, `lg`
+44px — so buttons align deterministically and don't drift with the font tokens. `lg` meets the
+44px (AAA) touch target; `sm` clears the WCAG 2.5.8 minimum (24px) but is meant for dense,
+pointer-first surfaces — prefer `md`/`lg` where touch is primary.
 
 <Canvas of={ButtonStories.Sizes} />
 
 ### With an icon
 
-The `icon` slot is decorative (`aria-hidden`) next to a visible label:
+The `icon` slot is decorative (`aria-hidden`) next to a visible label. While loading, the spinner
+takes the icon's slot **in place**, so an icon-bearing button never changes width; a button with no
+icon grows by the spinner's width when loading starts — give it an icon (or a fixed width) if that
+shift matters.
 
 <Canvas of={ButtonStories.WithIcon} />
 
-**Icon-only** buttons have no discernible text, so `aria-label` is **required** — a dev warning
-fires without it:
+A **trailing** icon (`iconEnd` — chevron, external link…) stays visible while loading, since the
+leading spinner carries the state:
+
+<Canvas of={ButtonStories.WithIconEnd} />
+
+**Icon-only** buttons are **square** (width = the size's height) and have no discernible text, so
+`aria-label` is **required** — a dev warning fires without it:
 
 <Canvas of={ButtonStories.IconOnly} />
 
@@ -50,10 +61,12 @@ disabled colours (no opacity hack).
 
 ### Loading
 
-`isLoading` blocks interaction and shows a spinner. Nothing visible changes beyond that — but
-screen-reader users are told the action is in progress: `aria-busy` plus a **visually-hidden
-status text in the user's language** (the design system owns this copy, since it never asks the
-app for strings).
+`isLoading` is **pending, not disabled**: activation is blocked (`aria-disabled` + a click guard,
+on every polymorph) but the button **keeps focus** — a mid-click `disabled` would drop focus to the
+page — and keeps its variant colours; only the spinner signals the wait. Screen-reader users are
+told the action is in progress: `aria-busy` plus a **visually-hidden `role="status"` text in the
+user's language** (announced when loading starts/ends; the design system owns this copy, since it
+never asks the app for strings).
 
 <Canvas of={ButtonStories.Loading} />
 
@@ -69,8 +82,11 @@ attributes (`type`, `disabled`) are not applied to non-`<button>` elements.
 
 - **Icon-only** buttons need an `aria-label` — a dev warning fires if it is missing (see the
   icon-only story above).
-- The **loading** status is exposed to assistive tech (`aria-busy` + a visually-hidden localized
-  text); the spinner is decorative (`aria-hidden`) and respects `prefers-reduced-motion`.
+- The **loading** state is pending, not disabled: the button stays focusable (`aria-disabled` +
+  click guard, never native `disabled` — which would drop focus mid-interaction) and the status is
+  exposed to assistive tech (`aria-busy` + a visually-hidden localized `role="status"` text,
+  announced on start/end); the spinner is decorative (`aria-hidden`) and respects
+  `prefers-reduced-motion`.
 - **Direction** follows the active locale (RTL/LTR). Styling uses CSS logical properties, so the
   layout mirrors automatically — try the Locale toolbar (`العربية`).
 - Contrast of every variant is enforced twice: at token level (WCAG AA pairs per theme) and on the

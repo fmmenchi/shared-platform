@@ -9,6 +9,7 @@ export const buttonVariants = cva(styles.button, {
     variant: {
       primary: styles.primary,
       secondary: styles.secondary,
+      accent: styles.accent,
       ghost: styles.ghost,
       destructive: styles.destructive,
     },

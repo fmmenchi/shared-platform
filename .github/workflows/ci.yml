@@ -13,6 +13,19 @@ env:
   HUSKY: 0
 
 jobs:
+  # One canonical "what kind of run is this?" — downstream jobs consume these
+  # outputs instead of each re-deriving github.event_name/github.ref conditions
+  # (dogfoods the compute-context brick).
+  context:
+    runs-on: ubuntu-latest
+    outputs:
+      event: ${{ steps.ctx.outputs.event }}
+      is-release: ${{ steps.ctx.outputs.is-release }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: ctx
+        uses: ./packages/ops/gh-actions/actions/compute-context
+
   main:
     runs-on: ubuntu-latest
     steps:
@@ -29,13 +42,14 @@ jobs:
 
       - run: pnpm nx format:check --all
 
-      - run: pnpm nx run-many -t typecheck build lint test build-storybook
+      - run: pnpm nx run-many -t typecheck build lint lint-css test build-storybook
 
   # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
   # only the projects with releasing conventional commits, so a plain dry-run is already
   # accurate — no affected pre-filter to mirror. Never versions/tags/publishes.
   release-preview:
-    if: github.event_name == 'pull_request'
+    needs: context
+    if: needs.context.outputs.event == 'pull-request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -55,8 +69,8 @@ jobs:
   # (inline — see the Release/Announce steps). Auth is the built-in GITHUB_TOKEN
   # (contents:write for tags/releases, packages:write to publish) — no PAT.
   release:
-    needs: main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [main, context]
+    if: needs.context.outputs.is-release == 'true'
     runs-on: ubuntu-latest
     # Serialize releases: two quick merges must not run `nx release` (tag + push)
     # concurrently and race on the push.

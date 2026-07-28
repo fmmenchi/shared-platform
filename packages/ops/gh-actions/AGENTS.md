@@ -8,9 +8,11 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
 
 ## Shape
 
-- **Composite actions** in `actions/` (`setup`, `trivy-scan`, `attach-sbom`, `slack-notify`) — thin
-  glue that wraps the nx plugins (`@fmmenchi/nx-trivy`, `@fmmenchi/nx-notify`). One source of truth:
-  the logic is in the plugins, never duplicated here.
+- **Composite actions** in `actions/` (`setup`, `compute-context`, `trivy-scan`, `attach-sbom`,
+  `announce-releases`, `slack-notify`) — thin glue that wraps the nx plugins (`@fmmenchi/nx-trivy`,
+  `@fmmenchi/nx-notify`), plus pure-computation bricks (`compute-context` derives the canonical run
+  context — event kind, release flag, sha/ref slugs — once, for every downstream job). One source of
+  truth: plugin logic is never duplicated here.
 - **Reusable workflow** lives at `../../../.github/workflows/security.reusable.yml` (GitHub only
   discovers reusable workflows under `.github/workflows/`), and references the actions above.
 - The `src/` TS is scaffolding only (the lib carries no code) — it exists so nx has a project to

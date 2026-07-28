@@ -1,0 +1,6 @@
+export { <%= className %> } from './<%= fileName %>.component.js';
+export { <%= propertyName %>Variants } from './<%= fileName %>.variants.js';
+export type {
+  <%= className %>Props,
+  <%= className %>Variants,
+} from './<%= fileName %>.types.js';

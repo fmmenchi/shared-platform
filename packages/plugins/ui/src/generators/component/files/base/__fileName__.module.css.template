@@ -1,0 +1,15 @@
+/*
+ * <%= className %> styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. `@reference` resolves
+ * `@apply` at THIS library's build; the output stays themable at runtime.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+.<%= propertyName %> {
+  /* TODO: structure via @apply (layout, radius, type scale). */
+}
+
+.primary {
+  /* TODO: colour via semantic roles, e.g. `@apply bg-primary text-primary-foreground;` */
+}
