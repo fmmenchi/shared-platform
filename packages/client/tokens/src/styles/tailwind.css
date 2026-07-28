@@ -138,6 +138,7 @@
   --color-input-invalid: var(--fm-color-input-invalid);
   --color-input-disabled: var(--fm-color-input-disabled);
   --color-input-placeholder: var(--fm-color-input-placeholder);
+  --color-input-border: var(--fm-color-input-border);
 
   /* ---- RADIUS ---- */
   --radius-*: initial;
