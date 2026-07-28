@@ -25,8 +25,10 @@ interface ButtonOwnProps extends ButtonVariants {
    * PENDING, not disabled: the control stays focusable (`aria-disabled` +
    * click guard, never native `disabled`, which would drop focus
    * mid-interaction) and keeps its variant colours. The status text is
-   * resolved from the active locale (DS-internal copy) and announced via
-   * `role="status"`.
+   * resolved from the active locale (DS-internal copy) and announced when
+   * loading starts via a persistent `role="status"` region rendered OUTSIDE
+   * the button (so the accessible name stays clean); the end is conveyed by
+   * `aria-busy` clearing and the region emptying.
    */
   isLoading?: boolean;
 }

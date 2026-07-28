@@ -69,50 +69,55 @@ function Button<As extends React.ElementType = 'button'>(
   }
 
   return (
-    <Comp
-      className={cn(
-        buttonVariants({ variant, size }),
-        isIconOnly && styles.iconOnly,
-        className,
-      )}
-      type={isNativeButton ? (type ?? 'button') : type}
-      disabled={isNativeButton ? disabled : undefined}
-      aria-busy={isLoading || undefined}
-      {...rest}
-      aria-disabled={
-        isPending
-          ? true
-          : (attrs['aria-disabled'] as React.AriaAttributes['aria-disabled'])
-      }
-      onClick={handleClick}
-    >
-      {adornment}
-      {children}
+    <>
+      <Comp
+        className={cn(
+          buttonVariants({ variant, size }),
+          isIconOnly && styles.iconOnly,
+          className,
+        )}
+        type={isNativeButton ? (type ?? 'button') : type}
+        disabled={isNativeButton ? disabled : undefined}
+        {...rest}
+        aria-busy={
+          isLoading
+            ? true
+            : (attrs['aria-busy'] as React.AriaAttributes['aria-busy'])
+        }
+        aria-disabled={
+          isPending
+            ? true
+            : (attrs['aria-disabled'] as React.AriaAttributes['aria-disabled'])
+        }
+        onClick={handleClick}
+      >
+        {adornment}
+        {children}
 
-      {/* Trailing icon: stays while loading (the leading spinner carries the
+        {/* Trailing icon: stays while loading (the leading spinner carries the
           state; removing it would shift the layout). */}
-      {iconEnd && (
-        <span
-          aria-hidden={isIconOnly ? undefined : true}
-          className={styles.icon}
-        >
-          {iconEnd}
-        </span>
-      )}
+        {iconEnd && (
+          <span
+            aria-hidden={isIconOnly ? undefined : true}
+            className={styles.icon}
+          >
+            {iconEnd}
+          </span>
+        )}
+      </Comp>
 
-      {/* Loading status for ASSISTIVE TECH only: `aria-busy` alone is
-          unreliable across screen readers, so a visually-hidden text carries
-          the state — in the user's language, owned by the DS (the ports
-          doctrine forbids asking the app for strings). Never visible: it must
-          not change the button's size or wording. `role="status"` makes the
-          transition itself announce (polite) — without it, a screen reader
-          only learns the state by re-reading the button. */}
-      {isLoading && (
-        <span role="status" className={styles.srOnly}>
-          {t('loading')}
-        </span>
-      )}
-    </Comp>
+      {/* Loading status for ASSISTIVE TECH, as a PERSISTENT live region OUTSIDE
+          the button: inside it, the sr-only text would join the accessible
+          name ("Save Loading" — nameFrom: contents recurses into role="status"
+          too), and a region mounted already-populated is routinely missed by
+          screen readers. Kept always mounted and empty when idle, so flipping
+          to loading MUTATES an existing region — the reliable announcement
+          path. The copy is DS-owned and localized; the end of loading is
+          conveyed by `aria-busy` clearing and the region emptying. */}
+      <span role="status" className={styles.srOnly}>
+        {isLoading ? t('loading') : ''}
+      </span>
+    </>
   );
 }
 
