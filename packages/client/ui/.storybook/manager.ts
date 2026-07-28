@@ -6,7 +6,7 @@ import { dark, light } from './manager-theme.generated';
 /**
  * Themes the Storybook MANAGER (chrome) from the design-system tokens. The colour +
  * brand values come from `manager-theme.generated.ts`, derived from @fmmenchi/tokens by
- * the `generate-manager-theme` target — nothing here is hand-copied. The manager runs
+ * the `codegen` target — nothing here is hand-copied. The manager runs
  * outside the preview iframe, so it can't follow the canvas `data-theme`; it picks the
  * light/dark variant from the OS preference at load instead.
  */

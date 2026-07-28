@@ -7,7 +7,7 @@ const config: StorybookConfig = {
   // No first-run telemetry prompt: it has no TTY in agent/CI runs.
   core: { disableTelemetry: true },
   stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
-  // `static/favicon.svg` is generated from the tokens by `generate-manager-theme`.
+  // `static/favicon.svg` is generated from the tokens by the `codegen` target.
   staticDirs: ['./static'],
   managerHead: (head) =>
     `${head}\n<link rel="icon" type="image/svg+xml" href="./favicon.svg" />`,

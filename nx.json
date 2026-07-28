@@ -120,6 +120,21 @@
       "cache": true,
       "dependsOn": ["^build"],
       "inputs": ["production", "^production"]
+    },
+    "codegen": {
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": ["codegen", "build", "^typecheck"]
+    },
+    "build-storybook": {
+      "dependsOn": ["codegen"]
+    },
+    "storybook": {
+      "dependsOn": ["codegen"]
+    },
+    "static-storybook": {
+      "dependsOn": ["codegen", "build-storybook"]
     }
   },
   "generators": {
