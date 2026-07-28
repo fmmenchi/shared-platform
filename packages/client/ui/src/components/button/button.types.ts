@@ -28,7 +28,9 @@ interface ButtonOwnProps extends ButtonVariants {
    * resolved from the active locale (DS-internal copy) and announced when
    * loading starts via a persistent `role="status"` region rendered OUTSIDE
    * the button (so the accessible name stays clean); the end is conveyed by
-   * `aria-busy` clearing and the region emptying.
+   * `aria-busy` clearing and the region emptying. Alternative: return a
+   * Promise from `onClick` and the button manages its own pending state until
+   * it settles (closing the double-click race with a synchronous guard).
    */
   isLoading?: boolean;
 }

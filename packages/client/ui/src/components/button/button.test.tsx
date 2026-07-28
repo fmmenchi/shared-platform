@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from './button.component.js';
 import { renderUi } from '../../test/render.js';
@@ -153,7 +153,56 @@ describe('Button', () => {
     });
   });
 
+  describe('self-managed pending (async onClick)', () => {
+    it('closes the double-click race and holds pending until settle', async () => {
+      let resolve!: () => void;
+      const onClick = vi.fn(
+        () =>
+          new Promise<void>((r) => {
+            resolve = r;
+          }),
+      );
+      render(<Button onClick={onClick}>Pay</Button>);
+      const btn = screen.getByRole('button', { name: 'Pay' });
+      // Two physical clicks can land BEFORE React re-renders — the classic
+      // double-submit window. The synchronous ref gate must swallow the 2nd.
+      btn.click();
+      btn.click();
+      expect(onClick).toHaveBeenCalledOnce();
+      await waitFor(() => expect(btn).toHaveAttribute('aria-busy', 'true'));
+      expect(btn).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.getByRole('status')).toHaveTextContent('Loading');
+
+      resolve();
+      await waitFor(() => expect(btn).not.toHaveAttribute('aria-busy'));
+      btn.click(); // usable again once settled
+      expect(onClick).toHaveBeenCalledTimes(2);
+    });
+
+    it('a sync onClick is untouched — no pending state', () => {
+      const onClick = vi.fn();
+      render(<Button onClick={onClick}>Save</Button>);
+      const btn = screen.getByRole('button', { name: 'Save' });
+      btn.click();
+      btn.click();
+      expect(onClick).toHaveBeenCalledTimes(2);
+      expect(btn).not.toHaveAttribute('aria-busy');
+    });
+  });
+
   describe('slots and polymorph plumbing', () => {
+    it('forwards disabled to a custom component polymorph', () => {
+      const Custom = (props: Record<string, unknown>) => (
+        <button {...(props as object)} />
+      );
+      render(
+        <Button as={Custom} disabled>
+          Go
+        </Button>,
+      );
+      expect(screen.getByRole('button', { name: 'Go' })).toBeDisabled();
+    });
+
     it('renders a trailing iconEnd, decorative, and keeps it while loading', () => {
       const { rerender } = render(
         <Button iconEnd={<svg data-testid="chevron" viewBox="0 0 16 16" />}>
