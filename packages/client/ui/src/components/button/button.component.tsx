@@ -42,13 +42,16 @@ function Button<As extends React.ElementType = 'button'>(
     'Button: an icon-only button has no discernible text — pass `aria-label`.',
   );
 
-  // Loading must block activation on EVERY polymorph. A native button gets
-  // `disabled`; an anchor/custom component can't, so it gets `aria-disabled`
-  // plus a click guard — the guard (not pointer-events) is the real gate,
-  // because keyboard activation on a link fires `click` too, and the
-  // `preventDefault` stops the `href` navigation.
-  const blocksAsNonNative = !isNativeButton && isLoading;
-  const handleClick = blocksAsNonNative
+  // Loading is PENDING, not disabled: the control keeps focus (a mid-click
+  // `disabled` would drop focus to <body> — WCAG 2.4.3 context loss), keeps
+  // its variant colours, and blocks activation with `aria-disabled` + a click
+  // guard on EVERY polymorph. The guard (not pointer-events) is the real
+  // gate: keyboard activation fires `click` too — Enter/Space on a button,
+  // Enter on a link — and `preventDefault` also stops `href` navigation and
+  // implicit form submission. Native `disabled` remains what the `disabled`
+  // prop (a deliberate state) means.
+  const isPending = isLoading && !disabled;
+  const handleClick = isPending
     ? (event: React.MouseEvent) => event.preventDefault()
     : onClick;
 
@@ -68,11 +71,11 @@ function Button<As extends React.ElementType = 'button'>(
     <Comp
       className={cn(buttonVariants({ variant, size }), className)}
       type={isNativeButton ? (type ?? 'button') : type}
-      disabled={isNativeButton ? disabled || isLoading : undefined}
+      disabled={isNativeButton ? disabled : undefined}
       aria-busy={isLoading || undefined}
       {...rest}
       aria-disabled={
-        blocksAsNonNative
+        isPending
           ? true
           : (attrs['aria-disabled'] as React.AriaAttributes['aria-disabled'])
       }
@@ -85,8 +88,14 @@ function Button<As extends React.ElementType = 'button'>(
           unreliable across screen readers, so a visually-hidden text carries
           the state — in the user's language, owned by the DS (the ports
           doctrine forbids asking the app for strings). Never visible: it must
-          not change the button's size or wording. */}
-      {isLoading && <span className={styles.srOnly}>{t('loading')}</span>}
+          not change the button's size or wording. `role="status"` makes the
+          transition itself announce (polite) — without it, a screen reader
+          only learns the state by re-reading the button. */}
+      {isLoading && (
+        <span role="status" className={styles.srOnly}>
+          {t('loading')}
+        </span>
+      )}
     </Comp>
   );
 }

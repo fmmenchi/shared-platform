@@ -51,7 +51,7 @@ const meta: Meta<typeof Button> = {
     isLoading: {
       control: 'boolean',
       description:
-        'Spinner + localized status; blocks interaction (`aria-busy`, disabled).',
+        'Spinner + localized status; pending, not disabled — blocks activation (`aria-disabled` + click guard) while keeping focus.',
       table: {
         type: { summary: 'boolean' },
         defaultValue: { summary: 'false' },

@@ -14,8 +14,12 @@ interface ButtonOwnProps extends ButtonVariants {
    */
   icon?: ReactNode;
   /**
-   * Show a spinner + a localized "loading" status and block interaction.
-   * The status text is resolved from the active locale (DS-internal copy).
+   * Show a spinner + a localized "loading" status and block activation —
+   * PENDING, not disabled: the control stays focusable (`aria-disabled` +
+   * click guard, never native `disabled`, which would drop focus
+   * mid-interaction) and keeps its variant colours. The status text is
+   * resolved from the active locale (DS-internal copy) and announced via
+   * `role="status"`.
    */
   isLoading?: boolean;
 }
