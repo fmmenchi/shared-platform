@@ -304,9 +304,6 @@ importers:
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
-      tailwind-merge:
-        specifier: ^3.6.0
-        version: 3.6.0
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
