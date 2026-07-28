@@ -1,0 +1,72 @@
+# compute-context — one canonical "what kind of run is this?" computation.
+#
+# Downstream jobs/steps consume these outputs instead of each re-deriving the
+# same facts from scattered `if: github.event_name == … && github.ref == …`
+# expressions (the drift-prone pattern). Run it once in a tiny job and let the
+# others `needs:` it:
+#
+#   jobs:
+#     context:
+#       runs-on: ubuntu-latest
+#       outputs:
+#         is-release: ${{ steps.ctx.outputs.is-release }}
+#       steps:
+#         - uses: actions/checkout@v7
+#         - id: ctx
+#           uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/compute-context@gh-actions/v0
+#     release:
+#       needs: [main, context]
+#       if: needs.context.outputs.is-release == 'true'
+#
+# Pure computation: no inputs, no secrets, no side effects.
+name: Compute context
+description: Canonical run context (event kind, default-branch/release flags, short SHA, ref slug) computed once for all downstream jobs.
+
+outputs:
+  event:
+    description: Normalized event kind — pull-request | push | tag | schedule | dispatch | other.
+    value: ${{ steps.ctx.outputs.event }}
+  is-default-branch:
+    description: '"true" when this run is a push to the repository default branch.'
+    value: ${{ steps.ctx.outputs.is-default-branch }}
+  is-release:
+    description: '"true" when this run should release (a push to the default branch — the trunk-based release trigger).'
+    value: ${{ steps.ctx.outputs.is-release }}
+  sha-short:
+    description: First 12 characters of the commit SHA.
+    value: ${{ steps.ctx.outputs.sha-short }}
+  ref-slug:
+    description: Branch/tag name sanitized for tags/URLs — lowercase, non-alphanumerics collapsed to "-".
+    value: ${{ steps.ctx.outputs.ref-slug }}
+
+runs:
+  using: composite
+  steps:
+    - id: ctx
+      shell: bash
+      env:
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: |
+        case "$GITHUB_EVENT_NAME" in
+          pull_request|pull_request_target) event='pull-request' ;;
+          push) if [[ "$GITHUB_REF" == refs/tags/* ]]; then event='tag'; else event='push'; fi ;;
+          schedule) event='schedule' ;;
+          workflow_dispatch) event='dispatch' ;;
+          *) event='other' ;;
+        esac
+
+        is_default='false'
+        if [[ "$event" == 'push' && "$GITHUB_REF" == "refs/heads/${DEFAULT_BRANCH}" ]]; then
+          is_default='true'
+        fi
+
+        ref_name="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+        ref_slug="$(printf '%s' "$ref_name" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')"
+
+        {
+          echo "event=$event"
+          echo "is-default-branch=$is_default"
+          echo "is-release=$is_default"
+          echo "sha-short=${GITHUB_SHA:0:12}"
+          echo "ref-slug=$ref_slug"
+        } >> "$GITHUB_OUTPUT"
