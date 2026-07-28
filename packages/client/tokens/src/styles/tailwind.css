@@ -180,7 +180,11 @@
   --shadow-md: var(--fm-shadow-md);
   --shadow-lg: var(--fm-shadow-lg);
 
-  /* ---- MOTION: eases by intent + coherent bare `transition-*` defaults ---- */
+  /* ---- MOTION: eases by intent + coherent bare `transition-*` defaults.
+          Tailwind's stock animations (animate-spin/ping/pulse/bounce) are
+          RESET too: keyframes come from the token layer (styles/motion.css),
+          paired with the duration/ease tokens — never the stock 1s presets. */
+  --animate-*: initial;
   --ease-*: initial;
   --ease-standard: var(--fm-ease-standard);
   --ease-enter: var(--fm-ease-enter);
