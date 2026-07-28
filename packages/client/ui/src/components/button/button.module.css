@@ -9,6 +9,8 @@
  * action family of the contract: fill/foreground + hover/active/disabled roles
  * (no opacity hacks, no hardcoded colours).
  */
+/* Shared motion primitives (fm-spin & co.) — inlined into this subpath's css. */
+@import '@fmmenchi/tokens/styles/motion.css';
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 .button {
@@ -117,12 +119,7 @@
   border: 2px solid currentColor;
   border-inline-end-color: transparent;
   border-radius: 9999px;
-  animation: fm-button-spin var(--fm-duration-l) linear infinite;
-}
-@keyframes fm-button-spin {
-  to {
-    transform: rotate(360deg);
-  }
+  animation: fm-spin var(--fm-duration-l) var(--fm-ease-linear) infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .spinner {
