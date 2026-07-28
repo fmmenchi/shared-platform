@@ -13,7 +13,12 @@
  * Subpath entry (`@fmmenchi/tokens/validate`) so the browser import graph of
  * the main entry never pulls the color math in.
  */
-import { displayable, parse as parseColor, wcagContrast } from 'culori';
+import {
+  converter,
+  displayable,
+  parse as parseColor,
+  wcagContrast,
+} from 'culori';
 import {
   ACTION_FAMILIES,
   COLOR_ROLES,
@@ -57,10 +62,23 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['background', 'muted-foreground', 4.5],
   ['input', 'input-foreground', 4.5],
   ['background', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
+  // Focus lands inside raised surfaces too (an input in a Dialog, a menu item
+  // in a Popover) — the ring must clear 3:1 on every surface it can appear on.
+  ['card', 'ring', 3],
+  ['popover', 'ring', 3],
   ['input', 'input-invalid', 3], // non-text invalid signal on the field
   ['background', 'input-border', 3], // control boundary vs the page (WCAG 1.4.11)
   ['background', 'link', 4.5],
   ['background', 'link-hover', 4.5],
+  // Links render inside cards/alerts/popovers, not only on the page.
+  ['card', 'link', 4.5],
+  ['popover', 'link', 4.5],
+  ['muted', 'link', 4.5],
+  // Status fills double as inline status TEXT on the page ("2 errors" in
+  // destructive/success/… colour) — so they must be readable as text.
+  ['background', 'success', 4.5],
+  ['background', 'warning', 4.5],
+  ['background', 'info', 4.5],
   ['selection', 'selection-foreground', 4.5],
   ['tooltip', 'tooltip-foreground', 4.5],
   ['input', 'input-placeholder', 4.5], // placeholder is text
@@ -75,7 +93,9 @@ export interface ThemeViolation {
     | 'unknown-role'
     | 'unparsable-color'
     | 'out-of-gamut'
-    | 'contrast';
+    | 'contrast'
+    | 'state-ramp'
+    | 'indistinct-disabled';
   role?: string;
   pair?: readonly [string, string];
   ratio?: number;
@@ -154,6 +174,54 @@ export function validateTheme(
         ratio,
         minimum,
         message: `${bg} × ${fg}: ${ratio.toFixed(2)} < ${minimum}`,
+      });
+    }
+  }
+
+  // ---- Relational checks: the static-literal methodology's failure modes ----
+  // Static values can't drift-check themselves, so the validator asserts the
+  // RELATIONSHIPS a theme must keep, not just each value in isolation.
+  const toOklch = converter('oklch');
+  const lightnessOf = (role: string): number | undefined => {
+    const parsed = parsable.get(role);
+    return parsed ? toOklch(parsed).l : undefined;
+  };
+
+  // Theme polarity anchors on the page surface: light page → states darken,
+  // dark page → states lighten (the graded-ramp methodology).
+  const backgroundL = lightnessOf('background');
+  const darkens = backgroundL !== undefined && backgroundL >= 0.5;
+
+  for (const family of ACTION_FAMILIES) {
+    const base = lightnessOf(family);
+    if (base === undefined) continue;
+    for (const state of ['hover', 'active'] as const) {
+      const stateL = lightnessOf(`${family}-${state}`);
+      if (stateL === undefined) continue;
+      const delta = stateL - base;
+      if (Math.abs(delta) < 0.02) {
+        violations.push({
+          kind: 'state-ramp',
+          role: `${family}-${state}`,
+          message: `"${family}-${state}" is indistinguishable from "${family}" (ΔL ${delta.toFixed(3)})`,
+        });
+      } else if (darkens ? delta > 0 : delta < 0) {
+        violations.push({
+          kind: 'state-ramp',
+          role: `${family}-${state}`,
+          message: `"${family}-${state}" ramps the wrong way for a ${darkens ? 'light' : 'dark'} theme (ΔL ${delta.toFixed(3)})`,
+        });
+      }
+    }
+
+    // Disabled is contrast-exempt (WCAG 1.4.3) but must still LOOK disabled:
+    // a fill indistinguishable from the enabled one fails the state, not AA.
+    const disabledL = lightnessOf(`${family}-disabled`);
+    if (disabledL !== undefined && Math.abs(disabledL - base) < 0.03) {
+      violations.push({
+        kind: 'indistinct-disabled',
+        role: `${family}-disabled`,
+        message: `"${family}-disabled" is indistinguishable from "${family}" (ΔL ${(disabledL - base).toFixed(3)})`,
       });
     }
   }
