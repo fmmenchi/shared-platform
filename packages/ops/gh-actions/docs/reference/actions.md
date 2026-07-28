@@ -12,6 +12,35 @@ first — the others shell out to nx.
 
 ---
 
+## `compute-context`
+
+One canonical "what kind of run is this?" — pure computation, no inputs, no secrets. Run it once in
+a tiny job and let downstream jobs `needs:` it instead of each re-deriving
+`github.event_name`/`github.ref` conditions (the drift-prone pattern):
+
+```yaml
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    outputs:
+      is-release: ${{ steps.ctx.outputs.is-release }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: ctx
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/compute-context@gh-actions/v0
+  release:
+    needs: [main, context]
+    if: needs.context.outputs.is-release == 'true'
+```
+
+| Output              | Description                                                                                       |
+| :------------------ | :------------------------------------------------------------------------------------------------ |
+| `event`             | Normalized event kind — `pull-request` \| `push` \| `tag` \| `schedule` \| `dispatch` \| `other`. |
+| `is-default-branch` | `"true"` on a push to the repository default branch.                                              |
+| `is-release`        | `"true"` when the run should release (push to the default branch — the trunk trigger).            |
+| `sha-short`         | First 12 characters of the commit SHA.                                                            |
+| `ref-slug`          | Branch/tag name sanitized for tags/URLs (lowercase, non-alphanumerics → `-`).                     |
+
 ## `setup`
 
 pnpm + Node + a frozen install for an nx workspace.
