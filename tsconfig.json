@@ -35,6 +35,9 @@
     },
     {
       "path": "./packages/shared/analytics"
+    },
+    {
+      "path": "./packages/plugins/ui"
     }
   ],
   "compilerOptions": {}

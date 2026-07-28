@@ -1,0 +1,32 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { <%= className %> } from './<%= fileName %>.component.js';
+
+const meta: Meta<typeof <%= className %>> = {
+  title: 'Components/<%= className %>',
+  component: <%= className %>,
+  args: { children: '<%= className %>' },
+  // The Props table is CURATED here (react-docgen can't derive it) — declare
+  // every public prop with type summary, default and description.
+  argTypes: {
+    variant: {
+      control: 'inline-radio',
+      options: ['primary'],
+      description: 'TODO — maps to a token role/treatment.',
+      table: { type: { summary: "'primary'" }, defaultValue: { summary: "'primary'" } },
+    },
+  },
+};
+export default meta;
+
+type Story = StoryObj<typeof <%= className %>>;
+
+/** All variants at a glance. */
+export const Gallery: Story = {
+  render: () => (
+    <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
+      <<%= className %> variant="primary">Primary</<%= className %>>
+    </div>
+  ),
+};
+
+export const Primary: Story = { args: { variant: 'primary' } };

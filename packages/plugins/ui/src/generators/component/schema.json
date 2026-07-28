@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "Component",
+  "title": "Scaffold a @fmmenchi/ui component with the full archetype",
+  "description": "Creates src/components/<name>/ (component, types, variants, module.css, stories, mdx, tests, barrel) following the Button archetype, and wires the public surface: root barrel, package.json subpath exports, and the vite entry.",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Component name, kebab-case (e.g. badge, radio-group).",
+      "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "Which component do you want to scaffold? (kebab-case)"
+    },
+    "element": {
+      "type": "string",
+      "description": "Native element the component builds on (native-first).",
+      "default": "div"
+    },
+    "messages": {
+      "type": "boolean",
+      "description": "Also scaffold a colocated .messages.ts catalog (only for components with DS-owned copy).",
+      "default": false
+    }
+  },
+  "required": ["name"]
+}

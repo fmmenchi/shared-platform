@@ -1,0 +1,30 @@
+import * as React from 'react';
+import { cn } from '../../util/cn.js';
+import { <%= propertyName %>Variants } from './<%= fileName %>.variants.js';
+import type { <%= className %>Props } from './<%= fileName %>.types.js';
+import styles from './<%= fileName %>.module.css';
+
+/**
+ * TODO: one sentence — what the user does with <%= className %>.
+ *
+ * Archetype notes (see Button, the reference component):
+ * - native-first: build on the right native element, not a div, when one exists;
+ * - polymorphism (`as`) via `PolymorphicProps` — see button.component.tsx;
+ * - pending, not disabled: a loading state keeps focus (`aria-disabled` + click
+ *   guard) and announces via a sr-only `role="status"` — copy Button's pattern;
+ * - DS copy lives in a colocated `.messages.ts`, never passed by the app.
+ */
+function <%= className %>(props: <%= className %>Props) {
+  const { className, variant, children, ...rest } = props;
+
+  return (
+    <<%= element %>
+      className={cn(<%= propertyName %>Variants({ variant }), className)}
+      {...rest}
+    >
+      {children}
+    </<%= element %>>
+  );
+}
+
+export { <%= className %> };
