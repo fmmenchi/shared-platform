@@ -21,3 +21,4 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 | [0006](./0006-absorb-ui-ports.md)                     | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`                       | accepted         |
 | [0007](./0007-security-scanning-workspace-level.md)   | Security scanning is workspace-level                                  | accepted         |
 | [0008](./0008-cross-app-framework-agnostic-layers.md) | What earns a place as a shared layer (cross-app + framework-agnostic) | accepted         |
+| [0009](./0009-motion-css-first.md)                    | Motion is CSS-first on the tokens; no motion runtime                  | accepted         |
