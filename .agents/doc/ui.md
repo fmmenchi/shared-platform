@@ -21,6 +21,11 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
   self-contained and colocated; `direction` is derived from the locale
   (`Intl.Locale.maximize().script`), never injected. Port design in
   [ADR-0001](../../apps/docusaurus/docs/adr/0001-ui-library-foundations.md).
+- **Icons: artwork is app content, the DS owns the seam.** An icon set is brand identity (like a
+  colour preset) → it lives app-side, injected via the `IconRenderer` port / `icon` props. Injected
+  icons must satisfy the contract documented on `IconRenderer` (`currentColor`, square viewBox,
+  `em`-sized, decorative-by-default). Functional glyphs a component needs to work (spinner, a future
+  chevron/✕) are drawn **inline in the component** — never from an icon set.
 - **Structure.** Folder-per-component, one concern per file; component files export **only** the
   component (Fast Refresh), types always in `<name>.types.ts`.
 - **Tests split by kind.** Component behaviour (semantics, interaction, a11y via axe, snapshot) vs

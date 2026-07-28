@@ -29,7 +29,20 @@ export type LinkComponent = ComponentType<
 /** App-provided imperative navigation. */
 export type NavigateFn = (href: string) => void;
 
-/** App-provided icon renderer: name in, node out. */
+/**
+ * App-provided icon renderer: name in, node out. The icon SET is app content
+ * (brand identity, like colour presets) — the DS owns only this seam and its
+ * own functional glyphs (drawn inline, e.g. the Button spinner).
+ *
+ * The contract an injected icon must satisfy, so it composes with the tokens:
+ * - **`currentColor`** for fill/stroke — it inherits the semantic colour role
+ *   of wherever it lands (e.g. `primary-foreground` inside a Button);
+ * - **square `viewBox`**, no intrinsic `width`/`height` attributes;
+ * - **sized in `em`** (or unsized, letting the slot size it) — it scales with
+ *   the component's own type scale;
+ * - decorative by default (components mark the slot `aria-hidden`); a
+ *   meaningful icon carries its own accessible name (e.g. an svg `<title>`).
+ */
 export type IconRenderer = ComponentType<{ name: string }>;
 
 /** Where portalled content (dialogs, popovers) mounts. */

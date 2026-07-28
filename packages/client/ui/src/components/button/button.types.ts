@@ -7,7 +7,11 @@ import type { buttonVariants } from './button.variants.js';
 export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
 interface ButtonOwnProps extends ButtonVariants {
-  /** Decorative icon (hidden while loading). */
+  /**
+   * Decorative icon (hidden while loading). Must follow the injected-icon
+   * contract (see `IconRenderer` in the ports): `currentColor`, square
+   * viewBox, `em`-sized — so it inherits the variant's foreground role.
+   */
   icon?: ReactNode;
   /**
    * Show a spinner + a localized "loading" status and block interaction.
