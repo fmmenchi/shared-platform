@@ -1,0 +1,74 @@
+{
+  "name": "@fmmenchi/nx-ui",
+  "version": "0.0.1",
+  "description": "Nx generators for developing the @fmmenchi/ui design system \u2014 scaffold a component with the full archetype (component/types/variants/css/stories/mdx/tests) and wire its exports.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/plugins/ui"
+  },
+  "private": true,
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "targets": {
+      "build": {
+        "executor": "@nx/js:tsc",
+        "outputs": [
+          "{options.outputPath}"
+        ],
+        "options": {
+          "outputPath": "packages/plugins/ui/dist",
+          "main": "packages/plugins/ui/src/index.ts",
+          "tsConfig": "packages/plugins/ui/tsconfig.lib.json",
+          "rootDir": "packages/plugins/ui/src",
+          "generatePackageJson": false,
+          "assets": [
+            {
+              "input": "./packages/plugins/ui/src",
+              "glob": "**/!(*.ts)",
+              "output": "."
+            },
+            {
+              "input": "./packages/plugins/ui/src",
+              "glob": "**/*.d.ts",
+              "output": "."
+            }
+          ]
+        }
+      },
+      "nx-release-publish": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "echo \"skip npm publish \u2014 internal DS tooling (versioned + tagged only)\""
+        }
+      }
+    },
+    "tags": [
+      "scope:plugins",
+      "type:plugin"
+    ]
+  },
+  "dependencies": {
+    "@nx/devkit": "23.1.0",
+    "tslib": "^2.3.0"
+  },
+  "generators": "./generators.json",
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo",
+    "generators.json"
+  ]
+}

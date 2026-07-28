@@ -1,0 +1,15 @@
+import { cva } from 'class-variance-authority';
+import styles from './<%= fileName %>.module.css';
+
+// `cva` maps the public variant API to CSS-module class names; the styling
+// lives in `<%= fileName %>.module.css`. Kept out of the component file so that
+// file exports only the component (React Fast Refresh requires that).
+export const <%= propertyName %>Variants = cva(styles.<%= propertyName %>, {
+  variants: {
+    variant: {
+      // TODO: one class per token role/treatment this component supports.
+      primary: styles.primary,
+    },
+  },
+  defaultVariants: { variant: 'primary' },
+});

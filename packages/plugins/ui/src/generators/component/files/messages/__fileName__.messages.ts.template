@@ -1,0 +1,8 @@
+import { defineMessages } from '../../i18n/messages.js';
+
+/** <%= className %>'s own micro-copy, colocated with the component. */
+export const <%= propertyName %>Messages = defineMessages('<%= fileName %>', {
+  en: { todo: 'TODO' },
+  it: { todo: 'TODO' },
+  ar: { todo: 'TODO' },
+});

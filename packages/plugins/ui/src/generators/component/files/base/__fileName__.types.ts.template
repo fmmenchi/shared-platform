@@ -1,0 +1,17 @@
+import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { VariantProps } from 'class-variance-authority';
+import type { <%= propertyName %>Variants } from './<%= fileName %>.variants.js';
+
+/** Variant axes, derived from the cva definition. */
+export type <%= className %>Variants = VariantProps<typeof <%= propertyName %>Variants>;
+
+interface <%= className %>OwnProps extends <%= className %>Variants {
+  children?: ReactNode;
+}
+
+/**
+ * Public <%= className %> props. TODO: switch to `PolymorphicProps<As, OwnProps>`
+ * (see button.types.ts) if this component needs an `as` prop.
+ */
+export type <%= className %>Props = <%= className %>OwnProps &
+  Omit<ComponentPropsWithRef<'<%= element %>'>, keyof <%= className %>OwnProps>;
