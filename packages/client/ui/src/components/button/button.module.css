@@ -34,6 +34,11 @@
     transform: none;
   }
 }
+/* A pending control must not LOOK pressable: pointer-events stops the mouse,
+   but keyboard Space/Enter still drives `:active` — suppress the press scale. */
+.button[aria-disabled='true']:active {
+  transform: none;
+}
 
 /* --- Colour variants: one action family each --- */
 .primary {
@@ -128,4 +133,23 @@
 /* Visually hidden but exposed to assistive tech. */
 .srOnly {
   @apply sr-only;
+}
+
+/* Windows High Contrast (forced-colors): the token fills are replaced by
+   system colors, so the variants collapse into the same flat surface — a
+   border restores the button's boundary. Pending/disabled map to GrayText
+   (only native :disabled gets that automatically), the focus outline to
+   Highlight. Every component ships a forced-colors block (styling doctrine). */
+@media (forced-colors: active) {
+  .button {
+    border: 1px solid ButtonText;
+  }
+  .button:disabled,
+  .button[aria-disabled='true'] {
+    color: GrayText;
+    border-color: GrayText;
+  }
+  .button:focus-visible {
+    outline-color: Highlight;
+  }
 }

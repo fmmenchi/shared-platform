@@ -2,13 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { converter, parse as parseColor } from 'culori';
+import { converter, parse as parseColor, wcagContrast } from 'culori';
 import { APCAcontrast, sRGBtoY } from 'apca-w3';
 import {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
   COLOR_ROLES,
   RADIUS_TOKENS,
+  SHADOW_TOKENS,
   SPACE_TOKENS,
   TOKEN_VARS,
   colorVar,
@@ -60,9 +61,17 @@ describe('contract completeness', () => {
     expect(defined).toEqual([...TOKEN_VARS].sort());
   });
 
-  it('the dark preset assigns exactly every color role', () => {
+  it('the dark preset assigns exactly every color role + the shadows', () => {
+    // Elevation is theme-dependent (light's 4-12% black shadows vanish on a
+    // dark background), so shadows are the one non-color override a preset
+    // makes; everything else non-color inherits.
     const defined = [...dark.keys()].sort();
-    expect(defined).toEqual(COLOR_ROLES.map(colorVar).sort());
+    expect(defined).toEqual(
+      [
+        ...COLOR_ROLES.map(colorVar),
+        ...SHADOW_TOKENS.map((t) => `--fm-shadow-${t}`),
+      ].sort(),
+    );
   });
 
   it('every color value parses as a color, in both themes', () => {
@@ -148,6 +157,54 @@ describe('reference presets pass the PUBLIC validator (allowed-themes gate)', ()
     expect(kinds).toContain('contrast');
     expect(kinds).toContain('missing-role');
     expect(kinds).toContain('unknown-role');
+  });
+
+  it('the validator reports broken state relationships (self-check)', () => {
+    const broken = { ...toTheme(light) };
+    broken['primary-hover'] = broken['primary']; // flat ramp
+    broken['secondary-hover'] = 'oklch(60% 0.05 256)'; // lighter on a light theme
+    broken['accent-disabled'] = broken['accent']; // disabled = enabled
+    const kinds = validateTheme(broken).map((v) => v.kind);
+    expect(
+      kinds.filter((k) => k === 'state-ramp').length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(kinds).toContain('indistinct-disabled');
+  });
+});
+
+describe('perceivability advisories (logged, not gated)', () => {
+  // WCAG 1.4.1: links must be distinguishable from surrounding text — 3:1 or a
+  // non-colour cue. The DS mandates UNDERLINED links in prose (the non-colour
+  // cue), so this is an advisory, not a gate; same for a selected item's
+  // surface, whose state is also carried by its foreground change.
+  it('logs link-vs-foreground and selection-vs-surface ratios', () => {
+    const themeOf = (vars: Map<string, string>): Record<string, string> => {
+      const theme: Record<string, string> = {};
+      for (const role of COLOR_ROLES) {
+        const raw = vars.get(colorVar(role));
+        if (raw !== undefined) theme[role] = resolve(vars, raw);
+      }
+      return theme;
+    };
+    for (const [name, theme] of [
+      ['light', light],
+      ['dark', dark],
+    ] as const) {
+      const t = themeOf(theme);
+      const linkVsText = wcagContrast(t['link'], t['foreground']);
+      const selVsCard = wcagContrast(t['selection'], t['card']);
+      if (linkVsText < 3) {
+        console.log(
+          `  [${name}] link vs foreground: ${linkVsText.toFixed(2)} (< 3 — prose links MUST be underlined)`,
+        );
+      }
+      if (selVsCard < 3) {
+        console.log(
+          `  [${name}] selection vs card: ${selVsCard.toFixed(2)} (< 3 — selected state must not rely on the wash alone)`,
+        );
+      }
+      expect(theme).toBeDefined();
+    }
   });
 });
 

@@ -139,6 +139,10 @@
   --fm-color-input-invalid: oklch(57% 0.2 27);
   --fm-color-input-disabled: oklch(96.5% 0.006 256);
   --fm-color-input-placeholder: oklch(38% 0.02 256);
+  /* Field boundary (outline-style inputs): a control boundary must clear 3:1
+     against the surrounding surface (WCAG 1.4.11) — the decorative --fm-color-
+     border does not. Declared pair: background × input-border. */
+  --fm-color-input-border: oklch(58% 0.016 256);
 
   /* ==========================================================
      RADIUS
@@ -175,16 +179,11 @@
   --fm-font-heading: var(--fm-font-sans);
   --fm-font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  --fm-text-2xs: 0.75rem;
-  --fm-text-xs: 0.875rem;
-  --fm-text-sm: 0.9375rem;
-  --fm-text-base: 1rem;
-  --fm-text-lg: 1.125rem;
-  --fm-text-xl: 1.25rem;
-  --fm-text-2xl: 1.5rem;
-  --fm-text-3xl: 1.875rem;
-  --fm-text-4xl: 2.25rem;
-  --fm-text-5xl: 3rem;
+  /* NB: no text/leading token scales (--fm-text-…, --fm-leading-…) YET — deliberately. Utilities use
+     Tailwind's defaults until a Text/Heading component settles the size+leading
+     pairing; a token scale nothing consumes would silently diverge from the
+     utilities (the phantom-contract trap). Introduce the scale WITH that
+     component, bridged in the same change. */
 
   --fm-font-weight-light: 300;
   --fm-font-weight-regular: 400;
@@ -192,10 +191,6 @@
   --fm-font-weight-semibold: 600;
   --fm-font-weight-bold: 700;
   --fm-font-weight-extrabold: 800;
-
-  --fm-leading-tight: 1.2;
-  --fm-leading-normal: 1.5;
-  --fm-leading-relaxed: 1.75;
 
   /* ==========================================================
      BORDERS · SHADOWS · SIZES
@@ -253,4 +248,6 @@
   --fm-z-modal-backdrop: 40;
   --fm-z-modal-content: 50;
   --fm-z-tooltip: 60;
+  /* Toasts outrank everything: they must surface over an open modal. */
+  --fm-z-toast: 70;
 }

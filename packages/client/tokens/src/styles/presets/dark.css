@@ -100,4 +100,12 @@
   --fm-color-input-invalid: oklch(70% 0.19 27);
   --fm-color-input-disabled: oklch(26% 0.02 256);
   --fm-color-input-placeholder: oklch(74% 0.014 256);
+  --fm-color-input-border: oklch(56% 0.02 256);
+
+  /* Elevation is THEME-DEPENDENT: the light shadows (4-12% black) vanish on a
+     21%-lightness background, so the dark preset re-tunes them — the one
+     non-color override a preset makes (see tokens.test.ts). */
+  --fm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --fm-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+  --fm-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6);
 }

@@ -64,11 +64,18 @@ disabled colours (no opacity hack).
 `isLoading` is **pending, not disabled**: activation is blocked (`aria-disabled` + a click guard,
 on every polymorph) but the button **keeps focus** — a mid-click `disabled` would drop focus to the
 page — and keeps its variant colours; only the spinner signals the wait. Screen-reader users are
-told the action is in progress: `aria-busy` plus a **visually-hidden `role="status"` text in the
-user's language** (announced when loading starts/ends; the design system owns this copy, since it
-never asks the app for strings).
+told the action is in progress: `aria-busy` plus a **persistent, visually-hidden `role="status"`
+region rendered outside the button** in the user's language — outside, so the status never joins
+the button's accessible name; persistent, so the start of loading mutates an existing region (the
+reliable announcement path). The end is conveyed by `aria-busy` clearing and the region emptying.
+The design system owns this copy, since it never asks the app for strings.
 
 <Canvas of={ButtonStories.Loading} />
+
+**Double submissions.** `isLoading` is controlled, so a second physical click can land before your
+state update re-renders. Either set it synchronously — or simply **return a Promise from
+`onClick`**: the button then manages its own pending state (spinner, `aria-disabled`, announcement)
+until it settles, and a synchronous internal guard closes the double-click race.
 
 ### As a link (`as`)
 
@@ -84,8 +91,9 @@ attributes (`type`, `disabled`) are not applied to non-`<button>` elements.
   icon-only story above).
 - The **loading** state is pending, not disabled: the button stays focusable (`aria-disabled` +
   click guard, never native `disabled` — which would drop focus mid-interaction) and the status is
-  exposed to assistive tech (`aria-busy` + a visually-hidden localized `role="status"` text,
-  announced on start/end); the spinner is decorative (`aria-hidden`) and respects
+  exposed to assistive tech (`aria-busy` + a persistent, visually-hidden localized `role="status"`
+  region outside the button — the name stays clean and the start announcement is reliable); the
+  spinner is decorative (`aria-hidden`) and respects
   `prefers-reduced-motion`.
 - **Direction** follows the active locale (RTL/LTR). Styling uses CSS logical properties, so the
   layout mirrors automatically — try the Locale toolbar (`العربية`).
