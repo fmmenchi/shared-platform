@@ -49,7 +49,9 @@ describe('Button', () => {
   describe('loading state', () => {
     it('is pending, not disabled: busy, aria-disabled, and still focusable', () => {
       render(<Button isLoading>Save</Button>);
-      const btn = screen.getByRole('button', { name: /save/i });
+      // EXACT name: the loading status must not pollute the accessible name
+      // (a status span inside the button would make it "Save Loading").
+      const btn = screen.getByRole('button', { name: 'Save' });
       expect(btn).toHaveAttribute('aria-busy', 'true');
       expect(btn).toHaveAttribute('aria-disabled', 'true');
       // Never native `disabled` while loading — that would drop focus to the
@@ -76,9 +78,24 @@ describe('Button', () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
-    it('announces the transition via a status region', () => {
-      renderUi(<Button isLoading>Save</Button>, { locale: 'en' });
+    it('announces via a PERSISTENT status region outside the button', () => {
+      // The region must pre-exist (mounting one already populated is routinely
+      // missed by screen readers) and live OUTSIDE the button (inside, its text
+      // would join the accessible name).
+      const { rerender } = render(<Button>Save</Button>);
+      const region = screen.getByRole('status');
+      expect(region).toHaveTextContent('');
+      expect(screen.getByRole('button', { name: 'Save' })).not.toContainElement(
+        region,
+      );
+
+      rerender(<Button isLoading>Save</Button>);
       expect(screen.getByRole('status')).toHaveTextContent('Loading');
+      // The name stays clean while the region is populated.
+      expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+
+      rerender(<Button>Save</Button>);
+      expect(screen.getByRole('status')).toHaveTextContent('');
     });
 
     it('a deliberately disabled button stays natively disabled while loading', () => {

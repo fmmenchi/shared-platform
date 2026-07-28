@@ -34,6 +34,11 @@
     transform: none;
   }
 }
+/* A pending control must not LOOK pressable: pointer-events stops the mouse,
+   but keyboard Space/Enter still drives `:active` — suppress the press scale. */
+.button[aria-disabled='true']:active {
+  transform: none;
+}
 
 /* --- Colour variants: one action family each --- */
 .primary {
