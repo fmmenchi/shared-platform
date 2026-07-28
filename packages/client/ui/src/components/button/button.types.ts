@@ -8,11 +8,18 @@ export type ButtonVariants = VariantProps<typeof buttonVariants>;
 
 interface ButtonOwnProps extends ButtonVariants {
   /**
-   * Decorative icon (hidden while loading). Must follow the injected-icon
-   * contract (see `IconRenderer` in the ports): `currentColor`, square
-   * viewBox, `em`-sized — so it inherits the variant's foreground role.
+   * Decorative leading icon (the spinner takes its slot while loading). Must
+   * follow the injected-icon contract (see `IconRenderer` in the ports):
+   * `currentColor`, square viewBox, `em`-sized — so it inherits the variant's
+   * foreground role.
    */
   icon?: ReactNode;
+  /**
+   * Decorative trailing icon (chevron, external-link…). Stays visible while
+   * loading — the leading spinner carries the state, and removing it would
+   * shift the layout. Same injected-icon contract as `icon`.
+   */
+  iconEnd?: ReactNode;
   /**
    * Show a spinner + a localized "loading" status and block activation —
    * PENDING, not disabled: the control stays focusable (`aria-disabled` +

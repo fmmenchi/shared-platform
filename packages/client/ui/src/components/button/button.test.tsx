@@ -136,6 +136,50 @@ describe('Button', () => {
     });
   });
 
+  describe('slots and polymorph plumbing', () => {
+    it('renders a trailing iconEnd, decorative, and keeps it while loading', () => {
+      const { rerender } = render(
+        <Button iconEnd={<svg data-testid="chevron" viewBox="0 0 16 16" />}>
+          Next
+        </Button>,
+      );
+      const slot = screen.getByTestId('chevron').parentElement;
+      expect(slot).toHaveAttribute('aria-hidden', 'true');
+      rerender(
+        <Button
+          iconEnd={<svg data-testid="chevron" viewBox="0 0 16 16" />}
+          isLoading
+        >
+          Next
+        </Button>,
+      );
+      // The trailing icon stays put — the leading spinner carries the state.
+      expect(screen.getByTestId('chevron')).toBeInTheDocument();
+    });
+
+    it('forwards ref to the underlying element (React 19 ref-as-prop)', () => {
+      const buttonRef = { current: null as HTMLButtonElement | null };
+      render(<Button ref={buttonRef}>Save</Button>);
+      expect(buttonRef.current).toBeInstanceOf(HTMLButtonElement);
+
+      const anchorRef = { current: null as HTMLAnchorElement | null };
+      render(
+        <Button as="a" href="/next" ref={anchorRef}>
+          Go
+        </Button>,
+      );
+      expect(anchorRef.current).toBeInstanceOf(HTMLAnchorElement);
+    });
+
+    it('renders inside an RTL provider (smoke)', () => {
+      renderUi(<Button icon={<svg viewBox="0 0 16 16" />}>حفظ</Button>, {
+        locale: 'ar',
+      });
+      const btn = screen.getByRole('button', { name: 'حفظ' });
+      expect(btn.closest('[dir]')).toHaveAttribute('dir', 'rtl');
+    });
+  });
+
   // Real Chromium: computed styles are the actual layout, so geometry is
   // asserted deterministically — the DS promise is exact control heights.
   describe('sizing', () => {
@@ -178,7 +222,13 @@ describe('Button', () => {
   // axe runs in real Chromium, so color-contrast is checked against the actual
   // token values — each colour role is a distinct contrast pair, in each theme.
   describe('accessibility (axe)', () => {
-    const variants = ['primary', 'secondary', 'ghost', 'destructive'] as const;
+    const variants = [
+      'primary',
+      'secondary',
+      'accent',
+      'ghost',
+      'destructive',
+    ] as const;
     const themes = [
       { name: 'light', theme: undefined },
       { name: 'dark', theme: 'dark' },

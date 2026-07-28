@@ -48,6 +48,12 @@
   @apply disabled:bg-secondary-disabled disabled:text-secondary-disabled-foreground;
 }
 
+.accent {
+  @apply bg-accent text-accent-foreground;
+  @apply hover:bg-accent-hover active:bg-accent-active;
+  @apply disabled:bg-accent-disabled disabled:text-accent-disabled-foreground;
+}
+
 /* Ghost is a treatment, not a family: quiet on the surface roles. */
 .ghost {
   @apply text-foreground bg-transparent;
