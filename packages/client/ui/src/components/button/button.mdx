@@ -72,6 +72,11 @@ The design system owns this copy, since it never asks the app for strings.
 
 <Canvas of={ButtonStories.Loading} />
 
+**Double submissions.** `isLoading` is controlled, so a second physical click can land before your
+state update re-renders. Either set it synchronously — or simply **return a Promise from
+`onClick`**: the button then manages its own pending state (spinner, `aria-disabled`, announcement)
+until it settles, and a synchronous internal guard closes the double-click race.
+
 ### As a link (`as`)
 
 Render as any element or component while keeping the button's look: `as="a"` (or `as={Link}`). The

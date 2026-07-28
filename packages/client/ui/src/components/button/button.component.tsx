@@ -38,10 +38,26 @@ function Button<As extends React.ElementType = 'button'>(
   const isIconOnly = !!((icon || iconEnd) && !children);
   const attrs = rest as Record<string, unknown>;
 
+  // A DOM tag other than <button> (as="a") cannot take `disabled` (TS already
+  // rejects it there); a CUSTOM component gets it forwarded and owns it.
+  const isDomTag = typeof Comp === 'string';
+
   useDevWarning(
     isIconOnly && !attrs['aria-label'] && !attrs['aria-labelledby'],
     'Button: an icon-only button has no discernible text — pass `aria-label`.',
   );
+  useDevWarning(
+    !isNativeButton && isDomTag && disabled !== undefined,
+    'Button: `disabled` does nothing on a non-button DOM polymorph — use `isLoading`, or handle the state in the target component.',
+  );
+
+  // SELF-MANAGED pending: when `onClick` returns a promise, the button holds
+  // its own pending state until it settles. The ref is the SYNCHRONOUS gate —
+  // two physical clicks can land before React re-renders, and the classic
+  // double-submit race lives exactly in that window.
+  const [isSettling, setIsSettling] = React.useState(false);
+  const settlingRef = React.useRef(false);
+  const showLoading = isLoading || isSettling;
 
   // Loading is PENDING, not disabled: the control keeps focus (a mid-click
   // `disabled` would drop focus to <body> — WCAG 2.4.3 context loss), keeps
@@ -51,14 +67,29 @@ function Button<As extends React.ElementType = 'button'>(
   // Enter on a link — and `preventDefault` also stops `href` navigation and
   // implicit form submission. Native `disabled` remains what the `disabled`
   // prop (a deliberate state) means.
-  const isPending = isLoading && !disabled;
-  const handleClick = isPending
-    ? (event: React.MouseEvent) => event.preventDefault()
-    : onClick;
+  const isPending = showLoading && !disabled;
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (isPending || settlingRef.current) {
+      event.preventDefault();
+      return;
+    }
+    const result = onClick?.(event) as unknown;
+    if (
+      result != null &&
+      typeof (result as PromiseLike<unknown>).then === 'function'
+    ) {
+      settlingRef.current = true;
+      setIsSettling(true);
+      void Promise.resolve(result as PromiseLike<unknown>).finally(() => {
+        settlingRef.current = false;
+        setIsSettling(false);
+      });
+    }
+  };
 
   // Leading adornment: the spinner while loading, otherwise the icon (if any).
   let adornment: React.ReactNode = null;
-  if (isLoading) {
+  if (showLoading) {
     adornment = <span aria-hidden="true" className={styles.spinner} />;
   } else if (icon) {
     adornment = (
@@ -77,10 +108,10 @@ function Button<As extends React.ElementType = 'button'>(
           className,
         )}
         type={isNativeButton ? (type ?? 'button') : type}
-        disabled={isNativeButton ? disabled : undefined}
+        disabled={isNativeButton || !isDomTag ? disabled : undefined}
         {...rest}
         aria-busy={
-          isLoading
+          showLoading
             ? true
             : (attrs['aria-busy'] as React.AriaAttributes['aria-busy'])
         }
@@ -115,7 +146,7 @@ function Button<As extends React.ElementType = 'button'>(
           path. The copy is DS-owned and localized; the end of loading is
           conveyed by `aria-busy` clearing and the region emptying. */}
       <span role="status" className={styles.srOnly}>
-        {isLoading ? t('loading') : ''}
+        {showLoading ? t('loading') : ''}
       </span>
     </>
   );
