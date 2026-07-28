@@ -1,6 +1,9 @@
 {
   "extends": ["stylelint-config-recommended"],
-  "plugins": ["stylelint-declaration-strict-value"],
+  "plugins": [
+    "stylelint-declaration-strict-value",
+    "./tools/stylelint/no-tailwind-arbitrary.cjs"
+  ],
   "rules": {
     "at-rule-no-unknown": [
       true,
@@ -44,7 +47,7 @@
             "color"
           ],
           {
-            "message": "Use a semantic colour token var(--fm-color-…), not a raw colour function"
+            "message": "Use a semantic colour token var(--fm-color-\u2026), not a raw colour function"
           }
         ],
         "scale-unlimited/declaration-strict-value": [
@@ -63,10 +66,16 @@
               "inherit",
               "initial",
               "unset",
-              "none"
+              "none",
+              "ButtonText",
+              "GrayText",
+              "Highlight",
+              "HighlightText",
+              "Canvas",
+              "CanvasText"
             ],
             "ignoreFunctions": true,
-            "message": "Use a semantic design token (var(--fm-color-…) / var(--fm-font-…)), not a hardcoded value"
+            "message": "Use a semantic design token (var(--fm-color-\u2026) / var(--fm-font-\u2026)), not a hardcoded value"
           }
         ],
         "declaration-property-value-disallowed-list": [
@@ -76,7 +85,8 @@
           {
             "message": "Motion: no raw durations (ms/s) or curves (cubic-bezier). Use the tokens var(--fm-duration-*) / var(--fm-ease-*) or the transition/animation utilities. See @fmmenchi/tokens"
           }
-        ]
+        ],
+        "fmmenchi/no-tailwind-arbitrary": true
       }
     }
   ]
