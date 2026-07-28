@@ -20,7 +20,7 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   default palette, so `bg-red-500` fails the build.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
   no runtime relative-color, no `@property`). `styles/tailwind.css` is a names-only `@theme inline`
-  bridge (no values → no drift). `presets/dark.css` overrides EXACTLY every color role.
+  bridge (no values → no drift). `presets/dark.css` overrides EXACTLY every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black shadows vanish on a dark background — enforced by `tokens.test.ts`).
 - **A theme = a complete assignment of every color role** (`ThemeColors` in `src/tokens.types.ts`).
   Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape — apps
   validate theirs with the PUBLIC `validateTheme()` (`@fmmenchi/tokens/validate`): completeness +
@@ -42,6 +42,10 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
 - **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
   system stacks (apps override `--fm-font-*`).
+- **No text/leading scale yet — deliberately.** Utilities use Tailwind's default sizes until a
+  Text/Heading component settles the size+leading pairing; never re-add an unbridged `--fm-text-*`
+  scale (a token nothing consumes silently diverges from the utilities — the phantom-contract trap).
+  Introduce the scale WITH that component, bridged in the same change.
 - Weight utilities are `font-regular` (not `font-normal`); breakpoints are build-time literals in
   `tailwind.css`, asserted against `BREAKPOINTS` in TS.
 

@@ -77,6 +77,7 @@ export const INPUT_ROLES = [
   'input-invalid',
   'input-disabled',
   'input-placeholder',
+  'input-border',
 ] as const;
 
 /** Every color role, flat — the completeness checklist for a theme. */
@@ -110,18 +111,6 @@ export const SPACE_TOKENS = [
   'inset-l',
 ] as const;
 export const FONT_TOKENS = ['sans', 'heading', 'mono'] as const;
-export const TEXT_TOKENS = [
-  '2xs',
-  'xs',
-  'sm',
-  'base',
-  'lg',
-  'xl',
-  '2xl',
-  '3xl',
-  '4xl',
-  '5xl',
-] as const;
 export const FONT_WEIGHT_TOKENS = [
   'light',
   'regular',
@@ -130,7 +119,6 @@ export const FONT_WEIGHT_TOKENS = [
   'bold',
   'extrabold',
 ] as const;
-export const LEADING_TOKENS = ['tight', 'normal', 'relaxed'] as const;
 export const BORDER_WIDTH_TOKENS = ['default', 'emphasis', 'divider'] as const;
 export const SHADOW_TOKENS = ['sm', 'md', 'lg'] as const;
 export const SIZE_TOKENS = ['container', 'prose'] as const;
@@ -151,6 +139,7 @@ export const Z_TOKENS = [
   'modal-backdrop',
   'modal-content',
   'tooltip',
+  'toast',
 ] as const;
 
 /* ---------- CSS variable names ---------- */
@@ -163,9 +152,7 @@ export const TOKEN_VARS: readonly string[] = [
   ...RADIUS_TOKENS.map((t) => `--fm-radius-${t}`),
   ...SPACE_TOKENS.map((t) => `--fm-space-${t}`),
   ...FONT_TOKENS.map((t) => `--fm-font-${t}`),
-  ...TEXT_TOKENS.map((t) => `--fm-text-${t}`),
   ...FONT_WEIGHT_TOKENS.map((t) => `--fm-font-weight-${t}`),
-  ...LEADING_TOKENS.map((t) => `--fm-leading-${t}`),
   ...BORDER_WIDTH_TOKENS.map((t) => `--fm-border-width-${t}`),
   ...SHADOW_TOKENS.map((t) => `--fm-shadow-${t}`),
   ...SIZE_TOKENS.map((t) => `--fm-size-${t}`),

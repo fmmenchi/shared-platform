@@ -58,6 +58,7 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['input', 'input-foreground', 4.5],
   ['background', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
   ['input', 'input-invalid', 3], // non-text invalid signal on the field
+  ['background', 'input-border', 3], // control boundary vs the page (WCAG 1.4.11)
   ['background', 'link', 4.5],
   ['background', 'link-hover', 4.5],
   ['selection', 'selection-foreground', 4.5],

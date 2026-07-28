@@ -9,6 +9,7 @@ import {
   CONTAINER_BREAKPOINTS,
   COLOR_ROLES,
   RADIUS_TOKENS,
+  SHADOW_TOKENS,
   SPACE_TOKENS,
   TOKEN_VARS,
   colorVar,
@@ -60,9 +61,17 @@ describe('contract completeness', () => {
     expect(defined).toEqual([...TOKEN_VARS].sort());
   });
 
-  it('the dark preset assigns exactly every color role', () => {
+  it('the dark preset assigns exactly every color role + the shadows', () => {
+    // Elevation is theme-dependent (light's 4-12% black shadows vanish on a
+    // dark background), so shadows are the one non-color override a preset
+    // makes; everything else non-color inherits.
     const defined = [...dark.keys()].sort();
-    expect(defined).toEqual(COLOR_ROLES.map(colorVar).sort());
+    expect(defined).toEqual(
+      [
+        ...COLOR_ROLES.map(colorVar),
+        ...SHADOW_TOKENS.map((t) => `--fm-shadow-${t}`),
+      ].sort(),
+    );
   });
 
   it('every color value parses as a color, in both themes', () => {
