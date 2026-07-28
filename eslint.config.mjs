@@ -102,6 +102,25 @@ export default [
     rules: {},
   },
   {
+    // "No utility strings in JSX" (ui doctrine) made machine-enforced: a
+    // Tailwind ARBITRARY utility in a string literal (`bg-[#123]`, `w-[37px]`)
+    // bypasses the token contract AND would not survive precompilation.
+    // The @apply side is enforced by Stylelint (fmmenchi/no-tailwind-arbitrary).
+    files: ['packages/client/ui/src/**/*.tsx'],
+    ignores: ['**/*.test.tsx', '**/*.stories.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'JSXAttribute[name.name="className"] Literal[value=/[a-zA-Z-]+-\\[[^\\]]*\\]/]',
+          message:
+            'Arbitrary Tailwind value in className — style through the component module.css with semantic tokens (see .agents/doc/styling.md).',
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.json'],
     // Override or add rules here
     rules: {},
