@@ -18,7 +18,10 @@ The doctrine behind every animation in the DS (decision: ADR-0009 — CSS-first,
 - **Exits are the one JS case.** A closing `<dialog>`/popover hits `display: none` before a CSS
   transition can run, and `@starting-style` isn't Baseline Widely available until ~2027 — so exits
   go through the `animateExit` primitive (WAAPI, token-driven, reduced-motion-aware, cancel-safe:
-  always `await` it before `close()`/unmount). When the platform catches up, it retires.
+  always `await` it before `close()`/unmount). It is PUBLIC API (exported from the barrel, for
+  consumer overlays too) with token-KEY options, never CSS var names:
+  `animateExit(el, { preset: 'scale' | 'fade', duration: 'xs'|'s'|'m'|'l', ease: 'standard'|'enter'|'exit'|'linear', keyframes? })`.
+  When the platform catches up, it retires (major, with a migration note).
 - **No motion runtime — ever.** framer-motion & co. are app concerns: the DS ships zero animation
   JS beyond `animateExit`. View Transitions / scroll-driven animations are watchlisted (not
   Baseline Widely).

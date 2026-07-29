@@ -1,4 +1,4 @@
-import type { AnimateExitOptions } from './animate-exit.types.js';
+import type { AnimateExitOptions, ExitPreset } from './animate-exit.types.js';
 
 /**
  * Imperative EXIT animation via the Web Animations API — the design system's
@@ -19,9 +19,10 @@ export async function animateExit(
   options: AnimateExitOptions = {},
 ): Promise<void> {
   const {
-    keyframes = DEFAULT_EXIT,
-    durationVar = '--fm-duration-m',
-    easeVar = '--fm-ease-exit',
+    preset = 'scale',
+    duration = 'm',
+    ease = 'exit',
+    keyframes = PRESETS[preset],
   } = options;
   if (typeof el.animate !== 'function') return;
 
@@ -31,21 +32,26 @@ export async function animateExit(
   if (!frames) return;
 
   const style = getComputedStyle(el);
-  const duration = parseDuration(style.getPropertyValue(durationVar)) ?? 350;
-  const easing = style.getPropertyValue(easeVar).trim() || 'ease-in';
+  const ms =
+    parseDuration(style.getPropertyValue(`--fm-duration-${duration}`)) ?? 350;
+  const easing =
+    style.getPropertyValue(`--fm-ease-${ease}`).trim() || 'ease-in';
 
   try {
-    await el.animate(frames, { duration, easing }).finished;
+    await el.animate(frames, { duration: ms, easing }).finished;
   } catch {
     // Canceled (element removed, animation interrupted) — exit proceeds.
   }
 }
 
-/** Default exit: fade + subtle scale (mirrors motion.css `fm-scale-out`). */
-const DEFAULT_EXIT: Keyframe[] = [
-  { opacity: 1, transform: 'none' },
-  { opacity: 0, transform: 'scale(0.97)' },
-];
+/** Built-in exit shapes, mirroring the motion.css primitives. */
+const PRESETS: Record<ExitPreset, Keyframe[]> = {
+  fade: [{ opacity: 1 }, { opacity: 0 }],
+  scale: [
+    { opacity: 1, transform: 'none' },
+    { opacity: 0, transform: 'scale(0.97)' },
+  ],
+};
 
 /**
  * The reduced-motion projection of a set of keyframes: transforms stripped,

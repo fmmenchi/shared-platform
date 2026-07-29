@@ -29,6 +29,15 @@ describe('animateExit', () => {
   });
 });
 
+describe('animateExit presets', () => {
+  it("the 'fade' preset is opacity-only (reduced-motion-safe by nature)", async () => {
+    const el = mount();
+    el.style.setProperty('--fm-duration-s', '10ms');
+    await animateExit(el, { preset: 'fade', duration: 's', ease: 'standard' });
+    el.remove();
+  });
+});
+
 describe('reducedMotionKeyframes', () => {
   it('strips transforms and keeps the fade', () => {
     expect(
