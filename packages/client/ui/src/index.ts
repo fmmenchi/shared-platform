@@ -50,3 +50,19 @@ export type {
   FieldDescriptionProps,
   FieldErrorProps,
 } from './components/field/field.types.js';
+export {
+  Fieldset,
+  FieldsetLegend,
+  FieldsetDescription,
+  FieldsetContent,
+  FieldsetError,
+} from './components/fieldset/index.js';
+export { fieldsetContentVariants } from './components/fieldset/fieldset.variants.js';
+export type {
+  FieldsetProps,
+  FieldsetLegendProps,
+  FieldsetDescriptionProps,
+  FieldsetContentProps,
+  FieldsetContentVariants,
+  FieldsetErrorProps,
+} from './components/fieldset/fieldset.types.js';

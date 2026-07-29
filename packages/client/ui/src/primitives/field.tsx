@@ -1,21 +1,17 @@
 import { createContext, useContext, useEffect } from 'react';
+import type { DescribedByRegistry } from './describedby-registry.js';
 
 /**
  * Shared state a `Field` provides to its label, description, error, and control.
  * The control never learns anything about VALUE — only a11y ids — so it stays
  * transparent (ADR-0013).
  */
-export interface FieldContextValue {
+export interface FieldContextValue extends DescribedByRegistry {
   /** id for the control; the label's `htmlFor` targets it. The FIELD owns it, so
    * the label always associates — a control can't override it inside a Field. */
   controlId: string;
   /** Error state — drives the control's `aria-invalid`. */
   invalid: boolean;
-  /** Space-joined ids of the rendered description(s) + error(s), in DOM order. */
-  describedBy: string | undefined;
-  /** A description/error part registers its own id (keyed BY the id, so several
-   * coexist and each cleans up independently). */
-  register: (id: string) => () => void;
   /** A control registers its presence, so the Field can warn on 0 or >1. */
   registerControl: () => () => void;
 }

@@ -1,0 +1,55 @@
+/*
+ * Fieldset styles — layout, the UA reset, and text roles (a Fieldset has no
+ * chrome of its own, so no border/fill and no forced-colors block: system
+ * colours handle the text). Colours ONLY through semantic role utilities;
+ * `@reference` resolves `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* Two UA defaults have to go. The 2px groove border + padding are chrome we
+     don't want; `min-inline-size: min-content` is the one that bites — it stops
+     a <fieldset> shrinking, so as a grid/flex item in the consumer's form layout
+     it would overflow its track instead of fitting. No other component needs
+     this: they are all div/input. */
+  .fieldset {
+    @apply grid gap-internal-xs;
+    min-inline-size: 0;
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
+
+  /* The rendered <legend> is placed over the block-start border, OUTSIDE the
+     fieldset's anonymous layout box — it is not a grid item, so the container's
+     `gap` never reaches it. Its spacing is therefore a margin, set to the same
+     token as that gap so the rhythm matches. */
+  .legend {
+    @apply text-foreground text-sm font-medium;
+    padding: 0;
+    margin-block-end: var(--fm-space-internal-xs);
+  }
+
+  .description {
+    @apply text-muted-foreground text-sm;
+  }
+
+  .error {
+    @apply text-sm;
+    color: var(--fm-color-error);
+  }
+
+  /* The controls' own layout lives here, not on the <fieldset> (see .legend). */
+  .content {
+    min-inline-size: 0;
+  }
+  .vertical {
+    @apply grid gap-internal-xs;
+  }
+  .horizontal {
+    @apply flex flex-wrap gap-inline-s;
+  }
+}

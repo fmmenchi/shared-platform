@@ -1,6 +1,7 @@
 import { useCallback, useId, useMemo, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { useDescribedByRegistry } from '../../primitives/describedby-registry.js';
 import {
   FieldContext,
   type FieldContextValue,
@@ -21,15 +22,10 @@ function Field(props: FieldProps) {
   const { className, invalid = false, children, ...rest } = props;
   const controlId = useId();
 
-  // Description/error parts register their OWN id (keyed by id), so several
-  // coexist, each cleans up independently, and the control describes exactly the
-  // parts actually in the DOM (never a dangling reference).
-  const [ids, setIds] = useState<string[]>([]);
-  const register = useCallback<FieldContextValue['register']>((id) => {
-    setIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    return () => setIds((prev) => prev.filter((x) => x !== id));
-  }, []);
-  const describedBy = ids.join(' ') || undefined;
+  // Description/error parts register their OWN id, so several coexist and the
+  // control describes exactly the parts actually in the DOM (shared with
+  // `Fieldset`, which describes a whole group the same way).
+  const { describedBy, register } = useDescribedByRegistry();
 
   // Controls register presence so we can flag the two silent misuses: a Field
   // with no control (its label points at nothing) or more than one (a duplicate

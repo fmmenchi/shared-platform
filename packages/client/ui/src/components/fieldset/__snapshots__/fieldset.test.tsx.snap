@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Fieldset > matches the rendered snapshot 1`] = `
+<fieldset
+  aria-describedby="_r_h_"
+  class="_fieldset_x4kw8_4"
+>
+  <legend
+    class="_legend_x4kw8_12"
+  >
+    Favourite colour
+  </legend>
+  <p
+    class="_description_x4kw8_21"
+    id="_r_h_"
+  >
+    Pick exactly one.
+  </p>
+  <div
+    class="_content_x4kw8_31 _vertical_x4kw8_34"
+  >
+    <label>
+      <input
+        name="colour"
+        type="radio"
+        value="green"
+      />
+       Green
+    </label>
+    <label>
+      <input
+        name="colour"
+        type="radio"
+        value="yellow"
+      />
+       Yellow
+    </label>
+  </div>
+</fieldset>
+`;
