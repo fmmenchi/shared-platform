@@ -27,7 +27,10 @@ ADR-0003 pins support to **Baseline Widely available**, lint-enforced. Two press
      expected Widely date —
      `/* eslint-disable-next-line css/use-baseline -- progressive: degrades to instant open; widely ~2027-02 */`
      — plus an `@supports` guard whenever the declaration would otherwise be invalid;
-   - when the feature goes Widely, the comment is removed (the exception expires by design).
+   - the exception is **recorded in the [Known issues ledger](../known-issues.md)** (feature,
+     where it's used, how it degrades, Widely ETA) — the single place to see what's in flight;
+   - when the feature goes Widely, the comment AND the ledger entry are removed (the exception
+     expires by design).
 3. **Not degradable ⇒ not yet.** A Newly feature whose absence breaks function (e.g. Popover API
    without a JS fallback) waits for Widely, as before.
 

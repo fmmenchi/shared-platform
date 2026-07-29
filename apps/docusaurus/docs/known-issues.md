@@ -90,3 +90,17 @@ supports eslint 10, but the React/a11y/import plugins don't.
 
 **What unblocks it.** `eslint-plugin-react` / `jsx-a11y` / `import` shipping eslint-10 support (their
 peer ranges widening to include `^10`).
+
+## Baseline exceptions in flight (ADR-0010)
+
+**Status:** living section · Newly-available features used as **graceful progressive enhancement**
+([ADR-0010](./adr/0010-progressive-enhancement-beyond-widely.md)). Every entry is also marked
+in-code by a justified `use-baseline` disable comment; when a feature goes Widely, code comment
+**and** ledger entry are removed.
+
+| Feature                                                   | Where                                                                                                    | Degrades to                          | Widely ETA |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------- |
+| `@starting-style` + `transition-behavior: allow-discrete` | approved for the Dialog's entry/exit (lands with the component; `animateExit` stays the guaranteed exit) | instant open/close, fully functional | ~2027-02   |
+
+**Waiting for Widely (not degradable — NOT exceptions):** Popover API (~2026-10, needs a JS
+fallback to degrade). **Watchlist (degradable, no design need yet):** View Transitions.

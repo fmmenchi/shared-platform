@@ -11,4 +11,6 @@ it before upgrading a dependency or diagnosing an odd build/CI failure, and **ad
 - **`@babel/*`** — `@nx/js` hard-pins `@babel/core@7`, so Babel-8 presets break the Storybook build;
 - **`eslint`** — `eslint-plugin-react`/`jsx-a11y`/`import` peer-cap at eslint 9;
 
-are blocked and **ignored in Dependabot** (`.github/dependabot.yml`). Related: [[releases]].
+are blocked and **ignored in Dependabot** (`.github/dependabot.yml`). The ledger also tracks the
+**Baseline exceptions in flight** (ADR-0010 progressive enhancements — currently `@starting-style`
+approved for the Dialog): check it before using a Newly-available feature. Related: [[releases]].
