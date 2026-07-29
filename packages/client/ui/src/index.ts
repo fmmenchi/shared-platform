@@ -19,3 +19,10 @@ export {
   UI_FALLBACK_LOCALE,
   type UiLocale,
 } from './i18n/messages.js';
+export { animateExit } from './primitives/animate-exit.js';
+export type {
+  AnimateExitOptions,
+  ExitPreset,
+  MotionDuration,
+  MotionEase,
+} from './primitives/animate-exit.types.js';

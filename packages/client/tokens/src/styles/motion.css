@@ -1,0 +1,59 @@
+/**
+ * Motion PRIMITIVES — the shared keyframes of the design system.
+ *
+ * Keyframes cannot live in `vars.css` (variables-only by contract), so they
+ * ship here as an opt-in stylesheet (`@fmmenchi/tokens/styles/motion.css`).
+ * A component css `@import`s it (Vite inlines it per subpath, so every
+ * component stays self-contained) and pairs a primitive with the motion
+ * tokens — never raw values:
+ *
+ *   animation: fm-scale-in var(--fm-duration-m) var(--fm-ease-enter);
+ *
+ * Doctrine (see ui's motion.md + ADR-0009): `prefers-reduced-motion` turns
+ * OFF the transform-bearing primitives (movement is the vestibular trigger)
+ * and may keep the pure fades (change is fine, motion is not). No JS motion
+ * runtime — CSS first, WAAPI (`animateExit`) for the imperative exits.
+ */
+
+/* Pure fades — safe under reduced motion. */
+@keyframes fm-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fm-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Fade + subtle scale — surfaces entering/leaving (dialog, popover, tooltip).
+   Transform-bearing: disable under reduced motion (or swap for the fades). */
+@keyframes fm-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes fm-scale-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* Fade + short rise — toasts/banners sliding into place. Transform-bearing. */
+@keyframes fm-slide-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+/* Continuous rotation — spinners (pair with --fm-ease-linear). Decorative
+   spinners must also respect reduced motion (animation: none). */
+@keyframes fm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

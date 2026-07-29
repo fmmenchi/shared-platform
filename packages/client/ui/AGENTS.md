@@ -18,14 +18,15 @@ pnpm nx g @fmmenchi/nx-ui:component <name>   # scaffold a new component (the But
 
 ## Rules — open the `.agents/doc/` spoke for your topic
 
-| Spoke                                             | When                                          |
-| ------------------------------------------------- | --------------------------------------------- |
-| [styling](./.agents/doc/styling.md)               | CSS Modules, `@apply`, cva, precompiled CSS   |
-| [primitives](./.agents/doc/primitives.md)         | `as` polymorphism, mergeRefs, useControlled   |
-| [testing](./.agents/doc/testing.md)               | component vs logic tests, axe                 |
-| [i18n](./.agents/doc/i18n.md)                     | colocated messages, direction/RTL             |
-| [component-docs](./.agents/doc/component-docs.md) | authoring a component's `.mdx`                |
-| [build](./.agents/doc/build.md)                   | React Compiler, tree-shaking, subpath exports |
+| Spoke                                             | When                                           |
+| ------------------------------------------------- | ---------------------------------------------- |
+| [styling](./.agents/doc/styling.md)               | CSS Modules, `@apply`, cva, precompiled CSS    |
+| [motion](./.agents/doc/motion.md)                 | animations, transitions, reduced-motion, exits |
+| [primitives](./.agents/doc/primitives.md)         | `as` polymorphism, mergeRefs, useControlled    |
+| [testing](./.agents/doc/testing.md)               | component vs logic tests, axe                  |
+| [i18n](./.agents/doc/i18n.md)                     | colocated messages, direction/RTL              |
+| [component-docs](./.agents/doc/component-docs.md) | authoring a component's `.mdx`                 |
+| [build](./.agents/doc/build.md)                   | React Compiler, tree-shaking, subpath exports  |
 
 Otherwise: native-first (native elements + light a11y; no headless behavior lib); browser-only
 (DOM lib in `tsconfig.lib.json`).
