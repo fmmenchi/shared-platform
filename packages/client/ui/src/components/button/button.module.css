@@ -13,140 +13,148 @@
 @import '@fmmenchi/tokens/styles/motion.css';
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
-.button {
-  @apply gap-internal-s inline-flex items-center justify-center;
-  @apply rounded-md text-sm font-medium transition;
-  @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
-}
-/* `:disabled` only exists on form elements; a loading `as="a"`/custom
+/* Every DS rule ships inside the `fmmenchi` cascade layer (ADR-0011): a
+   consumer's own UNLAYERED css always wins over it — overriding is a plain
+   rule, never a specificity war. Tokens (`:root` in vars.css) stay UNLAYERED
+   on purpose: they are the substrate every layer resolves against. `@import`
+   and `@reference` must precede the layer; keyframes stay unlayered (name-
+   scoped, not part of the property cascade). */
+@layer fmmenchi {
+  .button {
+    @apply gap-internal-s inline-flex items-center justify-center;
+    @apply rounded-md text-sm font-medium transition;
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+  /* `:disabled` only exists on form elements; a loading `as="a"`/custom
    polymorph is marked `aria-disabled` instead (the component also guards the
    click, since keyboard activation bypasses pointer-events). */
-.button:disabled,
-.button[aria-disabled='true'] {
-  @apply pointer-events-none;
-}
-/* Press feedback is the transform, not a colour — colour
+  .button:disabled,
+  .button[aria-disabled='true'] {
+    @apply pointer-events-none;
+  }
+  /* Press feedback is the transform, not a colour — colour
    alone can't distinguish pressed for the ghost treatment. */
-.button:active {
-  transform: scale(0.97);
-  transition: var(--fm-transition-press);
-}
-@media (prefers-reduced-motion: reduce) {
   .button:active {
+    transform: scale(0.97);
+    transition: var(--fm-transition-press);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .button:active {
+      transform: none;
+    }
+  }
+  /* A pending control must not LOOK pressable: pointer-events stops the mouse,
+   but keyboard Space/Enter still drives `:active` — suppress the press scale. */
+  .button[aria-disabled='true']:active {
     transform: none;
   }
-}
-/* A pending control must not LOOK pressable: pointer-events stops the mouse,
-   but keyboard Space/Enter still drives `:active` — suppress the press scale. */
-.button[aria-disabled='true']:active {
-  transform: none;
-}
 
-/* --- Colour variants: one action family each --- */
-.primary {
-  @apply bg-primary text-primary-foreground;
-  @apply hover:bg-primary-hover active:bg-primary-active;
-  @apply disabled:bg-primary-disabled disabled:text-primary-disabled-foreground;
-}
+  /* --- Colour variants: one action family each --- */
+  .primary {
+    @apply bg-primary text-primary-foreground;
+    @apply hover:bg-primary-hover active:bg-primary-active;
+    @apply disabled:bg-primary-disabled disabled:text-primary-disabled-foreground;
+  }
 
-.secondary {
-  @apply bg-secondary text-secondary-foreground;
-  @apply hover:bg-secondary-hover active:bg-secondary-active;
-  @apply disabled:bg-secondary-disabled disabled:text-secondary-disabled-foreground;
-}
+  .secondary {
+    @apply bg-secondary text-secondary-foreground;
+    @apply hover:bg-secondary-hover active:bg-secondary-active;
+    @apply disabled:bg-secondary-disabled disabled:text-secondary-disabled-foreground;
+  }
 
-.accent {
-  @apply bg-accent text-accent-foreground;
-  @apply hover:bg-accent-hover active:bg-accent-active;
-  @apply disabled:bg-accent-disabled disabled:text-accent-disabled-foreground;
-}
+  .accent {
+    @apply bg-accent text-accent-foreground;
+    @apply hover:bg-accent-hover active:bg-accent-active;
+    @apply disabled:bg-accent-disabled disabled:text-accent-disabled-foreground;
+  }
 
-/* Ghost is a treatment, not a family: quiet on the surface roles. */
-.ghost {
-  @apply text-foreground bg-transparent;
-  @apply hover:bg-muted active:bg-neutral-subtle;
-  @apply disabled:text-disabled-foreground disabled:bg-transparent;
-}
+  /* Ghost is a treatment, not a family: quiet on the surface roles. */
+  .ghost {
+    @apply text-foreground bg-transparent;
+    @apply hover:bg-muted active:bg-neutral-subtle;
+    @apply disabled:text-disabled-foreground disabled:bg-transparent;
+  }
 
-.destructive {
-  @apply bg-destructive text-destructive-foreground;
-  @apply hover:bg-destructive-hover active:bg-destructive-active;
-  @apply disabled:bg-destructive-disabled disabled:text-destructive-disabled-foreground;
-}
+  .destructive {
+    @apply bg-destructive text-destructive-foreground;
+    @apply hover:bg-destructive-hover active:bg-destructive-active;
+    @apply disabled:bg-destructive-disabled disabled:text-destructive-disabled-foreground;
+  }
 
-/* Size — explicit heights (32/36/44px), not padding-derived: the control's
+  /* Size — explicit heights (32/36/44px), not padding-derived: the control's
    height must not drift with the font tokens' line-height, and toolbars need
    buttons that align deterministically. `lg` (44px) meets the AAA touch
    target; `sm` (32px) clears the WCAG 2.5.8 minimum (24px) but is not for
    touch-primary surfaces — see the docs. Vertical centering is the flex row. */
-.sm {
-  @apply h-8 px-3 text-xs;
-}
-.md {
-  @apply h-9 px-4;
-}
-.lg {
-  @apply h-11 px-5 text-base;
-}
+  .sm {
+    @apply h-8 px-3 text-xs;
+  }
+  .md {
+    @apply h-9 px-4;
+  }
+  .lg {
+    @apply h-11 px-5 text-base;
+  }
 
-/* Icon-only buttons are square: the fixed height defines the width
+  /* Icon-only buttons are square: the fixed height defines the width
    (aspect-ratio), horizontal padding would only skew the glyph. */
-.iconOnly {
-  @apply aspect-square justify-center p-0;
-}
+  .iconOnly {
+    @apply aspect-square justify-center p-0;
+  }
 
-/* Decorative icon slot (was an inline utility string — moved here so it
+  /* Decorative icon slot (was an inline utility string — moved here so it
    survives precompilation instead of relying on a consumer Tailwind scan).
    The SLOT owns the size (1em, like the spinner it swaps with — so loading
    never shifts layout): an unsized svg would fall back to its 300×150
    intrinsic default, so the slot sizes its child per the injected-icon
    contract (`IconRenderer`). */
-.icon {
-  @apply inline-flex shrink-0 items-center justify-center;
-  width: 1em;
-  height: 1em;
-}
-.icon > :where(*) {
-  width: 100%;
-  height: 100%;
-}
-
-/* Loading spinner — decorative (aria-hidden); the accessible status is the
-   localized `.srOnly` text + `aria-busy`. Respects reduced-motion. */
-.spinner {
-  width: 1em;
-  height: 1em;
-  border: 2px solid currentColor;
-  border-inline-end-color: transparent;
-  border-radius: 9999px;
-  animation: fm-spin var(--fm-duration-l) var(--fm-ease-linear) infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation: none;
+  .icon {
+    @apply inline-flex shrink-0 items-center justify-center;
+    width: 1em;
+    height: 1em;
   }
-}
+  .icon > :where(*) {
+    width: 100%;
+    height: 100%;
+  }
 
-/* Visually hidden but exposed to assistive tech. */
-.srOnly {
-  @apply sr-only;
-}
+  /* Loading spinner — decorative (aria-hidden); the accessible status is the
+   localized `.srOnly` text + `aria-busy`. Respects reduced-motion. */
+  .spinner {
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: 9999px;
+    animation: fm-spin var(--fm-duration-l) var(--fm-ease-linear) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner {
+      animation: none;
+    }
+  }
 
-/* Windows High Contrast (forced-colors): the token fills are replaced by
+  /* Visually hidden but exposed to assistive tech. */
+  .srOnly {
+    @apply sr-only;
+  }
+
+  /* Windows High Contrast (forced-colors): the token fills are replaced by
    system colors, so the variants collapse into the same flat surface — a
    border restores the button's boundary. Pending/disabled map to GrayText
    (only native :disabled gets that automatically), the focus outline to
    Highlight. Every component ships a forced-colors block (styling doctrine). */
-@media (forced-colors: active) {
-  .button {
-    border: 1px solid ButtonText;
+  @media (forced-colors: active) {
+    .button {
+      border: 1px solid ButtonText;
+    }
+    .button:disabled,
+    .button[aria-disabled='true'] {
+      color: GrayText;
+      border-color: GrayText;
+    }
+    .button:focus-visible {
+      outline-color: Highlight;
+    }
   }
-  .button:disabled,
-  .button[aria-disabled='true'] {
-    color: GrayText;
-    border-color: GrayText;
-  }
-  .button:focus-visible {
-    outline-color: Highlight;
-  }
-}
+} /* @layer fmmenchi */
