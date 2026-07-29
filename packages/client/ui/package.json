@@ -49,7 +49,14 @@
       "import": "./dist/input.js",
       "default": "./dist/input.js"
     },
-    "./input/style.css": "./dist/input.css"
+    "./input/style.css": "./dist/input.css",
+    "./field": {
+      "@fmmenchi/source": "./src/components/field/index.ts",
+      "types": "./dist/components/field/index.d.ts",
+      "import": "./dist/field.js",
+      "default": "./dist/field.js"
+    },
+    "./field/style.css": "./dist/field.css"
   },
   "nx": {
     "tags": [

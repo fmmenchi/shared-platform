@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Field > matches the rendered snapshot 1`] = `
+<div
+  class="_field_ki78m_4"
+>
+  <label
+    class="_label_ki78m_8"
+    for="_r_i_"
+  >
+    Email
+  </label>
+  <input
+    class="_input_1gpu1_4 _md_1gpu1_43"
+    id="_r_i_"
+    type="text"
+  />
+</div>
+`;

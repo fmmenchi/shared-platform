@@ -1,0 +1,60 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FieldStories from './field.stories.tsx';
+
+<Meta of={FieldStories} />
+
+# Field
+
+Groups a label, a control, and optional description/error text, and wires them for accessibility so
+you don't hand-thread ids. Compose it: `<Field><FieldLabel/><Input/><FieldDescription/><FieldError/></Field>`.
+It shares one id between the label's `htmlFor` and the control, registers the description and error
+into the control's `aria-describedby`, and drives its `aria-invalid` from `invalid` — via React
+context, so any transparent control inside picks the wiring up (the control's own props still win).
+It owns no value or validation (ADR-0013) and has no chrome of its own — just layout and the text roles.
+
+## Anatomy
+
+- **`Field`** — the group; takes `invalid` and provides the context.
+- **`FieldLabel`** — `<label>` tied to the control (click-to-focus, name-from-label).
+- **`FieldDescription`** — helper text, added to `aria-describedby`.
+- **`FieldError`** — the message; renders and joins `aria-describedby` **only when it has content**.
+
+## Props
+
+<Controls of={FieldStories.Default} />
+
+## Usage
+
+### Default
+
+<Canvas of={FieldStories.Default} />
+
+### Invalid
+
+`invalid` (owned by your validation library) sets the control's `aria-invalid` and reveals the error.
+
+<Canvas of={FieldStories.Invalid} />
+
+## Accessibility
+
+- **Label association is automatic** — `FieldLabel htmlFor` and the control's `id` share one `useId`,
+  so clicking the label focuses the control and the control's name comes from the label.
+- **Description & error are announced with the field** — both register into `aria-describedby`; the
+  error only when it has content, so no empty/dangling references.
+- **Invalid isn't colour alone** — `invalid` sets `aria-invalid` (announced) and the control shows a
+  colour **and** a thicker border; the error text adds the words.
+- **Announcing a fresh error is the consumer's job** — `FieldError` is described-by, not a live
+  region. For an error that must be heard on submit, move focus to the field or use an error summary.
+- **One control per Field.** The field owns a single `id`; put two controls in one `Field` and they
+  collide (a dev warning fires). For a **radio/checkbox group** use a `<fieldset>` with a `<legend>`,
+  not this single-control Field.
+- **Precedence:** the field **owns the control's `id`** (so the label always associates — a control's
+  own `id` is ignored inside a Field); `aria-describedby` **merges** the field's with the control's;
+  the control's own `aria-invalid` **wins**.
+- **The a11y ids resolve on the client.** The control itself renders server-side; the
+  `aria-describedby` association is added on hydration (the description/error register via effect), so
+  it's present for JS clients — not for no-JS delivery.
+- **Only the design system's own controls auto-wire** (they call the internal field hook). A raw
+  `<input>` or a third-party control won't pick the wiring up — set its `id`/`aria-describedby`
+  yourself (a `FieldControl` slot for arbitrary elements is planned).
