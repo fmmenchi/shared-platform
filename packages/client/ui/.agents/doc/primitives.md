@@ -13,4 +13,12 @@ no headless-behavior lib.
 - **`useDevWarning(active, message)`** (hook) — dev-only `console.warn` when `active`; no-op in
   prod. Put dev guards here, not in the component body (compute the condition at the call site).
 
+**Every component forwards a ref to its underlying element** — no exceptions. It must be as
+reachable as the element it wraps: focus, measurement, anchoring an overlay, a form lib's `ref` all
+need it. In React 19 the ref is a plain prop, so typing props with `ComponentPropsWithRef<'tag'>` (or
+`PolymorphicProps`) and spreading `{...rest}` onto the element forwards it for free — never reach for
+`forwardRef` or a wrapper HOC (that would hide the native element). The generator template ships a
+ref-forwarding test, so the guarantee is enforced, not remembered. For a **composite** (wrapper +
+inner control) the ref targets the primary interactive element (the control, not the wrapper).
+
 Add a primitive only when a component actually needs it (YAGNI). Prefer native React (`useId`).
