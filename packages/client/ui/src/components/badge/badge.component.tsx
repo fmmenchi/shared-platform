@@ -16,8 +16,11 @@ function Badge(props: BadgeProps) {
 
   // Colour alone is never the signal: a badge with an icon but no text (and no
   // explicit label) has no discernible name. Warn instead of failing silently.
+  // A falsy child that renders nothing (`false`/`''` from a conditional, `null`)
+  // counts as NO label — but `0` is a real count, so it does count. axe won't
+  // flag an unnamed <span>, so this guard is the only protection.
   const hasLabel =
-    children != null ||
+    (children != null && children !== false && children !== '') ||
     attrs['aria-label'] != null ||
     attrs['aria-labelledby'] != null;
   useDevWarning(

@@ -47,7 +47,7 @@ describe('Badge', () => {
         <Badge variant="primary" emphasis="soft">
           A
         </Badge>,
-      ).getByText('A' as string);
+      ).getByText('A');
       const solid = render(
         <Badge variant="primary" emphasis="solid">
           B
@@ -66,6 +66,15 @@ describe('Badge', () => {
       const lg = render(<Badge size="lg">L</Badge>).getByText('L');
       const px = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize);
       expect(px(lg)).toBeGreaterThan(px(sm));
+    });
+
+    it('md is padded wider than sm (the axis is padding-driven, not just type)', () => {
+      // sm and md share `text-xs`, so the size difference is carried by padding.
+      const sm = render(<Badge size="sm">S</Badge>).getByText('S');
+      const md = render(<Badge size="md">M</Badge>).getByText('M');
+      const pad = (el: HTMLElement) =>
+        parseFloat(getComputedStyle(el).paddingInlineStart);
+      expect(pad(md)).toBeGreaterThan(pad(sm));
     });
   });
 
@@ -107,6 +116,35 @@ describe('Badge', () => {
       render(<Badge icon={<svg viewBox="0 0 16 16" />} aria-label="Online" />);
       expect(warn).not.toHaveBeenCalled();
     });
+
+    it('warns when the only child is falsy and renders nothing', () => {
+      // The classic footgun: `{cond && 'label'}` collapses to `false`, leaving
+      // an icon-only badge with no accessible name. `!= null` would miss it.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const cond = false;
+      render(
+        <Badge icon={<svg viewBox="0 0 16 16" />}>{cond && 'Label'}</Badge>,
+      );
+      render(<Badge icon={<svg viewBox="0 0 16 16" />}>{''}</Badge>);
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not warn on a 0 count — zero is a real label', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<Badge icon={<svg viewBox="0 0 16 16" />}>{0}</Badge>);
+      expect(warn).not.toHaveBeenCalled();
+      expect(screen.getByText('0')).toBeInTheDocument();
+    });
+  });
+
+  it('renders inside an RTL provider (smoke)', () => {
+    renderUi(<Badge variant="info">جديد</Badge>, { locale: 'ar' });
+    const badge = screen.getByText('جديد');
+    expect(badge.closest('[dir]')).toHaveAttribute('dir', 'rtl');
   });
 
   // axe in real Chromium — every variant × emphasis meets contrast, both themes.
