@@ -3,10 +3,8 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useDescribedByRegistry } from '../../primitives/describedby-registry.js';
-import {
-  FieldsetContext,
-  type FieldsetContextValue,
-} from './fieldset.context.js';
+import { DescribableContext } from '../../primitives/describable.js';
+import type { Describable } from '../../primitives/describable.types.js';
 import type { FieldsetProps } from './fieldset.types.js';
 import styles from './fieldset.module.css';
 
@@ -24,11 +22,11 @@ function isNamed(node: HTMLFieldSetElement): boolean {
 
 /**
  * Groups related controls — a radio or checkbox group, or any set of fields that
- * answer one question — as a native `<fieldset>` named by its `<legend>`. The
- * description and error register into the GROUP's `aria-describedby`, so they are
- * announced once for the group instead of repeated on every control. It touches
- * no value or validation (ADR-0013). For a single control with its own label use
- * `Field`.
+ * answer one question — as a native `<fieldset>` named by its `<legend>`. A
+ * `FieldDescription` / `FieldError` placed directly inside registers into the
+ * GROUP's `aria-describedby`, so it is announced once for the group instead of
+ * repeated on every control. It touches no value or validation (ADR-0013). For a
+ * single control with its own label use `Field`.
  */
 function Fieldset(props: FieldsetProps) {
   const {
@@ -72,9 +70,11 @@ function Fieldset(props: FieldsetProps) {
     'Fieldset: no accessible name — give it a <FieldsetLegend> with text, or an aria-label.',
   );
 
-  const value = useMemo<FieldsetContextValue>(
-    () => ({ describedBy, register }),
-    [describedBy, register],
+  // The same slot a `Field` fills, which is why one description/error pair serves
+  // both: a part binds to whichever container is NEAREST.
+  const describable = useMemo<Describable>(
+    () => ({ owner: 'Fieldset', register }),
+    [register],
   );
 
   // MERGE our describedby with any the consumer passes, so their own hint never
@@ -90,7 +90,7 @@ function Fieldset(props: FieldsetProps) {
   const supportsAriaInvalid = rest.role === 'radiogroup';
 
   return (
-    <FieldsetContext.Provider value={value}>
+    <DescribableContext.Provider value={describable}>
       <fieldset
         className={cn(styles.fieldset, className)}
         {...rest}
@@ -101,7 +101,7 @@ function Fieldset(props: FieldsetProps) {
       >
         {children}
       </fieldset>
-    </FieldsetContext.Provider>
+    </DescribableContext.Provider>
   );
 }
 

@@ -4,12 +4,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Fieldset } from './fieldset.component.js';
 import { FieldsetLegend } from './fieldset-legend.component.js';
-import { FieldsetDescription } from './fieldset-description.component.js';
+import { FieldDescription } from '../field/field-description.component.js';
 import { FieldsetContent } from './fieldset-content.component.js';
-import { FieldsetError } from './fieldset-error.component.js';
+import { FieldError } from '../field/field-error.component.js';
 import { Field } from '../field/field.component.js';
 import { FieldLabel } from '../field/field-label.component.js';
-import { FieldDescription } from '../field/field-description.component.js';
 import { Input } from '../input/input.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -24,7 +23,7 @@ function Colours(props: { name: string; invalid?: boolean; error?: string }) {
   return (
     <Fieldset invalid={invalid}>
       <FieldsetLegend>Favourite colour</FieldsetLegend>
-      <FieldsetDescription>Pick exactly one.</FieldsetDescription>
+      <FieldDescription>Pick exactly one.</FieldDescription>
       <FieldsetContent>
         <label>
           <input type="radio" name={name} value="green" /> Green
@@ -33,7 +32,7 @@ function Colours(props: { name: string; invalid?: boolean; error?: string }) {
           <input type="radio" name={name} value="yellow" /> Yellow
         </label>
       </FieldsetContent>
-      {error === undefined ? null : <FieldsetError>{error}</FieldsetError>}
+      {error === undefined ? null : <FieldError>{error}</FieldError>}
     </Fieldset>
   );
 }
@@ -47,11 +46,11 @@ function WideGroup(props: { name: string }) {
   return (
     <Fieldset>
       <FieldsetLegend>Notifications</FieldsetLegend>
-      <FieldsetDescription>
+      <FieldDescription>
         <span style={{ whiteSpace: 'nowrap' }}>
           Delivered every morning, and whenever something needs you
         </span>
-      </FieldsetDescription>
+      </FieldDescription>
       <FieldsetContent>
         <label>
           <input type="radio" name={props.name} value="all" /> All
@@ -139,7 +138,7 @@ describe('Fieldset', () => {
     render(
       <Fieldset>
         <FieldsetLegend>Empty</FieldsetLegend>
-        <FieldsetError>{false}</FieldsetError>
+        <FieldError>{false}</FieldError>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Empty' });
@@ -160,8 +159,8 @@ describe('Fieldset', () => {
     render(
       <Fieldset>
         <FieldsetLegend>Empty</FieldsetLegend>
-        <FieldsetDescription>{children}</FieldsetDescription>
-        <FieldsetError>{children}</FieldsetError>
+        <FieldDescription>{children}</FieldDescription>
+        <FieldError>{children}</FieldError>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Empty' });
@@ -173,7 +172,7 @@ describe('Fieldset', () => {
     render(
       <Fieldset>
         <FieldsetLegend>Zero</FieldsetLegend>
-        <FieldsetError>{0}</FieldsetError>
+        <FieldError>{0}</FieldError>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Zero' });
@@ -185,7 +184,7 @@ describe('Fieldset', () => {
     render(
       <Fieldset>
         <FieldsetLegend>Contact</FieldsetLegend>
-        <FieldsetDescription id="mine">Note.</FieldsetDescription>
+        <FieldDescription id="mine">Note.</FieldDescription>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Contact' });
@@ -215,8 +214,8 @@ describe('Fieldset', () => {
     render(
       <Fieldset>
         <FieldsetLegend>Contact</FieldsetLegend>
-        <FieldsetDescription>We only use it to reply.</FieldsetDescription>
-        <FieldsetDescription>One channel is enough.</FieldsetDescription>
+        <FieldDescription>We only use it to reply.</FieldDescription>
+        <FieldDescription>One channel is enough.</FieldDescription>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Contact' });
@@ -238,9 +237,9 @@ describe('Fieldset', () => {
       <Fieldset invalid>
         <FieldsetLegend>Colour</FieldsetLegend>
         <Reveal>
-          <FieldsetDescription>Hint, first in DOM.</FieldsetDescription>
+          <FieldDescription>Hint, first in DOM.</FieldDescription>
         </Reveal>
-        <FieldsetError>Error, second in DOM.</FieldsetError>
+        <FieldError>Error, second in DOM.</FieldError>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Colour' });
@@ -263,7 +262,7 @@ describe('Fieldset', () => {
     render(
       <Fieldset aria-describedby="external-hint">
         <FieldsetLegend>Contact</FieldsetLegend>
-        <FieldsetDescription>We only use it to reply.</FieldsetDescription>
+        <FieldDescription>We only use it to reply.</FieldDescription>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Contact' });
@@ -302,7 +301,7 @@ describe('Fieldset', () => {
     render(
       <Fieldset>
         <FieldsetLegend>Contact</FieldsetLegend>
-        <FieldsetDescription>Group note.</FieldsetDescription>
+        <FieldDescription>Group note.</FieldDescription>
         <FieldsetContent>
           <Field>
             <FieldLabel>Email</FieldLabel>
@@ -408,18 +407,57 @@ describe('Fieldset', () => {
   });
 
   it.each([
-    ['FieldsetLegend', <FieldsetLegend key="l">Orphan</FieldsetLegend>],
-    [
-      'FieldsetDescription',
-      <FieldsetDescription key="d">Orphan</FieldsetDescription>,
-    ],
-    ['FieldsetError', <FieldsetError key="e">Orphan</FieldsetError>],
-  ])('warns when %s is used outside a Fieldset', (name, element) => {
+    ['FieldDescription', <FieldDescription key="d">Orphan</FieldDescription>],
+    ['FieldError', <FieldError key="e">Orphan</FieldError>],
+  ])('warns when %s sits in no describable container', (name, element) => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(element);
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(`${name}: used outside a <Fieldset>`),
+      expect.stringContaining(`${name}: used outside a <Field> or <Fieldset>`),
     );
+  });
+
+  // The legend is the one part that fits a single container, so unlike the text
+  // parts it must reject a Field as well as no container at all.
+  it.each([
+    ['no container', <FieldsetLegend key="a">Orphan</FieldsetLegend>],
+    [
+      'a Field',
+      <Field key="b">
+        <FieldsetLegend>Orphan</FieldsetLegend>
+      </Field>,
+    ],
+  ])('warns when FieldsetLegend is used in %s', (_label, element) => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(element);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('FieldsetLegend: used outside a <Fieldset>'),
+    );
+  });
+
+  // The point of the shared slot: ONE description component, bound by position.
+  it('binds the same FieldDescription to the nearest container', async () => {
+    render(
+      <Fieldset>
+        <FieldsetLegend>Contact</FieldsetLegend>
+        <FieldDescription>Describes the group.</FieldDescription>
+        <FieldsetContent>
+          <Field>
+            <FieldLabel>Email</FieldLabel>
+            <Input />
+            <FieldDescription>Describes the control.</FieldDescription>
+          </Field>
+        </FieldsetContent>
+      </Fieldset>,
+    );
+    const group = screen.getByRole('group', { name: 'Contact' });
+    const input = screen.getByRole('textbox', { name: 'Email' });
+    const groupNote = screen.getByText('Describes the group.');
+    const controlNote = screen.getByText('Describes the control.');
+    await waitFor(() => {
+      expect(group.getAttribute('aria-describedby')).toBe(groupNote.id);
+      expect(input.getAttribute('aria-describedby')).toBe(controlNote.id);
+    });
   });
 
   it('forwards ref to the fieldset element', () => {

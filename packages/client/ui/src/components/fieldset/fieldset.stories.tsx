@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Fieldset } from './fieldset.component.js';
 import { FieldsetLegend } from './fieldset-legend.component.js';
-import { FieldsetDescription } from './fieldset-description.component.js';
+import { FieldDescription } from '../field/field-description.component.js';
 import { FieldsetContent } from './fieldset-content.component.js';
-import { FieldsetError } from './fieldset-error.component.js';
+import { FieldError } from '../field/field-error.component.js';
 import { Field } from '../field/field.component.js';
 import { FieldLabel } from '../field/field-label.component.js';
 import { Input } from '../input/input.component.js';
@@ -29,7 +29,7 @@ const meta: Meta<typeof Fieldset> = {
     children: {
       control: false,
       description:
-        'The `FieldsetLegend`, `FieldsetDescription`, `FieldsetContent` and `FieldsetError` parts.',
+        'The `FieldsetLegend`, `FieldDescription`, `FieldsetContent` and `FieldError` parts.',
       table: { type: { summary: 'ReactNode' } },
     },
   },
@@ -44,7 +44,7 @@ export const Default: Story = {
   render: (args) => (
     <Fieldset {...args}>
       <FieldsetLegend>Favourite colour</FieldsetLegend>
-      <FieldsetDescription>Pick exactly one.</FieldsetDescription>
+      <FieldDescription>Pick exactly one.</FieldDescription>
       <FieldsetContent>
         <label>
           <input type="radio" name="colour" value="green" /> Green
@@ -73,7 +73,7 @@ export const Invalid: Story = {
           <input type="radio" name="colour-invalid" value="yellow" /> Yellow
         </label>
       </FieldsetContent>
-      <FieldsetError>Choose a colour to continue.</FieldsetError>
+      <FieldError>Choose a colour to continue.</FieldError>
     </Fieldset>
   ),
 };
@@ -110,7 +110,7 @@ export const Orientation: Story = {
 
 /** Native `disabled` on the fieldset disables every control inside. The reason it
  *  is unavailable sits OUTSIDE the fieldset: nothing inside a disabled group is
- *  focusable, so a `FieldsetDescription` there could never be reached by anyone
+ *  focusable, so a `FieldDescription` there could never be reached by anyone
  *  navigating by focus. */
 export const Disabled: Story = {
   render: () => (
@@ -137,7 +137,7 @@ export const WithFields: Story = {
   render: () => (
     <Fieldset>
       <FieldsetLegend>Billing address</FieldsetLegend>
-      <FieldsetDescription>Used for the invoice only.</FieldsetDescription>
+      <FieldDescription>Used for the invoice only.</FieldDescription>
       <FieldsetContent>
         <Field>
           <FieldLabel>Street</FieldLabel>

@@ -28,24 +28,15 @@ export type FieldsetProps = FieldsetOwnProps &
 
 /**
  * The group's name. A native `<legend>` needs no id wiring, so this takes no
- * props of its own.
+ * props of its own. It is the one part that fits a single container: a `<legend>`
+ * names a group, never a field.
+ *
+ * The group's helper text and error message are `FieldDescription` and
+ * `FieldError` — the same parts a `Field` uses. They bind to the nearest
+ * describable container, so placed directly inside a `Fieldset` they describe the
+ * GROUP, and inside a nested `Field` they describe that field's control.
  */
 export type FieldsetLegendProps = ComponentPropsWithRef<'legend'>;
-
-/**
- * Helper text for the group, registered into its `aria-describedby`. Renders only
- * when it has content. The `id` is owned by the part (so the registration can
- * never dangle) — one passed here is ignored.
- */
-export type FieldsetDescriptionProps = ComponentPropsWithRef<'p'>;
-
-/**
- * The group's error message, registered into `aria-describedby` and rendered only
- * when it has content. The `id` is owned by the part — one passed here is ignored.
- * Announcement of a freshly-appearing error (focus-on-error or an error summary)
- * is the consumer's job.
- */
-export type FieldsetErrorProps = ComponentPropsWithRef<'p'>;
 
 /** How `FieldsetContent` lays the controls out. */
 export type FieldsetOrientation = 'vertical' | 'horizontal';

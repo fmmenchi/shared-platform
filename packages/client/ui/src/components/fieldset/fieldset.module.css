@@ -33,28 +33,14 @@
     margin-block-end: var(--spacing-internal-xs);
   }
 
-  /* `margin-block: 0` is not cosmetic. These parts are <p>, and the DS ships no
-     preflight, so in a consumer page each one would carry the UA `margin-block:
-     1em` — 14px on top of the 4px grid gap, i.e. the group's parts drifting 4.5x
-     apart while the control rows inside stay tight. `min-inline-size: 0` is what
-     actually lets the fieldset's single auto track shrink: the track takes the
-     LARGEST minimum contribution of its items, so the reset on `.content` alone
-     was not enough — a long unbreakable description would stretch the track and
-     with it the box holding the controls. */
-  .description,
-  .error,
+  /* `min-inline-size: 0` is what actually lets the fieldset's single auto track
+     shrink: the track takes the LARGEST minimum contribution of its items, so
+     resetting the fieldset alone was not enough — a long unbreakable description
+     would stretch the track and with it the box holding the controls. The group's
+     description and error are `FieldDescription`/`FieldError`, which carry their
+     own reset (including the UA paragraph margin) from field.module.css. */
   .content {
     min-inline-size: 0;
-    margin-block: 0;
-  }
-
-  .description {
-    @apply text-muted-foreground text-sm;
-  }
-
-  .error {
-    @apply text-sm;
-    color: var(--fm-color-error);
   }
 
   /* The controls' own layout lives here, not on the <fieldset> (see .legend).
@@ -67,14 +53,4 @@
     @apply flex flex-wrap gap-inline-s;
   }
 
-  /* Forced colors overrides every author colour, so the error's hue — its only
-     distinction from the hint above it — collapses to CanvasText and the two
-     paragraphs become identical. Restore the distinction structurally, the way
-     Input carries its invalid state as border WEIGHT rather than as a colour. */
-  @media (forced-colors: active) {
-    .error {
-      border-inline-start: 0.1875rem solid CanvasText;
-      padding-inline-start: var(--fm-space-internal-s);
-    }
-  }
 }

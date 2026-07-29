@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import { useFieldPart } from './field.context.js';
+import { useDescribable } from '../../primitives/describable.js';
 import type { FieldErrorProps } from './field.types.js';
 import styles from './field.module.css';
 
@@ -16,7 +16,7 @@ import styles from './field.module.css';
  */
 function FieldError(props: FieldErrorProps) {
   const { className, children, ref, ...rest } = props;
-  const register = useFieldPart('FieldError')?.register;
+  const register = useDescribable('FieldError')?.register;
   const id = useId();
   const node = useRef<HTMLParagraphElement>(null);
   const hasContent = hasRenderableChildren(children);

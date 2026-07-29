@@ -19,6 +19,37 @@ It owns no value or validation (ADR-0013) and has no chrome of its own — just 
 - **`FieldLabel`** — `<label>` tied to the control (click-to-focus, name-from-label).
 - **`FieldDescription`** — helper text, added to `aria-describedby`.
 - **`FieldError`** — the message; renders and joins `aria-describedby` **only when it has content**.
+- **`useField()`** — prop getters for wiring a control the design system does not own.
+
+`FieldDescription` and `FieldError` are shared with [Fieldset](?path=/docs/components-fieldset--docs):
+they bind to the nearest container, so the same part describes this field's control here and a whole
+group when placed directly inside a `Fieldset`.
+
+## Wiring a control we don't own
+
+The design system's controls pick the wiring up from context by themselves. A raw `<input>` or a
+third-party control cannot — it never reads our context — so `useField()` hands the wiring over as prop
+**getters**, which merge what you pass instead of replacing it:
+
+```tsx
+function BornOn({ locale }) {
+  const { getLabelProps, getControlProps } = useField()
+  return (
+    <>
+      <label {...getLabelProps()}>Born on</label>
+      <ThirdPartyDatePicker {...getControlProps({ locale })} />
+    </>
+  )
+}
+
+<Field invalid={!!errors.bornOn}>
+  <BornOn locale="it-IT" />
+  <FieldError>{errors.bornOn}</FieldError>
+</Field>
+```
+
+One `useField()` counts as one control, so the "more than one control" guard keeps working. Called
+outside a `Field` it warns and the getters pass your props through unchanged.
 
 ## Props
 

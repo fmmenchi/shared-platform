@@ -38,11 +38,15 @@ export type {
   InputProps,
   InputVariants,
 } from './components/input/input.types.js';
+// `FieldDescription` and `FieldError` bind to the nearest describable container,
+// so the same pair serves a `Field` and a `Fieldset` — there is deliberately no
+// `FieldsetDescription`/`FieldsetError`.
 export {
   Field,
   FieldLabel,
   FieldDescription,
   FieldError,
+  useField,
 } from './components/field/index.js';
 export type {
   FieldProps,
@@ -50,19 +54,19 @@ export type {
   FieldDescriptionProps,
   FieldErrorProps,
 } from './components/field/field.types.js';
+export type {
+  UseFieldResult,
+  FieldLabelSlotProps,
+} from './components/field/use-field.types.js';
 export {
   Fieldset,
   FieldsetLegend,
-  FieldsetDescription,
   FieldsetContent,
-  FieldsetError,
 } from './components/fieldset/index.js';
 export { fieldsetContentVariants } from './components/fieldset/fieldset.variants.js';
 export type {
   FieldsetProps,
   FieldsetLegendProps,
-  FieldsetDescriptionProps,
   FieldsetContentProps,
   FieldsetOrientation,
-  FieldsetErrorProps,
 } from './components/fieldset/fieldset.types.js';

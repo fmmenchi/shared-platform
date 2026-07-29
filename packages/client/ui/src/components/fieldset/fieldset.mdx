@@ -8,7 +8,7 @@ import * as FieldsetStories from './fieldset.stories.tsx';
 
 Groups related controls — a radio or checkbox group, or a set of fields that answer one question — in
 a native `<fieldset>` named by its `<legend>`. Compose it:
-`<Fieldset><FieldsetLegend/><FieldsetDescription/><FieldsetContent/><FieldsetError/></Fieldset>`.
+`<Fieldset><FieldsetLegend/><FieldDescription/><FieldsetContent/><FieldError/></Fieldset>`.
 The description and error register into the **group's** `aria-describedby`, so they are announced once
 for the group instead of repeated on every option. It owns no value or validation (ADR-0013) and has no
 chrome of its own. For a **single** control with its own label use
@@ -19,9 +19,11 @@ chrome of its own. For a **single** control with its own label use
 - **`Fieldset`** — the `<fieldset>`; takes `invalid` and provides the context. Native `disabled` and
   `role` pass through.
 - **`FieldsetLegend`** — the `<legend>`; the group's accessible name, with no id wiring.
-- **`FieldsetDescription`** — helper text for the group, added to `aria-describedby`.
+- **`FieldDescription`** — helper text for the group, added to `aria-describedby`. The SAME part a
+  `Field` uses: it binds to the nearest describable container (see Guidelines).
 - **`FieldsetContent`** — wraps the controls and owns their layout (`orientation`).
-- **`FieldsetError`** — the message; renders and joins `aria-describedby` **only when it has content**.
+- **`FieldError`** — the message; renders and joins `aria-describedby` **only when it has content**.
+  Also shared with `Field`, and bound the same way.
 
 ## Props
 
@@ -36,7 +38,7 @@ chrome of its own. For a **single** control with its own label use
 ### Invalid
 
 `invalid` (owned by your validation library) exposes `data-invalid` for your own styling, and — with
-`role="radiogroup"` — `aria-invalid`. It does **not** reveal the error by itself: `FieldsetError`
+`role="radiogroup"` — `aria-invalid`. It does **not** reveal the error by itself: `FieldError`
 renders whenever it has content, so drive both from the same state.
 
 <Canvas of={FieldsetStories.Invalid} />
@@ -62,6 +64,33 @@ A group whose members are separate labelled fields — `Field` inside `FieldsetC
 <Canvas of={FieldsetStories.InAGrid} />
 
 ## Guidelines
+
+### The description and error bind to the nearest container
+
+There is no `FieldsetDescription`/`FieldsetError`: `FieldDescription` and `FieldError` serve both
+containers, and **position** decides which one they describe. `Field` and `Fieldset` both fill the same
+slot, and React resolves the nearest provider:
+
+```tsx
+<Fieldset>
+  <FieldsetLegend>Contact</FieldsetLegend>
+  <FieldDescription>Describes the GROUP.</FieldDescription>
+  <FieldsetContent>
+    <Field>
+      <FieldLabel>Email</FieldLabel>
+      <Input />
+      <FieldDescription>Describes the CONTROL.</FieldDescription>
+    </Field>
+  </FieldsetContent>
+</Fieldset>
+```
+
+The trade to know about: the binding is implicit, so the call site alone does not tell you what a
+description describes — you have to see what encloses it. In exchange there is one part instead of two
+per container, and no way to reach for the wrong one. A part in neither container warns by name.
+
+`FieldsetLegend` is the exception: a `<legend>` names a group and never a single field, so it warns
+inside a `Field` too.
 
 ### `name` scopes a radio group — the fieldset does not
 
@@ -139,7 +168,7 @@ rule beats our UA reset. Import `normalize.css`/`sanitize.css` (or any base laye
   there.
 - **The error isn't colour alone** — the words carry the meaning, and under forced colors, where the
   hue is overridden to the system text colour, a border rule keeps it distinct from the hint above it.
-- **Announcing a fresh error is the consumer's job** — `FieldsetError` is described-by, not a live
+- **Announcing a fresh error is the consumer's job** — `FieldError` is described-by, not a live
   region. A `<fieldset>` is **not focusable**, so `ref.current.focus()` on it is a silent no-op: focus
   the first control inside (or an error summary link that targets it), or add `tabIndex={-1}` to the
   fieldset yourself if you want the group and its description announced together.
@@ -150,8 +179,8 @@ rule beats our UA reset. Import `normalize.css`/`sanitize.css` (or any base laye
 - **The a11y ids resolve on the client.** The fieldset and legend render server-side; the
   `aria-describedby` association is added on hydration (the parts register via effect), so it is
   present for JS clients — not for no-JS delivery.
-- **The parts own their ids.** An `id` passed to `FieldsetDescription`/`FieldsetError` is ignored, so
+- **The parts own their ids.** An `id` passed to `FieldDescription`/`FieldError` is ignored, so
   the group's reference can never point at an element that renamed itself.
 - **Nesting is safe:** a `FieldDescription` inside a `Field` inside a `Fieldset` describes the
-  **control**, and a `FieldsetDescription` describes the **group** — each part binds to its own owner,
-  and a part used outside its own container warns by name.
+  **control**, and the same part placed directly inside the `Fieldset` describes the **group** — the
+  nearest container wins, and a part with no container at all warns by name.
