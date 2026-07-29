@@ -75,10 +75,12 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['popover', 'link', 4.5],
   ['muted', 'link', 4.5],
   // Status fills double as inline status TEXT on the page ("2 errors" in
-  // destructive/success/… colour) — so they must be readable as text.
+  // destructive/success/… colour) — so they must be readable as text. `error`
+  // is the field-error message colour (Field).
   ['background', 'success', 4.5],
   ['background', 'warning', 4.5],
   ['background', 'info', 4.5],
+  ['background', 'error', 4.5],
   ['selection', 'selection-foreground', 4.5],
   ['tooltip', 'tooltip-foreground', 4.5],
   ['input', 'input-placeholder', 4.5], // placeholder is text
