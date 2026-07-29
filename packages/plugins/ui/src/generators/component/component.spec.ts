@@ -72,9 +72,10 @@ describe('component generator', () => {
     expect(component).toContain('badgeVariants');
     expect(component).toContain('<div'); // default element
     // Token-only styling doctrine is carried into the css template.
-    expect(tree.read(`${dir}/badge.module.css`, 'utf-8')).toContain(
-      "@reference '@fmmenchi/tokens/styles/tailwind.css'",
-    );
+    const css = tree.read(`${dir}/badge.module.css`, 'utf-8') as string;
+    expect(css).toContain("@reference '@fmmenchi/tokens/styles/tailwind.css'");
+    // Rules ship inside the DS cascade layer (ADR-0011).
+    expect(css).toContain('@layer fmmenchi {');
   });
 
   it('respects --element (native-first)', async () => {

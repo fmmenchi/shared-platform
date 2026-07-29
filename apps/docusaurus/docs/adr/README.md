@@ -23,3 +23,4 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 | [0008](./0008-cross-app-framework-agnostic-layers.md)   | What earns a place as a shared layer (cross-app + framework-agnostic) | accepted         |
 | [0009](./0009-motion-css-first.md)                      | Motion is CSS-first on the tokens; no motion runtime                  | accepted         |
 | [0010](./0010-progressive-enhancement-beyond-widely.md) | Use everything Widely; Newly only as graceful progressive enhancement | accepted         |
+| [0011](./0011-cascade-layers.md)                        | DS css ships in a cascade layer; consumers override unlayered         | accepted         |

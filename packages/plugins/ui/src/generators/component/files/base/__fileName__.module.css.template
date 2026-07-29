@@ -6,10 +6,15 @@
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
-.<%= propertyName %> {
-  /* TODO: structure via @apply (layout, radius, type scale). */
-}
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .<%= propertyName %> {
+    /* TODO: structure via @apply (layout, radius, type scale). */
+  }
 
-.primary {
-  /* TODO: colour via semantic roles, e.g. `@apply bg-primary text-primary-foreground;` */
+  .primary {
+    /* TODO: colour via semantic roles, e.g. `@apply bg-primary text-primary-foreground;` */
+  }
 }

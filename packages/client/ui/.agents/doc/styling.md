@@ -1,6 +1,10 @@
 # Styling (agent)
 
 - One `<name>.module.css` per component; `@reference '@fmmenchi/tokens/styles/tailwind.css'` on top.
+- **Wrap every rule in `@layer fmmenchi { … }`** (ADR-0011): the DS ships layered, so a consumer's
+  unlayered css overrides it with a plain rule — no specificity war, no `!important`. `@import` and
+  `@reference` stay ABOVE the layer; keyframes stay unlayered (name-scoped); tokens (`:root`) stay
+  unlayered (the substrate). The generator template already opens the layer — author inside it.
 - Author with `@apply` (structure) + **semantic role utilities** for colour (`bg-primary`,
   `text-foreground`, `hover:bg-primary-hover`…). The token bridge resets the default palette
   (`bg-red-500` fails the build). Variants map 1:1 to an action family
