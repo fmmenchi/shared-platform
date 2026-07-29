@@ -31,8 +31,9 @@ ADR-0003 pins support to **Baseline Widely available**, lint-enforced. Two press
      where it's used, how it degrades, Widely ETA) — the single place to see what's in flight;
    - when the feature goes Widely, the comment AND the ledger entry are removed (the exception
      expires by design).
-3. **Not degradable ⇒ not yet.** A Newly feature whose absence breaks function (e.g. Popover API
-   without a JS fallback) waits for Widely, as before.
+3. **Not degradable ⇒ not yet.** A Newly feature whose absence breaks function waits for Widely,
+   as before — unless the maintainer grants an explicit waiver (recorded in the ledger like any
+   exception), e.g. when the Widely date lands before any consumer could realistically ship.
 
 ### First applications
 
@@ -42,10 +43,13 @@ ADR-0003 pins support to **Baseline Widely available**, lint-enforced. Two press
 - `@starting-style` + `allow-discrete` (Widely ~2027-02): approved as the progressive entry/exit
   path for the upcoming Dialog — instant open/close where unsupported; `animateExit` remains the
   guaranteed-everywhere exit until then.
+- Popover API (Widely ~2026-10): **maintainer waiver, 2026-07** — not gracefully degradable
+  (without support the content renders inline or, with the split-rule fallback, stays hidden),
+  but its Widely date lands before any consuming component ships. May be adopted now; tracked in
+  the ledger until Widely.
 
 ## Consequences
 
 - The DS gains capabilities at the platform's pace instead of 30 months behind it.
 - Every exception is grep-able (`use-baseline --`), justified, dated, and self-expiring.
-- Watchlist stays honest: View Transitions (degradable — candidate when the design calls for it),
-  Popover API (not degradable — waits for Widely, ~2026-10).
+- Watchlist stays honest: View Transitions (degradable — candidate when the design calls for it).
