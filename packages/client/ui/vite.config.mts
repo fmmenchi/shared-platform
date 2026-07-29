@@ -63,6 +63,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        input: 'src/components/input/index.ts',
         badge: 'src/components/badge/index.ts',
         index: 'src/index.ts',
         button: 'src/components/button/index.ts',
