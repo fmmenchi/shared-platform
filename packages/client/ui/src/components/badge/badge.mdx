@@ -1,0 +1,61 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as BadgeStories from './badge.stories.tsx';
+
+<Meta of={BadgeStories} />
+
+# Badge
+
+A small presentational label for a status, category, or count. Built on a native `<span>`, so its
+text is its accessible name and the semantic `variant` only reinforces what the label already says.
+
+## Props
+
+Defaults: `variant="neutral"`, `emphasis="soft"`, `size="md"`. The three axes are orthogonal —
+`variant` is the colour role, `emphasis` the treatment, `size` the scale.
+
+<Controls of={BadgeStories.Default} />
+
+## Usage
+
+### Variants
+
+`variant` is the semantic colour role — brand identity (`primary`, `accent`, `destructive`) or
+status feedback (`success`, `warning`, `info`, `neutral`). Each maps to a token family, so every one
+has real colours in both themes (try the **Theme** toolbar).
+
+<Canvas of={BadgeStories.Gallery} />
+
+### Emphasis
+
+`emphasis` is orthogonal to the colour: `soft` paints the **subtle** wash (`*-subtle` under
+`*-subtle-foreground`), `solid` the **full fill** (`*` under `*-foreground`). Both are declared
+AA pairs for every variant. An `outline` treatment is intentionally absent until the brand families
+gain a `-border` token — it would otherwise be a contract-breaking pairing.
+
+<Canvas of={BadgeStories.Emphasis} />
+
+### Sizes
+
+<Canvas of={BadgeStories.Sizes} />
+
+### With an icon
+
+The `icon` slot is decorative (`aria-hidden`, sized to the text) next to a visible label.
+
+<Canvas of={BadgeStories.WithIcon} />
+
+## Accessibility
+
+- **Presentational, name from content.** The Badge is a plain `<span>` — no ARIA role. Its accessible
+  name is the visible text, so **colour is never the sole signal** (WCAG 1.4.1): the word ("Overdue")
+  carries the meaning, the variant reinforces it.
+- **Icon-only / count badges need a text alternative.** An icon with no text, or a bare number whose
+  meaning is contextual ("3"), is not self-describing — pass `aria-label` (e.g. `aria-label="3 unread"`).
+  The component **warns in development** when an icon has no discernible text.
+- **Not a live region.** A Badge does not announce itself, by design. For a count that changes and
+  must be announced, the consumer wraps it in their own `aria-live` region — the DS doesn't presume
+  when an update is important.
+- **Interactive belongs elsewhere.** A clickable or removable badge is a Tag/Chip (a real
+  `<button>` with its own focus and label), not this component.
+- **Forced colors:** a border restores the pill boundary when system colours flatten the fills.

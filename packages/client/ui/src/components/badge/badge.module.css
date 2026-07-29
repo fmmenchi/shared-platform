@@ -1,0 +1,112 @@
+/*
+ * Badge styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role tokens, motion ONLY through var(--fm-duration-*)/var(--fm-ease-*):
+ * the `lint-css` gate enforces both. `@reference` resolves `@apply` at THIS
+ * library's build; the output references var(--fm-*), so presets re-theme it.
+ *
+ * A `variant` sets the family's fill + subtle colour vars; an `emphasis` picks
+ * which pair to paint. That indirection keeps the colour matrix at 7 + 2 blocks
+ * instead of 7×2 compound rules.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .badge {
+    @apply inline-flex items-center gap-internal-xs;
+    @apply rounded-full font-medium whitespace-nowrap;
+    /* Counts and numeric labels must not jitter as digits change width. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Decorative icon slot: scales with the text (1em), sized here so an unsized
+     svg doesn't fall back to its intrinsic box. Always aria-hidden — the label
+     text carries the meaning (the component warns on an icon with no text). */
+  .icon {
+    @apply inline-flex shrink-0 items-center justify-center;
+    width: 1em;
+    height: 1em;
+  }
+  .icon > :where(*) {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* --- Size: padding-driven so the pill sits on the text baseline (no fixed
+     height that would fight line-height in running copy). --- */
+  .sm {
+    @apply px-2 py-px text-xs;
+  }
+  .md {
+    @apply px-2.5 py-0.5 text-xs;
+  }
+  .lg {
+    @apply px-3 py-1 text-sm;
+  }
+
+  /* --- Emphasis: consume the vars the variant set. `soft` = the subtle pill,
+     `solid` = the fill. Both are declared AA pairs for every variant. --- */
+  .soft {
+    background-color: var(--badge-soft-bg);
+    color: var(--badge-soft-fg);
+  }
+  .solid {
+    background-color: var(--badge-solid-bg);
+    color: var(--badge-solid-fg);
+  }
+
+  /* --- Variant = colour role: set both the fill and the subtle pair. --- */
+  .neutral {
+    --badge-solid-bg: var(--fm-color-neutral);
+    --badge-solid-fg: var(--fm-color-neutral-foreground);
+    --badge-soft-bg: var(--fm-color-neutral-subtle);
+    --badge-soft-fg: var(--fm-color-neutral-subtle-foreground);
+  }
+  .primary {
+    --badge-solid-bg: var(--fm-color-primary);
+    --badge-solid-fg: var(--fm-color-primary-foreground);
+    --badge-soft-bg: var(--fm-color-primary-subtle);
+    --badge-soft-fg: var(--fm-color-primary-subtle-foreground);
+  }
+  .accent {
+    --badge-solid-bg: var(--fm-color-accent);
+    --badge-solid-fg: var(--fm-color-accent-foreground);
+    --badge-soft-bg: var(--fm-color-accent-subtle);
+    --badge-soft-fg: var(--fm-color-accent-subtle-foreground);
+  }
+  .destructive {
+    --badge-solid-bg: var(--fm-color-destructive);
+    --badge-solid-fg: var(--fm-color-destructive-foreground);
+    --badge-soft-bg: var(--fm-color-destructive-subtle);
+    --badge-soft-fg: var(--fm-color-destructive-subtle-foreground);
+  }
+  .success {
+    --badge-solid-bg: var(--fm-color-success);
+    --badge-solid-fg: var(--fm-color-success-foreground);
+    --badge-soft-bg: var(--fm-color-success-subtle);
+    --badge-soft-fg: var(--fm-color-success-subtle-foreground);
+  }
+  .warning {
+    --badge-solid-bg: var(--fm-color-warning);
+    --badge-solid-fg: var(--fm-color-warning-foreground);
+    --badge-soft-bg: var(--fm-color-warning-subtle);
+    --badge-soft-fg: var(--fm-color-warning-subtle-foreground);
+  }
+  .info {
+    --badge-solid-bg: var(--fm-color-info);
+    --badge-solid-fg: var(--fm-color-info-foreground);
+    --badge-soft-bg: var(--fm-color-info-subtle);
+    --badge-soft-fg: var(--fm-color-info-subtle-foreground);
+  }
+
+  /* Forced colors (Windows High Contrast): the token fills are replaced by
+     system colours and every variant collapses to the same flat surface — a
+     border restores the pill's boundary. Every component ships this block. */
+  @media (forced-colors: active) {
+    .badge {
+      border: 1px solid CanvasText;
+    }
+  }
+}

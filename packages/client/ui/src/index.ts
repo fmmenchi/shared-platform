@@ -26,3 +26,9 @@ export type {
   MotionDuration,
   MotionEase,
 } from './primitives/animate-exit.types.js';
+export { Badge } from './components/badge/badge.component.js';
+export { badgeVariants } from './components/badge/badge.variants.js';
+export type {
+  BadgeProps,
+  BadgeVariants,
+} from './components/badge/badge.types.js';

@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Badge > matches the rendered snapshot 1`] = `
+<span
+  class="_badge_11ax8_4 _success_11ax8_76 _soft_11ax8_44 _md_11ax8_32"
+>
+  Active
+</span>
+`;
