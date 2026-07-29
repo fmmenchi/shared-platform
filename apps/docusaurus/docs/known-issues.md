@@ -102,5 +102,6 @@ in-code by a justified `use-baseline` disable comment; when a feature goes Widel
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------- |
 | `@starting-style` + `transition-behavior: allow-discrete` | approved for the Dialog's entry/exit (lands with the component; `animateExit` stays the guaranteed exit) | instant open/close, fully functional                                                           | ~2027-02   |
 | Popover API (**maintainer waiver, 2026-07**)              | approved for the upcoming Popover/Tooltip anchoring (no code usage yet)                                  | NOT graceful — content inline or hidden; waived because Widely lands before any consumer ships | ~2026-10   |
+| `@property` typed token roles                             | `tokens/styles/properties.css` — colours + radius registered for interpolation (ADR-0012)                | plain untyped custom properties; values hold, only interpolation (theme crossfade) is lost     | ~2027-01   |
 
 **Watchlist (degradable, no design need yet):** View Transitions.

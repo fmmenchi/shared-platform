@@ -43,6 +43,10 @@ ADR-0003 pins support to **Baseline Widely available**, lint-enforced. Two press
 - `@starting-style` + `allow-discrete` (Widely ~2027-02): approved as the progressive entry/exit
   path for the upcoming Dialog — instant open/close where unsupported; `animateExit` remains the
   guaranteed-everywhere exit until then.
+- `@property` typed token roles (Widely ~2027-01): approved to type the colour/radius roles for
+  interpolation (theme crossfade, gradients) — see [ADR-0012](./0012-typed-tokens-at-property.md).
+  Without support the roles are plain untyped custom properties: fully functional, only the
+  interpolation polish is lost.
 - Popover API (Widely ~2026-10): **maintainer waiver, 2026-07** — not gracefully degradable
   (without support the content renders inline or, with the split-rule fallback, stays hidden),
   but its Widely date lands before any consuming component ships. May be adopted now; tracked in

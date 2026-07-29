@@ -19,8 +19,13 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   `--fm-space-inset-m`, …) — never raw values, never a palette. The Tailwind bridge RESETS the
   default palette, so `bg-red-500` fails the build.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
-  no runtime relative-color, no `@property`). `styles/tailwind.css` is a names-only `@theme inline`
-  bridge (no values → no drift). `presets/dark.css` overrides EXACTLY every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black shadows vanish on a dark background — enforced by `tokens.test.ts`).
+  no runtime relative-color). `styles/properties.css` (imported at the top of `vars.css`)
+  `@property`-registers the color roles + radius so they are TYPED and INTERPOLATABLE (theme
+  crossfade, gradients) — ADR-0012; the `initial-value` is a throwaway placeholder, never the real
+  token, so single-source holds (coverage asserted by `tokens.test.ts`). `styles/tailwind.css` is a
+  names-only `@theme inline` bridge (no values → no drift). `presets/dark.css` overrides EXACTLY
+  every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black
+  shadows vanish on a dark background — enforced by `tokens.test.ts`).
 - **A theme = a complete assignment of every color role** (`ThemeColors` in `src/tokens.types.ts`).
   Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape — apps
   validate theirs with the PUBLIC `validateTheme()` (`@fmmenchi/tokens/validate`): completeness +

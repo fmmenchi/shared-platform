@@ -10,17 +10,22 @@
  * - Components consume ONLY semantic roles ("la semantica vince su tutto").
  *   There are no primitive ramps here: values are STATIC oklch literals,
  *   resolved at authoring time from the ramp methodology
- *   (base ± lightness, scaled chroma). No runtime relative-color syntax and
- *   no @property — neither is Baseline: Widely available yet.
+ *   (base ± lightness, scaled chroma). No runtime relative-color syntax yet
+ *   (not Baseline Widely). The roles ARE @property-registered — see
+ *   `properties.css`, imported below (ADR-0012; @property is Baseline NEWLY,
+ *   shipped as an ADR-0010 progressive enhancement — degrades to untyped).
  * - A THEME is a complete assignment of every color role (`ThemeColors` in
  *   `src/index.ts`). Non-color tokens inherit unless a preset overrides them.
  * - Contrast is enforced by test: every declared pair is WCAG AA (4.5:1 text,
  *   3:1 focus ring); `-disabled` pairs are exempt (WCAG 1.4.3 exception).
- * - This file is side-effect-free: variables only, no selectors beyond `:root`.
+ * - Values only (no selectors beyond `:root`). The one import is the co-located
+ *   @property type layer, which ships inseparably with the values it types.
  *
  * Namespacing: the `--fm-` prefix IS the public API — it cannot collide with a
  * consumer's own Tailwind theme (`--color-*`).
  */
+@import './properties.css';
+
 :root {
   /* ==========================================================
      COLOR — action families (primary · secondary · accent · destructive)
