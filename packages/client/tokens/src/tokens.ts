@@ -29,7 +29,11 @@ export const ACTION_SUFFIXES = [
   '-disabled-foreground',
 ] as const;
 
-export const STATUS_FAMILIES = ['success', 'warning', 'info'] as const;
+// `error` is a status/feedback family (Alerts, inline errors), DISTINCT from the
+// `destructive` action family (destructive buttons): same red hue, but status
+// treatment (subtle + border, no hover/active). Keeping them separate mirrors
+// mature systems (Spectrum "negative", Atlassian "removed").
+export const STATUS_FAMILIES = ['success', 'warning', 'info', 'error'] as const;
 
 export const STATUS_SUFFIXES = [
   '',

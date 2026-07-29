@@ -94,6 +94,14 @@
   --fm-color-info-subtle-foreground: oklch(32% 0.08 245);
   --fm-color-info-border: oklch(42% 0.105 245);
 
+  /* error: the feedback-red status family (Alerts, inline errors). Same hue as
+     destructive (27), status treatment — subtle wash + tinted border. */
+  --fm-color-error: oklch(43% 0.175 27);
+  --fm-color-error-foreground: oklch(100% 0 0);
+  --fm-color-error-subtle: oklch(92% 0.04 27);
+  --fm-color-error-subtle-foreground: oklch(33% 0.134 27);
+  --fm-color-error-border: oklch(43% 0.175 27);
+
   --fm-color-neutral: oklch(46% 0.02 256);
   --fm-color-neutral-foreground: oklch(100% 0 0);
   --fm-color-neutral-subtle: oklch(95% 0.007 256);
