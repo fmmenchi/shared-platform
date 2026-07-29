@@ -6,3 +6,8 @@
 .nx/self-healing
 /apps/docusaurus/build
 /apps/docusaurus/.docusaurus
+
+# Generated at build time and gitignored, so `format:check --all` flags it locally
+# (where a build has produced it) but not in CI, where the check runs first — an
+# ordering-dependent red main waiting to happen.
+/packages/client/ui/.storybook/manager-theme.generated.ts

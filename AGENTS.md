@@ -44,8 +44,12 @@ if Nx reports the workspace is out of sync).
 ## Definition of done — must be green before committing
 
 ```bash
+pnpm nx format:check --all                                          # Prettier — CI runs this too
 pnpm nx run-many -t typecheck build lint lint-css test build-storybook
 ```
+
+Both lines, not just the second: CI gates on `format:check` as well, so a run that is green here and
+unformatted still fails the PR. `pnpm nx format:write` fixes it.
 
 Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`. `lint-css`
 (Stylelint) enforces design-token values in the UI's CSS Modules — see [ui](./.agents/doc/ui.md).
