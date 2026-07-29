@@ -25,3 +25,4 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 | [0010](./0010-progressive-enhancement-beyond-widely.md) | Use everything Widely; Newly only as graceful progressive enhancement | accepted         |
 | [0011](./0011-cascade-layers.md)                        | DS css ships in a cascade layer; consumers override unlayered         | accepted         |
 | [0012](./0012-typed-tokens-at-property.md)              | Semantic tokens are `@property`-typed for interpolation               | accepted         |
+| [0013](./0013-form-controls-contract.md)                | Form controls are transparent native controls; validation stays out   | accepted         |
