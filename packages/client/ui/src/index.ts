@@ -38,3 +38,15 @@ export type {
   InputProps,
   InputVariants,
 } from './components/input/input.types.js';
+export {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+} from './components/field/index.js';
+export type {
+  FieldProps,
+  FieldLabelProps,
+  FieldDescriptionProps,
+  FieldErrorProps,
+} from './components/field/field.types.js';

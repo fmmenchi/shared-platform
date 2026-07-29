@@ -1,4 +1,5 @@
 import { cn } from '../../util/cn.js';
+import { useFieldControl } from '../../primitives/field.js';
 import { inputVariants } from './input.variants.js';
 import type { InputProps } from './input.types.js';
 
@@ -13,12 +14,15 @@ import type { InputProps } from './input.types.js';
  */
 function Input(props: InputProps) {
   const { className, size, type = 'text', ...rest } = props;
+  // Opt-in Field wiring: inside a <Field>, pick up id/aria-describedby/aria-invalid
+  // (the consumer's own props still win); standalone, this is a no-op.
+  const fieldProps = useFieldControl(rest);
 
   return (
     <input
       type={type}
       className={cn(inputVariants({ size }), className)}
-      {...rest}
+      {...fieldProps}
     />
   );
 }

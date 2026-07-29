@@ -1,0 +1,25 @@
+/*
+ * Field styles — layout + text roles only (a Field has no chrome of its own, so
+ * no border/fill and no forced-colors block: system colours handle the text).
+ * Colours ONLY through semantic role utilities; `@reference` resolves `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .field {
+    @apply grid gap-internal-xs;
+  }
+  .label {
+    @apply text-foreground text-sm font-medium;
+  }
+  .description {
+    @apply text-muted-foreground text-sm;
+  }
+  .error {
+    @apply text-sm;
+    color: var(--fm-color-error);
+  }
+}
