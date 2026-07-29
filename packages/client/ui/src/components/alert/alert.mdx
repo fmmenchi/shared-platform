@@ -1,0 +1,54 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as AlertStories from './alert.stories.tsx';
+
+<Meta of={AlertStories} />
+
+# Alert
+
+A prominent inline message that gives the user feedback — success, a warning, an error, or
+information. Built on a `<div>`; the `variant` carries the meaning through colour **and** a
+visually-hidden severity word, so the status reaches assistive tech, not just the eye.
+
+## Props
+
+Defaults: `variant="info"`; `live` defaults by variant (`error` is assertive, the rest polite).
+
+<Controls of={AlertStories.Default} />
+
+## Usage
+
+### Variants
+
+`variant` is the semantic status role — `info` · `success` · `warning` · `error`. Each is the
+tinted-surface treatment of its token family (`*-subtle` fill, `*-subtle-foreground` text,
+`*-border`), so every one has real colours in both themes (try the **Theme** toolbar). `error` is
+the feedback-red status family, distinct from the `destructive` action role used by buttons.
+
+<Canvas of={AlertStories.Gallery} />
+
+### With a title
+
+<Canvas of={AlertStories.WithTitle} />
+
+### With an icon
+
+The `icon` slot is decorative (`aria-hidden`); the text and severity carry the meaning. Icons are
+app-provided — the design system ships none.
+
+<Canvas of={AlertStories.WithIcon} />
+
+## Accessibility
+
+- **Status is never colour alone** (WCAG 1.4.1). A visually-hidden, localized severity word
+  (“Error:”, “Warning:”…) is announced before the message, so a screen-reader user gets the status a
+  sighted user reads from the colour and icon.
+- **Announcement is opt-in and calibrated.** `live` maps to the ARIA live region: `assertive` →
+  `role="alert"` (interrupts — the default for `error`), `polite` → `role="status"` (waits for a
+  pause — the default for the rest), `off` → no live region. Set `off` for an alert that is already
+  on the page at load (a live region announced on load is noise); set `live` explicitly when it
+  appears in response to an action.
+- **Not interactive.** A dismiss button or action is a separate concern (a real `<button>` with its
+  own label) — compose it, or a future dismissible variant will add it.
+- **Forced colors:** the tint collapses to a system surface, so the always-present border keeps the
+  alert bounded and the severity word keeps the meaning.
