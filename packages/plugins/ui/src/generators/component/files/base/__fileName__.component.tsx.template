@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { cn } from '../../util/cn.js';
 import { <%= propertyName %>Variants } from './<%= fileName %>.variants.js';
 import type { <%= className %>Props } from './<%= fileName %>.types.js';

@@ -11,6 +11,14 @@ describe('<%= className %>', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
 
+  it('forwards ref to the underlying element (React 19 ref-as-prop)', () => {
+    // Every component must be as reachable as the element it wraps — focus,
+    // measurement, anchoring an overlay, a form lib's ref all depend on it.
+    const ref = { current: null as HTMLElement | null };
+    render(<<%= className %> ref={ref}>Content</<%= className %>>);
+    expect(ref.current).toBeInstanceOf(HTMLElement);
+  });
+
   it('matches the rendered snapshot', () => {
     const { container } = render(<<%= className %> variant="primary">Content</<%= className %>>);
     expect(container.firstChild).toMatchSnapshot();

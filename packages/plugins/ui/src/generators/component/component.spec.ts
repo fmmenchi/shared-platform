@@ -71,11 +71,16 @@ describe('component generator', () => {
     expect(component).toContain('function Badge(');
     expect(component).toContain('badgeVariants');
     expect(component).toContain('<div'); // default element
+    // Native-first: no dead React import in the scaffold (it caused a lint fail).
+    expect(component).not.toContain("import * as React from 'react'");
     // Token-only styling doctrine is carried into the css template.
     const css = tree.read(`${dir}/badge.module.css`, 'utf-8') as string;
     expect(css).toContain("@reference '@fmmenchi/tokens/styles/tailwind.css'");
     // Rules ship inside the DS cascade layer (ADR-0011).
     expect(css).toContain('@layer fmmenchi {');
+    // Every component is born with a ref-forwarding guarantee (archetype).
+    const test = tree.read(`${dir}/badge.test.tsx`, 'utf-8') as string;
+    expect(test).toContain('forwards ref to the underlying element');
   });
 
   it('respects --element (native-first)', async () => {
