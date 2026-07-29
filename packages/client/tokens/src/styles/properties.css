@@ -265,6 +265,31 @@
   inherits: true;
   initial-value: oklch(0 0 0);
 }
+@property --fm-color-error {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-error-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-error-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-error-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-error-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
 
 /* --- Neutral + disabled --- */
 @property --fm-color-neutral {

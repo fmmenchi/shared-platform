@@ -64,6 +64,12 @@
   --fm-color-info-subtle-foreground: oklch(97% 0.015 245);
   --fm-color-info-border: oklch(77% 0.125 245);
 
+  --fm-color-error: oklch(77% 0.13 27);
+  --fm-color-error-foreground: oklch(24% 0.02 256);
+  --fm-color-error-subtle: oklch(37% 0.137 27);
+  --fm-color-error-subtle-foreground: oklch(95% 0.024 27);
+  --fm-color-error-border: oklch(77% 0.13 27);
+
   --fm-color-neutral: oklch(74% 0.014 256);
   --fm-color-neutral-foreground: oklch(24% 0.02 256);
   --fm-color-neutral-subtle: oklch(31% 0.02 256);

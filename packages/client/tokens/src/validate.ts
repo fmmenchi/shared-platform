@@ -82,7 +82,7 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['selection', 'selection-foreground', 4.5],
   ['tooltip', 'tooltip-foreground', 4.5],
   ['input', 'input-placeholder', 4.5], // placeholder is text
-  ...(['success', 'warning', 'info', 'neutral'] as const).map(
+  ...(['success', 'warning', 'info', 'error', 'neutral'] as const).map(
     (f) => [`${f}-subtle`, `${f}-border`, 3] as const, // tinted alert border
   ),
 ] as ReadonlyArray<readonly [ColorRole, ColorRole, number]>;

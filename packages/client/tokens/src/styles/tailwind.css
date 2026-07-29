@@ -104,6 +104,12 @@
   --color-info-subtle-foreground: var(--fm-color-info-subtle-foreground);
   --color-info-border: var(--fm-color-info-border);
 
+  --color-error: var(--fm-color-error);
+  --color-error-foreground: var(--fm-color-error-foreground);
+  --color-error-subtle: var(--fm-color-error-subtle);
+  --color-error-subtle-foreground: var(--fm-color-error-subtle-foreground);
+  --color-error-border: var(--fm-color-error-border);
+
   --color-neutral: var(--fm-color-neutral);
   --color-neutral-foreground: var(--fm-color-neutral-foreground);
   --color-neutral-subtle: var(--fm-color-neutral-subtle);
