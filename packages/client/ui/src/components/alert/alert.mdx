@@ -43,11 +43,16 @@ app-provided — the design system ships none.
 - **Status is never colour alone** (WCAG 1.4.1). A visually-hidden, localized severity word
   (“Error:”, “Warning:”…) is announced before the message, so a screen-reader user gets the status a
   sighted user reads from the colour and icon.
-- **Announcement is opt-in and calibrated.** `live` maps to the ARIA live region: `assertive` →
+- **Announcement politeness is calibrated.** `live` maps to the ARIA live region: `assertive` →
   `role="alert"` (interrupts — the default for `error`), `polite` → `role="status"` (waits for a
-  pause — the default for the rest), `off` → no live region. Set `off` for an alert that is already
-  on the page at load (a live region announced on load is noise); set `live` explicitly when it
-  appears in response to an action.
+  pause — the default for the rest), `off` → no live region. Use `off` for an alert already on the
+  page at load; the derived role is authoritative (a stray `role` in spread props can't clobber it).
+- **Announcement is not guaranteed by `live` alone.** A live region inserted already containing its
+  text is announced unreliably by screen readers — especially `polite`. For dynamic feedback that
+  must be heard, **keep the Alert mounted and change its content** (mutating an existing region is
+  the reliable path); for one-shot transient messages, a dedicated live-region/toast fits better
+  than an inline Alert. `error`/`assertive` is the most tolerant of insert-with-content.
+- **`title` is a content slot**, not the native tooltip attribute — it renders as the bold lead-in.
 - **Not interactive.** A dismiss button or action is a separate concern (a real `<button>` with its
   own label) — compose it, or a future dismissible variant will add it.
 - **Forced colors:** the tint collapses to a system surface, so the always-present border keeps the

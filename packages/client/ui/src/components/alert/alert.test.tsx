@@ -71,6 +71,35 @@ describe('Alert', () => {
       expect(screen.queryByRole('status')).toBeNull();
       expect(screen.getByText('Static')).toBeInTheDocument();
     });
+
+    it('defaults to variant "info" (role="status") with no variant', () => {
+      render(<Alert>Heads up</Alert>);
+      expect(screen.getByRole('status')).toHaveTextContent('Heads up');
+    });
+
+    it('coalesces an explicit variant={null} to the default', () => {
+      // VariantProps admits null; the component must not crash or drop the role.
+      render(<Alert variant={null}>Anything</Alert>);
+      expect(screen.getByRole('status')).toHaveTextContent('Information');
+    });
+
+    it('the derived role is authoritative over a role in spread props', () => {
+      // `live` is the knob — a stray role must not silently kill the announcement.
+      render(
+        <Alert variant="error" role="region">
+          Boom
+        </Alert>,
+      );
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+      expect(screen.queryByRole('region')).toBeNull();
+      // …but with live="off" the component sets no role, leaving the custom one.
+      render(
+        <Alert live="off" role="note">
+          Static
+        </Alert>,
+      );
+      expect(screen.getByRole('note')).toHaveTextContent('Static');
+    });
   });
 
   describe('severity is conveyed to assistive tech (not colour alone)', () => {
@@ -85,8 +114,12 @@ describe('Alert', () => {
     });
 
     it('localizes the severity word', () => {
-      renderUi(<Alert variant="error">Errore</Alert>, { locale: 'it' });
-      expect(screen.getByText('Errore:', { exact: false })).toBeInTheDocument();
+      // Distinct body so the assertion targets the severity, not the message.
+      renderUi(<Alert variant="error">Pagamento rifiutato</Alert>, {
+        locale: 'it',
+      });
+      const severity = screen.getByText('Errore:', { exact: false });
+      expect(severity.className).toMatch(/srOnly/);
     });
   });
 

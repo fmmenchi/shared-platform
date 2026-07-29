@@ -2,20 +2,20 @@
 
 exports[`Alert > matches the rendered snapshot 1`] = `
 <div
-  class="_alert_1b5u3_4 _error_1b5u3_65"
+  class="_alert_1cdm7_4 _error_1cdm7_65"
   role="alert"
 >
   <div
-    class="_content_1b5u3_28"
+    class="_content_1cdm7_28"
   >
     <span
-      class="_srOnly_1b5u3_39"
+      class="_srOnly_1cdm7_39"
     >
       Error
       : 
     </span>
     <div
-      class="_message_1b5u3_36"
+      class="_message_1cdm7_36"
     >
       Failed
     </div>

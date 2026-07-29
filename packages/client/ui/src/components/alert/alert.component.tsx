@@ -9,8 +9,9 @@ import styles from './alert.module.css';
  * A prominent inline message that gives the user feedback — success, a warning,
  * an error, or information. The `variant` carries the meaning through colour AND
  * a visually-hidden severity word, so the status reaches assistive tech too
- * (never colour alone, WCAG 1.4.1). Set `live` when the alert appears
- * dynamically so a screen reader announces it.
+ * (never colour alone, WCAG 1.4.1). `live` sets the announcement POLITENESS —
+ * see {@link AlertProps.live} for the reliability caveat when the alert is
+ * inserted already-populated.
  */
 function Alert(props: AlertProps) {
   const {
@@ -37,10 +38,13 @@ function Alert(props: AlertProps) {
         : undefined;
 
   return (
+    // The derived role is applied AFTER {...rest}, so `live` is the single knob
+    // and a stray `role` in the spread can't silently kill the announcement.
+    // `off` applies none, leaving any custom role the consumer set intact.
     <div
-      role={role}
       className={cn(alertVariants({ variant }), className)}
       {...rest}
+      {...(role ? { role } : {})}
     >
       {icon != null && (
         <span aria-hidden="true" className={styles.icon}>

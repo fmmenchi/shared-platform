@@ -72,7 +72,10 @@
      alert bounded; the severity word carries the meaning. */
   @media (forced-colors: active) {
     .alert {
-      border-color: CanvasText;
+      /* Self-contained (not just border-color) so the boundary survives even a
+         refactor that drops the base `border` — the house-style forced-colors
+         guarantee. */
+      border: 1px solid CanvasText;
     }
   }
 }
