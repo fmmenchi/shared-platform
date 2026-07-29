@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Alert > matches the rendered snapshot 1`] = `
+<div
+  class="_alert_1cdm7_4 _error_1cdm7_65"
+  role="alert"
+>
+  <div
+    class="_content_1cdm7_28"
+  >
+    <span
+      class="_srOnly_1cdm7_39"
+    >
+      Error
+      : 
+    </span>
+    <div
+      class="_message_1cdm7_36"
+    >
+      Failed
+    </div>
+  </div>
+</div>
+`;

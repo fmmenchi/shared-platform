@@ -1,0 +1,81 @@
+/*
+ * Alert styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role tokens: each variant is the tinted-surface treatment of a
+ * status family (`*-subtle` fill + `*-subtle-foreground` text + `*-border`), a
+ * variant sets those vars, the base rule paints them.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .alert {
+    @apply flex items-start gap-inline-s;
+    @apply rounded-md border p-inset-m;
+    background-color: var(--alert-bg);
+    color: var(--alert-fg);
+    border-color: var(--alert-border);
+  }
+
+  /* Decorative icon slot — app-provided; sized a touch above the text and
+     top-aligned with the first line. Colour inherits the text (currentColor). */
+  .icon {
+    @apply inline-flex shrink-0 items-center justify-center;
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  .icon > :where(*) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .content {
+    @apply min-w-0 flex-1;
+  }
+  .title {
+    @apply font-semibold;
+  }
+  /* Space the body under the title only when a title is present. */
+  .title + .message {
+    @apply mt-internal-xs;
+  }
+
+  .srOnly {
+    @apply sr-only;
+  }
+
+  /* --- Variants: set the tinted-surface vars for the family. --- */
+  .info {
+    --alert-bg: var(--fm-color-info-subtle);
+    --alert-fg: var(--fm-color-info-subtle-foreground);
+    --alert-border: var(--fm-color-info-border);
+  }
+  .success {
+    --alert-bg: var(--fm-color-success-subtle);
+    --alert-fg: var(--fm-color-success-subtle-foreground);
+    --alert-border: var(--fm-color-success-border);
+  }
+  .warning {
+    --alert-bg: var(--fm-color-warning-subtle);
+    --alert-fg: var(--fm-color-warning-subtle-foreground);
+    --alert-border: var(--fm-color-warning-border);
+  }
+  .error {
+    --alert-bg: var(--fm-color-error-subtle);
+    --alert-fg: var(--fm-color-error-subtle-foreground);
+    --alert-border: var(--fm-color-error-border);
+  }
+
+  /* Forced colors: the tint collapses to a system surface and the variants
+     become indistinguishable by colour — the border (always present) keeps the
+     alert bounded; the severity word carries the meaning. */
+  @media (forced-colors: active) {
+    .alert {
+      /* Self-contained (not just border-color) so the boundary survives even a
+         refactor that drops the base `border` — the house-style forced-colors
+         guarantee. */
+      border: 1px solid CanvasText;
+    }
+  }
+}
