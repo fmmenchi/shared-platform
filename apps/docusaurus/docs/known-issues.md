@@ -98,9 +98,9 @@ peer ranges widening to include `^10`).
 in-code by a justified `use-baseline` disable comment; when a feature goes Widely, code comment
 **and** ledger entry are removed.
 
-| Feature                                                   | Where                                                                                                    | Degrades to                          | Widely ETA |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------- |
-| `@starting-style` + `transition-behavior: allow-discrete` | approved for the Dialog's entry/exit (lands with the component; `animateExit` stays the guaranteed exit) | instant open/close, fully functional | ~2027-02   |
+| Feature                                                   | Where                                                                                                    | Degrades to                                                                                    | Widely ETA |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------- |
+| `@starting-style` + `transition-behavior: allow-discrete` | approved for the Dialog's entry/exit (lands with the component; `animateExit` stays the guaranteed exit) | instant open/close, fully functional                                                           | ~2027-02   |
+| Popover API (**maintainer waiver, 2026-07**)              | approved for the upcoming Popover/Tooltip anchoring (no code usage yet)                                  | NOT graceful — content inline or hidden; waived because Widely lands before any consumer ships | ~2026-10   |
 
-**Waiting for Widely (not degradable — NOT exceptions):** Popover API (~2026-10, needs a JS
-fallback to degrade). **Watchlist (degradable, no design need yet):** View Transitions.
+**Watchlist (degradable, no design need yet):** View Transitions.

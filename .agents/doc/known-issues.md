@@ -12,5 +12,6 @@ it before upgrading a dependency or diagnosing an odd build/CI failure, and **ad
 - **`eslint`** — `eslint-plugin-react`/`jsx-a11y`/`import` peer-cap at eslint 9;
 
 are blocked and **ignored in Dependabot** (`.github/dependabot.yml`). The ledger also tracks the
-**Baseline exceptions in flight** (ADR-0010 progressive enhancements — currently `@starting-style`
-approved for the Dialog): check it before using a Newly-available feature. Related: [[releases]].
+**Baseline exceptions in flight** (ADR-0010 — currently `@starting-style` approved for the Dialog,
+and the Popover API under a maintainer waiver): check it before using a Newly-available feature.
+Related: [[releases]].
