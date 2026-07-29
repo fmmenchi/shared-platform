@@ -1,0 +1,50 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as InputStories from './input.stories.tsx';
+
+<Meta of={InputStories} />
+
+# Input
+
+A single-line text field on the native `<input>`. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref and spreads every native prop, and never touches `value`/`onChange`, so it works uncontrolled or controlled and drops into any form library. The design system styles it and presents the invalid state; validation and form-state stay in your app.
+
+## Props
+
+Defaults: `size="md"`, `type="text"`. Every native `<input>` attribute is accepted.
+
+<Controls of={InputStories.Default} />
+
+## Usage
+
+### Sizes
+
+`size` matches Button (sm 32 · md 36 · lg 44) so a control and a button line up on the same row.
+
+<Canvas of={InputStories.Sizes} />
+
+### States
+
+The **invalid** look keys off the native `aria-invalid` attribute — the same one your form library
+(react-hook-form, Formik, …) already sets. There is no `invalid` prop; the design system only styles
+the state, it doesn't compute it.
+
+<Canvas of={InputStories.States} />
+
+### Types
+
+It's a real `<input>`, so `type="email" | "password" | "number" | "date"` and `inputMode` all work.
+A calendar date-picker is a separate (future) component, not this.
+
+<Canvas of={InputStories.Types} />
+
+## Accessibility
+
+- **Always give it a label.** Wrap it in a `<label>`, or pass `aria-label` / `aria-labelledby`. A
+  native input with no associated label has no accessible name.
+- **A placeholder is not a label** — it disappears on input and often fails contrast; use it for an
+  example value, never as the field's name.
+- **Errors:** set `aria-invalid` (your form library does this) and point `aria-describedby` at the
+  message element so it's announced with the field. The design system styles `aria-invalid`; it does
+  not invent the error text.
+- **Controlled or uncontrolled**, focus, and any native attribute pass straight through — the control
+  is as capable as the `<input>` it wraps.

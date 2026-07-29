@@ -1,0 +1,65 @@
+/*
+ * Input styles — CSS Modules authored with Tailwind. Colours ONLY through the
+ * semantic `input-*` role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. The invalid look keys off
+ * the native `[aria-invalid="true"]` (ADR-0013) — no `invalid` prop.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .input {
+    @apply w-full rounded-md border px-3;
+    @apply bg-input text-input-foreground border-input-border;
+    @apply placeholder:text-input-placeholder;
+    @apply transition;
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+
+  /* Hover lightens the field a touch (the token's own intent) — not while
+     disabled or invalid, where the state colour must stand. */
+  .input:hover:not(:disabled):not([aria-invalid='true']) {
+    @apply bg-input-hover;
+  }
+
+  /* Error state is the native attribute the form library already sets. */
+  .input[aria-invalid='true'] {
+    @apply border-input-invalid;
+  }
+
+  .input:disabled {
+    @apply bg-input-disabled cursor-not-allowed;
+  }
+
+  /* Size — heights match Button (32/36/44) so controls and buttons align. */
+  .sm {
+    @apply h-8 text-xs;
+  }
+  .md {
+    @apply h-9 text-sm;
+  }
+  .lg {
+    @apply h-11 text-base;
+  }
+
+  /* Forced colors: the token fill/border are replaced by system colours; the
+     border keeps the field bounded, and the invalid state — otherwise a colour
+     — is restored so it survives High Contrast. */
+  @media (forced-colors: active) {
+    .input {
+      border: 1px solid ButtonText;
+    }
+    /* HCM has no error colour, so signal invalid by WEIGHT, not hue — a thicker
+       border reads without a colour the palette doesn't have (the state is also
+       announced via aria-invalid + the error text). */
+    .input[aria-invalid='true'] {
+      border-width: 2px;
+    }
+    .input:disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+  }
+}

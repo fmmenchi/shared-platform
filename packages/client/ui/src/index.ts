@@ -32,3 +32,9 @@ export type {
   BadgeProps,
   BadgeVariants,
 } from './components/badge/badge.types.js';
+export { Input } from './components/input/input.component.js';
+export { inputVariants } from './components/input/input.variants.js';
+export type {
+  InputProps,
+  InputVariants,
+} from './components/input/input.types.js';

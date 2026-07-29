@@ -42,7 +42,14 @@
       "import": "./dist/badge.js",
       "default": "./dist/badge.js"
     },
-    "./badge/style.css": "./dist/badge.css"
+    "./badge/style.css": "./dist/badge.css",
+    "./input": {
+      "@fmmenchi/source": "./src/components/input/index.ts",
+      "types": "./dist/components/input/index.d.ts",
+      "import": "./dist/input.js",
+      "default": "./dist/input.js"
+    },
+    "./input/style.css": "./dist/input.css"
   },
   "nx": {
     "tags": [

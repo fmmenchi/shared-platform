@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Input > matches the rendered snapshot 1`] = `
+<input
+  aria-label="q"
+  class="_input_t7s1e_4 _md_t7s1e_45"
+  type="text"
+/>
+`;
