@@ -52,5 +52,4 @@
   .horizontal {
     @apply flex flex-wrap gap-inline-s;
   }
-
 }

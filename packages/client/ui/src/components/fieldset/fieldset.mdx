@@ -130,7 +130,7 @@ controls shrinks too). Note what the reset **moves** rather than removes: conten
 long unbreakable token — now paints outside the box instead of widening it. Give such content
 `overflow-wrap` or a `min-inline-size` of your own.
 
-### Import an unlayered CSS reset *before* this stylesheet
+### Import an unlayered CSS reset _before_ this stylesheet
 
 Every DS rule ships inside the `fmmenchi` cascade layer (ADR-0011) so your unlayered CSS wins without a
 specificity fight. That is what you want for theming — but it also means an unlayered `fieldset {}`
@@ -154,7 +154,7 @@ rule beats our UA reset. Import `normalize.css`/`sanitize.css` (or any base laye
   later is still announced before the error it qualifies). Each renders only when it has content, so
   the group never references a blank element.
 - **A group's description is heard on entry, not on every focus.** This is the one place the trade-off
-  is *worse* than `Field`'s: a control re-announces its `aria-describedby` every time it takes focus,
+  is _worse_ than `Field`'s: a control re-announces its `aria-describedby` every time it takes focus,
   so a late association heals on the next focus. A group's is announced when the focus boundary is
   crossed — often once per visit — so if the user enters during the hydration window (the parts
   register via effect) they may not hear it again that session. The text is still reachable in browse

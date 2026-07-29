@@ -9,7 +9,4 @@ export type {
   FieldDescriptionProps,
   FieldErrorProps,
 } from './field.types.js';
-export type {
-  UseFieldResult,
-  FieldLabelSlotProps,
-} from './use-field.types.js';
+export type { UseFieldResult, FieldLabelSlotProps } from './use-field.types.js';

@@ -33,19 +33,19 @@ third-party control cannot — it never reads our context — so `useField()` ha
 
 ```tsx
 function BornOn({ locale }) {
-  const { getLabelProps, getControlProps } = useField()
+  const { getLabelProps, getControlProps } = useField();
   return (
     <>
       <label {...getLabelProps()}>Born on</label>
       <ThirdPartyDatePicker {...getControlProps({ locale })} />
     </>
-  )
+  );
 }
 
 <Field invalid={!!errors.bornOn}>
   <BornOn locale="it-IT" />
   <FieldError>{errors.bornOn}</FieldError>
-</Field>
+</Field>;
 ```
 
 One `useField()` counts as one control, so the "more than one control" guard keeps working. Called

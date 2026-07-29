@@ -266,7 +266,9 @@ describe('Field', () => {
     });
 
     it('counts as the field’s one control', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
       render(
         <Field>
           <ThirdParty />
@@ -279,7 +281,9 @@ describe('Field', () => {
     });
 
     it('warns and wires nothing when called outside a Field', () => {
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
       render(<ThirdParty />);
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('useField: called outside a <Field>'),

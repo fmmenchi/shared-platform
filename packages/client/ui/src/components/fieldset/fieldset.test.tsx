@@ -191,7 +191,9 @@ describe('Fieldset', () => {
     await waitFor(() => expect(group).toHaveAttribute('aria-describedby'));
     const describedBy = group.getAttribute('aria-describedby') as string;
     // The reference resolves — which a consumer-supplied id would have broken.
-    expect(document.getElementById(describedBy)).toBe(screen.getByText('Note.'));
+    expect(document.getElementById(describedBy)).toBe(
+      screen.getByText('Note.'),
+    );
     expect(describedBy).not.toBe('mine');
   });
 

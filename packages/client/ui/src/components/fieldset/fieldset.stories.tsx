@@ -18,13 +18,19 @@ const meta: Meta<typeof Fieldset> = {
       control: 'boolean',
       description:
         'Error state of the GROUP: exposes `data-invalid` for your styling, plus `aria-invalid` when `role="radiogroup"`. It does not reveal the error on its own, and is not mirrored onto the controls inside.',
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' } },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+      },
     },
     disabled: {
       control: 'boolean',
       description:
         'Native `<fieldset disabled>` — disables every control inside, for free.',
-      table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' } },
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+      },
     },
     children: {
       control: false,
