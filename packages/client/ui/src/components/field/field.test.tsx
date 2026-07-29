@@ -6,6 +6,7 @@ import { FieldLabel } from './field-label.component.js';
 import { FieldDescription } from './field-description.component.js';
 import { FieldError } from './field-error.component.js';
 import { Input } from '../input/input.component.js';
+import { useField } from './use-field.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -113,7 +114,7 @@ describe('Field', () => {
     expect(screen.getByText('Email')).toHaveAttribute('for', input.id);
   });
 
-  it('describes the control with SEVERAL descriptions, in order', async () => {
+  it('describes the control with SEVERAL descriptions, in DOM order', async () => {
     render(
       <Field>
         <FieldLabel>Password</FieldLabel>
@@ -125,11 +126,14 @@ describe('Field', () => {
     const input = screen.getByRole('textbox', { name: 'Password' });
     const a = screen.getByText('At least 8 characters.');
     const b = screen.getByText('One number.');
-    await waitFor(() => {
-      const describedBy = input.getAttribute('aria-describedby') ?? '';
-      expect(describedBy).toContain(a.id);
-      expect(describedBy).toContain(b.id);
-    });
+    // Asserted as an ORDERED list: aria-describedby order is announcement order,
+    // and a `toContain` pair per id (what this test used to do) cannot see it.
+    await waitFor(() =>
+      expect(input.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        a.id,
+        b.id,
+      ]),
+    );
   });
 
   it('drops the error from aria-describedby when its content clears', async () => {
@@ -207,6 +211,87 @@ describe('Field', () => {
       </Field>,
     );
     expect(container.firstChild).toMatchSnapshot();
+  });
+
+  // The escape hatch for a control the DS does not own: it cannot read the context
+  // itself, so the wiring is handed over as prop getters.
+  describe('useField (prop getters)', () => {
+    function ThirdParty(props: { placeholder?: string }) {
+      const { getLabelProps, getControlProps } = useField();
+      return (
+        <>
+          <label {...getLabelProps()}>Born on</label>
+          <input {...getControlProps({ placeholder: props.placeholder })} />
+        </>
+      );
+    }
+
+    it('associates a raw label and control, and describes them', async () => {
+      render(
+        <Field>
+          <ThirdParty />
+          <FieldDescription>Day/month/year.</FieldDescription>
+        </Field>,
+      );
+      const input = screen.getByRole('textbox', { name: 'Born on' });
+      const desc = screen.getByText('Day/month/year.');
+      expect(screen.getByText('Born on')).toHaveAttribute('for', input.id);
+      await waitFor(() =>
+        expect(input.getAttribute('aria-describedby')).toContain(desc.id),
+      );
+    });
+
+    it('carries the field’s invalid state', () => {
+      render(
+        <Field invalid>
+          <ThirdParty />
+        </Field>,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+    });
+
+    it('MERGES the caller’s own props rather than replacing them', () => {
+      render(
+        <Field>
+          <ThirdParty placeholder="dd/mm/yyyy" />
+        </Field>,
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute(
+        'placeholder',
+        'dd/mm/yyyy',
+      );
+    });
+
+    it('counts as the field’s one control', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Field>
+          <ThirdParty />
+          <Input aria-label="second" />
+        </Field>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('more than one control'),
+      );
+    });
+
+    it('warns and wires nothing when called outside a Field', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<ThirdParty />);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('useField: called outside a <Field>'),
+      );
+      const input = screen.getByRole('textbox');
+      expect(input).not.toHaveAttribute('aria-describedby');
+      expect(input).not.toHaveAttribute('aria-invalid');
+    });
   });
 
   describe('accessibility (axe)', () => {

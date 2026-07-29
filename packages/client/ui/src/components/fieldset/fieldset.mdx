@@ -1,0 +1,186 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FieldsetStories from './fieldset.stories.tsx';
+
+<Meta of={FieldsetStories} />
+
+# Fieldset
+
+Groups related controls — a radio or checkbox group, or a set of fields that answer one question — in
+a native `<fieldset>` named by its `<legend>`. Compose it:
+`<Fieldset><FieldsetLegend/><FieldDescription/><FieldsetContent/><FieldError/></Fieldset>`.
+The description and error register into the **group's** `aria-describedby`, so they are announced once
+for the group instead of repeated on every option. It owns no value or validation (ADR-0013) and has no
+chrome of its own. For a **single** control with its own label use
+[Field](?path=/docs/components-field--docs) — this is its group sibling.
+
+## Anatomy
+
+- **`Fieldset`** — the `<fieldset>`; takes `invalid` and provides the context. Native `disabled` and
+  `role` pass through.
+- **`FieldsetLegend`** — the `<legend>`; the group's accessible name, with no id wiring.
+- **`FieldDescription`** — helper text for the group, added to `aria-describedby`. The SAME part a
+  `Field` uses: it binds to the nearest describable container (see Guidelines).
+- **`FieldsetContent`** — wraps the controls and owns their layout (`orientation`).
+- **`FieldError`** — the message; renders and joins `aria-describedby` **only when it has content**.
+  Also shared with `Field`, and bound the same way.
+
+## Props
+
+<Controls of={FieldsetStories.Default} />
+
+## Usage
+
+### Default
+
+<Canvas of={FieldsetStories.Default} />
+
+### Invalid
+
+`invalid` (owned by your validation library) exposes `data-invalid` for your own styling, and — with
+`role="radiogroup"` — `aria-invalid`. It does **not** reveal the error by itself: `FieldError`
+renders whenever it has content, so drive both from the same state.
+
+<Canvas of={FieldsetStories.Invalid} />
+
+### Orientation
+
+`FieldsetContent` lays the options out as a stack or a wrapping row.
+
+<Canvas of={FieldsetStories.Orientation} />
+
+### Disabled
+
+<Canvas of={FieldsetStories.Disabled} />
+
+### With Fields
+
+A group whose members are separate labelled fields — `Field` inside `FieldsetContent`.
+
+<Canvas of={FieldsetStories.WithFields} />
+
+### In a grid
+
+<Canvas of={FieldsetStories.InAGrid} />
+
+## Guidelines
+
+### The description and error bind to the nearest container
+
+There is no `FieldsetDescription`/`FieldsetError`: `FieldDescription` and `FieldError` serve both
+containers, and **position** decides which one they describe. `Field` and `Fieldset` both fill the same
+slot, and React resolves the nearest provider:
+
+```tsx
+<Fieldset>
+  <FieldsetLegend>Contact</FieldsetLegend>
+  <FieldDescription>Describes the GROUP.</FieldDescription>
+  <FieldsetContent>
+    <Field>
+      <FieldLabel>Email</FieldLabel>
+      <Input />
+      <FieldDescription>Describes the CONTROL.</FieldDescription>
+    </Field>
+  </FieldsetContent>
+</Fieldset>
+```
+
+The trade to know about: the binding is implicit, so the call site alone does not tell you what a
+description describes — you have to see what encloses it. In exchange there is one part instead of two
+per container, and no way to reach for the wrong one. A part in neither container warns by name.
+
+`FieldsetLegend` is the exception: a `<legend>` names a group and never a single field, so it warns
+inside a `Field` too.
+
+### `name` scopes a radio group — the fieldset does not
+
+A `<fieldset>` groups controls for **presentation and semantics**; what makes a set of radios one
+mutually-exclusive group is a shared `name`, scoped to the form. Two `Fieldset`s whose radios share a
+`name` are one group split across two boxes, with two names and two descriptions: arrowing out of the
+first walks into the second. Give every group its own `name`.
+
+Options are yours, so map over your data inside `FieldsetContent` — there is deliberately no `options`
+prop, because how many controls there are and what each carries is your content, not the design
+system's:
+
+```tsx
+<FieldsetContent>
+  {colours.map((c) => (
+    <label key={c.value}>
+      <input type="radio" name="colour" value={c.value} /> {c.label}
+    </label>
+  ))}
+</FieldsetContent>
+```
+
+### Layout lives on `FieldsetContent`, not on the `Fieldset`
+
+The rendered `<legend>` is placed over the fieldset's block-start border, **outside** the anonymous box
+that holds the rest of the content. So a `display: grid` with a `gap` on the `<fieldset>` never reaches
+the legend. Keeping the options' layout on the inner `FieldsetContent` means one `gap` governs them,
+while the legend keeps its own (matching) margin. Content that must sit **outside** that layout — a
+link, a note — goes beside `FieldsetContent`, inside the `Fieldset`.
+
+### A `<fieldset>` needs help to behave in your grid
+
+The UA stylesheet gives every `<fieldset>` `min-inline-size: min-content`, which stops it shrinking: as
+a grid or flex item it would overflow its track instead of fitting. `Fieldset` resets that (along with
+the default groove border and padding, and the minimum on its own parts, so the box holding the
+controls shrinks too). Note what the reset **moves** rather than removes: content that cannot wrap — a
+long unbreakable token — now paints outside the box instead of widening it. Give such content
+`overflow-wrap` or a `min-inline-size` of your own.
+
+### Import an unlayered CSS reset _before_ this stylesheet
+
+Every DS rule ships inside the `fmmenchi` cascade layer (ADR-0011) so your unlayered CSS wins without a
+specificity fight. That is what you want for theming — but it also means an unlayered `fieldset {}`
+rule beats our UA reset. Import `normalize.css`/`sanitize.css` (or any base layer that styles
+`fieldset`/`legend`) **before** `@fmmenchi/ui/style.css`, or the groove padding and
+`legend { display: table }` come back.
+
+## Accessibility
+
+- **The group is named by its `<legend>`** — native, so there is no `aria-labelledby` to thread and no
+  id to keep in sync. Naming it with `aria-label` on the `Fieldset` instead is supported; leaving it
+  unnamed — including an **empty** legend, from a missing translation key — fires a dev warning.
+  Whatever text is in the legend becomes the group's whole name, so don't put a control's own label
+  there.
+- **Native `<fieldset>` over `<div role="group">`.** The ARIA equivalent is what React Aria and MUI
+  use, and it styles more easily — but `role="group"` is effectively unsupported by VoiceOver on iOS,
+  the majority mobile screen reader. The native element keeps the grouping; the CSS cost is paid by
+  `FieldsetContent`.
+- **Description & error are announced for the GROUP** — both register into the fieldset's
+  `aria-describedby`, in **DOM order** (the registry sorts by document position, so a hint that appears
+  later is still announced before the error it qualifies). Each renders only when it has content, so
+  the group never references a blank element.
+- **A group's description is heard on entry, not on every focus.** This is the one place the trade-off
+  is _worse_ than `Field`'s: a control re-announces its `aria-describedby` every time it takes focus,
+  so a late association heals on the next focus. A group's is announced when the focus boundary is
+  crossed — often once per visit — so if the user enters during the hydration window (the parts
+  register via effect) they may not hear it again that session. The text is still reachable in browse
+  mode.
+- **The controls inside are left alone.** `invalid` sets `data-invalid` on the group and nothing on the
+  options: marking every radio `aria-invalid` would repeat one problem N times. `aria-invalid` is not a
+  supported attribute on `role="group"`, so on a plain `<fieldset>` there is no valid ARIA carrier for
+  a group-level invalid state at all — set **`role="radiogroup"`** (the one role a `<fieldset>` may
+  take that supports it) and `invalid` exposes `aria-invalid` on the group. Otherwise the error text is
+  what conveys the state. If a single control has its own error, wrap it in a `Field` and set `invalid`
+  there.
+- **The error isn't colour alone** — the words carry the meaning, and under forced colors, where the
+  hue is overridden to the system text colour, a border rule keeps it distinct from the hint above it.
+- **Announcing a fresh error is the consumer's job** — `FieldError` is described-by, not a live
+  region. A `<fieldset>` is **not focusable**, so `ref.current.focus()` on it is a silent no-op: focus
+  the first control inside (or an error summary link that targets it), or add `tabIndex={-1}` to the
+  fieldset yourself if you want the group and its description announced together.
+- **Native `disabled` disables the whole group**, including controls added later — one attribute
+  instead of N. Two consequences: controls inside a `<legend>` are exempt per the HTML spec, and
+  nothing inside is focusable any more, so the group's own description becomes unreachable to anyone
+  navigating by focus. Put the reason a group is unavailable **outside** the `Fieldset`.
+- **The a11y ids resolve on the client.** The fieldset and legend render server-side; the
+  `aria-describedby` association is added on hydration (the parts register via effect), so it is
+  present for JS clients — not for no-JS delivery.
+- **The parts own their ids.** An `id` passed to `FieldDescription`/`FieldError` is ignored, so
+  the group's reference can never point at an element that renamed itself.
+- **Nesting is safe:** a `FieldDescription` inside a `Field` inside a `Fieldset` describes the
+  **control**, and the same part placed directly inside the `Fieldset` describes the **group** — the
+  nearest container wins, and a part with no container at all warns by name.

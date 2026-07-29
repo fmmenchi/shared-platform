@@ -2,10 +2,10 @@
 
 exports[`Field > matches the rendered snapshot 1`] = `
 <div
-  class="_field_ki78m_4"
+  class="_field_14nhl_4"
 >
   <label
-    class="_label_ki78m_8"
+    class="_label_14nhl_8"
     for="_r_i_"
   >
     Email

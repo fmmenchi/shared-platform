@@ -56,7 +56,14 @@
       "import": "./dist/field.js",
       "default": "./dist/field.js"
     },
-    "./field/style.css": "./dist/field.css"
+    "./field/style.css": "./dist/field.css",
+    "./fieldset": {
+      "@fmmenchi/source": "./src/components/fieldset/index.ts",
+      "types": "./dist/components/fieldset/index.d.ts",
+      "import": "./dist/fieldset.js",
+      "default": "./dist/fieldset.js"
+    },
+    "./fieldset/style.css": "./dist/fieldset.css"
   },
   "nx": {
     "tags": [
