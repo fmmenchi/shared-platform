@@ -1,11 +1,11 @@
 import { useCallback, useId, useMemo, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useDescribedByRegistry } from '../../primitives/context/describedby-registry.js';
+import { useDescribedByRegistry } from '../../primitives/describedby-registry.js';
 import {
   FieldContext,
   type FieldContextValue,
-} from '../../primitives/context/field.js';
+} from './field.context.js';
 import type { FieldProps } from './field.types.js';
 import styles from './field.module.css';
 

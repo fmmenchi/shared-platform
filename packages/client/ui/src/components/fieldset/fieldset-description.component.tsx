@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import { useFieldsetPart } from '../../primitives/context/fieldset.js';
+import { useFieldsetPart } from './fieldset.context.js';
 import type { FieldsetDescriptionProps } from './fieldset.types.js';
 import styles from './fieldset.module.css';
 

@@ -1,5 +1,5 @@
 import { cn } from '../../util/cn.js';
-import { useFieldControl } from '../../primitives/context/field.js';
+import { useFieldControl } from '../field/field.context.js';
 import { inputVariants } from './input.variants.js';
 import type { InputProps } from './input.types.js';
 

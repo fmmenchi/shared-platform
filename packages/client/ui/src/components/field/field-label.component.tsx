@@ -1,6 +1,6 @@
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useFieldContext } from '../../primitives/context/field.js';
+import { useFieldContext } from './field.context.js';
 import type { FieldLabelProps } from './field.types.js';
 import styles from './field.module.css';
 

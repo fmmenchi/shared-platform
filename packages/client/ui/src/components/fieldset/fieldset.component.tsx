@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useDescribedByRegistry } from '../../primitives/context/describedby-registry.js';
+import { useDescribedByRegistry } from '../../primitives/describedby-registry.js';
 import {
   FieldsetContext,
   type FieldsetContextValue,
-} from '../../primitives/context/fieldset.js';
+} from './fieldset.context.js';
 import type { FieldsetProps } from './fieldset.types.js';
 import styles from './fieldset.module.css';
 

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect } from 'react';
-import { useDevWarning } from '../use-dev-warning.js';
-import type { DescribedByRegistry } from './describedby-registry.types.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import type { DescribedByRegistry } from '../../primitives/describedby-registry.types.js';
 
 /**
  * Shared state a `Field` provides to its label, description, error, and control.

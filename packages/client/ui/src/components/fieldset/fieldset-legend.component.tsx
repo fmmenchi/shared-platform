@@ -1,5 +1,5 @@
 import { cn } from '../../util/cn.js';
-import { useFieldsetPart } from '../../primitives/context/fieldset.js';
+import { useFieldsetPart } from './fieldset.context.js';
 import type { FieldsetLegendProps } from './fieldset.types.js';
 import styles from './fieldset.module.css';
 
