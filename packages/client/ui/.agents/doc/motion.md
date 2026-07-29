@@ -22,6 +22,14 @@ The doctrine behind every animation in the DS (decision: ADR-0009 — CSS-first,
   consumer overlays too) with token-KEY options, never CSS var names:
   `animateExit(el, { preset: 'scale' | 'fade', duration: 'xs'|'s'|'m'|'l', ease: 'standard'|'enter'|'exit'|'linear', keyframes? })`.
   When the platform catches up, it retires (major, with a migration note).
+- **Springs exist — in CSS.** `--fm-ease-spring` (subtle overshoot, the workhorse) and
+  `--fm-ease-bounce` (playful — success moments only) are real damped-spring physics via
+  `linear()` (Baseline Widely). Pair them with `--fm-duration-m`/`-l`; never bounce a
+  micro-interaction.
+- **`@starting-style` + `allow-discrete` are APPROVED as progressive enhancement** (ADR-0010):
+  entry/exit in pure CSS where supported, instant otherwise — mark the usage with the justified
+  `use-baseline` disable comment. First consumer: the Dialog. `animateExit` remains the
+  guaranteed-everywhere exit until Widely (~2027).
 - **No motion runtime — ever.** framer-motion & co. are app concerns: the DS ships zero animation
   JS beyond `animateExit`. View Transitions / scroll-driven animations are watchlisted (not
   Baseline Widely).

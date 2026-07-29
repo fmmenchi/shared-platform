@@ -123,7 +123,14 @@ export const BORDER_WIDTH_TOKENS = ['default', 'emphasis', 'divider'] as const;
 export const SHADOW_TOKENS = ['sm', 'md', 'lg'] as const;
 export const SIZE_TOKENS = ['container', 'prose'] as const;
 export const DURATION_TOKENS = ['none', 'xs', 's', 'm', 'l'] as const;
-export const EASE_TOKENS = ['standard', 'enter', 'exit', 'linear'] as const;
+export const EASE_TOKENS = [
+  'standard',
+  'enter',
+  'exit',
+  'linear',
+  'spring',
+  'bounce',
+] as const;
 export const TRANSITION_TOKENS = [
   'color',
   'transform',

@@ -11,14 +11,15 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## Index
 
-| ADR                                                   | Title                                                                 | Status           |
-| ----------------------------------------------------- | --------------------------------------------------------------------- | ---------------- |
-| [0001](./0001-ui-library-foundations.md)              | UI library foundations                                                | draft (scouting) |
-| 0002                                                  | _reserved_ — UI foundations decision (supersedes 0001)                | pending          |
-| [0003](./0003-browser-support-baseline.md)            | Browser support: Baseline                                             | accepted         |
-| [0004](./0004-docs-aggregation.md)                    | Docs live in packages; the site aggregates them                       | accepted         |
-| [0005](./0005-apps-layer-not-published.md)            | `apps/` hosts non-published sites; the docs site there                | accepted         |
-| [0006](./0006-absorb-ui-ports.md)                     | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`                       | accepted         |
-| [0007](./0007-security-scanning-workspace-level.md)   | Security scanning is workspace-level                                  | accepted         |
-| [0008](./0008-cross-app-framework-agnostic-layers.md) | What earns a place as a shared layer (cross-app + framework-agnostic) | accepted         |
-| [0009](./0009-motion-css-first.md)                    | Motion is CSS-first on the tokens; no motion runtime                  | accepted         |
+| ADR                                                     | Title                                                                 | Status           |
+| ------------------------------------------------------- | --------------------------------------------------------------------- | ---------------- |
+| [0001](./0001-ui-library-foundations.md)                | UI library foundations                                                | draft (scouting) |
+| 0002                                                    | _reserved_ — UI foundations decision (supersedes 0001)                | pending          |
+| [0003](./0003-browser-support-baseline.md)              | Browser support: Baseline                                             | accepted         |
+| [0004](./0004-docs-aggregation.md)                      | Docs live in packages; the site aggregates them                       | accepted         |
+| [0005](./0005-apps-layer-not-published.md)              | `apps/` hosts non-published sites; the docs site there                | accepted         |
+| [0006](./0006-absorb-ui-ports.md)                       | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`                       | accepted         |
+| [0007](./0007-security-scanning-workspace-level.md)     | Security scanning is workspace-level                                  | accepted         |
+| [0008](./0008-cross-app-framework-agnostic-layers.md)   | What earns a place as a shared layer (cross-app + framework-agnostic) | accepted         |
+| [0009](./0009-motion-css-first.md)                      | Motion is CSS-first on the tokens; no motion runtime                  | accepted         |
+| [0010](./0010-progressive-enhancement-beyond-widely.md) | Use everything Widely; Newly only as graceful progressive enhancement | accepted         |

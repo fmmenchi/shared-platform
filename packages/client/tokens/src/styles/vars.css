@@ -224,6 +224,49 @@
   ); /* appears: fast then decelerate */
   --fm-ease-exit: cubic-bezier(0.4, 0, 1, 1); /* leaves: slow then accelerate */
   --fm-ease-linear: cubic-bezier(0, 0, 1, 1); /* continuous, constant speed */
+  /* Spring PERSONALITIES via linear() (Baseline Widely since ~2026-06) — real
+     damped-spring physics sampled into stops, no JS runtime. The curve is
+     normalized over the animation duration: pair with --fm-duration-m/-l so
+     the settle reads naturally. `spring` = subtle 1.7% overshoot, the
+     workhorse; `bounce` = 26% overshoot, for playful/success moments only. */
+  --fm-ease-spring: linear(
+    0,
+    0.107 6.3%,
+    0.321 12.5%,
+    0.54 18.8%,
+    0.721 25%,
+    0.851 31.3%,
+    0.935 37.5%,
+    0.983 43.8%,
+    1.007 50%,
+    1.016 56.3%,
+    1.017 62.5%,
+    1.014 68.8%,
+    1.01 75%,
+    1.007 81.3%,
+    1.004 87.5%,
+    1.002 93.8%,
+    1
+  ); /* stiffness 250, damping 25 */
+  --fm-ease-bounce: linear(
+    0,
+    0.231 6.3%,
+    0.686 12.5%,
+    1.075 18.8%,
+    1.263 25%,
+    1.258 31.3%,
+    1.146 37.5%,
+    1.022 43.8%,
+    0.942 50%,
+    0.922 56.3%,
+    0.943 62.5%,
+    0.979 68.8%,
+    1.008 75%,
+    1.021 81.3%,
+    1.02 87.5%,
+    1.01 93.8%,
+    1
+  ); /* stiffness 400, damping 15 */
 
   --fm-transition-color:
     background-color var(--fm-duration-s) var(--fm-ease-enter),

@@ -190,6 +190,8 @@
   --ease-enter: var(--fm-ease-enter);
   --ease-exit: var(--fm-ease-exit);
   --ease-linear: var(--fm-ease-linear);
+  --ease-spring: var(--fm-ease-spring);
+  --ease-bounce: var(--fm-ease-bounce);
   --default-transition-duration: var(--fm-duration-s);
   --default-transition-timing-function: var(--fm-ease-standard);
 }
