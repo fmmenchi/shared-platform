@@ -6,13 +6,13 @@ exports[`Field > matches the rendered snapshot 1`] = `
 >
   <label
     class="_label_ki78m_8"
-    for="_r_a_"
+    for="_r_i_"
   >
     Email
   </label>
   <input
     class="_input_1gpu1_4 _md_1gpu1_43"
-    id="_r_a_"
+    id="_r_i_"
     type="text"
   />
 </div>

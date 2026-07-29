@@ -18,7 +18,7 @@ function FieldError(props: FieldErrorProps) {
   const hasContent = children != null && children !== false && children !== '';
   useEffect(() => {
     if (!hasContent) return;
-    return register?.('error', id);
+    return register?.(id);
   }, [register, id, hasContent]);
 
   if (!hasContent) return null;

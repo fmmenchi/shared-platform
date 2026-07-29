@@ -81,17 +81,92 @@ describe('Field', () => {
     expect(input).not.toHaveAttribute('aria-invalid');
   });
 
-  it('lets the control’s own props win over the field wiring', () => {
+  it('the control’s own aria-invalid overrides the field, and its describedby merges', async () => {
     render(
       <Field invalid>
         <FieldLabel>Email</FieldLabel>
-        <Input id="custom" aria-invalid={false} />
+        <Input aria-invalid={false} aria-describedby="external-hint" />
+        <FieldDescription>We’ll never share it.</FieldDescription>
       </Field>,
     );
-    // Own id wins; own aria-invalid=false overrides the field's invalid.
     const input = screen.getByRole('textbox');
-    expect(input).toHaveAttribute('id', 'custom');
+    // aria-invalid: the control's explicit false wins over the field's invalid.
     expect(input).toHaveAttribute('aria-invalid', 'false');
+    // aria-describedby MERGES the field's description with the control's own.
+    const desc = screen.getByText('We’ll never share it.');
+    await waitFor(() => {
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      expect(describedBy).toContain(desc.id);
+      expect(describedBy).toContain('external-hint');
+    });
+  });
+
+  it('owns the control id so the label always associates (own id is ignored)', () => {
+    render(
+      <Field>
+        <FieldLabel>Email</FieldLabel>
+        <Input id="ignored" />
+      </Field>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Email' });
+    expect(input.id).not.toBe('ignored');
+    expect(screen.getByText('Email')).toHaveAttribute('for', input.id);
+  });
+
+  it('describes the control with SEVERAL descriptions, in order', async () => {
+    render(
+      <Field>
+        <FieldLabel>Password</FieldLabel>
+        <Input />
+        <FieldDescription>At least 8 characters.</FieldDescription>
+        <FieldDescription>One number.</FieldDescription>
+      </Field>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Password' });
+    const a = screen.getByText('At least 8 characters.');
+    const b = screen.getByText('One number.');
+    await waitFor(() => {
+      const describedBy = input.getAttribute('aria-describedby') ?? '';
+      expect(describedBy).toContain(a.id);
+      expect(describedBy).toContain(b.id);
+    });
+  });
+
+  it('drops the error from aria-describedby when its content clears', async () => {
+    const { rerender } = render(
+      <Field invalid>
+        <FieldLabel>Email</FieldLabel>
+        <Input />
+        <FieldError>Required.</FieldError>
+      </Field>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Email' });
+    const err = screen.getByText('Required.');
+    await waitFor(() =>
+      expect(input.getAttribute('aria-describedby')).toContain(err.id),
+    );
+    rerender(
+      <Field invalid>
+        <FieldLabel>Email</FieldLabel>
+        <Input />
+        <FieldError>{null}</FieldError>
+      </Field>,
+    );
+    await waitFor(() => expect(input).not.toHaveAttribute('aria-describedby'));
+  });
+
+  it('warns when more than one control shares a Field', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Field>
+        <FieldLabel>Two</FieldLabel>
+        <Input aria-label="a" />
+        <Input aria-label="b" />
+      </Field>,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('more than one control'),
+    );
   });
 
   it('leaves a standalone control (no Field) untouched', () => {

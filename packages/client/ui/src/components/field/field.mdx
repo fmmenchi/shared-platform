@@ -46,4 +46,15 @@ It owns no value or validation (ADR-0013) and has no chrome of its own — just 
   colour **and** a thicker border; the error text adds the words.
 - **Announcing a fresh error is the consumer's job** — `FieldError` is described-by, not a live
   region. For an error that must be heard on submit, move focus to the field or use an error summary.
-- **Escape hatch:** a control's own `id` / `aria-describedby` / `aria-invalid` override the field's.
+- **One control per Field.** The field owns a single `id`; put two controls in one `Field` and they
+  collide (a dev warning fires). For a **radio/checkbox group** use a `<fieldset>` with a `<legend>`,
+  not this single-control Field.
+- **Precedence:** the field **owns the control's `id`** (so the label always associates — a control's
+  own `id` is ignored inside a Field); `aria-describedby` **merges** the field's with the control's;
+  the control's own `aria-invalid` **wins**.
+- **The a11y ids resolve on the client.** The control itself renders server-side; the
+  `aria-describedby` association is added on hydration (the description/error register via effect), so
+  it's present for JS clients — not for no-JS delivery.
+- **Only the design system's own controls auto-wire** (they call the internal field hook). A raw
+  `<input>` or a third-party control won't pick the wiring up — set its `id`/`aria-describedby`
+  yourself (a `FieldControl` slot for arbitrary elements is planned).

@@ -13,7 +13,7 @@ function FieldDescription(props: FieldDescriptionProps) {
   const register = useFieldContext()?.register;
   const id = useId();
   // `register` is stable (useCallback in Field), so this runs once per mount.
-  useEffect(() => register?.('description', id), [register, id]);
+  useEffect(() => register?.(id), [register, id]);
   return <p id={id} className={cn(styles.description, className)} {...rest} />;
 }
 
