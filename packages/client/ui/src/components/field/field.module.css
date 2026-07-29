@@ -1,7 +1,7 @@
 /*
  * Field styles — layout + text roles only (a Field has no chrome of its own, so
- * no border/fill and no forced-colors block: system colours handle the text).
- * Colours ONLY through semantic role utilities; `@reference` resolves `@apply`.
+ * no border/fill). Colours ONLY through semantic role utilities; `@reference`
+ * resolves `@apply`.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
@@ -15,11 +15,36 @@
   .label {
     @apply text-foreground text-sm font-medium;
   }
+
+  /* `margin-block: 0` is not cosmetic: these parts are <p>, and the DS ships no
+     preflight, so in a consumer page each one carries the UA `margin-block: 1em`
+     — 14px on top of the 4px grid gap, i.e. the field's parts drifting 4.5x
+     further apart than the token says. `min-inline-size: 0` lets the field's
+     single auto track shrink, since the track takes the LARGEST minimum
+     contribution of its items and an unbreakable string would otherwise stretch
+     it (and the control) past the container. */
+  .description,
+  .error {
+    min-inline-size: 0;
+    margin-block: 0;
+  }
+
   .description {
     @apply text-muted-foreground text-sm;
   }
   .error {
     @apply text-sm;
     color: var(--fm-color-error);
+  }
+
+  /* Forced colors overrides every author colour, so the error's hue collapses to
+     CanvasText and it becomes identical to the hint above it. The control's own
+     invalid look survives (Input carries it as border WEIGHT), but the message
+     needs its own structural cue. */
+  @media (forced-colors: active) {
+    .error {
+      border-inline-start: 0.1875rem solid CanvasText;
+      padding-inline-start: var(--fm-space-internal-s);
+    }
   }
 }

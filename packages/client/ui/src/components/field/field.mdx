@@ -40,10 +40,16 @@ It owns no value or validation (ADR-0013) and has no chrome of its own — just 
 
 - **Label association is automatic** — `FieldLabel htmlFor` and the control's `id` share one `useId`,
   so clicking the label focuses the control and the control's name comes from the label.
-- **Description & error are announced with the field** — both register into `aria-describedby`; the
-  error only when it has content, so no empty/dangling references.
+- **Description & error are announced with the field** — both register into `aria-describedby`, in
+  **DOM order** (the registry sorts by document position, so a hint that appears later is still
+  announced before the error it qualifies). Each renders only when it has content, so the control never
+  references a blank element — and the parts own their ids, so an `id` passed to `FieldDescription` /
+  `FieldError` is ignored rather than breaking the reference.
 - **Invalid isn't colour alone** — `invalid` sets `aria-invalid` (announced) and the control shows a
-  colour **and** a thicker border; the error text adds the words.
+  colour **and** a thicker border; the error text adds the words, and keeps a border rule under forced
+  colors, where the hue is overridden to the system text colour.
+- **A part used outside a `Field` warns by name** — a stray `FieldDescription` renders perfectly and
+  describes nothing, which is invisible without the warning.
 - **Announcing a fresh error is the consumer's job** — `FieldError` is described-by, not a live
   region. For an error that must be heard on submit, move focus to the field or use an error summary.
 - **One control per Field.** The field owns a single `id`; put two controls in one `Field` and they

@@ -17,7 +17,7 @@ const meta: Meta<typeof Fieldset> = {
     invalid: {
       control: 'boolean',
       description:
-        'Error state of the GROUP: exposes `data-invalid` and reveals the error. Not mirrored onto the controls inside.',
+        'Error state of the GROUP: exposes `data-invalid` for your styling, plus `aria-invalid` when `role="radiogroup"`. It does not reveal the error on its own, and is not mirrored onto the controls inside.',
       table: { type: { summary: 'boolean' }, defaultValue: { summary: 'false' } },
     },
     disabled: {
@@ -57,11 +57,13 @@ export const Default: Story = {
   ),
 };
 
-/** `invalid` reveals the group's error; the message is described once, for the
- *  whole group, instead of repeated on every option. */
+/** The message is described once, for the whole group, instead of repeated on
+ *  every option. `role="radiogroup"` is what lets `invalid` also expose
+ *  `aria-invalid` — on a plain `<fieldset>` (`role=group`) that attribute has no
+ *  meaning, so the error text alone conveys the state. */
 export const Invalid: Story = {
   render: () => (
-    <Fieldset invalid>
+    <Fieldset invalid role="radiogroup">
       <FieldsetLegend>Favourite colour</FieldsetLegend>
       <FieldsetContent>
         <label>
@@ -106,21 +108,26 @@ export const Orientation: Story = {
   ),
 };
 
-/** Native `disabled` on the fieldset disables every control inside. */
+/** Native `disabled` on the fieldset disables every control inside. The reason it
+ *  is unavailable sits OUTSIDE the fieldset: nothing inside a disabled group is
+ *  focusable, so a `FieldsetDescription` there could never be reached by anyone
+ *  navigating by focus. */
 export const Disabled: Story = {
   render: () => (
-    <Fieldset disabled>
-      <FieldsetLegend>Favourite colour</FieldsetLegend>
-      <FieldsetDescription>Sign in to choose.</FieldsetDescription>
-      <FieldsetContent>
-        <label>
-          <input type="radio" name="colour-disabled" value="green" /> Green
-        </label>
-        <label>
-          <input type="radio" name="colour-disabled" value="yellow" /> Yellow
-        </label>
-      </FieldsetContent>
-    </Fieldset>
+    <div style={{ display: 'grid', gap: 'var(--fm-space-internal-xs)' }}>
+      <p style={{ margin: 0 }}>Sign in to choose a colour.</p>
+      <Fieldset disabled>
+        <FieldsetLegend>Favourite colour</FieldsetLegend>
+        <FieldsetContent>
+          <label>
+            <input type="radio" name="colour-disabled" value="green" /> Green
+          </label>
+          <label>
+            <input type="radio" name="colour-disabled" value="yellow" /> Yellow
+          </label>
+        </FieldsetContent>
+      </Fieldset>
+    </div>
   ),
 };
 

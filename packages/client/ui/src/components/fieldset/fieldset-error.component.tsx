@@ -1,29 +1,40 @@
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { cn } from '../../util/cn.js';
-import { useFieldsetPart } from '../../primitives/fieldset.js';
+import { hasRenderableChildren } from '../../util/renderable-children.js';
+import { mergeRefs } from '../../primitives/merge-refs.js';
+import { useFieldsetPart } from '../../primitives/context/fieldset.js';
 import type { FieldsetErrorProps } from './fieldset.types.js';
 import styles from './fieldset.module.css';
 
 /**
  * The group's error message. Renders (and registers into the fieldset's
  * `aria-describedby`) ONLY when it has content, so an empty error neither shows
- * nor pollutes the description. The colour is the `error` status role plus normal
- * text weight, and the words carry the meaning — the error never rests on colour
- * alone. Announcing a freshly-appeared error is the consumer's job.
+ * nor points the group at a blank element. The colour is the `error` status role,
+ * and a rule restores the distinction under forced colors, where the hue is
+ * overridden — so the error never rests on colour alone. Announcing a
+ * freshly-appeared error is the consumer's job.
  */
 function FieldsetError(props: FieldsetErrorProps) {
-  const { className, children, ...rest } = props;
+  const { className, children, ref, ...rest } = props;
   const register = useFieldsetPart('FieldsetError')?.register;
   const id = useId();
-  const hasContent = children != null && children !== false && children !== '';
+  const node = useRef<HTMLParagraphElement>(null);
+  const hasContent = hasRenderableChildren(children);
+
   useEffect(() => {
-    if (!hasContent) return;
-    return register?.(id);
+    const element = node.current;
+    if (!hasContent || element == null) return;
+    return register?.(id, element);
   }, [register, id, hasContent]);
 
   if (!hasContent) return null;
   return (
-    <p id={id} className={cn(styles.error, className)} {...rest}>
+    <p
+      {...rest}
+      ref={mergeRefs(node, ref)}
+      id={id}
+      className={cn(styles.error, className)}
+    >
       {children}
     </p>
   );

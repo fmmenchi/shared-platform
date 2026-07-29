@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { useState, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Fieldset } from './fieldset.component.js';
 import { FieldsetLegend } from './fieldset-legend.component.js';
 import { FieldsetDescription } from './fieldset-description.component.js';
@@ -14,19 +16,21 @@ import { expectNoA11yViolations } from '../../test/axe.js';
 
 /** A radio group, the case Fieldset exists for. Radio isn't built yet, so the
  *  options are native inputs — which is also the point: the group wires itself
- *  around ANY control, it never reaches into them. */
-function Colours(props: { invalid?: boolean; error?: string }) {
-  const { invalid, error } = props;
+ *  around ANY control, it never reaches into them. `name` is a REQUIRED prop
+ *  because `name`, not the fieldset, is what scopes a radio group: two fixtures
+ *  sharing one name would silently merge into a single group. */
+function Colours(props: { name: string; invalid?: boolean; error?: string }) {
+  const { name, invalid, error } = props;
   return (
     <Fieldset invalid={invalid}>
       <FieldsetLegend>Favourite colour</FieldsetLegend>
       <FieldsetDescription>Pick exactly one.</FieldsetDescription>
       <FieldsetContent>
         <label>
-          <input type="radio" name="colour" value="green" /> Green
+          <input type="radio" name={name} value="green" /> Green
         </label>
         <label>
-          <input type="radio" name="colour" value="yellow" /> Yellow
+          <input type="radio" name={name} value="yellow" /> Yellow
         </label>
       </FieldsetContent>
       {error === undefined ? null : <FieldsetError>{error}</FieldsetError>}
@@ -57,16 +61,34 @@ function WideGroup(props: { name: string }) {
   );
 }
 
+/** Mounts `children` only once its OWN button is clicked, so the surrounding
+ *  `Fieldset` never re-renders and its `children` prop keeps its identity. That is
+ *  the shape a deps-based re-check cannot see: the DOM changes underneath a parent
+ *  that was never told. */
+function Reveal(props: { children: ReactNode }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={() => setShown(true)}>
+        reveal
+      </button>
+      {shown ? props.children : null}
+    </>
+  );
+}
+
 describe('Fieldset', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('names the group with its legend', () => {
-    render(<Colours />);
-    expect(screen.getByRole('group', { name: 'Favourite colour' })).toBeTruthy();
+    render(<Colours name="a" />);
+    expect(
+      screen.getByRole('group', { name: 'Favourite colour' }),
+    ).toBeTruthy();
   });
 
   it('describes the GROUP with the description', async () => {
-    render(<Colours />);
+    render(<Colours name="a" />);
     const group = screen.getByRole('group', { name: 'Favourite colour' });
     const desc = screen.getByText('Pick exactly one.');
     await waitFor(() =>
@@ -75,7 +97,7 @@ describe('Fieldset', () => {
   });
 
   it('describes the group with the error and marks it invalid for styling', async () => {
-    render(<Colours invalid error="Choose a colour." />);
+    render(<Colours name="a" invalid error="Choose a colour." />);
     const group = screen.getByRole('group', { name: 'Favourite colour' });
     expect(group).toHaveAttribute('data-invalid', 'true');
     const err = screen.getByText('Choose a colour.');
@@ -85,13 +107,32 @@ describe('Fieldset', () => {
   });
 
   it('leaves the controls inside untouched — the group is described once, not N times', async () => {
-    render(<Colours invalid error="Choose a colour." />);
+    render(<Colours name="a" invalid error="Choose a colour." />);
     const group = screen.getByRole('group', { name: 'Favourite colour' });
     await waitFor(() => expect(group).toHaveAttribute('aria-describedby'));
     for (const radio of screen.getAllByRole('radio')) {
       expect(radio).not.toHaveAttribute('aria-describedby');
       expect(radio).not.toHaveAttribute('aria-invalid');
     }
+  });
+
+  // `aria-invalid` is not a supported attribute on role=group, so it appears only
+  // when the consumer opts into the one role a <fieldset> may take that does.
+  it('exposes aria-invalid only when the group is a radiogroup', () => {
+    const { rerender } = render(
+      <Fieldset invalid>
+        <FieldsetLegend>Colour</FieldsetLegend>
+      </Fieldset>,
+    );
+    expect(screen.getByRole('group')).not.toHaveAttribute('aria-invalid');
+
+    rerender(
+      <Fieldset invalid role="radiogroup">
+        <FieldsetLegend>Colour</FieldsetLegend>
+      </Fieldset>,
+    );
+    const radiogroup = screen.getByRole('radiogroup', { name: 'Colour' });
+    expect(radiogroup).toHaveAttribute('aria-invalid', 'true');
   });
 
   it('renders no error and adds nothing to aria-describedby when the error is empty', () => {
@@ -106,20 +147,71 @@ describe('Fieldset', () => {
     expect(group).not.toHaveAttribute('data-invalid');
   });
 
+  // Every React-empty value, not just `false`: the empty ARRAY is the one a
+  // consumer actually hits, since mapping a validation array is the idiomatic
+  // shape. Each of these would otherwise render a blank <p> and point the group's
+  // aria-describedby at it.
+  it.each([
+    ['an empty array', [] as never],
+    ['a boolean', true],
+    ['whitespace', '   '],
+    ['null', null],
+  ])('renders neither error nor description for %s', (_label, children) => {
+    render(
+      <Fieldset>
+        <FieldsetLegend>Empty</FieldsetLegend>
+        <FieldsetDescription>{children}</FieldsetDescription>
+        <FieldsetError>{children}</FieldsetError>
+      </Fieldset>,
+    );
+    const group = screen.getByRole('group', { name: 'Empty' });
+    expect(group).not.toHaveAttribute('aria-describedby');
+    expect(group.querySelector('p')).toBeNull();
+  });
+
+  it('renders 0 as content — React renders it, so it is not empty', async () => {
+    render(
+      <Fieldset>
+        <FieldsetLegend>Zero</FieldsetLegend>
+        <FieldsetError>{0}</FieldsetError>
+      </Fieldset>,
+    );
+    const group = screen.getByRole('group', { name: 'Zero' });
+    await waitFor(() => expect(group).toHaveAttribute('aria-describedby'));
+    expect(screen.getByText('0')).toBeInTheDocument();
+  });
+
+  it('owns the part ids, so a consumer id can never leave the reference dangling', async () => {
+    render(
+      <Fieldset>
+        <FieldsetLegend>Contact</FieldsetLegend>
+        <FieldsetDescription id="mine">Note.</FieldsetDescription>
+      </Fieldset>,
+    );
+    const group = screen.getByRole('group', { name: 'Contact' });
+    await waitFor(() => expect(group).toHaveAttribute('aria-describedby'));
+    const describedBy = group.getAttribute('aria-describedby') as string;
+    // The reference resolves — which a consumer-supplied id would have broken.
+    expect(document.getElementById(describedBy)).toBe(screen.getByText('Note.'));
+    expect(describedBy).not.toBe('mine');
+  });
+
   it('drops the error from aria-describedby when its content clears', async () => {
-    const { rerender } = render(<Colours invalid error="Choose a colour." />);
+    const { rerender } = render(
+      <Colours name="a" invalid error="Choose a colour." />,
+    );
     const group = screen.getByRole('group', { name: 'Favourite colour' });
     const err = screen.getByText('Choose a colour.');
     await waitFor(() =>
       expect(group.getAttribute('aria-describedby')).toContain(err.id),
     );
-    rerender(<Colours invalid error="" />);
+    rerender(<Colours name="a" invalid error="" />);
     await waitFor(() =>
       expect(group.getAttribute('aria-describedby')).not.toContain(err.id),
     );
   });
 
-  it('describes the group with SEVERAL descriptions', async () => {
+  it('describes the group with SEVERAL descriptions, in DOM order', async () => {
     render(
       <Fieldset>
         <FieldsetLegend>Contact</FieldsetLegend>
@@ -130,11 +222,41 @@ describe('Fieldset', () => {
     const group = screen.getByRole('group', { name: 'Contact' });
     const a = screen.getByText('We only use it to reply.');
     const b = screen.getByText('One channel is enough.');
-    await waitFor(() => {
-      const describedBy = group.getAttribute('aria-describedby') ?? '';
-      expect(describedBy).toContain(a.id);
-      expect(describedBy).toContain(b.id);
-    });
+    await waitFor(() =>
+      expect(group.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        a.id,
+        b.id,
+      ]),
+    );
+  });
+
+  // aria-describedby order IS announcement order, and registration runs in effect
+  // order — so a part that mounts LATE must still be announced where it sits.
+  it('orders by DOM position even when a part mounts late', async () => {
+    const user = userEvent.setup();
+    render(
+      <Fieldset invalid>
+        <FieldsetLegend>Colour</FieldsetLegend>
+        <Reveal>
+          <FieldsetDescription>Hint, first in DOM.</FieldsetDescription>
+        </Reveal>
+        <FieldsetError>Error, second in DOM.</FieldsetError>
+      </Fieldset>,
+    );
+    const group = screen.getByRole('group', { name: 'Colour' });
+    const error = screen.getByText('Error, second in DOM.');
+    // The error registered first, alone. Now the hint arrives ABOVE it.
+    await waitFor(() =>
+      expect(group.getAttribute('aria-describedby')).toBe(error.id),
+    );
+    await user.click(screen.getByRole('button', { name: 'reveal' }));
+    const hint = await screen.findByText('Hint, first in DOM.');
+    await waitFor(() =>
+      expect(group.getAttribute('aria-describedby')?.split(' ')).toEqual([
+        hint.id,
+        error.id,
+      ]),
+    );
   });
 
   it('MERGES a consumer aria-describedby instead of letting it replace the group’s', async () => {
@@ -153,13 +275,22 @@ describe('Fieldset', () => {
     });
   });
 
+  it('keeps data-invalid even when a spread forwards a stale one', () => {
+    render(
+      <Fieldset invalid {...{ 'data-invalid': undefined }}>
+        <FieldsetLegend>Colour</FieldsetLegend>
+      </Fieldset>,
+    );
+    expect(screen.getByRole('group')).toHaveAttribute('data-invalid', 'true');
+  });
+
   it('disables every control inside via the native disabled attribute', () => {
     render(
       <Fieldset disabled>
         <FieldsetLegend>Favourite colour</FieldsetLegend>
         <FieldsetContent>
           <label>
-            <input type="radio" name="colour" value="green" /> Green
+            <input type="radio" name="disabled-group" value="green" /> Green
           </label>
         </FieldsetContent>
       </Fieldset>,
@@ -194,34 +325,88 @@ describe('Fieldset', () => {
     expect(group.getAttribute('aria-describedby')).not.toContain(fieldNote.id);
   });
 
-  it('warns when the group has no accessible name', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    render(
-      <Fieldset>
-        <FieldsetContent>
-          <input type="radio" name="c" aria-label="Green" />
-        </FieldsetContent>
-      </Fieldset>,
-    );
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('no accessible name'),
-    );
+  describe('the unnamed-group warning', () => {
+    it('fires for a group with no name, and not once a name is there', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const unnamed = (
+        <Fieldset>
+          <FieldsetContent>
+            <input type="radio" name="w1" aria-label="Green" />
+          </FieldsetContent>
+        </Fieldset>
+      );
+      const { unmount } = render(unnamed);
+      // Positive control first: without it, the negative case below would pass
+      // even with the whole warning deleted.
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no accessible name'),
+      );
+      unmount();
+
+      warn.mockClear();
+      render(
+        <Fieldset aria-label="Favourite colour">
+          <FieldsetContent>
+            <input type="radio" name="w2" aria-label="Green" />
+          </FieldsetContent>
+        </Fieldset>,
+      );
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('fires for an EMPTY legend — presence is not a name', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Fieldset>
+          <FieldsetLegend>{''}</FieldsetLegend>
+        </Fieldset>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no accessible name'),
+      );
+    });
+
+    it('fires for a blank aria-label', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<Fieldset aria-label="  " />);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no accessible name'),
+      );
+    });
+
+    // The legend's presence is owned by a DESCENDANT's state here, so `children`
+    // never changes identity — the case a deps-based re-check cannot see, which
+    // would leave a false accusation standing for the rest of the session.
+    it('clears once a legend owned by a child arrives', async () => {
+      const user = userEvent.setup();
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Fieldset>
+          <Reveal>
+            <FieldsetLegend>Late name</FieldsetLegend>
+          </Reveal>
+        </Fieldset>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no accessible name'),
+      );
+
+      warn.mockClear();
+      await user.click(screen.getByRole('button', { name: 'reveal' }));
+      await screen.findByRole('group', { name: 'Late name' });
+      // The observer re-measured, so nothing keeps accusing a group that IS named.
+      await waitFor(() => expect(warn).not.toHaveBeenCalled());
+    });
   });
 
-  it('does not warn when the name comes from aria-label instead of a legend', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    render(
-      <Fieldset aria-label="Favourite colour">
-        <FieldsetContent>
-          <input type="radio" name="c" aria-label="Green" />
-        </FieldsetContent>
-      </Fieldset>,
-    );
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  // Every part names ITSELF when orphaned: a description that registers nowhere
-  // is invisible otherwise, so silence would be the worst outcome.
   it.each([
     ['FieldsetLegend', <FieldsetLegend key="l">Orphan</FieldsetLegend>],
     [
@@ -251,17 +436,51 @@ describe('Fieldset', () => {
     expect(el).toBeInstanceOf(HTMLFieldSetElement);
   });
 
+  // A React 19 ref may RETURN its cleanup, in which case React never calls it
+  // with null. Merging the internal ref must not swallow that.
+  it('runs a consumer ref’s returned cleanup on unmount', () => {
+    const events: string[] = [];
+    const { unmount } = render(
+      <Fieldset
+        ref={() => {
+          events.push('attach');
+          return () => {
+            events.push('cleanup');
+          };
+        }}
+      >
+        <FieldsetLegend>Favourite colour</FieldsetLegend>
+      </Fieldset>,
+    );
+    unmount();
+    expect(events).toEqual(['attach', 'cleanup']);
+  });
+
   it('matches the rendered snapshot', () => {
-    const { container } = render(<Colours />);
+    const { container } = render(<Colours name="snap" />);
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  // The two CSS constraints a native <fieldset> imposes, measured in real
-  // Chromium rather than trusted: it must shrink as a grid item (the UA
-  // `min-inline-size: min-content` is reset), and the legend must not eat the
-  // container's gap.
+  it('applies the orientation class through the cva variants', () => {
+    render(
+      <Fieldset>
+        <FieldsetLegend>Channels</FieldsetLegend>
+        <FieldsetContent orientation="horizontal">
+          <label>
+            <input type="checkbox" name="o" value="email" /> Email
+          </label>
+        </FieldsetContent>
+      </Fieldset>,
+    );
+    const content = screen.getByRole('checkbox').closest('div') as HTMLElement;
+    expect(getComputedStyle(content).display).toBe('flex');
+    expect(getComputedStyle(content).flexWrap).toBe('wrap');
+  });
+
+  // The CSS constraints a native <fieldset> imposes, measured in real Chromium
+  // rather than trusted.
   describe('layout inside a consumer grid', () => {
-    it('shrinks to its track in a 2-column grid instead of overflowing', () => {
+    it('shrinks to its track in a 2-column grid, and so does the box holding the controls', () => {
       renderUi(
         <div
           style={{
@@ -274,24 +493,44 @@ describe('Fieldset', () => {
           <WideGroup name="b" />
         </div>,
       );
-      // Each 1fr track is 200px. Without the reset a <fieldset> is pinned to its
+      // Each 1fr track is 200px. Without the resets a <fieldset> is pinned to its
       // min-content width — here the full unwrappable line — and bursts out of
-      // the track. (The nowrap TEXT still overflows the box; that is the
-      // fixture's own doing and not the fieldset's business to clip.)
+      // the track, dragging the controls' own box with it: the fieldset's single
+      // auto track takes the LARGEST minimum of its items, so the description
+      // stretches the box the controls sit in even when the fieldset itself fits.
       for (const group of screen.getAllByRole('group')) {
         expect(group.getBoundingClientRect().width).toBe(200);
       }
+      for (const radio of screen.getAllByRole('radio')) {
+        const content = radio.closest('div') as HTMLElement;
+        expect(content.getBoundingClientRect().width).toBeLessThanOrEqual(200);
+      }
     });
 
-    it('separates the legend from the content even though gap cannot reach it', () => {
-      renderUi(<Colours />);
+    it('separates the legend from the content by exactly the container’s gap', () => {
+      renderUi(<Colours name="a" />);
+      const group = screen.getByRole('group', { name: 'Favourite colour' });
       const legend = screen.getByText('Favourite colour');
       const desc = screen.getByText('Pick exactly one.');
-      const gap =
+      // The legend is not a grid item, so `gap` cannot reach it and its spacing is
+      // a margin. Pin the two to the SAME number, or a rhythm change silently
+      // moves one and leaves the other behind.
+      const legendToContent =
         desc.getBoundingClientRect().top -
         legend.getBoundingClientRect().bottom;
-      expect(gap).toBeGreaterThan(0);
+      expect(legendToContent).toBeCloseTo(
+        Number.parseFloat(getComputedStyle(group).rowGap),
+        1,
+      );
     });
+
+    // NOT tested here, deliberately: that the parts carry no UA paragraph margin.
+    // `test-setup.ts` loads the tokens' Tailwind entry, which pulls in Preflight
+    // and so zeroes `p` margins for the whole test page — while the SHIPPED css
+    // contains no preflight at all. Any assertion on the computed margin would
+    // therefore pass with or without the reset in `fieldset.module.css`, i.e. be
+    // vacuous. The rhythm the parts get in a real consumer page can only be
+    // checked against the built artifact, not from in here.
   });
 
   describe('accessibility (axe)', () => {
@@ -312,16 +551,16 @@ describe('Fieldset', () => {
               gap: '1rem',
             }}
           >
-            <Colours />
-            <Colours invalid error="Choose a colour." />
+            <Colours name="axe-valid" />
+            <Colours name="axe-invalid" invalid error="Choose a colour." />
             <Fieldset>
               <FieldsetLegend>Channels</FieldsetLegend>
               <FieldsetContent orientation="horizontal">
                 <label>
-                  <input type="checkbox" name="ch" value="email" /> Email
+                  <input type="checkbox" name="axe-ch" value="email" /> Email
                 </label>
                 <label>
-                  <input type="checkbox" name="ch" value="sms" /> SMS
+                  <input type="checkbox" name="axe-ch" value="sms" /> SMS
                 </label>
               </FieldsetContent>
             </Fieldset>

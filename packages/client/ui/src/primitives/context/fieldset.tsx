@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
-import { useDevWarning } from './use-dev-warning.js';
-import type { DescribedByRegistry } from './describedby-registry.js';
+import { useDevWarning } from '../use-dev-warning.js';
+import type { DescribedByRegistry } from './describedby-registry.types.js';
 
 /**
  * Shared state a `Fieldset` provides to its description and error parts: the

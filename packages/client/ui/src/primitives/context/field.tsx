@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect } from 'react';
-import type { DescribedByRegistry } from './describedby-registry.js';
+import { useDevWarning } from '../use-dev-warning.js';
+import type { DescribedByRegistry } from './describedby-registry.types.js';
 
 /**
  * Shared state a `Field` provides to its label, description, error, and control.
@@ -20,6 +21,23 @@ export const FieldContext = createContext<FieldContextValue | null>(null);
 
 export const useFieldContext = (): FieldContextValue | null =>
   useContext(FieldContext);
+
+/**
+ * Context for a `Field` PART, warning (with the part's own name) when it is used
+ * outside one. Every part reads the context through this, so an orphan part can't
+ * fail silently — a stray description that registers nowhere renders perfectly
+ * and describes nothing, which is invisible without the warning. It returns
+ * `null` rather than throwing: a misplaced label is worth a loud warning, not a
+ * crashed page.
+ */
+export function useFieldPart(part: string): FieldContextValue | null {
+  const field = useFieldContext();
+  useDevWarning(
+    field == null,
+    `${part}: used outside a <Field>, so it is not wired to any control.`,
+  );
+  return field;
+}
 
 type FieldControlProps = {
   id?: string;

@@ -63,6 +63,6 @@ export type {
   FieldsetLegendProps,
   FieldsetDescriptionProps,
   FieldsetContentProps,
-  FieldsetContentVariants,
+  FieldsetOrientation,
   FieldsetErrorProps,
 } from './components/fieldset/fieldset.types.js';

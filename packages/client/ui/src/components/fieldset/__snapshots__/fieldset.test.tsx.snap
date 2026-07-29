@@ -2,26 +2,26 @@
 
 exports[`Fieldset > matches the rendered snapshot 1`] = `
 <fieldset
-  aria-describedby="_r_h_"
-  class="_fieldset_x4kw8_4"
+  aria-describedby="_r_t_"
+  class="_fieldset_1pa3a_4"
 >
   <legend
-    class="_legend_x4kw8_12"
+    class="_legend_1pa3a_12"
   >
     Favourite colour
   </legend>
   <p
-    class="_description_x4kw8_21"
-    id="_r_h_"
+    class="_description_1pa3a_21"
+    id="_r_t_"
   >
     Pick exactly one.
   </p>
   <div
-    class="_content_x4kw8_31 _vertical_x4kw8_34"
+    class="_content_1pa3a_21 _vertical_1pa3a_35"
   >
     <label>
       <input
-        name="colour"
+        name="snap"
         type="radio"
         value="green"
       />
@@ -29,7 +29,7 @@ exports[`Fieldset > matches the rendered snapshot 1`] = `
     </label>
     <label>
       <input
-        name="colour"
+        name="snap"
         type="radio"
         value="yellow"
       />
