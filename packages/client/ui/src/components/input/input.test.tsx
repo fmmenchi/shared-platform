@@ -63,13 +63,51 @@ describe('Input', () => {
       expect(input.value).toBe('abc');
     });
 
-    it('works controlled — forwards onChange for the library to own the value', async () => {
+    it('works controlled — forwards onChange and never owns the value itself', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
       render(<Input aria-label="q" value="" onChange={onChange} />);
-      await user.type(screen.getByRole('textbox', { name: 'q' }), 'x');
+      const input = screen.getByRole<HTMLInputElement>('textbox', {
+        name: 'q',
+      });
+      await user.type(input, 'x');
       expect(onChange).toHaveBeenCalled();
+      // Pinned value + a no-op onChange: a transparent control reverts to '',
+      // proving the DS holds no internal state (a regression that managed its
+      // own value would leave 'x' here).
+      expect(input.value).toBe('');
     });
+
+    it('passes a custom type through to the DOM', () => {
+      render(<Input aria-label="q" type="email" />);
+      expect(screen.getByRole('textbox', { name: 'q' })).toHaveAttribute(
+        'type',
+        'email',
+      );
+    });
+  });
+
+  describe('naming (a label is the consumer’s job)', () => {
+    it('has no accessible name on its own — a placeholder is not a label', () => {
+      render(<Input placeholder="you@example.com" />);
+      // The placeholder must NOT satisfy the accessible name.
+      expect(
+        screen.queryByRole('textbox', { name: 'you@example.com' }),
+      ).toBeNull();
+      expect(screen.getByRole('textbox')).toHaveAccessibleName('');
+    });
+  });
+
+  it('renders inside an RTL provider (smoke)', () => {
+    renderUi(
+      <label>
+        الاسم
+        <Input />
+      </label>,
+      { locale: 'ar' },
+    );
+    const input = screen.getByRole('textbox', { name: 'الاسم' });
+    expect(input.closest('[dir]')).toHaveAttribute('dir', 'rtl');
   });
 
   it('styles the native aria-invalid state (no `invalid` prop)', () => {

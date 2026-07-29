@@ -19,6 +19,8 @@ Defaults: `size="md"`, `type="text"`. Every native `<input>` attribute is accept
 ### Sizes
 
 `size` matches Button (sm 32 · md 36 · lg 44) so a control and a button line up on the same row.
+`lg` meets the 44px touch-target minimum (WCAG 2.5.5 / HIG); `sm`/`md` are for pointer-dense desktop
+forms — prefer `lg` where touch is primary.
 
 <Canvas of={InputStories.Sizes} />
 
@@ -33,9 +35,19 @@ the state, it doesn't compute it.
 ### Types
 
 It's a real `<input>`, so `type="email" | "password" | "number" | "date"` and `inputMode` all work.
-A calendar date-picker is a separate (future) component, not this.
+A calendar date-picker is a separate (future) component, not this. For **formatted numeric input**
+(thousands separators, currency, locale decimals), wrap Input with your own formatter (e.g.
+`react-number-format`'s `customInput={Input}`) — locale/formatting is a consumer concern (ADR-0013).
 
 <Canvas of={InputStories.Types} />
+
+### Adornments (planned)
+
+Inner icons, a prefix/suffix, or a clear/reveal button live **inside** the field border, so they can't
+be siblings of a bare `<input>`. They'll arrive as a separate `InputGroup` wrapper that owns the chrome
+with `Input` rendered bare inside (the Radix `TextField.Slot` model) — **not** as `startIcon`/`endIcon`
+props on `Input`, which would break its pure-passthrough contract. Until then, place elements outside
+the field with your own layout.
 
 ## Accessibility
 
@@ -44,7 +56,11 @@ A calendar date-picker is a separate (future) component, not this.
 - **A placeholder is not a label** — it disappears on input and often fails contrast; use it for an
   example value, never as the field's name.
 - **Errors:** set `aria-invalid` (your form library does this) and point `aria-describedby` at the
-  message element so it's announced with the field. The design system styles `aria-invalid`; it does
-  not invent the error text.
+  message element so it's announced with the field. The invalid look is a colour **and** a thicker
+  border, so it doesn't rely on colour alone. The design system styles `aria-invalid`; it does not
+  invent the error text.
+- **`disabled` vs `readOnly`:** `disabled` removes the field from the tab order and drops it from the
+  accessibility tree — never use it to lock a **required** field (screen-reader users won't reach it).
+  Use `readOnly` for a value that must stay focusable and announced.
 - **Controlled or uncontrolled**, focus, and any native attribute pass straight through — the control
   is as capable as the `<input>` it wraps.
