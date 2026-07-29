@@ -37,6 +37,7 @@
     },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
+    "./styles/properties.css": "./src/styles/properties.css",
     "./styles/presets/dark.css": "./src/styles/presets/dark.css",
     "./styles/motion.css": "./src/styles/motion.css"
   },

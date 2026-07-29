@@ -1,0 +1,456 @@
+/* eslint-disable css/use-baseline -- progressive: @property degrades to untyped custom properties (values hold, components render, only interpolation is lost); widely ~2027-01 (ADR-0010, ADR-0012) */
+/**
+ * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
+ *
+ * Registering each `--fm-*` role gives the browser its TYPE, which unlocks two
+ * things a plain custom property cannot do:
+ *   1. INTERPOLATION — a registered <color>/<length> animates. This is what lets
+ *      a `[data-theme]` flip CROSSFADE instead of snap (opt-in: the consumer adds
+ *      `transition` on the roles), and lets gradients/among-token tweens work.
+ *   2. A runtime type guard — an invalid assignment falls back to initial-value
+ *      instead of poisoning the cascade.
+ *
+ * SINGLE SOURCE IS PRESERVED: initial-value is a THROWAWAY placeholder
+ * (`oklch(0 0 0)`), never the real token — `vars.css` (:root) + `inherits: true`
+ * always cascade the true value over it, so nothing is duplicated. This file is
+ * imported at the top of `vars.css`, so the tokens and their types ship together.
+ *
+ * Coverage is asserted against COLOR_ROLES + RADIUS_TOKENS by `tokens.test.ts`
+ * (the registrations cannot drift from the contract). @property is Baseline
+ * NEWLY (Widely ~2027-01), so this ships as an ADR-0010 progressive enhancement:
+ * without support the roles stay untyped strings — fully functional, only the
+ * interpolation is lost (theme flip snaps, as it does today). Registered here
+ * behind the file-level use-baseline disable above (justified, dated).
+ *
+ * NOTE: only COLOURS and RADIUS are registered — the roles with a real
+ * interpolation payoff. Fonts/spacing/duration stay unregistered until a
+ * component needs to animate them (no phantom capability).
+ */
+
+/* --- Action families (primary · secondary · accent · destructive) --- */
+@property --fm-color-primary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-active {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-primary-disabled-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-active {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-secondary-disabled-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-active {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-accent-disabled-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-active {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-destructive-disabled-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+
+/* --- Status roles (success · warning · info) --- */
+@property --fm-color-success {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-success-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-success-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-success-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-success-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-warning {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-warning-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-warning-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-warning-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-warning-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-info {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-info-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-info-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-info-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-info-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+
+/* --- Neutral + disabled --- */
+@property --fm-color-neutral {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-neutral-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-neutral-subtle {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-neutral-subtle-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-neutral-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-disabled-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+
+/* --- Surfaces, text & focus --- */
+@property --fm-color-background {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-card {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-card-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-popover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-popover-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-muted {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-muted-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-ring {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-scrim {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-link {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-link-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-selection {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-selection-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-tooltip {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-tooltip-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+
+/* --- Form controls --- */
+@property --fm-color-input {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-foreground {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-hover {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-active {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-invalid {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-disabled {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-placeholder {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+@property --fm-color-input-border {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: oklch(0 0 0);
+}
+
+/* --- Radius — <length> initial-value must be computationally independent, so
+       NO rem/em (the browser rejects the rule): px equivalents at the 16px root. --- */
+@property --fm-radius-sm {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 4px;
+}
+@property --fm-radius-md {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 6px;
+}
+@property --fm-radius-lg {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 8px;
+}
+@property --fm-radius-xl {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 12px;
+}

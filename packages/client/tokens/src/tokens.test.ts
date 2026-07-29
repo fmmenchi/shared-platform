@@ -127,6 +127,49 @@ describe('tailwind bridge', () => {
   });
 });
 
+describe('@property registrations (typed tokens — ADR-0012)', () => {
+  const properties = read('properties.css').replace(/\s+/g, '');
+  const registered = (name: string, syntax: string) =>
+    properties.includes(
+      `@property--fm-${name}{syntax:'${syntax}';inherits:true;`,
+    );
+
+  it('registers every color role as an inheriting <color>', () => {
+    for (const role of COLOR_ROLES) {
+      expect(
+        registered(`color-${role}`, '<color>'),
+        `properties.css is missing @property --fm-color-${role}`,
+      ).toBe(true);
+    }
+  });
+
+  it('registers every radius token as an inheriting <length>', () => {
+    for (const t of RADIUS_TOKENS) {
+      expect(
+        registered(`radius-${t}`, '<length>'),
+        `properties.css is missing @property --fm-radius-${t}`,
+      ).toBe(true);
+    }
+  });
+
+  it('keeps initial-value a throwaway placeholder, never a real token value', () => {
+    // Single-source guarantee: the type layer must NOT re-declare real values
+    // (which would drift from vars.css). Colours use the sentinel oklch(0 0 0)
+    // (whitespace-stripped: `oklch(000)`); radius uses px (rem is rejected for a
+    // non-universal syntax) — never a rem, never the real radius rem literals.
+    expect(properties).not.toMatch(/initial-value:[^;]*rem/);
+    // Every colour initial-value is the sentinel — same count as the roles.
+    const colorInitials =
+      properties.match(
+        /syntax:'<color>';inherits:true;initial-value:([^;]+);/g,
+      ) ?? [];
+    expect(colorInitials.length).toBe(COLOR_ROLES.length);
+    for (const decl of colorInitials) {
+      expect(decl.endsWith('initial-value:oklch(000);')).toBe(true);
+    }
+  });
+});
+
 describe('reference presets pass the PUBLIC validator (allowed-themes gate)', () => {
   // The exact validator apps run on their brand presets — completeness,
   // parseability and every CONTRAST_PAIR (AA text 4.5:1, ring/invalid 3:1;
