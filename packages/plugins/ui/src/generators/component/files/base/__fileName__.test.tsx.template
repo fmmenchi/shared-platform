@@ -13,10 +13,19 @@ describe('<%= className %>', () => {
 
   it('forwards ref to the underlying element (React 19 ref-as-prop)', () => {
     // Every component must be as reachable as the element it wraps — focus,
-    // measurement, anchoring an overlay, a form lib's ref all depend on it.
-    const ref = { current: null as HTMLElement | null };
-    render(<<%= className %> ref={ref}>Content</<%= className %>>);
-    expect(ref.current).toBeInstanceOf(HTMLElement);
+    // measurement, anchoring an overlay, a form lib's ref all depend on it. A
+    // callback ref stays type-correct whatever element the component renders.
+    let el: HTMLElement | null = null;
+    render(
+      <<%= className %>
+        ref={(node) => {
+          el = node;
+        }}
+      >
+        Content
+      </<%= className %>>,
+    );
+    expect(el).toBeInstanceOf(HTMLElement);
   });
 
   it('matches the rendered snapshot', () => {
