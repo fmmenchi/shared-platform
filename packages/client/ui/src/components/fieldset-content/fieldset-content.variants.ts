@@ -1,5 +1,5 @@
 import { cva } from 'class-variance-authority';
-import styles from './fieldset.module.css';
+import styles from './fieldset-content.module.css';
 
 // `cva` maps the public variant API to CSS-module class names; the styling
 // lives in `fieldset.module.css`. Kept out of the component file so that

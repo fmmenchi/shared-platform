@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Fieldset } from './fieldset.component.js';
-import { FieldsetLegend } from './fieldset-legend.component.js';
-import { FieldDescription } from '../field/field-description.component.js';
-import { FieldsetContent } from './fieldset-content.component.js';
-import { FieldError } from '../field/field-error.component.js';
+import { FieldsetLegend } from '../fieldset-legend/fieldset-legend.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldsetContent } from '../fieldset-content/fieldset-content.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { Field } from '../field/field.component.js';
-import { FieldLabel } from '../field/field-label.component.js';
+import { FieldLabel } from '../field-label/field-label.component.js';
 import { Input } from '../input/input.component.js';
 
 const meta: Meta<typeof Fieldset> = {

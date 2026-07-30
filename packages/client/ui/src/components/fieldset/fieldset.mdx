@@ -1,6 +1,10 @@
-import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
 
 import * as FieldsetStories from './fieldset.stories.tsx';
+import { FieldsetLegend } from '../fieldset-legend/fieldset-legend.component.js';
+import { FieldsetContent } from '../fieldset-content/fieldset-content.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 
 <Meta of={FieldsetStories} />
 
@@ -27,7 +31,30 @@ chrome of its own. For a **single** control with its own label use
 
 ## Props
 
+Each part is a component in its own right (ADR-0014), so each has its own table — on this page, because
+what you compose is a Fieldset.
+
+### Fieldset
+
 <Controls of={FieldsetStories.Default} />
+
+### FieldsetLegend
+
+<ArgTypes of={FieldsetLegend} />
+
+### FieldsetContent
+
+<ArgTypes of={FieldsetContent} />
+
+### FieldDescription
+
+The same part a `Field` uses — placed directly inside a `Fieldset` it describes the GROUP.
+
+<ArgTypes of={FieldDescription} />
+
+### FieldError
+
+<ArgTypes of={FieldError} />
 
 ## Usage
 

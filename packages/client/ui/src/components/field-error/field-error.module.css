@@ -1,0 +1,30 @@
+/*
+ * A field's or a group's error message. Colours ONLY through semantic role utilities; `@reference` resolves
+ * `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* See field-description for why the UA paragraph margin and the min-content
+     floor are reset here rather than left to the container. */
+  .error {
+    @apply text-sm;
+    color: var(--fm-color-error);
+    min-inline-size: 0;
+    margin-block: 0;
+  }
+
+  /* Forced colors overrides every author colour, so the error's hue collapses to
+     CanvasText and it becomes identical to the hint above it. Inside a `Field` the
+     control's own invalid look survives (Input carries it as border WEIGHT), but a
+     group has no such channel and the message needs its own structural cue. */
+  @media (forced-colors: active) {
+    .error {
+      border-inline-start: 0.1875rem solid CanvasText;
+      padding-inline-start: var(--fm-space-internal-s);
+    }
+  }
+}

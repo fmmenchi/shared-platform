@@ -1,0 +1,21 @@
+/*
+ * The group's legend. Colours ONLY through semantic role utilities; `@reference` resolves
+ * `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* The rendered <legend> is placed over the block-start border, OUTSIDE the
+     fieldset's anonymous layout box — it is not a grid item, so the container's
+     `gap` never reaches it. Its spacing is therefore a margin, and it reads the
+     SAME custom property the `gap-internal-xs` utility compiles to, so the two
+     cannot drift apart. */
+  .legend {
+    @apply text-foreground text-sm font-medium;
+    padding: 0;
+    margin-block-end: var(--spacing-internal-xs);
+  }
+}

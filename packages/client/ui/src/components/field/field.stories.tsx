@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Field } from './field.component.js';
-import { FieldLabel } from './field-label.component.js';
-import { FieldDescription } from './field-description.component.js';
-import { FieldError } from './field-error.component.js';
+import { FieldLabel } from '../field-label/field-label.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { Input } from '../input/input.component.js';
 
 const meta: Meta<typeof Field> = {

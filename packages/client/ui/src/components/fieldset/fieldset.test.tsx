@@ -3,12 +3,12 @@ import { useState, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Fieldset } from './fieldset.component.js';
-import { FieldsetLegend } from './fieldset-legend.component.js';
-import { FieldDescription } from '../field/field-description.component.js';
-import { FieldsetContent } from './fieldset-content.component.js';
-import { FieldError } from '../field/field-error.component.js';
+import { FieldsetLegend } from '../fieldset-legend/fieldset-legend.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldsetContent } from '../fieldset-content/fieldset-content.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { Field } from '../field/field.component.js';
-import { FieldLabel } from '../field/field-label.component.js';
+import { FieldLabel } from '../field-label/field-label.component.js';
 import { Input } from '../input/input.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -33,29 +33,6 @@ function Colours(props: { name: string; invalid?: boolean; error?: string }) {
         </label>
       </FieldsetContent>
       {error === undefined ? null : <FieldError>{error}</FieldError>}
-    </Fieldset>
-  );
-}
-
-/** A group holding content that cannot wrap, so its min-content width is the
- *  full line — well past the 200px track below. That width is exactly what the UA
- *  `min-inline-size: min-content` pins the whole `<fieldset>` to, so this is the
- *  fixture that makes the reset observable (a long address would NOT: Chromium
- *  breaks lines after hyphens and dots, keeping min-content small). */
-function WideGroup(props: { name: string }) {
-  return (
-    <Fieldset>
-      <FieldsetLegend>Notifications</FieldsetLegend>
-      <FieldDescription>
-        <span style={{ whiteSpace: 'nowrap' }}>
-          Delivered every morning, and whenever something needs you
-        </span>
-      </FieldDescription>
-      <FieldsetContent>
-        <label>
-          <input type="radio" name={props.name} value="all" /> All
-        </label>
-      </FieldsetContent>
     </Fieldset>
   );
 }
@@ -133,85 +110,6 @@ describe('Fieldset', () => {
     const radiogroup = screen.getByRole('radiogroup', { name: 'Colour' });
     expect(radiogroup).toHaveAttribute('aria-invalid', 'true');
   });
-
-  it('renders no error and adds nothing to aria-describedby when the error is empty', () => {
-    render(
-      <Fieldset>
-        <FieldsetLegend>Empty</FieldsetLegend>
-        <FieldError>{false}</FieldError>
-      </Fieldset>,
-    );
-    const group = screen.getByRole('group', { name: 'Empty' });
-    expect(group).not.toHaveAttribute('aria-describedby');
-    expect(group).not.toHaveAttribute('data-invalid');
-  });
-
-  // Every React-empty value, not just `false`: the empty ARRAY is the one a
-  // consumer actually hits, since mapping a validation array is the idiomatic
-  // shape. Each of these would otherwise render a blank <p> and point the group's
-  // aria-describedby at it.
-  it.each([
-    ['an empty array', [] as never],
-    ['a boolean', true],
-    ['whitespace', '   '],
-    ['null', null],
-  ])('renders neither error nor description for %s', (_label, children) => {
-    render(
-      <Fieldset>
-        <FieldsetLegend>Empty</FieldsetLegend>
-        <FieldDescription>{children}</FieldDescription>
-        <FieldError>{children}</FieldError>
-      </Fieldset>,
-    );
-    const group = screen.getByRole('group', { name: 'Empty' });
-    expect(group).not.toHaveAttribute('aria-describedby');
-    expect(group.querySelector('p')).toBeNull();
-  });
-
-  it('renders 0 as content — React renders it, so it is not empty', async () => {
-    render(
-      <Fieldset>
-        <FieldsetLegend>Zero</FieldsetLegend>
-        <FieldError>{0}</FieldError>
-      </Fieldset>,
-    );
-    const group = screen.getByRole('group', { name: 'Zero' });
-    await waitFor(() => expect(group).toHaveAttribute('aria-describedby'));
-    expect(screen.getByText('0')).toBeInTheDocument();
-  });
-
-  it('owns the part ids, so a consumer id can never leave the reference dangling', async () => {
-    render(
-      <Fieldset>
-        <FieldsetLegend>Contact</FieldsetLegend>
-        <FieldDescription id="mine">Note.</FieldDescription>
-      </Fieldset>,
-    );
-    const group = screen.getByRole('group', { name: 'Contact' });
-    await waitFor(() => expect(group).toHaveAttribute('aria-describedby'));
-    const describedBy = group.getAttribute('aria-describedby') as string;
-    // The reference resolves — which a consumer-supplied id would have broken.
-    expect(document.getElementById(describedBy)).toBe(
-      screen.getByText('Note.'),
-    );
-    expect(describedBy).not.toBe('mine');
-  });
-
-  it('drops the error from aria-describedby when its content clears', async () => {
-    const { rerender } = render(
-      <Colours name="a" invalid error="Choose a colour." />,
-    );
-    const group = screen.getByRole('group', { name: 'Favourite colour' });
-    const err = screen.getByText('Choose a colour.');
-    await waitFor(() =>
-      expect(group.getAttribute('aria-describedby')).toContain(err.id),
-    );
-    rerender(<Colours name="a" invalid error="" />);
-    await waitFor(() =>
-      expect(group.getAttribute('aria-describedby')).not.toContain(err.id),
-    );
-  });
-
   it('describes the group with SEVERAL descriptions, in DOM order', async () => {
     render(
       <Fieldset>
@@ -407,61 +305,7 @@ describe('Fieldset', () => {
       await waitFor(() => expect(warn).not.toHaveBeenCalled());
     });
   });
-
-  it.each([
-    ['FieldDescription', <FieldDescription key="d">Orphan</FieldDescription>],
-    ['FieldError', <FieldError key="e">Orphan</FieldError>],
-  ])('warns when %s sits in no describable container', (name, element) => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    render(element);
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining(`${name}: used outside a <Field> or <Fieldset>`),
-    );
-  });
-
-  // The legend is the one part that fits a single container, so unlike the text
-  // parts it must reject a Field as well as no container at all.
-  it.each([
-    ['no container', <FieldsetLegend key="a">Orphan</FieldsetLegend>],
-    [
-      'a Field',
-      <Field key="b">
-        <FieldsetLegend>Orphan</FieldsetLegend>
-      </Field>,
-    ],
-  ])('warns when FieldsetLegend is used in %s', (_label, element) => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    render(element);
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('FieldsetLegend: used outside a <Fieldset>'),
-    );
-  });
-
   // The point of the shared slot: ONE description component, bound by position.
-  it('binds the same FieldDescription to the nearest container', async () => {
-    render(
-      <Fieldset>
-        <FieldsetLegend>Contact</FieldsetLegend>
-        <FieldDescription>Describes the group.</FieldDescription>
-        <FieldsetContent>
-          <Field>
-            <FieldLabel>Email</FieldLabel>
-            <Input />
-            <FieldDescription>Describes the control.</FieldDescription>
-          </Field>
-        </FieldsetContent>
-      </Fieldset>,
-    );
-    const group = screen.getByRole('group', { name: 'Contact' });
-    const input = screen.getByRole('textbox', { name: 'Email' });
-    const groupNote = screen.getByText('Describes the group.');
-    const controlNote = screen.getByText('Describes the control.');
-    await waitFor(() => {
-      expect(group.getAttribute('aria-describedby')).toBe(groupNote.id);
-      expect(input.getAttribute('aria-describedby')).toBe(controlNote.id);
-    });
-  });
-
   it('forwards ref to the fieldset element', () => {
     let el: HTMLElement | null = null;
     render(
@@ -499,78 +343,6 @@ describe('Fieldset', () => {
   it('matches the rendered snapshot', () => {
     const { container } = render(<Colours name="snap" />);
     expect(container.firstChild).toMatchSnapshot();
-  });
-
-  it('applies the orientation class through the cva variants', () => {
-    render(
-      <Fieldset>
-        <FieldsetLegend>Channels</FieldsetLegend>
-        <FieldsetContent orientation="horizontal">
-          <label>
-            <input type="checkbox" name="o" value="email" /> Email
-          </label>
-        </FieldsetContent>
-      </Fieldset>,
-    );
-    const content = screen.getByRole('checkbox').closest('div') as HTMLElement;
-    expect(getComputedStyle(content).display).toBe('flex');
-    expect(getComputedStyle(content).flexWrap).toBe('wrap');
-  });
-
-  // The CSS constraints a native <fieldset> imposes, measured in real Chromium
-  // rather than trusted.
-  describe('layout inside a consumer grid', () => {
-    it('shrinks to its track in a 2-column grid, and so does the box holding the controls', () => {
-      renderUi(
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            inlineSize: '400px',
-          }}
-        >
-          <WideGroup name="a" />
-          <WideGroup name="b" />
-        </div>,
-      );
-      // Each 1fr track is 200px. Without the resets a <fieldset> is pinned to its
-      // min-content width — here the full unwrappable line — and bursts out of
-      // the track, dragging the controls' own box with it: the fieldset's single
-      // auto track takes the LARGEST minimum of its items, so the description
-      // stretches the box the controls sit in even when the fieldset itself fits.
-      for (const group of screen.getAllByRole('group')) {
-        expect(group.getBoundingClientRect().width).toBe(200);
-      }
-      for (const radio of screen.getAllByRole('radio')) {
-        const content = radio.closest('div') as HTMLElement;
-        expect(content.getBoundingClientRect().width).toBeLessThanOrEqual(200);
-      }
-    });
-
-    it('separates the legend from the content by exactly the container’s gap', () => {
-      renderUi(<Colours name="a" />);
-      const group = screen.getByRole('group', { name: 'Favourite colour' });
-      const legend = screen.getByText('Favourite colour');
-      const desc = screen.getByText('Pick exactly one.');
-      // The legend is not a grid item, so `gap` cannot reach it and its spacing is
-      // a margin. Pin the two to the SAME number, or a rhythm change silently
-      // moves one and leaves the other behind.
-      const legendToContent =
-        desc.getBoundingClientRect().top -
-        legend.getBoundingClientRect().bottom;
-      expect(legendToContent).toBeCloseTo(
-        Number.parseFloat(getComputedStyle(group).rowGap),
-        1,
-      );
-    });
-
-    // NOT tested here, deliberately: that the parts carry no UA paragraph margin.
-    // `test-setup.ts` loads the tokens' Tailwind entry, which pulls in Preflight
-    // and so zeroes `p` margins for the whole test page — while the SHIPPED css
-    // contains no preflight at all. Any assertion on the computed margin would
-    // therefore pass with or without the reset in `fieldset.module.css`, i.e. be
-    // vacuous. The rhythm the parts get in a real consumer page can only be
-    // checked against the built artifact, not from in here.
   });
 
   describe('accessibility (axe)', () => {

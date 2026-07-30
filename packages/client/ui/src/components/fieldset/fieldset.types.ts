@@ -25,38 +25,3 @@ interface FieldsetOwnProps {
  */
 export type FieldsetProps = FieldsetOwnProps &
   Omit<ComponentPropsWithRef<'fieldset'>, keyof FieldsetOwnProps>;
-
-/**
- * The group's name. A native `<legend>` needs no id wiring, so this takes no
- * props of its own. It is the one part that fits a single container: a `<legend>`
- * names a group, never a field.
- *
- * The group's helper text and error message are `FieldDescription` and
- * `FieldError` — the same parts a `Field` uses. They bind to the nearest
- * describable container, so placed directly inside a `Fieldset` they describe the
- * GROUP, and inside a nested `Field` they describe that field's control.
- */
-export type FieldsetLegendProps = ComponentPropsWithRef<'legend'>;
-
-/** How `FieldsetContent` lays the controls out. */
-export type FieldsetOrientation = 'vertical' | 'horizontal';
-
-interface FieldsetContentOwnProps {
-  children?: ReactNode;
-  /**
-   * A stack (`vertical`, the default) or a wrapping row (`horizontal`). Declared
-   * as a plain union rather than inherited from the cva definition, because
-   * `VariantProps` also admits `null` — and cva reads `null` as "skip this
-   * variant", which would typecheck and silently leave the controls with no
-   * layout at all.
-   */
-  orientation?: FieldsetOrientation;
-}
-
-/**
- * Wraps the group's controls and owns their layout. It is a separate element
- * because the rendered `<legend>` sits outside the fieldset's layout box and
- * would never receive its `gap`.
- */
-export type FieldsetContentProps = FieldsetContentOwnProps &
-  Omit<ComponentPropsWithRef<'div'>, keyof FieldsetContentOwnProps>;

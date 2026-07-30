@@ -1,8 +1,8 @@
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useFieldContext } from './field.context.js';
-import type { FieldLabelProps } from './field.types.js';
-import styles from './field.module.css';
+import { useFieldContext } from '../field/field.context.js';
+import type { FieldLabelProps } from './field-label.types.js';
+import styles from './field-label.module.css';
 
 /**
  * The field's label. Its `htmlFor` targets the control's shared id, so clicking

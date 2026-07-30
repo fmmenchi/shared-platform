@@ -38,35 +38,30 @@ export type {
   InputProps,
   InputVariants,
 } from './components/input/input.types.js';
-// `FieldDescription` and `FieldError` bind to the nearest describable container,
-// so the same pair serves a `Field` and a `Fieldset` — there is deliberately no
-// `FieldsetDescription`/`FieldsetError`.
-export {
-  Field,
-  FieldLabel,
-  FieldDescription,
-  FieldError,
-  useField,
-} from './components/field/index.js';
-export type {
-  FieldProps,
-  FieldLabelProps,
-  FieldDescriptionProps,
-  FieldErrorProps,
-} from './components/field/field.types.js';
+// One folder per component, parts included — a part is a component in its own
+// right (the MUI model), so `FieldDescription`/`FieldError` belong to neither
+// family: they bind to the nearest describable container, `Field` or `Fieldset`.
+export { Field, useField } from './components/field/index.js';
+export type { FieldProps } from './components/field/field.types.js';
 export type {
   UseFieldResult,
   FieldLabelSlotProps,
 } from './components/field/use-field.types.js';
+export { FieldLabel } from './components/field-label/index.js';
+export type { FieldLabelProps } from './components/field-label/field-label.types.js';
+export { FieldDescription } from './components/field-description/index.js';
+export type { FieldDescriptionProps } from './components/field-description/field-description.types.js';
+export { FieldError } from './components/field-error/index.js';
+export type { FieldErrorProps } from './components/field-error/field-error.types.js';
+export { Fieldset } from './components/fieldset/index.js';
+export type { FieldsetProps } from './components/fieldset/fieldset.types.js';
+export { FieldsetLegend } from './components/fieldset-legend/index.js';
+export type { FieldsetLegendProps } from './components/fieldset-legend/fieldset-legend.types.js';
 export {
-  Fieldset,
-  FieldsetLegend,
   FieldsetContent,
-} from './components/fieldset/index.js';
-export { fieldsetContentVariants } from './components/fieldset/fieldset.variants.js';
+  fieldsetContentVariants,
+} from './components/fieldset-content/index.js';
 export type {
-  FieldsetProps,
-  FieldsetLegendProps,
   FieldsetContentProps,
   FieldsetOrientation,
-} from './components/fieldset/fieldset.types.js';
+} from './components/fieldset-content/fieldset-content.types.js';

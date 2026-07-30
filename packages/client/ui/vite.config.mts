@@ -64,7 +64,12 @@ export default defineConfig(() => ({
       // (`./button`). New components add an entry here.
       entry: {
         fieldset: 'src/components/fieldset/index.ts',
+        'fieldset-legend': 'src/components/fieldset-legend/index.ts',
+        'fieldset-content': 'src/components/fieldset-content/index.ts',
         field: 'src/components/field/index.ts',
+        'field-label': 'src/components/field-label/index.ts',
+        'field-description': 'src/components/field-description/index.ts',
+        'field-error': 'src/components/field-error/index.ts',
         input: 'src/components/input/index.ts',
         badge: 'src/components/badge/index.ts',
         index: 'src/index.ts',

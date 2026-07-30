@@ -3,24 +3,24 @@ import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDescribable } from '../../primitives/describable.js';
-import type { FieldDescriptionProps } from './field.types.js';
-import styles from './field.module.css';
+import type { FieldErrorProps } from './field-error.types.js';
+import styles from './field-error.module.css';
 
 /**
- * Helper text for the field. Registers its id into the control's
- * `aria-describedby`, so it is announced with the field. Like the error, it
- * renders only when it has content: an empty `<p>` would take a grid row and
- * point the control at a blank target.
+ * The field's error message. Renders (and registers into `aria-describedby`)
+ * ONLY when it has content, so an empty error neither shows nor points the
+ * control at a blank element. The colour is the `error` status role plus normal
+ * text weight — paired with the control's own invalid look, and with a rule that
+ * restores the distinction under forced colors, the error never rests on colour
+ * alone. Announcing a freshly-appeared error is the consumer's job.
  */
-function FieldDescription(props: FieldDescriptionProps) {
+function FieldError(props: FieldErrorProps) {
   const { className, children, ref, ...rest } = props;
-  const register = useDescribable('FieldDescription')?.register;
+  const register = useDescribable('FieldError')?.register;
   const id = useId();
   const node = useRef<HTMLParagraphElement>(null);
   const hasContent = hasRenderableChildren(children);
 
-  // Registers the NODE as well as the id, so the field can order its description
-  // ids by document position rather than by who mounted first.
   useEffect(() => {
     const element = node.current;
     if (!hasContent || element == null) return;
@@ -33,11 +33,11 @@ function FieldDescription(props: FieldDescriptionProps) {
       {...rest}
       ref={mergeRefs(node, ref)}
       id={id}
-      className={cn(styles.description, className)}
+      className={cn(styles.error, className)}
     >
       {children}
     </p>
   );
 }
 
-export { FieldDescription };
+export { FieldError };
