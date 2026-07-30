@@ -64,6 +64,23 @@ name — the slot does not name it.
 
 ## Guidelines
 
+### When you do NOT need one
+
+Around our own `Input`, a group with no slots is the same field with more DOM: `Input` already draws
+that border, that height and that ring on its own. Reach for a group when something has to sit inside
+the border — or when the control is **not** ours.
+
+That second case is the one worth knowing: a third-party date picker or masked input renders a bare,
+unstyled `<input>`. Wrapping it gives it the design system's field chrome without a single style
+override, while [`useField()`](?path=/docs/components-inputs-field--docs) gives it the label and
+description wiring:
+
+```tsx
+<InputGroup>
+  <ThirdPartyDatePicker {...getControlProps()} />
+</InputGroup>
+```
+
 ### Why a wrapper, and not `startIcon` on the input
 
 Inner content sits **inside** the border, so a bare `<input>` cannot host it — an input renders no
