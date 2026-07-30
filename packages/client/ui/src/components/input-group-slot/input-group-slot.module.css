@@ -1,8 +1,8 @@
 /*
  * InputGroupSlot styles — the inset content of a field: an icon, a prefix, a
- * clear or reveal button. It provides the field's horizontal inset, which is why
- * the group itself has none: the slot IS the padding on its side, so text never
- * runs under it and no width has to be reserved anywhere.
+ * clear or reveal button. The field's own inset belongs to the GROUP, so this only
+ * has to not collapse and not steal the click; the row's `gap` keeps the control's
+ * text off it, which is why no width has to be reserved anywhere.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
@@ -11,7 +11,6 @@
 @layer fmmenchi {
   .slot {
     @apply text-input-placeholder flex shrink-0 items-center gap-internal-xs;
-    padding-inline: var(--fm-space-internal-m);
   }
 
   /* Decorative by default: a slot that only shows an icon must not swallow the

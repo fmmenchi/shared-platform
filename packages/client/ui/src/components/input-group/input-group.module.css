@@ -10,8 +10,14 @@
 /* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
    consumer's unlayered css overrides them without a specificity war. */
 @layer fmmenchi {
+  /* The INSET is the group's, not the slot's — `px-3`, the same step `Input` uses
+     standalone, so a field reads identically with and without a group. A slot then
+     only contributes its own `gap`, and a group with no slots at all (a framed
+     textarea, a field that just needs the height) still keeps its text off the
+     border. Putting the inset on the slot instead made the slotless case render
+     flush against the border. */
   .group {
-    @apply flex w-full items-center rounded-md border;
+    @apply flex w-full items-center gap-internal-s rounded-md border px-3;
     @apply bg-input text-input-foreground border-input-border;
     @apply transition;
     min-inline-size: 0;

@@ -47,6 +47,34 @@ describe('InputGroup', () => {
     expect(Number.parseFloat(getComputedStyle(control).borderTopWidth)).toBe(0);
   });
 
+  // The inset belongs to the GROUP, so it survives a field with no slots at all —
+  // the case that rendered flush against the border while the slot owned it. Both
+  // scenarios are pinned, because only one of them is the one people look at.
+  it.each([
+    [
+      'with a slot',
+      <InputGroup key="a" data-testid="group">
+        <InputGroupSlot>
+          <span aria-hidden="true">⌕</span>
+        </InputGroupSlot>
+        <Input aria-label="Search" />
+      </InputGroup>,
+    ],
+    [
+      'with no slot at all',
+      <InputGroup key="b" data-testid="group">
+        <Input aria-label="Search" />
+      </InputGroup>,
+    ],
+  ])('keeps the text off the border %s', (_label, element) => {
+    renderUi(element);
+    const group = screen.getByTestId('group');
+    const control = screen.getByRole('textbox', { name: 'Search' });
+    const inset =
+      control.getBoundingClientRect().left - group.getBoundingClientRect().left;
+    expect(inset).toBeGreaterThanOrEqual(12);
+  });
+
   it('shows the control’s invalid state on the group', () => {
     search({ invalid: true });
     const group = screen.getByTestId('group');
