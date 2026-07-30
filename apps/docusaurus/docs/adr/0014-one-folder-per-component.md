@@ -82,6 +82,33 @@ This is MUI's model. Four rules follow from it:
    the part gets its own `meta` with curated argTypes and its sidebar entry suppressed, so the page count
    stays at one per family.
 
+### Why flat, and not a hat folder per family
+
+iungo groups families under a parent (`input/` holding `checkbox/`, `radio-button/`, `date-time/`;
+`cards/` holding `card/`, `card-simple/`, `shared/`), and Base UI does the same one level in
+(`field/{root,label,description,error}`). That shape was built here and then removed, so the criterion is
+worth stating rather than re-deriving:
+
+**A hat folder earns its place only when the names do NOT share a prefix.** iungo's `input/` groups
+`checkbox`, `radio-button`, `date-time` — no common prefix, so only the folder can express the relation.
+Ours do share one: `field-label`, `field-description`, `field-error` already sort next to `field`, and
+`fieldset-legend`, `fieldset-content` next to `fieldset`. **The prefix is already the grouping**; a hat
+would add a level without adding information.
+
+Three things a hat costs that flat does not:
+
+- **a recurring decision.** Every new component asks "which hat?", and mis-grouping costs a move later
+  (`Input` is wired BY `Field` but is not part of it — does it go inside or not?). Flat asks nothing.
+- **depth on every path.** Measured on the way here: a docs glob pinned to a depth broke **silently**, the
+  import-boundary lint rule was defeated by nesting twice, and imports were rewritten three times. Flat is
+  the only shape where none of those tools has to reason about depth.
+- **a claim that is often false.** A tree asserts ONE parent. `FieldDescription` belongs to `Field` and to
+  `Fieldset`; `Input` to neither. A flat list asserts nothing about relations, so it cannot assert a wrong
+  one — the relation is carried by the name and documented in the family's page.
+
+The standalone controls still to come — Checkbox, Radio, Switch, Select, Textarea — need no grouping at
+all: they do not compose into one another and each is looked up by name. They are a list, not a tree.
+
 The question of who owns a shared part **dissolves**: `FieldDescription` is a component in its own right,
 sibling to both families, owned by neither. This is why MUI has no `shared/` folder anywhere.
 
