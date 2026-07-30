@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { announceTarget, isPublishable } from './create-nodes';
+import { announceTarget, isReleasable } from './create-nodes';
 
-describe('isPublishable', () => {
+describe('isReleasable', () => {
   it('is true for a named, non-private package', () => {
-    expect(isPublishable({ name: '@fmmenchi/ui' })).toBe(true);
+    expect(isReleasable({ name: '@fmmenchi/ui' })).toBe(true);
   });
 
   it('is false for a private package or one with no name', () => {
-    expect(isPublishable({ name: '@fmmenchi/ui', private: true })).toBe(false);
-    expect(isPublishable({})).toBe(false);
+    // `private` means "not to a registry", NOT "not released": nx release tags and
+    // cuts a GitHub Release for these too, and those are worth announcing.
+    expect(isReleasable({ name: '@fmmenchi/gh-actions', private: true })).toBe(
+      true,
+    );
+    expect(isReleasable({})).toBe(false);
   });
 });
 

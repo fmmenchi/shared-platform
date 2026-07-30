@@ -43,8 +43,9 @@ pnpm nx test @fmmenchi/nx-notify   # node vitest (git parser + executor skip-pat
 ## Inference
 
 Registered in the root `nx.json` `plugins`, a `createNodesV2` (`src/plugin/create-nodes.ts`) infers
-**`announce-release` + `announce-error`** onto **every publishable package** (any layout — matched by
-`**/package.json`, filtered by `name && !private`, not a hardcoded path). So a consumer registers the
+**`announce-release` + `announce-error`** onto **every releasable project** (any layout — matched by
+`**/package.json`, filtered by having a `name`, not a hardcoded path — `private` is deliberately NOT
+excluded: it means "not to a registry", not "not released", and nx release tags those too). So a consumer registers the
 plugin once and gets the targets free — no per-project boilerplate. The targets `dependsOn` the
 plugin's own `build` and are **uncached** (they post to Slack; never serve a cached "sent"). This is
 the reusable-CI path: the `announce-releases`/`slack-notify` bricks run `<project>:announce-*`, which
