@@ -1,0 +1,94 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guidelines/Form field wiring" />
+
+# Form field wiring
+
+`Field` and `Fieldset` are two containers built on one idea, and the parts between them are shared.
+This page is that idea, written once: each component's own page documents its props and its usage,
+and points here for the model.
+
+## The one rule: a part binds to the nearest container
+
+There is no `FieldsetDescription` or `FieldsetError`. `FieldDescription` and `FieldError` bind to
+whichever **describable container** encloses them, and React resolves the nearest one:
+
+```tsx
+<Fieldset>
+  <FieldsetLegend>Contact</FieldsetLegend>
+  <FieldDescription>Describes the GROUP.</FieldDescription>
+  <FieldsetContent>
+    <Field>
+      <FieldLabel>Email</FieldLabel>
+      <Input />
+      <FieldDescription>Describes the CONTROL.</FieldDescription>
+    </Field>
+  </FieldsetContent>
+</Fieldset>
+```
+
+Same component, two bindings, decided by position. The trade-off is worth knowing: the binding is
+**implicit**, so the call site alone does not tell you what a description describes — you have to see
+what encloses it. In exchange there is one part instead of two per container, and no way to reach for
+the wrong one. A part in neither container warns by name in development.
+
+## What each container owns
+
+|                       | `Field` (one control)                         | `Fieldset` (a group)                                             |
+| --------------------- | --------------------------------------------- | ---------------------------------------------------------------- |
+| the name              | `FieldLabel` — `htmlFor` ↔ the control's `id` | `FieldsetLegend` — a native `<legend>`, no id wiring             |
+| who is described      | the **control**, via its `aria-describedby`   | the **group**, so it is announced once, not once per control     |
+| `invalid` exposes     | `aria-invalid` on the control                 | `data-invalid`; `aria-invalid` **only** with `role="radiogroup"` |
+| layout of the content | the container itself                          | `FieldsetContent` (the legend sits outside the layout box)       |
+
+`aria-invalid` is not a supported attribute on `role="group"`, which is what a plain `<fieldset>` is —
+so on a group the **error text** is what carries the state, unless you opt into `role="radiogroup"`.
+
+## Wiring a control we don't own
+
+The design system's own controls read the field context themselves. A raw `<input>` or a third-party
+component cannot, so `useField()` hands the wiring over as prop **getters**, which merge what you pass
+rather than replacing it:
+
+```tsx
+function BornOn({ locale }) {
+  const { getLabelProps, getControlProps } = useField();
+  return (
+    <>
+      <label {...getLabelProps()}>Born on</label>
+      <ThirdPartyDatePicker {...getControlProps({ locale })} />
+    </>
+  );
+}
+```
+
+One `useField()` counts as one control, so the field's "more than one control" guard keeps working.
+
+## What the design system does not own
+
+Validation rules, form state and submission stay with the consumer (ADR-0013). `invalid` is a
+**presentation** input: your library decides _when_ it is true. Two consequences worth stating:
+
+- **announcing a fresh error is yours.** `FieldError` is described-by, not a live region. For an error
+  that must be heard on submit, move focus to the control (a `<fieldset>` is **not** focusable, so
+  `ref.current.focus()` on it is a silent no-op) or use an error summary.
+- **a group is not scoped by its fieldset.** What makes a set of radios one mutually-exclusive group is
+  a shared `name`, scoped to the form. Two `Fieldset`s whose radios share a `name` are one group split
+  across two boxes.
+
+## Ordering and timing
+
+`aria-describedby` is built in **DOM order**, not in the order the parts happened to mount: the order
+of that attribute is the order things are announced, so a hint that appears late is still announced
+before the error it qualifies.
+
+The association itself is added on the client — the parts register through an effect — so it is present
+for JS clients, not for no-JS delivery. On a `Field` a missed association heals on the next focus,
+because a control re-announces its description every time it takes focus. On a `Fieldset` it does not:
+a group's description is announced when the focus boundary is crossed, often once per visit.
+
+## See also
+
+- [Field](?path=/docs/components-inputs-field--docs) — one control, its label, description and error.
+- [Fieldset](?path=/docs/components-inputs-fieldset--docs) — a group of controls named by a legend.
+- [Input](?path=/docs/components-inputs-input--docs) — the transparent native control.

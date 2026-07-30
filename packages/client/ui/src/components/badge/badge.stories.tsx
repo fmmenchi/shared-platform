@@ -13,7 +13,7 @@ const VARIANTS = [
 ] as const;
 
 const meta: Meta<typeof Badge> = {
-  title: 'Components/Badge',
+  title: 'Components/Data display/Badge',
   component: Badge,
   args: { children: 'Badge', variant: 'neutral', emphasis: 'soft', size: 'md' },
   // The Props table is CURATED here (react-docgen can't derive it) — declare

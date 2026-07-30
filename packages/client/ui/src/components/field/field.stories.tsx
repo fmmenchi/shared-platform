@@ -6,7 +6,7 @@ import { FieldError } from '../field-error/field-error.component.js';
 import { Input } from '../input/input.component.js';
 
 const meta: Meta<typeof Field> = {
-  title: 'Components/Field',
+  title: 'Components/Inputs/Field',
   component: Field,
   argTypes: {
     invalid: {

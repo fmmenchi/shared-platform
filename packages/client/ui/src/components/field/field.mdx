@@ -24,7 +24,12 @@ It owns no value or validation (ADR-0013) and has no chrome of its own — just 
 - **`FieldError`** — the message; renders and joins `aria-describedby` **only when it has content**.
 - **`useField()`** — prop getters for wiring a control the design system does not own.
 
-`FieldDescription` and `FieldError` are shared with [Fieldset](?path=/docs/components-fieldset--docs):
+The model these parts share with [Fieldset](?path=/docs/components-inputs-fieldset--docs) — the
+nearest-container binding rule, what each container owns, and the boundary with your validation
+library — is written once in
+[Guidelines → Form field wiring](?path=/docs/guidelines-form-field-wiring--docs).
+
+`FieldDescription` and `FieldError` are shared with [Fieldset](?path=/docs/components-inputs-fieldset--docs):
 they bind to the nearest container, so the same part describes this field's control here and a whole
 group when placed directly inside a `Fieldset`.
 
