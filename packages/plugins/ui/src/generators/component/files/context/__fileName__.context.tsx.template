@@ -1,0 +1,38 @@
+import { createContext, useContext } from 'react';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
+
+/**
+ * What a `<%= className %>` provides to its parts. Keep it to what the parts need
+ * — ids and state PRESENTATION — and never value/onChange: the controls stay
+ * transparent (ADR-0013).
+ */
+export interface <%= className %>ContextValue {
+  /** TODO: replace with what the parts actually read. */
+  placeholder?: never;
+}
+
+export const <%= className %>Context =
+  createContext<<%= className %>ContextValue | null>(null);
+
+export const use<%= className %>Context = (): <%= className %>ContextValue | null =>
+  useContext(<%= className %>Context);
+
+/**
+ * Context for a `<%= className %>` PART, warning (with the part's own name) when
+ * it is used outside one. Every part reads the context through this, so an orphan
+ * part can't fail silently. It returns `null` rather than throwing: a misplaced
+ * part is worth a loud warning, not a crashed page.
+ *
+ * A part reachable from ANOTHER family imports this file — a family's
+ * `*.context.js` is what it exposes to siblings (ADR-0014).
+ */
+export function use<%= className %>Part(
+  part: string,
+): <%= className %>ContextValue | null {
+  const context = use<%= className %>Context();
+  useDevWarning(
+    context == null,
+    `${part}: used outside a <<%= className %>>, so it is not wired to anything.`,
+  );
+  return context;
+}

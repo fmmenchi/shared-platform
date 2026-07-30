@@ -9,7 +9,10 @@
       "type": "string",
       "description": "Component name, kebab-case (e.g. badge, radio-group).",
       "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
-      "$default": { "$source": "argv", "index": 0 },
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
       "x-prompt": "Which component do you want to scaffold? (kebab-case)"
     },
     "element": {
@@ -20,6 +23,11 @@
     "messages": {
       "type": "boolean",
       "description": "Also scaffold a colocated .messages.ts catalog (only for components with DS-owned copy).",
+      "default": false
+    },
+    "context": {
+      "type": "boolean",
+      "description": "Also scaffold the component's React context \u2014 the contract its parts read, with the use<Name>Part hook that warns by name on an orphan part. Parts are separate components, generated separately.",
       "default": false
     }
   },
