@@ -1,6 +1,9 @@
-import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
 
 import * as FieldStories from './field.stories.tsx';
+import { FieldLabel } from '../field-label/field-label.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 
 <Meta of={FieldStories} />
 
@@ -53,7 +56,26 @@ outside a `Field` it warns and the getters pass your props through unchanged.
 
 ## Props
 
+Each part is a component in its own right (ADR-0014), so each has its own table — on this page, because
+what you compose is a Field.
+
+### Field
+
 <Controls of={FieldStories.Default} />
+
+### FieldLabel
+
+<ArgTypes of={FieldLabel} />
+
+### FieldDescription
+
+Shared with `Fieldset`: it describes whichever container is nearest.
+
+<ArgTypes of={FieldDescription} />
+
+### FieldError
+
+<ArgTypes of={FieldError} />
 
 ## Usage
 
