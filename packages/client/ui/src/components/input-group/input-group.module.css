@@ -36,8 +36,15 @@
   .group > input {
     @apply border-0 bg-transparent;
   }
+  /* The invalid border and the disabled fill are declared on the control with a
+     pseudo-class or an attribute, so a plain reset is a point less specific and
+     loses: an invalid field drew a second red border inside the group's, and a
+     disabled one its own grey box. Each needs a reset that matches the same way. */
   .group > input[aria-invalid='true'] {
     @apply border-0;
+  }
+  .group > input:disabled {
+    @apply bg-transparent;
   }
   .group > input:focus-visible {
     outline: none; /* the ring moves to the group, below */
@@ -48,6 +55,16 @@
      whole of what a slot component would have carried (ADR-0016). */
   .group > :not(input) {
     @apply text-input-placeholder shrink-0;
+  }
+  /* …and it is inset from the border by the same step the control's own padding
+     gives its text. Without this the symbol sits flush against the edge while the
+     value beside it does not — the group has no padding of its own, because the
+     control's belongs to the control (a drag started in it still selects text). */
+  .group > :not(input):first-child {
+    @apply ps-3;
+  }
+  .group > :not(input):last-child {
+    @apply pe-3;
   }
 
   /* The ring belongs to the whole field, so it is drawn on the group — but only

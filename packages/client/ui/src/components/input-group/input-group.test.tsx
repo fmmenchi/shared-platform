@@ -77,6 +77,47 @@ describe('InputGroup', () => {
     ).toBeCloseTo(screen.getByTestId('bare').getBoundingClientRect().height, 1);
   });
 
+  // What the control draws that the group also draws has to go in EVERY state, not
+  // just the resting one — the disabled fill is more specific than a plain reset,
+  // so without a matching one a disabled field shows its own grey box inside the
+  // group's border.
+  it('shows disabled on the group, and no second box on the control', () => {
+    field({ disabled: true });
+    const control = screen.getByRole('textbox', { name: 'Search' });
+    expect(getComputedStyle(control).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(screen.getByTestId('group')).cursor).toBe(
+      'not-allowed',
+    );
+  });
+
+  // Whatever is inset has to clear the border by the same step the control's own
+  // padding gives its text — the group has none of its own. Asserted per side,
+  // because the two rules are scoped by `:first-child` / `:last-child` and it is
+  // the scoping that can break.
+  it.each([
+    ['leading', 'paddingInlineStart'],
+    ['trailing', 'paddingInlineEnd'],
+  ] as const)('insets a %s affix from the border', (position, side) => {
+    const affix = (
+      <span data-testid="affix" aria-hidden="true">
+        EUR
+      </span>
+    );
+    renderUi(
+      <InputGroup data-testid="group">
+        {position === 'leading' ? affix : null}
+        <Input aria-label="Amount" />
+        {position === 'trailing' ? affix : null}
+      </InputGroup>,
+    );
+    const style = getComputedStyle(screen.getByTestId('affix'));
+    expect(Number.parseFloat(style[side])).toBeGreaterThanOrEqual(12);
+    // …and it stays inside the field, whichever side it is on.
+    expect(
+      screen.getByTestId('affix').getBoundingClientRect().width,
+    ).toBeGreaterThan(0);
+  });
+
   // `:focus-within` would light the whole field when a button inset beside the
   // control takes focus — telling the user the text field is active while their
   // caret is on the button.
