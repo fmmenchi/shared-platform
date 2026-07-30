@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InputGroup > matches the rendered snapshot 1`] = `
+<div
+  class="_group_tkj2b_4 _md_tkj2b_57"
+>
+  <span
+    class="_slot_1xvpw_3 _decorative_1xvpw_11"
+  >
+    icon
+  </span>
+  <input
+    aria-label="Search"
+    class="_input_1gpu1_4 _md_1gpu1_43"
+    type="text"
+  />
+</div>
+`;

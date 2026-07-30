@@ -1,0 +1,104 @@
+import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
+
+import * as InputGroupStories from './input-group.stories.tsx';
+import { InputGroupSlot } from '../input-group-slot/input-group-slot.component.js';
+
+<Meta of={InputGroupStories} />
+
+# InputGroup
+
+Puts content inside a field's border — a search icon, a currency prefix, a clear button — around a
+control that stays a plain, transparent child. The chrome moves here and the accessibility contract
+does not change: the control still forwards its ref, still spreads whatever you give it, and still
+carries its own `aria-invalid`.
+
+## Anatomy
+
+- **`InputGroup`** — the field: border, fill, radius, height, focus ring, and the invalid and disabled
+  looks, read from the control's own state.
+- **`InputGroupSlot`** — content inset on one side. Decorative by default; `interactive` when it holds
+  a control.
+- **the control** — `Input`, or anything else; it is an ordinary child, in the order you want it.
+
+## Props
+
+Each part is a component in its own right (ADR-0014), so each has its own table — on this page,
+because what you compose is an InputGroup.
+
+### InputGroup
+
+<Controls of={InputGroupStories.Default} />
+
+### InputGroupSlot
+
+<ArgTypes of={InputGroupSlot} />
+
+## Usage
+
+### Default
+
+<Canvas of={InputGroupStories.Default} />
+
+### With an action
+
+A slot holding a real control takes its pointer events back. Give that control its own accessible
+name — the slot does not name it.
+
+<Canvas of={InputGroupStories.WithAction} />
+
+### Affixes
+
+<Canvas of={InputGroupStories.Affixes} />
+
+### Sizes
+
+<Canvas of={InputGroupStories.Sizes} />
+
+### States
+
+<Canvas of={InputGroupStories.States} />
+
+### In a Field
+
+<Canvas of={InputGroupStories.InAField} />
+
+## Guidelines
+
+### Why a wrapper, and not `startIcon` on the input
+
+Inner content sits **inside** the border, so a bare `<input>` cannot host it — an input renders no
+children. The alternatives are to have the group render the control itself (Radix's `TextField.Root`)
+or to take the content as props (Mantine's `leftSection`, Chakra's `startElement`). Both break the
+contract that makes our `Input` usable with any form library: you must be able to spread
+`{...register()}` onto the real element and forward a ref to it. So the control stays a child you
+pass, and the group only wraps it.
+
+### The chrome moves; the state does not
+
+Inside a group the control is stripped to bare text — no border, no fill, no padding, no ring — and
+the group draws all of it. What the group does **not** take is state: `aria-invalid` and `disabled`
+stay on the control, where your form library already sets them, and the group reflects them with
+`:has()`. There is deliberately no `invalid` prop here that could disagree with the control.
+
+One consequence: the control's own `size` is redundant inside a group. The group is what has a height,
+and the control inherits the type scale.
+
+## Accessibility
+
+- **The group is not a control and takes no role.** It is a box around one; the accessible name, the
+  value and the states all belong to the control inside. Wrap it in a
+  [Field](?path=/docs/components-inputs-field--docs) to get the label and description wiring — the
+  group changes the chrome, not that contract.
+- **Clicking anywhere in the field focuses the control**, as it would in a bare input. That is why a
+  slot is decorative by default: its pointer events pass through, so the click reaches the group's
+  handler instead of dying on an icon. A slot holding a control opts back in with `interactive`, and
+  clicks on that control are left alone.
+- **A decorative slot still needs `aria-hidden`.** Icons are app-side, so the design system cannot do
+  it for you: a magnifier beside a field labelled "Search" is noise to a screen reader. Text that
+  carries meaning — a currency, a unit — is the opposite case: leave it readable, and make sure the
+  label or description says what it means, because the slot is not associated with the control.
+- **An icon-only control in a slot needs its own name** (`aria-label`), like any other button.
+- **The focus ring is drawn on the group** via `:focus-within`, because a ring on the control would
+  sit inside the border instead of around the field. Keyboard focus itself never moves to the group.
+- **Invalid is not colour alone** — the border changes colour _and_ weight, and both survive forced
+  colors, where the group re-draws its border in system colours.

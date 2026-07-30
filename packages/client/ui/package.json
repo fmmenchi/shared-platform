@@ -98,7 +98,21 @@
       "import": "./dist/fieldset-content.js",
       "default": "./dist/fieldset-content.js"
     },
-    "./fieldset-content/style.css": "./dist/fieldset-content.css"
+    "./fieldset-content/style.css": "./dist/fieldset-content.css",
+    "./input-group": {
+      "@fmmenchi/source": "./src/components/input-group/index.ts",
+      "types": "./dist/components/input-group/index.d.ts",
+      "import": "./dist/input-group.js",
+      "default": "./dist/input-group.js"
+    },
+    "./input-group/style.css": "./dist/input-group.css",
+    "./input-group-slot": {
+      "@fmmenchi/source": "./src/components/input-group-slot/index.ts",
+      "types": "./dist/components/input-group-slot/index.d.ts",
+      "import": "./dist/input-group-slot.js",
+      "default": "./dist/input-group-slot.js"
+    },
+    "./input-group-slot/style.css": "./dist/input-group-slot.css"
   },
   "nx": {
     "tags": [

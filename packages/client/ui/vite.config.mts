@@ -63,6 +63,8 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'input-group-slot': 'src/components/input-group-slot/index.ts',
+        'input-group': 'src/components/input-group/index.ts',
         fieldset: 'src/components/fieldset/index.ts',
         'fieldset-legend': 'src/components/fieldset-legend/index.ts',
         'fieldset-content': 'src/components/fieldset-content/index.ts',
