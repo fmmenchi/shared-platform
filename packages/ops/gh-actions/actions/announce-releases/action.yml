@@ -38,7 +38,9 @@ runs:
           body=$(gh release view "$tag" --json body --jq .body 2>/dev/null || true)
           url=$(gh release view "$tag" --json url --jq .url 2>/dev/null || true)
           # `$pkg:announce-release` is the target @fmmenchi/nx-notify infers onto each
-          # publishable package — generic to any nx workspace, no plugin project required.
+          # RELEASABLE project — generic to any nx workspace, no plugin project required.
+          # Every tag in this file therefore has the target, private packages included;
+          # a missing one means the plugin isn't registered, and failing loudly is right.
           RELEASE_VERSION="$version" RELEASE_URL="$url" RELEASE_BODY="$body" \
             pnpm nx run "$pkg:announce-release" || failed=1
         done < "${{ inputs.tags-file }}"

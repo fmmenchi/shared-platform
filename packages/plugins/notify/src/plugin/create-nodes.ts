@@ -11,9 +11,18 @@ type ProjectNode = NonNullable<
 >[string];
 type Target = NonNullable<ProjectNode['targets']>[string];
 
-/** A publishable package: a named, non-private project. Structure-agnostic. */
-export function isPublishable(pkg: PackageJson): boolean {
-  return Boolean(pkg.name) && pkg.private !== true;
+/**
+ * A RELEASABLE project: one that can appear in a `{projectName}@{version}` tag, i.e.
+ * any named project. Structure-agnostic.
+ *
+ * Deliberately not "publishable": `private: true` means *do not push to a registry*,
+ * not *do not release*. `nx release` versions, tags and cuts a GitHub Release for
+ * private projects too — a toolkit consumed by git ref rather than by install is the
+ * normal case — and those releases are exactly as worth announcing as any other.
+ * Excluding them here made the CI announce step fail on a tag it had itself produced.
+ */
+export function isReleasable(pkg: PackageJson): boolean {
+  return Boolean(pkg.name);
 }
 
 /**
@@ -34,10 +43,14 @@ export function announceTarget(kind: 'release' | 'error'): Target {
 }
 
 /**
- * Infers `announce-release` + `announce-error` onto every **publishable** package,
- * in ANY workspace layout (`packages/`, `libs/`, flat …) — matched by `**\/package.json`
- * and filtered by publishability, not a hardcoded path. Announcing a release is a
+ * Infers `announce-release` + `announce-error` onto every **releasable** project, in
+ * ANY workspace layout (`packages/`, `libs/`, flat …) — matched by `**\/package.json`
+ * and filtered by having a name, not by a hardcoded path. Announcing a release is a
  * per-package concern, so the target belongs on each project.
+ *
+ * Inference answers "who CAN announce"; the release decides who actually did, by
+ * writing its tags. Keeping those two apart is what stops a released-but-unpublished
+ * package from failing the announce step.
  */
 export const createNodesV2: CreateNodesV2 = [
   '**/package.json',
@@ -55,7 +68,7 @@ export const createNodesV2: CreateNodesV2 = [
         } catch {
           return {};
         }
-        if (!isPublishable(pkg)) return {};
+        if (!isReleasable(pkg)) return {};
 
         return {
           projects: {
