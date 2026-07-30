@@ -18,9 +18,22 @@ pnpm nx test @fmmenchi/nx-ui   # Tree-based generator specs
 
 - **generator `component`** — scaffolds `packages/client/ui/src/components/<name>/` with the full
   archetype (component / types / cva variants / token-only module.css / curated stories / mdx /
-  tests / barrel; `--element` for the native tag, `--messages` for a colocated catalog) and wires
-  the public surface: root barrel, `package.json` subpath exports, vite entry. **Throws** if the
-  component exists.
+  tests / barrel; `--element` for the native tag, `--messages` for a colocated catalog, `--context`
+  for the component's React context and its `use<Name>Part` warn-by-name hook) and wires the public
+  surface: root barrel, `package.json` subpath exports, vite entry. **Throws** if the component
+  exists.
+
+**A generator generates a component, not a family.** A compound part is a component in its own right
+(ADR-0014), so it is scaffolded by running the generator again — there is no compound mode, and adding
+one would contradict the ADR:
+
+```bash
+pnpm nx g @fmmenchi/nx-ui:component fieldset --element=fieldset --context
+pnpm nx g @fmmenchi/nx-ui:component fieldset-legend --element=legend
+```
+
+What relates the two — the context the part reads, the props it takes — is design work on components
+that already exist, not scaffolding.
 
 ## Rules
 

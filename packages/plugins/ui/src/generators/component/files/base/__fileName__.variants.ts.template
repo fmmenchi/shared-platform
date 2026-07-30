@@ -1,6 +1,11 @@
 import { cva } from 'class-variance-authority';
 import styles from './<%= fileName %>.module.css';
 
+// DELETE THIS FILE if the component has no variant axis — a compound's container
+// usually has none (it is layout and wiring, with no treatments to choose from).
+// Deleting it means also dropping `<%= className %>Variants` from the types file
+// and the `<%= propertyName %>Variants` line from the root barrel.
+//
 // `cva` maps the public variant API to CSS-module class names; the styling
 // lives in `<%= fileName %>.module.css`. Kept out of the component file so that
 // file exports only the component (React Fast Refresh requires that).
