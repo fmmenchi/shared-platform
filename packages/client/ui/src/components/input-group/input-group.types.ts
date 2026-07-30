@@ -1,24 +1,12 @@
-import type { ComponentPropsWithRef, ReactNode } from 'react';
-import type { VariantProps } from 'class-variance-authority';
-import type { inputGroupVariants } from './input-group.variants.js';
-
-/** Variant axes, derived from the cva definition. */
-export type InputGroupVariants = VariantProps<typeof inputGroupVariants>;
-
-interface InputGroupOwnProps extends InputGroupVariants {
-  /** One control, and the `InputGroupSlot`s inset beside it. */
-  children?: ReactNode;
-}
+import type { ComponentPropsWithRef } from 'react';
 
 /**
- * Puts content INSIDE a field's border — an icon, a prefix, a clear button — by
- * taking the chrome the control owns when it stands alone: border, fill, radius,
- * height, the focus ring, and the invalid and disabled looks, which it reads from
- * the control's own native state rather than from a prop of its own (ADR-0013).
+ * Puts content INSIDE a field's border by taking the chrome an `<input>` cannot
+ * carry beside it — the border, the fill and the radius — while the control keeps
+ * everything that is its own: height, padding, type scale, and the native state
+ * the form library sets on it (ADR-0013).
  *
- * The control stays a plain child and learns nothing about the group, so it keeps
- * forwarding its ref and spreading arbitrary props — `{...register()}` still works.
- * Its own `size` becomes redundant inside a group: the group is what has a height.
+ * There is no size axis here on purpose. The height comes from the control, where
+ * it already lives, so a group cannot disagree with the field inside it.
  */
-export type InputGroupProps = InputGroupOwnProps &
-  Omit<ComponentPropsWithRef<'div'>, keyof InputGroupOwnProps>;
+export type InputGroupProps = ComponentPropsWithRef<'div'>;

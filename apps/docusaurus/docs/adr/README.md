@@ -28,3 +28,4 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 | [0013](./0013-form-controls-contract.md)                | Form controls are transparent native controls; validation stays out   | accepted         |
 | [0014](./0014-one-folder-per-component.md)              | One folder per component, compound parts included                     | accepted         |
 | [0015](./0015-storybook-taxonomy.md)                    | Storybook categories live in titles; docs in three levels             | accepted         |
+| [0016](./0016-minimal-semantic-markup.md)               | Markup is minimal and semantic; an element must earn its place        | accepted         |

@@ -1,93 +1,89 @@
 /*
- * InputGroup styles. This component exists to put content INSIDE the field's
- * border, so it takes the chrome the control owns when it stands alone — border,
- * fill, radius, height, the invalid and disabled looks, the focus ring — and the
- * control inside is stripped back to bare text. Colours ONLY through the semantic
- * `input-*` role utilities; the `lint-css` gate enforces it.
+ * InputGroup styles. The group draws the chrome an `<input>` cannot carry beside
+ * itself — border, fill, radius — and the control keeps everything that is its
+ * own: height, padding, type scale. Colours ONLY through the semantic `input-*`
+ * role utilities; the `lint-css` gate enforces it.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 /* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
    consumer's unlayered css overrides them without a specificity war. */
 @layer fmmenchi {
-  /* The INSET is the group's, not the slot's — `px-3`, the same step `Input` uses
-     standalone, so a field reads identically with and without a group. A slot then
-     only contributes its own `gap`, and a group with no slots at all (a framed
-     textarea, a field that just needs the height) still keeps its text off the
-     border. Putting the inset on the slot instead made the slotless case render
-     flush against the border. */
+  /* `gap` is the only spacing decision the group makes: whatever you inset beside
+     the control is spaced from it, and the control's own padding does the rest —
+     which is why nothing here reserves a width and there is no size axis. */
+  /* The border is an INSET SHADOW, not a border: a real one would add its 2px to
+     the field, so the same control would stand 38px tall in a group and 36px bare,
+     and a form row would not line up. A shadow paints in the same place and takes
+     no space, which is what lets the height stay the control's. */
   .group {
-    @apply flex w-full items-center gap-internal-s rounded-md border px-3;
-    @apply bg-input text-input-foreground border-input-border;
+    @apply flex w-full items-center gap-internal-s rounded-md;
+    @apply bg-input text-input-foreground;
     @apply transition;
+    box-shadow: inset 0 0 0 1px var(--fm-color-input-border);
     min-inline-size: 0;
+    /* A long affix must not paint outside the rounded border. Outlines are not
+       clipped by overflow, so the focus ring below still shows in full. */
+    overflow: hidden;
   }
 
-  /* The control keeps its OWN chrome when it stands alone, so the group has to
-     take it back — matched on the ELEMENT, never on the class: `Input` must not
-     learn that it is inside a group (no prop, no context), and a CSS-module class
-     from another component is a hashed name this file could not name anyway.
-     The control then FILLS the row, so the whole field is one target and the
-     slots need no width guessing — unlike an absolutely-positioned section, which
-     has to be told how much padding to reserve on the control. */
-  .group :is(input, textarea) {
-    @apply h-full w-full border-0 bg-transparent p-0;
-    font: inherit;
-    color: inherit;
-    min-inline-size: 0;
-    flex: 1;
+  /* Everything the control draws that would now be drawn twice, removed — and only
+     that. Matched on the DIRECT CHILD, so a control nested inside something you
+     inset (a picker with its own input) cannot be mistaken for the field's own.
+     The `[aria-invalid]` reset needs its own rule: the control's invalid border is
+     (0,2,0) and would otherwise outrank a (0,1,1) reset, drawing a second red
+     border inside the group's. */
+  .group > input {
+    @apply border-0 bg-transparent;
   }
-  .group :is(input, textarea):focus-visible {
+  .group > input[aria-invalid='true'] {
+    @apply border-0;
+  }
+  .group > input:focus-visible {
     outline: none; /* the ring moves to the group, below */
   }
-  .group :is(input, textarea):disabled {
-    @apply bg-transparent;
-    cursor: inherit;
+
+  /* Content inset beside the control — an icon, a prefix — reads as secondary and
+     must not collapse when the field is narrow. No element of its own: this is the
+     whole of what a slot component would have carried (ADR-0016). */
+  .group > :not(input) {
+    @apply text-input-placeholder shrink-0;
   }
 
-  /* The ring belongs to the whole field now, so it keys off focus-WITHIN: the
-     control that takes focus is a child, and a ring drawn on it would sit inside
-     the border instead of around the field. */
-  .group:focus-within {
+  /* The ring belongs to the whole field, so it is drawn on the group — but only
+     for the CONTROL's focus. `:focus-within` would light the entire field when a
+     button inset beside it takes focus, telling the user the text field is active
+     while their caret is somewhere else. */
+  .group:has(> input:focus-visible) {
     @apply outline-ring outline-2 outline-offset-2;
   }
 
-  /* Invalid and disabled are read from the control's own state — the native
-     attributes the form library already sets (ADR-0013) — so the group presents
-     them without owning them, and without a prop that could desync. */
-  .group:has(:is(input, textarea)[aria-invalid='true']) {
-    @apply border-input-invalid;
-    border-width: 2px;
+  /* Invalid and disabled are read from the control's own native state — what the
+     form library already sets (ADR-0013) — so the group presents them without
+     owning a prop that could desync. */
+  .group:has(> input[aria-invalid='true']) {
+    box-shadow: inset 0 0 0 2px var(--fm-color-input-invalid);
   }
-  .group:has(:is(input, textarea):disabled) {
+  .group:has(> input:disabled) {
     @apply bg-input-disabled cursor-not-allowed;
   }
 
-  /* Size — heights match Input and Button (32/36/44) so controls and buttons
-     align. The control inherits the type scale, so an `Input size` inside a group
-     is redundant: the group is what has a height to give. */
-  .sm {
-    @apply h-8 text-xs;
-  }
-  .md {
-    @apply h-9 text-sm;
-  }
-  .lg {
-    @apply h-11 text-base;
-  }
-
-  /* Forced colors: the token fill/border are replaced by system colours; the
-     border keeps the field bounded, and the invalid state — otherwise a colour —
-     is restored so it survives High Contrast. Mirrors Input's own block, because
-     in a group these rules have to fire on the group instead. */
+  /* Forced colors drops shadows entirely, so the field would lose its outline —
+     a real border comes back here, and with it the 2px the shadow existed to
+     avoid. That trade is right: in this mode every field gains it equally, so a
+     row still lines up. Only the border WEIGHT carries the invalid state, as the
+     UA overrides its colour — exactly what Input documents. */
   @media (forced-colors: active) {
     .group {
       border: 1px solid ButtonText;
     }
-    .group:focus-within {
+    .group:has(> input[aria-invalid='true']) {
+      border-width: 2px;
+    }
+    .group:has(> input:focus-visible) {
       outline-color: Highlight;
     }
-    .group:has(:is(input, textarea):disabled) {
+    .group:has(> input:disabled) {
       border-color: GrayText;
       color: GrayText;
     }

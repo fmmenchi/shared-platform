@@ -105,14 +105,7 @@
       "import": "./dist/input-group.js",
       "default": "./dist/input-group.js"
     },
-    "./input-group/style.css": "./dist/input-group.css",
-    "./input-group-slot": {
-      "@fmmenchi/source": "./src/components/input-group-slot/index.ts",
-      "types": "./dist/components/input-group-slot/index.d.ts",
-      "import": "./dist/input-group-slot.js",
-      "default": "./dist/input-group-slot.js"
-    },
-    "./input-group-slot/style.css": "./dist/input-group-slot.css"
+    "./input-group/style.css": "./dist/input-group.css"
   },
   "nx": {
     "tags": [

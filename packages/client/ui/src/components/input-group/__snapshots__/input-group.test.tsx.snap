@@ -2,12 +2,12 @@
 
 exports[`InputGroup > matches the rendered snapshot 1`] = `
 <div
-  class="_group_1kx4o_4 _md_1kx4o_59"
+  class="_group_wxpic_4"
 >
   <span
-    class="_slot_sn8o0_3 _decorative_sn8o0_10"
+    aria-hidden="true"
   >
-    icon
+    ⌕
   </span>
   <input
     aria-label="Search"

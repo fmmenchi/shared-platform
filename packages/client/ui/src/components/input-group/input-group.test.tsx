@@ -1,18 +1,14 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { InputGroup } from './input-group.component.js';
-import { InputGroupSlot } from '../input-group-slot/input-group-slot.component.js';
 import { Input } from '../input/input.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
-const search = (props?: { invalid?: boolean; disabled?: boolean }) =>
+const field = (props?: { invalid?: boolean; disabled?: boolean }) =>
   renderUi(
     <InputGroup data-testid="group">
-      <InputGroupSlot data-testid="icon">
-        <span aria-hidden="true">⌕</span>
-      </InputGroupSlot>
+      <span aria-hidden="true">⌕</span>
       <Input
         aria-label="Search"
         aria-invalid={props?.invalid || undefined}
@@ -21,132 +17,95 @@ const search = (props?: { invalid?: boolean; disabled?: boolean }) =>
     </InputGroup>,
   );
 
+/** The field's outline, in px — 0 when there is none. Read through `outline-style`
+ *  because `outline-width` computes to `medium` (3px) even with no outline drawn. */
+const ringWidth = (el: HTMLElement) => {
+  const style = getComputedStyle(el);
+  return style.outlineStyle === 'none'
+    ? 0
+    : Number.parseFloat(style.outlineWidth);
+};
+
+/** The field's border, in px. It is an inset shadow, and a computed shadow reads
+ *  `<color> <x> <y> <blur> <spread> inset` — so the border is the FOURTH length. */
+const borderWidth = (el: HTMLElement) => {
+  const lengths = getComputedStyle(el).boxShadow.match(/-?[\d.]+px/g) ?? [];
+  return Number.parseFloat(lengths[3] ?? '0');
+};
+
 describe('InputGroup', () => {
-  afterEach(() => vi.restoreAllMocks());
-
-  it('leaves the control transparent — it is a plain child, spread and all', () => {
-    render(
-      <InputGroup>
-        <Input aria-label="Search" placeholder="Type here" name="q" />
-      </InputGroup>,
-    );
-    const control = screen.getByRole('textbox', { name: 'Search' });
-    expect(control).toHaveAttribute('placeholder', 'Type here');
-    expect(control).toHaveAttribute('name', 'q');
-  });
-
-  // The whole point: the chrome moves to the group, so the control must NOT draw
-  // a second border inside it.
-  it('takes the border, and strips the control of its own', () => {
-    search();
-    const group = screen.getByTestId('group');
-    const control = screen.getByRole('textbox', { name: 'Search' });
+  it('draws the border, and the control draws none', () => {
+    field();
+    expect(borderWidth(screen.getByTestId('group'))).toBeGreaterThan(0);
     expect(
-      Number.parseFloat(getComputedStyle(group).borderTopWidth),
-    ).toBeGreaterThan(0);
-    expect(Number.parseFloat(getComputedStyle(control).borderTopWidth)).toBe(0);
+      Number.parseFloat(
+        getComputedStyle(screen.getByRole('textbox', { name: 'Search' }))
+          .borderTopWidth,
+      ),
+    ).toBe(0);
   });
 
-  // The inset belongs to the GROUP, so it survives a field with no slots at all —
-  // the case that rendered flush against the border while the slot owned it. Both
-  // scenarios are pinned, because only one of them is the one people look at.
-  it.each([
-    [
-      'with a slot',
-      <InputGroup key="a" data-testid="group">
-        <InputGroupSlot>
+  // The stripping has to hold in EVERY state. The control's own invalid rule is
+  // more specific than a plain reset, so without a matching one the field draws
+  // two nested red borders — which is what shipped, and what the screenshot
+  // baseline had frozen as correct.
+  it('shows invalid on the group, and STILL none on the control', () => {
+    field({ invalid: true });
+    expect(borderWidth(screen.getByTestId('group'))).toBe(2);
+    expect(
+      Number.parseFloat(
+        getComputedStyle(screen.getByRole('textbox', { name: 'Search' }))
+          .borderTopWidth,
+      ),
+    ).toBe(0);
+  });
+
+  // The height comes from the control, so a grouped field and a bare one line up
+  // in the same row. This is what having no size axis on the group buys.
+  it('is exactly as tall as the same field without a group', () => {
+    renderUi(
+      <div>
+        <InputGroup data-testid="group">
           <span aria-hidden="true">⌕</span>
-        </InputGroupSlot>
-        <Input aria-label="Search" />
-      </InputGroup>,
-    ],
-    [
-      'with no slot at all',
-      <InputGroup key="b" data-testid="group">
-        <Input aria-label="Search" />
-      </InputGroup>,
-    ],
-  ])('keeps the text off the border %s', (_label, element) => {
-    renderUi(element);
-    const group = screen.getByTestId('group');
-    const control = screen.getByRole('textbox', { name: 'Search' });
-    const inset =
-      control.getBoundingClientRect().left - group.getBoundingClientRect().left;
-    expect(inset).toBeGreaterThanOrEqual(12);
-  });
-
-  it('shows the control’s invalid state on the group', () => {
-    search({ invalid: true });
-    const group = screen.getByTestId('group');
-    expect(Number.parseFloat(getComputedStyle(group).borderTopWidth)).toBe(2);
-  });
-
-  it('draws the focus ring around the whole field, not around the control', async () => {
-    const user = userEvent.setup();
-    search();
-    const group = screen.getByTestId('group');
-    await user.click(screen.getByRole('textbox', { name: 'Search' }));
-    expect(Number.parseFloat(getComputedStyle(group).outlineWidth)).toBe(2);
+          <Input aria-label="Grouped" />
+        </InputGroup>
+        <Input aria-label="Bare" data-testid="bare" />
+      </div>,
+    );
     expect(
-      getComputedStyle(screen.getByRole('textbox', { name: 'Search' }))
-        .outlineStyle,
-    ).toBe('none');
+      screen.getByTestId('group').getBoundingClientRect().height,
+    ).toBeCloseTo(screen.getByTestId('bare').getBoundingClientRect().height, 1);
   });
 
-  // Clicking the field anywhere focuses the control, as a bare input does. The
-  // decorative slot passes the event through (its pointer-events are none — see
-  // the slot's own suite), and this handler is what receives it.
-  it('focuses the control when the field is clicked beside it', () => {
-    search();
-    const control = screen.getByRole('textbox', { name: 'Search' });
-    expect(control).not.toHaveFocus();
-    fireEvent.mouseDown(screen.getByTestId('icon'));
-    expect(control).toHaveFocus();
-  });
-
-  it('leaves a click on a real control alone', async () => {
-    const user = userEvent.setup();
-    const onClick = vi.fn();
-    render(
-      <InputGroup>
+  // `:focus-within` would light the whole field when a button inset beside the
+  // control takes focus — telling the user the text field is active while their
+  // caret is on the button.
+  it('rings the field for the control’s focus, not for a button’s', () => {
+    renderUi(
+      <InputGroup data-testid="group">
         <Input aria-label="Search" />
-        <InputGroupSlot interactive>
-          <button type="button" onClick={onClick}>
-            Clear
-          </button>
-        </InputGroupSlot>
+        <button type="button">Clear</button>
       </InputGroup>,
     );
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(onClick).toHaveBeenCalledOnce();
-    expect(screen.getByRole('button', { name: 'Clear' })).toHaveFocus();
+    const group = screen.getByTestId('group');
+    screen.getByRole('button', { name: 'Clear' }).focus();
+    expect(ringWidth(group)).toBe(0);
+    screen.getByRole('textbox', { name: 'Search' }).focus();
+    expect(ringWidth(group)).toBe(2);
   });
 
-  it('composes a consumer onMouseDown, and yields to its preventDefault', () => {
-    const onMouseDown = vi.fn((event: React.MouseEvent) => {
-      event.preventDefault();
-    });
-    render(
-      <InputGroup onMouseDown={onMouseDown} data-testid="group">
-        <InputGroupSlot data-testid="icon">icon</InputGroupSlot>
-        <Input aria-label="Search" />
+  // The state selectors read the DIRECT child, so a control nested inside
+  // something inset beside the field cannot be mistaken for the field's own.
+  it('ignores an input nested in what you inset beside the control', () => {
+    renderUi(
+      <InputGroup data-testid="group">
+        <Input aria-label="Main" />
+        <span>
+          <input aria-label="Nested" aria-invalid="true" />
+        </span>
       </InputGroup>,
     );
-    fireEvent.mouseDown(screen.getByTestId('icon'));
-    expect(onMouseDown).toHaveBeenCalledOnce();
-    expect(screen.getByRole('textbox', { name: 'Search' })).not.toHaveFocus();
-  });
-
-  it('warns when it holds no control — a field-shaped box nothing can type into', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    render(
-      <InputGroup>
-        <InputGroupSlot>icon</InputGroupSlot>
-      </InputGroup>,
-    );
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('InputGroup: no control inside'),
-    );
+    expect(borderWidth(screen.getByTestId('group'))).toBe(1);
   });
 
   it('forwards ref to the group element', () => {
@@ -166,7 +125,7 @@ describe('InputGroup', () => {
   it('matches the rendered snapshot', () => {
     const { container } = render(
       <InputGroup>
-        <InputGroupSlot>icon</InputGroupSlot>
+        <span aria-hidden="true">⌕</span>
         <Input aria-label="Search" />
       </InputGroup>,
     );
@@ -192,20 +151,15 @@ describe('InputGroup', () => {
             }}
           >
             <InputGroup>
-              <InputGroupSlot>
-                <span aria-hidden="true">⌕</span>
-              </InputGroupSlot>
+              <span aria-hidden="true">⌕</span>
               <Input aria-label="Search" />
             </InputGroup>
             <InputGroup>
-              <Input aria-label="Amount" aria-invalid />
-              <InputGroupSlot>EUR</InputGroupSlot>
+              <Input aria-label="Amount in euros" aria-invalid />
+              <span aria-hidden="true">€</span>
             </InputGroup>
             <InputGroup>
               <Input aria-label="Locked" disabled />
-              <InputGroupSlot interactive>
-                <button type="button">Clear</button>
-              </InputGroupSlot>
             </InputGroup>
           </div>,
           { theme },

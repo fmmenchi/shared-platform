@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { InputGroup } from './input-group.component.js';
-import { InputGroupSlot } from '../input-group-slot/input-group-slot.component.js';
 import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
 import { FieldLabel } from '../field-label/field-label.component.js';
@@ -9,22 +8,14 @@ import { FieldDescription } from '../field-description/field-description.compone
 const meta: Meta<typeof InputGroup> = {
   title: 'Components/Inputs/InputGroup',
   component: InputGroup,
-  // The Props table is CURATED here (react-docgen can't derive it) — declare
-  // every public prop with type summary, default and description.
+  // The Props table is CURATED here (react-docgen can't derive it). There is one
+  // row to declare: everything else is a native div prop, and there is no size
+  // axis — the height comes from the control.
   argTypes: {
-    size: {
-      control: 'inline-radio',
-      options: ['sm', 'md', 'lg'],
-      description:
-        'Field height — 32/36/44px, matching Input and Button so controls align. The control inside inherits it, so its own `size` is redundant here.',
-      table: {
-        type: { summary: "'sm' | 'md' | 'lg'" },
-        defaultValue: { summary: "'md'" },
-      },
-    },
     children: {
       control: false,
-      description: 'One control, and the `InputGroupSlot`s inset beside it.',
+      description:
+        'One control, and whatever you inset beside it. Anything that is not the control is spaced by the row’s gap and reads as secondary.',
       table: { type: { summary: 'ReactNode' } },
     },
   },
@@ -33,63 +24,62 @@ export default meta;
 
 type Story = StoryObj<typeof InputGroup>;
 
-/** A decorative icon inset at the start. It is `aria-hidden` because it repeats
- *  what the label already says — and it lets the click through to the field. */
+/** An icon inset before the control. It is `aria-hidden` because it repeats what
+ *  the label already says — an icon that adds nothing to a screen reader is noise. */
 export const Default: Story = {
-  args: { size: 'md' },
-  render: (args) => (
-    <InputGroup {...args}>
-      <InputGroupSlot>
-        <span aria-hidden="true">⌕</span>
-      </InputGroupSlot>
+  render: () => (
+    <InputGroup>
+      <span aria-hidden="true">⌕</span>
       <Input aria-label="Search" placeholder="Search" />
     </InputGroup>
   ),
 };
 
-/** A slot holding a real control takes its pointer events back. Give that control
- *  its own accessible name — the slot does not name it. */
+/** Put a control beside the field and it behaves like one — it keeps its own click
+ *  and its own focus ring, and the field's ring stays off while it has focus. */
 export const WithAction: Story = {
   render: () => (
     <InputGroup>
       <Input aria-label="Search" defaultValue="fieldset" />
-      <InputGroupSlot interactive>
-        <button type="button" aria-label="Clear search">
-          ✕
-        </button>
-      </InputGroupSlot>
+      <button type="button" aria-label="Clear search">
+        ✕
+      </button>
     </InputGroup>
   ),
 };
 
-/** Text on either side: a unit, a currency, a fixed prefix. */
-export const Affixes: Story = {
+/** A unit or currency beside the value. The affix is NOT associated with the
+ *  control, so whatever it means has to be in the label or the description —
+ *  here the label carries it and the symbol is decorative. */
+export const Affix: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-      <InputGroup>
-        <InputGroupSlot>€</InputGroupSlot>
-        <Input aria-label="Amount" inputMode="decimal" placeholder="0.00" />
-      </InputGroup>
-      <InputGroup>
-        <InputGroupSlot>https://</InputGroupSlot>
-        <Input aria-label="Site" placeholder="example.com" />
-      </InputGroup>
-    </div>
+    <InputGroup>
+      <Input
+        aria-label="Amount in euros"
+        inputMode="decimal"
+        placeholder="0.00"
+      />
+      <span aria-hidden="true">€</span>
+    </InputGroup>
   ),
 };
 
-/** Heights match Input and Button, so a row of controls lines up. */
+/** The height comes from the control, so a grouped field lines up with a bare one
+ *  and `size` is declared in exactly one place. */
 export const Sizes: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
       {(['sm', 'md', 'lg'] as const).map((size) => (
-        <InputGroup key={size} size={size}>
-          <InputGroupSlot>
-            <span aria-hidden="true">⌕</span>
-          </InputGroupSlot>
-          <Input aria-label={`Search ${size}`} placeholder={size} />
+        <InputGroup key={size}>
+          <span aria-hidden="true">⌕</span>
+          <Input size={size} aria-label={`Search ${size}`} placeholder={size} />
         </InputGroup>
       ))}
+      <Input
+        size="md"
+        aria-label="Bare, for comparison"
+        placeholder="no group"
+      />
     </div>
   ),
 };
@@ -100,30 +90,29 @@ export const States: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
       <InputGroup>
-        <Input aria-label="Amount" aria-invalid defaultValue="-3" />
-        <InputGroupSlot>EUR</InputGroupSlot>
+        <Input aria-label="Amount in euros" aria-invalid defaultValue="-3" />
+        <span aria-hidden="true">€</span>
       </InputGroup>
       <InputGroup>
         <Input aria-label="Locked" disabled defaultValue="read only" />
-        <InputGroupSlot>
-          <span aria-hidden="true">🔒</span>
-        </InputGroupSlot>
+        <span aria-hidden="true">🔒</span>
       </InputGroup>
     </div>
   ),
 };
 
 /** Inside a `Field`, so the label, description and error wiring still apply — the
- *  group changes the chrome, not the a11y contract. */
+ *  group changes the chrome, not the a11y contract. The label is where the unit
+ *  is stated, because the affix beside the control is not associated with it. */
 export const InAField: Story = {
   render: () => (
     <Field>
-      <FieldLabel>Budget</FieldLabel>
+      <FieldLabel>Budget per person, in euros</FieldLabel>
       <InputGroup>
-        <InputGroupSlot>€</InputGroupSlot>
         <Input inputMode="decimal" placeholder="0.00" />
+        <span aria-hidden="true">€</span>
       </InputGroup>
-      <FieldDescription>Per person, taxes included.</FieldDescription>
+      <FieldDescription>Taxes included.</FieldDescription>
     </Field>
   ),
 };
