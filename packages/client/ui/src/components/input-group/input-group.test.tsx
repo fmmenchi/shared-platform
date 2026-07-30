@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { InputGroup } from './input-group.component.js';
 import { Input } from '../input/input.component.js';
+import { Field } from '../field/field.component.js';
+import { FieldLabel } from '../field-label/field-label.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -147,6 +150,38 @@ describe('InputGroup', () => {
       </InputGroup>,
     );
     expect(borderWidth(screen.getByTestId('group'))).toBe(1);
+  });
+
+  // How an error actually reaches the user, end to end and through three
+  // components that know nothing about each other: `Field` puts `aria-invalid` on
+  // the CONTROL, the group reads it off its direct child to draw the chrome, and
+  // `FieldError` registers into the CONTROL's describedby. The group has no
+  // `invalid` prop precisely because it would be a third source of truth.
+  it('carries an error through Field → control → group, with no prop of its own', async () => {
+    renderUi(
+      <Field invalid data-testid="field">
+        <FieldLabel>Budget in euros</FieldLabel>
+        <InputGroup data-testid="group">
+          <Input inputMode="decimal" />
+          <span aria-hidden="true">€</span>
+        </InputGroup>
+        <FieldError>Enter an amount above zero.</FieldError>
+      </Field>,
+    );
+    const control = screen.getByRole('textbox', { name: 'Budget in euros' });
+    const message = screen.getByText('Enter an amount above zero.');
+
+    // the state is on the control, where the form library would have put it
+    expect(control).toHaveAttribute('aria-invalid', 'true');
+    // the chrome follows, without the group being told anything
+    expect(borderWidth(screen.getByTestId('group'))).toBe(2);
+    // and the message describes the CONTROL, not the group
+    await waitFor(() =>
+      expect(control.getAttribute('aria-describedby')).toContain(message.id),
+    );
+    expect(
+      screen.getByTestId('group').getAttribute('aria-describedby'),
+    ).toBeNull();
   });
 
   it('forwards ref to the group element', () => {

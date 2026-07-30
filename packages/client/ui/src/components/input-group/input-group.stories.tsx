@@ -4,6 +4,7 @@ import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
 import { FieldLabel } from '../field-label/field-label.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 
 const meta: Meta<typeof InputGroup> = {
   title: 'Components/Inputs/InputGroup',
@@ -113,6 +114,23 @@ export const InAField: Story = {
         <span aria-hidden="true">€</span>
       </InputGroup>
       <FieldDescription>Taxes included.</FieldDescription>
+    </Field>
+  ),
+};
+
+/** An error goes through three components that know nothing about each other:
+ *  `Field` puts `aria-invalid` on the CONTROL, the group reads it off its direct
+ *  child to draw the chrome, and `FieldError` describes the control. The group has
+ *  no `invalid` prop of its own — it would be a third source of truth. */
+export const WithError: Story = {
+  render: () => (
+    <Field invalid>
+      <FieldLabel>Budget per person, in euros</FieldLabel>
+      <InputGroup>
+        <Input inputMode="decimal" defaultValue="-3" />
+        <span aria-hidden="true">€</span>
+      </InputGroup>
+      <FieldError>Enter an amount above zero.</FieldError>
     </Field>
   ),
 };

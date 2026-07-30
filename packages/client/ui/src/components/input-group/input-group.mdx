@@ -49,6 +49,10 @@ nothing else: no wrapper per child, no state of its own, no JavaScript.
 
 <Canvas of={InputGroupStories.InAField} />
 
+### An error
+
+<Canvas of={InputGroupStories.WithError} />
+
 ## Guidelines
 
 ### When you do NOT need one
@@ -71,6 +75,20 @@ have the group render the control itself (Radix's `TextField.Root`) or to take t
 (Mantine's `leftSection`, Chakra's `startElement`). Both break the contract that makes our `Input`
 usable with any form library: you must be able to spread `{...register()}` onto the real element and
 forward a ref to it. So the control stays a child you pass.
+
+### Errors are the field's, not the group's
+
+The group has no `invalid` prop, and needs none. Wrap it in a `Field`, set `invalid`
+there, and three components that know nothing about each other do the work:
+
+1. **`Field`** puts `aria-invalid` on the **control**, through context;
+2. **the group** reads that off its direct child and draws the error chrome;
+3. **`FieldError`** registers into the **control's** `aria-describedby`.
+
+So the message describes the control, not the box around it, and the visual state
+cannot disagree with the announced one — there is only ever one place the truth
+lives. A prop here would be a third, and the two defects this component shipped
+were both a second source of truth outranking the first.
 
 ### The chrome moves; the state and the height do not
 
