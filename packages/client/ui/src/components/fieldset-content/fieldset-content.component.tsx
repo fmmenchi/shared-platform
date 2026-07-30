@@ -1,6 +1,6 @@
 import { cn } from '../../util/cn.js';
-import { fieldsetContentVariants } from './fieldset.variants.js';
-import type { FieldsetContentProps } from './fieldset.types.js';
+import { fieldsetContentVariants } from './fieldset-content.variants.js';
+import type { FieldsetContentProps } from './fieldset-content.types.js';
 
 /**
  * Lays out the group's controls. It exists because the rendered `<legend>` sits

@@ -1,6 +1,6 @@
 /*
- * Fieldset styles — layout, the UA resets, and text roles. Colours ONLY through
- * semantic role utilities; `@reference` resolves `@apply`.
+ * Fieldset layout and the two UA resets a native <fieldset> needs. Colours ONLY through semantic role utilities; `@reference` resolves
+ * `@apply`.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
@@ -20,36 +20,5 @@
     margin: 0;
     border: 0;
     padding: 0;
-  }
-
-  /* The rendered <legend> is placed over the block-start border, OUTSIDE the
-     fieldset's anonymous layout box — it is not a grid item, so the container's
-     `gap` never reaches it. Its spacing is therefore a margin, and it reads the
-     SAME custom property the `gap-internal-xs` utility compiles to, so the two
-     cannot drift apart. */
-  .legend {
-    @apply text-foreground text-sm font-medium;
-    padding: 0;
-    margin-block-end: var(--spacing-internal-xs);
-  }
-
-  /* `min-inline-size: 0` is what actually lets the fieldset's single auto track
-     shrink: the track takes the LARGEST minimum contribution of its items, so
-     resetting the fieldset alone was not enough — a long unbreakable description
-     would stretch the track and with it the box holding the controls. The group's
-     description and error are `FieldDescription`/`FieldError`, which carry their
-     own reset (including the UA paragraph margin) from field.module.css. */
-  .content {
-    min-inline-size: 0;
-  }
-
-  /* The controls' own layout lives here, not on the <fieldset> (see .legend).
-     Stacked options are siblings in a list, so they take the `stack` step, not
-     the `internal` one that spaces a component's own parts. */
-  .vertical {
-    @apply grid gap-stack-s;
-  }
-  .horizontal {
-    @apply flex flex-wrap gap-inline-s;
   }
 }

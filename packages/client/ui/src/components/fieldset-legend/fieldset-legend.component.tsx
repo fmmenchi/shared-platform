@@ -1,7 +1,7 @@
 import { cn } from '../../util/cn.js';
 import { useDescribable } from '../../primitives/describable.js';
-import type { FieldsetLegendProps } from './fieldset.types.js';
-import styles from './fieldset.module.css';
+import type { FieldsetLegendProps } from './fieldset-legend.types.js';
+import styles from './fieldset-legend.module.css';
 
 /**
  * Names the group. A native `<legend>` is the group's accessible name with no id

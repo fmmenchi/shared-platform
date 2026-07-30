@@ -63,7 +63,42 @@
       "import": "./dist/fieldset.js",
       "default": "./dist/fieldset.js"
     },
-    "./fieldset/style.css": "./dist/fieldset.css"
+    "./fieldset/style.css": "./dist/fieldset.css",
+    "./field-label": {
+      "@fmmenchi/source": "./src/components/field-label/index.ts",
+      "types": "./dist/components/field-label/index.d.ts",
+      "import": "./dist/field-label.js",
+      "default": "./dist/field-label.js"
+    },
+    "./field-label/style.css": "./dist/field-label.css",
+    "./field-description": {
+      "@fmmenchi/source": "./src/components/field-description/index.ts",
+      "types": "./dist/components/field-description/index.d.ts",
+      "import": "./dist/field-description.js",
+      "default": "./dist/field-description.js"
+    },
+    "./field-description/style.css": "./dist/field-description.css",
+    "./field-error": {
+      "@fmmenchi/source": "./src/components/field-error/index.ts",
+      "types": "./dist/components/field-error/index.d.ts",
+      "import": "./dist/field-error.js",
+      "default": "./dist/field-error.js"
+    },
+    "./field-error/style.css": "./dist/field-error.css",
+    "./fieldset-legend": {
+      "@fmmenchi/source": "./src/components/fieldset-legend/index.ts",
+      "types": "./dist/components/fieldset-legend/index.d.ts",
+      "import": "./dist/fieldset-legend.js",
+      "default": "./dist/fieldset-legend.js"
+    },
+    "./fieldset-legend/style.css": "./dist/fieldset-legend.css",
+    "./fieldset-content": {
+      "@fmmenchi/source": "./src/components/fieldset-content/index.ts",
+      "types": "./dist/components/fieldset-content/index.d.ts",
+      "import": "./dist/fieldset-content.js",
+      "default": "./dist/fieldset-content.js"
+    },
+    "./fieldset-content/style.css": "./dist/fieldset-content.css"
   },
   "nx": {
     "tags": [

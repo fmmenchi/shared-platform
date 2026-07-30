@@ -18,16 +18,3 @@ interface FieldOwnProps {
  */
 export type FieldProps = FieldOwnProps &
   Omit<ComponentPropsWithRef<'div'>, keyof FieldOwnProps>;
-
-/** The field's label — associates with the control via the shared id. */
-export type FieldLabelProps = ComponentPropsWithRef<'label'>;
-
-/** Helper text, registered into the control's `aria-describedby`. */
-export type FieldDescriptionProps = ComponentPropsWithRef<'p'>;
-
-/**
- * The error message, registered into `aria-describedby` and rendered only when
- * it has content. Announcement of a freshly-appearing error (focus-on-error or
- * an error summary) is the consumer's job.
- */
-export type FieldErrorProps = ComponentPropsWithRef<'p'>;

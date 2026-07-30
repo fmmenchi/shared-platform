@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { Field } from './field.component.js';
-import { FieldLabel } from './field-label.component.js';
-import { FieldDescription } from './field-description.component.js';
-import { FieldError } from './field-error.component.js';
+import { FieldLabel } from '../field-label/field-label.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { Input } from '../input/input.component.js';
 import { useField } from './use-field.js';
 import { renderUi } from '../../test/render.js';
@@ -24,18 +23,6 @@ describe('Field', () => {
     const label = screen.getByText('Email');
     expect(label).toHaveAttribute('for', input.id);
     expect(input.id).toBeTruthy();
-  });
-
-  it('focuses the control when the label is clicked', async () => {
-    const user = userEvent.setup();
-    render(
-      <Field>
-        <FieldLabel>Email</FieldLabel>
-        <Input />
-      </Field>,
-    );
-    await user.click(screen.getByText('Email'));
-    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveFocus();
   });
 
   it('describes the control with the description text', async () => {
@@ -67,19 +54,6 @@ describe('Field', () => {
     await waitFor(() =>
       expect(input.getAttribute('aria-describedby')).toContain(err.id),
     );
-  });
-
-  it('renders no error and adds nothing to aria-describedby when the error is empty', () => {
-    render(
-      <Field>
-        <FieldLabel>Email</FieldLabel>
-        <Input />
-        <FieldError>{false}</FieldError>
-      </Field>,
-    );
-    const input = screen.getByRole('textbox', { name: 'Email' });
-    expect(input).not.toHaveAttribute('aria-describedby');
-    expect(input).not.toHaveAttribute('aria-invalid');
   });
 
   it('the control’s own aria-invalid overrides the field, and its describedby merges', async () => {
@@ -136,29 +110,6 @@ describe('Field', () => {
     );
   });
 
-  it('drops the error from aria-describedby when its content clears', async () => {
-    const { rerender } = render(
-      <Field invalid>
-        <FieldLabel>Email</FieldLabel>
-        <Input />
-        <FieldError>Required.</FieldError>
-      </Field>,
-    );
-    const input = screen.getByRole('textbox', { name: 'Email' });
-    const err = screen.getByText('Required.');
-    await waitFor(() =>
-      expect(input.getAttribute('aria-describedby')).toContain(err.id),
-    );
-    rerender(
-      <Field invalid>
-        <FieldLabel>Email</FieldLabel>
-        <Input />
-        <FieldError>{null}</FieldError>
-      </Field>,
-    );
-    await waitFor(() => expect(input).not.toHaveAttribute('aria-describedby'));
-  });
-
   it('warns when more than one control shares a Field', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(
@@ -178,14 +129,6 @@ describe('Field', () => {
     const input = screen.getByRole('textbox', { name: 'Solo' });
     expect(input).not.toHaveAttribute('aria-describedby');
     expect(input).not.toHaveAttribute('aria-invalid');
-  });
-
-  it('warns when FieldLabel is used outside a Field', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    render(<FieldLabel>Orphan</FieldLabel>);
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('outside a <Field>'),
-    );
   });
 
   it('forwards ref to the container element', () => {

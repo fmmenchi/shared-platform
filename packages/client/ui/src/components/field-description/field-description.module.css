@@ -1,0 +1,22 @@
+/*
+ * Helper text for a field or a group. Colours ONLY through semantic role utilities; `@reference` resolves
+ * `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* `margin-block: 0` is not cosmetic: this is a <p> and the DS ships no
+     preflight, so in a consumer page it would carry the UA `margin-block: 1em`
+     — 14px on top of the container's 4px grid gap. `min-inline-size: 0` lets the
+     container's single auto track shrink, since the track takes the LARGEST
+     minimum contribution of its items and an unbreakable string would otherwise
+     stretch it (and the control) past its bounds. */
+  .description {
+    @apply text-muted-foreground text-sm;
+    min-inline-size: 0;
+    margin-block: 0;
+  }
+}

@@ -2,22 +2,22 @@
 
 exports[`Fieldset > matches the rendered snapshot 1`] = `
 <fieldset
-  aria-describedby="_r_11_"
-  class="_fieldset_sjs14_4"
+  aria-describedby="_r_e_"
+  class="_fieldset_1wj81_3"
 >
   <legend
-    class="_legend_sjs14_12"
+    class="_legend_6q5yt_4"
   >
     Favourite colour
   </legend>
   <p
-    class="_description_14nhl_15"
-    id="_r_11_"
+    class="_description_g1y21_3"
+    id="_r_e_"
   >
     Pick exactly one.
   </p>
   <div
-    class="_content_sjs14_21 _vertical_sjs14_24"
+    class="_content_1cqsy_3 _vertical_1cqsy_6"
   >
     <label>
       <input
