@@ -9,7 +9,7 @@ import { FieldLabel } from '../field-label/field-label.component.js';
 import { Input } from '../input/input.component.js';
 
 const meta: Meta<typeof Fieldset> = {
-  title: 'Components/Fieldset',
+  title: 'Components/Inputs/Fieldset',
   component: Fieldset,
   // The Props table is CURATED here (react-docgen can't derive it) — declare
   // every public prop with type summary, default and description.

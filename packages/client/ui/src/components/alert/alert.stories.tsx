@@ -4,7 +4,7 @@ import { Alert } from './alert.component.js';
 const VARIANTS = ['info', 'success', 'warning', 'error'] as const;
 
 const meta: Meta<typeof Alert> = {
-  title: 'Components/Alert',
+  title: 'Components/Feedback/Alert',
   component: Alert,
   args: { children: 'Your changes have been saved.', variant: 'info' },
   argTypes: {

@@ -17,7 +17,7 @@ const PlusIcon = (
 );
 
 const meta: Meta<typeof Button> = {
-  title: 'Components/Button',
+  title: 'Components/Buttons/Button',
   component: Button,
   args: { children: 'Button' },
   // The Props table is CURATED here: the polymorphic generic signature defeats
