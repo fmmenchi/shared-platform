@@ -48,7 +48,7 @@ starter `libraries` / `plugins` `_category_.json` markers (rename/add to match y
 `doc:<category>` tags), and a `.gitignore`. It also appends `build` and
 `.docusaurus` to the workspace `.prettierignore` when present. The generated `package.json` wires
 these targets: `config-generator`, `sync-docs`, `watch-sync-docs`, `start` (`docusaurus start`),
-`build` (`docusaurus build`), `serve` (`docusaurus serve`).
+`build` (`docusaurus build`), `serve` (`docusaurus serve`), `clear` (`docusaurus clear`, uncached).
 
 ---
 
