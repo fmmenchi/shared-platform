@@ -2,7 +2,7 @@
 
 exports[`Fieldset > matches the rendered snapshot 1`] = `
 <fieldset
-  aria-describedby="_r_e_"
+  aria-describedby="«react-id»"
   class="_fieldset_1wj81_3"
 >
   <legend
@@ -12,7 +12,7 @@ exports[`Fieldset > matches the rendered snapshot 1`] = `
   </legend>
   <p
     class="_description_g1y21_3"
-    id="_r_e_"
+    id="«react-id»"
   >
     Pick exactly one.
   </p>
