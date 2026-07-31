@@ -165,5 +165,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "react-hook-form": "^7.83.0"
   }
 }

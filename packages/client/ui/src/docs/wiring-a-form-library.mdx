@@ -1,0 +1,114 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guidelines/Wiring a form library" />
+
+# Wiring a form library
+
+The design system ships **nothing** for this, on purpose: its controls are transparent (ADR-0013), so
+any form library already fits. What follows is the small amount of code your app writes once — and it
+is executed as a test in this repo, so if a recipe here is wrong, CI says so.
+
+## The whole contact point
+
+Every form library can produce a **bag of native input props** and a **message**. That is the entire
+contract, and it is the widest one available — which is why the design system does not need to define
+an interface for it:
+
+```ts
+interface Bound {
+  control: Omit<ComponentProps<'input'>, 'size'>;
+  error?: string;
+}
+```
+
+Omit `size`: on `Input` that name is the design system's **sizing axis** (`sm`/`md`/`lg`), so the
+native numeric attribute would not typecheck — and, worse, would silently mean something else.
+
+## Recipe 1 — a hook, and nothing else
+
+The smallest thing that works. All of the library's quirks live in one place, and the call site is
+three lines:
+
+```tsx
+// app/form/use-adapter.ts
+export function useAdapter(name: string): Bound {
+  const { register, control } = useFormContext();
+  const { errors } = useFormState({ control, name });
+  return { control: register(name), error: errors[name]?.message };
+}
+
+// anywhere
+const { control, error } = useAdapter('email');
+<Field label="Email" error={error}>
+  <Input {...control} />
+</Field>;
+```
+
+**Two things in that hook are load-bearing**, and both were found by measuring rather than reading:
+
+- **`useFormState`, not `formState` off the context.** react-hook-form's `formState` is a Proxy, and
+  its subscription does **not** reach a nested component — read it there and the error never arrives,
+  with nothing at all to tell you.
+- **`{ control, name }` subscribes per FIELD**, so one field's error does not re-render the others.
+
+## Recipe 2 — one component per anatomy
+
+When the three lines repeat across a large form, wrap them. Roughly eight lines each, and the call
+site becomes one tag:
+
+```tsx
+function FormInput({ name, label, hint, ...rest }) {
+  const { control, error } = useAdapter(name);
+  return (
+    <Field label={label} hint={hint} error={error}>
+      <Input {...control} {...rest} />
+    </Field>
+  );
+}
+
+function FormChoice({ name, label }) {
+  const { control, error } = useAdapter(name);
+  return (
+    <ChoiceField label={label} error={error}>
+      <Checkbox {...control} />
+    </ChoiceField>
+  );
+}
+```
+
+Spread the binding **first** and the caller's props after, so an explicit `type` or `placeholder` at
+the call site is never erased by the binding.
+
+## It really is library-agnostic
+
+The same two components work with no form library at all — the second executed recipe swaps
+`useAdapter` for a dozen lines of `useState` and changes nothing else:
+
+```tsx
+const adapter = (name: string): Bound => ({
+  control: {
+    name,
+    onChange: (e) => setValues({ ...values, [name]: e.target.value }),
+  },
+  error: errors[name],
+});
+```
+
+If a component could tell the difference, it would not be transparent.
+
+## Loading values that arrive later
+
+Hand the data to the library as its **`values`** — `useForm({ defaultValues, values: data })`. Do
+**not** reach for `reset(data)` in an effect: measured, it does not update the fields. See
+[Form field wiring](?path=/docs/guidelines-form-field-wiring--docs).
+
+## Where the rules go
+
+With this shape a per-field rule stays at the call site, because your own component decides its own
+signature — `register(name, rules)` is right there. That is the freedom you keep by owning these
+eight lines instead of importing them.
+
+## See also
+
+- [Form field wiring](?path=/docs/guidelines-form-field-wiring--docs) — labels, descriptions and errors.
+- [Controlled and uncontrolled](?path=/docs/guidelines-controlled-and-uncontrolled--docs) — who holds the value.
