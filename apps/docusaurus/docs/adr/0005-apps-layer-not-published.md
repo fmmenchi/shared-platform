@@ -1,8 +1,12 @@
 # ADR 0005 — `apps/` hosts non-published sites; the docs site lives there
 
-- **Status:** accepted (2026-07-22)
+- **Status:** superseded by [ADR-0020](./0020-where-things-live.md) (2026-07-30) — was: accepted (2026-07-22)
 - **Date:** 2026-07-22
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0020 — Where things live](./0020-where-things-live.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0020 for what is in force.
 
 ## Context and problem statement
 

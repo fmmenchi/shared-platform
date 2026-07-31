@@ -1,8 +1,12 @@
 # ADR 0015 — Storybook categories live in story titles; docs come in three levels
 
-- **Status:** accepted (2026-07-30)
+- **Status:** superseded by [ADR-0019](./0019-ui-package-organisation.md) (2026-07-30) — was: accepted (2026-07-30)
 - **Date:** 2026-07-30
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0019 — How the UI package is organised](./0019-ui-package-organisation.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0019 for what is in force.
 
 ## Context and problem statement
 

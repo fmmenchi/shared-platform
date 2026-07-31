@@ -1,8 +1,12 @@
 # ADR 0003 — Browser support target: Web Platform Baseline
 
-- **Status:** accepted (2026-07-18)
+- **Status:** superseded by [ADR-0017](./0017-browser-platform-target.md) (2026-07-30) — was: accepted (2026-07-18)
 - **Date:** 2026-07-18
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0017 — Browser platform target](./0017-browser-platform-target.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0017 for what is in force.
 
 > Accepted after a deliberation period during which the tooling ran in CI. The policy proved
 > itself three times before acceptance: the `getTextInfo` incident that motivated it, and — via
