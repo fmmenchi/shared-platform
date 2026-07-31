@@ -69,3 +69,5 @@ export { InputGroup } from './components/input-group/input-group.component.js';
 export type { InputGroupProps } from './components/input-group/input-group.types.js';
 export { Radio } from './components/radio/radio.component.js';
 export type { RadioProps } from './components/radio/radio.types.js';
+export { Checkbox } from './components/checkbox/checkbox.component.js';
+export type { CheckboxProps } from './components/checkbox/checkbox.types.js';

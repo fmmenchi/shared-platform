@@ -1,0 +1,62 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as CheckboxStories from './checkbox.stories.tsx';
+
+<Meta of={CheckboxStories} />
+
+# Checkbox
+
+An independent yes/no choice, on the native `<input type="checkbox">`. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref and spreads every native prop, and never touches `checked`/`onChange`, so it works uncontrolled or controlled and drops into any form library.
+
+**Not a radio with square corners.** Checkboxes sharing a `name` do **not** pair — each is its own value — and each takes its own tab stop, where a whole radio group takes one.
+
+## Props
+
+Every native `<input>` attribute is accepted except `type`, which is fixed. There is no `size` and no `variant`.
+
+<Controls of={CheckboxStories.Default} />
+
+## Usage
+
+### A single choice
+
+Label it by **nesting** it in a `<label>`, which associates the two with no `id` and makes the text part of the click target.
+
+<Canvas of={CheckboxStories.Default} />
+
+### States
+
+<Canvas of={CheckboxStories.States} />
+
+### A group
+
+<Canvas of={CheckboxStories.Group} />
+
+### The error belongs to the group
+
+<Canvas of={CheckboxStories.GroupError} />
+
+### Mixed — a parent summarising its children
+
+`indeterminate` is the reason this component is not a pure passthrough. It is a **DOM property with no HTML attribute**, so React cannot set it from props — and passing it as one does nothing at all, with **no warning** (measured). The component applies it via a ref.
+
+Two things follow, and both are visible in the story below:
+
+- **It is independent of `checked`.** A mixed box is not a checked box; the browser exposes it as `aria-checked="mixed"` on its own, so never write that attribute yourself.
+- **It is transient.** Clicking a mixed box clears the property natively. The component re-asserts your prop immediately afterwards, so the prop stays the source of truth — but the state it summarises is yours to recompute in `onChange`, exactly as in the story.
+
+<Canvas of={CheckboxStories.TriState} />
+
+## Accessibility
+
+- **The control keeps its native rendering**, tinted with `accent-color`, for the reason measured on [Radio](?path=/docs/components-inputs-radio--docs): a hand-drawn mark is erased in Windows High Contrast, leaving checked indistinguishable from unchecked. The trade is that only the mark is ours to colour, which is why the invalid state lives on the enclosing `Fieldset`.
+- **Mixed is announced natively.** Setting the property is enough; adding `aria-checked` would be redundant ARIA that can then contradict the property.
+- **Name a group.** Several related boxes belong in a `Fieldset` with a `FieldsetLegend`; without it a screen reader announces "Alpha, checkbox" with no idea what is being chosen.
+- **Target size:** the control is 18px, above the ~13px UA default. The row carries WCAG 2.5.8 — a wrapping `<label>` makes the text clickable too, so leave vertical gap between boxes.
+- **`disabled`** removes the box from the tab order and the accessibility tree. Never use it to lock a **required** consent box — a screen-reader user cannot reach it to find out why.
+
+## Notes for maintainers
+
+The stylesheet is a near-copy of `radio.module.css`. That is deliberate: each component owns its stylesheet ([ADR-0019](../../../../../apps/docusaurus/docs/adr/0019-ui-package-organisation.md)), and the alternative is a file reaching into a sibling's styles for eight lines.
+
+The `margin: 0` reset of the UA's asymmetric margin is **not** covered by a computed-style test — this page loads Tailwind Preflight, which zeroes it anyway, so such a test would pass with the line deleted. It is verified against the built `dist/checkbox.css`.

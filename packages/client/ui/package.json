@@ -112,7 +112,14 @@
       "import": "./dist/radio.js",
       "default": "./dist/radio.js"
     },
-    "./radio/style.css": "./dist/radio.css"
+    "./radio/style.css": "./dist/radio.css",
+    "./checkbox": {
+      "@fmmenchi/source": "./src/components/checkbox/index.ts",
+      "types": "./dist/components/checkbox/index.d.ts",
+      "import": "./dist/checkbox.js",
+      "default": "./dist/checkbox.js"
+    },
+    "./checkbox/style.css": "./dist/checkbox.css"
   },
   "nx": {
     "tags": [
