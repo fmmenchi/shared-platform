@@ -65,3 +65,5 @@ export type {
   FieldsetContentProps,
   FieldsetOrientation,
 } from './components/fieldset-content/fieldset-content.types.js';
+export { InputGroup } from './components/input-group/input-group.component.js';
+export type { InputGroupProps } from './components/input-group/input-group.types.js';

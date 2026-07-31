@@ -1,0 +1,123 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as InputGroupStories from './input-group.stories.tsx';
+
+<Meta of={InputGroupStories} />
+
+# InputGroup
+
+Puts content inside a field's border — a search icon, a currency symbol, a clear button — around a
+control that stays a plain, transparent child. It is one element with the field's chrome on it and
+nothing else: no wrapper per child, no state of its own, no JavaScript.
+
+## Anatomy
+
+- **`InputGroup`** — the field's border, fill and radius, plus the focus ring and the invalid and
+  disabled looks, read from the control's own state.
+- **the control** — `Input`, or anything else. It keeps its height, padding and type scale, so a field
+  inside a group lines up with one outside it.
+- **whatever you inset** — your icon, your button. There is no slot component: the row's `gap` spaces
+  it and one rule makes it read as secondary (ADR-0016).
+
+## Props
+
+<Controls of={InputGroupStories.Default} />
+
+## Usage
+
+### Default
+
+<Canvas of={InputGroupStories.Default} />
+
+### With an action
+
+<Canvas of={InputGroupStories.WithAction} />
+
+### An affix
+
+<Canvas of={InputGroupStories.Affix} />
+
+### Sizes
+
+<Canvas of={InputGroupStories.Sizes} />
+
+### States
+
+<Canvas of={InputGroupStories.States} />
+
+### In a Field
+
+<Canvas of={InputGroupStories.InAField} />
+
+### An error
+
+<Canvas of={InputGroupStories.WithError} />
+
+## Guidelines
+
+### When you do NOT need one
+
+Around our own `Input`, a group with nothing inset is the same field with an extra element: `Input`
+already draws that border and that height. Reach for a group when something has to sit inside the
+border — or when the control is **not** ours.
+
+That second case is worth knowing: a third-party date picker or masked input renders a bare, unstyled
+`<input>`. Wrapping it gives it the field chrome without a style override, while
+[`useField()`](?path=/docs/components-inputs-field--docs) gives it the label and description wiring.
+One caveat — the group's state selectors read its **direct child**, so a third-party control that
+renders its input nested inside its own wrapper will not get the invalid or disabled chrome
+automatically; style those from your own state.
+
+### Why a wrapper, and not `startIcon` on the input
+
+Inner content sits **inside** the border, and an `<input>` renders no children. The alternatives are to
+have the group render the control itself (Radix's `TextField.Root`) or to take the content as props
+(Mantine's `leftSection`, Chakra's `startElement`). Both break the contract that makes our `Input`
+usable with any form library: you must be able to spread `{...register()}` onto the real element and
+forward a ref to it. So the control stays a child you pass.
+
+### Errors are the field's, not the group's
+
+The group has no `invalid` prop, and needs none. Wrap it in a `Field`, set `invalid`
+there, and three components that know nothing about each other do the work:
+
+1. **`Field`** puts `aria-invalid` on the **control**, through context;
+2. **the group** reads that off its direct child and draws the error chrome;
+3. **`FieldError`** registers into the **control's** `aria-describedby`.
+
+So the message describes the control, not the box around it, and the visual state
+cannot disagree with the announced one — there is only ever one place the truth
+lives. A prop here would be a third, and the two defects this component shipped
+were both a second source of truth outranking the first.
+
+### The chrome moves; the state and the height do not
+
+The group takes what would otherwise be drawn twice — border, fill, radius — and nothing else. The
+control keeps its **height**, so there is no size axis here that could disagree with the field inside
+it, and it keeps its **state**: `aria-invalid` and `disabled` stay where your form library sets them,
+and the group reflects them with `:has()`.
+
+The border is drawn as an inset shadow rather than a real border, because a real one would add its 2px
+to the field: the same control would stand 38px tall in a group and 36px bare, and a form row would not
+line up.
+
+## Accessibility
+
+- **The group is not a control and takes no role.** It is a box around one; the name, the value and the
+  states belong to the control inside. Wrap it in a
+  [Field](?path=/docs/components-inputs-field--docs) for the label and description wiring — the group
+  changes the chrome, not that contract.
+- **What you inset is not associated with the control.** A decorative icon should be `aria-hidden`
+  (icons are app-side, so we cannot do it for you). Text that carries meaning — a currency, a unit — is
+  the harder case: it is announced as page text but never as part of the field, so **say it in the
+  label**, as the `Affix` and `InAField` stories do with "Amount in euros". A `https://` prefix beside
+  a field labelled only "Site" is the trap: a screen-reader user types the full URL and submits it
+  twice over.
+- **An icon-only control beside the field needs its own name** (`aria-label`) and its own target size —
+  24×24 CSS px minimum (WCAG 2.5.8), which a bare `<button>` with a glyph does not reach on its own.
+- **The focus ring is drawn on the group**, but only for the control's focus. A button inset beside the
+  field keeps its own ring, and the field's stays off — otherwise the whole field would light up while
+  the caret is on the button.
+- **Invalid is not colour alone** — the border changes colour _and_ weight. Under forced colors the
+  colour is overridden by the system, so the **weight** is what carries the state there; the field
+  keeps its outline because a real border is restored in that mode.
