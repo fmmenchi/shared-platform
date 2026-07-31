@@ -1,8 +1,12 @@
 # ADR 0011 — DS css ships in a cascade layer; consumers override unlayered
 
-- **Status:** accepted (2026-07-28)
+- **Status:** superseded by [ADR-0018](./0018-how-the-ds-ships-css.md) (2026-07-30) — was: accepted (2026-07-28)
 - **Date:** 2026-07-28
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0018 — How the design system ships CSS](./0018-how-the-ds-ships-css.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0018 for what is in force.
 
 ## Context and problem statement
 

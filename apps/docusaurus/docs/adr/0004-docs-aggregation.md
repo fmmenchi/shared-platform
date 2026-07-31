@@ -1,8 +1,12 @@
 # ADR 0004 — Docs live in the packages; the site aggregates them
 
-- **Status:** accepted (2026-07-21)
+- **Status:** superseded by [ADR-0020](./0020-where-things-live.md) (2026-07-30) — was: accepted (2026-07-21)
 - **Date:** 2026-07-21
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0020 — Where things live](./0020-where-things-live.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0020 for what is in force.
 
 ## Context and problem statement
 

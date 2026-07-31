@@ -1,8 +1,12 @@
 # ADR 0010 — Use everything Widely; Newly only as graceful progressive enhancement
 
-- **Status:** accepted (2026-07-29) — extends [ADR-0003](./0003-browser-support-baseline.md)
+- **Status:** superseded by [ADR-0017](./0017-browser-platform-target.md) (2026-07-30) — was: accepted (2026-07-29) — extends [ADR-0003](./0003-browser-support-baseline.md)
 - **Date:** 2026-07-29
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0017 — Browser platform target](./0017-browser-platform-target.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0017 for what is in force.
 
 ## Context and problem statement
 

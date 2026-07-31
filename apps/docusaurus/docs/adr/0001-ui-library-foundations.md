@@ -1,8 +1,12 @@
 # ADR 0001 — UI library foundations
 
-- **Status:** draft (scouting)
+- **Status:** superseded by [ADR-0002](./0002-ui-library-foundations-decision.md) (2026-07-30) — was: draft (scouting)
 - **Date:** 2026-07-17
 - **Deciders:** Fabio Menchicchi
+
+> **Superseded.** This decision now lives in [ADR-0002 — UI library foundations: the decision this ADR was scouting for](./0002-ui-library-foundations-decision.md),
+> which consolidates it with the decisions it belonged with. The text below is kept unchanged as the
+> record of what was decided and why; read 0002 for what is in force.
 
 ## Context and problem statement
 
