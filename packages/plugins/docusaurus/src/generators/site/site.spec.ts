@@ -45,6 +45,9 @@ describe('site generator', () => {
     );
     expect(targets['sync-docs'].options.targetPath).toBe('apps/docs/docs');
     expect(targets.build.dependsOn).toContain('sync-docs');
+    // clear wipes the .docusaurus cache — caching it would defeat its purpose
+    expect(targets.clear.options.command).toBe('docusaurus clear');
+    expect(targets.clear.cache).toBe(false);
     expect(pkg.dependencies['@fmmenchi/nx-docusaurus']).toBe('workspace:*');
   });
 

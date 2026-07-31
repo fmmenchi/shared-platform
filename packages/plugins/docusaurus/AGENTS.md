@@ -44,8 +44,9 @@ Full reference: [`docs/reference`](./docs/reference/index.md). Design: ADR-0004 
   and a `.gitignore` for the manifest.
 
 **Wired targets** (site `package.json`): `build` → `sync-docs` → `config-generator`; `start` (dev
-server) → `watch-sync-docs` → `config-generator`; `serve` standalone. Never call `config-generator`
-/ `sync-docs` by hand — `build`/`start` pull them in.
+server) → `watch-sync-docs` → `config-generator`; `serve` and `clear` (`docusaurus clear`, uncached)
+standalone. Never call `config-generator` / `sync-docs` by hand — `build`/`start` pull them in.
+Targets live in the **site generator's template**, never hand-added to a generated project.
 
 ## Rules
 

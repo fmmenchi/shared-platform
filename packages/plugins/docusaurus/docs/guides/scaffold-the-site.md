@@ -58,9 +58,14 @@ The generated `package.json` defines these Nx targets:
 | `start`            | `docusaurus start`  | `watch-sync-docs`  |
 | `build`            | `docusaurus build`  | `sync-docs`        |
 | `serve`            | `docusaurus serve`  | —                  |
+| `clear`            | `docusaurus clear`  | —                  |
 
 You never call `config-generator` or `sync-docs` by hand in normal use — `start` and `build` pull
 them in.
+
+`clear` wipes Docusaurus' own `.docusaurus` cache, which sits outside Nx's cache and therefore
+survives `--skip-nx-cache`. Reach for it when the site contradicts the sources — a broken-link error
+for a link that exists, or a page that keeps its old content after a sync.
 
 :::tip[Pin the URLs for deploys]
 
