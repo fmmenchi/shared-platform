@@ -105,7 +105,14 @@
       "import": "./dist/input-group.js",
       "default": "./dist/input-group.js"
     },
-    "./input-group/style.css": "./dist/input-group.css"
+    "./input-group/style.css": "./dist/input-group.css",
+    "./radio": {
+      "@fmmenchi/source": "./src/components/radio/index.ts",
+      "types": "./dist/components/radio/index.d.ts",
+      "import": "./dist/radio.js",
+      "default": "./dist/radio.js"
+    },
+    "./radio/style.css": "./dist/radio.css"
   },
   "nx": {
     "tags": [

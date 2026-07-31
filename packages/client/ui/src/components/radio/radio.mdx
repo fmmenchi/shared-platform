@@ -1,0 +1,88 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as RadioStories from './radio.stories.tsx';
+
+<Meta of={RadioStories} />
+
+# Radio
+
+One choice out of several, on the native `<input type="radio">`. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref and spreads every native prop, and never touches `checked`/`onChange`, so it works uncontrolled or controlled and drops into any form library.
+
+**There is no `RadioGroup`.** The platform already groups by `name`, and `Fieldset` already names a group — a wrapper would restate both and buy nothing.
+
+## Props
+
+Every native `<input>` attribute is accepted except `type`, which is fixed. There is no `size` and no `variant`.
+
+<Controls of={RadioStories.Default} />
+
+## Usage
+
+### A group
+
+Give every option the same `name`, wrap them in a `Fieldset` with a `FieldsetLegend`, and label each
+one by **nesting** it in a `<label>`. Nesting associates label and control with no `id`, and makes
+the text part of the click target.
+
+<Canvas of={RadioStories.Group} />
+
+### Errors belong to the group
+
+A `FieldError` inside the `Fieldset` is announced once for the whole group, and `invalid` sets
+`aria-invalid` on the `role="radiogroup"`. There is deliberately **no per-option error look**: an
+unchecked native radio exposes no border for the design system to repaint, and reddening every option
+would state one error three times.
+
+<Canvas of={RadioStories.GroupError} />
+
+### When the label is more than a name
+
+Nesting puts **everything inside the `<label>` into the accessible name**. For a plain option that is
+exactly right. For an option carrying a subtitle, a price or a badge it is not — measured:
+
+| markup                                    | accessible name                 | description                 |
+| ----------------------------------------- | ------------------------------- | --------------------------- |
+| `<label><Radio/>Pro<span>10 €/mo</span>`  | `"Pro 10 €/mo, best for teams"` | —                           |
+| `<Radio id aria-describedby/><label for>` | `"Pro"`                         | `"10 €/mo, best for teams"` |
+
+So the rule is not "always nest": **nest while the label is only the name, and switch to an explicit
+`id` + `aria-describedby` the moment it is not.** A rich option needs an id — which is why the
+richer, one-tag field components on the roadmap generate one themselves (via `Field`) rather than
+asking you to invent it.
+
+### States
+
+<Canvas of={RadioStories.States} />
+
+### Orientation
+
+Direction is `FieldsetContent`'s job, not the control's — the radio never positions itself.
+
+<Canvas of={RadioStories.Horizontal} />
+
+## Accessibility
+
+- **The control keeps its native rendering.** Only the mark is ours, tinted with `accent-color`. That
+  is a measured choice, not a default: a hand-drawn dot (`appearance: none` + a `::before`)
+  **disappears in Windows High Contrast** — dot and control both resolve to `Canvas`, leaving a
+  selected option indistinguishable from an unselected one. The native control is repainted by the OS
+  and survives.
+- **The trade:** only the mark is ours to colour, which is why the invalid state lives on the
+  enclosing `Fieldset`.
+- **Grouping is the `name`, not the DOM.** Options sharing a `name` are mutually exclusive, and the
+  browser then supplies arrow-key navigation, roving focus and **one tab stop for the whole group**.
+  Options with different names stay independent even when they look grouped — a silent defect, which
+  is why exclusivity is asserted in the tests rather than assumed.
+- **Name every group.** A `Fieldset` with no legend warns in development; without one a screen reader
+  announces "Free, radio button" with no idea what is being chosen.
+- **Target size:** the control is 18px, up from the ~13px UA default. The row carries WCAG 2.5.8 — a
+  wrapping `<label>` makes the text clickable too, so leave vertical gap between options.
+- **`disabled`** removes the option from the tab order and from the accessibility tree. For an option
+  that exists but cannot be picked yet, prefer leaving it enabled and saying why in the group's
+  `FieldDescription`.
+
+## Notes for maintainers
+
+The stylesheet resets the UA's asymmetric margin (`margin: 0`). That reset is **not** covered by a
+computed-style test: this page loads Tailwind Preflight, which zeroes the margin anyway, so such a
+test would pass with the line deleted. It is verified against the built `dist/radio.css` instead.

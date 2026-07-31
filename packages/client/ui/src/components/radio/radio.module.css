@@ -1,0 +1,55 @@
+/*
+ * Radio styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. `@reference` resolves
+ * `@apply` at THIS library's build; the output stays themable at runtime.
+ *
+ * Deliberately short. The control keeps its NATIVE rendering — no
+ * `appearance: none`, no drawn dot — so the browser paints the mark, the
+ * disabled shading and the High Contrast treatment. We tint it and size it.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .radio {
+    /* The checked mark, and the only colour we own. The UA derives the contrasting
+       inner dot from it, and repaints both with system colours in forced colors. */
+    accent-color: var(--fm-color-primary);
+
+    /* 18px: bigger than the ~13px UA default, which is small for a pointer
+       target. The row around it — a <label> wrapping control + text — is what
+       actually carries WCAG 2.5.8 target size, so this stays a comfort figure
+       rather than a compliance one. */
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+
+    /* The UA margin (Chromium: 3px 3px 0 5px) is asymmetric and would make the
+       consumer's own gap unpredictable. Reset it here rather than relying on a
+       reset: our CSS ships to apps that run no Preflight (ADR-0002). */
+    margin: 0;
+
+    /* Sits with the text when the label is plain inline flow, and holds its size
+       when the label is a flex row with text long enough to wrap — a flex item
+       with a fixed size still shrinks otherwise. */
+    vertical-align: middle;
+    flex: none;
+
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+
+  .radio:disabled {
+    @apply cursor-not-allowed;
+  }
+
+  /* Forced colors: the native control is drawn by the OS, so — unlike Input —
+     nothing needs restoring except the focus convention, which would otherwise
+     take the same system colour as the control's own outline. */
+  @media (forced-colors: active) {
+    .radio:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}
