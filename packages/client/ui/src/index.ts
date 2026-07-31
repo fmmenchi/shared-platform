@@ -73,3 +73,13 @@ export { Checkbox } from './components/checkbox/checkbox.component.js';
 export type { CheckboxProps } from './components/checkbox/checkbox.types.js';
 export { ChoiceField } from './components/choice-field/index.js';
 export type { ChoiceFieldProps } from './components/choice-field/choice-field.types.js';
+export { FormInput } from './components/form-input/form-input.component.js';
+export type { FormInputProps } from './components/form-input/form-input.types.js';
+export { FormChoice } from './components/form-choice/form-choice.component.js';
+export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
+export { FormAdapterProvider } from './form/index.js';
+export type {
+  FormAdapterProviderProps,
+  UseFormField,
+  BoundField,
+} from './form/index.js';

@@ -1,0 +1,45 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormChoiceStories from './form-choice.stories.tsx';
+
+<Meta of={FormChoiceStories} />
+
+# FormChoice
+
+FormChoice is a single bound choice — a consent box or an opt-in, already bound to the **form adapter in scope**. It renders the same anatomy as `ChoiceField` + `Checkbox`, and takes its control props and its error message from the adapter — so the call site names no form library.
+
+```tsx
+<FormAdapterProvider adapter={useMyFormField}>
+  <FormChoice name="…" label="…" />
+</FormAdapterProvider>
+```
+
+## Props
+
+There is no `error` prop: the message comes from the adapter, so it cannot be forgotten or set out of step with the library's own state. Every other native prop passes through, and an explicit one at the call site beats the binding.
+
+<Controls of={FormChoiceStories.Default} />
+
+## Usage
+
+<Canvas of={FormChoiceStories.Default} />
+
+### The adapter is a HOOK, not a function
+
+That is load-bearing, and it was measured rather than assumed. With a plain closure in context, the React Compiler caches the provider — react-hook-form mutates its `errors` object in place, so the closure's dependencies look unchanged — the provider never re-renders and **the error never reaches the field, silently**. As a hook it is called inside each bound component, so every field subscribes for itself, and per field rather than per form.
+
+```tsx
+const useMyFormField: UseFormField = (name) => {
+  const { register, control } = useFormContext();
+  const { errors } = useFormState({ control, name });
+  return { control: register(name), error: errors[name]?.message };
+};
+```
+
+### What it cannot do
+
+Binding is by **name alone**, so a per-field validation rule has nowhere to live at the call site — it comes from the adapter, from a schema or a rules map. If you want the rule next to the field, use `ChoiceField` and bind it yourself.
+
+## Accessibility
+
+Identical to the unbound anatomy: the label is associated by id, the message is announced through `aria-describedby`, and `aria-invalid` follows it. A control with **no adapter in scope throws** rather than rendering — an unbound field types perfectly well and submits nothing, which is a failure you would meet in production data rather than in development.

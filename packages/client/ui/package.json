@@ -126,7 +126,21 @@
       "import": "./dist/choice-field.js",
       "default": "./dist/choice-field.js"
     },
-    "./choice-field/style.css": "./dist/choice-field.css"
+    "./choice-field/style.css": "./dist/choice-field.css",
+    "./form-input": {
+      "@fmmenchi/source": "./src/components/form-input/index.ts",
+      "types": "./dist/components/form-input/index.d.ts",
+      "import": "./dist/form-input.js",
+      "default": "./dist/form-input.js"
+    },
+    "./form-input/style.css": "./dist/form-input.css",
+    "./form-choice": {
+      "@fmmenchi/source": "./src/components/form-choice/index.ts",
+      "types": "./dist/components/form-choice/index.d.ts",
+      "import": "./dist/form-choice.js",
+      "default": "./dist/form-choice.js"
+    },
+    "./form-choice/style.css": "./dist/form-choice.css"
   },
   "nx": {
     "tags": [
@@ -165,5 +179,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "react-hook-form": "^7.83.0"
   }
 }
