@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Input } from './input.component.js';
@@ -63,19 +64,88 @@ describe('Input', () => {
       expect(input.value).toBe('abc');
     });
 
-    it('works controlled — forwards onChange and never owns the value itself', async () => {
+    it('forwards onChange without owning the value', async () => {
       const user = userEvent.setup();
       const onChange = vi.fn();
-      render(<Input aria-label="q" value="" onChange={onChange} />);
+      render(<Input aria-label="q" defaultValue="" onChange={onChange} />);
       const input = screen.getByRole<HTMLInputElement>('textbox', {
         name: 'q',
       });
       await user.type(input, 'x');
-      expect(onChange).toHaveBeenCalled();
-      // Pinned value + a no-op onChange: a transparent control reverts to '',
-      // proving the DS holds no internal state (a regression that managed its
-      // own value would leave 'x' here).
-      expect(input.value).toBe('');
+      expect(onChange).toHaveBeenCalledTimes(1);
+      // What the user typed lives in the element, not in any state of ours.
+      expect(input.value).toBe('x');
+    });
+
+    // `value` DRIVES the element instead of being handed to React, which would
+    // also force the value back on every keystroke — the half that makes a field
+    // with no state behind it read-only.
+    describe('a driven value', () => {
+      function Host(props: { onChange?: () => void }) {
+        const [v, setV] = useState<string | undefined>(undefined);
+        return (
+          <>
+            <Input aria-label="q" value={v} onChange={props.onChange} />
+            <button type="button" onClick={() => setV('arrived@late.it')}>
+              load
+            </button>
+          </>
+        );
+      }
+
+      it('lands when it arrives late, on a field already on screen', async () => {
+        const user = userEvent.setup();
+        render(<Host />);
+        const input = screen.getByRole<HTMLInputElement>('textbox', {
+          name: 'q',
+        });
+        await user.click(screen.getByRole('button', { name: 'load' }));
+        expect(input.value).toBe('arrived@late.it');
+      });
+
+      it('ANNOUNCES the write, so a form library holding a copy learns of it', async () => {
+        // Without this a programmatic write is silent and the library submits
+        // the value it last saw. It needs the prototype setter: assigning
+        // through the element updates React's value tracker too, and the event
+        // is then discarded as a duplicate.
+        const user = userEvent.setup();
+        const onChange = vi.fn();
+        render(<Host onChange={onChange} />);
+        await user.click(screen.getByRole('button', { name: 'load' }));
+        expect(onChange).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not announce on mount — a form is not dirty before it is touched', () => {
+        const onChange = vi.fn();
+        render(<Input aria-label="q" value="seed" onChange={onChange} />);
+        expect(onChange).not.toHaveBeenCalled();
+      });
+
+      it('does NOT make the field read-only — the user can still type', async () => {
+        const user = userEvent.setup();
+        render(<Input aria-label="q" value="seed" />);
+        const input = screen.getByRole<HTMLInputElement>('textbox', {
+          name: 'q',
+        });
+        await user.type(input, 'x');
+        expect(input.value).toBe('seedx');
+      });
+
+      it('leaves form.reset() working, which is what uncontrolled buys', async () => {
+        const user = userEvent.setup();
+        render(
+          <form data-testid="f">
+            <Input aria-label="q" name="e" defaultValue="a@b.it" />
+          </form>,
+        );
+        const input = screen.getByRole<HTMLInputElement>('textbox', {
+          name: 'q',
+        });
+        await user.clear(input);
+        await user.type(input, 'zzz');
+        (screen.getByTestId('f') as HTMLFormElement).reset();
+        expect(input.value).toBe('a@b.it');
+      });
     });
 
     it('passes a custom type through to the DOM', () => {

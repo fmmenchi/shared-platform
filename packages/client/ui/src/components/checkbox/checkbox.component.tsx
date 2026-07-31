@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
+import { useNativeProperty } from '../../primitives/use-native-property.js';
 import { useFieldControl } from '../field/field.context.js';
 import type { CheckboxProps } from './checkbox.types.js';
 import styles from './checkbox.module.css';
@@ -34,36 +35,33 @@ function Checkbox(props: CheckboxProps) {
   const fieldProps = useFieldControl(rest);
   const el = useRef<HTMLInputElement>(null);
 
-  const controlled = checked !== undefined;
-  const mixed = checked === 'indeterminate';
+  // `indeterminate` is a property with no HTML attribute, so React cannot set it
+  // from props — pass it as one and nothing happens, with no warning. Driven
+  // when `checked` is, a starting value when only `defaultChecked` is, and
+  // restored after a change, which clears it natively.
+  const mixed = checked === undefined ? undefined : checked === 'indeterminate';
+  useNativeProperty(el, 'indeterminate', {
+    value: mixed,
+    initial: defaultChecked === 'indeterminate' ? true : undefined,
+  });
 
+  // Clicking a mixed box CLEARS the property natively — it becomes plainly
+  // checked. When the state is driven, the prop is the truth, so write it again.
+  // From the element's OWN listener rather than by wrapping the consumer's
+  // `onChange`: a wrapper sits on the element permanently, so React can never
+  // see that they forgot theirs, and its "controlled without onChange" warning
+  // silently disappears (measured — Radio still emits it, Checkbox had stopped).
+  // This listener also runs after React's onChange, so their handler still reads
+  // the browser's own post-click values.
   useEffect(() => {
     const node = el.current;
-    if (node == null) return;
-
-    // Uncontrolled: a STARTING value. Apply it and step back — from then on the
-    // browser owns the box, and a mixed box that is clicked becoming plainly
-    // checked is correct, because no prop is still claiming it is mixed.
-    if (!controlled) {
-      if (defaultChecked === 'indeterminate') node.indeterminate = true;
-      return;
-    }
-
-    // Controlled: the prop is the truth, so keep the property in step with it —
-    // including after a change, which clears indeterminateness natively. Done
-    // from the element's OWN listener rather than by wrapping the consumer's
-    // `onChange`: a wrapper sits on the element permanently, so React can never
-    // see that the consumer forgot theirs, and its "controlled without onChange"
-    // warning silently disappears (measured — Radio still emits it). This
-    // listener also runs after React's onChange, so the handler still reads the
-    // browser's own post-click values.
-    node.indeterminate = mixed;
+    if (node == null || mixed === undefined) return;
     const restore = () => {
       node.indeterminate = mixed;
     };
     node.addEventListener('change', restore);
     return () => node.removeEventListener('change', restore);
-  }, [controlled, mixed, defaultChecked]);
+  }, [mixed]);
 
   return (
     <input
@@ -72,7 +70,7 @@ function Checkbox(props: CheckboxProps) {
       className={cn(styles.checkbox, className)}
       // The element only ever sees booleans; the third state lives in the
       // property set above. A mixed box is UNCHECKED for form submission.
-      checked={mixed ? false : checked}
+      checked={checked === 'indeterminate' ? false : checked}
       defaultChecked={
         defaultChecked === 'indeterminate' ? false : defaultChecked
       }
