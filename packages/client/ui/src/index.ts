@@ -71,3 +71,5 @@ export { Radio } from './components/radio/radio.component.js';
 export type { RadioProps } from './components/radio/radio.types.js';
 export { Checkbox } from './components/checkbox/checkbox.component.js';
 export type { CheckboxProps } from './components/checkbox/checkbox.types.js';
+export { ChoiceField } from './components/choice-field/index.js';
+export type { ChoiceFieldProps } from './components/choice-field/choice-field.types.js';

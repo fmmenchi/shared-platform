@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ChoiceField > matches the rendered snapshot 1`] = `
+<div
+  class="_choice_14u5y_3"
+>
+  <input
+    class="_checkbox_kjpik_4"
+    id="«react-id»"
+    type="checkbox"
+  />
+  <label
+    class="_label_1pcai_4"
+    for="«react-id»"
+  >
+    Accept the terms
+  </label>
+</div>
+`;
