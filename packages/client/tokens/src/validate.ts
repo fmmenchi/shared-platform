@@ -68,6 +68,11 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['popover', 'ring', 3],
   ['input', 'input-invalid', 3], // non-text invalid signal on the field
   ['background', 'input-border', 3], // control boundary vs the page (WCAG 1.4.11)
+  // A checked radio/checkbox paints its mark in `primary` (via `accent-color`).
+  // That mark is the ONLY thing distinguishing checked from unchecked, so it is a
+  // non-text state indicator and owes 3:1 against the page (WCAG 1.4.11) — the
+  // fill/foreground pair above says nothing about how the control reads on it.
+  ['background', 'primary', 3],
   ['background', 'link', 4.5],
   ['background', 'link-hover', 4.5],
   // Links render inside cards/alerts/popovers, not only on the page.

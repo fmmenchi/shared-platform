@@ -67,3 +67,5 @@ export type {
 } from './components/fieldset-content/fieldset-content.types.js';
 export { InputGroup } from './components/input-group/input-group.component.js';
 export type { InputGroupProps } from './components/input-group/input-group.types.js';
+export { Radio } from './components/radio/radio.component.js';
+export type { RadioProps } from './components/radio/radio.types.js';

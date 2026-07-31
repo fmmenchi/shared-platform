@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Radio > matches the rendered snapshot 1`] = `
+<input
+  aria-label="free"
+  class="_radio_15zap_4"
+  type="radio"
+/>
+`;
