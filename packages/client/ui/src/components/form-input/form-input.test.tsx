@@ -179,6 +179,168 @@ describe('FormInput / FormChoice through the adapter port', () => {
     expect(input).toHaveAttribute('placeholder', 'you@x');
   });
 
+  // What the small contract can and cannot carry. Complex validation is not a
+  // problem for it: cross-field and async rules live in the library's schema and
+  // surface BY NAME, which is all this shape transports.
+  describe('complex validation', () => {
+    it('carries a CROSS-FIELD rule — the message arrives by name like any other', async () => {
+      const useConfirm: UseFormField = (name) => {
+        const { register, control, getValues } = useFormContext();
+        const { errors } = useFormState({ control, name });
+        return {
+          control: register(name, {
+            validate:
+              name === 'confirm'
+                ? (v) =>
+                    v === getValues('password') || 'Passwords do not match.'
+                : undefined,
+          }),
+          error: errors[name]?.message as string | undefined,
+        };
+      };
+      function Host() {
+        const form = useForm({ defaultValues: { password: '', confirm: '' } });
+        return (
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(() => undefined)}>
+              <FormAdapterProvider adapter={useConfirm}>
+                <FormInput name="password" label="Password" />
+                <FormInput name="confirm" label="Confirm" />
+              </FormAdapterProvider>
+              <button type="submit">Go</button>
+            </form>
+          </FormProvider>
+        );
+      }
+      const user = userEvent.setup();
+      render(<Host />);
+      await user.type(screen.getByRole('textbox', { name: 'Password' }), 'abc');
+      await user.type(screen.getByRole('textbox', { name: 'Confirm' }), 'xyz');
+      await user.click(screen.getByRole('button', { name: 'Go' }));
+
+      const confirm = screen.getByRole('textbox', { name: 'Confirm' });
+      await waitFor(() =>
+        expect(confirm).toHaveAccessibleDescription('Passwords do not match.'),
+      );
+      // and only that field is marked
+      expect(
+        screen.getByRole('textbox', { name: 'Password' }),
+      ).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('lets the adapter decide WHEN to show a message — e.g. only once touched', async () => {
+      // The contract carries no `touched`, and does not need to: gating is the
+      // adapter's decision, which keeps the shape small without losing the case.
+      const useTouchedOnly: UseFormField = (name) => {
+        const { register, control } = useFormContext();
+        const { errors, touchedFields } = useFormState({ control, name });
+        return {
+          control: register(name, { required: 'Email is required.' }),
+          error: touchedFields[name]
+            ? (errors[name]?.message as string | undefined)
+            : undefined,
+        };
+      };
+      function Host() {
+        const form = useForm({
+          defaultValues: { email: '' },
+          mode: 'onBlur',
+        });
+        return (
+          <FormProvider {...form}>
+            <FormAdapterProvider adapter={useTouchedOnly}>
+              <FormInput name="email" label="Email" />
+            </FormAdapterProvider>
+          </FormProvider>
+        );
+      }
+      const user = userEvent.setup();
+      render(<Host />);
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      // empty and invalid, but untouched: silent
+      expect(input).not.toHaveAttribute('aria-invalid');
+
+      await user.click(input);
+      await user.tab();
+      await waitFor(() =>
+        expect(input).toHaveAccessibleDescription('Email is required.'),
+      );
+    });
+  });
+
+  it('ONE adapter holds the whole policy — rules, cross-field, when to show', async () => {
+    // What an app actually writes: a single adapter, a single rules map, and a
+    // single decision about when a message is allowed to appear. It dispatches
+    // on `name`, which is why binding by name is enough.
+    const RULES: Record<string, RegisterOptions> = {
+      email: { required: 'Email is required.' },
+      password: { minLength: { value: 8, message: 'At least 8 characters.' } },
+      confirm: {
+        validate: (v, all) =>
+          v === (all as { password: string }).password ||
+          'Passwords do not match.',
+      },
+    };
+
+    const useAppField: UseFormField = (name) => {
+      const { register, control } = useFormContext();
+      const { errors, touchedFields, isSubmitted } = useFormState({
+        control,
+        name,
+      });
+      // one policy for the whole form: stay quiet until the field is touched
+      // or the form has been submitted once.
+      const show = isSubmitted || touchedFields[name] === true;
+      return {
+        control: register(name, RULES[name]),
+        error: show ? (errors[name]?.message as string | undefined) : undefined,
+      };
+    };
+
+    function App() {
+      const form = useForm({
+        defaultValues: { email: '', password: '', confirm: '' },
+        mode: 'onBlur',
+      });
+      return (
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(() => undefined)}>
+            <FormAdapterProvider adapter={useAppField}>
+              <FormInput name="email" label="Email" />
+              <FormInput name="password" label="Password" />
+              <FormInput name="confirm" label="Confirm password" />
+            </FormAdapterProvider>
+            <button type="submit">Create account</button>
+          </form>
+        </FormProvider>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<App />);
+    const email = screen.getByRole('textbox', { name: 'Email' });
+    const password = screen.getByRole('textbox', { name: 'Password' });
+    const confirm = screen.getByRole('textbox', { name: 'Confirm password' });
+
+    // nothing shouts before the user has done anything
+    expect(email).not.toHaveAttribute('aria-invalid');
+
+    await user.type(password, 'short');
+    await user.type(confirm, 'different');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    // a per-field rule, a cross-field rule and a required, all from one adapter
+    await waitFor(() =>
+      expect(password).toHaveAccessibleDescription('At least 8 characters.'),
+    );
+    await waitFor(() =>
+      expect(confirm).toHaveAccessibleDescription('Passwords do not match.'),
+    );
+    await waitFor(() =>
+      expect(email).toHaveAccessibleDescription('Email is required.'),
+    );
+  });
+
   it('throws by name when there is no adapter in scope', () => {
     // Silently unbound is worse: it renders, it types, and it submits nothing.
     const error = vi

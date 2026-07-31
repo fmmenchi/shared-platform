@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ComponentProps } from 'react';
 
 /**
  * How a form library binds ONE field, and the whole of what the design system
@@ -35,6 +35,19 @@ export interface BoundField {
    * this — probably to a generic — when `Textarea` and `Select` land.
    */
   control: Omit<ComponentProps<'input'>, 'size'>;
-  /** The message to show when the field is in error. Absent means valid. */
-  error?: ReactNode;
+  /**
+   * The message to show when the field is in error. Absent means valid.
+   *
+   * A STRING, deliberately, not a `ReactNode`. Every form library produces a
+   * string (react-hook-form, Formik) or an array of them (Conform) — so a
+   * wider type would accept more than any implementation produces, and give
+   * whoever writes an adapter nothing to aim at. It also makes Conform's
+   * `string[]` a visible `.join(', ')` in the adapter rather than a silent
+   * concatenation at render time.
+   *
+   * A rich message — one with a link in it — is outside this fast path by
+   * construction: compose `Field` + `FieldError` by hand, where a `ReactNode`
+   * is accepted.
+   */
+  error?: string;
 }

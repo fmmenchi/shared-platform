@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
 import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
+import { Button } from '../button/button.component.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
 
 /**
@@ -12,6 +13,7 @@ import type { UseFormField } from '../../form/form-adapter.types.js';
 function DemoForm({ children }: { children: ReactNode }) {
   const [values, setValues] = useState<Record<string, string | boolean>>({
     email: '',
+    password: '',
     tos: false,
   });
   const useDemoField: UseFormField = (name) => ({
@@ -83,4 +85,22 @@ export const FromTheAdapter: Story = {
       <FormChoice name="tos" label="Accept the terms" />
     </DemoForm>
   ),
+};
+
+/**
+ * A whole signup form, the way an app would write it. Nothing below the
+ * provider names a form library — swapping one is the single line that produces
+ * `useDemoField`.
+ */
+export const CompleteForm: Story = {
+  render: function CompleteFormStory() {
+    return (
+      <DemoForm>
+        <FormInput name="email" label="Email" hint="We’ll never share it." />
+        <FormInput name="password" label="Password" type="password" />
+        <FormChoice name="tos" label="I accept the terms and conditions" />
+        <Button type="submit">Create account</Button>
+      </DemoForm>
+    );
+  },
 };
