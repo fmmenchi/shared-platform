@@ -1,0 +1,80 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Guidelines/Controlled and uncontrolled" />
+
+# Controlled and uncontrolled
+
+Every component that holds a piece of state exposes the same pair of props, and the call site picks
+which one to use. There is never a third value prop, and never a mode inferred from something else.
+
+| the state | drives it | seeds it         |
+| --------- | --------- | ---------------- |
+| a value   | `value`   | `defaultValue`   |
+| a choice  | `checked` | `defaultChecked` |
+| a surface | `open`    | `defaultOpen`    |
+
+**Driven** means you own the state and push it: it can arrive late from a fetch, or be set from
+anywhere in your app. **Seeded** means the component starts there and then the browser owns it —
+which is what makes native form submission and `form.reset()` work with no JavaScript state at all.
+
+```tsx
+// driven — your state is the truth
+const [email, setEmail] = useState('');
+<Input value={email} onChange={(e) => setEmail(e.target.value)} />;
+
+// seeded — the element is the truth, and the form still submits
+<Input defaultValue="you@example.com" />;
+```
+
+## Seeded with no `onChange` at all
+
+That is not a degraded mode — it is the whole point of seeding, and it works end to end:
+
+```tsx
+<form>
+  <label>
+    Email <Input name="email" defaultValue="you@example.com" />
+  </label>
+  <label>
+    <Checkbox name="tos" value="yes" defaultChecked /> I accept
+  </label>
+</form>
+```
+
+The user types, the element keeps the value, and `FormData` reads it on submit — no `useState`, no
+`onChange`, no re-render per keystroke. Reach for `onChange` only when you actually need to react to
+the change; you do not need it to collect the value.
+
+## `onChange` is not the switch
+
+Passing `onChange` does not make a control driven, and omitting it does not make it seeded. The two
+are independent, because an `onChange` is often a pure **side effect** — analytics, revealing a
+dependent field, kicking off validation — and a handler used that way must not silently change what
+your value prop means.
+
+## What is the same for every component, and what is not
+
+The pair above is the whole API, and it does not vary. What varies — invisibly — is who implements
+it: for a control the browser draws itself (`Input`, `Checkbox`, `Radio`) the state lives in the
+DOM, and the design system simply passes your props through to React. For a control the design
+system draws, it holds the state for you. You should not be able to tell which is which from the
+call site, and that is the point.
+
+One consequence is worth knowing, because it is the reason the distinction exists at all: on a
+**seeded** control the element is the source of truth, so `<button type="reset">`, a form library's
+`reset(data)` and plain `<form>` submission all work without React being involved. That is what you
+would give up by making everything driven — see
+[Form field wiring](?path=/docs/guidelines-form-field-wiring--docs) for loading a form with values
+that arrive after it is on screen.
+
+## Switching mid-life
+
+Do not move a control from seeded to driven while it is mounted — React warns, and the value jumps.
+If the initial value arrives asynchronously, either start driven (with an empty value until the data
+lands), remount with a `key`, or use your form library's `reset()`.
+
+## See also
+
+- [Form field wiring](?path=/docs/guidelines-form-field-wiring--docs) — labels, descriptions, errors,
+  and populating a form with data that arrives late.
+- [Input](?path=/docs/components-inputs-input--docs) · [Checkbox](?path=/docs/components-inputs-checkbox--docs) · [Radio](?path=/docs/components-inputs-radio--docs)
