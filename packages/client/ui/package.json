@@ -119,7 +119,14 @@
       "import": "./dist/checkbox.js",
       "default": "./dist/checkbox.js"
     },
-    "./checkbox/style.css": "./dist/checkbox.css"
+    "./checkbox/style.css": "./dist/checkbox.css",
+    "./choice-field": {
+      "@fmmenchi/source": "./src/components/choice-field/index.ts",
+      "types": "./dist/components/choice-field/index.d.ts",
+      "import": "./dist/choice-field.js",
+      "default": "./dist/choice-field.js"
+    },
+    "./choice-field/style.css": "./dist/choice-field.css"
   },
   "nx": {
     "tags": [

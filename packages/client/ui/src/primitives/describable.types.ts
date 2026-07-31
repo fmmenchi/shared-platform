@@ -1,9 +1,9 @@
 /** Which container is describing itself — a part that only fits one can check. */
-export type DescribableOwner = 'Field' | 'Fieldset';
+export type DescribableOwner = 'Field' | 'ChoiceField' | 'Fieldset';
 
 /**
- * What ANY container that can be described hands to its text parts. Both `Field`
- * (one control) and `Fieldset` (a group) provide it, which is what lets one
+ * What ANY container that can be described hands to its text parts. `Field` and
+ * `ChoiceField` (one control each) and `Fieldset` (a group) all provide it, which is what lets one
  * `FieldDescription` / `FieldError` serve either: React resolves the nearest
  * provider, so a part inside a `Field` nested in a `Fieldset` describes the field,
  * and the same part outside that `Field` describes the group.

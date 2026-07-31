@@ -1,0 +1,30 @@
+/*
+ * ChoiceField layout — no chrome of its own, just the two-column anatomy.
+ * Colours ONLY through semantic role utilities; `@reference` resolves `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* The control takes column 1; everything with words goes in column 2, so the
+     hint and error line up under the LABEL rather than under an 18px box.
+
+     `align-items: center` centres each item in ITS OWN row, and the control's
+     row is the label's — so the control lands optically centred on the label's
+     first line with no magic offset.
+
+     Placed by ELEMENT, not by position: composing the parts by hand in any
+     order lays out the same, so the escape hatch cannot drift from the props. */
+  .choice {
+    @apply grid gap-internal-xs;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: var(--fm-space-internal-s);
+  }
+  .choice > label,
+  .choice > p {
+    grid-column: 2;
+  }
+}
