@@ -6,7 +6,7 @@ import * as CheckboxStories from './checkbox.stories.tsx';
 
 # Checkbox
 
-An independent yes/no choice, on the native `<input type="checkbox">`. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref and spreads every native prop, and never touches `checked`/`onChange`, so it works uncontrolled or controlled and drops into any form library.
+An independent yes/no choice, on the native `<input type="checkbox">`. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref and spreads every native prop, and never touches `checked`/`onChange` — your handler is attached to the element unchanged — so it works uncontrolled or controlled and drops into any form library.
 
 **Not a radio with square corners.** Checkboxes sharing a `name` do **not** pair — each is its own value — and each takes its own tab stop, where a whole radio group takes one.
 
@@ -38,22 +38,39 @@ Label it by **nesting** it in a `<label>`, which associates the two with no `id`
 
 ### Mixed — a parent summarising its children
 
-`indeterminate` is the reason this component is not a pure passthrough. It is a **DOM property with no HTML attribute**, so React cannot set it from props — and passing it as one does nothing at all, with **no warning** (measured). The component applies it via a ref.
+A checkbox has **three** states, and the third is a value of `checked`, not a prop of its own:
 
-Two things follow, and both are visible in the story below:
+```tsx
+<Checkbox checked={all ? true : none ? false : 'indeterminate'} onChange={…} />
+```
 
-- **It is independent of `checked`.** A mixed box is not a checked box; the browser exposes it as `aria-checked="mixed"` on its own, so never write that attribute yourself.
-- **It is transient.** Clicking a mixed box clears the property natively. The component re-asserts your prop immediately afterwards, so the prop stays the source of truth — but the state it summarises is yours to recompute in `onChange`, exactly as in the story.
+This is Radix's design, and the reason for it is that the alternative — a separate `indeterminate`
+prop — lets you express a box that is mixed _and_ unmixed at once. Measured, that combination
+produces a control that announces "mixed" for ever while the value it submits flips silently on
+every click. With one source of truth it is not expressible.
+
+The DOM cannot carry the third state as an attribute: `indeterminate` is a **property with no HTML
+attribute**, so React cannot set it from props — pass it as one and nothing happens, with no
+warning. The component sends the element `checked={false}` and sets the property, and keeps the two
+in step, including after a click, which clears the property natively. Your `onChange` is untouched.
+
+Three things follow, all visible in the story below:
+
+- **A mixed box is not a checked box.** The browser maps the property to a checked state of `mixed` in the ACCESSIBILITY TREE — there is no attribute to find in DevTools — so never write `aria-checked` yourself.
+- **`defaultChecked="indeterminate"` is a STARTING value.** Uncontrolled, a click settles the box to plainly checked — which is right, because nothing is still claiming it is mixed.
+- **A mixed box submits nothing,** and `required` is **not** satisfied by one (`checkValidity()` is false). The submitted value follows the boolean.
 
 <Canvas of={CheckboxStories.TriState} />
 
 ## Accessibility
 
-- **The control keeps its native rendering**, tinted with `accent-color`, for the reason measured on [Radio](?path=/docs/components-inputs-radio--docs): a hand-drawn mark is erased in Windows High Contrast, leaving checked indistinguishable from unchecked. The trade is that only the mark is ours to colour, which is why the invalid state lives on the enclosing `Fieldset`.
+- **The control keeps its native rendering**, tinted with `accent-color`, for the reason measured on [Radio](?path=/docs/components-inputs-radio--docs): a mark drawn with a FILL is erased in Windows High Contrast, leaving checked indistinguishable from unchecked. The trade is that only the mark is ours to colour, which is why the invalid state lives on the enclosing `Fieldset`.
 - **Mixed is announced natively.** Setting the property is enough; adding `aria-checked` would be redundant ARIA that can then contradict the property.
 - **Name a group.** Several related boxes belong in a `Fieldset` with a `FieldsetLegend`; without it a screen reader announces "Alpha, checkbox" with no idea what is being chosen.
-- **Target size:** the control is 18px, above the ~13px UA default. The row carries WCAG 2.5.8 — a wrapping `<label>` makes the text clickable too, so leave vertical gap between boxes.
-- **`disabled`** removes the box from the tab order and the accessibility tree. Never use it to lock a **required** consent box — a screen-reader user cannot reach it to find out why.
+- **Target size:** the control is 18px, above the ~13px UA default, and **that is under the 24×24 that WCAG 2.5.8 asks for**. A plain inline `<label>` does not rescue it — measured, its hit box is the text's content box (18px tall), not the line box. Either make the label a flex/block row (the stories' helper does: 24px tall at the DS's 16px/24px type) or rely on the spacing exception and leave **≥24px between the centres** of adjacent boxes.
+- **`disabled`** removes the box from sequential focus navigation. It does NOT remove it from the accessibility tree — a screen reader still reads it in browse mode, with a disabled state. Never use it to lock a **required** consent box: the user can read it but never reach it to act.
+- **`readOnly` does nothing on a checkbox** — the box still toggles. Use `disabled`, or don't render the control.
+- **A group's error is text, not ARIA.** `aria-invalid` is not supported on `role="group"`, so `Fieldset invalid` emits only a styling hook here and the `FieldError` text does the telling (it is in the group's `aria-describedby`). Do **not** reach for `role="radiogroup"` to get `aria-invalid` back — it would report your checkboxes as a radio group.
 
 ## Notes for maintainers
 

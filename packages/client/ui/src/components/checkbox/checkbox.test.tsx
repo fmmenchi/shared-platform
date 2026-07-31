@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,6 +10,11 @@ import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
 describe('Checkbox', () => {
+  // Without this, a console spy survives into the next test carrying its call
+  // history — which made a "does not warn" assertion fail on the PREVIOUS
+  // test's warning.
+  afterEach(() => vi.restoreAllMocks());
+
   it('is a checkbox that takes its name from the label it is nested in', () => {
     render(
       <label>
@@ -49,12 +54,13 @@ describe('Checkbox', () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
-  // `indeterminate` is a DOM property with no HTML attribute. React cannot set
-  // it from props and says nothing when you try — the whole reason this prop
-  // exists on the component rather than being left to the consumer.
-  describe('indeterminate', () => {
+  // The third state is a VALUE of `checked` (Radix's model), not a prop of its
+  // own — so "mixed" cannot disagree with "checked". The DOM cannot express it
+  // as an attribute: `indeterminate` is a property React cannot set from props,
+  // and passing it as one silently does nothing. The component bridges that.
+  describe('the mixed state', () => {
     it('exposes the mixed state to assistive tech', () => {
-      render(<Checkbox aria-label="all" indeterminate />);
+      render(<Checkbox aria-label="all" checked="indeterminate" readOnly />);
       const box = screen.getByRole('checkbox', { name: 'all' });
       expect(box).toBePartiallyChecked();
       // The browser derives it natively — writing aria-checked ourselves would
@@ -63,9 +69,7 @@ describe('Checkbox', () => {
     });
 
     it('is independent of checked', () => {
-      render(
-        <Checkbox aria-label="all" indeterminate defaultChecked={false} />,
-      );
+      render(<Checkbox aria-label="all" checked="indeterminate" readOnly />);
       const box = screen.getByRole<HTMLInputElement>('checkbox', {
         name: 'all',
       });
@@ -79,7 +83,11 @@ describe('Checkbox', () => {
         const [mixed, setMixed] = useState(true);
         return (
           <>
-            <Checkbox aria-label="all" indeterminate={mixed} />
+            <Checkbox
+              aria-label="all"
+              checked={mixed ? 'indeterminate' : false}
+              readOnly
+            />
             <button type="button" onClick={() => setMixed(false)}>
               settle
             </button>
@@ -96,17 +104,16 @@ describe('Checkbox', () => {
     });
 
     it('is RESTORED after a click clears it, while the prop still says mixed', async () => {
-      // The trap this component closes. Clicking an indeterminate box clears the
-      // property natively. A parent that still considers itself mixed would then
-      // disagree with the DOM forever if the effect were keyed on the prop — the
-      // value never changed, so a keyed effect would never run again.
+      // Clicking a mixed box clears the property natively. A parent that still
+      // considers itself mixed would otherwise disagree with the DOM for ever:
+      // the prop never changed, so the keyed effect never runs again.
       const user = userEvent.setup();
       function Host() {
         const [, force] = useState(0);
         return (
           <Checkbox
             aria-label="all"
-            indeterminate
+            checked="indeterminate"
             onChange={() => force((n) => n + 1)}
           />
         );
@@ -116,15 +123,94 @@ describe('Checkbox', () => {
         name: 'all',
       });
 
+      // The precondition, so this asserts RESTORATION and not "ends up true".
+      expect(box.indeterminate).toBe(true);
       await user.click(box);
       expect(box.indeterminate).toBe(true);
     });
 
-    it('defaults to not mixed', () => {
+    it('leaves the property alone when neither prop is given', () => {
+      // The component must not write `false` unasked: that would stomp on a
+      // consumer driving the property through the forwarded ref.
       render(<Checkbox aria-label="one" />);
-      expect(
-        screen.getByRole('checkbox', { name: 'one' }),
-      ).not.toBePartiallyChecked();
+      const box = screen.getByRole<HTMLInputElement>('checkbox', {
+        name: 'one',
+      });
+      box.indeterminate = true;
+      expect(box).toBePartiallyChecked();
+    });
+
+    it('still applies when the consumer also passes a ref', () => {
+      // Verified as a real gap: replacing mergeRefs with `ref ?? el` left all
+      // other tests green while silently disabling indeterminate for every
+      // consumer that passes a ref.
+      const mine = { current: null as HTMLInputElement | null };
+      render(
+        <Checkbox
+          aria-label="all"
+          checked="indeterminate"
+          onChange={() => undefined}
+          ref={mine}
+        />,
+      );
+      const node = mine.current;
+      expect(node).toBeInstanceOf(HTMLInputElement);
+      expect(node?.indeterminate).toBe(true);
+    });
+
+    it('is UNCHECKED for form submission — the value follows the boolean', () => {
+      // The mixed state is a rendering of "some of these are on", not a value.
+      render(
+        <form data-testid="f">
+          <label>
+            <Checkbox name="all" value="yes" checked="indeterminate" readOnly />{' '}
+            All
+          </label>
+        </form>,
+      );
+      const data = new FormData(screen.getByTestId('f') as HTMLFormElement);
+      expect(data.get('all')).toBeNull();
+    });
+
+    it('as a DEFAULT it is a starting value — a click settles it, and that is right', async () => {
+      // Uncontrolled, nothing claims the box is still mixed after the user acts,
+      // so the native clearing is the correct outcome. This is the case that
+      // the old separate `indeterminate` prop turned into a lying control.
+      const user = userEvent.setup();
+      render(<Checkbox aria-label="all" defaultChecked="indeterminate" />);
+      const box = screen.getByRole<HTMLInputElement>('checkbox', {
+        name: 'all',
+      });
+      expect(box.indeterminate).toBe(true);
+
+      await user.click(box);
+      expect(box.indeterminate).toBe(false);
+      expect(box.checked).toBe(true);
+    });
+
+    it('a boolean checked clears a mixed state it replaces', async () => {
+      const user = userEvent.setup();
+      function Host() {
+        const [state, setState] = useState<'indeterminate' | boolean>(
+          'indeterminate',
+        );
+        return (
+          <>
+            <Checkbox aria-label="all" checked={state} readOnly />
+            <button type="button" onClick={() => setState(true)}>
+              settle
+            </button>
+          </>
+        );
+      }
+      render(<Host />);
+      const box = screen.getByRole<HTMLInputElement>('checkbox', {
+        name: 'all',
+      });
+      expect(box.indeterminate).toBe(true);
+      await user.click(screen.getByRole('button', { name: 'settle' }));
+      expect(box.indeterminate).toBe(false);
+      expect(box.checked).toBe(true);
     });
   });
 
@@ -206,6 +292,54 @@ describe('Checkbox', () => {
       );
       const data = new FormData(screen.getByTestId('f') as HTMLFormElement);
       expect(data.get('tos')).toBe('yes');
+    });
+
+    it('leaves onChange a plain passthrough, so React still polices controlled use', () => {
+      // The component restores `indeterminate` from the element's own `change`
+      // listener rather than by wrapping onChange. Wrapping put a handler on the
+      // element permanently, which silently suppressed React's own "controlled
+      // without onChange" warning — measured against Radio, which still emits it.
+      const error = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      render(<Checkbox aria-label="accept" checked />);
+      const warned = error.mock.calls.some((call) =>
+        call.some((arg) =>
+          String(arg).includes('without an `onChange` handler'),
+        ),
+      );
+      expect(warned).toBe(true);
+    });
+
+    it('calls the consumer handler once, with the browser’s own post-click values', async () => {
+      // The documented ordering. Restoring BEFORE the handler would show it a
+      // value the browser never produced, breaking any handler that recomputes
+      // the mixed state from the event.
+      const user = userEvent.setup();
+      const seen: Array<{ checked: boolean; indeterminate: boolean }> = [];
+      render(
+        <Checkbox
+          aria-label="all"
+          checked="indeterminate"
+          onChange={(e) =>
+            seen.push({
+              checked: e.target.checked,
+              indeterminate: e.target.indeterminate,
+            })
+          }
+        />,
+      );
+      await user.click(screen.getByRole('checkbox', { name: 'all' }));
+      expect(seen).toEqual([{ checked: true, indeterminate: false }]);
+    });
+
+    it('merges a consumer className rather than replacing ours', () => {
+      const { container } = render(
+        <Checkbox aria-label="a" className="mine" />,
+      );
+      const box = container.querySelector('input') as HTMLInputElement;
+      expect(box.className).toContain('mine');
+      expect(box.className.split(' ').length).toBeGreaterThan(1);
     });
 
     it('reflects the disabled state', () => {
@@ -341,7 +475,7 @@ describe('Checkbox', () => {
             <Fieldset>
               <FieldsetLegend>Topics</FieldsetLegend>
               <label>
-                <Checkbox indeterminate /> All
+                <Checkbox checked="indeterminate" readOnly /> All
               </label>
               <label>
                 <Checkbox name="topics" value="a" defaultChecked /> Alpha

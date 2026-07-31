@@ -63,7 +63,7 @@ Direction is `FieldsetContent`'s job, not the control's — the radio never posi
 ## Accessibility
 
 - **The control keeps its native rendering.** Only the mark is ours, tinted with `accent-color`. That
-  is a measured choice, not a default: a hand-drawn dot (`appearance: none` + a `::before`)
+  is a measured choice, not a default: a dot drawn with a FILL (`appearance: none` + a `::before` with a background)
   **disappears in Windows High Contrast** — dot and control both resolve to `Canvas`, leaving a
   selected option indistinguishable from an unselected one. The native control is repainted by the OS
   and survives.
@@ -75,10 +75,13 @@ Direction is `FieldsetContent`'s job, not the control's — the radio never posi
   is why exclusivity is asserted in the tests rather than assumed.
 - **Name every group.** A `Fieldset` with no legend warns in development; without one a screen reader
   announces "Free, radio button" with no idea what is being chosen.
-- **Target size:** the control is 18px, up from the ~13px UA default. The row carries WCAG 2.5.8 — a
-  wrapping `<label>` makes the text clickable too, so leave vertical gap between options.
-- **`disabled`** removes the option from the tab order and from the accessibility tree. For an option
-  that exists but cannot be picked yet, prefer leaving it enabled and saying why in the group's
+- **Target size:** the control is 18px, up from the ~13px UA default, and **under the 24×24 WCAG 2.5.8
+  asks for**. A plain inline `<label>` does not rescue it — its hit box is the text's content box, not
+  the line box. Make the label a flex/block row, or rely on the spacing exception and leave **≥24px
+  between the centres** of adjacent options.
+- **`disabled`** removes the option from sequential focus navigation. It does NOT remove it from the
+  accessibility tree — a screen reader still reads it, with a disabled state. For an option that
+  exists but cannot be picked yet, prefer leaving it enabled and saying why in the group's
   `FieldDescription`.
 
 ## Notes for maintainers

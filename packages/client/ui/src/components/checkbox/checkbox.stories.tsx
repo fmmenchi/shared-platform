@@ -11,20 +11,18 @@ const meta: Meta<typeof Checkbox> = {
   title: 'Components/Inputs/Checkbox',
   component: Checkbox,
   argTypes: {
-    indeterminate: {
-      control: 'boolean',
-      description:
-        'The MIXED state. Exists as a prop because `indeterminate` is a DOM property with no HTML attribute — React cannot set it from props, and passing it as one silently does nothing.',
-      table: {
-        type: { summary: 'boolean' },
-        defaultValue: { summary: 'false' },
-      },
-    },
     checked: {
+      control: 'select',
+      options: [undefined, true, false, 'indeterminate'],
+      description:
+        'Controlled state. A checkbox has THREE states, so this is not a boolean: `\'indeterminate\'` is the mixed one. Modelling it here rather than as a separate prop (Radix\'s design) makes "mixed" unable to disagree with "checked".',
+      table: { type: { summary: "boolean | 'indeterminate'" } },
+    },
+    defaultChecked: {
       control: false,
       description:
-        'Never touched by the component (ADR-0013) — use it controlled with `onChange`, or `defaultChecked` uncontrolled.',
-      table: { type: { summary: 'boolean' } },
+        "Initial state when uncontrolled, `'indeterminate'` included. A starting value only — after that the browser owns the box.",
+      table: { type: { summary: "boolean | 'indeterminate'" } },
     },
     disabled: { control: 'boolean', table: { type: { summary: 'boolean' } } },
   },
@@ -55,13 +53,20 @@ export const Default: Story = {
   render: (args) => <Option {...args}>Accept the terms</Option>,
 };
 
-/** States: unchecked, checked, mixed, disabled. */
+/**
+ * States: unchecked, checked, mixed, disabled. The mixed one is CONTROLLED —
+ * `indeterminate` with an uncontrolled `checked` produces a box that keeps
+ * announcing "mixed" while the value it submits flips, so the component warns
+ * about it in development.
+ */
 export const States: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
       <Option>Unchecked</Option>
       <Option defaultChecked>Checked</Option>
-      <Option indeterminate>Mixed</Option>
+      <Option checked="indeterminate" readOnly>
+        Mixed
+      </Option>
       <Option disabled>Disabled</Option>
       <Option defaultChecked disabled>
         Disabled, checked
@@ -95,7 +100,13 @@ export const Group: Story = {
   ),
 };
 
-/** The error belongs to the group, exactly as it does for radios. */
+/**
+ * The error belongs to the group. Note it is carried by the TEXT, not by ARIA:
+ * `aria-invalid` is not supported on `role="group"`, so `invalid` emits only a
+ * styling hook and the `FieldError` — which is in the group's
+ * `aria-describedby` — does the telling. Do not add `role="radiogroup"` to get
+ * `aria-invalid` back; it would report checkboxes as a radio group.
+ */
 export const GroupError: Story = {
   render: () => (
     <Fieldset invalid>
@@ -135,8 +146,7 @@ export const TriState: Story = {
             }}
           >
             <Checkbox
-              checked={all}
-              indeterminate={!all && !none}
+              checked={all ? true : none ? false : 'indeterminate'}
               onChange={(e) => setOn(on.map(() => e.target.checked))}
             />
             All topics
