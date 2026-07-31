@@ -110,6 +110,127 @@ describe('Field', () => {
     );
   });
 
+  // The shorthand exists to remove the four-tag boilerplate of an ordinary
+  // field. It must produce EXACTLY what composing the parts produces — if the
+  // two diverge, the escape hatch stops being an escape hatch.
+  describe('shorthand props', () => {
+    it('labels, describes and errors the control from props alone', async () => {
+      render(
+        <Field label="Email" hint="Work address" error="Required">
+          <Input />
+        </Field>,
+      );
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      await waitFor(() =>
+        expect(input).toHaveAccessibleDescription('Work address Required'),
+      );
+      expect(input).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('announces hint before error, whichever order the ids register in', async () => {
+      render(
+        <Field label="Email" hint="Work address" error="Required">
+          <Input />
+        </Field>,
+      );
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      const hint = screen.getByText('Work address');
+      const error = screen.getByText('Required');
+      await waitFor(() =>
+        expect(input.getAttribute('aria-describedby')?.split(' ')).toEqual([
+          hint.id,
+          error.id,
+        ]),
+      );
+    });
+
+    it('renders the same wiring as the composed form', async () => {
+      const { container: shorthand } = render(
+        <Field label="Email" hint="Work address" error="Required">
+          <Input />
+        </Field>,
+      );
+      const { container: composed } = render(
+        <Field invalid>
+          <FieldLabel>Email</FieldLabel>
+          <Input />
+          <FieldDescription>Work address</FieldDescription>
+          <FieldError>Required</FieldError>
+        </Field>,
+      );
+      // ids differ per instance (useId), so compare the SHAPE: tag names and the
+      // attributes that carry the wiring, with every generated id masked out.
+      const shape = (root: HTMLElement) =>
+        [...root.querySelectorAll('*')].map((n) => ({
+          tag: n.tagName,
+          text: n.textContent,
+          for: n.getAttribute('for') != null,
+          describedBy: (n.getAttribute('aria-describedby') ?? '').split(' ')
+            .length,
+          invalid: n.getAttribute('aria-invalid'),
+        }));
+      await waitFor(() => expect(shape(shorthand)).toEqual(shape(composed)));
+    });
+
+    it('an empty error neither shows nor marks the field invalid', () => {
+      // The idiomatic call is unconditional — `error={errors.email?.message}`
+      // with no error is `undefined`, and must not light the field up.
+      render(
+        <Field label="Email" error={undefined}>
+          <Input />
+        </Field>,
+      );
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      expect(input).not.toHaveAttribute('aria-invalid');
+      expect(input).not.toHaveAttribute('aria-describedby');
+    });
+
+    it('an explicit invalid wins over the inferred one', () => {
+      render(
+        <Field label="Email" invalid error={undefined}>
+          <Input />
+        </Field>,
+      );
+      expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+    });
+
+    it('warns when a label prop and a composed FieldLabel are both present', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Field label="Email">
+          <FieldLabel>Also email</FieldLabel>
+          <Input />
+        </Field>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('more than one label'),
+      );
+    });
+
+    it('does NOT count a label that belongs to a nested control', () => {
+      // A checkbox-style row wraps its own control in a <label>. That is the
+      // control's label, not a second one for the field — no warning.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Field hint="Pick one">
+          <label>
+            <Input aria-label="inner" /> Accept
+          </label>
+        </Field>,
+      );
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('more than one label'),
+      );
+    });
+  });
+
   it('warns when more than one control shares a Field', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(

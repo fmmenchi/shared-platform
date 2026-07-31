@@ -1,9 +1,21 @@
-import { useCallback, useId, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { cn } from '../../util/cn.js';
+import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useDescribedByRegistry } from '../../primitives/describedby-registry.js';
 import { DescribableContext } from '../../primitives/describable.js';
 import type { Describable } from '../../primitives/describable.types.js';
+import { hasRenderableChildren } from '../../util/renderable-children.js';
+import { FieldLabel } from '../field-label/field-label.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { FieldContext, type FieldContextValue } from './field.context.js';
 import type { FieldProps } from './field.types.js';
 import styles from './field.module.css';
@@ -15,10 +27,36 @@ import styles from './field.module.css';
  * descriptions/errors register into the control's `aria-describedby`, and
  * `invalid` drives its `aria-invalid`. It touches no value or validation — the
  * control stays transparent (ADR-0013). For a group of controls use `Fieldset`.
+ *
+ * Two levels of the same API. The SHORTHAND covers the ordinary field — pass
+ * `label`, `hint` and `error` and the parts are rendered in the right order:
+ *
+ *     <Field label="Email" error={errors.email?.message}>
+ *       <Input {...register('email')} />
+ *     </Field>
+ *
+ * COMPOSING the parts by hand stays available and unchanged, for the field that
+ * needs something the props cannot express — a label with a badge in it, two
+ * descriptions, an error between the control and the hint. Mixing is fine as
+ * long as each part appears once; a second label is flagged in development.
  */
 function Field(props: FieldProps) {
-  const { className, invalid = false, children, ...rest } = props;
+  const {
+    className,
+    children,
+    label,
+    hint,
+    error,
+    invalid: invalidProp,
+    ref,
+    ...rest
+  } = props;
   const controlId = useId();
+
+  // An error IMPLIES the invalid state, so the two cannot be set out of step —
+  // the desync trap that a separate `invalid` prop invites. An explicit
+  // `invalid` still wins, for the field that is invalid before it has a message.
+  const invalid = invalidProp ?? hasRenderableChildren(error);
 
   // Description/error parts register their OWN id, so several coexist and the
   // control describes exactly the parts actually in the DOM.
@@ -51,11 +89,49 @@ function Field(props: FieldProps) {
     [register],
   );
 
+  // Two labels for one control concatenate into its accessible name, and the
+  // shorthand makes that easy to cause by accident — pass `label` AND compose a
+  // `FieldLabel`. Measured from the committed DOM rather than by inspecting
+  // `children`, so a label rendered by the consumer's own markup counts too.
+  // Direct children only: a `<label>` wrapping a control inside is that
+  // control's own, not a second label for this field.
+  const el = useRef<HTMLDivElement>(null);
+  const [extraLabels, setExtraLabels] = useState(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const node = el.current;
+    if (node == null) return;
+    const check = () =>
+      setExtraLabels(node.querySelectorAll(':scope > label').length > 1);
+    check();
+    // Watched rather than re-checked each render: a label owned by a
+    // descendant's own state appears without this component re-rendering, and
+    // re-checking on every render would be a setState with no dependency list.
+    // Dev-only in full — the query, the observer and the extra commit all drop
+    // out of a production build.
+    const observer = new MutationObserver(check);
+    observer.observe(node, { childList: true });
+    return () => observer.disconnect();
+  }, []);
+  useDevWarning(
+    extraLabels,
+    'Field: more than one label — the control takes its name from all of them. Use the `label` prop or compose a <FieldLabel>, not both.',
+  );
+
   return (
     <FieldContext.Provider value={value}>
       <DescribableContext.Provider value={describable}>
-        <div className={cn(styles.field, className)} {...rest}>
+        <div
+          className={cn(styles.field, className)}
+          {...rest}
+          ref={mergeRefs(el, ref)}
+        >
+          {label === undefined ? null : <FieldLabel>{label}</FieldLabel>}
           {children}
+          {hint === undefined ? null : (
+            <FieldDescription>{hint}</FieldDescription>
+          )}
+          {error === undefined ? null : <FieldError>{error}</FieldError>}
         </div>
       </DescribableContext.Provider>
     </FieldContext.Provider>
