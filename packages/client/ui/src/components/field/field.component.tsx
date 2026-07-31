@@ -48,6 +48,7 @@ function Field(props: FieldProps) {
     hint,
     error,
     invalid: invalidProp,
+    orientation,
     ref,
     ...rest
   } = props;
@@ -122,12 +123,28 @@ function Field(props: FieldProps) {
     <FieldContext.Provider value={value}>
       <DescribableContext.Provider value={describable}>
         <div
-          className={cn(styles.field, className)}
+          className={cn(
+            styles.field,
+            orientation === 'horizontal' && styles.horizontal,
+            className,
+          )}
           {...rest}
           ref={mergeRefs(el, ref)}
         >
-          {label === undefined ? null : <FieldLabel>{label}</FieldLabel>}
-          {children}
+          {/* In the row form the control comes FIRST in the DOM as well as on
+              screen, so reading order matches visual order (WCAG 1.3.2) rather
+              than relying on the grid to move things around. */}
+          {orientation === 'horizontal' ? (
+            <>
+              {children}
+              {label === undefined ? null : <FieldLabel>{label}</FieldLabel>}
+            </>
+          ) : (
+            <>
+              {label === undefined ? null : <FieldLabel>{label}</FieldLabel>}
+              {children}
+            </>
+          )}
           {hint === undefined ? null : (
             <FieldDescription>{hint}</FieldDescription>
           )}

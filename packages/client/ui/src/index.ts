@@ -42,7 +42,10 @@ export type {
 // right (the MUI model), so `FieldDescription`/`FieldError` belong to neither
 // family: they bind to the nearest describable container, `Field` or `Fieldset`.
 export { Field, useField } from './components/field/index.js';
-export type { FieldProps } from './components/field/field.types.js';
+export type {
+  FieldProps,
+  FieldOrientation,
+} from './components/field/field.types.js';
 export type {
   UseFieldResult,
   FieldLabelSlotProps,

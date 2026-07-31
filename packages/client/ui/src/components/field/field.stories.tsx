@@ -5,6 +5,8 @@ import { FieldDescription } from '../field-description/field-description.compone
 import { FieldError } from '../field-error/field-error.component.js';
 import { Input } from '../input/input.component.js';
 import { Badge } from '../badge/badge.component.js';
+import { Checkbox } from '../checkbox/checkbox.component.js';
+import { Radio } from '../radio/radio.component.js';
 
 const meta: Meta<typeof Field> = {
   title: 'Components/Inputs/Field',
@@ -27,6 +29,16 @@ const meta: Meta<typeof Field> = {
       description:
         'Shorthand for a FieldError. Content here also turns `invalid` on; empty content renders nothing.',
       table: { type: { summary: 'ReactNode' } },
+    },
+    orientation: {
+      control: 'inline-radio',
+      options: ['vertical', 'horizontal'],
+      description:
+        '`vertical` puts the label above the control; `horizontal` puts the control first with its label beside it — the anatomy of a single checkbox or radio.',
+      table: {
+        type: { summary: "'vertical' | 'horizontal'" },
+        defaultValue: { summary: "'vertical'" },
+      },
     },
     invalid: {
       control: 'boolean',
@@ -115,6 +127,35 @@ export const Form: Story = {
       </Field>
       <Field label="Password" error="At least 8 characters.">
         <Input type="password" autoComplete="new-password" />
+      </Field>
+    </div>
+  ),
+};
+
+/**
+ * The second anatomy: a single checkbox or radio, where the control leads and
+ * its label sits beside it. The hint and error align under the LABEL, so the
+ * text reads as one block instead of hanging off the control.
+ */
+export const Horizontal: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)', ...box }}>
+      <Field
+        orientation="horizontal"
+        label="Accept the terms"
+        hint="You can withdraw consent later."
+      >
+        <Checkbox />
+      </Field>
+      <Field
+        orientation="horizontal"
+        label="Send me product updates"
+        error="Choose an option to continue."
+      >
+        <Checkbox />
+      </Field>
+      <Field orientation="horizontal" label="Standard delivery">
+        <Radio name="shipping" defaultChecked />
       </Field>
     </div>
   ),

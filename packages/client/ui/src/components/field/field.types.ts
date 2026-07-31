@@ -1,6 +1,20 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 
+/** How a `Field` places its label relative to the control. */
+export type FieldOrientation = 'vertical' | 'horizontal';
+
 interface FieldOwnProps {
+  /**
+   * `vertical` (the default) puts the label ABOVE the control — the ordinary
+   * text field. `horizontal` puts the control FIRST and its label beside it,
+   * which is the anatomy of a single checkbox or radio; the hint and error then
+   * align under the label, not under the control.
+   *
+   * A plain union rather than one derived from a cva definition: `VariantProps`
+   * also admits `null`, which cva reads as "skip this variant" — it would
+   * typecheck and silently leave the field with no layout.
+   */
+  orientation?: FieldOrientation;
   /** The control, plus any parts you compose by hand. */
   children?: ReactNode;
   /**

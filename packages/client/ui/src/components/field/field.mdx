@@ -124,6 +124,21 @@ Shared with `Fieldset`: it describes whichever container is nearest.
 
 <Canvas of={FieldStories.Invalid} />
 
+### The row form
+
+A single checkbox or radio has the opposite anatomy: the control leads and the label sits beside it.
+Same component, same wiring — `orientation="horizontal"` changes the layout **and** the DOM order, so
+what is read matches what is seen rather than being reshuffled by the grid.
+
+<Canvas of={FieldStories.Horizontal} />
+
+The hint and error align under the **label**, not under the control, so the text reads as one block.
+Placement is by element rather than by position, so composing the parts by hand in any order lays out
+identically — asserted in the tests, because an escape hatch that drifts is not one.
+
+For a GROUP of checkboxes or radios this is the wrong container: the field is the group, so use a
+`Fieldset` with a `FieldsetLegend` and let each option carry its own `<label>`.
+
 ## Accessibility
 
 - **Label association is automatic** — `FieldLabel htmlFor` and the control's `id` share one `useId`,

@@ -11,4 +11,23 @@
   .field {
     @apply grid gap-internal-xs;
   }
+
+  /* The row form: the control LEADS and its label sits beside it — a consent
+     checkbox, a single radio. Two columns, with the description and error
+     aligned under the label rather than under the control, so the text reads as
+     one block.
+
+     `align-items: center` centres each item in ITS OWN row, and the control's
+     row is the label's, so the control lands optically centred on the label's
+     line without a magic offset. The parts are placed by element, not by
+     position, so composing them by hand in any order lays out the same. */
+  .horizontal {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: var(--fm-space-internal-s);
+  }
+  .horizontal > label,
+  .horizontal > p {
+    grid-column: 2;
+  }
 }

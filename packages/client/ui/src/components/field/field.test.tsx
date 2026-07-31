@@ -5,6 +5,7 @@ import { FieldLabel } from '../field-label/field-label.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
 import { Input } from '../input/input.component.js';
+import { Checkbox } from '../checkbox/checkbox.component.js';
 import { useField } from './use-field.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -228,6 +229,111 @@ describe('Field', () => {
       expect(warn).not.toHaveBeenCalledWith(
         expect.stringContaining('more than one label'),
       );
+    });
+  });
+
+  // The second anatomy: a single checkbox or radio, where the control leads and
+  // the label sits beside it. Same component, same wiring — only the layout and
+  // the DOM order of the two change.
+  describe('horizontal orientation', () => {
+    const renderRow = () =>
+      renderUi(
+        <Field
+          label="Accept the terms"
+          hint="You can withdraw consent later."
+          error="Required to continue."
+          orientation="horizontal"
+          style={{ inlineSize: '20rem' }}
+        >
+          <Checkbox />
+        </Field>,
+      );
+
+    it('still labels and describes the control', async () => {
+      renderRow();
+      const box = screen.getByRole('checkbox', { name: 'Accept the terms' });
+      await waitFor(() =>
+        expect(box).toHaveAccessibleDescription(
+          'You can withdraw consent later. Required to continue.',
+        ),
+      );
+      expect(box).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('puts the control BEFORE its label in the DOM, not only on screen', () => {
+      // Reading order should match visual order rather than being reshuffled by
+      // the grid (WCAG 1.3.2).
+      const { container } = renderRow();
+      const parts = [...container.querySelectorAll('input, label')];
+      expect(parts.map((n) => n.tagName)).toEqual(['INPUT', 'LABEL']);
+    });
+
+    it('places the label beside the control, not under it', () => {
+      const { container } = renderRow();
+      const box = (
+        container.querySelector('input') as HTMLElement
+      ).getBoundingClientRect();
+      const label = (
+        container.querySelector('label') as HTMLElement
+      ).getBoundingClientRect();
+      expect(label.left).toBeGreaterThan(box.right);
+      // Same line: their vertical centres coincide.
+      expect(
+        Math.abs((box.top + box.bottom) / 2 - (label.top + label.bottom) / 2),
+      ).toBeLessThan(1);
+    });
+
+    it('aligns hint and error under the LABEL, not under the control', () => {
+      const { container } = renderRow();
+      const label = (
+        container.querySelector('label') as HTMLElement
+      ).getBoundingClientRect();
+      const texts = [...container.querySelectorAll('p')].map((n) =>
+        n.getBoundingClientRect(),
+      );
+      expect(texts).toHaveLength(2);
+      for (const t of texts) {
+        expect(Math.abs(t.left - label.left)).toBeLessThan(1);
+        expect(t.top).toBeGreaterThan(label.bottom - 1);
+      }
+    });
+
+    it('stacks label above control when vertical (the default)', () => {
+      const { container } = renderUi(
+        <Field label="Email">
+          <Input />
+        </Field>,
+      );
+      const input = (
+        container.querySelector('input') as HTMLElement
+      ).getBoundingClientRect();
+      const label = (
+        container.querySelector('label') as HTMLElement
+      ).getBoundingClientRect();
+      expect(label.bottom).toBeLessThanOrEqual(input.top);
+    });
+
+    it('lays out the same when the parts are composed by hand', () => {
+      // Placement is by ELEMENT, not by position, so composing in any order
+      // gives the same result — otherwise the escape hatch would drift.
+      const { container } = renderUi(
+        <Field orientation="horizontal" style={{ inlineSize: '20rem' }}>
+          <Checkbox />
+          <FieldLabel>Accept the terms</FieldLabel>
+          <FieldError>Required to continue.</FieldError>
+        </Field>,
+      );
+      const box = (
+        container.querySelector('input') as HTMLElement
+      ).getBoundingClientRect();
+      const label = (
+        container.querySelector('label') as HTMLElement
+      ).getBoundingClientRect();
+      const err = (
+        container.querySelector('p') as HTMLElement
+      ).getBoundingClientRect();
+      expect(label.left).toBeGreaterThan(box.right);
+      expect(Math.abs(err.left - label.left)).toBeLessThan(1);
     });
   });
 
