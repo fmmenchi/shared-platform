@@ -13,14 +13,17 @@ import type { InputProps } from './input.types.js';
  * `aria-label`, or `aria-labelledby`) — a placeholder is not a label.
  */
 function Input(props: InputProps) {
-  const { className, size, type = 'text', ...rest } = props;
+  // No `= 'text'` inside the pattern: a default in the destructuring makes the
+  // React Compiler abandon the whole component, so the published bundle ships
+  // unmemoized (measured) — and nothing reports it, lint stays green.
+  const { className, size, type, ...rest } = props;
   // Opt-in Field wiring: inside a <Field>, pick up id/aria-describedby/aria-invalid
   // (the consumer's own props still win); standalone, this is a no-op.
   const fieldProps = useFieldControl(rest);
 
   return (
     <input
-      type={type}
+      type={type ?? 'text'}
       className={cn(inputVariants({ size }), className)}
       {...fieldProps}
     />

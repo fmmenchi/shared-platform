@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Checkbox > matches the rendered snapshot 1`] = `
+<input
+  aria-label="accept"
+  class="_checkbox_kjpik_4"
+  type="checkbox"
+/>
+`;

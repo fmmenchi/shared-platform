@@ -74,7 +74,9 @@ describe('Input', () => {
       expect(onChange).toHaveBeenCalled();
       // Pinned value + a no-op onChange: a transparent control reverts to '',
       // proving the DS holds no internal state (a regression that managed its
-      // own value would leave 'x' here).
+      // own value would leave 'x' here). This is React's own controlled input,
+      // which is what every major library uses for a text value — verified
+      // against MUI InputBase, Mantine Input and Base UI FieldControl.
       expect(input.value).toBe('');
     });
 
