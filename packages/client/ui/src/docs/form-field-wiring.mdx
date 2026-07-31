@@ -76,6 +76,39 @@ Validation rules, form state and submission stay with the consumer (ADR-0013). `
   a shared `name`, scoped to the form. Two `Fieldset`s whose radios share a `name` are one group split
   across two boxes.
 
+## Populating a form with values that arrive later
+
+The edit-form case: the record comes from a fetch, after the fields are already on screen. This is
+the one place where "the DOM holds the state" needs a word of explanation, because the obvious move
+does not work.
+
+```tsx
+<Input defaultValue={data?.email} /> // ⚠️ does NOT update when `data` arrives
+```
+
+`defaultValue` and `defaultChecked` are **initial** values. React applies them when the element
+mounts and then steps back — that is what makes the control uncontrolled. Changing them later is a
+no-op, silently.
+
+Three ways forward, in the order you should reach for them:
+
+1. **Your form library's `reset(data)`.** The standard answer, and the reason the controls are
+   transparent: `reset()` writes straight to the DOM, which is where the value lives. Call it in an
+   effect when the data lands, or pass the data as the library's `values`/`defaultValues` and let it
+   reset for you.
+2. **Remount with a `key`.** No library needed — change the key when the data arrives and the fields
+   mount fresh with the new defaults. Cheap and honest for a small form; it discards anything the
+   user had already typed, which is usually what you want before the record has loaded.
+3. **Go controlled.** `value` + `onChange` from your own state, seeded from the fetch. Correct, but
+   it makes every keystroke a render — reach for it when you need the value during typing anyway (a
+   live character count, a dependent field), not merely to load initial data.
+
+What does **not** work: assigning through a ref (`ref.current.value = …`). React tracks the value
+node and treats the change as a duplicate, so `onChange` never fires and no form library sees it.
+
+`setValue`/`reset` also work for a `Checkbox`'s third state, because that state is a value of
+`checked` — `reset({ topics: 'indeterminate' })` puts the box back to mixed like any other value.
+
 ## Ordering and timing
 
 `aria-describedby` is built in **DOM order**, not in the order the parts happened to mount: the order
