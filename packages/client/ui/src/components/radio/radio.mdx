@@ -35,6 +35,21 @@ would state one error three times.
 
 <Canvas of={RadioStories.GroupError} />
 
+### When the label is more than a name
+
+Nesting puts **everything inside the `<label>` into the accessible name**. For a plain option that is
+exactly right. For an option carrying a subtitle, a price or a badge it is not — measured:
+
+| markup                                    | accessible name                 | description                 |
+| ----------------------------------------- | ------------------------------- | --------------------------- |
+| `<label><Radio/>Pro<span>10 €/mo</span>`  | `"Pro 10 €/mo, best for teams"` | —                           |
+| `<Radio id aria-describedby/><label for>` | `"Pro"`                         | `"10 €/mo, best for teams"` |
+
+So the rule is not "always nest": **nest while the label is only the name, and switch to an explicit
+`id` + `aria-describedby` the moment it is not.** A rich option needs an id — which is why the
+richer, one-tag field components on the roadmap generate one themselves (via `Field`) rather than
+asking you to invent it.
+
 ### States
 
 <Canvas of={RadioStories.States} />
