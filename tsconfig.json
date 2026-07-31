@@ -38,6 +38,9 @@
     },
     {
       "path": "./packages/plugins/ui"
+    },
+    {
+      "path": "./packages/client/ui-react-hook-form"
     }
   ],
   "compilerOptions": {}
