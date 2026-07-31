@@ -91,6 +91,23 @@ supports eslint 10, but the React/a11y/import plugins don't.
 **What unblocks it.** `eslint-plugin-react` / `jsx-a11y` / `import` shipping eslint-10 support (their
 peer ranges widening to include `^10`).
 
+## A stale Docusaurus cache reports false broken links
+
+**Symptom.** `nx build @fmmenchi/docs` fails with `Docusaurus found broken links!` pointing at a
+markdown file that **exists** on disk and whose page is generated in `build/`. Typically after a
+document arrives through a `git merge` or a branch switch rather than being written in place.
+
+**Cause.** Docusaurus keeps its own cache in `apps/docusaurus/.docusaurus`. Its file→route map is
+built once; a document that appears afterwards is rendered, but relative `./file.md` links to it are
+no longer resolvable, so they survive into the HTML as literal paths and fail the link check.
+`--skip-nx-cache` does not help — it skips Nx's cache, not Docusaurus's.
+
+**Fix.** `pnpm nx clear @fmmenchi/docs`, then rebuild.
+
+**Do not "fix" the link.** Rewriting it to the route form (`./minimal-semantic-markup`) makes the
+build pass and encodes a local cache artifact in the repo — CI builds from a clean checkout and never
+sees the problem. If a link is genuinely broken, it fails after a clear too.
+
 ## Baseline exceptions in flight (ADR-0010)
 
 **Status:** living section · Newly-available features used as **graceful progressive enhancement**

@@ -25,6 +25,14 @@
           "targetPath": "apps/docusaurus/docs"
         }
       },
+      "clear": {
+        "executor": "nx:run-commands",
+        "cache": false,
+        "options": {
+          "command": "docusaurus clear",
+          "cwd": "{projectRoot}"
+        }
+      },
       "watch-sync-docs": {
         "executor": "@fmmenchi/nx-docusaurus:sync-docs",
         "dependsOn": [
