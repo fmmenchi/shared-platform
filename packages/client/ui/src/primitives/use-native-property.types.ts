@@ -11,15 +11,4 @@ export interface NativePropertyOptions<V> {
    * element owns the property from then on. Ignored when `value` is given.
    */
   initial?: V;
-  /**
-   * NOTIFY after a driven write: dispatch a native `input` + `change` so that
-   * everything holding a copy of the value — React's own `onChange`, a form
-   * library's internal state — learns about it. Without this a programmatic
-   * write is silent, and a form library would submit the value it last saw.
-   *
-   * Only for properties that ARE the control's value. A property that merely
-   * decorates it (a checkbox's `indeterminate`) must not fire a change: nothing
-   * about the submitted value moved, and the event would be a lie.
-   */
-  notify?: boolean;
 }

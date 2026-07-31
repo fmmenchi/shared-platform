@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, type RefObject } from 'react';
 import type { NativePropertyOptions } from './use-native-property.types.js';
 
 /**
@@ -30,48 +30,12 @@ import type { NativePropertyOptions } from './use-native-property.types.js';
  * not a general concept, and a knob with one user does not belong in a shared
  * API.
  */
-/**
- * Write the property, optionally announcing it.
- *
- * Through the PROTOTYPE's setter, not the element's own. React installs a value
- * tracker on the instance and compares against it to decide whether an event is
- * a real change; assigning through the instance updates that tracker too, so the
- * event we then dispatch is discarded as a duplicate and `onChange` never fires
- * — the exact reason `ref.current.value = x` looks like it works and does not.
- * Going through the prototype leaves the tracker stale, which is what makes the
- * change look real.
- */
-function write(
-  node: HTMLElement,
-  property: string,
-  value: unknown,
-  notify: boolean,
-): void {
-  const setter = Object.getOwnPropertyDescriptor(
-    Object.getPrototypeOf(node),
-    property,
-  )?.set;
-  if (notify && setter !== undefined) setter.call(node, value);
-  else Reflect.set(node, property, value);
-
-  if (!notify) return;
-  // ONE event, not two. React synthesises `onChange` from both `input` and
-  // `change` on a text field, so dispatching the pair calls the handler twice
-  // for a single write — measured. `input` is the one that fires first for a
-  // real edit, so it is the honest one to imitate.
-  node.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
 export function useNativeProperty<V>(
   ref: RefObject<HTMLElement | null>,
   property: string,
   options: NativePropertyOptions<V>,
 ): void {
-  const { value, initial, notify } = options;
-  // Mounting is not a change: the first pass seeds the element and must not
-  // announce one, or every field fires `onChange` on mount and a form is dirty
-  // before the user has touched it.
-  const mounted = useRef(false);
+  const { value, initial } = options;
 
   useEffect(() => {
     const node = ref.current;
@@ -81,15 +45,10 @@ export function useNativeProperty<V>(
       // Not driven: a starting value, then hands off. Writing anything later —
       // including a default of `false` — would stomp on an element the caller
       // may be driving imperatively through its own ref.
-      if (initial !== undefined) write(node, property, initial, false);
-      mounted.current = true;
+      if (initial !== undefined) Reflect.set(node, property, initial);
       return;
     }
 
-    // Announce every write EXCEPT the very first pass, which is the mount.
-    // Going from not-driven to driven — a value arriving from a fetch — is a
-    // change and does announce; only seeding the element on mount does not.
-    write(node, property, value, notify === true && mounted.current);
-    mounted.current = true;
-  }, [ref, property, value, initial, notify]);
+    Reflect.set(node, property, value);
+  }, [ref, property, value, initial]);
 }
