@@ -23,6 +23,9 @@ const config: StorybookConfig = {
     },
     '@storybook/addon-a11y',
     '@storybook/addon-mcp',
+    // Runs the stories as tests, from Storybook's own UI and from `nx test`.
+    // The Vitest side is wired in `vite.config.mts` — see the note there.
+    '@storybook/addon-vitest',
   ],
   framework: {
     name: getAbsolutePath('@storybook/react-vite'),
