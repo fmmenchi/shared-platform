@@ -28,7 +28,10 @@ import type { AnchoredOptions } from './use-anchored.types.js';
  * - **It does not show or hide anything.** Visibility belongs to the component:
  *   a tooltip's is hover and focus, a popover's is a click. This only measures —
  *   including when the anchor has been scrolled out of sight, which it REPORTS
- *   as `data-anchor-hidden` and leaves the stylesheet to act on.
+ *   as `data-anchor-hidden` and leaves the stylesheet to act on. Same for the
+ *   side it settled on (`data-placement`) and where the anchor's centre falls
+ *   along the surface (`--anchor-centre`): facts an arrow needs, drawn by
+ *   whoever wants one.
  *
  * CSS anchor positioning does all of this declaratively and recomputes natively,
  * and all three current engines implement it correctly — measured. It is not
@@ -72,10 +75,27 @@ export function useAnchored(
           // that container, pointing at a control the user could no longer see.
           hide({ padding: 4 }),
         ],
-      }).then(({ x, y, middlewareData }) => {
+      }).then(({ x, y, placement: resolved, middlewareData }) => {
         // Written to the element, not to state — see the note above.
         surface.style.left = `${x}px`;
         surface.style.top = `${y}px`;
+
+        // Where it ENDED UP, which is not what was asked for once `flip()` has
+        // had its say — a stylesheet drawing an arrow needs the resolved side,
+        // not the preferred one.
+        surface.dataset.placement = resolved;
+
+        // And where the anchor's centre falls along the surface, so that arrow
+        // still points at the trigger after `shift()` has slid the box sideways
+        // to stay in view. Measured from the FINAL coordinates, so it is right
+        // by construction rather than by agreement.
+        const box = anchor.getBoundingClientRect();
+        const vertical =
+          resolved.startsWith('top') || resolved.startsWith('bottom');
+        const centre = vertical
+          ? box.left + box.width / 2 - x
+          : box.top + box.height / 2 - y;
+        surface.style.setProperty('--anchor-centre', `${centre}px`);
         surface.toggleAttribute(
           'data-anchor-hidden',
           middlewareData.hide?.referenceHidden === true,
@@ -93,6 +113,8 @@ export function useAnchored(
       surface.style.left = '';
       surface.style.top = '';
       surface.removeAttribute('data-anchor-hidden');
+      delete surface.dataset.placement;
+      surface.style.removeProperty('--anchor-centre');
     };
   }, [anchor, surfaceRef, placement, gap, open]);
 }

@@ -232,6 +232,46 @@ describe('Tooltip', () => {
     });
   });
 
+  it('points its arrow at the trigger, even when slid back into view', async () => {
+    // The arrow is drawn from `--anchor-centre`, which is measured from the
+    // FINAL coordinates — so `shift()` sliding the box away from the edge moves
+    // the arrow the other way, and it still points at the control.
+    const aim = async (padding: string) => {
+      const { unmount } = render(
+        <div style={{ padding }}>
+          <Tooltip
+            content="a label a good deal wider than its trigger"
+            openDelay={0}
+            closeDelay={9999}
+          >
+            <Button aria-label="T">T</Button>
+          </Tooltip>
+        </div>,
+      );
+      await browser.hover(screen.getByRole('button', { name: 'T' }));
+      await waitFor(() => expect(isOpen()).toBe(true));
+
+      const trigger = screen
+        .getByRole('button', { name: 'T' })
+        .getBoundingClientRect();
+      const box = surface().getBoundingClientRect();
+      const arrow = parseFloat(getComputedStyle(surface(), '::after').left);
+      const miss = Math.abs(
+        box.left + arrow - (trigger.left + trigger.width / 2),
+      );
+      const placement = surface().dataset.placement;
+      unmount();
+      return { miss, placement };
+    };
+
+    // Centred, then hard against the viewport edge where `shift()` has to move
+    // the surface and the arrow must not move with it.
+    expect((await aim('120px')).miss).toBeLessThan(1);
+    const edge = await aim('120px 0 0 0');
+    expect(edge.miss).toBeLessThan(1);
+    expect(edge.placement).toBe('top');
+  });
+
   it('aligns by writing direction, not by screen side', async () => {
     // `-start` is documented as logical, so it is measured: the same
     // `top-start` sits on the left in LTR and on the right in RTL.

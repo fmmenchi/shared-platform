@@ -16,6 +16,11 @@
    and `@reference` stay above the layer; `:root` tokens stay unlayered. */
 @layer fmmenchi {
   .tooltip {
+    /* Declared here, overwritten inline by the geometry once it has measured.
+       Not an `--fm-` name on purpose: that prefix means a token from
+       @fmmenchi/tokens, and this is a runtime fact about one element. */
+    --anchor-centre: 50%;
+
     /* Undo the UA popover box before positioning it: `inset: auto` frees the
        four sides and `margin: 0` stops it being re-centred. */
     position: fixed;
@@ -83,6 +88,54 @@
     pointer-events: auto;
   }
 
+  /*
+   * The arrow. A rotated square straddling the edge, half of it inside the
+   * surface where it is invisible against the same fill — so it is a
+   * pseudo-element and not a node (ADR-0016), and `overflow: visible` above is
+   * what lets the outer half escape.
+   *
+   * `--anchor-centre` is written by the geometry: the arrow follows the
+   * trigger even after the box has been slid sideways to stay on screen. The
+   * `clamp` keeps it off the rounded corners, where a triangle growing out of a
+   * curve reads as a mistake.
+   */
+  .tooltip::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    rotate: 45deg;
+  }
+
+  .tooltip[data-placement^='top']::after,
+  .tooltip[data-placement^='bottom']::after {
+    left: clamp(10px, var(--anchor-centre), calc(100% - 10px));
+    translate: -50% 0;
+  }
+
+  .tooltip[data-placement^='left']::after,
+  .tooltip[data-placement^='right']::after {
+    top: clamp(10px, var(--anchor-centre), calc(100% - 10px));
+    translate: 0 -50%;
+  }
+
+  .tooltip[data-placement^='top']::after {
+    top: calc(100% - 4px);
+  }
+
+  .tooltip[data-placement^='bottom']::after {
+    bottom: calc(100% - 4px);
+  }
+
+  .tooltip[data-placement^='left']::after {
+    left: calc(100% - 4px);
+  }
+
+  .tooltip[data-placement^='right']::after {
+    right: calc(100% - 4px);
+  }
+
   /* The anchor has been scrolled out of sight and the surface has not, because
      nothing in the top layer is ever clipped. A tooltip pointing at a control
      the user cannot see is worse than no tooltip. */
@@ -112,6 +165,12 @@
       border: 1px solid CanvasText;
       background-color: Canvas;
       color: CanvasText;
+    }
+
+    /* The box is outlined here, and an arrow with no outline of its own would
+       read as a dent in it. It is decoration; the border is the information. */
+    .tooltip::after {
+      display: none;
     }
   }
 }
