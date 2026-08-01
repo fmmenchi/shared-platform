@@ -12,7 +12,10 @@ import {
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
 import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
-import type { UseFormField } from '../../form/form-adapter.types.js';
+import type {
+  BoundField,
+  UseFormField,
+} from '../../form/form-adapter.types.js';
 
 /**
  * The app-side adapter, once per library — react-hook-form here. It is a HOOK,
@@ -339,6 +342,146 @@ describe('FormInput / FormChoice through the adapter port', () => {
     await waitFor(() =>
       expect(email).toHaveAccessibleDescription('Email is required.'),
     );
+  });
+
+  it('is unchanged by a SCHEMA resolver — zod, valibot, yup', async () => {
+    // The question this answers: with zod you pass a `resolver` to useForm and
+    // never write a per-field rule, so the one thing this shape cannot do stops
+    // mattering. The adapter below has NO rules map at all and is otherwise
+    // identical — errors still arrive by name.
+    //
+    // The resolver is hand-written rather than imported: `zodResolver` is just a
+    // function of this shape, so the mechanism is proved without the dependency.
+    const schemaResolver = (values: Record<string, unknown>) => {
+      const errors: Record<string, { type: string; message: string }> = {};
+      if (!values.email) {
+        errors.email = { type: 'schema', message: 'Email is required.' };
+      }
+      if (String(values.password ?? '').length < 8) {
+        errors.password = { type: 'schema', message: 'At least 8 characters.' };
+      }
+      return { values: Object.keys(errors).length ? {} : values, errors };
+    };
+
+    // Note what is NOT here: no rules, no register options. Just the binding.
+    const useSchemaField: UseFormField = (name) => {
+      const { register, control } = useFormContext();
+      const { errors } = useFormState({ control, name });
+      return {
+        control: register(name),
+        error: errors[name]?.message as string | undefined,
+      };
+    };
+
+    function App() {
+      const form = useForm({
+        defaultValues: { email: '', password: '' },
+        resolver: schemaResolver,
+      });
+      return (
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(() => undefined)}>
+            <FormAdapterProvider adapter={useSchemaField}>
+              <FormInput name="email" label="Email" />
+              <FormInput name="password" label="Password" />
+            </FormAdapterProvider>
+            <button type="submit">Go</button>
+          </form>
+        </FormProvider>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Go' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('textbox', { name: 'Email' }),
+      ).toHaveAccessibleDescription('Email is required.'),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole('textbox', { name: 'Password' }),
+      ).toHaveAccessibleDescription('At least 8 characters.'),
+    );
+  });
+
+  // A field rarely fails in exactly one way, so the contract takes the three
+  // shapes libraries actually produce — and each message renders as its OWN
+  // element rather than being joined into one run-on sentence.
+  describe('several messages at once', () => {
+    const renderWith = (error: BoundField['error']) => {
+      const adapter: UseFormField = (name) => ({ control: { name }, error });
+      return render(
+        <FormAdapterProvider adapter={adapter}>
+          <FormInput name="email" label="Email" />
+        </FormAdapterProvider>,
+      );
+    };
+
+    it('a lone string', async () => {
+      renderWith('Email is required.');
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      await waitFor(() =>
+        expect(input).toHaveAccessibleDescription('Email is required.'),
+      );
+    });
+
+    it('an ARRAY — Conform’s shape — as separate elements, not joined', () => {
+      const { container } = renderWith(['Too short.', 'Needs a digit.']);
+      const errors = [...container.querySelectorAll('p')].map(
+        (n) => n.textContent,
+      );
+      // Two elements, not one string. Joined, a screen reader would read
+      // "Too short.Needs a digit." as a single run-on statement.
+      expect(errors).toEqual(['Too short.', 'Needs a digit.']);
+    });
+
+    it('a KEYED OBJECT — react-hook-form’s criteriaMode: all', () => {
+      const { container } = renderWith({
+        minLength: 'At least 8 characters.',
+        pattern: 'Must contain a digit.',
+      });
+      expect(
+        [...container.querySelectorAll('p')].map((n) => n.textContent),
+      ).toEqual(['At least 8 characters.', 'Must contain a digit.']);
+    });
+
+    it('announces every message, in order', async () => {
+      renderWith(['Too short.', 'Needs a digit.']);
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      await waitFor(() =>
+        expect(input).toHaveAccessibleDescription('Too short. Needs a digit.'),
+      );
+    });
+
+    it('the hint still comes BEFORE the errors, however many', async () => {
+      const adapter: UseFormField = () => ({
+        control: { name: 'email' },
+        error: ['A.', 'B.'],
+      });
+      render(
+        <FormAdapterProvider adapter={adapter}>
+          <FormInput name="email" label="Email" hint="Work address." />
+        </FormAdapterProvider>,
+      );
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      await waitFor(() =>
+        expect(input).toHaveAccessibleDescription('Work address. A. B.'),
+      );
+    });
+
+    it('empty shapes mean valid — no element, no aria-invalid', () => {
+      for (const empty of [undefined, '', [], {}] as const) {
+        const { container, unmount } = renderWith(empty);
+        expect(container.querySelectorAll('p')).toHaveLength(0);
+        expect(container.querySelector('input')).not.toHaveAttribute(
+          'aria-invalid',
+        );
+        unmount();
+      }
+    });
   });
 
   it('throws by name when there is no adapter in scope', () => {

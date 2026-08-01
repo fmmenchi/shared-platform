@@ -36,18 +36,23 @@ export interface BoundField {
    */
   control: Omit<ComponentProps<'input'>, 'size'>;
   /**
-   * The message to show when the field is in error. Absent means valid.
+   * What is wrong with the field. Absent means valid.
    *
-   * A STRING, deliberately, not a `ReactNode`. Every form library produces a
-   * string (react-hook-form, Formik) or an array of them (Conform) — so a
-   * wider type would accept more than any implementation produces, and give
-   * whoever writes an adapter nothing to aim at. It also makes Conform's
-   * `string[]` a visible `.join(', ')` in the adapter rather than a silent
-   * concatenation at render time.
+   * A field rarely fails in exactly one way, so this takes the three shapes
+   * form libraries actually produce, and the bound components render each
+   * message as its OWN element rather than joining them:
    *
+   * - **`string`** — one message. react-hook-form, Formik.
+   * - **`string[]`** — several. Conform's `field.errors`.
+   * - **`Record<string, string>`** — several, keyed by the rule that failed.
+   *   react-hook-form's `errors[name].types` under `criteriaMode: 'all'`. The
+   *   key is the stable identity, which is what a list needs and a bare array
+   *   cannot give.
+   *
+   * NOT a `ReactNode`: it would accept all of the above and then render an
+   * array as silently concatenated text, with no separator and no way to tell.
    * A rich message — one with a link in it — is outside this fast path by
-   * construction: compose `Field` + `FieldError` by hand, where a `ReactNode`
-   * is accepted.
+   * construction: compose `Field` + `FieldError`, where a `ReactNode` fits.
    */
-  error?: string;
+  error?: string | readonly string[] | Readonly<Record<string, string>>;
 }

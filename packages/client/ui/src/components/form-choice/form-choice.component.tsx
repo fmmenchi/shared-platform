@@ -1,6 +1,9 @@
 import { ChoiceField } from '../choice-field/choice-field.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
+import { FieldDescription } from '../field-description/field-description.component.js';
+import { FieldError } from '../field-error/field-error.component.js';
 import { useBoundField } from '../../form/form-adapter.context.js';
+import { toMessages } from '../../form/messages.js';
 import type { FormChoiceProps } from './form-choice.types.js';
 
 /**
@@ -15,10 +18,15 @@ import type { FormChoiceProps } from './form-choice.types.js';
 function FormChoice(props: FormChoiceProps) {
   const { name, label, hint, ...rest } = props;
   const { control, error } = useBoundField(name, 'FormChoice');
+  const messages = toMessages(error);
 
   return (
-    <ChoiceField label={label} hint={hint} error={error}>
+    <ChoiceField label={label} invalid={messages.length > 0}>
       <Checkbox {...control} {...rest} />
+      {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}
+      {messages.map(({ key, message }) => (
+        <FieldError key={key}>{message}</FieldError>
+      ))}
     </ChoiceField>
   );
 }
