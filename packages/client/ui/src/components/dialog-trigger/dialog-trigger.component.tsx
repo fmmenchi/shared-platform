@@ -26,13 +26,27 @@ function DialogTrigger(props: DialogTriggerProps) {
   const dialog = useDialogPart('DialogTrigger');
 
   const surface = dialog?.surface;
+  const controlled = dialog?.open !== undefined;
+  const reportOpen = dialog?.reportOpen;
+
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(event);
-      if (event.defaultPrevented || commandsSupported()) return;
+      if (event.defaultPrevented) return;
+
+      // Controlled: ASK, do not open. Measured before this: the command opened
+      // the dialog behind React's back, the `toggle` reached a `sync` that
+      // still saw `open={false}`, and it shut again inside the same frame — so
+      // a controlled dialog could not be opened from its own trigger at all.
+      if (controlled) {
+        reportOpen?.(true);
+        return;
+      }
+
+      if (commandsSupported()) return;
       surface?.showModal();
     },
-    [onClick, surface],
+    [onClick, controlled, reportOpen, surface],
   );
 
   return (
@@ -41,8 +55,10 @@ function DialogTrigger(props: DialogTriggerProps) {
       {...rest}
       ref={mergeRefs(dialog?.setInvoker, ref)}
       onClick={handleClick}
-      command="show-modal"
-      commandfor={dialog?.surfaceId}
+      // No command while controlled — two owners for one state is how the
+      // dialog ended up opening and closing itself.
+      command={controlled ? undefined : 'show-modal'}
+      commandfor={controlled ? undefined : dialog?.surfaceId}
       aria-haspopup="dialog"
     />
   );

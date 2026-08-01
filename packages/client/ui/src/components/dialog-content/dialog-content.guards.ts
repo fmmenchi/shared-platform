@@ -20,17 +20,19 @@ export function useDialogContentWarnings(
   open: boolean | undefined,
   hasOpenChange: boolean,
 ): void {
-  // Controlled with nowhere to report to. The prop wins back every close, and
-  // the browser closes this dialog four ways that never ask React — so without
-  // `onOpenChange` the user presses Escape, the dialog shuts, and the next
-  // render puts it straight back. An undismissable modal is a trap, not a bug
-  // to be found later.
+  // Controlled with nowhere to report to. The browser closes this dialog four
+  // ways that never ask React — `Escape`, a backdrop click, `command="close"`
+  // and `<form method="dialog">` — and every one of them is granted, so the
+  // consumer's prop is simply left saying something that is no longer true.
+  // (It is granted on purpose: re-asserting the prop over a close request was
+  // measured to trap the user inside an undismissable modal.)
   useDevWarning(
     open !== undefined && !hasOpenChange,
-    'Dialog: `open` was given without `onOpenChange`, so nothing can ever ' +
-      'close it — Escape, the backdrop and the close button all report to a ' +
-      'handler that is not there, and the next render reopens it. Pass ' +
-      '`onOpenChange`, or drop `open` and let the DOM own the state.',
+    'Dialog: `open` was given without `onOpenChange`, so nothing tells you ' +
+      'when the browser closes it — Escape, the backdrop, the close button ' +
+      'and a `method="dialog"` form all close it without asking, and your ' +
+      '`open` will still say true. Pass `onOpenChange`, or drop `open` and ' +
+      'let the DOM own the state.',
   );
 
   // The switch React itself warns about for every other control.

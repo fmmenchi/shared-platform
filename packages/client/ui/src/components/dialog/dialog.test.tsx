@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Dialog } from './dialog.component.js';
@@ -151,6 +151,62 @@ describe('Dialog', () => {
     expect(visited).toHaveLength(6);
 
     await browser.keyboard('{Escape}');
+  });
+
+  describe('controlled by the app', () => {
+    it('opens from its own trigger', async () => {
+      // Measured before this: the trigger's `command` opened the dialog behind
+      // React's back, the `toggle` reached a sync that still saw `open={false}`
+      // and it shut inside the same frame — a controlled dialog could not be
+      // opened from its own trigger at all. While controlled the trigger ASKS.
+      const Controlled = () => {
+        const [open, setOpen] = useState(false);
+        return (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger>Delete…</DialogTrigger>
+            <DialogContent>
+              <DialogHeading>Delete this draft?</DialogHeading>
+              <DialogClose>Cancel</DialogClose>
+            </DialogContent>
+          </Dialog>
+        );
+      };
+      render(<Controlled />);
+
+      await browser.click(screen.getByRole('button', { name: 'Delete…' }));
+      await waitFor(() =>
+        expect((screen.getByRole('dialog') as HTMLDialogElement).open).toBe(
+          true,
+        ),
+      );
+
+      await browser.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() =>
+        expect(
+          (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement)
+            .open,
+        ).toBe(false),
+      );
+    });
+
+    it('lets the user out, whatever the prop says', async () => {
+      // The consumer forgot to update their state. The dialog still closes:
+      // an undismissable modal is a keyboard trap, and no amount of "the prop
+      // is the source of truth" makes that acceptable.
+      render(
+        <Dialog open onOpenChange={() => undefined}>
+          <DialogContent>
+            <DialogHeading>Stuck?</DialogHeading>
+            <button type="button">inside</button>
+          </DialogContent>
+        </Dialog>,
+      );
+      const surface = screen.getByRole('dialog') as HTMLDialogElement;
+      expect(surface.open).toBe(true);
+
+      await browser.keyboard('{Escape}');
+      await waitFor(() => expect(surface.open).toBe(false));
+    });
   });
 
   describe('says out loud what would otherwise fail in silence', () => {

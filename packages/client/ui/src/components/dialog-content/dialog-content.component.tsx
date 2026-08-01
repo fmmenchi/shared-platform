@@ -128,23 +128,24 @@ function DialogContent(props: DialogContentProps) {
     if (!node.open) node.showModal();
   }, [controlled, defaultOpen]);
 
-  // The controlled half. It runs on every change of `open` AND on every toggle
-  // the platform performs, because being controlled means the prop wins BACK: a
-  // dialog the browser closed while `open` is still true is reopened, the same
-  // way React snaps an `<input value>` back when the consumer swallows the
-  // change. The four platform closes are exactly why `onOpenChange` is not
-  // optional in this mode, and why the guard warns when it is missing.
+  // The controlled half, and it runs on a CHANGE of `open` — never on what the
+  // platform did. An earlier version re-asserted the prop on every `toggle`,
+  // the way React snaps an `<input value>` back when the consumer swallows the
+  // change, and measured what that means for a modal: with `open` still true,
+  // `Escape` closed the dialog and the listener reopened it before the next
+  // frame. Twice. The user could not leave — a keyboard trap, WCAG 2.1.2, from
+  // a consumer bug that on an input would only have meant "you cannot type".
+  //
+  // So: `Escape`, a backdrop click, `command="close"` and
+  // `<form method="dialog">` are CLOSE REQUESTS, and they are granted. What the
+  // consumer gets for ignoring `onOpenChange` is a visible divergence — the
+  // dialog is shut while their prop says open — which they can see, report and
+  // fix. It is the one place this component refuses to be as strict as React.
   useEffect(() => {
     const node = surface.current;
     if (!node || controlled === undefined) return;
-
-    const sync = () => {
-      if (controlled && !node.open) node.showModal();
-      else if (!controlled && node.open) node.close();
-    };
-    sync();
-    node.addEventListener('toggle', sync);
-    return () => node.removeEventListener('toggle', sync);
+    if (controlled && !node.open) node.showModal();
+    if (!controlled && node.open) node.close();
   }, [controlled]);
 
   useDialogContentWarnings(
