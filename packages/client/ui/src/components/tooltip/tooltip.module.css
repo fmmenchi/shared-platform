@@ -30,8 +30,12 @@
     overflow-wrap: anywhere;
     /* The design system ships NO reset (ADR-0018), so `max-w-64` on a padded box
        is 16px wider than it says under the UA's `content-box`. Measured at 272px
-       against `dist/`, in all three engines — the same line `input`, `select` and
-       `textarea` each carry. */
+       against `dist/`, in all three engines.
+       Written out rather than `@apply control-base` (../../styles/utilities.css)
+       on purpose: that utility is the baseline for a CONTROL, and its other half
+       — `font-family: inherit` — is a control's problem. A `<div>` gets no font
+       of its own from any UA; measured in all three, this surface inherits the
+       page font already. Half a utility is not a utility. */
     box-sizing: border-box;
     /* Parked off-screen until the first measurement writes real coordinates.
        Without it the surface spends one frame at its STATIC position — next to
