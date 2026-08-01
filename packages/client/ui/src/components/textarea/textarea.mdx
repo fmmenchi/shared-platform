@@ -1,0 +1,47 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as TextareaStories from './textarea.stories.tsx';
+
+<Meta of={TextareaStories} />
+
+# Textarea
+
+Textarea is a multi-line text field on the native `<textarea>` — `Input`'s twin, for anything longer than a line: a note, an address, a message. It is fully transparent (ADR-0013): it forwards its ref, spreads every native attribute, and never touches `value`/`onChange`, so it works uncontrolled or controlled and drops into any form library.
+
+## Props
+
+<Controls of={TextareaStories.Default} />
+
+## Usage
+
+<Canvas of={TextareaStories.Default} />
+
+### The height is `rows`, not `size`
+
+`size` scales the type and the padding; it sets **no height**, because a `<textarea>` is sized by its `rows` attribute and a fixed height in CSS would make that attribute a lie — `rows={10}` inside a 36px box. Horizontal padding matches `Input` so a one-line field and a multi-line one share a rhythm when they sit together.
+
+<Canvas of={TextareaStories.Sizes} />
+
+### Dragging is vertical by default
+
+The browser's own default is `resize: both`, which lets a user drag the field **wider than the form that contains it** — a layout no grid survives. `resize="vertical"` is the default here, and `resize="none"` turns the handle off where the height must not change.
+
+<Canvas of={TextareaStories.Resize} />
+
+### What it does not do
+
+**It does not grow with its content.** Doing that in JavaScript means measuring on every keystroke — a layout read in the typing path, on the hottest event a form has. The platform does it in one CSS declaration (`field-sizing: content`), so it lands in the stylesheet when the Baseline gate says that property is adoptable, and until then the height stays `rows`.
+
+**It takes no `children`.** In HTML that is how a `<textarea>` gets its initial text; in React it is a trap — it sets the value through a channel that reads as content, and React warns about it. Use `defaultValue`.
+
+### States
+
+The error look is driven by the native `aria-invalid`, which every form library already sets — there is no `invalid` prop to keep in step. It is signalled by colour **and** a thicker border, so it is not carried by colour alone (WCAG 1.4.1) and survives forced-colors.
+
+<Canvas of={TextareaStories.States} />
+
+## Accessibility
+
+- Role **textbox** with `aria-multiline="true"`, from the element itself.
+- The accessible name comes from an associated `<label>` (wrapping or `htmlFor`), or `aria-label`/`aria-labelledby` — a placeholder is not a label.
+- Inside a `Field` it picks up `id`, `aria-describedby` and `aria-invalid` automatically; standalone it stays untouched.
+- Focus shows the same 2px ring as every other control, restored to the system `Highlight` colour in forced-colors.

@@ -1,5 +1,5 @@
 import { useUiAdapters } from '../i18n/provider.js';
-import type { BoundField } from './form-adapter.types.js';
+import type { BoundField, ControlTag } from './form-adapter.types.js';
 
 /**
  * The form binding in scope — the one given to `UiProvider` when the design
@@ -28,7 +28,10 @@ function useFormBinding() {
  * typing, and submits nothing — a failure that surfaces in production data
  * rather than in development.
  */
-export function useBoundField(name: string, component: string): BoundField {
+export function useBoundField<Tag extends ControlTag = 'input'>(
+  name: string,
+  component: string,
+): BoundField<Tag> {
   const binding = useFormBinding();
   const useFormField = binding?.field;
   if (useFormField == null) {
@@ -36,7 +39,19 @@ export function useBoundField(name: string, component: string): BoundField {
       `${component}: no form binding in scope — give one to <UiProvider adapters={{ form }}>.`,
     );
   }
-  return useFormField(name);
+  /*
+   * The one cast in the port, and the reason it is sound: an adapter builds its
+   * bag WITHOUT knowing the tag — `name`, `onChange` and `ref` are the same
+   * three things whichever control receives them, and every adapter's handler
+   * reads `event.target.value`, which all three have. What differs is only the
+   * TYPE of the element they mention, and the component asking here is the one
+   * that renders it, so it is also the only one that can say.
+   *
+   * The alternative was threading the tag through `UseFormField` itself, which
+   * would make every adapter declare a parameter it has no use for — a generic
+   * in four packages to spare one cast in this file.
+   */
+  return useFormField(name) as BoundField<Tag>;
 }
 
 /**

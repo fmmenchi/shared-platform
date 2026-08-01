@@ -75,6 +75,8 @@ export { ChoiceField } from './components/choice-field/index.js';
 export type { ChoiceFieldProps } from './components/choice-field/choice-field.types.js';
 export { FormInput } from './components/form-input/form-input.component.js';
 export type { FormInputProps } from './components/form-input/form-input.types.js';
+export { FormTextarea } from './components/form-textarea/form-textarea.component.js';
+export type { FormTextareaProps } from './components/form-textarea/form-textarea.types.js';
 export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
 export type {
@@ -89,3 +91,9 @@ export type {
 export { createBoundFields } from './form/index.js';
 export { FormErrorSummary } from './components/form-error-summary/index.js';
 export type { FormErrorSummaryProps } from './components/form-error-summary/form-error-summary.types.js';
+export { Textarea } from './components/textarea/textarea.component.js';
+export { textareaVariants } from './components/textarea/textarea.variants.js';
+export type {
+  TextareaProps,
+  TextareaVariants,
+} from './components/textarea/textarea.types.js';

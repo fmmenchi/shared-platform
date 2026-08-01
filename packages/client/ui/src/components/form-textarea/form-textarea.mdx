@@ -1,0 +1,43 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormTextareaStories from './form-textarea.stories.tsx';
+
+<Meta of={FormTextareaStories} />
+
+# FormTextarea
+
+FormTextarea is a labelled multi-line field, already bound to the **form adapter in scope** — `FormInput`'s twin, for text that runs past a line. It renders the same anatomy as `Field` + `Textarea`, and takes its control props and its messages from the adapter, so the call site names no form library.
+
+```tsx
+<FormTextarea name="notes" label="Notes" rows={4} />
+```
+
+## Props
+
+<Controls of={FormTextareaStories.Default} />
+
+There is no `error` prop: the messages come from the adapter as a **list**, so they cannot be forgotten or set out of step with the library's own state, and each renders as its own element. **What the binding owns is not a prop here either** — `value`, `defaultValue`, `onChange`, `onBlur`: passing one is a compile error rather than a field that silently stops reporting. A `ref` is the exception and is merged with the binding's. See [FormInput](?path=/docs/components-inputs-forminput--docs) for the reasoning and the levers to use instead.
+
+`rows`, `maxLength`, `readOnly`, `placeholder` and the rest of `Textarea`'s surface pass straight through.
+
+## Usage
+
+<Canvas of={FormTextareaStories.Default} />
+
+### The hint keeps its place before the messages
+
+<Canvas of={FormTextareaStories.WithHint} />
+
+### Beside a `FormInput`
+
+Horizontal padding and type scale match `Input`, so a one-line field and a multi-line one in the same form share a rhythm.
+
+<Canvas of={FormTextareaStories.InAForm} />
+
+### The tag is declared to the binding
+
+An adapter builds ONE bag of props without knowing which control will receive it — `name`, `onChange` and `ref` mean the same thing on an `<input>`, a `<textarea>` and a `<select>`. Their **types** do not agree, though: measured, a `control` typed for `<input>` fails on exactly two properties when spread onto a `<textarea>`, its `ref` and its event handlers. So `BoundField` is keyed by tag and this component asks for its own — `useBoundField<'textarea'>` — because the component that renders the element is the only one that can say which it is. Nothing changes for an adapter: `input` is the default, and the four shipped ones are untouched.
+
+## Accessibility
+
+Identical to the unbound anatomy: the label is associated by id, every message is announced through `aria-describedby`, and `aria-invalid` follows them. The control is a **textbox** with `aria-multiline="true"`, from the element itself. A field with **no adapter in scope throws** rather than rendering — an unbound field types perfectly well and submits nothing, which is a failure you would meet in production data rather than in development.

@@ -2,6 +2,8 @@ export type {
   UseFormField,
   UseFormErrors,
   BoundField,
+  ControlTag,
+  ControlPropsByTag,
   FieldMessages,
 } from './form-adapter.types.js';
 export type { BindingOwned } from './binding-owned.types.js';
