@@ -8,6 +8,7 @@ import {
   useFormContext,
   useFormState,
   type RegisterOptions,
+  type Resolver,
 } from 'react-hook-form';
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
@@ -352,7 +353,8 @@ describe('FormInput / FormChoice through the adapter port', () => {
     //
     // The resolver is hand-written rather than imported: `zodResolver` is just a
     // function of this shape, so the mechanism is proved without the dependency.
-    const schemaResolver = (values: Record<string, unknown>) => {
+    type Values = { email: string; password: string };
+    const schemaResolver: Resolver<Values> = (values) => {
       const errors: Record<string, { type: string; message: string }> = {};
       if (!values.email) {
         errors.email = { type: 'schema', message: 'Email is required.' };
@@ -360,7 +362,9 @@ describe('FormInput / FormChoice through the adapter port', () => {
       if (String(values.password ?? '').length < 8) {
         errors.password = { type: 'schema', message: 'At least 8 characters.' };
       }
-      return { values: Object.keys(errors).length ? {} : values, errors };
+      return Object.keys(errors).length > 0
+        ? { values: {}, errors }
+        : { values, errors: {} };
     };
 
     // Note what is NOT here: no rules, no register options. Just the binding.
