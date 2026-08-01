@@ -2,8 +2,8 @@ import type { ElementType } from 'react';
 import type { ButtonProps } from '../button/button.types.js';
 
 /**
- * Same shape as `PopoverTriggerProps`, and for the same reason: it ends in a
- * `<button>`, because `popovertargetaction` works on nothing else.
+ * The same props as `PopoverTrigger`: a `Button`'s, plus an `as` for anything
+ * that accepts them and ends in a `<button>`.
  */
 export type PopoverCloseProps = Omit<ButtonProps<'button'>, 'as'> & {
   /**

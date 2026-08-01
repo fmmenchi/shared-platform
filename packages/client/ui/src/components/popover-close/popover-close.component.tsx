@@ -11,6 +11,13 @@ import type { PopoverCloseProps } from './popover-close.types.js';
  * It earns its place for one reason: the surface's id is generated and internal,
  * so without this part there is no way to write that attribute yourself.
  */
+// The prop type is CONCRETE — `Omit<ButtonProps<'button'>, 'as'>` — and not
+// `ComponentPropsWithRef<typeof Button>`, nor a generic with a `typeof Button`
+// default. Measured, both of those resolve through the `ElementType` constraint
+// and degrade the whole bag to a string index signature, so
+// `<Trigger nosuchprop onClick={42} as="a" href="/x">` compiled without a word.
+// Button's own `as` is omitted before the intersection: two `as` props intersect
+// to something nothing satisfies.
 function PopoverClose(props: PopoverCloseProps) {
   const { as, ...rest } = props;
   // Cast at the render site, not in the prop type: `as` is CONSTRAINED to

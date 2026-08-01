@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Popover } from './popover.component.js';
 import { PopoverTrigger } from '../popover-trigger/popover-trigger.component.js';
@@ -72,6 +73,59 @@ describe('Popover', () => {
     const link = screen.getByRole('link', { name: 'Copy link' });
     await browser.keyboard('{Tab}');
     expect(document.activeElement).toBe(link);
+  });
+
+  describe('controlled by the app', () => {
+    it('opens from its own trigger', async () => {
+      // Measured before this: `popovertarget` opened the surface behind React's
+      // back, the `toggle` reached a sync that still saw `open={false}`, and it
+      // was hidden again inside the same frame — a controlled popover could not
+      // be opened from its own trigger at all.
+      const Controlled = () => {
+        const [open, setOpen] = useState(false);
+        return (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger>Share</PopoverTrigger>
+            <PopoverContent>
+              <PopoverHeading>Share this page</PopoverHeading>
+            </PopoverContent>
+          </Popover>
+        );
+      };
+      render(<Controlled />);
+
+      await browser.click(screen.getByRole('button', { name: 'Share' }));
+      await waitFor(() =>
+        expect(screen.getByRole('dialog').matches(':popover-open')).toBe(true),
+      );
+
+      await browser.click(screen.getByRole('button', { name: 'Share' }));
+      await waitFor(() =>
+        expect(
+          screen.getByRole('dialog', { hidden: true }).matches(':popover-open'),
+        ).toBe(false),
+      );
+    });
+
+    it('is still dismissable, whatever the prop says', async () => {
+      // The consumer forgot to update their state. Measured before this: with
+      // `open` true, Escape did not dismiss and neither did a click outside —
+      // and because a light-dismiss popover CONSUMES that click, the page
+      // behind was unusable while the surface sat there.
+      render(
+        <Popover open onOpenChange={() => undefined}>
+          <PopoverTrigger>Share</PopoverTrigger>
+          <PopoverContent>
+            <PopoverHeading>Stuck?</PopoverHeading>
+          </PopoverContent>
+        </Popover>,
+      );
+      const surface = screen.getByRole('dialog');
+      expect(surface.matches(':popover-open')).toBe(true);
+
+      await browser.keyboard('{Escape}');
+      await waitFor(() => expect(surface.matches(':popover-open')).toBe(false));
+    });
   });
 
   describe('accessibility (axe)', () => {

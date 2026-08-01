@@ -51,21 +51,19 @@ function PopoverContent(props: PopoverContentProps) {
     if (!node.matches(':popover-open')) node.showPopover();
   }, [controlled, defaultOpen]);
 
-  // The controlled half. Re-asserted on every `toggle` too, because the prop
-  // wins back: the platform hides an `auto` popover on a click outside, on
-  // `Escape` and when another one opens, and none of those asks React.
+  // The controlled half, and it runs on a CHANGE of `open` — never on what the
+  // platform did. An earlier version re-asserted the prop on every `toggle`,
+  // and measured what that means: with `open` still true, `Escape` did not
+  // dismiss, a click outside did not dismiss, and because a light-dismiss
+  // popover CONSUMES that click, the page behind became unusable while the
+  // surface sat there. A dismissal is a request, and it is granted; an
+  // inattentive consumer gets a visible divergence instead of a stuck page.
   useEffect(() => {
     const node = surface.current;
     if (!node || controlled === undefined) return;
-
-    const sync = () => {
-      const isOpen = node.matches(':popover-open');
-      if (controlled && !isOpen) node.showPopover();
-      else if (!controlled && isOpen) node.hidePopover();
-    };
-    sync();
-    node.addEventListener('toggle', sync);
-    return () => node.removeEventListener('toggle', sync);
+    const isOpen = node.matches(':popover-open');
+    if (controlled && !isOpen) node.showPopover();
+    if (!controlled && isOpen) node.hidePopover();
   }, [controlled]);
 
   useAnchored(popover?.anchor ?? null, surface, {
