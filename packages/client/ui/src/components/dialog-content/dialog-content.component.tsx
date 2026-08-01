@@ -108,7 +108,51 @@ function DialogContent(props: DialogContentProps) {
     };
   }, [invoker]);
 
-  useDialogContentWarnings(surface, invoker);
+  // The state initializer, and it has to be imperative: `<dialog open>` is a
+  // NON-modal dialog — measured, no backdrop, the page behind stays clickable
+  // and `Escape` does not close it — so there is no attribute that means
+  // "modal". Seeded ONCE and never re-asserted: from here the DOM owns the
+  // state, which is the whole reason there is no `open` prop to disagree with.
+  const controlled = dialog?.open;
+  const seeded = useRef(false);
+  const defaultOpen = dialog?.defaultOpen ?? false;
+  useEffect(() => {
+    const node = surface.current;
+    // Uncontrolled only: with `open` given, the sync below owns the state and a
+    // seed would be a second writer racing it at mount.
+    if (controlled !== undefined || !defaultOpen || seeded.current || !node)
+      return;
+    seeded.current = true;
+    // `showModal()` throws on an already-open dialog, and a consumer may have
+    // opened it from the ref before this ran.
+    if (!node.open) node.showModal();
+  }, [controlled, defaultOpen]);
+
+  // The controlled half. It runs on every change of `open` AND on every toggle
+  // the platform performs, because being controlled means the prop wins BACK: a
+  // dialog the browser closed while `open` is still true is reopened, the same
+  // way React snaps an `<input value>` back when the consumer swallows the
+  // change. The four platform closes are exactly why `onOpenChange` is not
+  // optional in this mode, and why the guard warns when it is missing.
+  useEffect(() => {
+    const node = surface.current;
+    if (!node || controlled === undefined) return;
+
+    const sync = () => {
+      if (controlled && !node.open) node.showModal();
+      else if (!controlled && node.open) node.close();
+    };
+    sync();
+    node.addEventListener('toggle', sync);
+    return () => node.removeEventListener('toggle', sync);
+  }, [controlled]);
+
+  useDialogContentWarnings(
+    surface,
+    invoker,
+    controlled,
+    dialog?.hasOpenChange ?? false,
+  );
 
   return (
     <dialog

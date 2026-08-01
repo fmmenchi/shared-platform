@@ -131,4 +131,116 @@ describe('DialogContent', () => {
     );
     warn.mockRestore();
   });
+  it('opens MODALLY at mount with `defaultOpen`, not merely `open`', async () => {
+    render(
+      <Dialog defaultOpen>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+    // `open` alone would pass for a NON-modal dialog, which is what the
+    // attribute gives and what this seed exists not to be.
+    expect(surface.open).toBe(true);
+    expect(surface.matches(':modal')).toBe(true);
+  });
+
+  it('is a SEED, not a control: it does not reopen after a close', async () => {
+    const { rerender } = render(
+      <Dialog defaultOpen>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+    expect(surface.open).toBe(true);
+
+    surface.close();
+    expect(surface.open).toBe(false);
+
+    // A re-render with the prop still true must not re-assert it — that is the
+    // difference between a state initializer and a controlled `open`, and the
+    // browser closes this dialog four ways that never ask React.
+    rerender(
+      <Dialog defaultOpen>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    expect(surface.open).toBe(false);
+  });
+
+  it('stays closed without it', () => {
+    render(
+      <Dialog>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    expect(
+      (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement).open,
+    ).toBe(false);
+  });
+  it('opens and closes from the `open` prop', () => {
+    const noop = () => undefined;
+    const { rerender } = render(
+      <Dialog open={false} onOpenChange={noop}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    const surface = screen.getByRole('dialog', {
+      hidden: true,
+    }) as HTMLDialogElement;
+    expect(surface.open).toBe(false);
+
+    rerender(
+      <Dialog open onOpenChange={noop}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    expect(surface.open).toBe(true);
+    expect(surface.matches(':modal')).toBe(true);
+
+    rerender(
+      <Dialog open={false} onOpenChange={noop}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    expect(surface.open).toBe(false);
+  });
+
+  it('wins BACK: a close the platform performs is undone while `open` is true', async () => {
+    const noop = () => undefined;
+    render(
+      <Dialog open onOpenChange={noop}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+    expect(surface.open).toBe(true);
+
+    // What Escape, a backdrop click and `<form method="dialog">` all reach.
+    surface.close();
+    await vi.waitFor(() => expect(surface.open).toBe(true));
+  });
+
+  it('ignores `defaultOpen` while controlled — one writer, not two', () => {
+    render(
+      <Dialog open={false} defaultOpen onOpenChange={() => undefined}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    expect(
+      (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement).open,
+    ).toBe(false);
+  });
+
+  it('warns when `open` arrives without `onOpenChange`', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Dialog open>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`open` was given without `onOpenChange`'),
+    );
+    warn.mockRestore();
+  });
 });

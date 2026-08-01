@@ -28,6 +28,12 @@ export interface DialogContextValue {
   setInvoker: (node: HTMLElement | null) => void;
   /** The heading that names it: the first one registered, while it is mounted. */
   headingId: string | undefined;
+  /** Whether the consumer wired `onOpenChange` — a controlled dialog needs it. */
+  hasOpenChange: boolean;
+  /** The controlled value, or `undefined` when the DOM owns the state. */
+  open: boolean | undefined;
+  /** The mount-time seed, read by the content — see `DialogProps.defaultOpen`. */
+  defaultOpen: boolean;
   /** A heading announcing itself. Returns the way to take it back. */
   registerHeading: (id: string) => () => void;
 }

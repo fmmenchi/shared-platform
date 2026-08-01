@@ -32,7 +32,7 @@ import type { DialogProps } from './dialog.types.js';
  * `Tooltip`.
  */
 function Dialog(props: DialogProps) {
-  const { children, onOpenChange } = props;
+  const { children, open, defaultOpen = false, onOpenChange } = props;
 
   const surfaceId = useId();
   const [surface, setSurface] = useState<HTMLDialogElement | null>(null);
@@ -61,10 +61,23 @@ function Dialog(props: DialogProps) {
       setSurface,
       invoker,
       setInvoker,
+      open,
+      hasOpenChange: onOpenChange !== undefined,
+      defaultOpen,
       headingId: headingIds[0],
       registerHeading,
     }),
-    [surfaceId, reportOpen, surface, invoker, headingIds, registerHeading],
+    [
+      surfaceId,
+      reportOpen,
+      surface,
+      invoker,
+      open,
+      onOpenChange,
+      defaultOpen,
+      headingIds,
+      registerHeading,
+    ],
   );
 
   return (

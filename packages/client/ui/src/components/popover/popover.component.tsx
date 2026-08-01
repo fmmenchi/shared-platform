@@ -33,7 +33,13 @@ import type { PopoverProps } from './popover.types.js';
  * must be dealt with before anything else is a `Dialog`.
  */
 function Popover(props: PopoverProps) {
-  const { children, placement = 'bottom', onOpenChange } = props;
+  const {
+    children,
+    placement = 'bottom',
+    open: controlled,
+    defaultOpen = false,
+    onOpenChange,
+  } = props;
 
   const surfaceId = useId();
   const [open, setOpen] = useState(false);
@@ -55,11 +61,24 @@ function Popover(props: PopoverProps) {
       reportOpen,
       anchor,
       setAnchor,
+      controlled,
+      hasOpenChange: onOpenChange !== undefined,
+      defaultOpen,
       headingId,
       setHeadingId,
       placement,
     }),
-    [surfaceId, open, reportOpen, anchor, headingId, placement],
+    [
+      surfaceId,
+      open,
+      reportOpen,
+      anchor,
+      controlled,
+      onOpenChange,
+      defaultOpen,
+      headingId,
+      placement,
+    ],
   );
 
   return (
