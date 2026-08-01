@@ -26,6 +26,7 @@
     "@nx/storybook": "23.1.0",
     "@nx/vite": "23.1.0",
     "@nx/vitest": "23.1.0",
+    "@nx/web": "23.1.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@storybook/addon-a11y": "^10.5.5",
     "@storybook/addon-docs": "^10.5.5",

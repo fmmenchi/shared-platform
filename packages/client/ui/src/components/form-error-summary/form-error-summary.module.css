@@ -1,0 +1,32 @@
+/*
+ * Error summary — the one piece of form chrome the design system owns.
+ * Colours ONLY through semantic role utilities; `@reference` resolves `@apply`.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .summary {
+    @apply grid gap-internal-s rounded-md border p-inset-m;
+    @apply bg-error-subtle border-error-border text-foreground;
+  }
+  /* It takes focus programmatically, so it must show a ring when it does —
+     without one the announcement happens with nothing visible to match it. */
+  .summary:focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+  .heading {
+    @apply text-base font-semibold;
+    margin: 0;
+  }
+  .list {
+    @apply grid gap-internal-xs;
+    margin: 0;
+    padding-inline-start: var(--fm-space-inline-m);
+  }
+  .link {
+    @apply text-error underline;
+  }
+  .link:hover {
+    @apply no-underline;
+  }
+}

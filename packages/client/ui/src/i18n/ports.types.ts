@@ -1,3 +1,7 @@
+import type {
+  UseFormErrors,
+  UseFormField,
+} from '../form/form-adapter.types.js';
 /**
  * Injection ports — the contracts the app implements so the UI stays
  * provider-agnostic. Interfaces only (zero runtime): re-exported from the
@@ -49,8 +53,24 @@ export type IconRenderer = ComponentType<{ name: string }>;
 export type PortalContainer = HTMLElement | (() => HTMLElement);
 
 /** The bundle the app injects through the single `UiProvider`. */
+/** What a form library provides to the design system, given once at setup. */
+export interface FormBinding {
+  field: UseFormField;
+  errors?: UseFormErrors;
+}
+
 export interface UiAdapters {
   i18n: I18n;
+  /**
+   * The form library's binding, given ONCE when the design system is set up —
+   * after which every `Form`, `FormInput`, `FormChoice` and
+   * `FormErrorSummary` below works with nothing further to wire.
+   *
+   * Both members are hooks, called inside the components that render each
+   * field, so each subscribes for itself. A single `Form` may still override
+   * them, for the rare page that binds two libraries at once.
+   */
+  form?: FormBinding;
   Link?: LinkComponent;
   navigate?: NavigateFn;
   Icon?: IconRenderer;

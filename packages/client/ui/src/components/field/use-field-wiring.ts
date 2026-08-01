@@ -42,20 +42,34 @@ export function useFieldWiring(
   // with no control (its label points at nothing) or more than one (a duplicate
   // id — a field wraps exactly one control).
   const [controlCount, setControlCount] = useState(0);
-  const registerControl = useCallback<
-    FieldContextValue['registerControl']
-  >(() => {
-    setControlCount((c) => c + 1);
-    return () => setControlCount((c) => c - 1);
-  }, []);
+  // A control may bring its own id — a form library that mints one and points
+  // its own markup at it. The field ADOPTS it rather than overwriting, so the
+  // label's `htmlFor` follows and nothing the consumer passed is discarded.
+  const [adoptedId, setAdoptedId] = useState<string>();
+  const registerControl = useCallback<FieldContextValue['registerControl']>(
+    (ownId) => {
+      setControlCount((c) => c + 1);
+      if (ownId !== undefined) setAdoptedId(ownId);
+      return () => {
+        setControlCount((c) => c - 1);
+        if (ownId !== undefined) setAdoptedId(undefined);
+      };
+    },
+    [],
+  );
   useDevWarning(
     controlCount > 1,
     `${owner}: more than one control shares its id — it wraps a single control (use a Fieldset for a group).`,
   );
 
   const field = useMemo<FieldContextValue>(
-    () => ({ controlId, invalid, describedBy, registerControl }),
-    [controlId, invalid, describedBy, registerControl],
+    () => ({
+      controlId: adoptedId ?? controlId,
+      invalid,
+      describedBy,
+      registerControl,
+    }),
+    [adoptedId, controlId, invalid, describedBy, registerControl],
   );
   // The text parts bind to the nearest DESCRIBABLE container, which `Fieldset`
   // provides too — so a `FieldDescription` inside a field nested in a Fieldset

@@ -72,12 +72,22 @@ export function UiProvider({ adapters, theme, children }: UiProviderProps) {
   }, [adapters, i18n]);
 
   return (
-    <UiContext.Provider value={value}>
+    <UiContext value={value}>
       <div dir={value.direction} data-theme={theme}>
         {children}
       </div>
-    </UiContext.Provider>
+    </UiContext>
   );
+}
+
+/**
+ * The injected adapters, or `undefined` outside a provider — the tolerant
+ * counterpart of `useUi`, for the parts of the design system that must keep
+ * working without one. Nothing here throws, because a component that merely
+ * ASKS whether an adapter was supplied should not require the provider to exist.
+ */
+export function useUiAdapters(): UiAdapters | undefined {
+  return useContext(UiContext)?.adapters;
 }
 
 export function useUi(): UiContextValue {

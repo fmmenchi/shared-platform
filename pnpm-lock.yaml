@@ -70,6 +70,9 @@ importers:
       '@nx/vitest':
         specifier: 23.1.0
         version: 23.1.0(561a99a2cd7d7c800b5046454558da1c)
+      '@nx/web':
+        specifier: 23.1.0
+        version: 23.1.0(5397c2fc7d2e999e0572a41478863718)
       '@rolldown/plugin-babel':
         specifier: ^0.2.3
         version: 0.2.3(@babel/core@8.0.1)(@babel/plugin-transform-runtime@7.29.7(@babel/core@8.0.1))(@babel/runtime@7.29.7)(rolldown@1.1.5)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))
@@ -278,6 +281,52 @@ importers:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
 
+  apps/ui-ports-validation:
+    dependencies:
+      '@conform-to/react':
+        specifier: ^1.20.2
+        version: 1.20.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@conform-to/zod':
+        specifier: ^1.20.2
+        version: 1.20.2(zod@4.4.3)
+      '@fmmenchi/tokens':
+        specifier: workspace:*
+        version: link:../../packages/client/tokens
+      '@fmmenchi/ui':
+        specifier: workspace:*
+        version: link:../../packages/client/ui
+      '@fmmenchi/ui-form-ports':
+        specifier: workspace:*
+        version: link:../../packages/client/ui-form-ports
+      '@hookform/resolvers':
+        specifier: ^5.5.7
+        version: 5.5.7(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(joi@17.13.4)(react-hook-form@7.83.0(react@19.2.8))(valibot@1.2.0(typescript@6.0.3))(zod@4.4.3)
+      react-hook-form:
+        specifier: ^7.83.0
+        version: 7.83.0(react@19.2.8)
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
+    devDependencies:
+      '@tanstack/react-form':
+        specifier: ^1.33.2
+        version: 1.33.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/jest-dom':
+        specifier: ^7.0.0
+        version: 7.0.0(@testing-library/dom@10.4.1)
+      '@testing-library/react':
+        specifier: 16.3.2
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@testing-library/user-event':
+        specifier: ^14.6.1
+        version: 14.6.1(@testing-library/dom@10.4.1)
+      '@vitest/browser-playwright':
+        specifier: ^4.1.10
+        version: 4.1.10(playwright@1.62.0)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vitest@4.1.10)
+      formik:
+        specifier: ^2.4.9
+        version: 2.4.9(@types/react@19.2.17)(react@19.2.8)
+
   packages/client/tokens:
     dependencies:
       culori:
@@ -307,6 +356,28 @@ importers:
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
+
+  packages/client/ui-form-ports:
+    dependencies:
+      react:
+        specifier: 19.2.8
+        version: 19.2.8
+    devDependencies:
+      '@conform-to/react':
+        specifier: ^1.20.2
+        version: 1.20.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@fmmenchi/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@tanstack/react-form':
+        specifier: ^1.33.2
+        version: 1.33.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      formik:
+        specifier: ^2.4.9
+        version: 2.4.9(@types/react@19.2.17)(react@19.2.8)
+      react-hook-form:
+        specifier: ^7.83.0
+        version: 7.83.0(react@19.2.8)
 
   packages/ops/ci:
     dependencies:
@@ -1847,6 +1918,29 @@ packages:
       }
     engines: { node: '>=22.12.0' }
 
+  '@conform-to/dom@1.20.2':
+    resolution:
+      {
+        integrity: sha512-HfVb0XCHZijXODupqdV7+DrlZgJAYRQsXm/FpfFjKZO1P1S8LhlS7yMBTH2K5zkMyhk6fV/BvfUZi88Kp1EslA==,
+      }
+
+  '@conform-to/react@1.20.2':
+    resolution:
+      {
+        integrity: sha512-UTsPZQwfIAXSbs3Q+h/xpHMWMlhJRNj1tG0VwXNua+uYQ2b2eL6MSTKtiE41tUnUWdjIWsvPWbQNk2dMvSQHDQ==,
+      }
+    peerDependencies:
+      react: 19.2.8
+      react-dom: 19.2.8
+
+  '@conform-to/zod@1.20.2':
+    resolution:
+      {
+        integrity: sha512-NMMmj1ND00s+AM9aFbNl15JI6VxNlvORYy4X7UbVM0kFsKIOP7pqU4TVKSVGTGKhOn1k2tnEieA0srVdgMe/CA==,
+      }
+    peerDependencies:
+      zod: ^3.21.0 || ^4.0.0
+
   '@conventional-changelog/git-client@3.1.0':
     resolution:
       {
@@ -3156,6 +3250,87 @@ packages:
       {
         integrity: sha512-foQZKJig7Ob0BMAYBfcJk8d77QtOe7Wo4ox7ff1lQYoNNAb6jwcY1ncdoy2e9wQZzvNy7ODZCYJkK8kzmcAnAg==,
       }
+
+  '@hookform/resolvers@5.5.7':
+    resolution:
+      {
+        integrity: sha512-CyPCYV8/KlXfEXLWj8HHHhVsR/IZ6Ckm3b/a4fWtO/lRnRK1huqncb8LlAWrmpPRsse5glF5aVuDRMHEr3UGag==,
+      }
+    peerDependencies:
+      '@sinclair/typebox': '>=0.25.24'
+      '@standard-schema/spec': ^1.0.0
+      '@typeschema/main': '>=0.13.7'
+      '@vinejs/vine': ^2.0.0 || ^3.0.0
+      ajv: ^8.12.0
+      ajv-errors: ^3.0.0
+      ajv-formats: ^2.1.1
+      arktype: ^2.0.0
+      ata-validator: ^0.7.0
+      class-transformer: '>=0.4.0'
+      class-validator: '>=0.12.0'
+      computed-types: ^1.0.0
+      effect: ^3.10.3
+      fluentvalidation-ts: ^3.0.0
+      fp-ts: ^2.7.0
+      io-ts: ^2.0.0
+      joi: ^17.0.0
+      nope-validator: '>=0.12.0'
+      react-hook-form: ^7.55.0
+      superstruct: '>=0.12.0'
+      typanion: ^3.3.2
+      valibot: '>=0.31.0 || ^1.0.0-beta.4 || ^1.0.0-rc'
+      vest: '>=3.0.0'
+      yup: ^1.0.0
+      zod: ^3.25.0 || ^4.0.0
+    peerDependenciesMeta:
+      '@sinclair/typebox':
+        optional: true
+      '@standard-schema/spec':
+        optional: true
+      '@typeschema/main':
+        optional: true
+      '@vinejs/vine':
+        optional: true
+      ajv:
+        optional: true
+      ajv-errors:
+        optional: true
+      ajv-formats:
+        optional: true
+      arktype:
+        optional: true
+      ata-validator:
+        optional: true
+      class-transformer:
+        optional: true
+      class-validator:
+        optional: true
+      computed-types:
+        optional: true
+      effect:
+        optional: true
+      fluentvalidation-ts:
+        optional: true
+      fp-ts:
+        optional: true
+      io-ts:
+        optional: true
+      joi:
+        optional: true
+      nope-validator:
+        optional: true
+      superstruct:
+        optional: true
+      typanion:
+        optional: true
+      valibot:
+        optional: true
+      vest:
+        optional: true
+      yup:
+        optional: true
+      zod:
+        optional: true
 
   '@humanfs/core@0.19.2':
     resolution:
@@ -5314,6 +5489,12 @@ packages:
         integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==,
       }
 
+  '@standard-schema/utils@0.3.0':
+    resolution:
+      {
+        integrity: sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==,
+      }
+
   '@storybook/addon-a11y@10.5.5':
     resolution:
       {
@@ -5897,6 +6078,54 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
+  '@tanstack/devtools-event-client@0.4.4':
+    resolution:
+      {
+        integrity: sha512-6T5Yop/793YI+H+5J8Hsyj4kCih9sl4t3ElLgKioW5hk3ocn+ZdSJ94tT7vL7uabxSugWYBZlOTMPzEw2puvQw==,
+      }
+    engines: { node: '>=18' }
+    hasBin: true
+
+  '@tanstack/form-core@1.33.2':
+    resolution:
+      {
+        integrity: sha512-F60zJd15bGrXKonc1kpRYnNRNfiES7F+hgvrPMrsZznPLqZtO2DIg76OU6R25kCYkqYQY5xvuKteuWcUsc587A==,
+      }
+
+  '@tanstack/pacer-lite@0.1.1':
+    resolution:
+      {
+        integrity: sha512-y/xtNPNt/YeyoVxE/JCx+T7yjEzpezmbb+toK8DDD1P4m7Kzs5YR956+7OKexG3f8aXgC3rLZl7b1V+yNUSy5w==,
+      }
+    engines: { node: '>=18' }
+
+  '@tanstack/react-form@1.33.2':
+    resolution:
+      {
+        integrity: sha512-nEfayOu+27q5cZ5E0G5dmnddqLcLjdFCatbL/LCs/iLD469a1o1yYJlr8RISV3GfnqsBpm0hf+8kM4okh5fPCw==,
+      }
+    peerDependencies:
+      '@tanstack/react-start': '*'
+      react: 19.2.8
+    peerDependenciesMeta:
+      '@tanstack/react-start':
+        optional: true
+
+  '@tanstack/react-store@0.11.0':
+    resolution:
+      {
+        integrity: sha512-tX4YXh3PDkmpvGQWkWqKpzs/MSqbtuwY9dWdWhtV9Q50PmO+jOkUKIWIX4G85dwt7lxdHLXsiaEKPdKmC8F41w==,
+      }
+    peerDependencies:
+      react: 19.2.8
+      react-dom: 19.2.8
+
+  '@tanstack/store@0.11.0':
+    resolution:
+      {
+        integrity: sha512-WlzzCt3xi0G6pCAJu1U+2jiECwabETDpQDi3hfkFZvJii9AuZqEKbOiVarX1/bWhTNjU486yQtJCCasi/0q+Cw==,
+      }
+
   '@testing-library/dom@10.4.1':
     resolution:
       {
@@ -6177,6 +6406,14 @@ packages:
       {
         integrity: sha512-qjDJRrmvBMiTx+jyLxvLfJU7UznFuokDv4f3WRuriHKERccVpFU+8XMQUAbDzoiJCsmexxRExQeMwwCdamSKDA==,
       }
+
+  '@types/hoist-non-react-statics@3.3.7':
+    resolution:
+      {
+        integrity: sha512-PQTyIulDkIDro8P+IHbKCsw7U2xxBYflVzW/FgWdCAePD9xGSidgA76/GeJ6lBKoblyhf9pBY763gbrN+1dI8g==,
+      }
+    peerDependencies:
+      '@types/react': '*'
 
   '@types/html-minifier-terser@6.1.0':
     resolution:
@@ -9017,6 +9254,13 @@ packages:
         integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==,
       }
 
+  deepmerge@2.2.1:
+    resolution:
+      {
+        integrity: sha512-R9hc1Xa/NOBi9WRVUWg19rl1UB7Tt4kuPd+thNJgFZoxXsTz7ncaPaeIm+40oSGuP33DfMb4sZt1QIGiJzC4EA==,
+      }
+    engines: { node: '>=0.10.0' }
+
   deepmerge@4.3.1:
     resolution:
       {
@@ -10305,6 +10549,14 @@ packages:
         integrity: sha512-wzsgA6WOq+09wrU1tsJ09udeR/YZRaeArL9e1wPbFg3GG2yDnC2ldKpxs4xunpFF9DgqCqOIra3bc1HWrJ37Ww==,
       }
     engines: { node: '>=0.4.x' }
+
+  formik@2.4.9:
+    resolution:
+      {
+        integrity: sha512-5nI94BMnlFDdQRBY4Sz39WkhxajZJ57Fzs8wVbtsQlm5ScKIR1QLYqv/ultBnobObtlUyxpxoLodpixrsf36Og==,
+      }
+    peerDependencies:
+      react: 19.2.8
 
   forwarded@0.2.0:
     resolution:
@@ -12406,6 +12658,12 @@ packages:
         integrity: sha512-gvVijfZvn7R+2qyPX8mAuKcFGDf6Nc61GdvGafQsHL0sBIxfKzA+usWn4GFC/bk+QdwPUD4kWFJLhElipq+0VA==,
       }
     engines: { node: ^12.20.0 || ^14.13.1 || >=16.0.0 }
+
+  lodash-es@4.18.1:
+    resolution:
+      {
+        integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==,
+      }
 
   lodash.camelcase@4.3.0:
     resolution:
@@ -14783,11 +15041,26 @@ packages:
     peerDependencies:
       react: 19.2.8
 
+  react-fast-compare@2.0.4:
+    resolution:
+      {
+        integrity: sha512-suNP+J1VU1MWFKcyt7RtjiSWUjvidmQSlqu+eHslq+342xCbGTYmC0mEhPCOHxlW0CywylOC1u2DFAT+bv4dBw==,
+      }
+
   react-fast-compare@3.2.2:
     resolution:
       {
         integrity: sha512-nsO+KSNgo1SbJqJEYRE9ERzo7YtYbou/OqjSQKxV7jcKox7+usiUVZOAC+XnDOABXggQTno0Y1CpVnuWEc1boQ==,
       }
+
+  react-hook-form@7.83.0:
+    resolution:
+      {
+        integrity: sha512-AXt8cMCmx5a7u4uvpb2uRFVrWQhllI4pV+LSykxIac/hjt44TnQkmX9BKuQi2i+LDC62esmiLpilkav+kjVf/A==,
+      }
+    engines: { node: '>=18.0.0' }
+    peerDependencies:
+      react: 19.2.8
 
   react-is@16.13.1:
     resolution:
@@ -18843,6 +19116,19 @@ snapshots:
       conventional-commits-parser: 7.1.0
       picocolors: 1.1.1
 
+  '@conform-to/dom@1.20.2': {}
+
+  '@conform-to/react@1.20.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@conform-to/dom': 1.20.2
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  '@conform-to/zod@1.20.2(zod@4.4.3)':
+    dependencies:
+      '@conform-to/dom': 1.20.2
+      zod: 4.4.3
+
   '@conventional-changelog/git-client@3.1.0(conventional-commits-parser@7.1.0)':
     dependencies:
       '@simple-libs/child-process-utils': 2.0.0
@@ -20368,6 +20654,19 @@ snapshots:
   '@hapi/topo@5.1.0':
     dependencies:
       '@hapi/hoek': 9.3.0
+
+  '@hookform/resolvers@5.5.7(@sinclair/typebox@0.34.52)(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(joi@17.13.4)(react-hook-form@7.83.0(react@19.2.8))(valibot@1.2.0(typescript@6.0.3))(zod@4.4.3)':
+    dependencies:
+      '@standard-schema/utils': 0.3.0
+      react-hook-form: 7.83.0(react@19.2.8)
+    optionalDependencies:
+      '@sinclair/typebox': 0.34.52
+      '@standard-schema/spec': 1.1.0
+      ajv: 8.20.0
+      ajv-formats: 2.1.1(ajv@8.20.0)
+      joi: 17.13.4
+      valibot: 1.2.0(typescript@6.0.3)
+      zod: 4.4.3
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -21974,6 +22273,8 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
+  '@standard-schema/utils@0.3.0': {}
+
   '@storybook/addon-a11y@10.5.5(storybook@10.5.5(@types/react@19.2.17)(prettier@3.9.6)(react@19.2.8))':
     dependencies:
       '@storybook/global': 5.0.0
@@ -22372,6 +22673,33 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
 
+  '@tanstack/devtools-event-client@0.4.4': {}
+
+  '@tanstack/form-core@1.33.2':
+    dependencies:
+      '@tanstack/devtools-event-client': 0.4.4
+      '@tanstack/pacer-lite': 0.1.1
+      '@tanstack/store': 0.11.0
+
+  '@tanstack/pacer-lite@0.1.1': {}
+
+  '@tanstack/react-form@1.33.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@tanstack/form-core': 1.33.2
+      '@tanstack/react-store': 0.11.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
+    transitivePeerDependencies:
+      - react-dom
+
+  '@tanstack/react-store@0.11.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+    dependencies:
+      '@tanstack/store': 0.11.0
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+      use-sync-external-store: 1.6.0(react@19.2.8)
+
+  '@tanstack/store@0.11.0': {}
+
   '@testing-library/dom@10.4.1':
     dependencies:
       '@babel/code-frame': 7.29.7
@@ -22564,6 +22892,11 @@ snapshots:
       '@types/unist': 3.0.3
 
   '@types/history@4.7.11': {}
+
+  '@types/hoist-non-react-statics@3.3.7(@types/react@19.2.17)':
+    dependencies:
+      '@types/react': 19.2.17
+      hoist-non-react-statics: 3.3.2
 
   '@types/html-minifier-terser@6.1.0': {}
 
@@ -24475,6 +24808,8 @@ snapshots:
 
   deep-is@0.1.4: {}
 
+  deepmerge@2.2.1: {}
+
   deepmerge@4.3.1: {}
 
   default-browser-id@5.0.1: {}
@@ -25412,6 +25747,20 @@ snapshots:
       mime-types: 2.1.35
 
   format@0.2.2: {}
+
+  formik@2.4.9(@types/react@19.2.17)(react@19.2.8):
+    dependencies:
+      '@types/hoist-non-react-statics': 3.3.7(@types/react@19.2.17)
+      deepmerge: 2.2.1
+      hoist-non-react-statics: 3.3.2
+      lodash: 4.18.1
+      lodash-es: 4.18.1
+      react: 19.2.8
+      react-fast-compare: 2.0.4
+      tiny-warning: 1.0.3
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - '@types/react'
 
   forwarded@0.2.0: {}
 
@@ -26627,7 +26976,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 26.1.1
+      '@types/node': 26.1.2
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -26868,6 +27217,8 @@ snapshots:
   locate-path@7.2.0:
     dependencies:
       p-locate: 6.0.0
+
+  lodash-es@4.18.1: {}
 
   lodash.camelcase@4.3.0: {}
 
@@ -28719,7 +29070,13 @@ snapshots:
       react: 19.2.8
       scheduler: 0.27.0
 
+  react-fast-compare@2.0.4: {}
+
   react-fast-compare@3.2.2: {}
+
+  react-hook-form@7.83.0(react@19.2.8):
+    dependencies:
+      react: 19.2.8
 
   react-is@16.13.1: {}
 
