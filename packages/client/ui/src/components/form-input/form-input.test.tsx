@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { useState } from 'react';
+import { createRef, useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormInput } from './form-input.component.js';
@@ -83,6 +83,131 @@ describe('the bound components, against the contract itself', () => {
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('type', 'email');
     expect(input).toHaveAttribute('placeholder', 'you@x');
+  });
+
+  // …but `value` and `onChange` are not that kind of prop: the call site
+  // winning them does not override the binding, it SEVERS it — the field still
+  // renders, still types, and submits nothing. So they are not props here at
+  // all, and the two halves of that refusal are tested together.
+  describe('what the binding owns, the call site cannot take', () => {
+    const trackChanges = (seen: string[]): UseFormField =>
+      function useField(name) {
+        return {
+          control: {
+            name,
+            onChange: (event) => {
+              const el = event.target as HTMLInputElement;
+              seen.push(
+                `${name}=${el.type === 'checkbox' ? el.checked : el.value}`,
+              );
+            },
+          },
+        };
+      };
+
+    it('refuses `onChange`, `value` and `checked` at the type level', () => {
+      const field: UseFormField = (name) => ({ control: { name } });
+      const noop = () => undefined;
+      // Each of these is a compile error, which is the whole point: the
+      // failure moves from production data to the editor. `@ts-expect-error`
+      // fails the typecheck if the prop ever becomes legal again.
+      const _forbidden = (
+        <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field } }}>
+          {/* @ts-expect-error the binding owns onChange */}
+          <FormInput name="email" label="Email" onChange={noop} />
+          {/* @ts-expect-error the binding owns the value */}
+          <FormInput name="email" label="Email" value="typed" />
+          {/* @ts-expect-error the binding owns the checked state */}
+          <FormChoice name="tos" label="Accept" checked />
+        </UiProvider>
+      );
+      expect(_forbidden).toBeTruthy();
+    });
+
+    it('and drops them at runtime too, where the type cannot reach', async () => {
+      // A JavaScript consumer, or an `as any`. The binding keeps the field
+      // whatever the call site says — and dev says so by name rather than
+      // leaving it quietly unbound.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const user = userEvent.setup();
+      const seen: string[] = [];
+      const stolen = vi.fn();
+      const props = { onChange: stolen, value: 'frozen' } as object;
+
+      render(
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en' },
+            form: { field: trackChanges(seen) },
+          }}
+        >
+          <FormInput name="email" label="Email" {...props} />
+        </UiProvider>,
+      );
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      expect(input).toHaveValue('');
+
+      await user.type(input, 'ab');
+      expect(seen).toEqual(['email=a', 'email=ab']);
+      expect(stolen).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('FormInput: `onChange`, `value` are owned'),
+        ),
+      );
+      warn.mockRestore();
+    });
+
+    it('an undefined value is absent, and warns about nothing', async () => {
+      // A prop bag with `onChange: undefined` in it — from `enabled ? track :
+      // undefined` upstream — is not passing the prop, so there is nothing to
+      // drop and nothing to say.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const user = userEvent.setup();
+      const seen: string[] = [];
+      const props = { onChange: undefined } as object;
+      render(
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en' },
+            form: { field: trackChanges(seen) },
+          }}
+        >
+          <FormInput name="email" label="Email" {...props} />
+        </UiProvider>,
+      );
+
+      await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a');
+      expect(seen).toEqual(['email=a']);
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('but a ref is SHARED — both the binding’s and the call site’s', () => {
+      // The one binding-owned prop that can be. react-hook-form's `register`
+      // returns a ref, and a call site that replaced it would leave the field
+      // unregistered — no value, no validation, no focus on error.
+      const bindingRef = createRef<HTMLInputElement>();
+      const callSiteRef = createRef<HTMLInputElement>();
+      const field: UseFormField = (name) => ({
+        control: { name, ref: bindingRef },
+      });
+      render(
+        <UiProvider
+          adapters={{ i18n: { locale: 'en' }, form: { field: field } }}
+        >
+          <FormInput name="email" label="Email" ref={callSiteRef} />
+        </UiProvider>,
+      );
+
+      const input = screen.getByRole('textbox', { name: 'Email' });
+      expect(bindingRef.current).toBe(input);
+      expect(callSiteRef.current).toBe(input);
+    });
   });
 
   // A field rarely fails in exactly one way, so the contract takes the three

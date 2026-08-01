@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { useState } from 'react';
+import { createRef, useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -192,6 +192,56 @@ describe('FormInput / FormChoice through the adapter port', () => {
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('type', 'email');
     expect(input).toHaveAttribute('placeholder', 'you@x');
+  });
+
+  // …but not `value`, and not `onChange`. Against a REAL library this is where
+  // the difference bites: `register` returns the handlers and the ref, so a
+  // call site that won them would leave the field unregistered — it renders, it
+  // types, and it submits nothing, with nothing to say so. The type refuses
+  // them; here we prove the runtime does too, and that a ref is still shared.
+  it('keeps register’s binding whatever the call site passes — and shares the ref', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    const stolen = vi.fn();
+    const own = createRef<HTMLInputElement>();
+    // What a JavaScript consumer can still do, and TypeScript cannot see.
+    const forced = { onChange: stolen, value: 'frozen' } as object;
+
+    function App() {
+      const form = useForm({ defaultValues: { email: '' } });
+      return (
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'en' },
+                form: { field: useRhfField },
+              }}
+            >
+              <FormInput name="email" label="Email" ref={own} {...forced} />
+            </UiProvider>
+            <button type="submit">Send</button>
+          </form>
+        </FormProvider>
+      );
+    }
+
+    render(<App />);
+    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
+    await user.click(screen.getByRole('button', { name: 'Send' }));
+
+    // the library still owns the value…
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ email: 'a@b.it' });
+    expect(stolen).not.toHaveBeenCalled();
+    // …the ref, which CAN be shared, reached the call site…
+    expect(own.current).toBe(screen.getByRole('textbox', { name: 'Email' }));
+    // …and dev said what it dropped, by name.
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('FormInput: `onChange`, `value` are owned'),
+    );
+    warn.mockRestore();
   });
 
   // What the small contract can and cannot carry. Complex validation is not a

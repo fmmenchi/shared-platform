@@ -18,6 +18,17 @@ FormInput is a labelled text field, already bound to the **form adapter in scope
 
 There is no `error` prop: the message comes from the adapter, so it cannot be forgotten or set out of step with the library's own state. Every other native prop passes through, and an explicit one at the call site beats the binding.
 
+**What the binding owns is not a prop here at all.** `value`, `defaultValue`, `checked`, `defaultChecked`, `onChange` and `onBlur` are how the field reaches its library — react-hook-form's `register` returns the handlers, the value comes from the library's state — so a call site that won them would not override the binding, it would sever it: the field renders, it types, and it submits nothing. Passing one is a **compile error** that names the lever to use instead, and if the type is bypassed the prop is dropped and dev warns by name.
+
+```tsx
+<FormInput name="email" label="Email" onChange={track} />
+//                                    ~~~~~~~~ owned by the binding
+```
+
+To react to a value change, use your library's own lever — `watch`, `useField`, `subscribe` — which hands you the parsed value rather than a DOM event. To own the handler outright, compose `Field` + `Input` and bind them yourself; that door stays open, and this component adds no markup, so nothing else changes.
+
+A `ref` is the exception: it is the one binding-owned prop that can be shared, so yours is **merged** with the binding's and both receive the node.
+
 <Controls of={FormInputStories.Default} />
 
 ## Usage
