@@ -1,7 +1,7 @@
 import type { AnyFieldApi, AnyFormApi } from '@tanstack/react-form';
 import { useField, useSelector } from '@tanstack/react-form';
 import type { UseFormErrors, UseFormField } from '@fmmenchi/ui';
-import { isBooleanField } from '../field-type.js';
+import { isBooleanField, readValue } from '../field-type.js';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
@@ -41,7 +41,8 @@ export function createTanstackField(
   const { types = {} } = options;
 
   return function useTanstackField(name) {
-    const boolean = isBooleanField(types[name]);
+    const type = types[name];
+    const boolean = isBooleanField(type);
     const field: AnyFieldApi = useField({ form, name });
     // Quiet until the field has been LEFT, or the form has been sent once.
     //
@@ -57,11 +58,9 @@ export function createTanstackField(
         name,
         ...(boolean
           ? { checked: Boolean(value) }
-          : { value: (value as string) ?? '' }),
-        onChange: (event) => {
-          const target = event.target as HTMLInputElement;
-          field.handleChange(boolean ? target.checked : target.value);
-        },
+          : { value: toInputValue(value) }),
+        onChange: (event) =>
+          field.handleChange(readValue(type, event.target as HTMLInputElement)),
         onBlur: () => field.handleBlur(),
       },
       error: submitted || meta.isBlurred ? toMessages(meta.errors) : undefined,
@@ -88,6 +87,11 @@ export function createTanstackErrors(form: AnyFormApi): UseFormErrors {
     }
     return byName;
   };
+}
+
+/** A control's `value` prop is a string; `undefined` would make it uncontrolled. */
+function toInputValue(value: unknown): string {
+  return value == null ? '' : String(value);
 }
 
 /**

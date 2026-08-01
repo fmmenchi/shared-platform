@@ -92,15 +92,14 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
     <div
       {...rest}
       ref={mergeRefs(el, ref)}
-      // A labelled group rather than role="alert": the summary is a place you
-      // come back to, and focusing it announces it — an alert would announce it
-      // a second time, from wherever the user happened to be.
+      // A labelled REGION rather than role="alert": the summary is a place you
+      // come back to, so it has to be reachable on its own — and a named region
+      // is a landmark, which is what puts it in a screen reader's rotor. This
+      // was `group`, which is not a landmark and so delivered none of that.
       //
-      // Note `group` is NOT a landmark role, so this does not appear in a screen
-      // reader's landmark rotor. Making it one means `role="region"`, which is a
-      // deliberate change to the accessible surface and to every query that
-      // finds this component — worth doing, on its own.
-      role="group"
+      // Not an alert, because focusing it already announces it; an alert would
+      // announce it a second time, from wherever the user happened to be.
+      role="region"
       aria-labelledby={headingId}
       tabIndex={-1}
       className={cn(styles.summary, className)}

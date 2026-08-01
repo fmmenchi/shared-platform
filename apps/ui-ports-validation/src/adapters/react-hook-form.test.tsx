@@ -90,7 +90,7 @@ describe('the adapter over a real library — it reads, it does not replace', ()
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
-    const summary = await screen.findByRole('group', {
+    const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
     expect(
@@ -117,7 +117,7 @@ describe('the adapter over a real library — it reads, it does not replace', ()
     const user = userEvent.setup();
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    await screen.findByRole('group');
+    await screen.findByRole('region');
     await user.click(screen.getByRole('link', { name: /Password:/ }));
     expect(screen.getByRole('textbox', { name: 'Password' })).toHaveFocus();
   });
@@ -127,7 +127,7 @@ describe('the adapter over a real library — it reads, it does not replace', ()
     const onValid = vi.fn();
     render(<App onValid={onValid} />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    await screen.findByRole('group');
+    await screen.findByRole('region');
 
     await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
     await user.type(
@@ -137,6 +137,6 @@ describe('the adapter over a real library — it reads, it does not replace', ()
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => expect(onValid).toHaveBeenCalled());
-    await waitFor(() => expect(screen.queryByRole('group')).toBeNull());
+    await waitFor(() => expect(screen.queryByRole('region')).toBeNull());
   });
 });

@@ -26,7 +26,7 @@ describe('a real zod schema, through the port', () => {
     renderScreen();
     await user.click(screen.getByRole('button', { name: /Create account/ }));
 
-    const summary = await screen.findByRole('group', {
+    const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
     expect(
@@ -85,7 +85,7 @@ describe('a real zod schema, through the port', () => {
     await user.click(screen.getByRole('button', { name: /Create account/ }));
 
     expect(
-      screen.queryByRole('group', { name: 'There is a problem' }),
+      screen.queryByRole('region', { name: 'There is a problem' }),
     ).toBeNull();
     await waitFor(
       () => expect(screen.getByText(/Submitted:/)).toBeInTheDocument(),

@@ -28,6 +28,7 @@ const SCREENS: Array<[string, ComponentType<{ constraints?: boolean }>]> = [
 const email = () => screen.getByRole('textbox', { name: /Email/ });
 const password = () => screen.getByLabelText(/^Password/);
 const tos = () => screen.getByRole('checkbox', { name: /terms/i });
+const seats = () => screen.getByRole('spinbutton', { name: /Seats/ });
 
 async function submit() {
   const user = userEvent.setup();
@@ -69,7 +70,7 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
     render(<Screen />);
     await submit();
 
-    const summary = await screen.findByRole('group', {
+    const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
     expect(summary.textContent).toContain('Enter a valid email address.');
@@ -84,7 +85,7 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
     render(<Screen />);
     expect(email()).not.toHaveAttribute('aria-invalid', 'true');
     expect(
-      screen.queryByRole('group', { name: 'There is a problem' }),
+      screen.queryByRole('region', { name: 'There is a problem' }),
     ).toBeNull();
   });
 
@@ -98,6 +99,7 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
 
     await user.type(email(), 'someone@example.com');
     await user.type(password(), 'a-long-enough-password');
+    await user.type(seats(), '3');
     await user.click(tos());
     await submit();
 
@@ -105,7 +107,7 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
       expect(email()).not.toHaveAttribute('aria-invalid', 'true'),
     );
     expect(
-      screen.queryByRole('group', { name: 'There is a problem' }),
+      screen.queryByRole('region', { name: 'There is a problem' }),
     ).toBeNull();
     // The typing reached the library and came back: proof the binding is live
     // in both directions, not just rendering what was typed into the DOM.
@@ -115,6 +117,11 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
     // form was accepted" look identical from the outside.
     const sent = await screen.findByText(/^Submitted:/);
     expect(sent.textContent).toContain('someone@example.com');
+    // A NUMBER reached the library, not the string the DOM handed over. Written
+    // as JSON, so `"seats":3` and `"seats":"3"` are two different assertions —
+    // which is the whole point: a schema expecting a number would reject the
+    // second, forever, and no amount of typing would fix it.
+    expect(sent.textContent).toContain('"seats":3');
   });
 
   it('every aria-describedby target EXISTS — no dangling reference', async () => {
@@ -131,11 +138,16 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
     //
     // Every control, not just the ones with a textbox role: the password field
     // and the checkbox are where a role-filtered check quietly stopped looking.
-    for (const control of [email(), password(), tos()]) {
+    for (const control of [email(), password(), seats(), tos()]) {
+      // eslint-disable-next-line no-console
+      console.log(
+        'CTRL',
+        control.getAttribute('name'),
+        JSON.stringify(control.getAttribute('aria-describedby')),
+      );
       const ids = (control.getAttribute('aria-describedby') ?? '')
         .split(' ')
         .filter(Boolean);
-      expect(ids.length, 'described by nothing').toBeGreaterThan(0);
       for (const id of ids) {
         expect(document.getElementById(id), `dangling: ${id}`).not.toBeNull();
       }

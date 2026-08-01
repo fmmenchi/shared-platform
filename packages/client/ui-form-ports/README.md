@@ -26,7 +26,7 @@ and the reasoning is the same.
 
 | Subpath             | Needs                                  | Provides                                                    |
 | ------------------- | -------------------------------------- | ----------------------------------------------------------- |
-| `./react-hook-form` | `react-hook-form` (optional peer)      | `useRhfField`, `useRhfErrors`, `RhfForm`                    |
+| `./react-hook-form` | `react-hook-form` (optional peer)      | `createRhfField`, `useRhfErrors`, `RhfForm`                 |
 | `./formik`          | `formik` (optional peer)               | `createFormikField`, `useFormikErrors`                      |
 | `./tanstack`        | `@tanstack/react-form` (optional peer) | `createTanstackField`, `createTanstackErrors`               |
 | `./conform`         | `@conform-to/react` (optional peer)    | `createConformField`, `createConformErrors`                 |
@@ -38,29 +38,38 @@ no-library option. All five bind the **same** components, and one test suite in
 of them needed its own assertions, the port would be leaking. `./react-19` is
 tested separately, because its submission model is not a library's at all.
 
-### `types`, and why only some of them need it
+### `types` — declare the fields that are not plain text
 
-Three of the four take a map of the fields that are not plain text inputs:
+All four take the same map, so swapping libraries does not mean rewriting it:
 
 ```tsx
-createFormikField({ types: { tos: 'checkbox' } });
+createFormikField({ types: { tos: 'checkbox', seats: 'number' } });
 ```
 
-A **controlled** library binds a text input through `value` and a checkbox
-through `checked` — two different props — and the field name alone does not say
-which. react-hook-form is the exception and needs no map: it is uncontrolled, so
-it binds by `name` and `ref` and lets the DOM hold the state either way.
+It answers two questions the field **name** cannot.
+
+**Which prop holds the state.** A controlled library binds a text input through
+`value` and a checkbox through `checked` — two different props. Being
+uncontrolled, react-hook-form does not need this one.
+
+**What type to store.** A DOM value is always a string, so a `number` field would
+put `"31"` where the schema expects `31` — and the form then fails validation
+forever, with a message no amount of typing fixes. Every port undoes that loss,
+each with its library's own lever (`valueAsNumber` for react-hook-form,
+`valueAsNumber` read at the source for the controlled two, schema coercion for
+Conform, which validates `FormData`). Leaving it to the consumer's schema would
+not have been an answer: the port is what writes the value, so the loss is the
+port's to undo. The shared suite asserts `"seats":3`, not `"seats":"3"` — the
+two are different assertions, which is the point.
+
+`date` is deliberately not converted: a date input's value already **is** the
+canonical `YYYY-MM-DD` string, so passing it on loses nothing, and turning it
+into a `Date` would be a decision about time zones that belongs to the schema.
 
 There is no `'radio'`. A radio group is N controls sharing one name with a
 distinct value each, so the option's value cannot be expressed in a map keyed by
 field NAME — advertising it would have meant a control that can never be
 selected. That binding needs its own shape, one name to many controls.
-
-Known gap, for the controlled ports: a `'number'` or `'date'` field round-trips
-its value as a **string**, because the adapter reads `event.target.value` and
-does not coerce. With a schema that expects a number this fails validation and
-the form cannot be submitted. Use a string schema with a coercion step, or bind
-that field yourself, until the port carries the conversion.
 
 ### `./react-hook-form`
 

@@ -9,7 +9,7 @@ describe('React 19 alone, with no form library at all', () => {
     render(<React19Screen />);
     await user.click(screen.getByRole('button', { name: /Create account/ }));
 
-    const summary = await screen.findByRole('group', {
+    const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
     expect(
@@ -65,7 +65,7 @@ describe('React 19 alone, with no form library at all', () => {
       { timeout: 3000 },
     );
     expect(
-      screen.queryByRole('group', { name: 'There is a problem' }),
+      screen.queryByRole('region', { name: 'There is a problem' }),
     ).toBeNull();
   });
 });
