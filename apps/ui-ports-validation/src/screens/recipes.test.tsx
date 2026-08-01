@@ -139,12 +139,6 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
     // Every control, not just the ones with a textbox role: the password field
     // and the checkbox are where a role-filtered check quietly stopped looking.
     for (const control of [email(), password(), seats(), tos()]) {
-      // eslint-disable-next-line no-console
-      console.log(
-        'CTRL',
-        control.getAttribute('name'),
-        JSON.stringify(control.getAttribute('aria-describedby')),
-      );
       const ids = (control.getAttribute('aria-describedby') ?? '')
         .split(' ')
         .filter(Boolean);
