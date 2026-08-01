@@ -173,7 +173,14 @@
       "import": "./dist/select.js",
       "default": "./dist/select.js"
     },
-    "./select/style.css": "./dist/select.css"
+    "./select/style.css": "./dist/select.css",
+    "./tooltip": {
+      "@fmmenchi/source": "./src/components/tooltip/index.ts",
+      "types": "./dist/components/tooltip/index.d.ts",
+      "import": "./dist/tooltip.js",
+      "default": "./dist/tooltip.js"
+    },
+    "./tooltip/style.css": "./dist/tooltip.css"
   },
   "nx": {
     "tags": [
@@ -208,6 +215,7 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.8.0",
     "@fmmenchi/tokens": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

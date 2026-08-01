@@ -1,0 +1,81 @@
+import { useEffect, type RefObject } from 'react';
+import {
+  autoUpdate,
+  computePosition,
+  flip,
+  offset,
+  shift,
+} from '@floating-ui/dom';
+import type { AnchoredOptions } from './use-anchored.types.js';
+
+/**
+ * Keep a floating surface next to its anchor: positioned, flipped when there is
+ * no room on the preferred side, and slid back into view when it would leave it.
+ *
+ * The one place the design system imports geometry (ADR-0021). Everything above
+ * it — what opens the surface, what closes it, what it announces — is the
+ * component's, which is why this hook knows nothing about focus, dismissal or
+ * ARIA. It is internal and unexported from the package: it becomes public only
+ * if a second consumer confirms its shape.
+ *
+ * Two things it does NOT do, deliberately:
+ *
+ * - **It never sets React state.** Coordinates are written straight to the
+ *   element's style, because `autoUpdate` fires on every scroll frame and a
+ *   `setState` there would re-render the subtree sixty times a second to move
+ *   two pixels.
+ * - **It does not show or hide anything.** Visibility belongs to the component:
+ *   a tooltip's is hover and focus, a popover's is a click. This only measures.
+ *
+ * CSS anchor positioning does all of this declaratively and recomputes natively,
+ * and all three current engines implement it correctly — measured. It is not
+ * Baseline yet, which is about the browsers people are running rather than the
+ * ones being shipped, so this hook is the bridge. When it lands, this file
+ * becomes a stylesheet and nothing above it changes.
+ *
+ * The anchor arrives as an ELEMENT and the surface as a ref, which is not an
+ * inconsistency: the surface is the component's own node and never changes, but
+ * the anchor may be somebody else's — held in state so that a new one actually
+ * re-runs the measurement, which a ref would not report.
+ */
+export function useAnchored(
+  anchor: HTMLElement | null,
+  surfaceRef: RefObject<HTMLElement | null>,
+  options: AnchoredOptions,
+): void {
+  const { placement = 'top', offset: gap = 8, open } = options;
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!open || !anchor || !surface) return;
+
+    const reposition = () => {
+      // An anchor with no box — hidden, or removed while the surface is still
+      // open — measures as a zero rect at the origin, and the clamp then parks
+      // the surface in the corner of the viewport. Measured. Better to leave
+      // the last good coordinates alone until it has a box again.
+      if (anchor.getClientRects().length === 0) return;
+
+      void computePosition(anchor, surface, {
+        placement,
+        strategy: 'fixed',
+        middleware: [offset(gap), flip(), shift({ padding: 8 })],
+      }).then(({ x, y }) => {
+        // Written to the element, not to state — see the note above.
+        surface.style.left = `${x}px`;
+        surface.style.top = `${y}px`;
+      });
+    };
+
+    const stop = autoUpdate(anchor, surface, reposition);
+    return () => {
+      stop();
+      // The coordinates are stale the moment this closes: measured, reopening
+      // after a scroll put the surface where the anchor USED to be. Clearing
+      // them returns it to wherever the stylesheet parks a closed surface,
+      // which is the only position that is right by construction.
+      surface.style.left = '';
+      surface.style.top = '';
+    };
+  }, [anchor, surfaceRef, placement, gap, open]);
+}

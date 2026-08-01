@@ -1,0 +1,106 @@
+/*
+ * Tooltip styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both.
+ *
+ * Two things this file has to undo before it can style anything. The UA gives
+ * `[popover]` a border, padding, and `inset: 0; margin: auto` — which CENTRES it
+ * in the viewport, so coordinates written by the component would be ignored
+ * outright. And the tooltip must be laid out even while hidden, because
+ * `aria-describedby` points at it from the first render.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .tooltip {
+    /* Undo the UA popover box before positioning it: `inset: auto` frees the
+       four sides and `margin: 0` stops it being re-centred. */
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: 0;
+    padding: 0;
+    /* The UA also makes a popover a scroll container. Undone here so a shadow —
+       or the arrow this will grow — is not clipped by a box that had no reason
+       to scroll: the text wraps instead, and long unbreakable tokens break. */
+    overflow: visible;
+    overflow-wrap: anywhere;
+    /* The design system ships NO reset (ADR-0018), so `max-w-64` on a padded box
+       is 16px wider than it says under the UA's `content-box`. Measured at 272px
+       against `dist/`, in all three engines — the same line `input`, `select` and
+       `textarea` each carry. */
+    box-sizing: border-box;
+    /* Parked off-screen until the first measurement writes real coordinates.
+       Without it the surface spends one frame at its STATIC position — next to
+       the trigger, often under the pointer — which both flashes in the wrong
+       place and fires a `pointerenter` that reopens what a click just closed.
+       Measured: the same test passed or failed depending on where the trigger
+       sat in the viewport. */
+    top: -9999px;
+    left: 0;
+
+    @apply max-w-64 rounded-md px-2 py-1;
+    @apply bg-tooltip text-tooltip-foreground text-xs;
+    /* `width: max-content` keeps the measured box the size of its text, so the
+       coordinates the component computes describe the box that is painted. */
+    width: max-content;
+
+    /* THIS is what hides the tooltip, not the popover state. Where the Popover
+       API exists the UA adds its own `display: none` while closed and this is
+       belt and braces; where it does not, the attribute is inert and these two
+       declarations are the only thing between the user and a tooltip that is
+       always on screen. Visibility is ours; the top layer is the enhancement. */
+    opacity: 0;
+    pointer-events: none;
+
+    /* PROGRESSIVE ENHANCEMENT, and the shape motion.md prescribes for a surface
+       the UA hides with `display: none`. A plain `transition: opacity` here was
+       DEAD: measured with `transitionrun` listeners, it never fired once in any
+       of the three engines — opening goes `display: none` → shown with the end
+       value already applied, and closing is cut off by `hidePopover()`.
+       `@starting-style` gives the entry a value to come from, and transitioning
+       `display` and `overlay` with `allow-discrete` keeps the surface in the top
+       layer long enough to fade out. Both are Baseline "newly", not "widely", so
+       no linter guards this (`css/use-baseline` skips `.module.css`) and it is a
+       judgement written down as such: where they are missing the tooltip appears
+       and disappears instantly, which is the fallback the ADR-0017 tier asks
+       for. */
+    transition-property: opacity, display, overlay;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+    transition-behavior: allow-discrete;
+  }
+
+  .tooltip[data-open] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Nested inside the rule it applies to, so it cannot outlive it. */
+  @starting-style {
+    .tooltip[data-open] {
+      opacity: 0;
+    }
+  }
+
+  /* The pointer must not reach a tooltip that is fading out, or the surface's
+     own `pointerenter` would keep reviving it. */
+  @media (prefers-reduced-motion: reduce) {
+    .tooltip {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+
+  /* Forced colors: the token fill is replaced by a system colour, so the box
+     needs a border to stay a box at all. */
+  @media (forced-colors: active) {
+    .tooltip {
+      border: 1px solid CanvasText;
+      background-color: Canvas;
+      color: CanvasText;
+    }
+  }
+}
