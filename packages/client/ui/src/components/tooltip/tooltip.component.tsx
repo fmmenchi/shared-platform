@@ -1,7 +1,6 @@
 import {
   cloneElement,
   isValidElement,
-  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -13,6 +12,7 @@ import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
+import { useTooltipDisclosure } from './tooltip.disclosure.js';
 import { tooltipVariants } from './tooltip.variants.js';
 import type { TooltipProps } from './tooltip.types.js';
 
@@ -63,16 +63,24 @@ function Tooltip(props: TooltipProps) {
 
   const id = useId();
   const surfaceRef = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // A click presses, then focuses. Without remembering the press, the focus that
-  // follows reopens what the press just closed — and `:focus-visible` does not
-  // settle it, because a programmatic `.focus()` can match it too.
-  const pressed = useRef(false);
-  const [open, setOpen] = useState(false);
   // STATE, not a ref: both the listeners below and the measurement have to run
   // again when the trigger node changes, and a ref would never tell them it had.
   const [triggerNode, setTriggerNode] = useState<HTMLElement | null>(null);
-  const [pendingOpen, setPendingOpen] = useState(false);
+
+  // When it is shown and when it goes, named — the timing and the click/focus
+  // race are in there, so the listeners below say what the user did and nothing
+  // about how it is implemented. Destructured because each action is stable and
+  // the object is not.
+  const {
+    open,
+    engaged,
+    showNow,
+    showAfterDelay,
+    showOnFocus,
+    hideAfterDelay,
+    dismiss,
+    dismissOnPress,
+  } = useTooltipDisclosure({ openDelay, closeDelay });
 
   // DECLARED BEFORE the measurement, because effects run in declaration order
   // and the UA keeps a closed popover at `display: none`: measuring first would
@@ -87,27 +95,6 @@ function Tooltip(props: TooltipProps) {
 
   useAnchored(triggerNode, surfaceRef, { placement, open });
 
-  // `useCallback` here is not memoisation for its own sake: `react-hooks/refs`
-  // reads a ref touched inside a function CREATED during render as a ref touched
-  // during render, and cannot tell that these only ever run from an event.
-  const schedule = useCallback((next: boolean, delay: number) => {
-    clearTimeout(timer.current);
-    // Tracked because `Escape` must be able to cancel an open that has been
-    // asked for and not yet happened: measured, pressing it 60ms into a 400ms
-    // `openDelay` used to be ignored and the tooltip appeared anyway.
-    setPendingOpen(next);
-    timer.current = setTimeout(() => {
-      setPendingOpen(false);
-      setOpen(next);
-    }, delay);
-  }, []);
-
-  const closeNow = useCallback(() => {
-    clearTimeout(timer.current);
-    setPendingOpen(false);
-    setOpen(false);
-  }, []);
-
   // The trigger's listeners are NATIVE, added to the node itself, and that is
   // the whole composition story: `cloneElement` props REPLACE the child's, so a
   // trigger with its own `onFocus` would have silently lost it — the same defect
@@ -117,35 +104,24 @@ function Tooltip(props: TooltipProps) {
   useEffect(() => {
     if (!triggerNode) return;
 
-    const release = () => {
-      pressed.current = false;
-    };
-    const onPointerEnter = () => {
-      release();
-      schedule(true, openDelay);
-    };
+    const onPointerEnter = () => showAfterDelay();
+    const onPointerDown = () => dismissOnPress();
+
     const onPointerLeave = () => {
-      release();
       // Focus outlives the pointer. Measured: tabbing to a trigger and then
       // brushing the mouse over it dismissed what the keyboard had opened,
       // which is the "persistent" half of WCAG 1.4.13 broken.
       if (triggerNode.matches(':focus-visible')) return;
-      schedule(false, closeDelay);
-    };
-    const onPointerDown = () => {
-      pressed.current = true;
-      closeNow();
-    };
-    const onFocus = (event: FocusEvent) => {
-      if (pressed.current) return;
-      if ((event.target as HTMLElement).matches(':focus-visible'))
-        setOpen(true);
+      hideAfterDelay();
     };
     const onBlur = () => {
-      release();
       // …and the pointer outlives the focus, for the same reason.
       if (triggerNode.matches(':hover')) return;
-      schedule(false, closeDelay);
+      hideAfterDelay();
+    };
+    const onFocus = (event: FocusEvent) => {
+      if ((event.target as HTMLElement).matches(':focus-visible'))
+        showOnFocus();
     };
 
     triggerNode.addEventListener('pointerenter', onPointerEnter);
@@ -160,7 +136,13 @@ function Tooltip(props: TooltipProps) {
       triggerNode.removeEventListener('focus', onFocus);
       triggerNode.removeEventListener('blur', onBlur);
     };
-  }, [triggerNode, schedule, closeNow, openDelay, closeDelay]);
+  }, [
+    triggerNode,
+    showAfterDelay,
+    showOnFocus,
+    hideAfterDelay,
+    dismissOnPress,
+  ]);
 
   // The SURFACE's listeners are native for a reason of its own, and this one was
   // measured: React's synthetic `pointerenter` never fired when the pointer
@@ -171,8 +153,8 @@ function Tooltip(props: TooltipProps) {
     const surface = surfaceRef.current;
     if (!surface) return;
 
-    const stay = () => schedule(true, 0);
-    const leave = () => schedule(false, closeDelay);
+    const stay = () => showNow();
+    const leave = () => hideAfterDelay();
 
     surface.addEventListener('pointerenter', stay);
     surface.addEventListener('pointerleave', leave);
@@ -180,18 +162,16 @@ function Tooltip(props: TooltipProps) {
       surface.removeEventListener('pointerenter', stay);
       surface.removeEventListener('pointerleave', leave);
     };
-  }, [schedule, closeDelay]);
-
-  useEffect(() => () => clearTimeout(timer.current), []);
+  }, [showNow, hideAfterDelay]);
 
   // Escape must dismiss without moving focus, from wherever the user is — hence
   // the document and not the trigger: with a tooltip open the focus may sit
   // anywhere, and a handler on the trigger would never hear it.
   useEffect(() => {
-    // `pendingOpen` too: an open that has been asked for is a thing to dismiss.
-    // Nothing else — otherwise merely hovering a trigger would eat the user's
-    // Escape.
-    if (!open && !pendingOpen) return;
+    // `engaged`, not `open`: an open that has been asked for is a thing to
+    // dismiss. Nothing wider — merely hovering a trigger would otherwise eat
+    // the user's Escape.
+    if (!engaged) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
@@ -200,14 +180,14 @@ function Tooltip(props: TooltipProps) {
       // two dismissals, and the user loses the thing they were working in.
       event.preventDefault();
       event.stopPropagation();
-      closeNow();
+      dismiss();
     };
 
     // Capture, so no handler between the document and the trigger acts on an
     // Escape that was ours to answer.
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [open, pendingOpen, closeNow]);
+  }, [engaged, dismiss]);
 
   // A trigger that swallows the ref makes the whole component a no-op: nothing
   // opens, nothing is described, and nothing is logged. It cannot be told apart
