@@ -12,6 +12,7 @@
 /* Shared motion primitives (fm-spin & co.) — inlined into this subpath's css. */
 @import '@fmmenchi/tokens/styles/motion.css';
 @reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
 
 /* Every DS rule ships inside the `fmmenchi` cascade layer (ADR-0011): a
    consumer's own UNLAYERED css always wins over it — overriding is a plain
@@ -21,20 +22,15 @@
    scoped, not part of the property cascade). */
 @layer fmmenchi {
   .button {
-    /* The UA reset this control needs, because our CSS ships to apps that run no
-       Preflight (ADR-0002) — the same call Checkbox and Radio already make, and
-       measured in Chromium, Firefox and WebKit rather than assumed:
-       - a `<button>` carries a 2px OUTSET border of its own. No variant declares
-         one, so every button shipped with a browser-drawn 3D ridge around it —
-         most visibly the ghost treatment, whose whole point is to have no chrome.
-       - a form control does NOT inherit the page font: on a Georgia page the
-         label rendered in Arial (Chromium), -apple-system (Gecko), system-ui
-         (WebKit), beside body text in Georgia. `font-size`/`font-weight` are safe
-         (the utilities above set them); the family is not.
-       `box-sizing` needs no line — a `<button>` is `border-box` in every UA — and
-       neither does `margin`, measured 0 everywhere. The heights stay 32/36/44. */
+    /* The UA baseline every control we draw needs — `box-sizing` and the font
+       family, with the measurements — lives once in `styles/utilities.css`. */
+    @apply control-base;
+    /* This one is the `<button>`'s alone: it carries a 2px OUTSET border of its
+       own, and no variant declares one — so every button shipped with a
+       browser-drawn 3D ridge, most visibly the ghost treatment, whose whole
+       point is to have no chrome. (`margin` needs no line, measured 0
+       everywhere. The heights stay 32/36/44.) */
     border: 0;
-    font-family: inherit;
 
     @apply gap-internal-s inline-flex items-center justify-center;
     @apply rounded-md text-sm font-medium transition;

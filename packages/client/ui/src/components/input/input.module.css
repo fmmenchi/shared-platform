@@ -5,26 +5,16 @@
  * the native `[aria-invalid="true"]` (ADR-0013) — no `invalid` prop.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
 
 /* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
    consumer's unlayered css overrides them without a specificity war. `@import`
    and `@reference` stay above the layer; `:root` tokens stay unlayered. */
 @layer fmmenchi {
   .input {
-    /* The design system ships NO reset, and a `<input>` does not get
-       `border-box` from any UA stylesheet — so `w-full` + `px-3` + a border
-       rendered 306px inside a 280px field, and `h-9` measured 40px against the
-       36px it promises. Measured in Chromium, Firefox and WebKit. Declaring it
-       here makes the control the same size with or without the consumer's own
-       reset. */
-    box-sizing: border-box;
-    /* The UA gives a form control its OWN font, not the page's: measured on a
-       Georgia page, Chromium rendered the input in Arial and the textarea in
-       monospace — the two components these files call twins, in two different
-       typefaces. `inherit` is the local UA reset the DS already does on
-       checkbox/radio, for the same reason: our CSS ships to apps that run no
-       Preflight. */
-    font-family: inherit;
+    /* The UA baseline every control we draw needs — `box-sizing` and the font
+       family, with the measurements — lives once in `styles/utilities.css`. */
+    @apply control-base;
     /* No `color-scheme` here ON PURPOSE — the parts the UA paints (the caret,
        the scrollbar) do follow it, but `light dark` means "either, per the
        USER'S preference", not "per the theme": measured, dark theme + a
