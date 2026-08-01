@@ -3,13 +3,16 @@ import type { Placement } from '@floating-ui/dom';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 
 /**
- * What a `Popover` provides to its parts. Note what is NOT here: nothing that
- * opens or closes it. The platform owns that — `popovertarget` toggles,
- * `popover="auto"` dismisses — so the parts have no `open()` to call and no way
- * to disagree with the browser about the state. `open` below is a MIRROR, read
- * from the `toggle` event, and it exists for the two things the platform does
- * not do for us: telling the trigger what to say in `aria-expanded`, and
- * telling the geometry when to start measuring.
+ * What a `Popover` provides to its parts. The platform owns the toggling —
+ * `popovertarget` toggles, `popover="auto"` dismisses — so no part has an
+ * `open()` to call of its own.
+ *
+ * Two different things are called open here, deliberately. `open` is a MIRROR,
+ * read from the `toggle` event, for the two jobs the platform does not do for
+ * us: what the trigger says in `aria-expanded`, and when the geometry starts
+ * measuring. `controlled` is the consumer's prop — `undefined` unless they
+ * passed one — which is how the content tells "drive me" from "let the DOM own
+ * it".
  */
 export interface PopoverContextValue {
   /** The surface's id: what the trigger targets, and what it controls. */

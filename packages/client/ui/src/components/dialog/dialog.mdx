@@ -79,6 +79,14 @@ The scroll lock is written **inline on `:root`**, not as a stylesheet rule, and 
 
 <Canvas of={DialogStories.WithAForm} />
 
+### Opening it from code
+
+Uncontrolled is the default and the one to reach for: leave `open` out and the state lives in the DOM, where the browser put it. `defaultOpen` seeds it once at mount, and `onOpenChange` reports what happened, whoever caused it.
+
+`open` is there for when the dialog's visibility is genuinely part of your state, and it is a commitment rather than a convenience. It is the source of truth while it is given, so it wins BACK: a dialog the platform closed while the prop still says open is reopened. And this dialog is closed by the browser **four** ways that never ask React — `Escape`, a backdrop click under `closedby="any"`, `<form method="dialog">` and `command="close"` — so `open` without `onOpenChange` builds a modal the user cannot dismiss. That combination warns in development, as does switching between controlled and uncontrolled halfway through.
+
+Both halves are imperative underneath, and that is forced: `<dialog open>` is a **non-modal** dialog — no backdrop, the page behind stays clickable, `Escape` does not close it — so modality can only be asked for with `showModal()`. The component calls it for you; you can still call it yourself through the content's ref.
+
 ### Scrolling, and the scrollbar
 
 A modal that lets the page scroll behind it is the commonest defect of the pattern, and `showModal()` does not prevent it — measured, the page scrolled 300px under an open dialog in all three engines. One rule does, scoped to this component's own dialog so it never speaks for somebody else's.

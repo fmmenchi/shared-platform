@@ -2,12 +2,15 @@ import { createContext, useContext } from 'react';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 
 /**
- * What a `Dialog` provides to its parts. As with the Popover, nothing in here
- * opens or closes it: `command="show-modal"` and `command="close"` are the
- * platform's, so the parts have no `open()` to call and no way to disagree with
- * the browser about the state — which is why there is no `open` here at all.
- * `surface` exists only for the fallback where a browser has no invoker
- * commands yet.
+ * What a `Dialog` provides to its parts. The platform still owns the toggling —
+ * `command="show-modal"` and `command="close"` are its own, so no part has an
+ * `open()` to call — and `surface` exists only for the fallback where a browser
+ * has no invoker commands yet.
+ *
+ * `open` here is NOT a mirror of that state: it is the consumer's controlled
+ * prop, `undefined` whenever they have not passed one, which is the only way
+ * the content can tell "drive me" from "let the DOM own it". The state itself
+ * is never copied — `reportOpen` passes the platform's `toggle` straight out.
  */
 export interface DialogContextValue {
   /** The dialog's id: what the trigger and the close button command. */
