@@ -231,6 +231,42 @@ describe('Tooltip', () => {
     });
   });
 
+  it('aligns by writing direction, not by screen side', async () => {
+    // `-start` is documented as logical, so it is measured: the same
+    // `top-start` sits on the left in LTR and on the right in RTL.
+    const side = async (dir: 'ltr' | 'rtl') => {
+      const { unmount } = render(
+        <div dir={dir} style={{ padding: '120px' }}>
+          <Tooltip
+            content="a tooltip wider than its trigger"
+            placement="top-start"
+            openDelay={0}
+            closeDelay={9999}
+          >
+            <Button aria-label="T">TRIGGER</Button>
+          </Tooltip>
+        </div>,
+      );
+      await browser.hover(screen.getByRole('button', { name: 'T' }));
+      await waitFor(() => expect(isOpen()).toBe(true));
+      const trigger = screen
+        .getByRole('button', { name: 'T' })
+        .getBoundingClientRect();
+      const tip = surface().getBoundingClientRect();
+      const aligned =
+        Math.abs(tip.left - trigger.left) < 2
+          ? 'left'
+          : Math.abs(tip.right - trigger.right) < 2
+            ? 'right'
+            : 'neither';
+      unmount();
+      return aligned;
+    };
+
+    expect(await side('ltr')).toBe('left');
+    expect(await side('rtl')).toBe('right');
+  });
+
   it('goes when the anchor is scrolled out of sight', async () => {
     // Nothing in the top layer is clipped, which is the point of it and also
     // the defect: measured, an anchor scrolled out of its `overflow: auto`

@@ -48,7 +48,9 @@ Opening waits for the pointer to rest (`openDelay`, 400ms); **focus opens immedi
 
 ### Placement
 
-The preferred side flips automatically when there is no room, and slides back into view when it would leave it.
+Twelve values, not four. The bare side is **centred on the trigger** — `top` means "above, centred" — and `-start` / `-end` align it along that side. They are logical, not physical: under `dir="rtl"` a `top-start` tooltip sits on the right.
+
+What you pass is a preference. The tooltip flips to the opposite side when there is no room, slides back in when it would leave the viewport, and hides itself when the trigger has been scrolled out of sight — nothing in the top layer is clipped, so that last one has to be done rather than inherited.
 
 <Canvas of={TooltipStories.Placements} />
 
