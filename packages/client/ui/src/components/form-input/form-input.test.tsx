@@ -210,11 +210,12 @@ describe('the bound components, against the contract itself', () => {
     });
   });
 
-  // A field rarely fails in exactly one way, so the contract takes the three
-  // shapes libraries produce — and each message renders as its OWN element.
-  describe('several messages at once', () => {
-    const renderWith = (error: BoundField['error']) => {
-      const field: UseFormField = (name) => ({ control: { name }, error });
+  // A field rarely fails in exactly one way, so the contract carries a LIST —
+  // one shape, whatever the library reports — and each message renders as its
+  // OWN element.
+  describe('the messages a field carries', () => {
+    const renderWith = (errors: BoundField['errors']) => {
+      const field: UseFormField = (name) => ({ control: { name }, errors });
       return render(
         <UiProvider
           adapters={{ i18n: { locale: 'en' }, form: { field: field } }}
@@ -223,9 +224,11 @@ describe('the bound components, against the contract itself', () => {
         </UiProvider>,
       );
     };
+    const rendered = (container: HTMLElement) =>
+      [...container.querySelectorAll('p')].map((n) => n.textContent);
 
-    it('a lone string', async () => {
-      renderWith('Email is required.');
+    it('one message', async () => {
+      renderWith(['Email is required.']);
       await waitFor(() =>
         expect(
           screen.getByRole('textbox', { name: 'Email' }),
@@ -233,29 +236,30 @@ describe('the bound components, against the contract itself', () => {
       );
     });
 
-    it('an ARRAY — Conform’s shape — as separate elements, not joined', () => {
+    it('several, as separate elements rather than joined', () => {
       const { container } = renderWith(['Too short.', 'Needs a digit.']);
       // Joined, a screen reader would read "Too short.Needs a digit." as one
       // run-on statement.
-      expect(
-        [...container.querySelectorAll('p')].map((n) => n.textContent),
-      ).toEqual(['Too short.', 'Needs a digit.']);
+      expect(rendered(container)).toEqual(['Too short.', 'Needs a digit.']);
     });
 
-    it('a KEYED OBJECT — react-hook-form’s criteriaMode: all', () => {
-      const { container } = renderWith({
-        minLength: 'At least 8 characters.',
-        pattern: 'Must contain a digit.',
-      });
-      expect(
-        [...container.querySelectorAll('p')].map((n) => n.textContent),
-      ).toEqual(['At least 8 characters.', 'Must contain a digit.']);
+    it('keeps the adapter’s order, and drops blanks', () => {
+      const { container } = renderWith(['B.', '', '   ', 'A.']);
+      expect(rendered(container)).toEqual(['B.', 'A.']);
+    });
+
+    // Two rules failing together often carry the same sentence, and hearing it
+    // twice is a defect in every case. It is also what lets the message be its
+    // own key.
+    it('says a repeated message once', () => {
+      const { container } = renderWith(['Required.', 'Required.']);
+      expect(rendered(container)).toEqual(['Required.']);
     });
 
     it('announces every message, and the hint keeps its place before them', async () => {
       const field: UseFormField = (name) => ({
         control: { name },
-        error: ['A.', 'B.'],
+        errors: ['A.', 'B.'],
       });
       render(
         <UiProvider
@@ -271,8 +275,8 @@ describe('the bound components, against the contract itself', () => {
       );
     });
 
-    it('empty shapes mean valid — no element, no aria-invalid', () => {
-      for (const empty of [undefined, '', [], {}] as const) {
+    it('no messages means valid — no element, no aria-invalid', () => {
+      for (const empty of [undefined, [], ['']] as const) {
         const { container, unmount } = renderWith(empty);
         expect(container.querySelectorAll('p')).toHaveLength(0);
         expect(container.querySelector('input')).not.toHaveAttribute(
@@ -280,6 +284,39 @@ describe('the bound components, against the contract itself', () => {
         );
         unmount();
       }
+    });
+
+    // The point of keying by the message: fixing the FIRST of two must not
+    // remount the second, which is what an index key does.
+    it('keeps a surviving message’s element when an earlier one is fixed', () => {
+      const field = (errors: readonly string[]): UseFormField =>
+        function useField(name) {
+          return { control: { name }, errors };
+        };
+      const { container, rerender } = render(
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en' },
+            form: { field: field(['Too short.', 'Needs a digit.']) },
+          }}
+        >
+          <FormInput name="email" label="Email" />
+        </UiProvider>,
+      );
+      const survivor = container.querySelectorAll('p')[1];
+
+      rerender(
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en' },
+            form: { field: field(['Needs a digit.']) },
+          }}
+        >
+          <FormInput name="email" label="Email" />
+        </UiProvider>,
+      );
+
+      expect(container.querySelectorAll('p')[0]).toBe(survivor);
     });
   });
 

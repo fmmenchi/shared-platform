@@ -27,12 +27,12 @@ import type { FormInputProps } from './form-input.types.js';
  */
 function FormInput(props: FormInputProps) {
   const { name, label, hint, ref, ...rest } = props;
-  const { control, error } = useBoundField(name, 'FormInput');
+  const { control, errors } = useBoundField(name, 'FormInput');
   useBindingOwnedWarning(rest, 'FormInput');
   // A field rarely fails in one way. Each message is its OWN element, so a
   // screen reader announces them as separate statements and the eye sees a
   // list — joining them would read as one run-on sentence.
-  const messages = toMessages(error);
+  const messages = toMessages(errors);
   return (
     <Field label={label} invalid={messages.length > 0}>
       {/* The adapter's props come FIRST so an explicit prop at the call site
@@ -49,8 +49,10 @@ function FormInput(props: FormInputProps) {
       {/* Composed rather than passed as props, so the hint keeps its place
           BEFORE the errors however many of them there are. */}
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}
-      {messages.map(({ key, message }) => (
-        <FieldError key={key}>{message}</FieldError>
+      {/* Keyed by the message itself: the only identity a message has that
+          survives an earlier one being fixed. */}
+      {messages.map((message) => (
+        <FieldError key={message}>{message}</FieldError>
       ))}
     </Field>
   );

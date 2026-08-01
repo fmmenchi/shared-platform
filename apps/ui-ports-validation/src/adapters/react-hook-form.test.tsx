@@ -22,12 +22,16 @@ import {
    the library — the design system owns only how they are shown.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/** The port carries a LIST of messages; react-hook-form reports one. */
+const list = (message: unknown): string[] =>
+  typeof message === 'string' && message !== '' ? [message] : [];
+
 const useRhfField: UseFormField = (name) => {
   const { register, control } = useFormContext();
   const { errors } = useFormState({ control, name });
   return {
     control: register(name),
-    error: errors[name]?.message as string | undefined,
+    errors: list(errors[name]?.message),
   };
 };
 
@@ -35,10 +39,7 @@ const useRhfErrors: UseFormErrors = () => {
   const { control } = useFormContext();
   const { errors } = useFormState({ control });
   return Object.fromEntries(
-    Object.entries(errors).map(([name, error]) => [
-      name,
-      [String(error?.message ?? '')].filter(Boolean),
-    ]),
+    Object.entries(errors).map(([name, error]) => [name, list(error?.message)]),
   );
 };
 

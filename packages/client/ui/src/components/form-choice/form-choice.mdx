@@ -16,7 +16,7 @@ FormChoice is a single bound choice — a consent box or an opt-in, already boun
 
 ## Props
 
-There is no `error` prop: the message comes from the adapter, so it cannot be forgotten or set out of step with the library's own state. Every other native prop passes through, and an explicit one at the call site beats the binding.
+There is no `error` prop: the messages come from the adapter as a **list**, so they cannot be forgotten or set out of step with the library's own state. Every other native prop passes through, and an explicit one at the call site beats the binding.
 
 **What the binding owns is not a prop here at all** — `checked`, `defaultChecked`, `onChange`, `onBlur` and the value props are the library's, and passing one is a compile error rather than a field that silently stops reporting. A `ref` is the exception, and is merged with the binding's. See [FormInput](?path=/docs/components-inputs-forminput--docs) for the reasoning and for the levers to use instead.
 
@@ -34,7 +34,8 @@ That is load-bearing, and it was measured rather than assumed. With a plain clos
 const useMyFormField: UseFormField = (name) => {
   const { register, control } = useFormContext();
   const { errors } = useFormState({ control, name });
-  return { control: register(name), error: errors[name]?.message };
+  const message = errors[name]?.message;
+  return { control: register(name), errors: message ? [message] : [] };
 };
 ```
 

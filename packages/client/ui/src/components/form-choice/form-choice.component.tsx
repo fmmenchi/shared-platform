@@ -22,9 +22,9 @@ import type { FormChoiceProps } from './form-choice.types.js';
  */
 function FormChoice(props: FormChoiceProps) {
   const { name, label, hint, ref, ...rest } = props;
-  const { control, error } = useBoundField(name, 'FormChoice');
+  const { control, errors } = useBoundField(name, 'FormChoice');
   useBindingOwnedWarning(rest, 'FormChoice');
-  const messages = toMessages(error);
+  const messages = toMessages(errors);
 
   return (
     <ChoiceField label={label} invalid={messages.length > 0}>
@@ -37,8 +37,8 @@ function FormChoice(props: FormChoiceProps) {
         ref={mergeRefs(control.ref, ref)}
       />
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}
-      {messages.map(({ key, message }) => (
-        <FieldError key={key}>{message}</FieldError>
+      {messages.map((message) => (
+        <FieldError key={message}>{message}</FieldError>
       ))}
     </ChoiceField>
   );

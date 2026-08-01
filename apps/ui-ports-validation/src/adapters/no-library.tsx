@@ -29,7 +29,7 @@ export function useHandRolledForm<T extends Record<string, unknown>>(options: {
         }));
       },
     },
-    error: errors[name],
+    errors: errors[name],
   });
 
   const formErrors: UseFormErrors = () => errors;

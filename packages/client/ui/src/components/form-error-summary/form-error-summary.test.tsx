@@ -34,7 +34,7 @@ function useDemoForm() {
           [name]: (e.target as HTMLInputElement).value,
         })),
     },
-    error: errors[name],
+    errors: errors[name],
   });
   const formErrors: UseFormErrors = () => errors;
 

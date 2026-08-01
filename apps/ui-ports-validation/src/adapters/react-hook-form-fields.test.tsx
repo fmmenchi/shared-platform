@@ -17,6 +17,7 @@ import {
   type RegisterOptions,
   type Resolver,
 } from 'react-hook-form';
+import { useRhfField as useRhfPortField } from '@fmmenchi/ui-form-ports/react-hook-form';
 
 /**
  * The app-side adapter, once per library — react-hook-form here. It is a HOOK,
@@ -31,13 +32,17 @@ const RULES: Record<string, RegisterOptions> = {
   email: { required: 'Email is required.' },
 };
 
+/** The port carries a LIST of messages; react-hook-form reports one. */
+const list = (message: unknown): string[] =>
+  typeof message === 'string' && message !== '' ? [message] : [];
+
 const useRhfField: UseFormField = (name) => {
   const { register, control } = useFormContext();
   // Per-FIELD subscription: one field's error does not re-render the others.
   const { errors } = useFormState({ control, name });
   return {
     control: register(name, RULES[name]),
-    error: errors[name]?.message as string | undefined,
+    errors: list(errors[name]?.message),
   };
 };
 
@@ -138,8 +143,8 @@ describe('FormInput / FormChoice through the adapter port', () => {
             });
           },
         },
-        error:
-          name === 'email' && v.email === '' ? 'Email is required.' : undefined,
+        errors:
+          name === 'email' && v.email === '' ? ['Email is required.'] : [],
       });
       return (
         <>
@@ -260,7 +265,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
                     v === getValues('password') || 'Passwords do not match.'
                 : undefined,
           }),
-          error: errors[name]?.message as string | undefined,
+          errors: list(errors[name]?.message),
         };
       };
       function Host() {
@@ -306,9 +311,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
         const { errors, touchedFields } = useFormState({ control, name });
         return {
           control: register(name, { required: 'Email is required.' }),
-          error: touchedFields[name]
-            ? (errors[name]?.message as string | undefined)
-            : undefined,
+          errors: touchedFields[name] ? list(errors[name]?.message) : [],
         };
       };
       function Host() {
@@ -368,7 +371,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       const show = isSubmitted || touchedFields[name] === true;
       return {
         control: register(name, RULES[name]),
-        error: show ? (errors[name]?.message as string | undefined) : undefined,
+        errors: show ? list(errors[name]?.message) : [],
       };
     };
 
@@ -449,7 +452,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       const { errors } = useFormState({ control, name });
       return {
         control: register(name),
-        error: errors[name]?.message as string | undefined,
+        errors: list(errors[name]?.message),
       };
     };
 
@@ -492,12 +495,13 @@ describe('FormInput / FormChoice through the adapter port', () => {
     );
   });
 
-  // A field rarely fails in exactly one way, so the contract takes the three
-  // shapes libraries actually produce — and each message renders as its OWN
-  // element rather than being joined into one run-on sentence.
+  // A field rarely fails in exactly one way, so the port carries a LIST — one
+  // shape, whatever the library reports. Normalising into it is the ADAPTER's
+  // job, which is the one place that knows which library it is talking to; here
+  // that claim is made against the real one.
   describe('several messages at once', () => {
-    const renderWith = (error: BoundField['error']) => {
-      const adapter: UseFormField = (name) => ({ control: { name }, error });
+    const renderWith = (errors: BoundField['errors']) => {
+      const adapter: UseFormField = (name) => ({ control: { name }, errors });
       return render(
         <UiProvider
           adapters={{ i18n: { locale: 'en' }, form: { field: adapter } }}
@@ -507,15 +511,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       );
     };
 
-    it('a lone string', async () => {
-      renderWith('Email is required.');
-      const input = screen.getByRole('textbox', { name: 'Email' });
-      await waitFor(() =>
-        expect(input).toHaveAccessibleDescription('Email is required.'),
-      );
-    });
-
-    it('an ARRAY — Conform’s shape — as separate elements, not joined', () => {
+    it('renders each as its OWN element, not joined', () => {
       const { container } = renderWith(['Too short.', 'Needs a digit.']);
       const errors = [...container.querySelectorAll('p')].map(
         (n) => n.textContent,
@@ -523,16 +519,6 @@ describe('FormInput / FormChoice through the adapter port', () => {
       // Two elements, not one string. Joined, a screen reader would read
       // "Too short.Needs a digit." as a single run-on statement.
       expect(errors).toEqual(['Too short.', 'Needs a digit.']);
-    });
-
-    it('a KEYED OBJECT — react-hook-form’s criteriaMode: all', () => {
-      const { container } = renderWith({
-        minLength: 'At least 8 characters.',
-        pattern: 'Must contain a digit.',
-      });
-      expect(
-        [...container.querySelectorAll('p')].map((n) => n.textContent),
-      ).toEqual(['At least 8 characters.', 'Must contain a digit.']);
     });
 
     it('announces every message, in order', async () => {
@@ -546,7 +532,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
     it('the hint still comes BEFORE the errors, however many', async () => {
       const adapter: UseFormField = () => ({
         control: { name: 'email' },
-        error: ['A.', 'B.'],
+        errors: ['A.', 'B.'],
       });
       render(
         <UiProvider
@@ -561,8 +547,8 @@ describe('FormInput / FormChoice through the adapter port', () => {
       );
     });
 
-    it('empty shapes mean valid — no element, no aria-invalid', () => {
-      for (const empty of [undefined, '', [], {}] as const) {
+    it('no messages means valid — no element, no aria-invalid', () => {
+      for (const empty of [undefined, [], ['']] as const) {
         const { container, unmount } = renderWith(empty);
         expect(container.querySelectorAll('p')).toHaveLength(0);
         expect(container.querySelector('input')).not.toHaveAttribute(
@@ -570,6 +556,66 @@ describe('FormInput / FormChoice through the adapter port', () => {
         );
         unmount();
       }
+    });
+
+    // Where the shipped adapter earns the list. Under `criteriaMode: 'all'`
+    // react-hook-form reports one message PER RULE in `error.types`, and
+    // reading `error.message` alone shows one of three with nothing to say the
+    // rest exist — measured: the field was invalid for two reasons and the user
+    // could only see one.
+    it('the shipped adapter flattens rhf’s `types` — every failed rule shows', async () => {
+      // Hand-written rather than imported: `zodResolver` is a function of this
+      // shape, so the mechanism is proved without the dependency. Under
+      // `criteriaMode: 'all'` the library keeps every entry of `types`.
+      const everyRule: Resolver<{ password: string }> = (values) => {
+        const types: Record<string, string> = {};
+        if (String(values.password).length < 8)
+          types.minLength = 'At least 8 characters.';
+        if (!/[0-9]/.test(String(values.password)))
+          types.pattern = 'Must contain a digit.';
+        const messages = Object.values(types);
+        return messages.length > 0
+          ? {
+              values: {},
+              errors: {
+                password: { type: 'validate', types, message: messages[0] },
+              },
+            }
+          : { values, errors: {} };
+      };
+
+      function App() {
+        const form = useForm({
+          defaultValues: { password: '' },
+          criteriaMode: 'all',
+          resolver: everyRule,
+        });
+        return (
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(() => undefined)}>
+              <UiProvider
+                adapters={{
+                  i18n: { locale: 'en' },
+                  form: { field: useRhfPortField },
+                }}
+              >
+                <FormInput name="password" label="Password" />
+              </UiProvider>
+              <button type="submit">Go</button>
+            </form>
+          </FormProvider>
+        );
+      }
+      const user = userEvent.setup();
+      const { container } = render(<App />);
+      await user.type(screen.getByRole('textbox', { name: 'Password' }), 'ab');
+      await user.click(screen.getByRole('button', { name: 'Go' }));
+
+      await waitFor(() =>
+        expect(
+          [...container.querySelectorAll('p')].map((n) => n.textContent),
+        ).toEqual(['At least 8 characters.', 'Must contain a digit.']),
+      );
     });
   });
 

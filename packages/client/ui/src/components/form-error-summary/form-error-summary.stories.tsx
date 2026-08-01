@@ -44,7 +44,7 @@ function DemoForm() {
         }));
       },
     },
-    error: errors[name],
+    errors: errors[name],
   });
   const formErrors: UseFormErrors = () => errors;
 

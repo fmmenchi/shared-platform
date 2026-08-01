@@ -77,6 +77,12 @@ export { FormInput } from './components/form-input/form-input.component.js';
 export type { FormInputProps } from './components/form-input/form-input.types.js';
 export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
-export type { UseFormField, UseFormErrors, BoundField } from './form/index.js';
+export type {
+  UseFormField,
+  UseFormErrors,
+  BoundField,
+  FieldMessages,
+  BindingOwned,
+} from './form/index.js';
 export { FormErrorSummary } from './components/form-error-summary/index.js';
 export type { FormErrorSummaryProps } from './components/form-error-summary/form-error-summary.types.js';

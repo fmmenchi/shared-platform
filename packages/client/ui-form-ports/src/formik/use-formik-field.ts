@@ -57,7 +57,9 @@ export function createFormikField(
             : field.onChange,
         onBlur: field.onBlur,
       },
-      error: meta.touched ? meta.error : undefined,
+      // Formik reports one message per field; the port takes a list, so the
+      // wrapping happens here rather than in the design system.
+      errors: meta.touched && meta.error ? [meta.error] : [],
     };
   };
 }
