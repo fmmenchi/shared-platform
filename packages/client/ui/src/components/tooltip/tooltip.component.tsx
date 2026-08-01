@@ -268,6 +268,32 @@ function Tooltip(props: TooltipProps) {
     ref?: Ref<HTMLElement>;
   };
   const childRef = childProps.ref;
+  const theirDescribedBy = childProps['aria-describedby'];
+
+  // …and the description must not depend on it either. The prop above is what
+  // makes the description exist before hydration, so it stays; this puts it back
+  // when the trigger dropped it. Measured: a component that forwards its ref and
+  // picks the props it recognises keeps the ref and silently loses this.
+  useEffect(() => {
+    if (!triggerNode) return;
+
+    const tokens = (triggerNode.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .filter(Boolean);
+    if (tokens.includes(id)) return;
+
+    triggerNode.setAttribute('aria-describedby', [...tokens, id].join(' '));
+    return () => {
+      const rest = (triggerNode.getAttribute('aria-describedby') ?? '')
+        .split(' ')
+        .filter((token) => token && token !== id);
+      if (rest.length) {
+        triggerNode.setAttribute('aria-describedby', rest.join(' '));
+      } else {
+        triggerNode.removeAttribute('aria-describedby');
+      }
+    };
+  }, [triggerNode, id, theirDescribedBy]);
 
   // The state setter IS a callback ref, so the trigger node needs no ref of our
   // own — which is also what keeps this out of the React Compiler's way: a ref
@@ -280,7 +306,7 @@ function Tooltip(props: TooltipProps) {
 
   const trigger = cloneElement(children, {
     ref: triggerRef,
-    'aria-describedby': cn(childProps['aria-describedby'], id),
+    'aria-describedby': cn(theirDescribedBy, id),
   } as Record<string, unknown>);
 
   return (

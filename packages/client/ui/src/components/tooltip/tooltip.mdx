@@ -20,7 +20,7 @@ Tooltip is a short label that appears beside its trigger on hover and on keyboar
 
 `content` is a **string**, and that is the API refusing something rather than an oversight. A tooltip is reached by hovering or focusing its trigger, never by Tab — so a link or a button inside it could not be operated by a keyboard user at all. Rich, interactive content is a `Popover`.
 
-The trigger is **cloned, not wrapped** (ADR-0016), so the tooltip adds no element of its own to your layout. It must therefore accept a `ref`, which every design-system component does. Its own handlers are never touched: the tooltip listens on the node itself rather than passing handlers down, so a trigger with an `onFocus` of its own keeps it — there is nothing to overwrite.
+The trigger is **cloned, not wrapped** (ADR-0016), so the tooltip adds no element of its own to your layout. It must therefore accept a `ref` — the one thing it owes us, and the tooltip warns in development when it does not arrive. Everything else is put on the element directly, so a trigger that picks the props it recognises still opens and is still described. Its own handlers are never touched: the tooltip listens on the node itself rather than passing handlers down, so a trigger with an `onFocus` of its own keeps it — there is nothing to overwrite.
 
 ## Usage
 

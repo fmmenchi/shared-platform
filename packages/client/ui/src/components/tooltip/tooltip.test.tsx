@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createRef, type ReactNode } from 'react';
+import { createRef, forwardRef, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 // The REAL pointer and the REAL keyboard, driven through the browser rather than
@@ -58,6 +58,32 @@ describe('Tooltip', () => {
     expect(ref.current).toBe(trigger);
     // Both survive: ours is appended, theirs is not replaced.
     expect(trigger.getAttribute('aria-describedby')).toMatch(/^theirs \S+$/);
+  });
+
+  it('describes a trigger that forwards nothing but its ref', async () => {
+    // A component that takes the ref and picks the props it recognises is
+    // ordinary, not broken — and the description used to vanish with it, in
+    // silence, while the tooltip still opened.
+    const RefOnly = forwardRef<HTMLButtonElement, { children?: ReactNode }>(
+      (props, ref) => (
+        <button ref={ref} aria-label="Archive">
+          {props.children}
+        </button>
+      ),
+    );
+    RefOnly.displayName = 'RefOnly';
+
+    render(
+      <Tooltip content="Move to archive">
+        <RefOnly>A</RefOnly>
+      </Tooltip>,
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Archive' }),
+      ).toHaveAccessibleDescription('Move to archive'),
+    );
   });
 
   it('opens on hover after the delay, and closes when the pointer leaves', async () => {
