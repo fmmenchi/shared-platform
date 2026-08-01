@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
 import { UiProvider } from '../../i18n/provider.js';
+import { createBoundFields } from '../../form/bound-fields.js';
 import type {
   BoundField,
   UseFormField,
@@ -317,6 +318,58 @@ describe('the bound components, against the contract itself', () => {
       );
 
       expect(container.querySelectorAll('p')[0]).toBe(survivor);
+    });
+  });
+
+  // A misspelt name binds a field the form does not have: it renders, it types,
+  // and it submits nothing — the same failure as being unbound, and the one the
+  // compiler is best placed to catch, since the form's shape is already a type.
+  describe('names checked against the form', () => {
+    // The LIBRARY's path type in an app — `FieldPath<Values>` and friends.
+    // Written by hand here because the design system depends on no form
+    // library, which is also what proves it needs none: any string union does.
+    type Name = 'email' | 'tos' | `items.${number}.title`;
+    const { FormInput: Input, FormChoice: Choice } = createBoundFields<Name>();
+
+    it('refuses a name the form does not have', () => {
+      const field: UseFormField = (name) => ({ control: { name } });
+      const tree = (
+        <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field } }}>
+          <Input name="email" label="Email" />
+          {/* the library's own array syntax, which is why the type is the
+              library's and not one invented here */}
+          <Input name="items.0.title" label="Title" />
+          <Choice name="tos" label="Accept" />
+          {/* @ts-expect-error 'emial' is not a field of this form */}
+          <Input name="emial" label="Email" />
+          {/* @ts-expect-error the index is missing */}
+          <Input name="items.title" label="Title" />
+        </UiProvider>
+      );
+      expect(tree).toBeTruthy();
+    });
+
+    it('is the same component — no wrapper, no second implementation', () => {
+      expect(Input).toBe(FormInput);
+      expect(Choice).toBe(FormChoice);
+
+      const field: UseFormField = (name) => ({
+        control: { name },
+        errors: ['Email is required.'],
+      });
+      const { container } = render(
+        <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field } }}>
+          <Input name="email" label="Email" hint="Work address." />
+        </UiProvider>,
+      );
+      // renders the whole anatomy, exactly as the untyped component does
+      expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAttribute(
+        'name',
+        'email',
+      );
+      expect(
+        [...container.querySelectorAll('p')].map((n) => n.textContent),
+      ).toEqual(['Work address.', 'Email is required.']);
     });
   });
 
