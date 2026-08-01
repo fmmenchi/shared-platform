@@ -1,6 +1,6 @@
 import { useField, useFormikContext } from 'formik';
 import type { UseFormField } from '@fmmenchi/ui';
-import { isBooleanField } from '../field-type.js';
+import { isBooleanField, readValue } from '../field-type.js';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
@@ -33,6 +33,7 @@ export function createFormikField(
   return function useFormikField(name) {
     const type = types[name];
     const boolean = isBooleanField(type);
+    const { setFieldValue } = useFormikContext();
     // Formik keys its binding off the type too: asked for a checkbox it returns
     // `checked` and leaves `value` alone.
     const [field, meta] = useField(boolean ? { name, type } : name);
@@ -42,8 +43,18 @@ export function createFormikField(
         name: field.name,
         ...(boolean
           ? { checked: Boolean(field.checked) }
-          : { value: (field.value as string) ?? '' }),
-        onChange: field.onChange,
+          : { value: field.value == null ? '' : String(field.value) }),
+        // Formik's own `onChange` reads `target.value` and stores the string.
+        // For a number field that is the type loss `readValue` exists to undo,
+        // so the write goes through `setFieldValue` instead.
+        onChange:
+          type === 'number'
+            ? (event) =>
+                setFieldValue(
+                  name,
+                  readValue(type, event.target as HTMLInputElement),
+                )
+            : field.onChange,
         onBlur: field.onBlur,
       },
       error: meta.touched ? meta.error : undefined,
@@ -55,11 +66,55 @@ export function createFormikField(
 export function useFormikErrors(): Readonly<Record<string, readonly string[]>> {
   const { errors, touched, submitCount } =
     useFormikContext<Record<string, unknown>>();
-  const show = (name: string) =>
-    submitCount > 0 || (touched as Record<string, unknown>)[name] === true;
-  return Object.fromEntries(
-    Object.entries(errors)
-      .filter(([name, message]) => show(name) && typeof message === 'string')
-      .map(([name, message]) => [name, [message as string]]),
-  );
+
+  const byName: Record<string, readonly string[]> = {};
+  for (const [name, messages] of flatten(errors)) {
+    // Formik marks every field touched on a submit attempt, so after one
+    // failed submit the whole list appears at once.
+    if (submitCount > 0 || getIn(touched, name) === true) {
+      byName[name] = messages;
+    }
+  }
+  return byName;
+}
+
+/**
+ * Formik keeps its errors as a TREE — `{ address: { city: 'Required' } }` for a
+ * field named `address.city`, and an array for a field array. The fields
+ * themselves read it with a path lookup, so they show those messages fine.
+ *
+ * Flattening is what keeps the summary honest. Taking only the top-level string
+ * entries, which is the obvious reading of `errors`, silently dropped every
+ * nested one: the field showed a message the summary did not list, and if it was
+ * the only error the summary rendered nothing at all while the form refused to
+ * submit. The summary exists precisely so nobody has to walk the form to find
+ * out what failed.
+ */
+function flatten(node: unknown, path = ''): Array<[string, string[]]> {
+  if (typeof node === 'string') {
+    return node === '' ? [] : [[path, [node]]];
+  }
+  if (Array.isArray(node)) {
+    return node.flatMap((child, index) => flatten(child, `${path}[${index}]`));
+  }
+  if (node != null && typeof node === 'object') {
+    return Object.entries(node).flatMap(([key, child]) =>
+      flatten(child, path === '' ? key : `${path}.${key}`),
+    );
+  }
+  return [];
+}
+
+/** Reads `touched` by the same dotted/indexed path `flatten` produces. */
+function getIn(source: unknown, path: string): unknown {
+  return path
+    .split(/[.[\]]+/)
+    .filter(Boolean)
+    .reduce<unknown>(
+      (node, key) =>
+        node == null || typeof node !== 'object'
+          ? undefined
+          : (node as Record<string, unknown>)[key],
+      source,
+    );
 }

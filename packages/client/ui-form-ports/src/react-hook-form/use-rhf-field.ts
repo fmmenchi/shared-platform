@@ -1,5 +1,6 @@
 import { useFormContext, useFormState } from 'react-hook-form';
 import type { UseFormField } from '@fmmenchi/ui';
+import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for react-hook-form.
@@ -20,14 +21,34 @@ import type { UseFormField } from '@fmmenchi/ui';
  * - **Subscribed per FIELD** (`{ control, name }`), so one field's error does
  *   not re-render every other field in the form.
  *
- * It is a HOOK, and must stay one: the design system calls it inside the
- * component that renders each field, so that component subscribes for itself.
+ * The returned function is a HOOK, and must stay one: the design system calls it
+ * inside the component that renders each field, so that component subscribes for
+ * itself.
+ *
+ * `types` is only about NUMBERS here. react-hook-form is uncontrolled, so it
+ * needs no help telling a checkbox from a text field — but a DOM value is always
+ * a string, and `register` stores it verbatim. A `number` field would put `"31"`
+ * where the schema expects `31`, and the form would then fail validation forever
+ * with a message the user cannot act on by typing anything. `valueAsNumber` is
+ * react-hook-form's own switch for exactly that; the map is what tells us to
+ * throw it.
  */
-export const useRhfField: UseFormField = (name) => {
-  const { register, control } = useFormContext();
-  const { errors } = useFormState({ control, name });
-  return {
-    control: register(name),
-    error: errors[name]?.message as string | undefined,
+export function createRhfField(
+  options: FormFieldTypeOptions = {},
+): UseFormField {
+  const { types = {} } = options;
+
+  return function useRhfField(name) {
+    const { register, control } = useFormContext();
+    const { errors } = useFormState({ control, name });
+    return {
+      control: register(name, {
+        valueAsNumber: types[name] === 'number',
+      }),
+      error: errors[name]?.message as string | undefined,
+    };
   };
-};
+}
+
+/** The binding with no field types declared — every field reads as a string. */
+export const useRhfField: UseFormField = createRhfField();

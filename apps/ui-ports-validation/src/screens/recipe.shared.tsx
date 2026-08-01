@@ -23,6 +23,11 @@ export const RecipeSchema = z.object({
   // That difference belongs to the library, not to the port — the messages
   // still come out keyed by name.
   tos: z.literal(true, { message: 'You have to accept to continue.' }),
+  // A NUMBER, not a string that looks like one. The DOM only ever hands back a
+  // string, so this field is what proves the port undoes that loss — a schema
+  // expecting a number is the ordinary case, and it would otherwise fail
+  // forever with a message no amount of typing fixes.
+  seats: z.number({ message: 'How many seats?' }).min(1, 'At least one seat.'),
 });
 
 export type RecipeValues = z.infer<typeof RecipeSchema>;
@@ -31,16 +36,18 @@ export const RECIPE_EMPTY = {
   email: '',
   password: '',
   tos: false,
+  seats: undefined,
 } as unknown as RecipeValues;
 
 export const RECIPE_LABELS: Record<string, string> = {
   email: 'Email',
   password: 'Password',
   tos: 'Terms and conditions',
+  seats: 'Seats',
 };
 
 /** The one field whose state is `checked` — the reason adapters take `types`. */
-export const RECIPE_TYPES = { tos: 'checkbox' } as const;
+export const RECIPE_TYPES = { tos: 'checkbox', seats: 'number' } as const;
 
 /* ─── recipe 1 — the fields ────────────────────────────────────────────────
    Written ONCE and rendered by every screen. Nothing here names a form
@@ -86,6 +93,7 @@ export function RecipeFields({
         autoComplete="new-password"
         {...(constraints ? { required: true, minLength: 8 } : {})}
       />
+      <FormInput name="seats" label="Seats" type="number" />
       <FormChoice name="tos" label="I accept the terms and conditions" />
       <button type="submit">Create account</button>
     </>

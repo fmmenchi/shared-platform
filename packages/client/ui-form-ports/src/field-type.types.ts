@@ -11,6 +11,13 @@
  * only distinguish a boolean control from the rest. The map is the same at the
  * call site so that swapping libraries does not mean rewriting it.
  *
+ * It also decides how the value is READ BACK. A DOM value is always a string,
+ * so a `number` field would otherwise put `"31"` where the schema expects a
+ * number — and the form would fail validation forever with a message the user
+ * cannot act on by typing anything. Leaving that to the consumer's schema is not
+ * an answer: the port is what writes the value, so the loss is the port's to
+ * undo. See `readValue`.
+ *
  * `radio` is deliberately ABSENT. A radio group is N controls sharing one name
  * with a distinct value each, so the option's value — the thing the binding
  * turns on — cannot be expressed in a map keyed by field NAME. Advertising it

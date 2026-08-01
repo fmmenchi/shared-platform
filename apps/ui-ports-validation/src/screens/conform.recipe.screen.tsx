@@ -29,6 +29,11 @@ const ConformSchema = z.object({
     .string({ message: 'Use at least 8 characters.' })
     .min(8, 'Use at least 8 characters.'),
   tos: z.literal('on', { message: 'You have to accept to continue.' }),
+  // FormData hands over a string, so the schema is what converts here — which is
+  // Conform's model, and why it needs no `number` in its type map.
+  seats: z.coerce
+    .number({ message: 'How many seats?' })
+    .min(1, 'At least one seat.'),
 });
 
 const conformField = createConformField({ types: RECIPE_TYPES });
@@ -69,11 +74,13 @@ export function ConformRecipeScreen({
             // element back would only prove the DOM holds what was typed into
             // it — it would never touch the library, and the test that asserts
             // "the value round-tripped" would be asserting nothing.
-            setSaved(
-              parseWithZod(new FormData(event.currentTarget), {
-                schema: ConformSchema,
-              }).payload,
-            );
+            const submission = parseWithZod(new FormData(event.currentTarget), {
+              schema: ConformSchema,
+            });
+            // `.value`, the PARSED result — not `.payload`, which is the raw
+            // FormData echoed back. The payload would show `seats: "3"` and
+            // prove only that the DOM holds what was typed into it.
+            setSaved(submission.status === 'success' ? submission.value : null);
           }}
         >
           <RecipeFields constraints={constraints} />

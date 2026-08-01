@@ -3,21 +3,26 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { UiProvider } from '@fmmenchi/ui';
 import {
   RhfForm,
+  createRhfField,
   useRhfErrors,
-  useRhfField,
 } from '@fmmenchi/ui-form-ports/react-hook-form';
 import {
   RECIPE_EMPTY,
+  RECIPE_TYPES,
   RecipeFields,
   RecipeSchema,
   Submitted,
   type RecipeValues,
 } from './recipe.shared.js';
 
+const rhfField = createRhfField({ types: RECIPE_TYPES });
+
 /**
- * react-hook-form — the UNCONTROLLED one, and the only one of the four that
- * needs no `types` map: it binds by `name` and `ref` and lets the DOM hold the
- * state, so it never has to choose between `value` and `checked`.
+ * react-hook-form — the UNCONTROLLED one: it binds by `name` and `ref` and lets
+ * the DOM hold the state, so it never has to choose between `value` and
+ * `checked`. It still takes the `types` map, for the one thing being
+ * uncontrolled does not solve: a DOM value is a string, and a `number` field
+ * would otherwise store `"3"` where the schema expects `3`.
  *
  * `RhfForm` is `useForm` + `FormProvider` + `handleSubmit` + `<form>`, written
  * once. Note what it does with native validation: it sets `noValidate`, because
@@ -37,7 +42,7 @@ export function RhfRecipeScreen({
     <UiProvider
       adapters={{
         i18n: { locale: 'en' },
-        form: { field: useRhfField, errors: useRhfErrors },
+        form: { field: rhfField, errors: useRhfErrors },
       }}
     >
       <RhfForm
