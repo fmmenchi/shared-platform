@@ -2,7 +2,8 @@
   "extends": ["stylelint-config-recommended"],
   "plugins": [
     "stylelint-declaration-strict-value",
-    "./tools/stylelint/no-tailwind-arbitrary.cjs"
+    "./tools/stylelint/no-tailwind-arbitrary.cjs",
+    "./tools/stylelint/no-unresolvable-var.cjs"
   ],
   "rules": {
     "at-rule-no-unknown": [
@@ -86,7 +87,8 @@
             "message": "Motion: no raw durations (ms/s) or curves (cubic-bezier). Use the tokens var(--fm-duration-*) / var(--fm-ease-*) or the transition/animation utilities. See @fmmenchi/tokens"
           }
         ],
-        "fmmenchi/no-tailwind-arbitrary": true
+        "fmmenchi/no-tailwind-arbitrary": true,
+        "fmmenchi/no-unresolvable-var": true
       }
     }
   ]
