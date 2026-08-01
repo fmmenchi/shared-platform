@@ -574,13 +574,18 @@ describe('FormInput / FormChoice through the adapter port', () => {
         if (!/[0-9]/.test(String(values.password)))
           types.pattern = 'Must contain a digit.';
         const messages = Object.values(types);
+        // Collected into a Record rather than built inline: an object literal
+        // with an optional key makes the two branches infer as a union that
+        // fits neither half of `ResolverResult`.
+        const errors: Record<
+          string,
+          { type: string; types: Record<string, string>; message: string }
+        > = {};
+        if (messages.length > 0) {
+          errors.password = { type: 'validate', types, message: messages[0] };
+        }
         return messages.length > 0
-          ? {
-              values: {},
-              errors: {
-                password: { type: 'validate', types, message: messages[0] },
-              },
-            }
+          ? { values: {}, errors }
           : { values, errors: {} };
       };
 
