@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import { useUiAdapters } from '../i18n/provider.js';
 import type {
   BoundField,
   FormStatus,
@@ -14,6 +15,17 @@ export interface FormAdapter {
 export const FormAdapterContext = createContext<FormAdapter | null>(null);
 
 /**
+ * The binding in scope: the nearest `Form`/`FormAdapterProvider` if there is
+ * one, otherwise the one given to `UiProvider` when the design system was set
+ * up. Set it once there and the bound components work with nothing else wired.
+ */
+function useFormAdapter(): FormAdapter | null {
+  const local = useContext(FormAdapterContext);
+  const fromSetup = useUiAdapters()?.form;
+  return local ?? fromSetup ?? null;
+}
+
+/**
  * Bind one field through the adapter in scope.
  *
  * The adapter is CALLED AS A HOOK here, inside the component that renders the
@@ -27,7 +39,7 @@ export const FormAdapterContext = createContext<FormAdapter | null>(null);
  * rather than in development.
  */
 export function useBoundField(name: string, component: string): BoundField {
-  const adapter = useContext(FormAdapterContext);
+  const adapter = useFormAdapter();
   const useFormField = adapter?.field;
   if (useFormField == null) {
     throw new Error(
@@ -45,7 +57,7 @@ export function useBoundField(name: string, component: string): BoundField {
  * not use. Asking for it when it was not supplied is the misuse, and throws.
  */
 export function useFormStatus(component: string): FormStatus {
-  const adapter = useContext(FormAdapterContext);
+  const adapter = useFormAdapter();
   if (adapter == null) {
     throw new Error(
       `${component}: no form adapter in scope — wrap this form in a <FormAdapterProvider>.`,

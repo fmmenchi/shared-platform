@@ -6,6 +6,7 @@ import { FormInput } from '../form-input/form-input.component.js';
 import { FormSubmit } from '../form-submit/form-submit.component.js';
 import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
+import { UiProvider } from '../../i18n/provider.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
 
 const field: UseFormField = (name) => ({ control: { name } });
@@ -127,5 +128,57 @@ describe('Form', () => {
       ),
     );
     release();
+  });
+});
+
+describe('the binding given once at setup', () => {
+  it('bound components work with NOTHING wired on the form', async () => {
+    // What "instantiate the design system and forms just work" means: the
+    // binding is an adapter like i18n or Link, given once.
+    render(
+      <UiProvider
+        adapters={{
+          i18n: { locale: 'en' },
+          form: {
+            field: (name) => ({
+              control: { name },
+              error: name === 'email' ? 'Required.' : undefined,
+            }),
+            status: () => ({
+              submitting: false,
+              errors: { email: ['Required.'] },
+            }),
+          },
+        }}
+      >
+        <Form>
+          <FormInput name="email" label="Email" />
+          <FormSubmit>Save</FormSubmit>
+        </Form>
+      </UiProvider>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Email' });
+    expect(input).toHaveAttribute('name', 'email');
+    await waitFor(() => expect(input).toHaveAccessibleDescription('Required.'));
+    expect(screen.getByRole('button', { name: /Save/ })).toBeInTheDocument();
+  });
+
+  it('a binding on the Form overrides the one from setup', () => {
+    render(
+      <UiProvider
+        adapters={{
+          i18n: { locale: 'en' },
+          form: { field: (name) => ({ control: { name: `setup-${name}` } }) },
+        }}
+      >
+        <Form field={(name) => ({ control: { name: `local-${name}` } })}>
+          <FormInput name="email" label="Email" />
+        </Form>
+      </UiProvider>,
+    );
+    expect(screen.getByRole('textbox', { name: 'Email' })).toHaveAttribute(
+      'name',
+      'local-email',
+    );
   });
 });

@@ -7,14 +7,14 @@ import type {
 interface FormOwnProps {
   children?: ReactNode;
   /**
-   * The field-binding hook for the form library you are using — written once
-   * per app. Every bound control below reads it.
+   * The field-binding hook for the form library you are using.
+   *
+   * Usually OMITTED: give it once to `UiProvider` when the design system is set
+   * up and every form below works with nothing further to wire. Pass it here
+   * only to override that — the rare page binding two libraries at once.
    */
-  field: UseFormField;
-  /**
-   * The form-state hook, for `FormSubmit` and `FormErrorSummary`. Optional: a
-   * form using neither never needs to supply it.
-   */
+  field?: UseFormField;
+  /** The form-state hook, overriding the one given at setup. */
   status?: UseFormStatus;
   /**
    * Leave the browser's own validation off, which is the default and almost

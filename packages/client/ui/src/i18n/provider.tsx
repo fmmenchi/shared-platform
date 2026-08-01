@@ -80,6 +80,16 @@ export function UiProvider({ adapters, theme, children }: UiProviderProps) {
   );
 }
 
+/**
+ * The injected adapters, or `undefined` outside a provider — the tolerant
+ * counterpart of `useUi`, for the parts of the design system that must keep
+ * working without one. Nothing here throws, because a component that merely
+ * ASKS whether an adapter was supplied should not require the provider to exist.
+ */
+export function useUiAdapters(): UiAdapters | undefined {
+  return useContext(UiContext)?.adapters;
+}
+
 export function useUi(): UiContextValue {
   const ctx = useContext(UiContext);
   if (!ctx) throw new Error('useUi must be used within <UiProvider>');

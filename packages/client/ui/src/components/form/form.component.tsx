@@ -2,12 +2,21 @@ import { FormAdapterContext } from '../../form/form-adapter.context.js';
 import type { FormProps } from './form.types.js';
 
 /**
- * The `<form>` element and the adapter scope for everything inside it:
+ * The `<form>` element, and the adapter scope for everything inside it.
  *
- *     <Form field={useMyField} status={useMyStatus} onSubmit={form.handleSubmit(save)}>
+ * Give the form binding ONCE, where the design system is set up:
+ *
+ *     <UiProvider adapters={{ i18n, form: { field: useRhfField, status: useRhfStatus } }}>
+ *
+ * and from then on a form is just a form:
+ *
+ *     <Form onSubmit={form.handleSubmit(save)}>
  *       <FormInput name="email" label="Email" />
  *       <FormSubmit>Save</FormSubmit>
  *     </Form>
+ *
+ * `field`/`status` on this component override that, for the rare page binding
+ * two libraries at once.
  *
  * It renders ONE element — the `<form>` — and adds no wrapper: the adapter
  * scope is context, which has no markup.
@@ -27,12 +36,19 @@ import type { FormProps } from './form.types.js';
 function Form(props: FormProps) {
   const { field, status, children, noValidate = true, ...rest } = props;
 
-  return (
-    <FormAdapterContext value={{ field, status }}>
-      <form noValidate={noValidate} {...rest}>
-        {children}
-      </form>
-    </FormAdapterContext>
+  const element = (
+    <form noValidate={noValidate} {...rest}>
+      {children}
+    </form>
+  );
+
+  // Only scope a binding when one was actually passed. Providing an empty one
+  // would SHADOW the binding given to `UiProvider`, so every form would need
+  // its own — the opposite of setting it up once.
+  return field === undefined ? (
+    element
+  ) : (
+    <FormAdapterContext value={{ field, status }}>{element}</FormAdapterContext>
   );
 }
 
