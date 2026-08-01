@@ -163,13 +163,91 @@
       @apply overflow-hidden whitespace-nowrap;
     }
 
+    /* The icon the engine draws is a FILLED TRIANGLE — the one shape that reads
+       "unstyled control" no matter how well the box is themed. `::picker-icon`
+       is a real pseudo-element, so emptying its content and giving it two
+       borders makes the chevron the rest of the DS uses, and `select:open`
+       turns it over. The colour stays `currentColor`: the disabled and
+       forced-colors treatments below then reach it for free, which a data URI
+       could never do. `translate` is optical — a square rotated on its corner
+       has its ink centre below its box centre. */
+    .select::picker-icon {
+      content: '';
+      @apply size-2 shrink-0;
+      border: 0 solid currentColor;
+      border-inline-end-width: 1.5px;
+      border-block-end-width: 1.5px;
+      rotate: 45deg;
+      translate: 0 -0.15rem;
+      transition: rotate var(--fm-duration-s) var(--fm-ease-standard);
+    }
+
+    .select:open::picker-icon {
+      rotate: 225deg;
+      translate: 0 0.1rem;
+    }
+
+    /* Reduced motion: kill the MOVEMENT, keep the change — the chevron still
+       ends up pointing the other way, it just gets there instantly. */
+    @media (prefers-reduced-motion: reduce) {
+      .select::picker-icon {
+        transition-duration: var(--fm-duration-none);
+      }
+    }
+
+    /* The list is a raised surface once it is ours to draw: it needs the
+       elevation and the gap that say "above the page", which the flat UA popup
+       never had. */
     .select::picker(select) {
-      @apply rounded-md border p-1;
+      @apply rounded-md border p-1 shadow-lg;
       @apply bg-input text-input-foreground border-input-border;
+      margin-block-start: 0.25rem;
+    }
+
+    /* A row, not a line of text: the padding and the radius are what stop the
+       list reading as a native menu. `:focus` is here next to `:hover` on
+       purpose — in the picker the KEYBOARD-highlighted option is focused, not
+       hovered, so hover alone would leave arrow-key navigation with no
+       feedback at all. `input-hover` is the role authored for exactly this and
+       shipped unused; measured against `input-foreground` it is 14.20:1 light
+       and 10.13:1 dark. */
+    .select option {
+      @apply rounded-sm gap-2 px-2 py-1.5;
+    }
+
+    .select option:hover,
+    .select option:focus {
+      @apply bg-input-hover;
+    }
+
+    /* The engine rings the keyboard row with the OS's own blue — the last
+       system colour left in a themed control. Measured, `:focus-visible` marks
+       ONLY the arrow-key row (hovering with the mouse gives `:hover` and never
+       moves focus), so the DS ring can take it over without following the
+       pointer around. The offset is NEGATIVE: drawn outside, the ring would be
+       clipped by the picker's own padding. Against the surfaces it lands on the
+       `ring` role measures 4.68:1 light / 6.34:1 dark, over the 3:1 WCAG 1.4.11
+       asks of a non-text indicator. */
+    .select option:focus-visible {
+      @apply outline-ring outline-2;
+      outline-offset: -2px;
     }
 
     .select option:checked {
       @apply bg-primary text-primary-foreground;
+    }
+
+    /* The engine puts its checkmark BEFORE the label, which indents every row
+       by a tick-width the unchecked ones do not use. Sent to the trailing edge
+       it marks the row without shifting the text. */
+    .select option::checkmark {
+      order: 1;
+      margin-inline-start: auto;
+    }
+
+    /* The group label is a heading, not an option — it only needs the room. */
+    .select optgroup {
+      @apply px-2 pt-1.5 pb-1;
     }
   }
 
@@ -189,6 +267,13 @@
     .select:disabled {
       border-color: GrayText;
       color: GrayText;
+    }
+    /* The list we draw only exists in the `base-select` branch, and there the
+       selected row is carried by `bg-primary` — a token, so forced colors drop
+       it. `Highlight` is the OS's own word for the same thing. */
+    .select option:checked {
+      background-color: Highlight;
+      color: HighlightText;
     }
   }
 }
