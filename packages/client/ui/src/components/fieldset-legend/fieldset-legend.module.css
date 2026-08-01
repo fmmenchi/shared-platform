@@ -12,10 +12,18 @@
      fieldset's anonymous layout box — it is not a grid item, so the container's
      `gap` never reaches it. Its spacing is therefore a margin, and it reads the
      SAME custom property the `gap-internal-xs` utility compiles to, so the two
-     cannot drift apart. */
+     cannot drift apart.
+     That property is `--fm-space-internal-xs`, the DS token — NOT the Tailwind
+     bridge alias `--spacing-internal-xs` this line used to name. `@apply`
+     resolves the alias at build time (the Fieldset's `gap-internal-xs` ships as
+     `gap: var(--fm-space-internal-xs)`), but a hand-written `var()` is passed
+     through untouched, and the alias is defined only in `tokens/styles/
+     tailwind.css` — which Storybook and the suite were importing and no
+     consumer does. Shipped, the variable resolved to nothing and the legend had
+     NO bottom margin at all: measured 0px where the token says 4px. */
   .legend {
     @apply text-foreground text-sm font-medium;
     padding: 0;
-    margin-block-end: var(--spacing-internal-xs);
+    margin-block-end: var(--fm-space-internal-xs);
   }
 }

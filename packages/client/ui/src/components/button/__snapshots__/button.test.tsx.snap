@@ -2,7 +2,7 @@
 
 exports[`Button > matches the rendered snapshot 1`] = `
 <button
-  class="_button_vdvvg_37 _primary_vdvvg_78 _md_vdvvg_182"
+  class="_button_16hrp_37 _primary_16hrp_78 _md_16hrp_182"
   type="button"
 >
   Save

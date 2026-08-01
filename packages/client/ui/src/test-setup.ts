@@ -1,8 +1,17 @@
 import { expect } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-// Load the token theme so components render with real values (contrast, radius…),
+// Load the token values so components render with real ones (contrast, radius…),
 // plus the dark preset so `[data-theme='dark']` resolves in a11y/contrast tests.
-import '@fmmenchi/tokens/styles/tailwind.css';
+//
+// `vars.css`, NOT `tailwind.css`, and that is the whole point: `tailwind.css`
+// does `@import 'tailwindcss'`, which brings PREFLIGHT — a reset the shipped
+// `dist/*.css` does not contain. With it loaded here the suite ran on a page
+// every consumer of ours lacks, so a component that forgot `box-sizing` or
+// `font-family: inherit` passed: Preflight had already set them. That is not a
+// hypothetical — `git log -S 'font-family: inherit'` returns two commits and
+// BOTH are fixes, never a `feat(`; the same holds for `box-sizing`. The values
+// are all `vars.css` ever provided; the reset was the accident.
+import '@fmmenchi/tokens/styles/vars.css';
 import '@fmmenchi/tokens/styles/presets/dark.css';
 
 /**

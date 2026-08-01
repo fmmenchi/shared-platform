@@ -41,10 +41,16 @@ describe('FieldsetLegend', () => {
   // anonymous box, so the container's `gap` cannot reach it and its spacing is a
   // margin. Pin the two to the same number, or a rhythm change moves one only.
   it('is separated from the content by exactly the container’s gap', () => {
+    // A `<div>`, deliberately, not a `<p>`: the suite no longer loads Preflight
+    // (see `test-setup.ts`), so a `<p>` brings its own UA `margin-block: 1em`
+    // and the measurement below would read OUR 4px margin plus the browser's
+    // 16px. That margin belongs to the consumer's content, not to the DS — the
+    // assertion here is about the legend's spacing, so the fixture must not
+    // contribute any of its own.
     renderUi(
       <Fieldset>
         <FieldsetLegend>Favourite colour</FieldsetLegend>
-        <p>Content</p>
+        <div>Content</div>
       </Fieldset>,
     );
     const group = screen.getByRole('group', { name: 'Favourite colour' });

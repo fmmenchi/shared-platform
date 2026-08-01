@@ -2,7 +2,13 @@ import { definePreview } from '@storybook/react-vite';
 import addonDocs from '@storybook/addon-docs';
 import addonA11y from '@storybook/addon-a11y';
 import { UiProvider } from '../src/i18n/provider.js';
-import '@fmmenchi/tokens/styles/tailwind.css';
+// `vars.css`, NOT `tailwind.css`: the latter does `@import 'tailwindcss'` and so
+// brings PREFLIGHT, a reset that the CSS we ship does not contain. Storybook is
+// where we look at these components, and with Preflight loaded we were looking
+// at them on a page no consumer has — every missing UA reset invisible, and
+// found later against `dist` instead. The canvas now starts where a consumer
+// starts: token values, our component CSS, and whatever the browser does.
+import '@fmmenchi/tokens/styles/vars.css';
 import '@fmmenchi/tokens/styles/presets/dark.css';
 
 import { DocsContainer } from '@storybook/addon-docs/blocks';
