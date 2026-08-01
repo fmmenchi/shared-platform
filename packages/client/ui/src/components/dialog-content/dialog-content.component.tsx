@@ -3,6 +3,7 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { lockScroll, unlockScroll } from '../../primitives/scroll-lock.js';
 import { useDialogPart } from '../dialog/dialog.context.js';
+import { useDialogContentWarnings } from './dialog-content.guards.js';
 import type { DialogContentProps } from './dialog-content.types.js';
 import styles from './dialog-content.module.css';
 
@@ -107,40 +108,7 @@ function DialogContent(props: DialogContentProps) {
     };
   }, [invoker]);
 
-  // The two ways a dialog is misused that otherwise fail in silence. They need
-  // the mounted nodes — an accessible name and a rendered tag are DOM questions
-  // — so this is an effect rather than `useDevWarning`.
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
-    const node = surface.current;
-    if (!node) return;
-
-    const timer = setTimeout(() => {
-      if (
-        !node.getAttribute('aria-labelledby') &&
-        !node.getAttribute('aria-label')
-      ) {
-        console.warn(
-          'Dialog: this dialog has no accessible name, so it is announced as ' +
-            '"dialog" and nothing else. Give it a <DialogHeading>, or an ' +
-            '`aria-label`.',
-        );
-      }
-
-      // `commandfor` works on a `<button>` and on nothing else, so a trigger
-      // rendered `as` anything else is silently dead — and only on browsers
-      // that HAVE invoker commands, which is the worst kind of dead.
-      if (invoker && invoker.tagName !== 'BUTTON') {
-        console.warn(
-          `Dialog: the trigger renders a <${invoker.tagName.toLowerCase()}>, ` +
-            'but `commandfor` only works on a <button>, so this dialog will ' +
-            'never open. Use `as` with something that ends in a button.',
-        );
-      }
-    });
-
-    return () => clearTimeout(timer);
-  }, [invoker]);
+  useDialogContentWarnings(surface, invoker);
 
   return (
     <dialog

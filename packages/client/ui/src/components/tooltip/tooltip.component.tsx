@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { useTooltipTriggerWarning } from './tooltip.guards.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useTooltipDisclosure } from './tooltip.disclosure.js';
@@ -209,23 +210,7 @@ function Tooltip(props: TooltipProps) {
     return () => document.removeEventListener('keydown', onKeyDown, true);
   }, [engaged, open, dismiss]);
 
-  // A trigger that swallows the ref makes the whole component a no-op: nothing
-  // opens, nothing is described, and nothing is logged. It cannot be told apart
-  // from a ref that has not arrived yet by looking once — measured, the first
-  // effect pass reads `null` for a perfectly good trigger and the second reads
-  // the node — so the question is asked one task later, which is after React
-  // has flushed the update the ref callback scheduled.
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'production' || triggerNode) return;
-    const check = setTimeout(() => {
-      console.warn(
-        'Tooltip: the trigger never received a ref, so the tooltip cannot open ' +
-          'or describe anything. `children` must be a component that forwards ' +
-          'its `ref` to the DOM element it renders.',
-      );
-    });
-    return () => clearTimeout(check);
-  }, [triggerNode]);
+  useTooltipTriggerWarning(triggerNode);
 
   // `content` that only repeats the name is announced twice, and only
   // `aria-label` can say so exactly — anything else means computing an
