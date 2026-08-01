@@ -61,6 +61,14 @@
     }
   }
 
+  /*
+   * No `forced-colors` block, and that is measured rather than forgotten. In
+   * Chromium and Firefox with forced colors ACTIVE, this surface comes out
+   * `Canvas` on `CanvasText` with a 1px `CanvasText` border and the shadow
+   * dropped — legible and still separated from the page, because it carries a
+   * real border rather than resting on the shadow. The tooltip needs its own
+   * block precisely because it has NO border to be forced.
+   */
   @media (prefers-reduced-motion: reduce) {
     .content {
       transition-duration: var(--fm-duration-none);
