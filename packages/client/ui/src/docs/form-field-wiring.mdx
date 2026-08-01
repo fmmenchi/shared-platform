@@ -92,10 +92,13 @@ no-op, silently.
 
 Three ways forward, in the order you should reach for them:
 
-1. **Your form library's `reset(data)`.** The standard answer, and the reason the controls are
-   transparent: `reset()` writes straight to the DOM, which is where the value lives. Call it in an
-   effect when the data lands, or pass the data as the library's `values`/`defaultValues` and let it
-   reset for you.
+1. **Hand the data to your form library as its `values`.** In react-hook-form that is
+   `useForm({ defaultValues, values: data })` — when `data` arrives the fields fill in, no effect and
+   no imperative call. **Measured**, along with the thing that looks equivalent and is not: calling
+   `reset(data)` from an effect did **not** update the fields in the same setup. A raw `<input>`
+   behaved identically, so this is the library's contract rather than anything the design system
+   does — but reach for `values` first, and treat `reset()` as the imperative escape hatch you
+   verify rather than assume.
 2. **Remount with a `key`.** No library needed — change the key when the data arrives and the fields
    mount fresh with the new defaults. Cheap and honest for a small form; it discards anything the
    user had already typed, which is usually what you want before the record has loaded.
