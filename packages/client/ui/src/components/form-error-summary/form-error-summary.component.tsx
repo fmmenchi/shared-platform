@@ -40,11 +40,26 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
   );
   const count = entries.length;
 
-  // Move focus here when the summary appears, so a screen reader announces the
-  // failure at once. Keyed on the COUNT, so a second failed submit that changes
-  // nothing does not steal focus back while the user is reading.
+  // Move focus here when the summary APPEARS, so a screen reader announces the
+  // failure at once — and only then.
+  //
+  // Keying this on the count was wrong, and measured: a library that revalidates
+  // as you type drops the count the moment a field becomes valid, so fixing one
+  // error mid-word yanked focus out of the input and the rest of the keystrokes
+  // went nowhere. Silent — the field simply ended up holding less than was
+  // typed. Found by running one suite against four form libraries.
+  //
+  // So the trigger is the 0 → n edge, which is exactly "the summary was not
+  // here and now it is".
+  //
+  // The trade: submitting again while the same errors are still on screen does
+  // NOT bring focus back, because the port carries messages, not submissions —
+  // there is no signal here that says one happened. Not announcing a summary
+  // the user is already looking at is the smaller cost by far.
+  const wasEmpty = useRef(true);
   useEffect(() => {
-    if (count > 0) el.current?.focus();
+    if (count > 0 && wasEmpty.current) el.current?.focus();
+    wasEmpty.current = count === 0;
   }, [count]);
 
   if (count === 0) return null;
