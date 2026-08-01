@@ -25,9 +25,12 @@
        checkbox/radio, for the same reason: our CSS ships to apps that run no
        Preflight. */
     font-family: inherit;
-    /* The parts the UA paints — the caret, the scrollbar — follow this, not our
-       tokens. Without it they stay light while the theme is dark. */
-    color-scheme: light dark;
+    /* No `color-scheme` here ON PURPOSE — the parts the UA paints (the caret,
+       the scrollbar) do follow it, but `light dark` means "either, per the
+       USER'S preference", not "per the theme": measured, dark theme + a
+       light-set OS still painted them light, and declaring it on the control
+       BLOCKS the theme's own scheme from reaching it. It is declared once next
+       to the theme instead — `@fmmenchi/tokens/styles/presets/dark.css`. */
     @apply w-full rounded-md border px-3;
     @apply bg-input text-input-foreground border-input-border;
     @apply placeholder:text-input-placeholder;
@@ -43,8 +46,12 @@
     border-width: 2px;
   }
 
+  /* The fill alone did not say "disabled": the value stayed at full contrast, so
+     a disabled field read as an editable one holding text. `disabled-foreground`
+     is the generic role for a control not tied to a colour family — Button's
+     ghost treatment already uses it — and is AA-exempt (WCAG 1.4.3). */
   .input:disabled {
-    @apply bg-input-disabled cursor-not-allowed;
+    @apply bg-input-disabled text-disabled-foreground cursor-not-allowed;
   }
 
   /* Size — heights match Button (32/36/44) so controls and buttons align. */

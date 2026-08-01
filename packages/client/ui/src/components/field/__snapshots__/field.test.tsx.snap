@@ -11,7 +11,7 @@ exports[`Field > matches the rendered snapshot 1`] = `
     Email
   </label>
   <input
-    class="_input_1hui4_4 _md_1hui4_46"
+    class="_input_1xjgv_4 _md_1xjgv_46"
     id="«react-id»"
     type="text"
   />
