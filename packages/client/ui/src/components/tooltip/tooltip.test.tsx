@@ -231,6 +231,37 @@ describe('Tooltip', () => {
     });
   });
 
+  it('goes when the anchor is scrolled out of sight', async () => {
+    // Nothing in the top layer is clipped, which is the point of it and also
+    // the defect: measured, an anchor scrolled out of its `overflow: auto`
+    // container left the tooltip painted in full over the content ABOVE that
+    // container, pointing at a control the user could no longer see.
+    render(
+      <div>
+        <div style={{ height: '250px' }} />
+        <div
+          data-testid="scroller"
+          style={{ height: '150px', overflow: 'auto' }}
+        >
+          <div style={{ height: '80px' }} />
+          <Tooltip content="Move to archive" openDelay={0} closeDelay={9999}>
+            <Button aria-label="Archive">A</Button>
+          </Tooltip>
+          <div style={{ height: '1200px' }} />
+        </div>
+      </div>,
+    );
+
+    await browser.hover(screen.getByRole('button', { name: 'Archive' }));
+    const surface = screen.getByRole('tooltip', { hidden: true });
+    await waitFor(() => expect(isOpen()).toBe(true));
+    expect(surface).not.toHaveAttribute('data-anchor-hidden');
+
+    screen.getByTestId('scroller').scrollTop = 300;
+    await waitFor(() => expect(surface).toHaveAttribute('data-anchor-hidden'));
+    expect(getComputedStyle(surface).visibility).toBe('hidden');
+  });
+
   it('closes on press, and the trigger’s own handler still runs', async () => {
     const user = userEvent.setup();
     const onClick = vi.fn();

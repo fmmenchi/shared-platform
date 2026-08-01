@@ -83,6 +83,13 @@
     pointer-events: auto;
   }
 
+  /* The anchor has been scrolled out of sight and the surface has not, because
+     nothing in the top layer is ever clipped. A tooltip pointing at a control
+     the user cannot see is worse than no tooltip. */
+  .tooltip[data-anchor-hidden] {
+    visibility: hidden;
+  }
+
   /* Nested inside the rule it applies to, so it cannot outlive it. */
   @starting-style {
     .tooltip[data-open] {

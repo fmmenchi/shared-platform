@@ -3,6 +3,7 @@ import {
   autoUpdate,
   computePosition,
   flip,
+  hide,
   offset,
   shift,
 } from '@floating-ui/dom';
@@ -25,7 +26,9 @@ import type { AnchoredOptions } from './use-anchored.types.js';
  *   `setState` there would re-render the subtree sixty times a second to move
  *   two pixels.
  * - **It does not show or hide anything.** Visibility belongs to the component:
- *   a tooltip's is hover and focus, a popover's is a click. This only measures.
+ *   a tooltip's is hover and focus, a popover's is a click. This only measures —
+ *   including when the anchor has been scrolled out of sight, which it REPORTS
+ *   as `data-anchor-hidden` and leaves the stylesheet to act on.
  *
  * CSS anchor positioning does all of this declaratively and recomputes natively,
  * and all three current engines implement it correctly — measured. It is not
@@ -59,11 +62,24 @@ export function useAnchored(
       void computePosition(anchor, surface, {
         placement,
         strategy: 'fixed',
-        middleware: [offset(gap), flip(), shift({ padding: 8 })],
-      }).then(({ x, y }) => {
+        middleware: [
+          offset(gap),
+          flip(),
+          shift({ padding: 8 }),
+          // The top layer is not clipped by anything, which is the point of it
+          // and also this: measured, an anchor scrolled halfway out of its
+          // `overflow: auto` container left the surface painted in full over
+          // that container, pointing at a control the user could no longer see.
+          hide({ padding: 4 }),
+        ],
+      }).then(({ x, y, middlewareData }) => {
         // Written to the element, not to state — see the note above.
         surface.style.left = `${x}px`;
         surface.style.top = `${y}px`;
+        surface.toggleAttribute(
+          'data-anchor-hidden',
+          middlewareData.hide?.referenceHidden === true,
+        );
       });
     };
 
@@ -76,6 +92,7 @@ export function useAnchored(
       // which is the only position that is right by construction.
       surface.style.left = '';
       surface.style.top = '';
+      surface.removeAttribute('data-anchor-hidden');
     };
   }, [anchor, surfaceRef, placement, gap, open]);
 }
