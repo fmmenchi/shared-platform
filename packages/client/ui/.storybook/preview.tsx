@@ -8,6 +8,7 @@ import { UiProvider } from '../src/i18n/provider.js';
 // at them on a page no consumer has — every missing UA reset invisible, and
 // found later against `dist` instead. The canvas now starts where a consumer
 // starts: token values, our component CSS, and whatever the browser does.
+// (ADR-0021 — browser defaults.)
 import '@fmmenchi/tokens/styles/vars.css';
 import '@fmmenchi/tokens/styles/presets/dark.css';
 

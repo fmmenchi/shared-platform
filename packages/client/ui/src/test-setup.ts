@@ -10,7 +10,7 @@ import '@testing-library/jest-dom/vitest';
 // `font-family: inherit` passed: Preflight had already set them. That is not a
 // hypothetical — `git log -S 'font-family: inherit'` returns two commits and
 // BOTH are fixes, never a `feat(`; the same holds for `box-sizing`. The values
-// are all `vars.css` ever provided; the reset was the accident.
+// are all `vars.css` ever provided; the reset was the accident. (ADR-0021.)
 import '@fmmenchi/tokens/styles/vars.css';
 import '@fmmenchi/tokens/styles/presets/dark.css';
 
