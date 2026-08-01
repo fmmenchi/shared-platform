@@ -105,3 +105,5 @@ export type {
   SelectProps,
   SelectVariants,
 } from './components/select/select.types.js';
+export { Tooltip } from './components/tooltip/tooltip.component.js';
+export type { TooltipProps } from './components/tooltip/tooltip.types.js';
