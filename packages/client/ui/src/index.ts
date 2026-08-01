@@ -77,6 +77,8 @@ export { FormInput } from './components/form-input/form-input.component.js';
 export type { FormInputProps } from './components/form-input/form-input.types.js';
 export { FormTextarea } from './components/form-textarea/form-textarea.component.js';
 export type { FormTextareaProps } from './components/form-textarea/form-textarea.types.js';
+export { FormSelect } from './components/form-select/form-select.component.js';
+export type { FormSelectProps } from './components/form-select/form-select.types.js';
 export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
 export type {
@@ -97,3 +99,9 @@ export type {
   TextareaProps,
   TextareaVariants,
 } from './components/textarea/textarea.types.js';
+export { Select } from './components/select/select.component.js';
+export { selectVariants } from './components/select/select.variants.js';
+export type {
+  SelectProps,
+  SelectVariants,
+} from './components/select/select.types.js';

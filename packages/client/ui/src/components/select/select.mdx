@@ -1,0 +1,53 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as SelectStories from './select.stories.tsx';
+
+<Meta of={SelectStories} />
+
+# Select
+
+Select is one choice from a short list, on the native `<select>`. The options are its children — plain `<option>` and `<optgroup>` — and it is fully transparent (ADR-0013): ref and every native attribute pass through, `value`/`onChange` are never touched.
+
+## Props
+
+<Controls of={SelectStories.Default} />
+
+Two natives are **refused**, because accepting them would promise something this component cannot keep. `multiple` — the native multi-select is a scrolling box with no chips and a ctrl+click nobody discovers; use a `Fieldset` of `Checkbox` for a few options, a combobox for many. And the native `size` (a row count), whose name is the design system's sizing axis: a `<select size={5}>` is a list box, not this.
+
+## Usage
+
+<Canvas of={SelectStories.Default} />
+
+### The rendering stays native
+
+There is no `appearance: none` here and no drawn arrow — the same call as `Checkbox` and `Radio`, and for a reason that costs more than it looks. On a phone the browser opens the **system picker**: a sheet or a wheel, at thumb height, that no popup of ours reaches. Styling stops at the box; the open list belongs to the platform.
+
+The trade is real and worth stating: the list cannot be themed, so a `Select` and a future combobox will not look alike while open. What buys it back is everything the native control brings for free — typeahead, arrow keys, Home/End, the screen-reader announcements, and submitting with `FormData` even with no JavaScript running.
+
+<Canvas of={SelectStories.Sizes} />
+
+### The options are yours
+
+They are content, and a design system that owned them would be owning the app's data. `<optgroup>` works, because it is just HTML.
+
+<Canvas of={SelectStories.Groups} />
+
+A **placeholder** is the same trick as in plain HTML — a first option with an empty value: `<option value="">Choose…</option>`. Add `disabled` to it if the user must not pick it back.
+
+### When this is the wrong component
+
+| you need                   | reach for               |
+| -------------------------- | ----------------------- |
+| several options, a handful | `Fieldset` + `Checkbox` |
+| several options, many      | a combobox with chips   |
+| search inside the options  | a combobox              |
+| icons or rich rows         | a combobox              |
+
+<Canvas of={SelectStories.WithAnInput} />
+
+## Accessibility
+
+- Role **combobox**, from the element itself: a single-choice `<select>` maps there, with the popup rendered by the OS.
+- The accessible name comes from an associated `<label>` (wrapping or `htmlFor`), or `aria-label`/`aria-labelledby`.
+- Inside a `Field` it picks up `id`, `aria-describedby` and `aria-invalid` automatically; standalone it stays untouched.
+- The invalid look keys off the native `aria-invalid` and is carried by colour **and** border weight (WCAG 1.4.1), so it survives forced-colors; focus restores the system `Highlight` there.

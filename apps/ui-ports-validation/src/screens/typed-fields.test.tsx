@@ -27,12 +27,15 @@ import { createFormikFields } from '@fmmenchi/ui-form-ports/formik';
 interface SignupValues {
   email: string;
   tos: boolean;
+  notes: string;
+  country: string;
   guests: { name: string }[];
 }
 
 /* ── react-hook-form: the kit, against a real form ───────────────────────── */
 
-const { Form, FormInput, FormChoice } = createRhfForm<SignupValues>();
+const { Form, FormInput, FormChoice, FormTextarea, FormSelect } =
+  createRhfForm<SignupValues>();
 
 describe('createRhfForm', () => {
   it('binds and submits, with no library named at the call site', async () => {
@@ -42,7 +45,15 @@ describe('createRhfForm', () => {
     render(
       <Form
         onSubmit={onSubmit}
-        options={{ defaultValues: { email: '', tos: false, guests: [] } }}
+        options={{
+          defaultValues: {
+            email: '',
+            tos: false,
+            notes: '',
+            country: '',
+            guests: [],
+          },
+        }}
       >
         <UiProvider
           adapters={{ i18n: { locale: 'en' }, form: { field: useRhfField } }}
@@ -71,6 +82,15 @@ describe('createRhfForm', () => {
         <FormInput name="email" label="Email" />
         <FormInput name="guests.0.name" label="Guest 1" />
         <FormChoice name="tos" label="Accept" />
+        {/* the kit hands out EVERY bound component, including the two that
+            landed after it was written — the interface lives in the design
+            system, so no adapter had to be touched */}
+        <FormTextarea name="notes" label="Notes" />
+        <FormSelect name="country" label="Country">
+          <option value="it">Italy</option>
+        </FormSelect>
+        {/* @ts-expect-error 'notse' is not a field of SignupValues */}
+        <FormTextarea name="notse" label="Notes" />
         {/* @ts-expect-error 'emial' is not a field of SignupValues */}
         <FormInput name="emial" label="Email" />
         {/* @ts-expect-error a row is reached by index, not by name */}

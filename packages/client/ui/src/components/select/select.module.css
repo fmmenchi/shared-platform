@@ -1,0 +1,68 @@
+/*
+ * Select styles — CSS Modules authored with Tailwind. Colours ONLY through the
+ * semantic `input-*` role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. It shares Input's roles
+ * and heights on purpose: three controls on one row that did not match would
+ * read as three different systems.
+ *
+ * The NATIVE rendering is kept — no `appearance: none`, no drawn arrow — the
+ * same call as Checkbox and Radio. The browser paints the arrow and, on a
+ * phone, opens the system picker; styling stops at the box. The open list is
+ * therefore the platform's, which is the trade this component exists to make.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .select {
+    @apply w-full rounded-md border px-3;
+    @apply bg-input text-input-foreground border-input-border;
+    @apply transition;
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+    /* The arrow is the browser's, and it needs room that `px-3` alone does not
+       leave on the inline-end side. */
+    @apply pe-8;
+  }
+
+  /* Error state is the native attribute the form library already sets. Signalled
+     by BOTH colour and weight (a thicker border) so it isn't carried by colour
+     alone (WCAG 1.4.1) — the same weight cue then works in forced colors too. */
+  .select[aria-invalid='true'] {
+    @apply border-input-invalid;
+    border-width: 2px;
+  }
+
+  .select:disabled {
+    @apply bg-input-disabled cursor-not-allowed;
+  }
+
+  /* Size — heights match Input and Button (32/36/44) so controls align. */
+  .sm {
+    @apply h-8 text-xs;
+  }
+  .md {
+    @apply h-9 text-sm;
+  }
+  .lg {
+    @apply h-11 text-base;
+  }
+
+  /* Forced colors: the token fill/border are replaced by system colours; the
+     border keeps the field bounded, and the invalid state — otherwise a colour
+     — is restored so it survives High Contrast. */
+  @media (forced-colors: active) {
+    .select {
+      border: 1px solid ButtonText;
+    }
+    /* Restore the OS focus convention, like every other DS control. */
+    .select:focus-visible {
+      outline-color: Highlight;
+    }
+    .select:disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+  }
+}

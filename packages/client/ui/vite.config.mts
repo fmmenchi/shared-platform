@@ -63,11 +63,13 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        select: 'src/components/select/index.ts',
         textarea: 'src/components/textarea/index.ts',
         'form-error-summary': 'src/components/form-error-summary/index.ts',
         'form-choice': 'src/components/form-choice/index.ts',
         'form-input': 'src/components/form-input/index.ts',
         'form-textarea': 'src/components/form-textarea/index.ts',
+        'form-select': 'src/components/form-select/index.ts',
         'choice-field': 'src/components/choice-field/index.ts',
         checkbox: 'src/components/checkbox/index.ts',
         radio: 'src/components/radio/index.ts',

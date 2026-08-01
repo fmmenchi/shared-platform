@@ -139,6 +139,12 @@
       "import": "./dist/form-textarea.js",
       "default": "./dist/form-textarea.js"
     },
+    "./form-select": {
+      "@fmmenchi/source": "./src/components/form-select/index.ts",
+      "types": "./dist/components/form-select/index.d.ts",
+      "import": "./dist/form-select.js",
+      "default": "./dist/form-select.js"
+    },
     "./form-input/style.css": "./dist/form-input.css",
     "./form-choice": {
       "@fmmenchi/source": "./src/components/form-choice/index.ts",
@@ -160,7 +166,14 @@
       "import": "./dist/textarea.js",
       "default": "./dist/textarea.js"
     },
-    "./textarea/style.css": "./dist/textarea.css"
+    "./textarea/style.css": "./dist/textarea.css",
+    "./select": {
+      "@fmmenchi/source": "./src/components/select/index.ts",
+      "types": "./dist/components/select/index.d.ts",
+      "import": "./dist/select.js",
+      "default": "./dist/select.js"
+    },
+    "./select/style.css": "./dist/select.css"
   },
   "nx": {
     "tags": [

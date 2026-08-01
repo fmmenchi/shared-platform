@@ -1,0 +1,44 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormSelectStories from './form-select.stories.tsx';
+
+<Meta of={FormSelectStories} />
+
+# FormSelect
+
+FormSelect is a labelled single choice, already bound to the **form adapter in scope**. It renders the same anatomy as `Field` + `Select`, and takes its control props and its messages from the adapter, so the call site names no form library.
+
+```tsx
+<FormSelect name="country" label="Country">
+  <option value="">Choose…</option>
+  <option value="it">Italy</option>
+</FormSelect>
+```
+
+## Props
+
+<Controls of={FormSelectStories.Default} />
+
+The **options stay yours**: they are content, and a design system that owned them would be owning the app's data.
+
+There is no `error` prop — the messages come from the adapter as a list — and **what the binding owns is not a prop here either**: `value`, `defaultValue`, `onChange`, `onBlur`. Passing one is a compile error rather than a field that silently stops reporting; a `ref` is the exception and is merged with the binding's. See [FormInput](?path=/docs/components-inputs-forminput--docs) for the reasoning, and [Select](?path=/docs/components-inputs-select--docs) for what this control deliberately is not.
+
+## Usage
+
+<Canvas of={FormSelectStories.Default} />
+
+### The hint keeps its place before the messages
+
+<Canvas of={FormSelectStories.WithHint} />
+
+### Beside a `FormInput`
+
+<Canvas of={FormSelectStories.InAForm} />
+
+### The tag is declared to the binding
+
+An adapter builds ONE bag of props without knowing which control receives it. Its `ref` and handlers name an element, though, so this component asks the binding for its own tag — `useBoundField<'select'>` — while the four shipped adapters stay untouched, `input` being the default. The `select` entry omits the native `size` for the same reason `Input`'s does: that name is the sizing axis here, and a number arriving from an adapter would quietly turn the control into a list box.
+
+## Accessibility
+
+Identical to the unbound anatomy: the label is associated by id, every message is announced through `aria-describedby`, and `aria-invalid` follows them. The control is a **combobox** whose popup the OS renders. A field with **no adapter in scope throws** rather than rendering — an unbound field picks perfectly well and submits nothing, which is a failure you would meet in production data rather than in development.
