@@ -1,0 +1,89 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as PopoverStories from './popover.stories.tsx';
+
+<Meta of={PopoverStories} />
+
+# Popover
+
+Popover is a surface with real content, opened from a control and dismissed the way the platform dismisses things. Unlike a tooltip it takes focus, so anything in it can be operated.
+
+```tsx
+<Popover>
+  <PopoverTrigger>Share</PopoverTrigger>
+  <PopoverContent>
+    <PopoverHeading>Share this page</PopoverHeading>
+    <p>Anyone with the link can read it.</p>
+    <PopoverClose as={Button}>Done</PopoverClose>
+  </PopoverContent>
+</Popover>
+```
+
+## Props
+
+<Controls of={PopoverStories.Default} />
+
+## Anatomy
+
+```tsx
+<Popover>
+  {' '}
+  {/* wiring: no element of its own */}
+  <PopoverTrigger /> {/* a <button>: popovertarget + aria-expanded */}
+  <PopoverContent>
+    {' '}
+    {/* popover="auto" role="dialog", in the top layer */}
+    <PopoverHeading /> {/* the dialog's accessible name */}
+    …
+    <PopoverClose /> {/* popovertargetaction="hide" */}
+  </PopoverContent>
+</Popover>
+```
+
+Every part but the root takes the props of the element it renders. `PopoverTrigger` and `PopoverClose` take a `Button`'s — including `variant` — and an `as` for anything that accepts those and ends in a `<button>`, which is what `popovertarget` requires. `PopoverHeading` takes an `as` restricted to the six heading levels, because it names a dialog.
+
+### The parts
+
+| part             | what it is                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `Popover`        | the wiring. It renders **no element** — one that only carries a context has not earned its place                                  |
+| `PopoverTrigger` | what opens it. A `Button` by default; `as` takes anything ending in a `<button>`, which `popovertarget` requires                  |
+| `PopoverContent` | the surface: top layer, anchored, `role="dialog"`                                                                                 |
+| `PopoverHeading` | names it. An `h2` by default, `as` for the level the page needs — a dialog with no name is announced as "dialog" and nothing else |
+| `PopoverClose`   | closes it from inside. It exists because the surface's id is internal, so you could not write that attribute yourself             |
+
+## Usage
+
+<Canvas of={PopoverStories.Default} />
+
+### What is not in here
+
+Almost everything, and that is the design (ADR-0021). The toggle is `popovertarget`, so there is no click handler and the control **opens, paints and dismisses before React has hydrated** — the surface is styled from `:popover-open`, the platform's own state, not from a copy of it. (An earlier version painted from a copy, and a popover opened before hydration stayed invisible for the rest of its life.) Only the trigger's `aria-expanded` waits for hydration, and it catches up by reading the state rather than waiting for the next event.
+
+`Escape` and clicking outside are `popover="auto"`, so there is no dismissal logic and no focus manager. The top layer is the platform's, so there is no portal and no `z-index`. All of it measured in Chromium before a line of this was written.
+
+What is left is what the platform genuinely does not do: where the surface goes, what the trigger says about it, and what names it.
+
+<Canvas of={PopoverStories.WithAForm} />
+
+### Placement
+
+<Canvas of={PopoverStories.Placements} />
+
+### Opening it from code
+
+There is no `open` prop, on purpose: the state lives in the DOM, where the browser put it, and a second copy in React could only disagree with it. Use the platform's own API through the content's ref — `ref.current.showPopover()` and `hidePopover()` — and take `onOpenChange` as the report of what happened, whoever caused it.
+
+## Accessibility
+
+- **A native `<dialog>`, named by its heading.** The role comes from the element, not from an ARIA attribute (ADR-0016) — measured first: `<dialog popover>` opens, paints, dismisses and returns focus exactly as a `div` does, in all three engines, and our stylesheet wins over its UA box with no reset present. `PopoverHeading` registers its id as the surface's `aria-labelledby`; without a name a dialog is announced as "dialog" and nothing else.
+- **The trigger says what it will open, and whether it is open** — `aria-haspopup="dialog"` and `aria-expanded`, mirrored from the platform's own state rather than from a copy of ours.
+- **Focus goes in, and comes back — from a dismissal.** The surface carries `autofocus`, the one piece of focus management the platform leaves to the author, so the dialog is focused and its name announced. Returning the focus to the trigger is the platform's business, and it does it for `Escape` and for `PopoverClose` — **but not for a click outside**, measured: a click moves the focus where it landed, so it stays there. That is the platform's behaviour and it is the right one; it is written down here because it is easy to assume otherwise.
+- **`autofocus` on a control inside is inert.** The surface takes the focus itself, so an `autoFocus` on a field within it never runs. Focus that field from an `onToggle` handler if you need it.
+- **The anchor going takes the popover with it.** Scrolled out of a clipping ancestor, hidden or removed, and the popover CLOSES rather than hiding — an invisible dialog that stays open holds the top layer, eats the next click, and strands whatever focus was inside it.
+- **It is not modal.** The page behind stays live and reachable, by design. Something that must be dealt with before anything else is a `Dialog`, not a popover.
+- **A tooltip is not a small popover.** A tooltip opens on hover, never takes focus, and may hold nothing interactive — a link inside one could never be reached. That is why they are two components (ADR-0021).
+
+### Where it is painted
+
+In the **top layer**, which keeps it out of an ancestor's `overflow: hidden` and out of every `z-index` race without moving the node in the DOM — so reading order, tab order and `aria-*` relationships stay as authored. When the trigger is scrolled out of sight the surface hides with it: nothing in the top layer is clipped, so that has to be done rather than inherited.

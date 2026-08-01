@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Tooltip } from './tooltip.component.js';
+import { TooltipProvider } from './tooltip.context.js';
 import { Button } from '../button/button.component.js';
 
 const meta: Meta<typeof Tooltip> = {
@@ -22,12 +23,27 @@ const meta: Meta<typeof Tooltip> = {
       table: { type: { summary: 'ReactElement' } },
     },
     placement: {
-      control: 'inline-radio',
-      options: ['top', 'bottom', 'left', 'right'],
+      control: 'select',
+      options: [
+        'top',
+        'top-start',
+        'top-end',
+        'right',
+        'right-start',
+        'right-end',
+        'bottom',
+        'bottom-start',
+        'bottom-end',
+        'left',
+        'left-start',
+        'left-end',
+      ],
       description:
-        'Preferred side. Flipped automatically when there is no room.',
+        'Preferred side, and where it sits along that side. The bare side is **centred** — `top` means "above, centred on the trigger" — and `-start` / `-end` are the alignment. They are LOGICAL: in RTL, `top-start` is on the right. Flipped automatically when there is no room, and slid back in when it would leave the viewport.',
       table: {
-        type: { summary: "'top' | 'bottom' | 'left' | 'right' | …" },
+        type: {
+          summary: "'top' | 'top-start' | 'top-end' | 'right' | … | 'left-end'",
+        },
         defaultValue: { summary: "'top'" },
       },
     },
@@ -60,18 +76,37 @@ export const Default: Story = {
   ),
 };
 
-/** Each side, and each one flips when the viewport gets in the way. */
+/**
+ * All twelve. The bare side is **centred**; `-start` and `-end` align it along
+ * that side. Every one of them flips when the viewport gets in the way, so what
+ * you ask for is a preference, not an instruction.
+ */
 export const Placements: Story = {
   render: () => (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, max-content)',
-        gap: 'var(--fm-space-inline-m)',
+        gridTemplateColumns: 'repeat(3, max-content)',
+        gap: 'var(--fm-space-inline-m) var(--fm-space-inline-l)',
         padding: 'var(--fm-space-stack-xl)',
       }}
     >
-      {(['top', 'right', 'bottom', 'left'] as const).map((placement) => (
+      {(
+        [
+          'top-start',
+          'top',
+          'top-end',
+          'right-start',
+          'right',
+          'right-end',
+          'bottom-start',
+          'bottom',
+          'bottom-end',
+          'left-start',
+          'left',
+          'left-end',
+        ] as const
+      ).map((placement) => (
         <Tooltip
           key={placement}
           content={`Placed ${placement}`}
@@ -85,31 +120,68 @@ export const Placements: Story = {
 };
 
 /**
+ * `-start` and `-end` follow the writing direction rather than the screen: under
+ * `dir="rtl"` the same `top-start` sits on the RIGHT of the trigger. Nothing in
+ * the component says so — the geometry is asked for a direction and answers.
+ */
+export const AlignmentIsLogical: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 'var(--fm-space-stack-xl)' }}>
+      {(['ltr', 'rtl'] as const).map((dir) => (
+        <div
+          key={dir}
+          dir={dir}
+          style={{
+            display: 'flex',
+            gap: 'var(--fm-space-inline-l)',
+            padding: 'var(--fm-space-stack-xl)',
+            border: '1px dashed var(--fm-color-border)',
+          }}
+        >
+          <Tooltip content={`${dir}: top-start`} placement="top-start">
+            <Button variant="secondary">top-start</Button>
+          </Tooltip>
+          <Tooltip content={`${dir}: top-end`} placement="top-end">
+            <Button variant="secondary">top-end</Button>
+          </Tooltip>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
  * A row of icon buttons, which is where the delays earn their place: sweeping a
  * pointer across them with no `openDelay` strobes every tooltip on the way.
+ *
+ * Wrapped in a `TooltipProvider`, so the row behaves as one set — wait once for
+ * the first label and the rest are instant, and never two at a time. Hover the
+ * first button, then move along the row.
  */
 export const InAToolbar: Story = {
   render: () => (
-    <div
-      style={{
-        display: 'flex',
-        gap: 'var(--fm-space-inline-xs)',
-        padding: 'var(--fm-space-stack-xl)',
-      }}
-    >
-      {[
-        ['Bold', 'B'],
-        ['Italic', 'I'],
-        ['Underline', 'U'],
-        ['Strikethrough', 'S'],
-      ].map(([label, glyph]) => (
-        <Tooltip key={label} content={label}>
-          <Button variant="ghost" aria-label={label}>
-            {glyph}
-          </Button>
-        </Tooltip>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div
+        style={{
+          display: 'flex',
+          gap: 'var(--fm-space-inline-xs)',
+          padding: 'var(--fm-space-stack-xl)',
+        }}
+      >
+        {[
+          ['Bold', 'B'],
+          ['Italic', 'I'],
+          ['Underline', 'U'],
+          ['Strikethrough', 'S'],
+        ].map(([label, glyph]) => (
+          <Tooltip key={label} content={label}>
+            <Button variant="ghost" aria-label={label}>
+              {glyph}
+            </Button>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   ),
 };
 

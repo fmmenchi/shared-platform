@@ -44,13 +44,21 @@ Read this part first.
 
 Opening waits for the pointer to rest (`openDelay`, 400ms); **focus opens immediately**, because unlike a pointer sweeping a toolbar, focus arrives on purpose. Closing waits too (`closeDelay`, 120ms), which is what lets the pointer travel onto the tooltip without it vanishing on the way.
 
+Wrap a group in a **`TooltipProvider`** and it behaves as one set: having waited out the first label, the next button's tooltip is instant, and only one is ever open — without it, moving along a row opens the next while the previous is still inside its `closeDelay`, and two labels describe two different buttons at once. `skipDelay` (300ms) is how long "instant" lasts after the last one closes; `0` turns it off. A tooltip with no provider is unchanged, because two independent toolbars are not one another's business.
+
 <Canvas of={TooltipStories.InAToolbar} />
 
 ### Placement
 
-The preferred side flips automatically when there is no room, and slides back into view when it would leave it.
+Twelve values, not four. The bare side is **centred on the trigger** — `top` means "above, centred" — and `-start` / `-end` align it along that side. They are logical, not physical: under `dir="rtl"` a `top-start` tooltip sits on the right.
+
+What you pass is a preference. The tooltip flips to the opposite side when there is no room, slides back in when it would leave the viewport, and **closes** when the trigger is scrolled out of sight, hidden or removed — nothing in the top layer is clipped, so a surface whose anchor has gone would otherwise sit there pointing at something the user can no longer see.
 
 <Canvas of={TooltipStories.Placements} />
+
+`-start` and `-end` follow the writing direction rather than the screen: the same `top-start` sits on the left in LTR and on the right in RTL.
+
+<Canvas of={TooltipStories.AlignmentIsLogical} />
 
 ## Accessibility
 

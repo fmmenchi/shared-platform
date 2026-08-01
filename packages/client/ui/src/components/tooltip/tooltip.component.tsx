@@ -80,6 +80,7 @@ function Tooltip(props: TooltipProps) {
     hideAfterDelay,
     dismiss,
     dismissOnPress,
+    releasePress,
   } = useTooltipDisclosure({ openDelay, closeDelay });
 
   // DECLARED BEFORE the measurement, because effects run in declaration order
@@ -93,7 +94,14 @@ function Tooltip(props: TooltipProps) {
     if (!open && shown) surface.hidePopover();
   }, [open]);
 
-  useAnchored(triggerNode, surfaceRef, { placement, open });
+  useAnchored(triggerNode, surfaceRef, {
+    placement,
+    open,
+    // A trigger that goes away takes its tooltip with it. Measured: removing a
+    // hovered trigger left the tooltip painted on screen forever, because the
+    // `pointerleave` that would have closed it could never fire.
+    onAnchorLost: dismiss,
+  });
 
   // The trigger's listeners are NATIVE, added to the node itself, and that is
   // the whole composition story: `cloneElement` props REPLACE the child's, so a
@@ -115,7 +123,13 @@ function Tooltip(props: TooltipProps) {
       hideAfterDelay();
     };
     const onBlur = () => {
-      // …and the pointer outlives the focus, for the same reason.
+      // The press is released whatever happens — it only ever meant "the focus
+      // that follows THIS click is not a reason to open". Measured: keeping it
+      // latched while the pointer rested on the trigger meant a user who
+      // clicked and left the mouse there got no tooltip from the keyboard
+      // again, which is the persistent half of WCAG 1.4.13 lost to a flag.
+      releasePress();
+      // …and the pointer outlives the focus, as the focus outlives the pointer.
       if (triggerNode.matches(':hover')) return;
       hideAfterDelay();
     };
@@ -142,6 +156,7 @@ function Tooltip(props: TooltipProps) {
     showOnFocus,
     hideAfterDelay,
     dismissOnPress,
+    releasePress,
   ]);
 
   // The SURFACE's listeners are native for a reason of its own, and this one was
@@ -175,11 +190,16 @@ function Tooltip(props: TooltipProps) {
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      // The Escape is SPENT here. Measured: without this, dismissing a tooltip
-      // inside a modal `<dialog>` closed the dialog as well — one keypress,
-      // two dismissals, and the user loses the thing they were working in.
-      event.preventDefault();
-      event.stopPropagation();
+
+      // SPENT only if there is something to see. Measured: gated on `engaged`
+      // alone, a pointer merely resting on a trigger swallowed the Escape from
+      // millisecond 0 of a 400ms delay — inside a `<dialog>`, one keypress
+      // dismissed nothing at all. An open that has only been ASKED for is
+      // cancelled here and the key travels on to whoever else wants it.
+      if (open) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
       dismiss();
     };
 
@@ -187,7 +207,7 @@ function Tooltip(props: TooltipProps) {
     // Escape that was ours to answer.
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);
-  }, [engaged, dismiss]);
+  }, [engaged, open, dismiss]);
 
   // A trigger that swallows the ref makes the whole component a no-op: nothing
   // opens, nothing is described, and nothing is logged. It cannot be told apart

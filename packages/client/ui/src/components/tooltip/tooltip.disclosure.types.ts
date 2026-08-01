@@ -29,4 +29,6 @@ export interface TooltipDisclosure {
   dismiss: () => void;
   /** A press: it goes now, and the focus that follows must not bring it back. */
   dismissOnPress: () => void;
+  /** That press is over — the next focus is a reason to open again. */
+  releasePress: () => void;
 }

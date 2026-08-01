@@ -6,7 +6,6 @@ export type {
   LinkComponent,
   NavigateFn,
   IconRenderer,
-  PortalContainer,
 } from './i18n/ports.types.js';
 export { Button } from './components/button/button.component.js';
 export { buttonVariants } from './components/button/button.variants.js';
@@ -106,4 +105,16 @@ export type {
   SelectVariants,
 } from './components/select/select.types.js';
 export { Tooltip } from './components/tooltip/tooltip.component.js';
+export { TooltipProvider } from './components/tooltip/tooltip.context.js';
 export type { TooltipProps } from './components/tooltip/tooltip.types.js';
+export type { TooltipProviderProps } from './components/tooltip/tooltip.context.types.js';
+export { Popover } from './components/popover/popover.component.js';
+export { PopoverTrigger } from './components/popover-trigger/popover-trigger.component.js';
+export { PopoverContent } from './components/popover-content/popover-content.component.js';
+export { PopoverHeading } from './components/popover-heading/popover-heading.component.js';
+export { PopoverClose } from './components/popover-close/popover-close.component.js';
+export type { PopoverProps } from './components/popover/popover.types.js';
+export type { PopoverTriggerProps } from './components/popover-trigger/popover-trigger.types.js';
+export type { PopoverContentProps } from './components/popover-content/popover-content.types.js';
+export type { PopoverHeadingProps } from './components/popover-heading/popover-heading.types.js';
+export type { PopoverCloseProps } from './components/popover-close/popover-close.types.js';

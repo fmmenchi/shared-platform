@@ -1,0 +1,11 @@
+/* The popover's name. Sized as a heading, not as a page title: it sits inside a
+   surface the size of a card. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .heading {
+    @apply text-base font-semibold;
+    margin: 0;
+    margin-block-end: var(--fm-space-stack-s);
+  }
+}

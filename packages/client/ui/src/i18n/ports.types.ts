@@ -49,9 +49,6 @@ export type NavigateFn = (href: string) => void;
  */
 export type IconRenderer = ComponentType<{ name: string }>;
 
-/** Where portalled content (dialogs, popovers) mounts. */
-export type PortalContainer = HTMLElement | (() => HTMLElement);
-
 /** The bundle the app injects through the single `UiProvider`. */
 /** What a form library provides to the design system, given once at setup. */
 export interface FormBinding {
@@ -74,5 +71,4 @@ export interface UiAdapters {
   Link?: LinkComponent;
   navigate?: NavigateFn;
   Icon?: IconRenderer;
-  portalContainer?: PortalContainer;
 }
