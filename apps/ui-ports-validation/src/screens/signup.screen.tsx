@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FormAdapterProvider } from '@fmmenchi/ui';
+import { UiProvider } from '@fmmenchi/ui';
 import type { Resolver } from 'react-hook-form';
 import { RhfForm } from '@fmmenchi/ui-form-ports/react-hook-form';
 import { useHandRolledForm } from '../adapters/no-library.js';
@@ -58,9 +58,14 @@ export function SignupWithNoLibrary() {
   return (
     <>
       <Host>
-        <FormAdapterProvider field={field} errors={formErrors}>
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en' },
+            form: { field: field, errors: formErrors },
+          }}
+        >
           <SignupFields />
-        </FormAdapterProvider>
+        </UiProvider>
       </Host>
       <Saved values={saved} />
     </>

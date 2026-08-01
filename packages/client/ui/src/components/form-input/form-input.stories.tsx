@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
-import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
+import { UiProvider } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
 
@@ -40,7 +40,11 @@ function DemoForm({ children }: { children: ReactNode }) {
         maxWidth: '22rem',
       }}
     >
-      <FormAdapterProvider field={useDemoField}>{children}</FormAdapterProvider>
+      <UiProvider
+        adapters={{ i18n: { locale: 'en' }, form: { field: useDemoField } }}
+      >
+        {children}
+      </UiProvider>
       <output style={{ font: 'var(--fm-font-mono, monospace)', opacity: 0.7 }}>
         {JSON.stringify(values)}
       </output>

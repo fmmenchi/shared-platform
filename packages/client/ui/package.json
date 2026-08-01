@@ -147,14 +147,7 @@
       "import": "./dist/form-error-summary.js",
       "default": "./dist/form-error-summary.js"
     },
-    "./form-error-summary/style.css": "./dist/form-error-summary.css",
-    "./form": {
-      "@fmmenchi/source": "./src/components/form/index.ts",
-      "types": "./dist/components/form/index.d.ts",
-      "import": "./dist/form.js",
-      "default": "./dist/form.js"
-    },
-    "./form/style.css": "./dist/form.css"
+    "./form-error-summary/style.css": "./dist/form-error-summary.css"
   },
   "nx": {
     "tags": [

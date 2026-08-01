@@ -1,6 +1,5 @@
 import type { ComponentProps, ReactNode } from 'react';
 import type { FieldValues, SubmitHandler, UseFormProps } from 'react-hook-form';
-import type { Form } from '@fmmenchi/ui';
 
 interface RhfFormOwnProps<T extends FieldValues> {
   /**
@@ -15,11 +14,9 @@ interface RhfFormOwnProps<T extends FieldValues> {
 }
 
 /**
- * Everything `Form` takes, minus the binding props — the binding is this
- * package's job, and is given once to `UiProvider`.
+ * Every native `<form>` prop, plus the two above. `noValidate` defaults to true
+ * here — see the component for why that decision belongs to this package and
+ * not to the design system.
  */
 export type RhfFormProps<T extends FieldValues> = RhfFormOwnProps<T> &
-  Omit<
-    ComponentProps<typeof Form>,
-    'onSubmit' | 'children' | 'field' | 'status'
-  >;
+  Omit<ComponentProps<'form'>, 'onSubmit' | 'children'>;

@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
-import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
+import { UiProvider } from '../../i18n/provider.js';
 import type {
   BoundField,
   UseFormField,
@@ -20,9 +20,9 @@ describe('the bound components, against the contract itself', () => {
   it('binds a control and shows nothing when there is no error', () => {
     const field: UseFormField = (name) => ({ control: { name } });
     render(
-      <FormAdapterProvider field={field}>
+      <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field: field } }}>
         <FormInput name="email" label="Email" />
-      </FormAdapterProvider>,
+      </UiProvider>,
     );
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('name', 'email');
@@ -51,10 +51,12 @@ describe('the bound components, against the contract itself', () => {
       return (
         <>
           <output>{JSON.stringify(values)}</output>
-          <FormAdapterProvider field={field}>
+          <UiProvider
+            adapters={{ i18n: { locale: 'en' }, form: { field: field } }}
+          >
             <FormInput name="email" label="Email" />
             <FormChoice name="tos" label="Accept" />
-          </FormAdapterProvider>
+          </UiProvider>
         </>
       );
     }
@@ -69,14 +71,14 @@ describe('the bound components, against the contract itself', () => {
   it('an explicit prop at the call site beats the binding', () => {
     const field: UseFormField = (name) => ({ control: { name } });
     render(
-      <FormAdapterProvider field={field}>
+      <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field: field } }}>
         <FormInput
           name="email"
           label="Email"
           type="email"
           placeholder="you@x"
         />
-      </FormAdapterProvider>,
+      </UiProvider>,
     );
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('type', 'email');
@@ -89,9 +91,11 @@ describe('the bound components, against the contract itself', () => {
     const renderWith = (error: BoundField['error']) => {
       const field: UseFormField = (name) => ({ control: { name }, error });
       return render(
-        <FormAdapterProvider field={field}>
+        <UiProvider
+          adapters={{ i18n: { locale: 'en' }, form: { field: field } }}
+        >
           <FormInput name="email" label="Email" />
-        </FormAdapterProvider>,
+        </UiProvider>,
       );
     };
 
@@ -129,9 +133,11 @@ describe('the bound components, against the contract itself', () => {
         error: ['A.', 'B.'],
       });
       render(
-        <FormAdapterProvider field={field}>
+        <UiProvider
+          adapters={{ i18n: { locale: 'en' }, form: { field: field } }}
+        >
           <FormInput name="email" label="Email" hint="Work address." />
-        </FormAdapterProvider>,
+        </UiProvider>,
       );
       await waitFor(() =>
         expect(
@@ -152,13 +158,13 @@ describe('the bound components, against the contract itself', () => {
     });
   });
 
-  it('throws by name when there is no adapter in scope', () => {
+  it('throws by name when there is no binding in scope', () => {
     // Silently unbound is worse: it renders, it types, and it submits nothing.
     const error = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
     expect(() => render(<FormInput name="email" label="Email" />)).toThrow(
-      /FormInput: no form adapter in scope/,
+      /FormInput: no form binding in scope/,
     );
     error.mockRestore();
   });

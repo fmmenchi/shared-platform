@@ -9,9 +9,9 @@ import type { FormInputProps } from './form-input.types.js';
 /**
  * A labelled text field, already bound to the form library in scope:
  *
- *     <FormAdapterProvider adapter={useMyFormField}>
+ *     <UiProvider adapters={useMyFormField}>
  *       <FormInput name="email" label="Email" />
- *     </FormAdapterProvider>
+ *     </UiProvider>
  *
  * One tag per field, and nothing below the provider names a form library —
  * swapping one is a single line, in a single place.

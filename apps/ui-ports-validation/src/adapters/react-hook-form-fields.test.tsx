@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
-  FormAdapterProvider,
+  UiProvider,
   FormChoice,
   FormInput,
   type BoundField,
@@ -54,10 +54,12 @@ function RhfForm({ onSubmit }: { onSubmit: (v: unknown) => void }) {
 }
 function Bound() {
   return (
-    <FormAdapterProvider field={useRhfField}>
+    <UiProvider
+      adapters={{ i18n: { locale: 'en' }, form: { field: useRhfField } }}
+    >
       <FormInput name="email" label="Email" hint="We’ll never share it." />
       <FormChoice name="tos" label="Accept the terms" />
-    </FormAdapterProvider>
+    </UiProvider>
   );
 }
 
@@ -90,9 +92,14 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <FormAdapterProvider field={useRhfField}>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'en' },
+                form: { field: useRhfField },
+              }}
+            >
               <FormInput name="email" label="Email" />
-            </FormAdapterProvider>
+            </UiProvider>
             <button type="submit">Go</button>
           </form>
         </FormProvider>
@@ -137,10 +144,12 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <>
           <output>{JSON.stringify(v)}</output>
-          <FormAdapterProvider field={adapter}>
+          <UiProvider
+            adapters={{ i18n: { locale: 'en' }, form: { field: adapter } }}
+          >
             <FormInput name="email" label="Email" />
             <FormChoice name="tos" label="Accept the terms" />
-          </FormAdapterProvider>
+          </UiProvider>
         </>
       );
     }
@@ -169,14 +178,16 @@ describe('FormInput / FormChoice through the adapter port', () => {
   it('an explicit prop at the call site still beats the binding', async () => {
     const adapter: UseFormField = (name) => ({ control: { name } });
     render(
-      <FormAdapterProvider field={adapter}>
+      <UiProvider
+        adapters={{ i18n: { locale: 'en' }, form: { field: adapter } }}
+      >
         <FormInput
           name="email"
           label="Email"
           type="email"
           placeholder="you@x"
         />
-      </FormAdapterProvider>,
+      </UiProvider>,
     );
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('type', 'email');
@@ -207,10 +218,15 @@ describe('FormInput / FormChoice through the adapter port', () => {
         return (
           <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(() => undefined)}>
-              <FormAdapterProvider field={useConfirm}>
+              <UiProvider
+                adapters={{
+                  i18n: { locale: 'en' },
+                  form: { field: useConfirm },
+                }}
+              >
                 <FormInput name="password" label="Password" />
                 <FormInput name="confirm" label="Confirm" />
-              </FormAdapterProvider>
+              </UiProvider>
               <button type="submit">Go</button>
             </form>
           </FormProvider>
@@ -252,9 +268,14 @@ describe('FormInput / FormChoice through the adapter port', () => {
         });
         return (
           <FormProvider {...form}>
-            <FormAdapterProvider field={useTouchedOnly}>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'en' },
+                form: { field: useTouchedOnly },
+              }}
+            >
               <FormInput name="email" label="Email" />
-            </FormAdapterProvider>
+            </UiProvider>
           </FormProvider>
         );
       }
@@ -309,11 +330,16 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <FormAdapterProvider field={useAppField}>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'en' },
+                form: { field: useAppField },
+              }}
+            >
               <FormInput name="email" label="Email" />
               <FormInput name="password" label="Password" />
               <FormInput name="confirm" label="Confirm password" />
-            </FormAdapterProvider>
+            </UiProvider>
             <button type="submit">Create account</button>
           </form>
         </FormProvider>
@@ -385,10 +411,15 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <FormAdapterProvider field={useSchemaField}>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'en' },
+                form: { field: useSchemaField },
+              }}
+            >
               <FormInput name="email" label="Email" />
               <FormInput name="password" label="Password" />
-            </FormAdapterProvider>
+            </UiProvider>
             <button type="submit">Go</button>
           </form>
         </FormProvider>
@@ -418,9 +449,11 @@ describe('FormInput / FormChoice through the adapter port', () => {
     const renderWith = (error: BoundField['error']) => {
       const adapter: UseFormField = (name) => ({ control: { name }, error });
       return render(
-        <FormAdapterProvider field={adapter}>
+        <UiProvider
+          adapters={{ i18n: { locale: 'en' }, form: { field: adapter } }}
+        >
           <FormInput name="email" label="Email" />
-        </FormAdapterProvider>,
+        </UiProvider>,
       );
     };
 
@@ -466,9 +499,11 @@ describe('FormInput / FormChoice through the adapter port', () => {
         error: ['A.', 'B.'],
       });
       render(
-        <FormAdapterProvider field={adapter}>
+        <UiProvider
+          adapters={{ i18n: { locale: 'en' }, form: { field: adapter } }}
+        >
           <FormInput name="email" label="Email" hint="Work address." />
-        </FormAdapterProvider>,
+        </UiProvider>,
       );
       const input = screen.getByRole('textbox', { name: 'Email' });
       await waitFor(() =>
@@ -488,13 +523,13 @@ describe('FormInput / FormChoice through the adapter port', () => {
     });
   });
 
-  it('throws by name when there is no adapter in scope', () => {
+  it('throws by name when there is no binding in scope', () => {
     // Silently unbound is worse: it renders, it types, and it submits nothing.
     const error = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
     expect(() => render(<FormInput name="email" label="Email" />)).toThrow(
-      /FormInput: no form adapter in scope/,
+      /FormInput: no form binding in scope/,
     );
     error.mockRestore();
   });

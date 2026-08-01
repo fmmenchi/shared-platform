@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormErrorSummary } from './form-error-summary.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
-import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
+import { UiProvider } from '../../i18n/provider.js';
 import type {
   UseFormErrors,
   UseFormField,
@@ -49,7 +49,12 @@ function DemoForm() {
   const formErrors: UseFormErrors = () => errors;
 
   return (
-    <FormAdapterProvider field={field} errors={formErrors}>
+    <UiProvider
+      adapters={{
+        i18n: { locale: 'en' },
+        form: { field: field, errors: formErrors },
+      }}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -67,7 +72,7 @@ function DemoForm() {
         <FormChoice name="tos" label="I accept the terms and conditions" />
         <button type="submit">Create account</button>
       </form>
-    </FormAdapterProvider>
+    </UiProvider>
   );
 }
 

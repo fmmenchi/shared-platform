@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
-  FormAdapterProvider,
+  UiProvider,
   FormErrorSummary,
   FormInput,
   type UseFormField,
@@ -65,7 +65,12 @@ describe('the adapter over a real library — it reads, it does not replace', ()
     return (
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(onValid)}>
-          <FormAdapterProvider field={useRhfField} errors={useRhfErrors}>
+          <UiProvider
+            adapters={{
+              i18n: { locale: 'en' },
+              form: { field: useRhfField, errors: useRhfErrors },
+            }}
+          >
             <FormErrorSummary
               labelFor={(n) =>
                 ({ email: 'Email', password: 'Password' })[n] ?? n
@@ -74,7 +79,7 @@ describe('the adapter over a real library — it reads, it does not replace', ()
             <FormInput name="email" label="Email" />
             <FormInput name="password" label="Password" />
             <button type="submit">Create account</button>
-          </FormAdapterProvider>
+          </UiProvider>
         </form>
       </FormProvider>
     );

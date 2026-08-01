@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormErrorSummary } from './form-error-summary.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
-import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
+import { UiProvider } from '../../i18n/provider.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 import type {
@@ -44,7 +44,12 @@ function useDemoForm() {
 function DemoForm({ onValid = vi.fn() }: { onValid?: () => void }) {
   const { field, formErrors, errors, setSubmitted } = useDemoForm();
   return (
-    <FormAdapterProvider field={field} errors={formErrors}>
+    <UiProvider
+      adapters={{
+        i18n: { locale: 'en' },
+        form: { field: field, errors: formErrors },
+      }}
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -59,7 +64,7 @@ function DemoForm({ onValid = vi.fn() }: { onValid?: () => void }) {
         <FormInput name="password" label="Password" />
         <button type="submit">Create account</button>
       </form>
-    </FormAdapterProvider>
+    </UiProvider>
   );
 }
 
@@ -126,9 +131,11 @@ describe('the form level of the adapter', () => {
     const field: UseFormField = (name) => ({ control: { name } });
     expect(() =>
       render(
-        <FormAdapterProvider field={field}>
+        <UiProvider
+          adapters={{ i18n: { locale: 'en' }, form: { field: field } }}
+        >
           <FormErrorSummary />
-        </FormAdapterProvider>,
+        </UiProvider>,
       ),
     ).toThrow(/provides no `errors`/);
     error.mockRestore();

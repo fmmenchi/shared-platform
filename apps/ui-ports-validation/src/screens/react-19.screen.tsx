@@ -1,6 +1,11 @@
 import { useActionState } from 'react';
 import { z } from 'zod';
-import { Form, FormChoice, FormErrorSummary, FormInput } from '@fmmenchi/ui';
+import {
+  FormChoice,
+  FormErrorSummary,
+  FormInput,
+  UiProvider,
+} from '@fmmenchi/ui';
 import {
   ActionErrorsProvider,
   useActionErrors,
@@ -55,18 +60,27 @@ export function React19Screen() {
 
   return (
     <ActionErrorsProvider errors={state.errors}>
-      <Form field={useActionField} errors={useActionErrors} action={action}>
-        <FormErrorSummary labelFor={(name) => LABELS[name] ?? name} />
-        <FormInput
-          name="email"
-          label="Email"
-          type="email"
-          hint="We’ll only use it to sign you in."
-        />
-        <FormInput name="password" label="Password" type="password" />
-        <FormChoice name="tos" label="I accept the terms and conditions" />
-        <Submit />
-      </Form>
+      {/* A NESTED UiProvider overrides the app-wide binding for this subtree —
+          which is the whole reason a per-form binding prop was unnecessary. */}
+      <UiProvider
+        adapters={{
+          i18n: { locale: 'en' },
+          form: { field: useActionField, errors: useActionErrors },
+        }}
+      >
+        <form action={action}>
+          <FormErrorSummary labelFor={(name) => LABELS[name] ?? name} />
+          <FormInput
+            name="email"
+            label="Email"
+            type="email"
+            hint="We’ll only use it to sign you in."
+          />
+          <FormInput name="password" label="Password" type="password" />
+          <FormChoice name="tos" label="I accept the terms and conditions" />
+          <Submit />
+        </form>
+      </UiProvider>
       {state.saved ? (
         <output className="saved">
           Submitted: {JSON.stringify(state.saved)}

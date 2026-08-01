@@ -1,5 +1,4 @@
 import { FormProvider, useForm, type FieldValues } from 'react-hook-form';
-import { Form } from '@fmmenchi/ui';
 import type { RhfFormProps } from './rhf-form.types.js';
 
 /**
@@ -29,10 +28,21 @@ function RhfForm<T extends FieldValues>(props: RhfFormProps<T>) {
 
   return (
     <FormProvider {...form}>
-      {/* the design system's Form: one <form>, noValidate, adapter scope */}
-      <Form onSubmit={form.handleSubmit(onSubmit)} {...rest}>
+      {/*
+        `noValidate` belongs HERE and not in the design system. Turning the
+        browser's own validation off is a VALIDATION decision, and the design
+        system does not make those (ADR-0013) — but by reaching for this
+        component you have already chosen react-hook-form to do the validating,
+        so the decision is justified by the context.
+
+        It matters: with the browser's validation left on, a `required` field
+        blocks submission before `handleSubmit` ever runs — measured, zero calls
+        — and shows an unstyleable bubble beside the FieldError. Pass
+        `noValidate={false}` to keep the native behaviour anyway.
+      */}
+      <form noValidate onSubmit={form.handleSubmit(onSubmit)} {...rest}>
         {children}
-      </Form>
+      </form>
     </FormProvider>
   );
 }
