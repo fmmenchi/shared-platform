@@ -23,6 +23,25 @@ Popover is a surface with real content, opened from a control and dismissed the 
 
 <Controls of={PopoverStories.Default} />
 
+## Anatomy
+
+```tsx
+<Popover>
+  {' '}
+  {/* wiring: no element of its own */}
+  <PopoverTrigger /> {/* a <button>: popovertarget + aria-expanded */}
+  <PopoverContent>
+    {' '}
+    {/* popover="auto" role="dialog", in the top layer */}
+    <PopoverHeading /> {/* the dialog's accessible name */}
+    …
+    <PopoverClose /> {/* popovertargetaction="hide" */}
+  </PopoverContent>
+</Popover>
+```
+
+Every part but the root takes the props of the element it renders. `PopoverTrigger` and `PopoverClose` take a `Button`'s — including `variant` — and an `as` for anything that accepts those and ends in a `<button>`, which is what `popovertarget` requires. `PopoverHeading` takes an `as` restricted to the six heading levels, because it names a dialog.
+
 ### The parts
 
 | part             | what it is                                                                                                                        |
@@ -39,7 +58,9 @@ Popover is a surface with real content, opened from a control and dismissed the 
 
 ### What is not in here
 
-Almost everything, and that is the design (ADR-0021). The toggle is `popovertarget`, so there is no click handler and the control works before React has hydrated. `Escape`, clicking outside, and returning the focus to the trigger are `popover="auto"`, so there is no dismissal logic and no focus manager. The top layer is the platform's, so there is no portal and no `z-index`. All of it measured in Chromium before a line of this was written.
+Almost everything, and that is the design (ADR-0021). The toggle is `popovertarget`, so there is no click handler and the control **opens, paints and dismisses before React has hydrated** — the surface is styled from `:popover-open`, the platform's own state, not from a copy of it. (An earlier version painted from a copy, and a popover opened before hydration stayed invisible for the rest of its life.) Only the trigger's `aria-expanded` waits for hydration, and it catches up by reading the state rather than waiting for the next event.
+
+`Escape` and clicking outside are `popover="auto"`, so there is no dismissal logic and no focus manager. The top layer is the platform's, so there is no portal and no `z-index`. All of it measured in Chromium before a line of this was written.
 
 What is left is what the platform genuinely does not do: where the surface goes, what the trigger says about it, and what names it.
 
@@ -55,9 +76,11 @@ There is no `open` prop, on purpose: the state lives in the DOM, where the brows
 
 ## Accessibility
 
-- **`role="dialog"`, named by its heading.** `PopoverHeading` registers its id as the surface's `aria-labelledby`; without a name a dialog is announced as "dialog".
+- **A native `<dialog>`, named by its heading.** The role comes from the element, not from an ARIA attribute (ADR-0016) — measured first: `<dialog popover>` opens, paints, dismisses and returns focus exactly as a `div` does, in all three engines, and our stylesheet wins over its UA box with no reset present. `PopoverHeading` registers its id as the surface's `aria-labelledby`; without a name a dialog is announced as "dialog" and nothing else.
 - **The trigger says what it will open, and whether it is open** — `aria-haspopup="dialog"` and `aria-expanded`, mirrored from the platform's own state rather than from a copy of ours.
-- **Focus goes in, and comes back.** The surface carries `autofocus`, the one piece of focus management the platform leaves to the author; returning focus to the trigger on close is its business, and it does it — from `Escape`, from a click outside, and from `PopoverClose`.
+- **Focus goes in, and comes back — from a dismissal.** The surface carries `autofocus`, the one piece of focus management the platform leaves to the author, so the dialog is focused and its name announced. Returning the focus to the trigger is the platform's business, and it does it for `Escape` and for `PopoverClose` — **but not for a click outside**, measured: a click moves the focus where it landed, so it stays there. That is the platform's behaviour and it is the right one; it is written down here because it is easy to assume otherwise.
+- **`autofocus` on a control inside is inert.** The surface takes the focus itself, so an `autoFocus` on a field within it never runs. Focus that field from an `onToggle` handler if you need it.
+- **The anchor going takes the popover with it.** Scrolled out of a clipping ancestor, hidden or removed, and the popover CLOSES rather than hiding — an invisible dialog that stays open holds the top layer, eats the next click, and strands whatever focus was inside it.
 - **It is not modal.** The page behind stays live and reachable, by design. Something that must be dealt with before anything else is a `Dialog`, not a popover.
 - **A tooltip is not a small popover.** A tooltip opens on hover, never takes focus, and may hold nothing interactive — a link inside one could never be reached. That is why they are two components (ADR-0021).
 

@@ -20,7 +20,7 @@ describe('PopoverContent', () => {
   });
 
   it('forwards its ref to the element the platform acts on', () => {
-    const ref = createRef<HTMLDivElement>();
+    const ref = createRef<HTMLDialogElement>();
     render(
       <Popover>
         <PopoverContent ref={ref}>content</PopoverContent>
@@ -29,34 +29,35 @@ describe('PopoverContent', () => {
 
     // The ref IS the programmatic API: `showPopover()`/`hidePopover()` are the
     // platform's, so the component offers no `open` prop to disagree with them.
+    // Typed as `HTMLDialogElement`, because the surface IS one.
     expect(ref.current).toBe(screen.getByRole('dialog', { hidden: true }));
     expect(typeof ref.current?.showPopover).toBe('function');
   });
 
-  it('carries the surface’s border around its arrow', async () => {
+  it('scrolls when the content is taller than the screen', async () => {
     render(
       <Popover>
         <PopoverTrigger>Share</PopoverTrigger>
-        <PopoverContent>content</PopoverContent>
+        <PopoverContent>
+          {Array.from({ length: 60 }, (_, row) => (
+            <p key={row} style={{ height: '40px' }}>
+              row {row}
+            </p>
+          ))}
+        </PopoverContent>
       </Popover>,
     );
     await browser.click(screen.getByRole('button', { name: 'Share' }));
 
     const surface = screen.getByRole('dialog');
-    const arrow = getComputedStyle(surface, '::after');
-    const sides = [
-      arrow.borderTopWidth,
-      arrow.borderRightWidth,
-      arrow.borderBottomWidth,
-      arrow.borderLeftWidth,
-    ].filter((width) => parseFloat(width) > 0);
-
-    // Exactly the two edges that face out — the fill is opaque, so without them
-    // the arrow punches a hole in the outline where it meets the box.
-    expect(sides).toHaveLength(2);
-    // …and in the surface's own colour, which Tailwind's `border` does NOT set:
-    // it sets the width, and the colour falls back to `currentColor`.
-    expect(arrow.borderTopColor).toBe(getComputedStyle(surface).borderTopColor);
+    surface.scrollTop = 200;
+    // It is `position: fixed` in the top layer, so nothing else can bring the
+    // bottom of it back: measured before this, 1549px of content — including
+    // the only dismiss button — were painted below the viewport and reachable
+    // by no scroll, no wheel and no key. That was the price of the arrow, and
+    // the arrow is what went.
+    expect(surface.scrollTop).toBe(200);
+    expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight);
   });
 
   it('says so when it is used outside a Popover', () => {

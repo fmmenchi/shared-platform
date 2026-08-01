@@ -6,7 +6,6 @@ export type {
   LinkComponent,
   NavigateFn,
   IconRenderer,
-  PortalContainer,
 } from './i18n/ports.types.js';
 export { Button } from './components/button/button.component.js';
 export { buttonVariants } from './components/button/button.variants.js';

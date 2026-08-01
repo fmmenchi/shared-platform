@@ -1,4 +1,4 @@
-import { useEffect, useId, type ElementType } from 'react';
+import { useEffect, useId } from 'react';
 import { cn } from '../../util/cn.js';
 import { usePopoverPart } from '../popover/popover.context.js';
 import type { PopoverHeadingProps } from './popover-heading.types.js';
@@ -14,13 +14,8 @@ import styles from './popover-heading.module.css';
  * heading above it. The `id` is owned by the part, so the reference can never
  * dangle — one passed here is ignored.
  */
-function PopoverHeading<As extends ElementType = 'h2'>(
-  props: PopoverHeadingProps<As>,
-) {
-  const { as, className, children, ...rest } =
-    props as PopoverHeadingProps<'h2'> & {
-      as?: ElementType;
-    };
+function PopoverHeading(props: PopoverHeadingProps) {
+  const { as, className, children, ...rest } = props;
   const Component = as ?? 'h2';
   const popover = usePopoverPart('PopoverHeading');
   const id = useId();

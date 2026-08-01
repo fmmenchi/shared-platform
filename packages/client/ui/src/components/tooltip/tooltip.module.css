@@ -69,34 +69,24 @@
     opacity: 0;
     pointer-events: none;
 
-    /* PROGRESSIVE ENHANCEMENT, and the shape motion.md prescribes for a surface
-       the UA hides with `display: none`. A plain `transition: opacity` here was
-       DEAD: measured with `transitionrun` listeners, it never fired once in any
-       of the three engines — opening goes `display: none` → shown with the end
-       value already applied, and closing is cut off by `hidePopover()`.
-       `@starting-style` gives the entry a value to come from, and transitioning
-       `display` and `overlay` with `allow-discrete` keeps the surface in the top
-       layer long enough to fade out. Both are Baseline "newly", not "widely", so
-       no linter guards this (`css/use-baseline` skips `.module.css`) and it is a
-       judgement written down as such: where they are missing the tooltip appears
-       and disappears instantly, which is the fallback the ADR-0017 tier asks
-       for. */
-    transition-property: opacity, display, overlay;
+    /* ENTRY ONLY, and that is measured rather than modest. A plain
+       `transition: opacity` was dead — the UA holds a closed popover at
+       `display: none`, so opening arrives with the end value already applied —
+       and `@starting-style` gives it a value to come from. The EXIT was dead
+       too, twice over: Gecko and WebKit run no transition at all on close, and
+       in Chromium the surface is parked off-screen the instant it closes, so
+       the fade played at `top: -9999px`. `display`/`overlay`/`allow-discrete`
+       bought a hundred milliseconds of nothing, in every engine, and are gone.
+       `@starting-style` is Baseline "newly": where it is missing the tooltip
+       simply appears, which is the ADR-0017 fallback. */
+    transition-property: opacity;
     transition-duration: var(--fm-duration-xs);
     transition-timing-function: var(--fm-ease-enter);
-    transition-behavior: allow-discrete;
   }
 
   .tooltip[data-open] {
     opacity: 1;
     pointer-events: auto;
-  }
-
-  /* The anchor has been scrolled out of sight and the surface has not, because
-     nothing in the top layer is ever clipped. A tooltip pointing at a control
-     the user cannot see is worse than no tooltip. */
-  .tooltip[data-anchor-hidden] {
-    visibility: hidden;
   }
 
   /* Nested inside the rule it applies to, so it cannot outlive it. */

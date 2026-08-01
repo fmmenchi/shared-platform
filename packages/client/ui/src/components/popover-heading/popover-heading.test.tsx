@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Popover } from '../popover/popover.component.js';
@@ -7,6 +8,20 @@ import { PopoverContent } from '../popover-content/popover-content.component.js'
 import { PopoverHeading } from './popover-heading.component.js';
 
 describe('PopoverHeading', () => {
+  it('forwards its ref', () => {
+    const ref = createRef<HTMLHeadingElement>();
+    render(
+      <Popover>
+        <PopoverContent>
+          <PopoverHeading ref={ref}>Share this page</PopoverHeading>
+        </PopoverContent>
+      </Popover>,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('heading', { name: 'Share this page', hidden: true }),
+    );
+  });
+
   it('names the dialog it is inside', async () => {
     render(
       <Popover>

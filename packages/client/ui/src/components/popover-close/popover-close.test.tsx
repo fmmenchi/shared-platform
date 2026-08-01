@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Popover } from '../popover/popover.component.js';
@@ -7,6 +8,20 @@ import { PopoverContent } from '../popover-content/popover-content.component.js'
 import { PopoverClose } from './popover-close.component.js';
 
 describe('PopoverClose', () => {
+  it('forwards its ref', () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <Popover>
+        <PopoverContent>
+          <PopoverClose ref={ref}>Done</PopoverClose>
+        </PopoverContent>
+      </Popover>,
+    );
+    expect(ref.current).toBe(
+      screen.getByRole('button', { name: 'Done', hidden: true }),
+    );
+  });
+
   it('closes it, and the focus goes back to the trigger', async () => {
     render(
       <Popover>

@@ -18,6 +18,20 @@ import { expectNoA11yViolations } from '../../test/axe.js';
 // closed popover at `display: none`, so the surface is out of the accessibility
 // tree exactly when we want to assert that it is closed.
 const surface = () => screen.getByRole('tooltip', { hidden: true });
+
+/**
+ * Somewhere for the REAL pointer to go. Playwright does not reset it between
+ * tests, so a test that leaves it over a trigger hands the next one a spurious
+ * `pointerenter` the moment that test renders a button in the same place —
+ * which cost two green tests before it was understood.
+ */
+const Away = () => (
+  <div
+    data-testid="away"
+    style={{ position: 'fixed', bottom: 0, left: 0, width: 24, height: 24 }}
+  />
+);
+const parkPointer = () => browser.hover(screen.getByTestId('away'));
 const isOpen = () => surface().hasAttribute('data-open');
 
 describe('Tooltip', () => {
@@ -193,6 +207,36 @@ describe('Tooltip', () => {
       expect(document.activeElement).toBe(trigger);
     });
 
+    it('spends the Escape only when there is something to see', async () => {
+      // Gated on "engaged" alone, a pointer merely RESTING on a trigger
+      // swallowed the key from millisecond 0 of a 400ms delay: measured inside
+      // a dialog, one keypress dismissed nothing at all. A pending open is
+      // cancelled here and the key travels on.
+      render(
+        <dialog data-testid="dialog">
+          {/* Takes the focus `showModal()` hands out, so the trigger is only
+              hovered — focus would open the tooltip immediately and legitimately
+              spend the key. */}
+          <Button aria-label="Elsewhere">E</Button>
+          <Tooltip content="Delete" openDelay={400}>
+            <Button aria-label="Delete">D</Button>
+          </Tooltip>
+        </dialog>,
+      );
+      const dialog = screen.getByTestId('dialog') as HTMLDialogElement;
+      dialog.showModal();
+
+      await browser.hover(screen.getByRole('button', { name: 'Delete' }));
+      expect(isOpen()).toBe(false);
+
+      await browser.keyboard('{Escape}');
+      await waitFor(() => expect(dialog.open).toBe(false));
+      // …and the tooltip that was on its way never arrives.
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      expect(isOpen()).toBe(false);
+      if (dialog.open) dialog.close();
+    });
+
     it('spends the Escape it uses: a surrounding dialog stays open', async () => {
       render(
         <dialog data-testid="dialog">
@@ -345,11 +389,12 @@ describe('Tooltip', () => {
     expect(await side('rtl')).toBe('right');
   });
 
-  it('goes when the anchor is scrolled out of sight', async () => {
+  it('closes when the anchor is scrolled out of sight', async () => {
     // Nothing in the top layer is clipped, which is the point of it and also
-    // the defect: measured, an anchor scrolled out of its `overflow: auto`
-    // container left the tooltip painted in full over the content ABOVE that
-    // container, pointing at a control the user could no longer see.
+    // the defect: an anchor scrolled out of its `overflow: auto` container left
+    // the tooltip painted in full over the content ABOVE that container. It
+    // CLOSES rather than hiding — a hidden-but-open surface strands whatever
+    // state it holds, which on its sibling the Popover meant the focus.
     render(
       <div>
         <div style={{ height: '250px' }} />
@@ -367,13 +412,56 @@ describe('Tooltip', () => {
     );
 
     await browser.hover(screen.getByRole('button', { name: 'Archive' }));
-    const surface = screen.getByRole('tooltip', { hidden: true });
     await waitFor(() => expect(isOpen()).toBe(true));
-    expect(surface).not.toHaveAttribute('data-anchor-hidden');
 
     screen.getByTestId('scroller').scrollTop = 300;
-    await waitFor(() => expect(surface).toHaveAttribute('data-anchor-hidden'));
-    expect(getComputedStyle(surface).visibility).toBe('hidden');
+    await waitFor(() => expect(isOpen()).toBe(false));
+  });
+
+  it('closes when its trigger is taken away under the pointer', async () => {
+    // The `pointerleave` that would close it can never fire, so without the
+    // geometry reporting the loss the tooltip stayed on screen for good.
+    const { rerender } = render(
+      <Tooltip content="Delete" openDelay={0} closeDelay={9999}>
+        <Button aria-label="Delete">D</Button>
+      </Tooltip>,
+    );
+    await browser.hover(screen.getByRole('button', { name: 'Delete' }));
+    await waitFor(() => expect(isOpen()).toBe(true));
+
+    rerender(
+      <Tooltip content="Delete" openDelay={0} closeDelay={9999}>
+        <Button aria-label="Delete" style={{ display: 'none' }}>
+          D
+        </Button>
+      </Tooltip>,
+    );
+    await waitFor(() => expect(isOpen()).toBe(false));
+  });
+
+  it('opens from the keyboard again after a click, pointer or no pointer', async () => {
+    render(
+      <>
+        <Away />
+        <Tooltip content="Open menu" openDelay={0}>
+          <Button aria-label="Open menu">M</Button>
+        </Tooltip>
+      </>,
+    );
+    const trigger = screen.getByRole('button', { name: 'Open menu' });
+
+    // Click with the pointer and LEAVE IT THERE, then come back by keyboard.
+    // The press flag used to stay latched until a `pointerleave` that never
+    // came, so the tooltip never opened again — the persistent half of WCAG
+    // 1.4.13, lost to a flag.
+    await browser.click(trigger);
+    await waitFor(() => expect(isOpen()).toBe(false));
+
+    await browser.keyboard('{Tab}');
+    await browser.keyboard('{Shift>}{Tab}{/Shift}');
+    await waitFor(() => expect(isOpen()).toBe(true));
+
+    await parkPointer();
   });
 
   it('closes on press, and the trigger’s own handler still runs', async () => {
@@ -410,12 +498,15 @@ describe('Tooltip', () => {
   });
 
   describe('TooltipProvider — the tooltips of one set', () => {
+    // Keyed, so that removing the first genuinely UNMOUNTS it: same position
+    // and same type would otherwise be reconciled into the survivor, and the
+    // test would prove nothing.
     const pair = (
       <>
-        <Tooltip content="Bold">
+        <Tooltip key="bold" content="Bold">
           <Button aria-label="Bold">B</Button>
         </Tooltip>
-        <Tooltip content="Italic">
+        <Tooltip key="italic" content="Italic">
           <Button aria-label="Italic">I</Button>
         </Tooltip>
       </>
@@ -438,6 +529,39 @@ describe('Tooltip', () => {
       await browser.hover(screen.getByRole('button', { name: 'Italic' }));
       await new Promise((resolve) => setTimeout(resolve, 60));
       expect(openNow()).toEqual(['Italic']);
+    });
+
+    it('is not wedged by a tooltip unmounted while open', async () => {
+      const { rerender } = render(
+        <TooltipProvider>
+          <Away />
+          {pair}
+        </TooltipProvider>,
+      );
+
+      await browser.hover(screen.getByRole('button', { name: 'Bold' }));
+      await waitFor(() => expect(openNow()).toEqual(['Bold']));
+
+      // The slot used to keep pointing at a dead `dismiss`, so "somebody is
+      // open" stayed true and every tooltip in the provider opened instantly
+      // for the rest of the page's life.
+      // Away from the trigger first: the real pointer would otherwise open the
+      // survivor by itself and prove nothing.
+      await parkPointer();
+      rerender(
+        <TooltipProvider>
+          <Away />
+          {null}
+          <Tooltip key="italic" content="Italic">
+            <Button aria-label="Italic">I</Button>
+          </Tooltip>
+        </TooltipProvider>,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      await browser.hover(screen.getByRole('button', { name: 'Italic' }));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(openNow()).toEqual([]);
     });
 
     it('changes nothing for a tooltip standing alone', async () => {

@@ -28,7 +28,11 @@ const meta: Meta<typeof Popover> = {
         'top-start',
         'top-end',
         'left',
+        'left-start',
+        'left-end',
         'right',
+        'right-start',
+        'right-end',
       ],
       description:
         'Preferred side of the trigger, and where it sits along it. Logical: `-start` is the right-hand edge under `dir="rtl"`. Flipped when there is no room.',

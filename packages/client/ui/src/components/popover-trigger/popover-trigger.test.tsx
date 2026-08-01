@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Popover } from '../popover/popover.component.js';
@@ -6,6 +7,19 @@ import { PopoverTrigger } from './popover-trigger.component.js';
 import { PopoverContent } from '../popover-content/popover-content.component.js';
 
 describe('PopoverTrigger', () => {
+  it('forwards its ref to the element the surface anchors to', () => {
+    const ref = createRef<HTMLButtonElement>();
+    render(
+      <Popover>
+        <PopoverTrigger ref={ref}>Share</PopoverTrigger>
+        <PopoverContent>content</PopoverContent>
+      </Popover>,
+    );
+    // Merged with the context's own: the geometry needs this node, and so may
+    // the consumer. Losing either is silent.
+    expect(ref.current).toBe(screen.getByRole('button', { name: 'Share' }));
+  });
+
   it('targets the surface declaratively, and says what it will open', () => {
     render(
       <Popover>

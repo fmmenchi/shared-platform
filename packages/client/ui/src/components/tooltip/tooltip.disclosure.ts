@@ -67,6 +67,11 @@ export function useTooltipDisclosure(timing: TooltipTiming): TooltipDisclosure {
   useEffect(() => {
     if (open) claim(dismiss);
     else release(dismiss);
+    // Unmounting while open used to leave the group's slot pointing at a dead
+    // `dismiss`: measured, every tooltip in that provider then opened instantly
+    // for the rest of the page's life, because "somebody is open" was true
+    // forever.
+    return () => release(dismiss);
   }, [open, claim, release, dismiss]);
 
   return {
@@ -96,5 +101,9 @@ export function useTooltipDisclosure(timing: TooltipTiming): TooltipDisclosure {
       pressed.current = true;
       settle(false);
     }, [settle]),
+
+    releasePress: useCallback(() => {
+      pressed.current = false;
+    }, []),
   };
 }

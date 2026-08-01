@@ -76,6 +76,10 @@
     height: 8px;
     background: inherit;
     rotate: 45deg;
+    /* The DS ships no reset, so without this the two border sides below make
+       the popover's arrow a 9×9 box and every constant here off by half of
+       one. */
+    box-sizing: border-box;
     /* A surface WITH a border needs the arrow to carry it too, on the two edges
        that face out — otherwise the opaque fill covers the line where the arrow
        meets the box and the border reads as broken (measured: a hole in the
@@ -107,30 +111,32 @@
     translate: 0 -50%;
   }
 
-  /* Aligned, horizontal sides: the cross axis is the inline one. */
+  /*
+   * Aligned: the inset places the arrow's EDGE, half its width short of where
+   * its centre belongs — deliberately, instead of a `translate`. Measured: a
+   * logical inset with a physical translate is right in LTR and 8px out in RTL
+   * (12.00px from the aligned edge became 20.00px, in all three engines),
+   * because `inset-inline-start` flips with the direction and `translate` does
+   * not. Arithmetic that never needs to know which way the page runs.
+   */
   &[data-placement='top-start']::after,
   &[data-placement='bottom-start']::after {
-    inset-inline-start: var(--arrow-inset);
-    translate: -50% 0;
+    inset-inline-start: calc(var(--arrow-inset) - 4px);
   }
 
   &[data-placement='top-end']::after,
   &[data-placement='bottom-end']::after {
-    inset-inline-end: var(--arrow-inset);
-    translate: 50% 0;
+    inset-inline-end: calc(var(--arrow-inset) - 4px);
   }
 
-  /* Aligned, vertical sides: the cross axis is the block one. */
   &[data-placement='left-start']::after,
   &[data-placement='right-start']::after {
-    inset-block-start: var(--arrow-inset);
-    translate: 0 -50%;
+    inset-block-start: calc(var(--arrow-inset) - 4px);
   }
 
   &[data-placement='left-end']::after,
   &[data-placement='right-end']::after {
-    inset-block-end: var(--arrow-inset);
-    translate: 0 50%;
+    inset-block-end: calc(var(--arrow-inset) - 4px);
   }
 
   /*

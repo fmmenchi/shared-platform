@@ -11,13 +11,12 @@ import type { PopoverCloseProps } from './popover-close.types.js';
  * It earns its place for one reason: the surface's id is generated and internal,
  * so without this part there is no way to write that attribute yourself.
  */
-function PopoverClose<As extends ElementType = typeof Button>(
-  props: PopoverCloseProps<As>,
-) {
-  const { as, ...rest } = props as PopoverCloseProps<'button'> & {
-    as?: ElementType;
-  };
-  const Component = as ?? Button;
+function PopoverClose(props: PopoverCloseProps) {
+  const { as, ...rest } = props;
+  // Cast at the render site, not in the prop type: `as` is CONSTRAINED to
+  // something that takes a Button's props, which is what makes the contract
+  // strict, and a constrained `ElementType` is not directly callable in JSX.
+  const Component = (as ?? Button) as ElementType;
   const popover = usePopoverPart('PopoverClose');
 
   return (
