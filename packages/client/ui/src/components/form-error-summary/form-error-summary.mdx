@@ -33,12 +33,14 @@ Submit the empty form below, then try the list with the keyboard.
 
 ## Accessibility
 
-- **It takes focus when it appears**, so the failure is announced immediately rather than waiting to
-  be discovered. Focus is moved when the number of errors changes, not on every render, so a second
-  failed submit that changes nothing does not steal focus back while you are reading.
-- **A labelled `role="group"`, not `role="alert"`.** The summary is a place you return to, so it has
-  to be reachable as a landmark — and focusing it already announces it, where an alert would announce
-  it a second time.
+- **It takes focus when it appears, and on every failed submit after that**, so the failure is
+  announced immediately rather than waiting to be discovered — and so a resubmission that is rejected
+  again is never silent. Those two edges are the whole trigger; the error _count_ is not, because a
+  library that revalidates as you type drops it the moment a field becomes valid, and focus must not
+  leave the input you are still typing in.
+- **A labelled `role="group"`, not `role="alert"`.** Focusing the summary already announces it, where
+  an alert would announce it a second time from wherever you happened to be. Note that `group` is not
+  a landmark role, so the summary does not appear in a landmark rotor.
 - **Each entry moves focus to its control.** Fields carry generated ids, so the link cannot point at
   one; the field **name** is the stable handle, and it is what the form library and the DOM already
   agree on.
