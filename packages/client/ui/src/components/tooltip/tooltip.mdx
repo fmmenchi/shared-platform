@@ -65,7 +65,7 @@ And four more, from the shape of the component:
 - **`role="tooltip"`, referenced with `aria-describedby`.** The surface stays in the DOM while closed, and the reference still resolves even though the browser hides it: a node referenced directly by `aria-describedby` counts as described even when it is not rendered — verified against Chromium's own accessibility tree, where the surface is ignored and the trigger's description is the tooltip's text anyway. A tooltip that is only mounted while open is a description no screen reader ever reads.
 - **A press dismisses it.** A click both presses and focuses, so the tooltip closes on the press and does not reopen on the focus behind it.
 - **The `Escape` is spent here.** Dismissing the tooltip does not also close the dialog it sits in: one keypress, one dismissal.
-- **It says so when it is misused.** In development it warns if the trigger has no accessible name, if `content` only repeats that name, or if the trigger swallowed the ref — the three failures that are otherwise completely silent.
+- **It says so when it is misused.** In development it warns if `content` only repeats the trigger's `aria-label`, and if the trigger swallowed the ref — two failures that are otherwise completely silent. It does **not** try to tell you the trigger is unnamed: computing an accessible name by hand gets `<img alt>` wrong, and `axe`'s `button-name` already does it properly.
 
 **On touch there is no tooltip**, because there is no hover. That is a platform fact, not an omission — and it is the reason nothing essential may live in here.
 

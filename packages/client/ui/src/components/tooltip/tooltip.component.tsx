@@ -10,6 +10,7 @@ import {
   type Ref,
 } from 'react';
 import { cn } from '../../util/cn.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { tooltipVariants } from './tooltip.variants.js';
@@ -226,40 +227,16 @@ function Tooltip(props: TooltipProps) {
     return () => clearTimeout(check);
   }, [triggerNode]);
 
-  // The two ways a tooltip is misused even when it works, both of which fail in
-  // silence. They need the mounted node — an accessible name is a DOM question,
-  // not a props one — so this is an effect rather than `useDevWarning`.
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'production' || !triggerNode) return;
-
-    // Text inside `aria-hidden` does not name anything, and an icon marked that
-    // way is precisely the trigger that ships nameless — so it is stripped
-    // before asking. A copy, because the real trigger is not ours to touch.
-    const visible = triggerNode.cloneNode(true) as HTMLElement;
-    for (const hidden of visible.querySelectorAll('[aria-hidden="true"]')) {
-      hidden.remove();
-    }
-
-    const label =
-      triggerNode.getAttribute('aria-label')?.trim() ||
-      visible.textContent?.trim() ||
-      '';
-    const labelledBy = triggerNode.getAttribute('aria-labelledby');
-
-    if (!label && !labelledBy) {
-      console.warn(
-        'Tooltip: the trigger has no accessible name. A tooltip is a description, ' +
-          'not a name — on touch it never appears, so this control is nameless. ' +
-          'Give the trigger an `aria-label`.',
-      );
-    } else if (label && label === content.trim()) {
-      console.warn(
-        `Tooltip: \`content\` repeats the trigger's accessible name ("${label}"), ` +
-          'so a screen reader announces it twice. Either describe something the ' +
-          'name does not say, or drop the tooltip.',
-      );
-    }
-  }, [triggerNode, content]);
+  // `content` that only repeats the name is announced twice, and only
+  // `aria-label` can say so exactly — anything else means computing an
+  // accessible name by hand, which was tried here and got `<img alt>` wrong.
+  // An unnamed trigger is `axe`'s `button-name`, where it is computed properly.
+  useDevWarning(
+    triggerNode?.getAttribute('aria-label')?.trim() === content.trim(),
+    `Tooltip: \`content\` repeats the trigger's accessible name, so a screen ` +
+      'reader announces it twice. Either describe something the name does not ' +
+      'say, or drop the tooltip.',
+  );
 
   // `children.props.ref`, not `children.ref`: in React 19 the ref IS a regular
   // prop, and reading the old field warns on every render.
