@@ -1,0 +1,22 @@
+{
+  "name": "@fmmenchi/ui-ports-validation",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "tags": [
+      "scope:app",
+      "type:validation"
+    ]
+  },
+  "dependencies": {
+    "@fmmenchi/tokens": "workspace:*",
+    "@fmmenchi/ui": "workspace:*",
+    "react-hook-form": "^7.83.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitest/browser-playwright": "^4.1.10"
+  }
+}

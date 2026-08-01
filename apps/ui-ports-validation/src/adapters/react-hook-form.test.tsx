@@ -2,19 +2,20 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
+  FormAdapterProvider,
+  FormErrorSummary,
+  FormInput,
+  FormSubmit,
+  type UseFormField,
+  type UseFormStatus,
+} from '@fmmenchi/ui';
+
+import {
   useForm,
   FormProvider,
   useFormContext,
   useFormState,
 } from 'react-hook-form';
-import { FormErrorSummary } from './form-error-summary.component.js';
-import { FormSubmit } from '../form-submit/form-submit.component.js';
-import { FormInput } from '../form-input/form-input.component.js';
-import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
-import type {
-  UseFormField,
-  UseFormStatus,
-} from '../../form/form-adapter.types.js';
 
 /* ═══════════════════════════════════════════════════════════════════════════
    THE WHOLE ADAPTER for react-hook-form, both levels. It READS; it decides
@@ -141,8 +142,6 @@ describe('the adapter over a real library — it reads, it does not replace', ()
 
 describe('FormSubmit takes pending from whichever source exists', () => {
   it('React’s own useFormStatus, with NO adapter at all', async () => {
-    const { FormSubmit } =
-      await import('../form-submit/form-submit.component.js');
     const user = userEvent.setup();
     let release: () => void = () => undefined;
     render(
@@ -166,9 +165,7 @@ describe('FormSubmit takes pending from whichever source exists', () => {
     release();
   });
 
-  it('an explicit isLoading beats both', async () => {
-    const { FormSubmit } =
-      await import('../form-submit/form-submit.component.js');
+  it('an explicit isLoading beats both', () => {
     render(
       <form>
         <FormSubmit isLoading>Save</FormSubmit>
