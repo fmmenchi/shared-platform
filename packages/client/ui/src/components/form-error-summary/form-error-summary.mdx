@@ -1,0 +1,48 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormErrorSummaryStories from './form-error-summary.stories.tsx';
+
+<Meta of={FormErrorSummaryStories} />
+
+# FormErrorSummary
+
+After a failed submit, one place that says what went wrong and takes you to each field.
+
+```tsx
+<FormErrorSummary labelFor={(name) => LABELS[name]} />
+```
+
+It renders **nothing** while the form is valid, so it can sit in the markup unconditionally.
+
+## Why the adapter has a form level at all
+
+A per-field message is announced only once you reach that field. On a long form, a keyboard or
+screen-reader user has no way to learn that three fields failed without walking the whole thing —
+and no way to find them again afterwards. The summary is the fix, and it needs **errors keyed by
+name**, which no single field can provide. That is the entire reason `UseFormStatus` exists.
+
+## Props
+
+<Controls of={FormErrorSummaryStories.Default} />
+
+## Usage
+
+Submit the empty form below, then try the list with the keyboard.
+
+<Canvas of={FormErrorSummaryStories.Default} />
+
+## Accessibility
+
+- **It takes focus when it appears**, so the failure is announced immediately rather than waiting to
+  be discovered. Focus is moved when the number of errors changes, not on every render, so a second
+  failed submit that changes nothing does not steal focus back while you are reading.
+- **A labelled `role="group"`, not `role="alert"`.** The summary is a place you return to, so it has
+  to be reachable as a landmark — and focusing it already announces it, where an alert would announce
+  it a second time.
+- **Each entry moves focus to its control.** Fields carry generated ids, so the link cannot point at
+  one; the field **name** is the stable handle, and it is what the form library and the DOM already
+  agree on.
+- **`labelFor` is not decoration.** Without it the list shows the raw `name` — `given_name`,
+  `tos` — which is a database column, not something a person recognises.
+- Every message from every field is listed, in field order, so a field failing three rules produces
+  three entries rather than one summary of a summary.

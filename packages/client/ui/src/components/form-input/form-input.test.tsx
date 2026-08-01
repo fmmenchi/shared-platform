@@ -54,7 +54,7 @@ function RhfForm({ onSubmit }: { onSubmit: (v: unknown) => void }) {
 }
 function Bound() {
   return (
-    <FormAdapterProvider adapter={useRhfField}>
+    <FormAdapterProvider field={useRhfField}>
       <FormInput name="email" label="Email" hint="We’ll never share it." />
       <FormChoice name="tos" label="Accept the terms" />
     </FormAdapterProvider>
@@ -90,7 +90,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <FormAdapterProvider adapter={useRhfField}>
+            <FormAdapterProvider field={useRhfField}>
               <FormInput name="email" label="Email" />
             </FormAdapterProvider>
             <button type="submit">Go</button>
@@ -137,7 +137,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <>
           <output>{JSON.stringify(v)}</output>
-          <FormAdapterProvider adapter={adapter}>
+          <FormAdapterProvider field={adapter}>
             <FormInput name="email" label="Email" />
             <FormChoice name="tos" label="Accept the terms" />
           </FormAdapterProvider>
@@ -169,7 +169,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
   it('an explicit prop at the call site still beats the binding', async () => {
     const adapter: UseFormField = (name) => ({ control: { name } });
     render(
-      <FormAdapterProvider adapter={adapter}>
+      <FormAdapterProvider field={adapter}>
         <FormInput
           name="email"
           label="Email"
@@ -207,7 +207,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
         return (
           <FormProvider {...form}>
             <form onSubmit={form.handleSubmit(() => undefined)}>
-              <FormAdapterProvider adapter={useConfirm}>
+              <FormAdapterProvider field={useConfirm}>
                 <FormInput name="password" label="Password" />
                 <FormInput name="confirm" label="Confirm" />
               </FormAdapterProvider>
@@ -252,7 +252,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
         });
         return (
           <FormProvider {...form}>
-            <FormAdapterProvider adapter={useTouchedOnly}>
+            <FormAdapterProvider field={useTouchedOnly}>
               <FormInput name="email" label="Email" />
             </FormAdapterProvider>
           </FormProvider>
@@ -309,7 +309,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <FormAdapterProvider adapter={useAppField}>
+            <FormAdapterProvider field={useAppField}>
               <FormInput name="email" label="Email" />
               <FormInput name="password" label="Password" />
               <FormInput name="confirm" label="Confirm password" />
@@ -385,7 +385,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
       return (
         <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <FormAdapterProvider adapter={useSchemaField}>
+            <FormAdapterProvider field={useSchemaField}>
               <FormInput name="email" label="Email" />
               <FormInput name="password" label="Password" />
             </FormAdapterProvider>
@@ -418,7 +418,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
     const renderWith = (error: BoundField['error']) => {
       const adapter: UseFormField = (name) => ({ control: { name }, error });
       return render(
-        <FormAdapterProvider adapter={adapter}>
+        <FormAdapterProvider field={adapter}>
           <FormInput name="email" label="Email" />
         </FormAdapterProvider>,
       );
@@ -466,7 +466,7 @@ describe('FormInput / FormChoice through the adapter port', () => {
         error: ['A.', 'B.'],
       });
       render(
-        <FormAdapterProvider adapter={adapter}>
+        <FormAdapterProvider field={adapter}>
           <FormInput name="email" label="Email" hint="Work address." />
         </FormAdapterProvider>,
       );

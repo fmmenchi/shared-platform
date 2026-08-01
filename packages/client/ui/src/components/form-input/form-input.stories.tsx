@@ -40,9 +40,7 @@ function DemoForm({ children }: { children: ReactNode }) {
         maxWidth: '22rem',
       }}
     >
-      <FormAdapterProvider adapter={useDemoField}>
-        {children}
-      </FormAdapterProvider>
+      <FormAdapterProvider field={useDemoField}>{children}</FormAdapterProvider>
       <output style={{ font: 'var(--fm-font-mono, monospace)', opacity: 0.7 }}>
         {JSON.stringify(values)}
       </output>

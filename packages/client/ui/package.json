@@ -140,7 +140,21 @@
       "import": "./dist/form-choice.js",
       "default": "./dist/form-choice.js"
     },
-    "./form-choice/style.css": "./dist/form-choice.css"
+    "./form-choice/style.css": "./dist/form-choice.css",
+    "./form-error-summary": {
+      "@fmmenchi/source": "./src/components/form-error-summary/index.ts",
+      "types": "./dist/components/form-error-summary/index.d.ts",
+      "import": "./dist/form-error-summary.js",
+      "default": "./dist/form-error-summary.js"
+    },
+    "./form-error-summary/style.css": "./dist/form-error-summary.css",
+    "./form-submit": {
+      "@fmmenchi/source": "./src/components/form-submit/index.ts",
+      "types": "./dist/components/form-submit/index.d.ts",
+      "import": "./dist/form-submit.js",
+      "default": "./dist/form-submit.js"
+    },
+    "./form-submit/style.css": "./dist/form-submit.css"
   },
   "nx": {
     "tags": [
