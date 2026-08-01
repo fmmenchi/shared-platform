@@ -127,14 +127,43 @@ are covered by the _same_ variables:
 - `@fmmenchi/tokens/styles/vars.css` — the SAME tokens as plain `:root` custom properties (single source — the Tailwind file is a names-only bridge over it), for
   a consumer with no Tailwind.
 - `@fmmenchi/tokens/styles/presets/*.css` — plain `[data-theme]` overrides, valid in both lanes.
+- `@fmmenchi/tokens/styles/baseline.css` — an **optional** page baseline (see below).
 
 ### Consumer recipe
 
 ```css
 @import '@fmmenchi/tokens/styles/vars.css'; /* the --fm-* variables (plain CSS) */
 @import '@fmmenchi/tokens/styles/presets/dark.css'; /* optional [data-theme='dark'] preset */
+@import '@fmmenchi/tokens/styles/baseline.css'; /* optional page baseline */
 @import '@fmmenchi/ui/style.css'; /* precompiled component styles */
 ```
+
+### The optional baseline
+
+**Nothing in the design system needs it.** Every component normalises itself, so an app that never
+imports it still gets components that render correctly. It is offered the way the `dark` preset is:
+a reference artifact you adopt, replace, or ignore.
+
+It is **not** Preflight, and not a copy of one. An app on Tailwind already has Preflight for free,
+and Preflight is opinionated in ways a shared platform has no standing to decide for your content —
+it unstyles headings and strips list markers. This baseline is neutral and applies the token theme
+to the page: `<h1>` stays a heading, `<ul>` keeps its markers, `body` picks up
+`--fm-color-background` / `--fm-color-foreground`, so a `[data-theme]` preset re-themes the page and
+not only the widgets. What it does normalise is the boring, universally-agreed part — `box-sizing`,
+the `body` margin, `font: inherit` on form controls, replaced elements as blocks.
+
+**You have nothing to order.** It ships inside `@layer fmmenchi.base`, a sublayer of the layer you
+may already be ordering. A layer's own rules beat its sublayers, so the cascade is:
+
+```
+fmmenchi.base  <  fmmenchi (the components)  <  your own css
+```
+
+The baseline styles bare elements (`button`, `input`, `a`) — the same ones our components render —
+so this ordering is what stops it beating them, and it holds without a single statement from you. An
+app with no layers at all still overrides everything in it with a plain rule.
+
+Import it after `vars.css` and any preset: every value in it is a token.
 
 ```tsx
 import { UiProvider, Button } from '@fmmenchi/ui';
