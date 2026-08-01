@@ -83,6 +83,9 @@ export type {
   BoundField,
   FieldMessages,
   BindingOwned,
+  BoundFields,
+  WithFieldName,
 } from './form/index.js';
+export { createBoundFields } from './form/index.js';
 export { FormErrorSummary } from './components/form-error-summary/index.js';
 export type { FormErrorSummaryProps } from './components/form-error-summary/form-error-summary.types.js';

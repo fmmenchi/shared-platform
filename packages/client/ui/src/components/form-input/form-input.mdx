@@ -48,6 +48,22 @@ const useMyFormField: UseFormField = (name) => {
 };
 ```
 
+### Names checked against the form
+
+`name` is a `string`, so `name="emial"` compiles and then fails the way an unbound field fails: it renders, it types, and it submits nothing. The form's shape is already a type in your app, so hand it over once and the compiler catches that:
+
+```tsx
+// once, beside the form's type
+const { FormInput, FormChoice } = createBoundFields<FieldPath<SignupValues>>();
+
+<FormInput name="emial" label="Email" />;
+//         ~~~~~~~~~~~~ not a field of SignupValues
+```
+
+`FieldPath` there is **react-hook-form's own** — use whatever your library offers (`DeepKeys` for TanStack, and a plain union where it offers none). The path syntax for a row belongs to the library too, `guests.0.name` here and `guests[0].name` for Conform, so a path type written in the design system would be wrong for half of them.
+
+It is a factory and not a prop because the type cannot travel any other way: React context carries a value whose type is fixed when the context is created, so no provider can hand a per-form name type to its descendants. There is no runtime — the same components come back, re-typed.
+
 ### What it cannot do
 
 Binding is by **name alone**, so a per-field validation rule has nowhere to live at the call site — it comes from the adapter, from a schema or a rules map. If you want the rule next to the field, use `Field` and bind it yourself.
