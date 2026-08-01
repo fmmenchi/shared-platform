@@ -16,8 +16,11 @@ export interface FieldContextValue {
   invalid: boolean;
   /** Space-joined ids of the registered description(s)/error(s), in DOM order. */
   describedBy: string | undefined;
-  /** A control registers its presence, so the Field can warn on 0 or >1. */
-  registerControl: () => () => void;
+  /**
+   * A control registers its presence, so the field can warn on 0 or >1 — and
+   * its OWN id, if it brought one, so the field can adopt it.
+   */
+  registerControl: (ownId?: string) => () => void;
 }
 
 export const FieldContext = createContext<FieldContextValue | null>(null);
@@ -72,7 +75,11 @@ export function applyFieldProps<P extends object>(
     undefined;
   return {
     ...props,
-    id: field.controlId,
+    // The control's OWN id WINS. A layer that silently discards what it was
+    // handed is not transparent, and some form libraries (Conform) mint an id
+    // and point their own markup at it. The field adopts it instead — see
+    // `registerControl` — so the label follows and the two never disagree.
+    id: own.id ?? field.controlId,
     'aria-describedby': describedBy,
     'aria-invalid': own['aria-invalid'] ?? (field.invalid || undefined),
   };
@@ -88,7 +95,10 @@ export function useFieldControl<P extends FieldControlProps>(props: P): P {
   const field = useFieldContext();
   // Register presence so the Field can flag a missing or duplicated control.
   const registerControl = field?.registerControl;
-  useEffect(() => registerControl?.(), [registerControl]);
+  const ownId = (props as FieldControlProps).id;
+  // Report the id as well as the presence: if the control brought one, the
+  // field adopts it so the label's `htmlFor` follows.
+  useEffect(() => registerControl?.(ownId), [registerControl, ownId]);
   // The result adds only keys `P` already declares, so it is still a `P`.
   return applyFieldProps(field, props) as P;
 }

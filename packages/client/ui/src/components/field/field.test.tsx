@@ -76,15 +76,36 @@ describe('Field', () => {
     });
   });
 
-  it('owns the control id so the label always associates (own id is ignored)', () => {
+  it('ADOPTS a control’s own id, and the label follows it', async () => {
+    // A layer that silently discards what it was handed is not transparent, and
+    // some form libraries (Conform) mint an id and point their own markup at
+    // it. So the control's id wins — and the field adopts it, so the label
+    // moves with it and the two never disagree.
     render(
       <Field>
         <FieldLabel>Email</FieldLabel>
-        <Input id="ignored" />
+        <Input id="brought-my-own" />
       </Field>,
     );
     const input = screen.getByRole('textbox', { name: 'Email' });
-    expect(input.id).not.toBe('ignored');
+    expect(input.id).toBe('brought-my-own');
+    await waitFor(() =>
+      expect(screen.getByText('Email')).toHaveAttribute(
+        'for',
+        'brought-my-own',
+      ),
+    );
+  });
+
+  it('mints one when the control brought none', () => {
+    render(
+      <Field>
+        <FieldLabel>Email</FieldLabel>
+        <Input />
+      </Field>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Email' });
+    expect(input.id).toBeTruthy();
     expect(screen.getByText('Email')).toHaveAttribute('for', input.id);
   });
 
