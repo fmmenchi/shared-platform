@@ -24,13 +24,34 @@ const LEAD: Record<NotificationKind, string> = {
 };
 
 /**
+ * The three characters Slack reserves, escaped as Slack asks the SENDER to escape them.
+ *
+ * Not optional, and not cosmetic: Slack reads `<…>` as a link or a mention, so an
+ * unescaped one that is neither is shown in its escaped form instead — a changelog line
+ * reading "add form — the <form> element" arrived in the channel as
+ * `add form — the &lt;form&gt; element`. Measured, from a real release.
+ *
+ * Slack decodes exactly these three on the way in, so escaping here is what makes
+ * `<form>` render as `<form>`. Anything else — an apostrophe, an em dash, an emoji —
+ * must be left alone: entities Slack does not decode are shown literally.
+ */
+export function escapeMrkdwn(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/**
  * Plain markdown → Slack mrkdwn: `**bold**` → `*bold*`, `[text](url)` → `<url|text>`,
  * headings and `-`/`*` bullets normalized. Capped at {@link MAX_BODY} with a stated
  * truncation, so it stays under Slack's per-section limit instead of being rejected whole.
+ *
+ * Escaping comes FIRST and the link syntax after, in that order on purpose: the `<url|text>`
+ * spans are ours and must survive, while every `<` that came from the source must not.
  */
 export function toMrkdwn(markdown: string): string {
-  let out = markdown
-    .replace(/\r\n/g, '\n')
+  let out = escapeMrkdwn(markdown.replace(/\r\n/g, '\n'))
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<$2|$1>') // links, before bold
     .replace(/\*\*(.+?)\*\*/g, '*$1*') // **bold** → *bold*
     .replace(/__(.+?)__/g, '*$1*')
@@ -39,7 +60,12 @@ export function toMrkdwn(markdown: string): string {
     .trim();
 
   if (out.length > MAX_BODY) {
-    out = `${out.slice(0, MAX_BODY).trimEnd()}\n… _(truncated — see the source)_`;
+    out = `${out
+      .slice(0, MAX_BODY)
+      // A cut through an entity would leave `&am` on screen, which is the very artefact
+      // the escaping exists to remove.
+      .replace(/&[a-z#0-9]*$/i, '')
+      .trimEnd()}\n… _(truncated — see the source)_`;
   }
   return out;
 }
@@ -68,6 +94,7 @@ export function slackBlocks(notification: Notification): SlackBlock[] {
       type: 'actions',
       elements: notification.actions.map((a) => ({
         type: 'button',
+        // NOT escaped: `plain_text` is not parsed, so Slack would show `&lt;` verbatim.
         text: { type: 'plain_text', text: a.label },
         url: a.url,
       })),
@@ -97,7 +124,9 @@ async function post(
     },
     body: JSON.stringify({
       channel,
-      text: notification.text,
+      // The fallback text is parsed like any other message text — a `<` in an error
+      // message would be read as a link span there too.
+      text: escapeMrkdwn(notification.text),
       blocks: slackBlocks(notification),
     }),
   });

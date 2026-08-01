@@ -35,6 +35,17 @@ describe('slack transport — send', () => {
     expect(Array.isArray(sent.blocks)).toBe(true);
   });
 
+  it('escapes the fallback text too — it is parsed like any other message', async () => {
+    const fetchMock = slackReplies({ ok: true });
+
+    await slack(config).send(
+      errorNotification('app', 'cannot read <form> config', 'https://x'),
+    );
+
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.text).toBe('app: cannot read &lt;form&gt; config');
+  });
+
   /* The reason this exists: Slack answers 200 and REFUSES, in the body. */
   it('throws when Slack refuses the message, despite the 200', async () => {
     slackReplies({ ok: false, error: 'invalid_auth' }, 200);
@@ -105,5 +116,46 @@ describe('toMrkdwn', () => {
     const out = toMrkdwn('x'.repeat(5000));
     expect(out.length).toBeLessThan(5000);
     expect(out).toContain('truncated');
+  });
+
+  /**
+   * Slack asks the SENDER to escape `&`, `<` and `>`, and decodes exactly those three.
+   * Skipping it is not a cosmetic loss: Slack reads `<…>` as a link or a mention, and
+   * shows one that is neither in its escaped form instead. This is the real line that
+   * went out — `@fmmenchi/ui@0.0.30` — arriving as `the &lt;form&gt; element`.
+   */
+  describe('the three characters Slack reserves', () => {
+    it('escapes a tag from a commit subject, so Slack renders it', () => {
+      const out = toMrkdwn('- **ui:** add form — the <form> element');
+      expect(out).toContain('the &lt;form&gt; element');
+      expect(out).not.toContain('<form>');
+    });
+
+    it('escapes ampersands and stray closing angles', () => {
+      expect(toMrkdwn('A & B, and a > b')).toBe('A &amp; B, and a &gt; b');
+    });
+
+    it('keeps OUR link spans, which are added after the escaping', () => {
+      const out = toMrkdwn('see [the commit](https://ex.com/c/1)');
+      expect(out).toContain('<https://ex.com/c/1|the commit>');
+    });
+
+    it('escapes an ampersand inside a link URL, as Slack asks', () => {
+      const out = toMrkdwn('[q](https://ex.com/s?a=1&b=2)');
+      expect(out).toContain('<https://ex.com/s?a=1&amp;b=2|q>');
+    });
+
+    it('never truncates through an entity', () => {
+      // A cut landing mid-`&amp;` would put `&am` on screen — the exact artefact the
+      // escaping exists to remove.
+      const out = toMrkdwn(`${'x'.repeat(2798)}&&&&`);
+      expect(out).not.toMatch(/&[a-z#0-9]*\n/);
+      expect(out).toContain('truncated');
+    });
+
+    it('leaves everything else alone — apostrophes, dashes, emoji', () => {
+      const out = toMrkdwn("a field's errors — 🚀");
+      expect(out).toBe("a field's errors — 🚀");
+    });
   });
 });

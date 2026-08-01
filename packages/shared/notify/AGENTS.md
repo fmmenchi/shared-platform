@@ -29,6 +29,11 @@ Three layers — build a neutral notification, pick transport(s), send:
   internals (`slackBlocks`, `toMrkdwn`, the `fetch`) are Slack-specific and live behind it. The
   reason it is TS, not `curl`: **Slack answers HTTP 200 even when it refuses** (`{ ok: false }`) — it
   parses the body and **throws** (`invalid_auth`, `not_in_channel`, …); only a unit test pins that down.
+  It also **escapes `&`, `<`, `>`** — the three Slack asks the sender to escape and the only three it
+  decodes — before adding its own `<url|text>` spans, and nothing else: a changelog line reading
+  `the <form> element` arrived in the channel as `the &lt;form&gt; element` without it, because Slack
+  reads `<…>` as a link and shows one that is not in its escaped form. `plain_text` fields (button
+  labels) are left raw: they are not parsed, so an entity there would be shown verbatim.
 
 ## Rules
 
