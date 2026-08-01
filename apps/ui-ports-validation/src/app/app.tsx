@@ -5,8 +5,16 @@ import {
   SignupWithRhf,
 } from '../screens/signup.screen.js';
 import { PrefilledScreen } from '../screens/prefilled.screen.js';
+import { ZodScreen } from '../screens/zod.screen.js';
+import { useRhfField, useRhfStatus } from '../adapters/react-hook-form.js';
 
 const SCREENS = {
+  zod: {
+    title: 'react-hook-form + zod',
+    blurb:
+      'The rules live in a zod schema, in the app. The design system never sees them — only the messages they produce, by field name. One line says "zod"; nothing below it knows.',
+    render: () => <ZodScreen />,
+  },
   rhf: {
     title: 'react-hook-form',
     blurb:
@@ -30,11 +38,18 @@ const SCREENS = {
 type ScreenKey = keyof typeof SCREENS;
 
 export function App() {
-  const [screen, setScreen] = useState<ScreenKey>('rhf');
+  const [screen, setScreen] = useState<ScreenKey>('zod');
   const current = SCREENS[screen];
 
   return (
-    <UiProvider adapters={{ i18n: { locale: 'en' } }}>
+    // The form binding is given ONCE here, like i18n or Link. Every form below
+    // works with nothing further to wire.
+    <UiProvider
+      adapters={{
+        i18n: { locale: 'en' },
+        form: { field: useRhfField, status: useRhfStatus },
+      }}
+    >
       <main className="page">
         <header className="head">
           <h1>UI ports — validation</h1>
