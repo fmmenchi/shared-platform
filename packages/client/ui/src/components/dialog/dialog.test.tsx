@@ -38,15 +38,23 @@ describe('Dialog', () => {
     const trigger = screen.getByRole('button', { name: 'Delete…' });
 
     await browser.click(trigger);
+
+    // WebKit drops the focus on `<body>` ~60ms AFTER the close event, which is
+    // why the repair is deferred and why the first version never fired. The
+    // ENGINE is not reproducible here, so the condition is: the focus is let go
+    // at the moment of the close, before the deferred check runs.
+    //
+    // Attached to the event rather than awaited afterwards, deliberately —
+    // blurring after `await` raced the repair's own timer and made this test
+    // fail one run in three.
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+    surface.addEventListener(
+      'close',
+      () => (document.activeElement as HTMLElement | null)?.blur(),
+      { once: true },
+    );
+
     await browser.keyboard('{Escape}');
-
-    // WebKit drops the focus on `<body>` ~60ms AFTER the close event — which is
-    // why the repair is deferred, and why the first version never fired. The
-    // condition is reproduced here rather than the engine: whoever holds the
-    // focus lets it go, and the repair must notice.
-    (document.activeElement as HTMLElement | null)?.blur();
-    expect(document.activeElement).toBe(document.body);
-
     await waitFor(() => expect(document.activeElement).toBe(trigger), {
       timeout: 1000,
     });

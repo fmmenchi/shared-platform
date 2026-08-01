@@ -12,31 +12,27 @@ export interface PopoverProps {
    */
   placement?: Placement;
   /**
-   * Drives it. The controlled half of the pair: while it is given, this prop is
-   * the source of truth and the surface is shown or hidden to match — including
-   * BACK, when the platform hides it and the prop still says open.
+   * Opens and closes it from your own state.
    *
-   * Which makes `onOpenChange` mandatory in practice, and a dev warning says
-   * so: a light-dismiss popover is hidden by a click outside, by `Escape` and
-   * by another `auto` popover opening, none of which asks React first.
+   * While you pass it, the trigger asks you instead of toggling the popover
+   * itself — so pass `onOpenChange` as well, or nothing will ever set this to
+   * `true`. The platform can still dismiss the popover on its own (a click
+   * outside, `Escape`, another popover opening) and it will, even while this
+   * says `true`; `onOpenChange` is how you hear about it.
    *
-   * Leave it out for the uncontrolled half and let the DOM own the state.
+   * Leave it out to let the DOM own the state.
    */
   open?: boolean;
   /**
-   * Seeded once, at mount. IMPERATIVE like the Dialog's: the platform toggles a
-   * popover through `popovertarget` or `showPopover()`, and there is no
-   * attribute that opens one. A SEED, not a control — after the first paint the
-   * DOM owns the state, and the platform hides this surface on its own (a click
-   * outside, `Escape`, another `auto` popover opening) without asking React.
-   * There is deliberately no `open` twin — see `onOpenChange`.
+   * Show it on the first render, then stay out of the way. Ignored while you
+   * pass `open`.
    */
   defaultOpen?: boolean;
   /**
-   * Told when the platform opens or closes it. A REPORT, not a control: the
-   * popover's state lives in the DOM, where the browser put it, so there is no
-   * `open` prop to disagree with. To drive one from code, call `showPopover()`
-   * / `hidePopover()` on the content's ref — the platform's own API.
+   * Called whenever it opens or closes — from the trigger, from the platform
+   * (a click outside, `Escape`, another popover opening), or from `open`
+   * itself. Required in practice whenever you pass `open`, and warned about in
+   * development if it is missing.
    */
   onOpenChange?: (open: boolean) => void;
 }

@@ -4,41 +4,27 @@ export interface DialogProps {
   /** The trigger, the dialog itself, and whatever else belongs to it. */
   children: ReactNode;
   /**
-   * Drives it. While it is given, this prop decides when the dialog OPENS, and
-   * the trigger stops commanding the platform and asks you instead — one owner
-   * at a time, or the two of you close what the other just opened (measured:
-   * that is exactly what happened, inside a single frame).
+   * Opens and closes it from your own state.
    *
-   * What it does NOT do is win a close back. `Escape`, a backdrop click,
-   * `command="close"` and `<form method="dialog">` are close REQUESTS and they
-   * are granted, even while this says `true`. React snaps an `<input value>`
-   * back when the consumer swallows the change; doing the same here was
-   * measured to leave the user inside a modal they could not dismiss — a
-   * keyboard trap (WCAG 2.1.2), which is not a state this component will
-   * produce for anybody. You get a visible divergence instead, and
-   * `onOpenChange` tells you the moment it happens.
+   * While you pass it, the trigger asks you instead of opening the dialog
+   * itself — so pass `onOpenChange` as well, or nothing will ever set this to
+   * `true`. The browser can still close the dialog on its own (`Escape`, a
+   * click on the backdrop, a `method="dialog"` form) and it will, even while
+   * this says `true`; `onOpenChange` is how you hear about it.
    *
-   * Leave it out for the uncontrolled half and let the DOM own the state.
+   * Leave it out to let the DOM own the state.
    */
   open?: boolean;
   /**
-   * Seeded once, at mount. IMPERATIVE because the platform offers nothing
-   * declarative: the `open` ATTRIBUTE renders a NON-modal dialog — measured, no
-   * backdrop, the page behind stays clickable, `Escape` does not close — so
-   * modality can only be asked for with `showModal()`. A SEED, not a control:
-   * after the first paint the DOM owns the state, and the browser closes this
-   * dialog on its own four ways (Escape, a backdrop click under
-   * `closedby="any"`, `<form method="dialog">`, `command="close"`), none of
-   * which asks React first. Ignored while `open` is given: one writer, not
-   * two.
+   * Open it on the first render, then stay out of the way. Ignored while you
+   * pass `open`.
    */
   defaultOpen?: boolean;
   /**
-   * Told whenever it opens or closes — by the trigger, by the platform, or by
-   * `open` itself. Uncontrolled it is a report; controlled it is the other half
-   * of the contract, because the browser closes this dialog four ways that
-   * never ask React and this is how you hear about them. A dev warning fires if
-   * `open` arrives without it.
+   * Called whenever it opens or closes — from the trigger, from the browser
+   * (`Escape`, the backdrop, `method="dialog"`), or from `open` itself.
+   * Required in practice whenever you pass `open`, and warned about in
+   * development if it is missing.
    */
   onOpenChange?: (open: boolean) => void;
 }
