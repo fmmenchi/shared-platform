@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PopoverHeading > matches the rendered snapshot 1`] = `
+<h2
+  class=""
+  id="«react-id»"
+  variant="primary"
+>
+  Content
+</h2>
+`;

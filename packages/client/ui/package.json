@@ -180,7 +180,42 @@
       "import": "./dist/tooltip.js",
       "default": "./dist/tooltip.js"
     },
-    "./tooltip/style.css": "./dist/tooltip.css"
+    "./tooltip/style.css": "./dist/tooltip.css",
+    "./popover": {
+      "@fmmenchi/source": "./src/components/popover/index.ts",
+      "types": "./dist/components/popover/index.d.ts",
+      "import": "./dist/popover.js",
+      "default": "./dist/popover.js"
+    },
+    "./popover/style.css": "./dist/popover.css",
+    "./popover-trigger": {
+      "@fmmenchi/source": "./src/components/popover-trigger/index.ts",
+      "types": "./dist/components/popover-trigger/index.d.ts",
+      "import": "./dist/popover-trigger.js",
+      "default": "./dist/popover-trigger.js"
+    },
+    "./popover-trigger/style.css": "./dist/popover-trigger.css",
+    "./popover-content": {
+      "@fmmenchi/source": "./src/components/popover-content/index.ts",
+      "types": "./dist/components/popover-content/index.d.ts",
+      "import": "./dist/popover-content.js",
+      "default": "./dist/popover-content.js"
+    },
+    "./popover-content/style.css": "./dist/popover-content.css",
+    "./popover-heading": {
+      "@fmmenchi/source": "./src/components/popover-heading/index.ts",
+      "types": "./dist/components/popover-heading/index.d.ts",
+      "import": "./dist/popover-heading.js",
+      "default": "./dist/popover-heading.js"
+    },
+    "./popover-heading/style.css": "./dist/popover-heading.css",
+    "./popover-close": {
+      "@fmmenchi/source": "./src/components/popover-close/index.ts",
+      "types": "./dist/components/popover-close/index.d.ts",
+      "import": "./dist/popover-close.js",
+      "default": "./dist/popover-close.js"
+    },
+    "./popover-close/style.css": "./dist/popover-close.css"
   },
   "nx": {
     "tags": [

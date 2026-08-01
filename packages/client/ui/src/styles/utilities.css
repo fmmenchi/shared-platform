@@ -46,3 +46,120 @@
   box-sizing: border-box;
   font-family: inherit;
 }
+
+/*
+ * The arrow of an anchored surface — a tooltip's, a popover's, and whatever
+ * else `useAnchored` positions. Here rather than in either component's file
+ * because both need it identically and the geometry that feeds it is shared:
+ * `data-placement` (the side it ENDED UP on, once `flip()` has had its say) and
+ * `--anchor-centre` (where the anchor's centre falls along the surface), both
+ * written by the hook.
+ *
+ * A rotated square straddling the edge, half of it inside the surface where it
+ * is invisible against the same fill — so a pseudo-element and not a node
+ * (ADR-0016). The surface must not be a scroll container, or the outer half is
+ * clipped.
+ *
+ * TWO cases, because one rule was measured getting the second wrong. CENTRED
+ * follows the anchor, so the arrow stays on the trigger after `shift()` has slid
+ * the box sideways. ALIGNED (`-start`/`-end`) sits a fixed inset from the edge
+ * it is aligned to: a wide trigger with a short label puts the anchor's centre
+ * PAST the surface's own edge, and following it pinned the arrow onto the
+ * rounded corner. Logical properties, because `-start` is the right-hand edge
+ * in RTL.
+ */
+@utility anchored-arrow {
+  &::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+    rotate: 45deg;
+    /* A surface WITH a border needs the arrow to carry it too, on the two edges
+       that face out — otherwise the opaque fill covers the line where the arrow
+       meets the box and the border reads as broken (measured: a hole in the
+       popover's outline). A surface without one leaves these at zero and the
+       declaration costs nothing. Which two edges depends on where the tip
+       points, so it is set per placement below. */
+    border: 0 solid var(--arrow-border-colour, transparent);
+  }
+
+  /* Centred: on the anchor, clear of both corners. The `min`/`max` matter on a
+     small surface, which has less room than the two insets ask for. */
+  &[data-placement='top']::after,
+  &[data-placement='bottom']::after {
+    left: clamp(
+      min(var(--arrow-inset), 50%),
+      var(--anchor-centre),
+      max(calc(100% - var(--arrow-inset)), 50%)
+    );
+    translate: -50% 0;
+  }
+
+  &[data-placement='left']::after,
+  &[data-placement='right']::after {
+    top: clamp(
+      min(var(--arrow-inset), 50%),
+      var(--anchor-centre),
+      max(calc(100% - var(--arrow-inset)), 50%)
+    );
+    translate: 0 -50%;
+  }
+
+  /* Aligned, horizontal sides: the cross axis is the inline one. */
+  &[data-placement='top-start']::after,
+  &[data-placement='bottom-start']::after {
+    inset-inline-start: var(--arrow-inset);
+    translate: -50% 0;
+  }
+
+  &[data-placement='top-end']::after,
+  &[data-placement='bottom-end']::after {
+    inset-inline-end: var(--arrow-inset);
+    translate: 50% 0;
+  }
+
+  /* Aligned, vertical sides: the cross axis is the block one. */
+  &[data-placement='left-start']::after,
+  &[data-placement='right-start']::after {
+    inset-block-start: var(--arrow-inset);
+    translate: 0 -50%;
+  }
+
+  &[data-placement='left-end']::after,
+  &[data-placement='right-end']::after {
+    inset-block-end: var(--arrow-inset);
+    translate: 0 50%;
+  }
+
+  /*
+   * Which side it pokes out of, for all eight — and which two of its own edges
+   * face outwards there. A square rotated 45° points its corners at the sides:
+   * the tip that points UP is the corner between the top and left edges, so
+   * those two carry the border, and so on around.
+   */
+  &[data-placement^='top']::after {
+    top: calc(100% - 4px);
+    border-bottom-width: var(--arrow-border-width, 0);
+    border-right-width: var(--arrow-border-width, 0);
+  }
+
+  &[data-placement^='bottom']::after {
+    bottom: calc(100% - 4px);
+    border-top-width: var(--arrow-border-width, 0);
+    border-left-width: var(--arrow-border-width, 0);
+  }
+
+  &[data-placement^='left']::after {
+    left: calc(100% - 4px);
+    border-top-width: var(--arrow-border-width, 0);
+    border-right-width: var(--arrow-border-width, 0);
+  }
+
+  &[data-placement^='right']::after {
+    right: calc(100% - 4px);
+    border-bottom-width: var(--arrow-border-width, 0);
+    border-left-width: var(--arrow-border-width, 0);
+  }
+}

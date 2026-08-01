@@ -10,6 +10,7 @@
  * `aria-describedby` points at it from the first render.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
 
 /* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
    consumer's unlayered css overrides them without a specificity war. `@import`
@@ -20,6 +21,9 @@
        Not an `--fm-` name on purpose: that prefix means a token from
        @fmmenchi/tokens, and this is a runtime fact about one element. */
     --anchor-centre: 50%;
+    --arrow-inset: calc(var(--fm-radius-md) + 6px);
+
+    @apply anchored-arrow;
 
     /* Undo the UA popover box before positioning it: `inset: auto` frees the
        four sides and `margin: 0` stops it being re-centred. */
@@ -86,99 +90,6 @@
   .tooltip[data-open] {
     opacity: 1;
     pointer-events: auto;
-  }
-
-  /*
-   * The arrow. A rotated square straddling the edge, half of it inside the
-   * surface where it is invisible against the same fill — so a pseudo-element
-   * and not a node (ADR-0016), and the `overflow: visible` above is what lets
-   * the outer half escape.
-   *
-   * TWO placements, two rules, because one rule was measured getting the second
-   * wrong. On a CENTRED placement the arrow follows `--anchor-centre`, written
-   * by the geometry, so it stays on the trigger after `shift()` has slid the box
-   * sideways. On an ALIGNED one (`-start`/`-end`) the anchor's centre is often
-   * not under the surface at all — a wide trigger with a short label put it 6px
-   * past the box's own edge — and following it pinned the arrow onto the rounded
-   * corner. There it sits a fixed distance from the aligned edge instead, which
-   * is what the alignment means. Logical properties, because `-start` is
-   * logical: in RTL it is the right-hand edge.
-   */
-  .tooltip::after {
-    --arrow-inset: calc(var(--fm-radius-md) + 6px);
-
-    content: '';
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: inherit;
-    rotate: 45deg;
-  }
-
-  /* Centred: on the anchor, kept off both corners. The `min`/`max` matter on a
-     small surface — a 24px-tall box has less room than the two insets ask for,
-     and without them the arrow lands wherever the clamp collapses to. */
-  .tooltip[data-placement='top']::after,
-  .tooltip[data-placement='bottom']::after {
-    left: clamp(
-      min(var(--arrow-inset), 50%),
-      var(--anchor-centre),
-      max(calc(100% - var(--arrow-inset)), 50%)
-    );
-    translate: -50% 0;
-  }
-
-  .tooltip[data-placement='left']::after,
-  .tooltip[data-placement='right']::after {
-    top: clamp(
-      min(var(--arrow-inset), 50%),
-      var(--anchor-centre),
-      max(calc(100% - var(--arrow-inset)), 50%)
-    );
-    translate: 0 -50%;
-  }
-
-  /* Aligned, horizontal sides: the cross axis is the inline one. */
-  .tooltip[data-placement='top-start']::after,
-  .tooltip[data-placement='bottom-start']::after {
-    inset-inline-start: var(--arrow-inset);
-    translate: -50% 0;
-  }
-
-  .tooltip[data-placement='top-end']::after,
-  .tooltip[data-placement='bottom-end']::after {
-    inset-inline-end: var(--arrow-inset);
-    translate: 50% 0;
-  }
-
-  /* Aligned, vertical sides: the cross axis is the block one. */
-  .tooltip[data-placement='left-start']::after,
-  .tooltip[data-placement='right-start']::after {
-    inset-block-start: var(--arrow-inset);
-    translate: 0 -50%;
-  }
-
-  .tooltip[data-placement='left-end']::after,
-  .tooltip[data-placement='right-end']::after {
-    inset-block-end: var(--arrow-inset);
-    translate: 0 50%;
-  }
-
-  /* Which side it pokes out of, for all eight. */
-  .tooltip[data-placement^='top']::after {
-    top: calc(100% - 4px);
-  }
-
-  .tooltip[data-placement^='bottom']::after {
-    bottom: calc(100% - 4px);
-  }
-
-  .tooltip[data-placement^='left']::after {
-    left: calc(100% - 4px);
-  }
-
-  .tooltip[data-placement^='right']::after {
-    right: calc(100% - 4px);
   }
 
   /* The anchor has been scrolled out of sight and the surface has not, because

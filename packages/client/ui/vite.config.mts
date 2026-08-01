@@ -63,6 +63,11 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'popover-close': 'src/components/popover-close/index.ts',
+        'popover-heading': 'src/components/popover-heading/index.ts',
+        'popover-content': 'src/components/popover-content/index.ts',
+        'popover-trigger': 'src/components/popover-trigger/index.ts',
+        popover: 'src/components/popover/index.ts',
         tooltip: 'src/components/tooltip/index.ts',
         select: 'src/components/select/index.ts',
         textarea: 'src/components/textarea/index.ts',

@@ -1,0 +1,80 @@
+/*
+ * The popover surface. Everything the tooltip's stylesheet has to undo, this
+ * has to undo too — the UA's `[popover]` box centres itself in the viewport,
+ * scrolls, and carries a border and padding of its own — because they are the
+ * same platform feature seen twice. What differs is what it is FOR: this one
+ * holds content, so it is a card, it may be tall, and it keeps its scrolling.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .content {
+    /* Overwritten inline by the geometry once it has measured. Not an `--fm-`
+       name: that prefix means a token, and this is a runtime fact. */
+    --anchor-centre: 50%;
+    --arrow-inset: calc(var(--fm-radius-lg) + 6px);
+    /* This surface has a border, so its arrow carries one too. */
+    --arrow-border-width: 1px;
+    --arrow-border-colour: var(--fm-color-border);
+
+    @apply anchored-arrow;
+
+    /* Undo the UA popover box before positioning it: `inset: auto` frees the
+       four sides, `margin: 0` stops it being re-centred in the viewport. */
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+
+    /* Parked off-screen until the first measurement writes real coordinates,
+       so the first frame is never at the UA's static position. */
+    top: -9999px;
+    left: 0;
+
+    @apply max-w-80 rounded-lg border p-4 shadow-lg;
+    /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only, and
+       the colour then falls back to `currentColor` — the card's text, which is
+       nearly black. Measured against the arrow, which had the right colour and
+       so did not match. */
+    @apply bg-card text-card-foreground border-border;
+    /* Content, unlike a label, can be taller than the screen — but a scroll
+       container would clip the arrow, so the scrolling belongs to an inner box
+       and the surface keeps its overflow visible. */
+    max-height: calc(100dvh - 2rem);
+    overflow: visible;
+
+    /* Same shape as the tooltip's, and the same reason: the UA holds a closed
+       popover at `display: none`, so entry needs a value to come from and exit
+       needs the box kept in the top layer while it fades. Baseline "newly", a
+       judgement written down (ADR-0017): without them it simply appears. */
+    opacity: 0;
+    transition-property: opacity, display, overlay;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+    transition-behavior: allow-discrete;
+  }
+
+  .content[data-open] {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .content[data-open] {
+      opacity: 0;
+    }
+  }
+
+  /* The anchor has been scrolled out of sight and the surface has not, because
+     nothing in the top layer is clipped. */
+  .content[data-anchor-hidden] {
+    visibility: hidden;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .content {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+}
