@@ -41,14 +41,21 @@ export function FormikScreen({
         const result = RecipeSchema.safeParse(values);
         if (result.success) return {};
         // Formik wants one message per field, keyed by name.
+        // Keyed by field name. An issue with an EMPTY path is a form-level rule
+        // (an object `.refine()`), which belongs to no field — `String(path[0])`
+        // would key it under the literal "undefined" and the summary would
+        // render a link to a field that does not exist.
         return Object.fromEntries(
-          result.error.issues.map((issue) => [
-            String(issue.path[0]),
-            issue.message,
-          ]),
+          result.error.issues
+            .filter((issue) => issue.path.length > 0)
+            .map((issue) => [String(issue.path[0]), issue.message]),
         );
       }}
-      onSubmit={(values) => setSaved(values)}
+      // `async`, deliberately. Formik bails out of its own submit bookkeeping
+      // when the handler is synchronous — "consumer is responsible for cleaning
+      // up via setSubmitting(false)" — and a form that never clears
+      // `isSubmitting` leaves the ordinary loading button spinning for good.
+      onSubmit={async (values) => setSaved(values)}
     >
       <UiProvider
         adapters={{

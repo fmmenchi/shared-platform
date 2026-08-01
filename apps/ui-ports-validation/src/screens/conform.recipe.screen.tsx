@@ -65,7 +65,15 @@ export function ConformRecipeScreen({
             // would have reached the server.
             if (event.defaultPrevented) return;
             event.preventDefault();
-            setSaved(Object.fromEntries(new FormData(event.currentTarget)));
+            // Conform's PARSED value, not the raw FormData. Reading the form
+            // element back would only prove the DOM holds what was typed into
+            // it — it would never touch the library, and the test that asserts
+            // "the value round-tripped" would be asserting nothing.
+            setSaved(
+              parseWithZod(new FormData(event.currentTarget), {
+                schema: ConformSchema,
+              }).payload,
+            );
           }}
         >
           <RecipeFields constraints={constraints} />

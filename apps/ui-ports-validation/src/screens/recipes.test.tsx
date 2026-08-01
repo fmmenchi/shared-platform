@@ -54,6 +54,14 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
       expect(password()).toHaveAccessibleDescription(
         'Use at least 8 characters.',
       );
+      // The checkbox too. Its message reaching the SUMMARY proves nothing about
+      // its own binding: the summary comes through a different port member
+      // (`errors`), so a checkbox whose field binding is broken still shows up
+      // there while standing on it says nothing at all.
+      expect(tos()).toHaveAttribute('aria-invalid', 'true');
+      expect(tos()).toHaveAccessibleDescription(
+        'You have to accept to continue.',
+      );
     });
   });
 
@@ -107,6 +115,41 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
     // form was accepted" look identical from the outside.
     const sent = await screen.findByText(/^Submitted:/);
     expect(sent.textContent).toContain('someone@example.com');
+  });
+
+  it('every aria-describedby target EXISTS — no dangling reference', async () => {
+    render(<Screen />);
+    await submit();
+    await waitFor(() =>
+      expect(email()).toHaveAttribute('aria-invalid', 'true'),
+    );
+
+    // A library that writes its own `aria-describedby` points it at an error
+    // element IT expects you to render — and the design system renders
+    // `FieldError` instead. Conform did exactly that: the attribute carried an
+    // id that existed nowhere. Silent, and on the accessible part.
+    //
+    // Every control, not just the ones with a textbox role: the password field
+    // and the checkbox are where a role-filtered check quietly stopped looking.
+    for (const control of [email(), password(), tos()]) {
+      const ids = (control.getAttribute('aria-describedby') ?? '')
+        .split(' ')
+        .filter(Boolean);
+      expect(ids.length, 'described by nothing').toBeGreaterThan(0);
+      for (const id of ids) {
+        expect(document.getElementById(id), `dangling: ${id}`).not.toBeNull();
+      }
+    }
+  });
+
+  it('every control carries its name — the summary links depend on it', () => {
+    render(<Screen />);
+    // Not decoration: `FormErrorSummary` finds the control to focus by
+    // `[name=...]`, and a native submission collects by name. An adapter that
+    // dropped it would break both, and nothing else in this suite would notice.
+    expect(email()).toHaveAttribute('name', 'email');
+    expect(password()).toHaveAttribute('name', 'password');
+    expect(tos()).toHaveAttribute('name', 'tos');
   });
 
   it('recipe 3 — native constraints reach the control unchanged', () => {
