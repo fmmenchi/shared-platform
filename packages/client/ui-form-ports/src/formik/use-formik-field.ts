@@ -1,9 +1,7 @@
 import { useField, useFormikContext } from 'formik';
 import type { UseFormField } from '@fmmenchi/ui';
-import {
-  isBooleanField,
-  type FormFieldTypeOptions,
-} from '../field-type.types.js';
+import { isBooleanField } from '../field-type.js';
+import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for Formik.

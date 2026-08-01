@@ -9,7 +9,7 @@ import { useRhfField, useRhfErrors } from '@fmmenchi/ui-form-ports/react-hook-fo
 <UiProvider adapters={{ i18n, form: { field: useRhfField, errors: useRhfErrors } }}>
 ```
 
-From then on a form is just a form — `Form`, `FormInput`, `FormChoice` and
+From then on a form is just a form — `FormInput`, `FormChoice` and
 `FormErrorSummary` work with nothing further to wire.
 
 ## Why one package and not one per library
@@ -34,8 +34,9 @@ and the reasoning is the same.
 
 The first four are the four most-used React form libraries; `./react-19` is the
 no-library option. All five bind the **same** components, and one test suite in
-`apps/ui-ports-validation` runs the same assertions against all of them — if any
-of them needed its own assertions, the port would be leaking.
+`apps/ui-ports-validation` runs the same assertions against **the four** — if any
+of them needed its own assertions, the port would be leaking. `./react-19` is
+tested separately, because its submission model is not a library's at all.
 
 ### `types`, and why only some of them need it
 
@@ -49,6 +50,17 @@ A **controlled** library binds a text input through `value` and a checkbox
 through `checked` — two different props — and the field name alone does not say
 which. react-hook-form is the exception and needs no map: it is uncontrolled, so
 it binds by `name` and `ref` and lets the DOM hold the state either way.
+
+There is no `'radio'`. A radio group is N controls sharing one name with a
+distinct value each, so the option's value cannot be expressed in a map keyed by
+field NAME — advertising it would have meant a control that can never be
+selected. That binding needs its own shape, one name to many controls.
+
+Known gap, for the controlled ports: a `'number'` or `'date'` field round-trips
+its value as a **string**, because the adapter reads `event.target.value` and
+does not coerce. With a schema that expects a number this fails validation and
+the form cannot be submitted. Use a string schema with a coercion step, or bind
+that field yourself, until the port carries the conversion.
 
 ### `./react-hook-form`
 

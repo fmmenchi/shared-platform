@@ -47,18 +47,17 @@
     "@fmmenchi/ui": ">=0.0.0",
     "react-hook-form": "^7.0.0",
     "@conform-to/react": "^1.0.0",
-    "formik": "^2.0.0",
-    "@tanstack/react-form": "^1.0.0"
+    "formik": "^2.1.0",
+    "@tanstack/react-form": ">=1.33.1 <2"
   },
   "devDependencies": {
     "@conform-to/react": "^1.20.2",
-    "@conform-to/zod": "^1.20.2",
     "@fmmenchi/ui": "workspace:*",
     "@tanstack/react-form": "^1.33.2",
     "formik": "^2.4.9",
     "react-hook-form": "^7.83.0"
   },
-  "description": "Form-library implementations of @fmmenchi/ui's form ports — one subpath each.",
+  "description": "Form-library implementations of @fmmenchi/ui's form ports \u2014 one subpath each.",
   "peerDependenciesMeta": {
     "react-hook-form": {
       "optional": true
@@ -72,5 +71,17 @@
     "@tanstack/react-form": {
       "optional": true
     }
-  }
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/client/ui-form-ports"
+  },
+  "files": [
+    "dist"
+  ]
 }

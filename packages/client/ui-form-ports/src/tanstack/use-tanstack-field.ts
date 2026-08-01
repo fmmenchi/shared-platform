@@ -1,10 +1,8 @@
-import type { AnyFormApi } from '@tanstack/react-form';
+import type { AnyFieldApi, AnyFormApi } from '@tanstack/react-form';
 import { useField, useSelector } from '@tanstack/react-form';
 import type { UseFormErrors, UseFormField } from '@fmmenchi/ui';
-import {
-  isBooleanField,
-  type FormFieldTypeOptions,
-} from '../field-type.types.js';
+import { isBooleanField } from '../field-type.js';
+import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for TanStack Form.
@@ -44,8 +42,13 @@ export function createTanstackField(
 
   return function useTanstackField(name) {
     const boolean = isBooleanField(types[name]);
-    const field = useField({ form, name } as never) as FieldLike;
-    // Quiet until the field has been visited or the form has been sent once.
+    const field: AnyFieldApi = useField({ form, name });
+    // Quiet until the field has been LEFT, or the form has been sent once.
+    //
+    // `isBlurred`, not `isTouched`: TanStack sets `isTouched` on the first
+    // keystroke, so gating on it would shout after one character — while the
+    // Formik port, whose `touched` is blur-based, stayed quiet. Two ports
+    // behaving differently is the leak this whole exercise exists to catch.
     const submitted = useSelector(form.store, (s) => s.submissionAttempts > 0);
     const { value, meta } = field.state;
 
@@ -61,7 +64,7 @@ export function createTanstackField(
         },
         onBlur: () => field.handleBlur(),
       },
-      error: submitted || meta.isTouched ? toMessages(meta.errors) : undefined,
+      error: submitted || meta.isBlurred ? toMessages(meta.errors) : undefined,
     };
   };
 }
@@ -80,22 +83,11 @@ export function createTanstackErrors(form: AnyFormApi): UseFormErrors {
 
     const byName: Record<string, readonly string[]> = {};
     for (const [name, meta] of Object.entries(state.fieldMeta)) {
-      const messages = toMessages((meta as FieldMetaLike | undefined)?.errors);
+      const messages = toMessages(meta?.errors);
       if (messages.length > 0) byName[name] = messages;
     }
     return byName;
   };
-}
-
-interface FieldMetaLike {
-  errors?: unknown;
-  isTouched?: boolean;
-}
-
-interface FieldLike {
-  state: { value: unknown; meta: FieldMetaLike };
-  handleChange: (value: unknown) => void;
-  handleBlur: () => void;
 }
 
 /**
