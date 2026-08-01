@@ -212,6 +212,38 @@
       "types": "./dist/components/popover-close/index.d.ts",
       "import": "./dist/popover-close.js",
       "default": "./dist/popover-close.js"
+    },
+    "./dialog": {
+      "@fmmenchi/source": "./src/components/dialog/index.ts",
+      "types": "./dist/components/dialog/index.d.ts",
+      "import": "./dist/dialog.js",
+      "default": "./dist/dialog.js"
+    },
+    "./dialog-trigger": {
+      "@fmmenchi/source": "./src/components/dialog-trigger/index.ts",
+      "types": "./dist/components/dialog-trigger/index.d.ts",
+      "import": "./dist/dialog-trigger.js",
+      "default": "./dist/dialog-trigger.js"
+    },
+    "./dialog-content": {
+      "@fmmenchi/source": "./src/components/dialog-content/index.ts",
+      "types": "./dist/components/dialog-content/index.d.ts",
+      "import": "./dist/dialog-content.js",
+      "default": "./dist/dialog-content.js"
+    },
+    "./dialog-content/style.css": "./dist/dialog-content.css",
+    "./dialog-heading": {
+      "@fmmenchi/source": "./src/components/dialog-heading/index.ts",
+      "types": "./dist/components/dialog-heading/index.d.ts",
+      "import": "./dist/dialog-heading.js",
+      "default": "./dist/dialog-heading.js"
+    },
+    "./dialog-heading/style.css": "./dist/dialog-heading.css",
+    "./dialog-close": {
+      "@fmmenchi/source": "./src/components/dialog-close/index.ts",
+      "types": "./dist/components/dialog-close/index.d.ts",
+      "import": "./dist/dialog-close.js",
+      "default": "./dist/dialog-close.js"
     }
   },
   "nx": {

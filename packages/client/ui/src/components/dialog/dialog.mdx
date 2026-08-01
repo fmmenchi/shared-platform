@@ -1,0 +1,107 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as DialogStories from './dialog.stories.tsx';
+
+<Meta of={DialogStories} />
+
+# Dialog
+
+Dialog is something the user must deal with before going back to the page: the background is inert, the focus is trapped inside, and it is dismissed on purpose.
+
+```tsx
+<Dialog>
+  <DialogTrigger>Delete…</DialogTrigger>
+  <DialogContent>
+    <DialogHeading>Delete this draft?</DialogHeading>
+    <p>It cannot be undone.</p>
+    <DialogClose>Cancel</DialogClose>
+  </DialogContent>
+</Dialog>
+```
+
+If it can be ignored, it is a `Popover`. If it only describes its trigger, it is a `Tooltip`.
+
+## Anatomy
+
+```tsx
+<Dialog>
+  {' '}
+  {/* wiring: no element of its own */}
+  <DialogTrigger /> {/* a <button>: command="show-modal" */}
+  <DialogContent>
+    {' '}
+    {/* the native <dialog>, opened modally */}
+    <DialogHeading /> {/* the dialog's accessible name */}
+    …
+    <DialogClose /> {/* command="close" */}
+  </DialogContent>
+</Dialog>
+```
+
+| part            | what it is                                                                                       |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `Dialog`        | the wiring. It renders **no element** — one that only carries a context has not earned its place |
+| `DialogTrigger` | what opens it: `command="show-modal"`, no handler                                                |
+| `DialogContent` | the dialog itself — a native `<dialog>`, opened modally, in the top layer                        |
+| `DialogHeading` | names it. An `h2` by default, `as` for the level the page needs                                  |
+| `DialogClose`   | closes it from inside. It exists because the dialog's id is generated and internal               |
+
+`DialogTrigger` and `DialogClose` take a `Button`'s props — including `variant` — and an `as` for anything that accepts them and ends in a `<button>`, which is what `commandfor` requires. `DialogHeading` takes an `as` restricted to the six heading levels, because it names the dialog.
+
+## Props
+
+<Controls of={DialogStories.Default} />
+
+## Usage
+
+<Canvas of={DialogStories.Default} />
+
+### What is not in here
+
+The list is longer than the component. Measured in Chromium, Firefox and WebKit before a line of it was written:
+
+| what a dialog needs         | who does it                                                 |
+| --------------------------- | ----------------------------------------------------------- |
+| open it                     | `command="show-modal"` — the attribute is the behaviour     |
+| trap the focus              | `showModal()`                                               |
+| make the page behind inert  | `showModal()`                                               |
+| the dimmed backdrop         | `::backdrop`                                                |
+| dismiss on `Escape`         | the platform                                                |
+| dismiss on a backdrop click | `closedby="any"`                                            |
+| close it from inside        | `command="close"`                                           |
+| return a value              | `<form method="dialog">` → `dialog.returnValue`             |
+| **stop the page scrolling** | **one CSS rule**, `:root:has(…[open]) { overflow: hidden }` |
+| **put the focus back**      | the platform — except WebKit, which we repair               |
+
+That last pair is everything this component adds. The backdrop-click handler that compares click coordinates to the dialog's box — the one every library writes — is replaced by `closedby` outright.
+
+The scroll lock is written **inline on `:root`**, not as a stylesheet rule, and that is a correction rather than a preference: as a rule inside `@layer fmmenchi` it was beaten by an ordinary unlayered `html { overflow-y: auto }` on the consumer's page, so the modal opened over a page that still scrolled — ADR-0022 had already rejected that shape for exactly this reason. It also keys on `:modal`, not on the `open` attribute: a non-modal `<dialog open>` leaves the page interactive, and freezing its scroll would trap the user with nothing to dismiss.
+
+<Canvas of={DialogStories.WithAForm} />
+
+### Scrolling, and the scrollbar
+
+A modal that lets the page scroll behind it is the commonest defect of the pattern, and `showModal()` does not prevent it — measured, the page scrolled 300px under an open dialog in all three engines. One rule does, scoped to this component's own dialog so it never speaks for somebody else's.
+
+It compensates for the scrollbar it hides, as far as anything can. Hiding the overflow widens the viewport by the scrollbar's width, so the page's content jumps sideways; the lock pads the root by the width it measured, which holds the content in the flow still. Elements positioned `fixed` still move, and nothing written from here can prevent that — `react-remove-scroll` has the same limitation for the same reason.
+
+Measured with a classic scrollbar, the shift is 15px in WebKit, and `scrollbar-gutter: stable` does **not** cure it there even though the engine reports the property as supported. On Chromium it does. There is no remedy that works everywhere; this is the honest state of it, not an omission.
+
+<Canvas of={DialogStories.LongContent} />
+
+## Accessibility
+
+- **A native `<dialog>`, named by its heading.** The role comes from the element (ADR-0016); `DialogHeading` registers its id as `aria-labelledby`. A dialog with no name is announced as "dialog" and nothing else.
+- **The trigger says what will appear** — `aria-haspopup="dialog"` — and deliberately **not** `aria-expanded`: unlike a popover's trigger, this one is inert while the dialog is open, so "expanded" would describe a state nobody can observe from it.
+- **The focus is trapped by the platform**, and the ring is not identical in every engine — Chromium passes through the document on its way round, WebKit lands on the dialog itself. What holds everywhere is the thing that matters: nothing outside is reachable.
+- **The focus comes back.** Chromium and Firefox return it to the trigger; WebKit drops it on `<body>`, so the component puts it back — only ever a repair, never a second guess when the engine already did the right thing.
+- **`Escape` always works**, in every engine, with or without `closedby`.
+- **It says so when it is misused.** In development it warns if the dialog has no accessible name, and if the trigger renders anything other than a `<button>` — `commandfor` works on nothing else, so such a trigger is silently dead, and only on the browsers that have invoker commands.
+
+### Before hydration, and the attribute that has to be there
+
+The trigger carries `command`/`commandfor` **always**, on the server as well as in the browser, and a click handler stands by for browsers that do not have invoker commands yet — it asks the question at click time rather than when the module loads. That sounds like a detail and is not: the first version answered it once, at module scope, where the answer on a server is "no DOM". The attribute never reached the server HTML, React declined to patch it in ("This won't be patched up"), and the fallback stood down because on the client the answer had flipped. The dialog was dead for every SSR consumer.
+
+### Where it is painted
+
+In the **top layer**, like the other surfaces, which is why it needs no `z-index` and no portal — and why the backdrop can exist at all.

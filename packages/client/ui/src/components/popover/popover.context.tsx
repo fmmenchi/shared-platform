@@ -24,6 +24,12 @@ export interface PopoverContextValue {
   /** The heading's id, when there is one — the surface's accessible name. */
   headingId: string | undefined;
   setHeadingId: (id: string | undefined) => void;
+  /** The controlled value, or `undefined` when the DOM owns the state. */
+  controlled: boolean | undefined;
+  /** Whether the consumer wired `onOpenChange` — a controlled popover needs it. */
+  hasOpenChange: boolean;
+  /** The mount-time seed, read by the content — see `PopoverProps.defaultOpen`. */
+  defaultOpen: boolean;
   /** Preferred side, passed to the geometry by the content. */
   placement: Placement;
 }

@@ -1,0 +1,65 @@
+/*
+ * The modal surface. Much less to undo than a popover's, because a `<dialog>`
+ * opened with `showModal()` is centred, sized and layered by the UA — what is
+ * left is what it looks like.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .content {
+    margin: auto;
+    box-sizing: border-box;
+
+    @apply rounded-lg border p-6 shadow-lg;
+    /* Plain CSS, not an arbitrary Tailwind value: the gate rejects those, and
+       rightly — but a modal's width is geometry, not a token scale. */
+    width: min(32rem, calc(100vw - 2rem));
+    /* The UA gives a modal `max-width: calc(100% - 6px - 2em)`, which is
+       TIGHTER than the line above for every viewport under ~550px — measured,
+       the intended 1rem side gap came out as 19px and the declaration never
+       governed where it was written to. `max-height` was overridden and
+       `max-width` was not; stating both keeps the box ours. */
+    max-width: calc(100vw - 2rem);
+    /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only, and
+       the colour falls back to `currentColor` — nearly black. */
+    @apply bg-card text-card-foreground border-border;
+    max-height: calc(100dvh - 4rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+
+    /* Entry only. The exit was measured dead in every engine on this DS's other
+       surfaces — Gecko and WebKit run no transition on close at all — and a
+       modal that lingers is worse than one that goes. `@starting-style` is
+       Baseline "newly": without it the dialog simply appears (ADR-0017). */
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+  }
+
+  .content[open] {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .content[open] {
+      opacity: 0;
+    }
+  }
+
+  /* The UA's backdrop is a faint grey — too faint to say "the page is not
+     yours right now". The scrim token is exactly this job. */
+  .content::backdrop {
+    background-color: var(--fm-color-scrim);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .content {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+
+  /* No `forced-colors` block: like the popover, this surface carries a real
+     border, so forced colours give it `Canvas` on `CanvasText` with a
+     `CanvasText` outline and drop the shadow — legible, and still separated. */
+}

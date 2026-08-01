@@ -3,6 +3,7 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { usePopoverPart } from '../popover/popover.context.js';
+import { usePopoverControlWarnings } from './popover-content.guards.js';
 import type { PopoverContentProps } from './popover-content.types.js';
 import styles from './popover-content.module.css';
 
@@ -30,6 +31,42 @@ function PopoverContent(props: PopoverContentProps) {
   // dismiss still ate the next click. Closing hands the focus back to the
   // trigger, which is the platform's job and it does it.
   const close = useCallback(() => surface.current?.hidePopover(), []);
+
+  // The state initializer, imperative for the same reason the Dialog's is: the
+  // platform toggles a popover through `popovertarget` or `showPopover()`, and
+  // no attribute opens one. Seeded ONCE and never re-asserted — from here the
+  // DOM owns the state, which is why there is no `open` prop beside it.
+  const controlled = popover?.controlled;
+  usePopoverControlWarnings(controlled, popover?.hasOpenChange ?? false);
+  const seeded = useRef(false);
+  const defaultOpen = popover?.defaultOpen ?? false;
+  useEffect(() => {
+    const node = surface.current;
+    // Uncontrolled only: with `open` given, the sync below owns the state.
+    if (controlled !== undefined || !defaultOpen || seeded.current || !node)
+      return;
+    seeded.current = true;
+    // `showPopover()` throws on an already-open surface, and the trigger or a
+    // consumer's ref may have opened it before this ran.
+    if (!node.matches(':popover-open')) node.showPopover();
+  }, [controlled, defaultOpen]);
+
+  // The controlled half. Re-asserted on every `toggle` too, because the prop
+  // wins back: the platform hides an `auto` popover on a click outside, on
+  // `Escape` and when another one opens, and none of those asks React.
+  useEffect(() => {
+    const node = surface.current;
+    if (!node || controlled === undefined) return;
+
+    const sync = () => {
+      const isOpen = node.matches(':popover-open');
+      if (controlled && !isOpen) node.showPopover();
+      else if (!controlled && isOpen) node.hidePopover();
+    };
+    sync();
+    node.addEventListener('toggle', sync);
+    return () => node.removeEventListener('toggle', sync);
+  }, [controlled]);
 
   useAnchored(popover?.anchor ?? null, surface, {
     placement: popover?.placement ?? 'bottom',
