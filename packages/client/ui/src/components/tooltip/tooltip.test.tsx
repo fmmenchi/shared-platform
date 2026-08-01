@@ -272,6 +272,43 @@ describe('Tooltip', () => {
     expect(edge.placement).toBe('top');
   });
 
+  it('puts the arrow at the aligned edge, not on the anchor', async () => {
+    // A wide trigger with a short label: on `top-start` the anchor's centre is
+    // PAST the surface's own edge, and following it pinned the arrow onto the
+    // rounded corner. An aligned placement means the arrow belongs a fixed
+    // distance from the edge it is aligned to — measured here from both ends.
+    const arrowIn = async (placement: 'top-start' | 'top-end') => {
+      const { unmount } = render(
+        <div style={{ padding: '200px' }}>
+          <Tooltip
+            content="short"
+            placement={placement}
+            openDelay={0}
+            closeDelay={9999}
+          >
+            <Button aria-label="T">A REALLY RATHER WIDE TRIGGER</Button>
+          </Tooltip>
+        </div>,
+      );
+      await browser.hover(screen.getByRole('button', { name: 'T' }));
+      await waitFor(() => expect(isOpen()).toBe(true));
+
+      // `left`/`right` both resolve to used values on an absolutely positioned
+      // box, so the distance from each edge is read directly rather than
+      // inferred from which one is `auto`.
+      const arrow = getComputedStyle(surface(), '::after');
+      const edges = {
+        fromLeft: parseFloat(arrow.left),
+        fromRight: parseFloat(arrow.right),
+      };
+      unmount();
+      return edges;
+    };
+
+    expect((await arrowIn('top-start')).fromLeft).toBeLessThan(20);
+    expect((await arrowIn('top-end')).fromRight).toBeLessThan(20);
+  });
+
   it('aligns by writing direction, not by screen side', async () => {
     // `-start` is documented as logical, so it is measured: the same
     // `top-start` sits on the left in LTR and on the right in RTL.
