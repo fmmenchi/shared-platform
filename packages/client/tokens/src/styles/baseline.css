@@ -1,0 +1,134 @@
+/**
+ * `baseline` — an OPTIONAL page baseline for an app that wants one.
+ *
+ * Nothing in the design system needs this file. Every component normalises
+ * itself (`control-base` in `@fmmenchi/ui`), so a consumer who never imports
+ * this still gets components that render correctly. It is offered, not
+ * required — the same status the `dark` preset has: a reference artifact an app
+ * adopts, replaces, or ignores.
+ *
+ * WHY IT IS NOT PREFLIGHT. An app on Tailwind already gets Preflight for free,
+ * so shipping a copy would be redundant; and Preflight is *opinionated* — it
+ * unstyles headings and strips list markers, which is a decision about the
+ * app's own content that a shared platform has no standing to make. What an app
+ * cannot get in two lines is this: a NEUTRAL normalisation that also applies the
+ * token theme to the page. Headings stay big here, `<ul>` keeps its markers,
+ * `<strong>` stays bold.
+ *
+ * WHY IT IS LAYERED, and in `fmmenchi.base` specifically. This file styles bare
+ * ELEMENTS — `button`, `input`, `a` — the very elements our components render.
+ * Unlayered it would beat them outright, because an unlayered rule wins over a
+ * layered one whatever the specificity (ADR-0018). A nested sublayer is the
+ * placement ADR-0018 anticipated for exactly this, and it orders itself:
+ * a layer's own rules always win over its sublayers, so
+ *
+ *     fmmenchi.base  <  fmmenchi (the components)  <  the app's own css
+ *
+ * Verified in Chromium, not assumed. The consequence that matters: a consumer
+ * has NOTHING to order. The single `@layer fmmenchi, app;` statement they may
+ * already have keeps working unchanged, and an app with no layers at all
+ * overrides everything here with a plain rule.
+ *
+ * Import AFTER `vars.css` (and any preset), since every value here is a token.
+ * Baseline: Widely available only (ADR-0017).
+ */
+
+@layer fmmenchi.base {
+  /* The one reset every sheet agrees on, and the one whose absence cost this
+     DS a shipped defect: a `<span>` with a border measured 1em + 4px. */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    /* iOS inflates text after an orientation change; `100%` keeps the size the
+       page asked for. The prefixed spelling ONLY: WebKit is the engine that
+       does the inflating and the one that reads it, while the unprefixed
+       property is not Baseline Widely and the `css/use-baseline` gate rejects
+       it — correctly, since it would buy nothing here. */
+    -webkit-text-size-adjust: 100%;
+    /* 8 is the UA default and far too wide for code blocks. */
+    tab-size: 4;
+  }
+
+  body {
+    /* The UA's 8px body margin: the single default every app removes by hand. */
+    margin: 0;
+    font-family: var(--fm-font-sans);
+    /* This is what makes it a THEMED baseline rather than a normaliser: the
+       page picks up the same roles the components resolve against, so a
+       `[data-theme]` preset re-themes the page and not just the widgets. */
+    background-color: var(--fm-color-background);
+    color: var(--fm-color-foreground);
+  }
+
+  /* The FAMILY only — deliberately not the size or the weight. Preflight
+     flattens headings because a utility framework restates them anyway; here
+     `<h1>` stays a heading, so a document rendered with no classes at all is
+     still readable. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--fm-font-heading);
+  }
+
+  /* `font-size: 1em` undoes the UA's habit of shrinking monospace text. */
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--fm-font-mono);
+    font-size: 1em;
+  }
+
+  /* The one OPINION in this file, and it is here on evidence: as inline boxes
+     these sit on the text baseline and carry its descender gap, which is how an
+     unsized `<svg>` silently changes a control's width. `max-width` stops a
+     replaced element overflowing its container. */
+  img,
+  svg,
+  video,
+  canvas,
+  audio,
+  iframe,
+  embed,
+  object {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* A form control takes its OWN font from the UA, never the page's: measured
+     on a Georgia page, Chromium rendered an input in Arial and a textarea in
+     monospace. Our components each state this for themselves; the app's own
+     controls get it here. */
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  a {
+    color: var(--fm-color-link);
+  }
+  a:hover {
+    color: var(--fm-color-link-hover);
+  }
+
+  /* eslint-disable-next-line css/use-baseline -- progressive: unprefixed
+     `::selection` is below Widely; where it is missing the UA paints its own
+     selection colour, so nothing breaks and nothing is unreadable (ADR-0010).
+     It stays because `selection` / `selection-foreground` are contract-declared
+     roles — this is the only place in the platform that can give them a
+     consumer, and a themed page whose selection is the OS blue is half-themed. */
+  ::selection {
+    background-color: var(--fm-color-selection);
+    color: var(--fm-color-selection-foreground);
+  }
+}

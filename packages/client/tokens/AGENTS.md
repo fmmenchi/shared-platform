@@ -47,6 +47,14 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
 - **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
   system stacks (apps override `--fm-font-*`).
+- **`styles/baseline.css` is the one file here with element rules, and it is OPTIONAL.** No
+  component depends on it — each normalises itself (`control-base` in `@fmmenchi/ui`) — so never
+  move a component's normalisation into it. It is neutral, not a Preflight clone: headings keep
+  their size, `<ul>` keeps its markers; what it adds over a normaliser is applying the theme to the
+  page (`body` gets `background`/`foreground`, `::selection` gets the selection roles — the only
+  consumer those two roles have). It ships inside `@layer fmmenchi.base` so it can never beat the
+  components: a layer's own rules win over its sublayers, so
+  `fmmenchi.base < fmmenchi < the app's css`, and the consumer orders nothing.
 - **No text/leading scale yet — deliberately.** Utilities use Tailwind's default sizes until a
   Text/Heading component settles the size+leading pairing; never re-add an unbridged `--fm-text-*`
   scale (a token nothing consumes silently diverges from the utilities — the phantom-contract trap).
