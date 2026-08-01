@@ -117,7 +117,11 @@ export default defineConfig(() => ({
     // the Storybook UI renders it rather than bare.
     projects: [
       {
-        extends: true,
+        // `as const` on both literals below: without them TypeScript widens
+        // them to `boolean` and `string`, and Vitest's project config wants
+        // `true` and `'chromium' | 'firefox' | 'webkit'` exactly. The whole
+        // config then fails to typecheck, which is how it reached `main`.
+        extends: true as const,
         test: {
           name: '@fmmenchi/ui',
           watch: false,
@@ -127,14 +131,14 @@ export default defineConfig(() => ({
             enabled: true,
             provider: playwright(),
             headless: true,
-            instances: [{ browser: 'chromium' }],
+            instances: [{ browser: 'chromium' as const }],
           },
           include: ['{src,tests}/**/*.{test,spec}.{ts,tsx}'],
           reporters: ['default'],
         },
       },
       {
-        extends: true,
+        extends: true as const,
         plugins: [
           storybookTest({
             configDir: path.join(import.meta.dirname, '.storybook'),
@@ -143,12 +147,11 @@ export default defineConfig(() => ({
         test: {
           name: 'storybook',
           watch: false,
-          setupFiles: ['./.storybook/vitest.setup.ts'],
           browser: {
             enabled: true,
             provider: playwright(),
             headless: true,
-            instances: [{ browser: 'chromium' }],
+            instances: [{ browser: 'chromium' as const }],
           },
           reporters: ['default'],
         },
