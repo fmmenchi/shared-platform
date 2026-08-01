@@ -106,4 +106,6 @@ export type {
   SelectVariants,
 } from './components/select/select.types.js';
 export { Tooltip } from './components/tooltip/tooltip.component.js';
+export { TooltipProvider } from './components/tooltip/tooltip.context.js';
 export type { TooltipProps } from './components/tooltip/tooltip.types.js';
+export type { TooltipProviderProps } from './components/tooltip/tooltip.context.types.js';

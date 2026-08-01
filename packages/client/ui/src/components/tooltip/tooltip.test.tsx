@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 // close a `<dialog>` — the very thing one test has to prove we do NOT do.
 import { userEvent as browser } from '@vitest/browser/context';
 import { Tooltip } from './tooltip.component.js';
+import { TooltipProvider } from './tooltip.context.js';
 import { Button } from '../button/button.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -329,6 +330,51 @@ describe('Tooltip', () => {
     expect(
       screen.getByRole('button', { name: 'T' }),
     ).toHaveAccessibleDescription('Always readable');
+  });
+
+  describe('TooltipProvider — the tooltips of one set', () => {
+    const pair = (
+      <>
+        <Tooltip content="Bold">
+          <Button aria-label="Bold">B</Button>
+        </Tooltip>
+        <Tooltip content="Italic">
+          <Button aria-label="Italic">I</Button>
+        </Tooltip>
+      </>
+    );
+    const openNow = () =>
+      screen
+        .getAllByRole('tooltip', { hidden: true })
+        .filter((tip) => tip.hasAttribute('data-open'))
+        .map((tip) => tip.textContent);
+
+    it('opens the next one instantly, and only one at a time', async () => {
+      render(<TooltipProvider>{pair}</TooltipProvider>);
+
+      await browser.hover(screen.getByRole('button', { name: 'Bold' }));
+      await waitFor(() => expect(openNow()).toEqual(['Bold']));
+
+      // 60ms against a 400ms `openDelay`: having waited once, the user has said
+      // they are reading labels. And the first is gone — two labels describing
+      // two different buttons must never sit on screen together.
+      await browser.hover(screen.getByRole('button', { name: 'Italic' }));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(openNow()).toEqual(['Italic']);
+    });
+
+    it('changes nothing for a tooltip standing alone', async () => {
+      render(pair);
+
+      await browser.hover(screen.getByRole('button', { name: 'Bold' }));
+      await waitFor(() => expect(openNow()).toEqual(['Bold']));
+
+      await browser.hover(screen.getByRole('button', { name: 'Italic' }));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      // Still the first one, still waiting out the second's full delay: two
+      // independent tooltips are not one another's business.
+      expect(openNow()).toEqual(['Bold']);
+    });
   });
 
   describe('says out loud what would otherwise fail in silence', () => {

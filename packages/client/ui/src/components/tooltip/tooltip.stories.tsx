@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Tooltip } from './tooltip.component.js';
+import { TooltipProvider } from './tooltip.context.js';
 import { Button } from '../button/button.component.js';
 
 const meta: Meta<typeof Tooltip> = {
@@ -152,29 +153,35 @@ export const AlignmentIsLogical: Story = {
 /**
  * A row of icon buttons, which is where the delays earn their place: sweeping a
  * pointer across them with no `openDelay` strobes every tooltip on the way.
+ *
+ * Wrapped in a `TooltipProvider`, so the row behaves as one set — wait once for
+ * the first label and the rest are instant, and never two at a time. Hover the
+ * first button, then move along the row.
  */
 export const InAToolbar: Story = {
   render: () => (
-    <div
-      style={{
-        display: 'flex',
-        gap: 'var(--fm-space-inline-xs)',
-        padding: 'var(--fm-space-stack-xl)',
-      }}
-    >
-      {[
-        ['Bold', 'B'],
-        ['Italic', 'I'],
-        ['Underline', 'U'],
-        ['Strikethrough', 'S'],
-      ].map(([label, glyph]) => (
-        <Tooltip key={label} content={label}>
-          <Button variant="ghost" aria-label={label}>
-            {glyph}
-          </Button>
-        </Tooltip>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div
+        style={{
+          display: 'flex',
+          gap: 'var(--fm-space-inline-xs)',
+          padding: 'var(--fm-space-stack-xl)',
+        }}
+      >
+        {[
+          ['Bold', 'B'],
+          ['Italic', 'I'],
+          ['Underline', 'U'],
+          ['Strikethrough', 'S'],
+        ].map(([label, glyph]) => (
+          <Tooltip key={label} content={label}>
+            <Button variant="ghost" aria-label={label}>
+              {glyph}
+            </Button>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   ),
 };
 

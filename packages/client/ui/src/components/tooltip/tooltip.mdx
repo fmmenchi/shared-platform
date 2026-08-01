@@ -44,6 +44,8 @@ Read this part first.
 
 Opening waits for the pointer to rest (`openDelay`, 400ms); **focus opens immediately**, because unlike a pointer sweeping a toolbar, focus arrives on purpose. Closing waits too (`closeDelay`, 120ms), which is what lets the pointer travel onto the tooltip without it vanishing on the way.
 
+Wrap a group in a **`TooltipProvider`** and it behaves as one set: having waited out the first label, the next button's tooltip is instant, and only one is ever open — without it, moving along a row opens the next while the previous is still inside its `closeDelay`, and two labels describe two different buttons at once. `skipDelay` (300ms) is how long "instant" lasts after the last one closes; `0` turns it off. A tooltip with no provider is unchanged, because two independent toolbars are not one another's business.
+
 <Canvas of={TooltipStories.InAToolbar} />
 
 ### Placement

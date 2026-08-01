@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTooltipCoordination } from './tooltip.context.js';
 import type {
   TooltipDisclosure,
   TooltipTiming,
@@ -12,6 +13,10 @@ import type {
  * and focus return from the platform and needs none of this. Delays are the
  * shape of a HOVER surface. The day a second one exists — a submenu — this file
  * moves to `primitives/` unchanged, and not a day earlier.
+ *
+ * A tooltip in a `TooltipProvider` also asks its neighbours two questions —
+ * whether one of them just closed (then this one is instant) and whether one is
+ * still open (then that one goes). Alone, the answers are no and none.
  *
  * Two things live in here that read as trivia at the call site and are not:
  *
@@ -35,6 +40,7 @@ export function useTooltipDisclosure(timing: TooltipTiming): TooltipDisclosure {
   const [asked, setAsked] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pressed = useRef(false);
+  const { skipsDelay, claim, release } = useTooltipCoordination();
 
   const schedule = useCallback((next: boolean, delay: number) => {
     clearTimeout(timer.current);
@@ -54,6 +60,15 @@ export function useTooltipDisclosure(timing: TooltipTiming): TooltipDisclosure {
   // A tooltip left waiting on an unmounted component would call `setOpen` on it.
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  const dismiss = useCallback(() => settle(false), [settle]);
+
+  // What the neighbours are told, and it is the same event twice: while this one
+  // is open nobody else may be, and once it closes the next one is instant.
+  useEffect(() => {
+    if (open) claim(dismiss);
+    else release(dismiss);
+  }, [open, claim, release, dismiss]);
+
   return {
     open,
     engaged: open || asked,
@@ -62,8 +77,8 @@ export function useTooltipDisclosure(timing: TooltipTiming): TooltipDisclosure {
 
     showAfterDelay: useCallback(() => {
       pressed.current = false;
-      schedule(true, openDelay);
-    }, [schedule, openDelay]),
+      schedule(true, skipsDelay() ? 0 : openDelay);
+    }, [schedule, openDelay, skipsDelay]),
 
     showOnFocus: useCallback(() => {
       if (pressed.current) return;
@@ -75,7 +90,7 @@ export function useTooltipDisclosure(timing: TooltipTiming): TooltipDisclosure {
       schedule(false, closeDelay);
     }, [schedule, closeDelay]),
 
-    dismiss: useCallback(() => settle(false), [settle]),
+    dismiss,
 
     dismissOnPress: useCallback(() => {
       pressed.current = true;
