@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useFormErrors } from '../../form/form-adapter.context.js';
@@ -34,18 +34,57 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
   } = props;
   const errors = useFormErrors('FormErrorSummary');
   const el = useRef<HTMLDivElement>(null);
+  // Generated, not a literal: two forms on one page each get a summary, and a
+  // hard-coded id made both groups resolve to the FIRST heading — so the payment
+  // form announced the address form's heading. Measured, and axe does not flag
+  // it. Every other part of a field mints its id the same way.
+  const headingId = useId();
 
   const entries = Object.entries(errors).filter(
     ([, messages]) => messages.length > 0,
   );
   const count = entries.length;
 
-  // Move focus here when the summary appears, so a screen reader announces the
-  // failure at once. Keyed on the COUNT, so a second failed submit that changes
-  // nothing does not steal focus back while the user is reading.
+  // Every failed submission counts the form's own `submit` event, in the
+  // CAPTURE phase, so it is seen before the handler that will reject it — and
+  // whether the form is an `onSubmit` one or a React 19 `action`.
+  //
+  // The summary is not in the DOM until there is something to summarise, so the
+  // listener attaches when it appears. That is exactly right: the submission
+  // that PUT it there is the 0 → n edge below, and every later one arrives here.
+  const [submits, setSubmits] = useState(0);
+  const shown = count > 0;
   useEffect(() => {
-    if (count > 0) el.current?.focus();
-  }, [count]);
+    if (!shown) return;
+    const form = el.current?.closest('form');
+    if (form == null) return;
+    const count = () => setSubmits((n) => n + 1);
+    form.addEventListener('submit', count, true);
+    return () => form.removeEventListener('submit', count, true);
+  }, [shown]);
+
+  // Move focus here when the summary APPEARS, and on every failed submission
+  // after that, so a screen reader announces the failure at once. Both edges are
+  // required and neither is enough alone.
+  //
+  // Keying this on the error COUNT was wrong, and measured: a library that
+  // revalidates as you type drops the count the moment a field becomes valid, so
+  // fixing one error mid-word yanked focus out of the input and the rest of the
+  // keystrokes went nowhere. Silent — the field simply ended up holding less
+  // than was typed. Found by running one suite against four form libraries.
+  //
+  // Submitting again with the same errors leaves the count unchanged, though, and
+  // a user who is told nothing cannot know the form was rejected again. So the
+  // count is not the trigger at all: appearing is, and submitting is.
+  const wasEmpty = useRef(true);
+  const seenSubmits = useRef(0);
+  useEffect(() => {
+    if (count > 0 && (wasEmpty.current || submits !== seenSubmits.current)) {
+      el.current?.focus();
+    }
+    wasEmpty.current = count === 0;
+    seenSubmits.current = submits;
+  }, [count, submits]);
 
   if (count === 0) return null;
 
@@ -53,15 +92,20 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
     <div
       {...rest}
       ref={mergeRefs(el, ref)}
-      // A labelled region rather than role="alert": the summary is a place you
-      // return to, so it must be reachable by landmark, and focusing it already
-      // announces it — an alert would announce it a second time.
+      // A labelled group rather than role="alert": the summary is a place you
+      // come back to, and focusing it announces it — an alert would announce it
+      // a second time, from wherever the user happened to be.
+      //
+      // Note `group` is NOT a landmark role, so this does not appear in a screen
+      // reader's landmark rotor. Making it one means `role="region"`, which is a
+      // deliberate change to the accessible surface and to every query that
+      // finds this component — worth doing, on its own.
       role="group"
-      aria-labelledby="fm-error-summary-heading"
+      aria-labelledby={headingId}
       tabIndex={-1}
       className={cn(styles.summary, className)}
     >
-      <h2 id="fm-error-summary-heading" className={styles.heading}>
+      <h2 id={headingId} className={styles.heading}>
         {heading}
       </h2>
       <ul className={styles.list}>
@@ -80,9 +124,12 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
                     ?.querySelector<HTMLElement>(
                       `[name="${CSS.escape(name)}"]`,
                     );
-                  if (control == null) return;
+                  // Prevented either way: the href is a handle, not a
+                  // destination. No field carries `id="email"`, so letting the
+                  // navigation through would push a history entry for a
+                  // fragment that matches nothing.
                   event.preventDefault();
-                  control.focus();
+                  control?.focus();
                 }}
               >
                 {labelFor?.(name) ?? name}: {message}

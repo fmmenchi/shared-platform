@@ -103,6 +103,45 @@ describe('the form level of the adapter', () => {
     );
   });
 
+  it('takes focus again on a second failed submit, so it is never silent', async () => {
+    const user = userEvent.setup();
+    render(<DemoForm />);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    const summary = await screen.findByRole('group', {
+      name: 'There is a problem',
+    });
+    await waitFor(() => expect(summary).toHaveFocus());
+
+    // Move away, as a user reading and then retrying would.
+    const email = screen.getByRole('textbox', { name: 'Email' });
+    await user.click(email);
+    expect(email).toHaveFocus();
+
+    // Submit again with the same errors: the COUNT does not change, so nothing
+    // in the rendered output does either. Told nothing, a screen-reader user
+    // cannot know the form was rejected a second time.
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() => expect(summary).toHaveFocus());
+  });
+
+  it('does NOT take focus back while the user is typing a fix', async () => {
+    const user = userEvent.setup();
+    render(<DemoForm />);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('group', { name: 'There is a problem' });
+
+    // Fixing one field drops the error count — which is not the summary
+    // appearing, and must not pull focus out of the input mid-word. It did:
+    // with a library that revalidates as you type, the keystrokes after the
+    // field became valid went nowhere and the value silently came up short.
+    const email = screen.getByRole('textbox', { name: 'Email' });
+    await user.click(email);
+    await user.type(email, 'someone@example.com');
+
+    expect(email).toHaveFocus();
+    expect(email).toHaveValue('someone@example.com');
+  });
+
   it('each entry moves focus to its field — the whole point of the list', async () => {
     const user = userEvent.setup();
     render(<DemoForm />);

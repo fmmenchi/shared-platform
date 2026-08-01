@@ -6,12 +6,43 @@ import {
 } from '../screens/signup.screen.js';
 import { PrefilledScreen } from '../screens/prefilled.screen.js';
 import { ZodScreen } from '../screens/zod.screen.js';
+import { RhfRecipeScreen } from '../screens/rhf.screen.js';
+import { FormikScreen } from '../screens/formik.screen.js';
+import { TanstackScreen } from '../screens/tanstack.screen.js';
+import { ConformRecipeScreen } from '../screens/conform.recipe.screen.js';
 import {
   useRhfField,
   useRhfErrors,
 } from '@fmmenchi/ui-form-ports/react-hook-form';
 
 const SCREENS = {
+  // The four libraries, rendering the SAME fields through the same components.
+  // One test suite runs against all four (recipes.test.tsx): if any of them
+  // needed its own assertions, the port would be leaking.
+  'recipe-rhf': {
+    title: 'Recipes · react-hook-form',
+    blurb:
+      'Uncontrolled: it binds by name and ref and lets the DOM hold the state — the only one of the four that needs no type map.',
+    render: () => <RhfRecipeScreen />,
+  },
+  'recipe-formik': {
+    title: 'Recipes · Formik',
+    blurb:
+      'Controlled, and with no zod integration of its own: the schema goes through the plain validate callback. Invisible from the markup.',
+    render: () => <FormikScreen />,
+  },
+  'recipe-tanstack': {
+    title: 'Recipes · TanStack Form',
+    blurb:
+      'A render-prop API with no props bag to spread. The adapter builds one from the store, so the markup is byte-for-byte the others’.',
+    render: () => <TanstackScreen />,
+  },
+  'recipe-conform': {
+    title: 'Recipes · Conform',
+    blurb:
+      'Validates FormData, not a JS object — so a ticked box is the string "on". Its own schema, the same markup.',
+    render: () => <ConformRecipeScreen />,
+  },
   zod: {
     title: 'react-hook-form + zod',
     blurb:

@@ -16,6 +16,24 @@
       "types": "./dist/react-19/index.d.ts",
       "import": "./dist/react-19.js",
       "default": "./dist/react-19.js"
+    },
+    "./conform": {
+      "@fmmenchi/source": "./src/conform/index.ts",
+      "types": "./dist/conform/index.d.ts",
+      "import": "./dist/conform.js",
+      "default": "./dist/conform.js"
+    },
+    "./formik": {
+      "@fmmenchi/source": "./src/formik/index.ts",
+      "types": "./dist/formik/index.d.ts",
+      "import": "./dist/formik.js",
+      "default": "./dist/formik.js"
+    },
+    "./tanstack": {
+      "@fmmenchi/source": "./src/tanstack/index.ts",
+      "types": "./dist/tanstack/index.d.ts",
+      "import": "./dist/tanstack.js",
+      "default": "./dist/tanstack.js"
     }
   },
   "nx": {
@@ -27,16 +45,43 @@
   "peerDependencies": {
     "react": "^19.0.0",
     "@fmmenchi/ui": ">=0.0.0",
-    "react-hook-form": "^7.0.0"
+    "react-hook-form": "^7.0.0",
+    "@conform-to/react": "^1.0.0",
+    "formik": "^2.1.0",
+    "@tanstack/react-form": ">=1.33.1 <2"
   },
   "devDependencies": {
+    "@conform-to/react": "^1.20.2",
     "@fmmenchi/ui": "workspace:*",
+    "@tanstack/react-form": "^1.33.2",
+    "formik": "^2.4.9",
     "react-hook-form": "^7.83.0"
   },
-  "description": "Form-library implementations of @fmmenchi/ui's form ports — one subpath each.",
+  "description": "Form-library implementations of @fmmenchi/ui's form ports \u2014 one subpath each.",
   "peerDependenciesMeta": {
     "react-hook-form": {
       "optional": true
+    },
+    "@conform-to/react": {
+      "optional": true
+    },
+    "formik": {
+      "optional": true
+    },
+    "@tanstack/react-form": {
+      "optional": true
     }
-  }
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/client/ui-form-ports"
+  },
+  "files": [
+    "dist"
+  ]
 }
