@@ -72,7 +72,11 @@ What is left is what the platform genuinely does not do: where the surface goes,
 
 ### Opening it from code
 
-There is no `open` prop, on purpose: the state lives in the DOM, where the browser put it, and a second copy in React could only disagree with it. Use the platform's own API through the content's ref — `ref.current.showPopover()` and `hidePopover()` — and take `onOpenChange` as the report of what happened, whoever caused it.
+Uncontrolled is the default, and it is the one to reach for: leave `open` out and the state lives in the DOM, where the browser put it. `defaultOpen` seeds it once at mount, and `onOpenChange` reports what happened, whoever caused it.
+
+`open` is there for when the popover's visibility is genuinely part of your state, and it is a real commitment rather than a convenience. It is the source of truth while it is given, so it wins BACK: a surface the platform hid while the prop still says open is shown again. The platform hides an `auto` popover on a click outside, on `Escape`, and when another one opens — none of which asks React — so `open` without `onOpenChange` builds something the user cannot dismiss. That combination warns in development.
+
+Both halves are imperative underneath, because no attribute opens a popover: the component calls `showPopover()` / `hidePopover()` for you. You can still call them yourself through the content's ref.
 
 ## Accessibility
 
