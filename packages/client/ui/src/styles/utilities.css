@@ -1,0 +1,48 @@
+/*
+ * DS-authored utilities — the normalisation every control we draw needs, in ONE
+ * place instead of re-derived per component.
+ *
+ * This is NOT a reset: it ships no element selectors and touches nothing of the
+ * consumer's page. `@apply control-base` inlines the declarations into the
+ * component's own hashed class, so it applies to OUR button and never to
+ * theirs. A page baseline is the app's business (see the `baseline` discussion
+ * in ../../.agents/doc/styling.md); this is the component's own contract —
+ * "I render the same regardless of the page hosting me".
+ *
+ * Why it exists at all: the DS ships precompiled CSS, so a consumer runs no
+ * Preflight (ADR-0001). Whatever the UA puts on a control is what they see.
+ * Split by evidence, not by taste — `git log -S` says the ELEMENT-SPECIFIC
+ * resets (the fieldset's groove border, the select's `appearance`, the
+ * textarea's `resize`) were all authored upfront, in the component's own
+ * `feat(`, while these two CROSS-CUTTING ones have two commits each and both
+ * are `fix(`. You ask yourself about a groove border while writing a fieldset;
+ * you never ask "does this inherit the page font".
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/*
+ * The baseline for a form control the DS draws. Measured in Chromium, Firefox
+ * and WebKit, not assumed:
+ *
+ * - `box-sizing`: an `<input>` and a `<textarea>` get `border-box` from NO UA
+ *   stylesheet, so `w-full` + `px-3` + a border rendered 306px inside a 280px
+ *   field, and `h-9` measured 40px against the 36px it promises — three
+ *   controls on one row at three heights. A `<button>` and a `<select>` DO get
+ *   it from every UA; stating it for all four keeps them in one box model
+ *   instead of resting on that asymmetry.
+ * - `font-family`: a form control gets its OWN font, not the page's. On a
+ *   Georgia page Chromium rendered the input in Arial and the textarea in
+ *   monospace — components these files call twins, in two different typefaces —
+ *   and the button label came out Arial (Chromium), -apple-system (Gecko),
+ *   system-ui (WebKit). `font-size`/`font-weight` need no line: the size
+ *   utilities set them. The family is the one that leaks.
+ *
+ * What is NOT here: anything true of one element only. `border: 0` belongs to
+ * Button (a `<button>` carries a 2px OUTSET border), `appearance: none` to
+ * Select, `resize` to Textarea, `margin: 0` to Checkbox/Radio. Those stay where
+ * their reason is.
+ */
+@utility control-base {
+  box-sizing: border-box;
+  font-family: inherit;
+}
