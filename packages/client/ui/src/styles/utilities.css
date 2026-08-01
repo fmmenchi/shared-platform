@@ -10,7 +10,7 @@
  * "I render the same regardless of the page hosting me".
  *
  * Why it exists at all: the DS ships precompiled CSS, so a consumer runs no
- * Preflight (ADR-0001). Whatever the UA puts on a control is what they see.
+ * Preflight (ADR-0001), and no component may depend on one (ADR-0022). Whatever the UA puts on a control is what they see.
  * Split by evidence, not by taste — `git log -S` says the ELEMENT-SPECIFIC
  * resets (the fieldset's groove border, the select's `appearance`, the
  * textarea's `resize`) were all authored upfront, in the component's own

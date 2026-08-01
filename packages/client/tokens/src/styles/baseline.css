@@ -30,7 +30,8 @@
  * overrides everything here with a plain rule.
  *
  * Import AFTER `vars.css` (and any preset), since every value here is a token.
- * Baseline: Widely available only (ADR-0017).
+ * Baseline: Widely available only (ADR-0017). The decision this file implements
+ * is ADR-0022 — browser defaults.
  */
 
 @layer fmmenchi.base {
