@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { FormAdapterProvider } from '@fmmenchi/ui';
 import type { Resolver } from 'react-hook-form';
-import {
-  RhfHost,
-  useRhfField,
-  useRhfErrors,
-} from '../adapters/react-hook-form.js';
+import { RhfForm } from '@fmmenchi/ui-form-ports/react-hook-form';
 import { useHandRolledForm } from '../adapters/no-library.js';
 import {
   EMPTY,
@@ -32,19 +28,17 @@ export function SignupWithRhf({ prefill }: { prefill?: SignupValues }) {
   const [saved, setSaved] = useState<SignupValues | null>(null);
   return (
     <>
-      <RhfHost
-        defaultValues={EMPTY}
-        values={prefill}
-        resolver={resolver}
+      {/* RhfForm is the library's: useForm, its provider, the <form> and
+          handleSubmit, written once there instead of in every app. */}
+      <RhfForm<SignupValues>
+        options={{ defaultValues: EMPTY, values: prefill, resolver }}
         onSubmit={async (values) => {
           await new Promise((r) => setTimeout(r, 700));
           setSaved(values);
         }}
       >
-        <FormAdapterProvider field={useRhfField} errors={useRhfErrors}>
-          <SignupFields />
-        </FormAdapterProvider>
-      </RhfHost>
+        <SignupFields />
+      </RhfForm>
       <Saved values={saved} />
     </>
   );

@@ -3,7 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UiProvider } from '@fmmenchi/ui';
 import { ZodScreen } from './zod.screen.js';
-import { useRhfField, useRhfErrors } from '../adapters/react-hook-form.js';
+import {
+  useRhfField,
+  useRhfErrors,
+} from '@fmmenchi/ui-form-ports/react-hook-form';
 
 const renderScreen = () =>
   render(
