@@ -5,6 +5,7 @@ import babel from '@rolldown/plugin-babel';
 import tailwindcss from '@tailwindcss/vite';
 import dts from 'vite-plugin-dts';
 import { playwright } from '@vitest/browser-playwright';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -99,17 +100,54 @@ export default defineConfig(() => ({
     },
   },
   test: {
-    name: '@fmmenchi/ui',
-    watch: false,
-    globals: true,
-    setupFiles: ['./src/test-setup.ts'],
-    browser: {
-      enabled: true,
-      provider: playwright(),
-      headless: true,
-      instances: [{ browser: 'chromium' }],
-    },
-    include: ['{src,tests}/**/*.{test,spec}.{ts,tsx}'],
-    reporters: ['default'],
+    // TWO projects, not one. The first is the suite as it was — the hand-written
+    // component and logic tests. The second runs every STORY as a test, which is
+    // what `@storybook/addon-vitest` adds: one run backs both the test widget
+    // inside Storybook's UI and `nx test @fmmenchi/ui` in CI.
+    //
+    // They stay apart rather than merging because they load different setups.
+    // The unit project loads `src/test-setup.ts` (token values, and NO Preflight
+    // — ADR-0022). The story project loads `.storybook/vitest.setup.ts`, which
+    // applies `preview.tsx`'s decorators, so a story under test renders the way
+    // the Storybook UI renders it rather than bare.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: '@fmmenchi/ui',
+          watch: false,
+          globals: true,
+          setupFiles: ['./src/test-setup.ts'],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: 'chromium' }],
+          },
+          include: ['{src,tests}/**/*.{test,spec}.{ts,tsx}'],
+          reporters: ['default'],
+        },
+      },
+      {
+        extends: true,
+        plugins: [
+          storybookTest({
+            configDir: path.join(import.meta.dirname, '.storybook'),
+          }),
+        ],
+        test: {
+          name: 'storybook',
+          watch: false,
+          setupFiles: ['./.storybook/vitest.setup.ts'],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: 'chromium' }],
+          },
+          reporters: ['default'],
+        },
+      },
+    ],
   },
 }));
