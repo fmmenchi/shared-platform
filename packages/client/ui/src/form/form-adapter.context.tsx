@@ -51,10 +51,15 @@ export function useFormStatus(component: string): FormStatus {
       `${component}: no form adapter in scope — wrap this form in a <FormAdapterProvider>.`,
     );
   }
-  if (adapter.status == null) {
+  const useStatus = adapter.status;
+  if (useStatus == null) {
     throw new Error(
       `${component}: the form adapter in scope provides no \`status\` — add one to use form-level components.`,
     );
   }
-  return adapter.status();
+  // Called through a `use`-prefixed BINDING, not as `adapter.status()`. A member
+  // call is not recognised as a hook by the tooling, and the React Compiler then
+  // memoises around it — measured: "change in the order of Hooks", and the value
+  // arrives undefined. The field path does the same thing for the same reason.
+  return useStatus();
 }
