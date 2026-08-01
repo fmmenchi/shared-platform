@@ -90,7 +90,7 @@ function Fieldset(props: FieldsetProps) {
   const supportsAriaInvalid = rest.role === 'radiogroup';
 
   return (
-    <DescribableContext.Provider value={describable}>
+    <DescribableContext value={describable}>
       <fieldset
         className={cn(styles.fieldset, className)}
         {...rest}
@@ -101,7 +101,7 @@ function Fieldset(props: FieldsetProps) {
       >
         {children}
       </fieldset>
-    </DescribableContext.Provider>
+    </DescribableContext>
   );
 }
 

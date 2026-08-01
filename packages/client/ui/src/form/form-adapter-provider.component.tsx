@@ -15,9 +15,9 @@ function FormAdapterProvider(props: FormAdapterProviderProps) {
   // avoiding — the provider must re-render its consumers when the app's hooks
   // change identity.
   return (
-    <FormAdapterContext.Provider value={{ field, status }}>
+    <FormAdapterContext value={{ field, status }}>
       {children}
-    </FormAdapterContext.Provider>
+    </FormAdapterContext>
   );
 }
 

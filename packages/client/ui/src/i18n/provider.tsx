@@ -72,11 +72,11 @@ export function UiProvider({ adapters, theme, children }: UiProviderProps) {
   }, [adapters, i18n]);
 
   return (
-    <UiContext.Provider value={value}>
+    <UiContext value={value}>
       <div dir={value.direction} data-theme={theme}>
         {children}
       </div>
-    </UiContext.Provider>
+    </UiContext>
   );
 }
 

@@ -46,8 +46,8 @@ function ChoiceField(props: ChoiceFieldProps) {
   const wiring = useFieldWiring('ChoiceField', invalid);
 
   return (
-    <FieldContext.Provider value={wiring.field}>
-      <DescribableContext.Provider value={wiring.describable}>
+    <FieldContext value={wiring.field}>
+      <DescribableContext value={wiring.describable}>
         <div
           className={cn(styles.choice, className)}
           {...rest}
@@ -63,8 +63,8 @@ function ChoiceField(props: ChoiceFieldProps) {
           )}
           {error === undefined ? null : <FieldError>{error}</FieldError>}
         </div>
-      </DescribableContext.Provider>
-    </FieldContext.Provider>
+      </DescribableContext>
+    </FieldContext>
   );
 }
 

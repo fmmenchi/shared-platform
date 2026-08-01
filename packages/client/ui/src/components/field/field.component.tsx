@@ -55,8 +55,8 @@ function Field(props: FieldProps) {
   const wiring = useFieldWiring('Field', invalid);
 
   return (
-    <FieldContext.Provider value={wiring.field}>
-      <DescribableContext.Provider value={wiring.describable}>
+    <FieldContext value={wiring.field}>
+      <DescribableContext value={wiring.describable}>
         <div
           className={cn(styles.field, className)}
           {...rest}
@@ -69,8 +69,8 @@ function Field(props: FieldProps) {
           )}
           {error === undefined ? null : <FieldError>{error}</FieldError>}
         </div>
-      </DescribableContext.Provider>
-    </FieldContext.Provider>
+      </DescribableContext>
+    </FieldContext>
   );
 }
 
