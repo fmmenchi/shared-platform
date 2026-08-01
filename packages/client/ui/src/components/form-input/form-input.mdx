@@ -60,6 +60,8 @@ const { FormInput, FormChoice } = createBoundFields<FieldPath<SignupValues>>();
 //         ~~~~~~~~~~~~ not a field of SignupValues
 ```
 
+If you use `@fmmenchi/ui-form-ports`, reach for its kit instead and pass the **values** type — `createRhfForm<SignupValues>()`, `createTanstackFields<…>()`, `createFormikFields<…>()`. It calls this underneath, and derives the paths with your library's own type, so no `FieldPath` reaches your components.
+
 `FieldPath` there is **react-hook-form's own** — use whatever your library offers (`DeepKeys` for TanStack, and a plain union where it offers none). The path syntax for a row belongs to the library too, `guests.0.name` here and `guests[0].name` for Conform, so a path type written in the design system would be wrong for half of them.
 
 It is a factory and not a prop because the type cannot travel any other way: React context carries a value whose type is fixed when the context is created, so no provider can hand a per-form name type to its descendants. There is no runtime — the same components come back, re-typed.

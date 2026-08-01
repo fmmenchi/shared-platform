@@ -24,19 +24,71 @@ and the reasoning is the same.
 
 ## Subpaths
 
-| Subpath             | Needs                                  | Provides                                                    |
-| ------------------- | -------------------------------------- | ----------------------------------------------------------- |
-| `./react-hook-form` | `react-hook-form` (optional peer)      | `createRhfField`, `useRhfErrors`, `RhfForm`                 |
-| `./formik`          | `formik` (optional peer)               | `createFormikField`, `useFormikErrors`                      |
-| `./tanstack`        | `@tanstack/react-form` (optional peer) | `createTanstackField`, `createTanstackErrors`               |
-| `./conform`         | `@conform-to/react` (optional peer)    | `createConformField`, `createConformErrors`                 |
-| `./react-19`        | nothing but React                      | `useActionField`, `useActionErrors`, `ActionErrorsProvider` |
+| Subpath             | Needs                                  | Provides                                                              |
+| ------------------- | -------------------------------------- | --------------------------------------------------------------------- |
+| `./react-hook-form` | `react-hook-form` (optional peer)      | `createRhfField`, `useRhfErrors`, `RhfForm`, `createRhfForm`          |
+| `./formik`          | `formik` (optional peer)               | `createFormikField`, `useFormikErrors`, `createFormikFields`          |
+| `./tanstack`        | `@tanstack/react-form` (optional peer) | `createTanstackField`, `createTanstackErrors`, `createTanstackFields` |
+| `./conform`         | `@conform-to/react` (optional peer)    | `createConformField`, `createConformErrors`                           |
+| `./react-19`        | nothing but React                      | `useActionField`, `useActionErrors`, `ActionErrorsProvider`           |
 
 The first four are the four most-used React form libraries; `./react-19` is the
 no-library option. All five bind the **same** components, and one test suite in
 `apps/ui-ports-validation` runs the same assertions against **the four** — if any
 of them needed its own assertions, the port would be leaking. `./react-19` is
 tested separately, because its submission model is not a library's at all.
+
+### Names checked against your form
+
+`name` is what binds a field, so a misspelt one fails the way an unbound field
+fails: it renders, it types, and it submits nothing. Each adapter ships a kit
+that checks names against the form's own fields — you pass the **values** type,
+never a path type:
+
+```ts
+// signup.form.ts — outside any component, beside the schema
+export const { Form, FormInput, FormChoice } = createRhfForm<SignupValues>();
+```
+
+```tsx
+// signup-fields.tsx — another file, another component, clean props
+import { FormInput } from './signup.form.js';
+
+<FormInput name="email" label="Email" />
+<FormInput name="emial" label="Email" />   // does not compile
+```
+
+No `FieldPath` and no library import reach your components: the path type is
+derived inside the adapter, which is the only place that knows the syntax —
+`guests.0.name` for react-hook-form, `guests[0].name` for TanStack. Same call,
+different derivation:
+
+| Subpath             | Kit                         | Paths from                                            |
+| ------------------- | --------------------------- | ----------------------------------------------------- |
+| `./react-hook-form` | `createRhfForm<T>()`        | `FieldPath<T>` (the library's)                        |
+| `./tanstack`        | `createTanstackFields<T>()` | `DeepKeys<T>` (the library's)                         |
+| `./formik`          | `createFormikFields<T>()`   | `FormikPath<T>` — derived here: Formik publishes none |
+| `./conform`         | none, and none needed       | `fields.email.name` off the metadata                  |
+
+**Conform is the exception on purpose.** Its names come from the metadata
+object, so a typo is a property that does not exist — a stronger guarantee than
+a string union, and it covers array rows too. Its own `FieldName<Schema>` type
+is `string & { [brand]?: … }` with the brand **optional**, so it accepts any
+string: typing a name against it would add nothing. Measured, not assumed.
+
+It takes no `defaultValues`. Real defaults come from props or a request, so they
+are not available where the kit is declared: the kit carries the SHAPE, the data
+goes to the form at render (`options={{ defaultValues, resolver }}`).
+
+Called with no type argument the kit returns a message type instead of the
+components, so the mistake is a compile error rather than a silent widening to
+`string`. The guard is type-level only — a JavaScript consumer still gets
+working, unchecked components.
+
+Why a module-level declaration rather than a provider: a type does not travel
+through React context (a context's type is fixed where it is created) and does
+not descend the JSX tree. An import is what carries it across a file boundary,
+which is exactly what a sub-component needs.
 
 ### `types` — declare the fields that are not plain text
 
