@@ -656,7 +656,7 @@ describe('Tooltip', () => {
     ] as const) {
       it(`has no violations — ${name}`, async () => {
         const { container } = renderUi(
-          <div
+          <main
             style={{
               background: 'var(--fm-color-background)',
               color: 'var(--fm-color-foreground)',
@@ -666,10 +666,37 @@ describe('Tooltip', () => {
             <Tooltip content="Move to archive">
               <Button aria-label="Archive">A</Button>
             </Tooltip>
-          </div>,
+          </main>,
           { theme },
         );
         await expectNoA11yViolations(container);
+      });
+
+      it(`has no violations while OPEN — ${name}`, async () => {
+        const { container } = renderUi(
+          <main
+            style={{
+              background: 'var(--fm-color-background)',
+              color: 'var(--fm-color-foreground)',
+              padding: '1rem',
+            }}
+          >
+            <Away />
+            <Tooltip content="Move to archive" openDelay={0}>
+              <Button aria-label="Archive">A</Button>
+            </Tooltip>
+          </main>,
+          { theme },
+        );
+
+        // Open, and past the fade: axe reading a surface mid-transition
+        // reports the contrast of an opacity on its way to 1.
+        await browser.hover(screen.getByRole('button', { name: 'Archive' }));
+        await waitFor(() => expect(isOpen()).toBe(true));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await expectNoA11yViolations(container);
+
+        await parkPointer();
       });
     }
   });

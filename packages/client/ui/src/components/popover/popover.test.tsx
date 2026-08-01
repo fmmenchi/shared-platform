@@ -81,7 +81,7 @@ describe('Popover', () => {
     ] as const) {
       it(`has no violations — ${name}`, async () => {
         const { container } = renderUi(
-          <div
+          <main
             style={{
               background: 'var(--fm-color-background)',
               color: 'var(--fm-color-foreground)',
@@ -89,9 +89,35 @@ describe('Popover', () => {
             }}
           >
             {example()}
-          </div>,
+          </main>,
           { theme },
         );
+        await expectNoA11yViolations(container);
+      });
+
+      it(`has no violations while OPEN — ${name}`, async () => {
+        // The state the closed-only axe run never saw, and the one that
+        // matters: the dialog, its name, the trigger's `aria-expanded`, and
+        // the contrast of content on the card. Awaited past the entry fade —
+        // axe measured mid-transition reports a contrast failure for opacity
+        // that is on its way to 1, which is a measurement artefact and not a
+        // criterion. A `<main>` for the same reason: axe's `region` rule flags
+        // content outside a landmark, and a bare test page has none.
+        const { container } = renderUi(
+          <main
+            style={{
+              background: 'var(--fm-color-background)',
+              color: 'var(--fm-color-foreground)',
+              padding: '1rem',
+            }}
+          >
+            {example()}
+          </main>,
+          { theme },
+        );
+
+        await browser.click(screen.getByRole('button', { name: 'Share' }));
+        await new Promise((resolve) => setTimeout(resolve, 400));
         await expectNoA11yViolations(container);
       });
     }
