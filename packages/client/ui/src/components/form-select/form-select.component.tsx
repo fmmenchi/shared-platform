@@ -29,7 +29,7 @@ import type { FormSelectProps } from './form-select.types.js';
  */
 function FormSelect(props: FormSelectProps) {
   const { name, label, hint, children, ref, ...rest } = props;
-  const { control, errors } = useBoundField<'select'>(name, 'FormSelect');
+  const { control, errors } = useBoundField(name, 'FormSelect', 'select');
   useBindingOwnedWarning(rest, 'FormSelect');
   const messages = toMessages(errors);
 

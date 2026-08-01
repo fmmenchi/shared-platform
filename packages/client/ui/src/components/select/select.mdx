@@ -18,11 +18,17 @@ Two natives are **refused**, because accepting them would promise something this
 
 <Canvas of={SelectStories.Default} />
 
-### The rendering stays native
+### The box is ours, the list is the browser's
 
-There is no `appearance: none` here and no drawn arrow — the same call as `Checkbox` and `Radio`, and for a reason that costs more than it looks. On a phone the browser opens the **system picker**: a sheet or a wheel, at thumb height, that no popup of ours reaches. Styling stops at the box; the open list belongs to the platform.
+`appearance: none` takes the box — border, radius, colours, and an arrow drawn with two gradients so it follows `currentColor` into the dark theme. It gives up **nothing** of the list: the popup is still the platform's, still the system picker on a phone. That is precisely why `appearance: base-select` had to be invented — `none` never reached the list.
 
-The trade is real and worth stating: the list cannot be themed, so a `Select` and a future combobox will not look alike while open. What buys it back is everything the native control brings for free — typeahead, arrow keys, Home/End, the screen-reader announcements, and submitting with `FormData` even with no JavaScript running.
+It also fixes something measured: WebKit **discards `padding` entirely** on a menulist select, so before this a Select and an Input in the same form started their text at different insets on Safari.
+
+The trade that remains is real: the open list cannot be themed, so a `Select` and a future combobox will not look alike while open. What buys it back is everything the native control brings for free — typeahead, arrow keys, Home/End, the screen-reader announcements, and submitting with `FormData` even with no JavaScript running.
+
+Where the engine supports it, a `@supports (appearance: base-select)` block themes the list too. That is a **deliberate** use of a single-engine feature, below Baseline "newly available": no linter guards it — `css/use-baseline` explicitly ignores `.module.css`, since its parser cannot read `@apply` — so it is a judgement, written down here rather than discovered later. Everything works with none of it.
+
+<Canvas of={SelectStories.States} />
 
 <Canvas of={SelectStories.Sizes} />
 
@@ -32,7 +38,18 @@ They are content, and a design system that owned them would be owning the app's 
 
 <Canvas of={SelectStories.Groups} />
 
-A **placeholder** is the same trick as in plain HTML — a first option with an empty value: `<option value="">Choose…</option>`. Add `disabled` to it if the user must not pick it back.
+A **placeholder** is the same trick as in plain HTML — a first option with an empty value:
+
+```tsx
+<FormSelect name="country" label="Country">
+  <option value="" disabled>
+    Choose…
+  </option>
+  …
+</FormSelect>
+```
+
+If you add `disabled`, you must also make the empty value the initial one — `defaultValue=""`, or your form library's default for that field. Measured: without it HTML's own reset algorithm **skips disabled options** and selects the first real one, so the field starts on `"it"`, `required` never fires (`valueMissing: false`), and a user who never opened the select submits a value they did not choose.
 
 ### When this is the wrong component
 

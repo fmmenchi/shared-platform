@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Textarea } from './textarea.component.js';
+import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -30,6 +31,47 @@ describe('Textarea', () => {
     );
   });
 
+  // Untested until an adversarial review removed `useFieldControl` and watched
+  // all 14 tests stay green.
+  it('inside a Field, adopts its id, description and invalid state', async () => {
+    render(
+      <Field label="Notes" hint="Markdown is fine." error="Too short.">
+        <Textarea />
+      </Field>,
+    );
+
+    const field = screen.getByRole('textbox', { name: 'Notes' });
+    expect(field).toHaveAttribute('id');
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    await waitFor(() =>
+      expect(field).toHaveAccessibleDescription('Markdown is fine. Too short.'),
+    );
+  });
+
+  it('honours its size and resize axes, and merges the consumer className', () => {
+    // `textareaVariants({})` used to leave the suite green: neither axis was
+    // asserted anywhere.
+    const { rerender } = render(
+      <Textarea aria-label="q" size="lg" resize="none" className="mine" />,
+    );
+    const field = screen.getByRole('textbox', { name: 'q' });
+    const large = field.className;
+    expect(field).toHaveClass('mine');
+
+    rerender(
+      <Textarea aria-label="q" size="sm" resize="none" className="mine" />,
+    );
+    const small = screen.getByRole('textbox', { name: 'q' }).className;
+    expect(small).not.toBe(large);
+
+    rerender(
+      <Textarea aria-label="q" size="sm" resize="vertical" className="mine" />,
+    );
+    expect(screen.getByRole('textbox', { name: 'q' }).className).not.toBe(
+      small,
+    );
+  });
+
   it('forwards ref to the textarea element', () => {
     let el: HTMLElement | null = null;
     render(
@@ -43,6 +85,10 @@ describe('Textarea', () => {
     expect(el).toBeInstanceOf(HTMLTextAreaElement);
   });
 
+  // What this catches: a change in the MARKUP — a stray wrapper, a lost
+  // attribute. What it does NOT catch: anything in the stylesheet. The class
+  // names are content-hashed, so editing one declaration fails this test with
+  // the same diff as editing another, and the reflex `-u` absorbs both.
   it('matches the rendered snapshot', () => {
     const { container } = render(<Textarea aria-label="q" />);
     expect(container.firstChild).toMatchSnapshot();
@@ -123,6 +169,18 @@ describe('Textarea', () => {
               <label>
                 Notes
                 <Textarea size={size} />
+              </label>
+              <label>
+                Invalid
+                <Textarea size={size} aria-invalid="true" />
+              </label>
+              <label>
+                Disabled
+                <Textarea size={size} disabled />
+              </label>
+              <label>
+                Read-only
+                <Textarea size={size} readOnly defaultValue="Said." />
               </label>
             </div>,
             { theme },

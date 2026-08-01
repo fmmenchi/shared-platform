@@ -1,4 +1,5 @@
 import { useUiAdapters } from '../i18n/provider.js';
+import { forTag } from './control-props.js';
 import type { BoundField, ControlTag } from './form-adapter.types.js';
 
 /**
@@ -31,6 +32,7 @@ function useFormBinding() {
 export function useBoundField<Tag extends ControlTag = 'input'>(
   name: string,
   component: string,
+  tag: Tag = 'input' as Tag,
 ): BoundField<Tag> {
   const binding = useFormBinding();
   const useFormField = binding?.field;
@@ -40,18 +42,25 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
     );
   }
   /*
-   * The one cast in the port, and the reason it is sound: an adapter builds its
-   * bag WITHOUT knowing the tag — `name`, `onChange` and `ref` are the same
-   * three things whichever control receives them, and every adapter's handler
-   * reads `event.target.value`, which all three have. What differs is only the
-   * TYPE of the element they mention, and the component asking here is the one
-   * that renders it, so it is also the only one that can say.
+   * An adapter builds its bag WITHOUT knowing the tag, which is what makes the
+   * port small: `name`, `onChange` and `ref` mean the same thing on all three
+   * controls, and every adapter's handler reads `event.target.value`, which
+   * all three have.
+   *
+   * The cast alone was NOT sound, and an adversarial review proved it with
+   * Conform: `getInputProps` also emits `type`, `pattern`, `accept`, `min`,
+   * `max`, `step` and `multiple`, which reached a `<select>` verbatim — and
+   * `multiple` turns it into a listbox, breaking the role the docs and tests
+   * state. So the bag is FILTERED for the tag here, not merely re-typed:
+   * `forTag` drops what the element cannot carry, the same way
+   * `withoutBindingOwned` keeps the call site honest where types do not reach.
    *
    * The alternative was threading the tag through `UseFormField` itself, which
    * would make every adapter declare a parameter it has no use for — a generic
-   * in four packages to spare one cast in this file.
+   * in four packages to spare one filter in this file.
    */
-  return useFormField(name) as BoundField<Tag>;
+  const bound = useFormField(name) as BoundField<Tag>;
+  return { ...bound, control: forTag(tag, bound.control) };
 }
 
 /**

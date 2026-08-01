@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Select } from './select.component.js';
+import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -42,6 +43,102 @@ describe('Select', () => {
     expect(screen.getByRole('option', { name: 'Italy' })).toBeInTheDocument();
   });
 
+  // The Field wiring was untested: removing `useFieldControl` from the component
+  // left all 14 tests green. Input's suite had this; this one had copied
+  // everything but.
+  it('inside a Field, adopts its id, description and invalid state', async () => {
+    render(
+      <Field label="Country" hint="Where you live." error="Pick one.">
+        <Select>
+          <Options />
+        </Select>
+      </Field>,
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Country' });
+    expect(select).toHaveAttribute('id');
+    expect(select).toHaveAttribute('aria-invalid', 'true');
+    await waitFor(() =>
+      expect(select).toHaveAccessibleDescription('Where you live. Pick one.'),
+    );
+  });
+
+  it('honours its size axis, and merges the consumer className', () => {
+    // Both were unasserted: `selectVariants({})` and dropping `className` from
+    // `cn` each left the suite green.
+    const { rerender } = render(
+      <Select aria-label="q" size="lg" className="mine">
+        <Options />
+      </Select>,
+    );
+    const select = screen.getByRole('combobox', { name: 'q' });
+    const large = select.className;
+    expect(select).toHaveClass('mine');
+
+    rerender(
+      <Select aria-label="q" size="sm" className="mine">
+        <Options />
+      </Select>,
+    );
+    expect(screen.getByRole('combobox', { name: 'q' }).className).not.toBe(
+      large,
+    );
+  });
+
+  describe('what it refuses, where the type cannot reach', () => {
+    it('drops `multiple` from a spread — it would flip the role to listbox', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      // A JSX spread of a non-fresh object skips excess-property checks, and
+      // this is the path FormSelect takes with the adapter's bag. Conform's
+      // `getInputProps` really does emit `multiple` for an array field.
+      const bag = { multiple: true } as object;
+      render(
+        <Select aria-label="q" {...bag}>
+          <Options />
+        </Select>,
+      );
+
+      const select = screen.getByRole<HTMLSelectElement>('combobox', {
+        name: 'q',
+      });
+      expect(select.multiple).toBe(false);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Select: `multiple` is not supported'),
+      );
+      warn.mockRestore();
+    });
+
+    it('drops a numeric `size`, and keeps the height it would have removed', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const bag = { size: 5 } as object;
+      render(
+        <Select aria-label="q" {...bag}>
+          <Options />
+        </Select>,
+      );
+
+      const forced = screen.getByRole<HTMLSelectElement>('combobox', {
+        name: 'q',
+      });
+      expect(forced).not.toHaveAttribute('size');
+      // cva's default only fires on `undefined`, so a numeric size used to
+      // remove the class outright and leave the control unsized.
+      const { container } = render(
+        <Select aria-label="plain">
+          <Options />
+        </Select>,
+      );
+      expect(forced.className).toBe(
+        container.querySelector('select')?.className,
+      );
+      warn.mockRestore();
+    });
+  });
+
   it('forwards ref to the select element', () => {
     let el: HTMLElement | null = null;
     render(
@@ -57,6 +154,10 @@ describe('Select', () => {
     expect(el).toBeInstanceOf(HTMLSelectElement);
   });
 
+  // What this catches: a change in the MARKUP — a stray wrapper, a lost
+  // attribute. What it does NOT catch: anything in the stylesheet. The class
+  // names are content-hashed, so editing one declaration fails this test with
+  // the same diff as editing another, and the reflex `-u` absorbs both.
   it('matches the rendered snapshot', () => {
     const { container } = render(
       <Select aria-label="q">
@@ -126,7 +227,9 @@ describe('Select', () => {
     });
   });
 
-  // axe in real Chromium — every size, in each theme.
+  // axe in real Chromium — every size AND the states Input already audited:
+  // invalid and disabled shipped unchecked here, which lowered a bar the repo
+  // had already set.
   describe('accessibility (axe)', () => {
     const sizes = ['sm', 'md', 'lg'] as const;
     const themes = [
@@ -149,6 +252,26 @@ describe('Select', () => {
                 Country
                 <Select size={size}>
                   <Options />
+                </Select>
+              </label>
+              <label>
+                Invalid
+                <Select size={size} aria-invalid="true">
+                  <Options />
+                </Select>
+              </label>
+              <label>
+                Disabled
+                <Select size={size} disabled>
+                  <Options />
+                </Select>
+              </label>
+              <label>
+                Grouped
+                <Select size={size}>
+                  <optgroup label="Europe">
+                    <option value="it">Italy</option>
+                  </optgroup>
                 </Select>
               </label>
             </div>,

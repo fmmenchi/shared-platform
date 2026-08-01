@@ -69,7 +69,9 @@ describe('FormSelect, against the contract itself', () => {
   it('renders every message, and the hint keeps its place before them', async () => {
     const field: UseFormField = (name) => ({
       control: { name },
-      errors: ['Pick a country.'],
+      // TWO messages: with one, `messages.slice(0, 1)` in the component left
+      // this test green while claiming to render every message.
+      errors: ['Pick a country.', 'We only ship to the EU.'],
     });
     render(
       provider(
@@ -83,7 +85,7 @@ describe('FormSelect, against the contract itself', () => {
     const control = screen.getByRole('combobox', { name: 'Country' });
     await waitFor(() =>
       expect(control).toHaveAccessibleDescription(
-        'Where you live. Pick a country.',
+        'Where you live. Pick a country. We only ship to the EU.',
       ),
     );
     expect(control).toHaveAttribute('aria-invalid', 'true');
@@ -130,6 +132,43 @@ describe('FormSelect, against the contract itself', () => {
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('FormSelect: `onChange`, `value` are owned'),
     );
+    warn.mockRestore();
+  });
+
+  it('drops the props only an <input> can carry', () => {
+    // THE Conform case, and the reason the port filters instead of merely
+    // re-typing: `getInputProps` is the only helper its adapter can call for a
+    // field it was not told is a select, and it emits these from the schema's
+    // constraints. Measured before the fix: they reached the DOM verbatim, and
+    // `multiple` flipped the element's role from combobox to listbox.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const field: UseFormField = (name) => ({
+      control: {
+        name,
+        type: 'text',
+        pattern: '[a-z]+',
+        accept: 'image/*',
+        min: 1,
+        step: 2,
+        multiple: true,
+      },
+    });
+    render(
+      provider(
+        field,
+        <FormSelect name="country" label="Country">
+          {options}
+        </FormSelect>,
+      ),
+    );
+
+    const control = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: 'Country',
+    });
+    expect(control.multiple).toBe(false);
+    for (const attribute of ['type', 'pattern', 'accept', 'min', 'step']) {
+      expect(control).not.toHaveAttribute(attribute);
+    }
     warn.mockRestore();
   });
 

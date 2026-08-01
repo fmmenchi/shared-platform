@@ -26,7 +26,7 @@ import type { FormTextareaProps } from './form-textarea.types.js';
  */
 function FormTextarea(props: FormTextareaProps) {
   const { name, label, hint, ref, ...rest } = props;
-  const { control, errors } = useBoundField<'textarea'>(name, 'FormTextarea');
+  const { control, errors } = useBoundField(name, 'FormTextarea', 'textarea');
   useBindingOwnedWarning(rest, 'FormTextarea');
   const messages = toMessages(errors);
 

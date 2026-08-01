@@ -19,6 +19,8 @@ Textarea is a multi-line text field on the native `<textarea>` — `Input`'s twi
 
 `size` scales the type and the padding; it sets **no height**, because a `<textarea>` is sized by its `rows` attribute and a fixed height in CSS would make that attribute a lie — `rows={10}` inside a 36px box. Horizontal padding matches `Input` so a one-line field and a multi-line one share a rhythm when they sit together.
 
+It does set a **minimum** equal to Input's height, and that minimum earns its place twice: padding alone lands 2px off Input at every size (the 0.25rem scale cannot express the 7/8/9px that would solve it), and it is the floor that stops the resize handle being dragged down to 18px — under the 24px target size WCAG 2.5.8 asks for.
+
 <Canvas of={TextareaStories.Sizes} />
 
 ### Dragging is vertical by default
@@ -41,7 +43,7 @@ The error look is driven by the native `aria-invalid`, which every form library 
 
 ## Accessibility
 
-- Role **textbox** with `aria-multiline="true"`, from the element itself.
+- Role **textbox**, with the _multiline_ property set by the element itself. (No `aria-multiline` attribute appears in the DOM — the mapping is the browser's, not an attribute we write.)
 - The accessible name comes from an associated `<label>` (wrapping or `htmlFor`), or `aria-label`/`aria-labelledby` — a placeholder is not a label.
 - Inside a `Field` it picks up `id`, `aria-describedby` and `aria-invalid` automatically; standalone it stays untouched.
 - Focus shows the same 2px ring as every other control, restored to the system `Highlight` colour in forced-colors.

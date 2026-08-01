@@ -37,7 +37,7 @@ There is no `error` prop — the messages come from the adapter as a list — an
 
 ### The tag is declared to the binding
 
-An adapter builds ONE bag of props without knowing which control receives it. Its `ref` and handlers name an element, though, so this component asks the binding for its own tag — `useBoundField<'select'>` — while the four shipped adapters stay untouched, `input` being the default. The `select` entry omits the native `size` for the same reason `Input`'s does: that name is the sizing axis here, and a number arriving from an adapter would quietly turn the control into a list box.
+An adapter builds ONE bag of props without knowing which control receives it, so this component tells the binding which tag it renders — `useBoundField(name, 'FormSelect', 'select')` — and the binding **filters the bag** to what that element can carry. Re-typing alone was not enough, and Conform proved it: with no way to say "this field is a select", its adapter called `getInputProps` and emitted `type`, `pattern`, `accept` and `multiple` onto the element — and `multiple` flips the role from `combobox` to `listbox`, so the contract this page states stopped holding. The cure is upstream (Conform's adapter now uses `getSelectProps`, given a `select` entry in its `types` map); the filter is the net, for any adapter that gets it wrong.
 
 ## Accessibility
 

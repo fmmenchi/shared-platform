@@ -1,4 +1,9 @@
-import { getInputProps, useField } from '@conform-to/react';
+import {
+  getInputProps,
+  getSelectProps,
+  getTextareaProps,
+  useField,
+} from '@conform-to/react';
 import type { UseFormField } from '@fmmenchi/ui';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
 
@@ -27,11 +32,24 @@ export function createConformField(
 
   return function useConformField(name) {
     const [meta] = useField(name);
+    const type = types[name] ?? 'text';
+    /*
+     * Conform has THREE helpers, one per element, and calling the wrong one is
+     * not cosmetic: an adversarial review measured `getInputProps` emitting
+     * `type`, `pattern`, `accept`, `min`, `step` and `multiple` onto a
+     * `<select>` — and `multiple` turns it into a listbox, so the role the docs
+     * and the tests state stopped holding. The design system now filters the
+     * bag by tag as a net; this is the cure.
+     */
+    const control =
+      type === 'select'
+        ? getSelectProps(meta, { ariaAttributes: false })
+        : type === 'textarea'
+          ? getTextareaProps(meta, { ariaAttributes: false })
+          : getInputProps(meta, { type, ariaAttributes: false });
+
     return {
-      control: getInputProps(meta, {
-        type: types[name] ?? 'text',
-        ariaAttributes: false,
-      }),
+      control,
       // Conform already reports a list, which is the port's shape — one of the
       // reasons the port took that shape.
       errors: meta.errors,
