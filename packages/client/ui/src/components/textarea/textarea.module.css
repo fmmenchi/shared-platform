@@ -1,0 +1,74 @@
+/*
+ * Textarea styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through the semantic `input-*` role utilities, motion ONLY through
+ * var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate enforces both.
+ * It shares Input's roles on purpose: a text field and a multi-line text field
+ * that did not match would read as two different systems.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .textarea {
+    @apply w-full rounded-md border px-3;
+    @apply bg-input text-input-foreground border-input-border;
+    @apply placeholder:text-input-placeholder;
+    @apply transition;
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+
+  /* Error state is the native attribute the form library already sets. Signalled
+     by BOTH colour and weight (a thicker border) so it isn't carried by colour
+     alone (WCAG 1.4.1) — the same weight cue then works in forced colors too. */
+  .textarea[aria-invalid='true'] {
+    @apply border-input-invalid;
+    border-width: 2px;
+  }
+
+  .textarea:disabled {
+    @apply bg-input-disabled cursor-not-allowed;
+  }
+
+  /* Size scales the type and the VERTICAL padding; the horizontal stays `px-3`
+     like Input, so a text field and a multi-line one side by side share a
+     rhythm. No height here: Input's `h-8/9/11` would fight `rows`, which is
+     what actually sizes a textarea and belongs to the consumer. */
+  .sm {
+    @apply py-1.5 text-xs;
+  }
+  .md {
+    @apply py-2 text-sm;
+  }
+  .lg {
+    @apply py-2.5 text-base;
+  }
+
+  /* The browser's default is `both`, which lets a drag make the field wider
+     than the form around it — a layout no grid survives, and the one thing a
+     textarea does that an author never wants. */
+  .resizeVertical {
+    resize: vertical;
+  }
+  .resizeNone {
+    resize: none;
+  }
+
+  /* Forced colors: the token fill/border are replaced by system colours; the
+     border keeps the field bounded, and the invalid state — otherwise a colour
+     — is restored so it survives High Contrast. */
+  @media (forced-colors: active) {
+    .textarea {
+      border: 1px solid ButtonText;
+    }
+    /* Restore the OS focus convention, like every other DS control. */
+    .textarea:focus-visible {
+      outline-color: Highlight;
+    }
+    .textarea:disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+  }
+}

@@ -71,17 +71,40 @@ export type UseFormErrors = () => Readonly<Record<string, FieldMessages>>;
  */
 export type FieldMessages = readonly string[];
 
-export interface BoundField {
+/**
+ * The native controls a field can be, and the props each one takes.
+ *
+ * An adapter produces ONE bag of props without knowing which tag will receive
+ * it — `name`, `onChange`, `ref` mean the same thing on all three. The types do
+ * not agree, though: measured, a `control` typed for `<input>` fails on exactly
+ * two properties when spread onto a `<textarea>` — `ref`
+ * (`Ref<HTMLInputElement>` vs `Ref<HTMLTextAreaElement>`) and the event
+ * handlers. Everything else, three hundred props of it, is assignable.
+ *
+ * So the bag is keyed by TAG, and the component that renders the element is the
+ * one that says which. `input` omits the native `size` attribute: on `Input`
+ * that name is the design system's sizing axis (`sm`/`md`/`lg`), so a number
+ * arriving from an adapter would not typecheck and, worse, would quietly mean
+ * something else. `textarea` omits `children`, which is how HTML sets its
+ * initial text and a trap in React.
+ */
+export interface ControlPropsByTag {
+  input: Omit<ComponentProps<'input'>, 'size'>;
+  textarea: Omit<ComponentProps<'textarea'>, 'children'>;
+  select: ComponentProps<'select'>;
+}
+
+/** Which native control a bound component renders. */
+export type ControlTag = keyof ControlPropsByTag;
+
+export interface BoundField<Tag extends ControlTag = 'input'> {
   /**
    * Spread onto the control. Native props only — `name`, `onChange`, `ref`, …
    *
-   * Typed for `<input>` because that is what the bound components render today.
-   * The native `size` attribute is omitted: on `Input` that name is the design
-   * system's SIZING axis (`sm`/`md`/`lg`), so a number arriving from an adapter
-   * would not typecheck and, worse, would silently mean something else. Widen
-   * this — probably to a generic — when `Textarea` and `Select` land.
+   * Defaults to `input`, so every adapter written before the other tags existed
+   * still says exactly what it said.
    */
-  control: Omit<ComponentProps<'input'>, 'size'>;
+  control: ControlPropsByTag[Tag];
   /**
    * What is wrong with the field — see {@link FieldMessages}. Absent, or empty,
    * means valid; a field rarely fails in exactly one way, so it is a list.
