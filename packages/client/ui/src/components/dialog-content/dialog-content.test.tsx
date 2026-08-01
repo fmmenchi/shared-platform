@@ -205,10 +205,21 @@ describe('DialogContent', () => {
     expect(surface.open).toBe(false);
   });
 
-  it('wins BACK: a close the platform performs is undone while `open` is true', async () => {
-    const noop = () => undefined;
+  it('grants a close the platform performs, even while `open` is true', async () => {
+    // This replaces a test that asserted the opposite — that the prop "wins
+    // back" a platform close, the way React snaps an `<input value>` back when
+    // the consumer swallows the change. Measured what that means here: with
+    // `open` still true, Escape closed the dialog and it reopened before the
+    // next frame; a second Escape did the same; the focus never left. The user
+    // could not get out — a keyboard trap (WCAG 2.1.2) built out of a consumer
+    // bug that on an input would only have meant "you cannot type".
+    //
+    // So a close request is granted, and what an inattentive consumer gets is
+    // a visible divergence — the dialog shut while their prop says open —
+    // which they can see and fix, and which `onOpenChange` tells them about.
+    const onOpenChange = vi.fn();
     render(
-      <Dialog open onOpenChange={noop}>
+      <Dialog open onOpenChange={onOpenChange}>
         <DialogContent>content</DialogContent>
       </Dialog>,
     );
@@ -217,7 +228,35 @@ describe('DialogContent', () => {
 
     // What Escape, a backdrop click and `<form method="dialog">` all reach.
     surface.close();
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    expect(surface.open).toBe(false);
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('opens again when the prop asks again', async () => {
+    // The other half of granting the close: the consumer is still in charge,
+    // so a NEW `true` reopens it. The effect runs on the prop's transitions,
+    // never on the platform's, which is the whole distinction.
+    const { rerender } = render(
+      <Dialog open onOpenChange={() => undefined}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+    surface.close();
+
+    rerender(
+      <Dialog open={false} onOpenChange={() => undefined}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
+    rerender(
+      <Dialog open onOpenChange={() => undefined}>
+        <DialogContent>content</DialogContent>
+      </Dialog>,
+    );
     await vi.waitFor(() => expect(surface.open).toBe(true));
+    surface.close();
   });
 
   it('ignores `defaultOpen` while controlled — one writer, not two', () => {

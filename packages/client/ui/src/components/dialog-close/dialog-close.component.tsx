@@ -20,13 +20,26 @@ function DialogClose(props: DialogCloseProps) {
   const dialog = useDialogPart('DialogClose');
 
   const surface = dialog?.surface;
+  const controlled = dialog?.open !== undefined;
+  const reportOpen = dialog?.reportOpen;
+
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(event);
-      if (event.defaultPrevented || commandsSupported()) return;
+      if (event.defaultPrevented) return;
+
+      // Symmetrical with the trigger: while the consumer owns the state, this
+      // asks them to close it. (The dialog closes either way — the platform
+      // grants every close request — but reporting keeps their prop in step.)
+      if (controlled) {
+        reportOpen?.(false);
+        return;
+      }
+
+      if (commandsSupported()) return;
       surface?.close();
     },
-    [onClick, surface],
+    [onClick, controlled, reportOpen, surface],
   );
 
   return (
@@ -34,8 +47,8 @@ function DialogClose(props: DialogCloseProps) {
       type="button"
       {...rest}
       onClick={handleClick}
-      command="close"
-      commandfor={dialog?.surfaceId}
+      command={controlled ? undefined : 'close'}
+      commandfor={controlled ? undefined : dialog?.surfaceId}
     />
   );
 }
