@@ -71,7 +71,7 @@ function DemoForm({ onValid = vi.fn() }: { onValid?: () => void }) {
 describe('the form level of the adapter', () => {
   it('renders NOTHING while the form is valid', () => {
     render(<DemoForm />);
-    expect(screen.queryByRole('group')).toBeNull();
+    expect(screen.queryByRole('region')).toBeNull();
   });
 
   it('lists every message from every field after a failed submit', async () => {
@@ -79,7 +79,7 @@ describe('the form level of the adapter', () => {
     render(<DemoForm />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
-    const summary = await screen.findByRole('group', {
+    const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
     const items = [...summary.querySelectorAll('li')].map((n) => n.textContent);
@@ -98,7 +98,7 @@ describe('the form level of the adapter', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }));
     await waitFor(() =>
       expect(
-        screen.getByRole('group', { name: 'There is a problem' }),
+        screen.getByRole('region', { name: 'There is a problem' }),
       ).toHaveFocus(),
     );
   });
@@ -107,7 +107,7 @@ describe('the form level of the adapter', () => {
     const user = userEvent.setup();
     render(<DemoForm />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    const summary = await screen.findByRole('group', {
+    const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
     await waitFor(() => expect(summary).toHaveFocus());
@@ -128,7 +128,7 @@ describe('the form level of the adapter', () => {
     const user = userEvent.setup();
     render(<DemoForm />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    await screen.findByRole('group', { name: 'There is a problem' });
+    await screen.findByRole('region', { name: 'There is a problem' });
 
     // Fixing one field drops the error count — which is not the summary
     // appearing, and must not pull focus out of the input mid-word. It did:
@@ -146,7 +146,7 @@ describe('the form level of the adapter', () => {
     const user = userEvent.setup();
     render(<DemoForm />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    await screen.findByRole('group');
+    await screen.findByRole('region');
 
     await user.click(
       screen.getByRole('link', { name: /Password: At least 8/ }),
@@ -158,7 +158,7 @@ describe('the form level of the adapter', () => {
     const user = userEvent.setup();
     render(<DemoForm />);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    const summary = await screen.findByRole('group');
+    const summary = await screen.findByRole('region');
     expect(summary.textContent).toContain('Email:');
     expect(summary.textContent).not.toContain('email:');
   });
@@ -202,7 +202,7 @@ describe('the form level of the adapter', () => {
         await user.click(
           screen.getByRole('button', { name: 'Create account' }),
         );
-        await screen.findByRole('group');
+        await screen.findByRole('region');
         await expectNoA11yViolations(container);
       });
     }
