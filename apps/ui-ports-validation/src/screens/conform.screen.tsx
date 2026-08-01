@@ -49,21 +49,22 @@ const TYPES: Record<string, 'text' | 'email' | 'password' | 'checkbox'> = {
 
 const useConformField: UseFormField = (name) => {
   const [meta] = useField(name);
-  // Conform's getInputProps returns an `aria-describedby` pointing at an error
-  // element IT expects you to render. We render `FieldError` instead, so that
-  // reference dangles — measured: `<id>-email-error`, which exists nowhere.
-  // Dropping it is the adapter's job: translating between one library's
-  // assumptions and the design system's is the whole reason an adapter exists.
+  // `ariaAttributes: false` — Conform's own switch for exactly this case. It
+  // otherwise emits an `aria-describedby` pointing at an error element IT
+  // expects you to render, and we render `FieldError` instead: measured before
+  // this, the attribute carried `<id>-email-error`, which existed nowhere. A
+  // dangling reference, silent, on the accessible part.
   //
-  // The `id` is NOT dropped. The field adopts whatever the control brings and
-  // moves the label's `htmlFor` to match, so Conform keeps the id its own
-  // markup refers to.
-  const { 'aria-describedby': _conformDescribedBy, ...control } = getInputProps(
-    meta,
-    { type: TYPES[name] ?? 'text' },
-  );
-
-  return { control, error: meta.errors };
+  // The `id` still comes through, and is kept: the field ADOPTS whatever the
+  // control brings and moves the label's `htmlFor` to match, so Conform keeps
+  // the id its own markup refers to.
+  return {
+    control: getInputProps(meta, {
+      type: TYPES[name] ?? 'text',
+      ariaAttributes: false,
+    }),
+    error: meta.errors,
+  };
 };
 
 export function ConformScreen() {
