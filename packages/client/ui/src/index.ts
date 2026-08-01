@@ -118,3 +118,13 @@ export type { PopoverTriggerProps } from './components/popover-trigger/popover-t
 export type { PopoverContentProps } from './components/popover-content/popover-content.types.js';
 export type { PopoverHeadingProps } from './components/popover-heading/popover-heading.types.js';
 export type { PopoverCloseProps } from './components/popover-close/popover-close.types.js';
+export { Dialog } from './components/dialog/dialog.component.js';
+export { DialogTrigger } from './components/dialog-trigger/dialog-trigger.component.js';
+export { DialogContent } from './components/dialog-content/dialog-content.component.js';
+export { DialogHeading } from './components/dialog-heading/dialog-heading.component.js';
+export { DialogClose } from './components/dialog-close/dialog-close.component.js';
+export type { DialogProps } from './components/dialog/dialog.types.js';
+export type { DialogTriggerProps } from './components/dialog-trigger/dialog-trigger.types.js';
+export type { DialogContentProps } from './components/dialog-content/dialog-content.types.js';
+export type { DialogHeadingProps } from './components/dialog-heading/dialog-heading.types.js';
+export type { DialogCloseProps } from './components/dialog-close/dialog-close.types.js';

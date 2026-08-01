@@ -1,0 +1,10 @@
+/* The dialog's name. Sized as a heading inside a card, not as a page title. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .heading {
+    @apply text-lg font-semibold;
+    margin: 0;
+    margin-block-end: var(--fm-space-stack-s);
+  }
+}
