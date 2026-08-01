@@ -1,0 +1,178 @@
+/*
+ * Select styles — CSS Modules authored with Tailwind. Colours ONLY through the
+ * semantic `input-*` role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. It shares Input's roles
+ * and heights on purpose: three controls on one row that did not match would
+ * read as three different systems.
+ *
+ * The BOX is ours and the LIST is the browser's. `appearance: none` takes the
+ * first — measured, WebKit otherwise discards `padding` on a menulist select
+ * entirely, so a Select and an Input in the same form started their text at
+ * different insets on Safari — and it costs nothing of the second: the popup
+ * stays the platform's, which is why `appearance: base-select` had to be
+ * invented to reach it. On a phone that is still the system picker.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .select {
+    /* A `<select>` DOES get `border-box` from every UA stylesheet, unlike
+       `<input>` and `<textarea>` — stating it keeps the three in one box model
+       instead of relying on that asymmetry. */
+    box-sizing: border-box;
+    /* The UA gives a form control its OWN font, not the page's: measured on a
+       Georgia page, Chromium rendered the input in Arial and the textarea in
+       monospace — the two components these files call twins, in two different
+       typefaces. `inherit` is the local UA reset the DS already does on
+       checkbox/radio, for the same reason: our CSS ships to apps that run no
+       Preflight. */
+    font-family: inherit;
+    /* No `color-scheme` here ON PURPOSE. The list the UA paints does follow it,
+       but `light dark` on the control means "either, per the USER'S preference"
+       — measured: with the dark theme active and the OS set to light, the
+       native parts rendered light anyway, and worse, the declaration BLOCKS the
+       theme from propagating (a control that declares nothing inherits the
+       theme's scheme correctly; one that declares `light dark` does not). The
+       scheme belongs to the theme, so it is declared once next to it, in the
+       `dark` preset — see `@fmmenchi/tokens/styles/presets/dark.css`. */
+    appearance: none;
+    @apply w-full rounded-md border px-3;
+    @apply bg-input text-input-foreground border-input-border;
+    @apply transition;
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+    /* Room for OUR arrow. With the native one this padding was pure waste — the
+       UA already reserves ~17px of its own and author padding is additive, so
+       labels truncated ~32px early (measured, all three engines). */
+    @apply pe-8;
+    /* The arrow, drawn with two gradients rather than an inline SVG: a data URI
+       cannot inherit `currentColor`, so it would need a hardcoded colour per
+       theme — and a `<select>` renders no pseudo-elements, so `::after` is not
+       available either. */
+    background-image:
+      linear-gradient(45deg, transparent 50%, currentColor 50%),
+      linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-size:
+      0.3rem 0.3rem,
+      0.3rem 0.3rem;
+    background-repeat: no-repeat;
+    /* `background-position` has no logical form, so this is the one physical
+       pair in the file — flipped for rtl below. */
+    background-position:
+      right 1.05rem center,
+      right 0.75rem center;
+  }
+
+  /* Both forms, because a descendant selector alone is a trap: `dir` sits on the
+     `<html>` element in most apps, but it is equally legal ON the control (a
+     single rtl field in an ltr form), and `[dir='rtl'] .select` does not match
+     an element that carries the attribute itself. Measured: in that case the
+     logical `pe-8` moved the free space to the inline-end (left) while the arrow
+     stayed physically right, and the option label ran underneath it. */
+  [dir='rtl'] .select,
+  .select[dir='rtl'] {
+    /* The two OFFSETS swap as well as the edge they count from. The arrow is two
+       half-tiles — the 45deg one is its left half, the 135deg its right — so
+       anchoring them to `left` in the same 1.05/0.75 order mirrors the pair and
+       draws the halves back to front: measured, an hourglass notch instead of a
+       chevron, on every rtl select. Reversed here, the left half stays the left
+       half (0.75rem from the inline edge, then 1.05rem). */
+    background-position:
+      left 0.75rem center,
+      left 1.05rem center;
+  }
+
+  /* Firefox does not match `:focus-visible` on a mouse-clicked select — it is
+     not a text control — so the DS ring never appeared there while every other
+     control had one. `:focus` covers it: on a select, unlike a text field, a
+     ring on click is what the other engines already do. */
+  .select:focus {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+
+  /* Error state is the native attribute the form library already sets. Signalled
+     by BOTH colour and weight (a thicker border) so it isn't carried by colour
+     alone (WCAG 1.4.1) — the same weight cue then works in forced colors too. */
+  .select[aria-invalid='true'] {
+    @apply border-input-invalid;
+    border-width: 2px;
+  }
+
+  /* The foreground has to be stated, and on this control especially: the UA used
+     to grey a disabled select's own text, and `appearance: none` took that with
+     it — leaving a disabled field whose label, and whose arrow (it follows
+     `currentColor`), were painted at full contrast. `disabled-foreground` is the
+     generic role for a control not tied to a colour family, the one Button's
+     ghost treatment already uses; it is AA-exempt by WCAG 1.4.3. */
+  .select:disabled {
+    @apply bg-input-disabled text-disabled-foreground cursor-not-allowed;
+  }
+
+  /* Size — heights match Input and Button (32/36/44) so controls align. Now
+     that all three declare `border-box`, they do: measured 36/36/36 at `md`
+     against the 36/40/38 they used to render without a consumer reset. */
+  .sm {
+    @apply h-8 text-xs;
+  }
+  .md {
+    @apply h-9 text-sm;
+  }
+  .lg {
+    @apply h-11 text-base;
+  }
+
+  /* PROGRESSIVE ENHANCEMENT, and a deliberate one: `appearance: base-select` is
+     single-engine today, which is below Baseline "newly available". No linter
+     guards a `.module.css` — the `css/use-baseline` rule explicitly ignores
+     them, since its parser cannot read `@apply` — so this is a judgement, not a
+     gate's verdict, and it is written down as such (ADR-0010).
+     Everything above works with none of this; where the engine has it, the list
+     the browser was painting becomes ours to theme. */
+  @supports (appearance: base-select) {
+    .select,
+    .select::picker(select) {
+      appearance: base-select;
+    }
+
+    /* `base-select` brings its OWN `::picker-icon`, so the gradient arrow above
+       becomes the SECOND arrow on the same control — measured, two chevrons on
+       every select in Chromium and WebKit, and in rtl the icon flips with the
+       control while ours stayed physically right, under the label. Where the
+       engine draws it, we do not: the padding goes back to `px-3`'s value,
+       since the icon is laid out in flow rather than painted into the padding. */
+    .select {
+      background-image: none;
+      @apply pe-3;
+    }
+
+    .select::picker(select) {
+      @apply rounded-md border p-1;
+      @apply bg-input text-input-foreground border-input-border;
+    }
+
+    .select option:checked {
+      @apply bg-primary text-primary-foreground;
+    }
+  }
+
+  /* Forced colors: the token fill/border are replaced by system colours; the
+     border keeps the field bounded. The invalid state survives as a WEIGHT cue,
+     not by a rule of its own: `.select[aria-invalid='true']` (0,2,0) outranks
+     the `border` below (0,1,0), so its 2px stands. Verified in Chromium and
+     Firefox emulation. */
+  @media (forced-colors: active) {
+    .select {
+      border: 1px solid ButtonText;
+    }
+    /* Restore the OS focus convention, like every other DS control. */
+    .select:focus-visible {
+      outline-color: Highlight;
+    }
+    .select:disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+  }
+}

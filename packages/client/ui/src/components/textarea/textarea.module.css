@@ -12,6 +12,24 @@
    and `@reference` stay above the layer; `:root` tokens stay unlayered. */
 @layer fmmenchi {
   .textarea {
+    /* The design system ships NO reset, and a `<textarea>` gets `border-box`
+       from no UA stylesheet — so `w-full` + `px-3` + a border rendered 306px
+       inside a 280px field, overflowing its grid column. Measured in Chromium,
+       Firefox and WebKit. */
+    box-sizing: border-box;
+    /* The UA gives a form control its OWN font, not the page's: measured on a
+       Georgia page, Chromium rendered the input in Arial and the textarea in
+       monospace — the two components these files call twins, in two different
+       typefaces. `inherit` is the local UA reset the DS already does on
+       checkbox/radio, for the same reason: our CSS ships to apps that run no
+       Preflight. */
+    font-family: inherit;
+    /* No `color-scheme` here ON PURPOSE — the scrollbar and the resize handle
+       are painted by the UA and do follow it, but `light dark` means "either,
+       per the USER'S preference", not "per the theme": measured, dark theme + a
+       light-set OS still painted them light, and declaring it on the control
+       BLOCKS the theme's own scheme from reaching it. It is declared once next
+       to the theme instead — `@fmmenchi/tokens/styles/presets/dark.css`. */
     @apply w-full rounded-md border px-3;
     @apply bg-input text-input-foreground border-input-border;
     @apply placeholder:text-input-placeholder;
@@ -20,36 +38,56 @@
   }
 
   /* Error state is the native attribute the form library already sets. Signalled
-     by BOTH colour and weight (a thicker border) so it isn't carried by colour
-     alone (WCAG 1.4.1) — the same weight cue then works in forced colors too. */
+     by BOTH colour and weight so it isn't carried by colour alone (WCAG 1.4.1).
+     The weight is an INSET SHADOW, not a second border pixel: this is the one
+     control with no fixed height, so 1px → 2px measured a `rows=1` field growing
+     38px → 40px and nudging the whole form down the instant validation ran —
+     while Input and Select, both fixed-height, held still. A shadow paints in
+     the same place and takes no space, the trade InputGroup already makes.
+     Forced colors drops shadows, so the weight returns to the border there. */
   .textarea[aria-invalid='true'] {
     @apply border-input-invalid;
-    border-width: 2px;
+    box-shadow: inset 0 0 0 1px var(--fm-color-input-invalid);
   }
 
+  /* The fill alone did not say "disabled": the text stayed at full contrast, so
+     a disabled field read as an editable one. `disabled-foreground` is the
+     generic role for a control not tied to a colour family — Button's ghost
+     treatment already uses it — and is AA-exempt (WCAG 1.4.3). */
   .textarea:disabled {
-    @apply bg-input-disabled cursor-not-allowed;
+    @apply bg-input-disabled text-disabled-foreground cursor-not-allowed;
   }
 
   /* Size scales the type and the VERTICAL padding; the horizontal stays `px-3`
      like Input, so a text field and a multi-line one side by side share a
-     rhythm. No height here: Input's `h-8/9/11` would fight `rows`, which is
-     what actually sizes a textarea and belongs to the consumer. */
+     rhythm. No fixed height: Input's `h-8/9/11` would fight `rows`, which is
+     what actually sizes a textarea and belongs to the consumer.
+     The MINIMUM, though, is Input's height, and it earns its place twice —
+     measured, padding alone lands 2px off Input at every size and the 0.25rem
+     scale cannot express the 7/8/9px that would solve it; and it is the floor
+     that stops the resize handle being dragged down to 18px, under the 24px
+     WCAG 2.5.8 target size. */
   .sm {
-    @apply py-1.5 text-xs;
+    @apply min-h-8 py-1.5 text-xs;
   }
   .md {
-    @apply py-2 text-sm;
+    @apply min-h-9 py-2 text-sm;
   }
   .lg {
-    @apply py-2.5 text-base;
+    @apply min-h-11 py-2.5 text-base;
   }
 
   /* The browser's default is `both`, which lets a drag make the field wider
      than the form around it — a layout no grid survives, and the one thing a
-     textarea does that an author never wants. */
+     textarea does that an author never wants. `block` rather than `vertical` to
+     stay logical like the rest of the file — but DECLARED TWICE, because the
+     logical keywords are not Baseline Widely (ADR-0003) and the fallback of an
+     unsupported `resize` value is not "the physical axis", it is the UA's own
+     `both`: exactly the bug this rule exists to prevent. An engine that knows
+     `block` takes the second declaration, one that does not keeps `vertical`. */
   .resizeVertical {
     resize: vertical;
+    resize: block;
   }
   .resizeNone {
     resize: none;
@@ -61,6 +99,12 @@
   @media (forced-colors: active) {
     .textarea {
       border: 1px solid ButtonText;
+    }
+    /* Shadows are not painted in this mode, so the invalid weight — a shadow
+       above, to keep the box from growing — comes back as the second border
+       pixel. Colour is the UA's here, which is why the WEIGHT has to carry it. */
+    .textarea[aria-invalid='true'] {
+      border-width: 2px;
     }
     /* Restore the OS focus convention, like every other DS control. */
     .textarea:focus-visible {

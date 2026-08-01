@@ -34,7 +34,18 @@ export type FormFieldType =
   | 'date'
   | 'search'
   | 'tel'
-  | 'url';
+  | 'url'
+  /**
+   * The two that are not `<input>` types at all, but ELEMENTS. They are in the
+   * same map because the map answers one question — "what kind of control is
+   * this field?" — and an adapter that could not be told turned out to be a
+   * real defect, not a hypothetical: Conform shapes every prop by this, so
+   * without a member for them it called `getInputProps` for a select and
+   * emitted `type`, `pattern`, `accept` and `multiple` onto it. `multiple`
+   * flipped the element's role to `listbox`.
+   */
+  | 'select'
+  | 'textarea';
 
 export interface FormFieldTypeOptions {
   /**

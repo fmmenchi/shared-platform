@@ -82,16 +82,17 @@ export type FieldMessages = readonly string[];
  * handlers. Everything else, three hundred props of it, is assignable.
  *
  * So the bag is keyed by TAG, and the component that renders the element is the
- * one that says which. `input` omits the native `size` attribute: on `Input`
- * that name is the design system's sizing axis (`sm`/`md`/`lg`), so a number
- * arriving from an adapter would not typecheck and, worse, would quietly mean
- * something else. `textarea` omits `children`, which is how HTML sets its
- * initial text and a trap in React.
+ * one that says which. `input` and `select` both omit the native `size`
+ * attribute: that name is the design system's sizing axis (`sm`/`md`/`lg`), so
+ * a number arriving from an adapter would not typecheck and, worse, would
+ * quietly mean something else — on a `<select>` it would turn the control into
+ * a list box. `textarea` omits `children`, which is how HTML sets its initial
+ * text and a trap in React.
  */
 export interface ControlPropsByTag {
   input: Omit<ComponentProps<'input'>, 'size'>;
   textarea: Omit<ComponentProps<'textarea'>, 'children'>;
-  select: ComponentProps<'select'>;
+  select: Omit<ComponentProps<'select'>, 'size'>;
 }
 
 /** Which native control a bound component renders. */

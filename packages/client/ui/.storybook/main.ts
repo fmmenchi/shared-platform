@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 
+import remarkGfm from 'remark-gfm';
 import type { StorybookConfig } from '@storybook/react-vite';
 
 const config: StorybookConfig = {
@@ -12,7 +13,14 @@ const config: StorybookConfig = {
   managerHead: (head) =>
     `${head}\n<link rel="icon" type="image/svg+xml" href="./favicon.svg" />`,
   addons: [
-    '@storybook/addon-docs',
+    {
+      // MDX 3 does not enable GFM, so every markdown TABLE in the docs — four
+      // pages of them — rendered as literal pipes until this was added.
+      name: '@storybook/addon-docs',
+      options: {
+        mdxPluginOptions: { mdxCompileOptions: { remarkPlugins: [remarkGfm] } },
+      },
+    },
     '@storybook/addon-a11y',
     '@storybook/addon-mcp',
   ],

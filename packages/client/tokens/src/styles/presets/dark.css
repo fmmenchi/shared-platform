@@ -8,6 +8,20 @@
  * role or fails a pair does not pass the gate ("i temi ammessi").
  */
 [data-theme='dark'] {
+  /* The one declaration here that is not a token, and it has to be here: the
+     parts of a form control the UA paints itself — a `<select>`'s open list, a
+     scrollbar, the caret, the resize handle — take their colours from
+     `color-scheme`, never from our roles. A component cannot declare it,
+     because a control that says `color-scheme: light dark` follows the USER'S
+     OS preference and, measured, stops inheriting the theme's scheme
+     altogether: dark theme on a light-set OS painted the native parts light.
+     The theme knows which scheme it is; the control does not. Light needs no
+     counterpart — the UA default already paints those parts light.
+     Not a `--fm-*` token: it is a rendering mode, not a value, and a brand
+     preset that overrides the colour roles inherits this line by declaring
+     `color-scheme: dark` in its own dark selector. */
+  color-scheme: dark;
+
   /* Action families */
   --fm-color-primary: oklch(77% 0.118 256);
   --fm-color-primary-foreground: oklch(24% 0.02 256);

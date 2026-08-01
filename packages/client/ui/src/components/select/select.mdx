@@ -1,0 +1,70 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as SelectStories from './select.stories.tsx';
+
+<Meta of={SelectStories} />
+
+# Select
+
+Select is one choice from a short list, on the native `<select>`. The options are its children — plain `<option>` and `<optgroup>` — and it is fully transparent (ADR-0013): ref and every native attribute pass through, `value`/`onChange` are never touched.
+
+## Props
+
+<Controls of={SelectStories.Default} />
+
+Two natives are **refused**, because accepting them would promise something this component cannot keep. `multiple` — the native multi-select is a scrolling box with no chips and a ctrl+click nobody discovers; use a `Fieldset` of `Checkbox` for a few options, a combobox for many. And the native `size` (a row count), whose name is the design system's sizing axis: a `<select size={5}>` is a list box, not this.
+
+## Usage
+
+<Canvas of={SelectStories.Default} />
+
+### The box is ours, the list is the browser's
+
+`appearance: none` takes the box — border, radius, colours, and an arrow drawn with two gradients so it follows `currentColor` into the dark theme. It gives up **nothing** of the list: the popup is still the platform's, still the system picker on a phone. That is precisely why `appearance: base-select` had to be invented — `none` never reached the list.
+
+It also fixes something measured: WebKit **discards `padding` entirely** on a menulist select, so before this a Select and an Input in the same form started their text at different insets on Safari.
+
+The trade that remains is real: the open list cannot be themed, so a `Select` and a future combobox will not look alike while open. What buys it back is everything the native control brings for free — typeahead, arrow keys, Home/End, the screen-reader announcements, and submitting with `FormData` even with no JavaScript running.
+
+Where the engine supports it, a `@supports (appearance: base-select)` block themes the list too. That is a **deliberate** use of a single-engine feature, below Baseline "newly available": no linter guards it — `css/use-baseline` explicitly ignores `.module.css`, since its parser cannot read `@apply` — so it is a judgement, written down here rather than discovered later. Everything works with none of it.
+
+<Canvas of={SelectStories.States} />
+
+<Canvas of={SelectStories.Sizes} />
+
+### The options are yours
+
+They are content, and a design system that owned them would be owning the app's data. `<optgroup>` works, because it is just HTML.
+
+<Canvas of={SelectStories.Groups} />
+
+A **placeholder** is the same trick as in plain HTML — a first option with an empty value:
+
+```tsx
+<FormSelect name="country" label="Country">
+  <option value="" disabled>
+    Choose…
+  </option>
+  …
+</FormSelect>
+```
+
+If you add `disabled`, you must also make the empty value the initial one — `defaultValue=""`, or your form library's default for that field. Measured: without it HTML's own reset algorithm **skips disabled options** and selects the first real one, so the field starts on `"it"`, `required` never fires (`valueMissing: false`), and a user who never opened the select submits a value they did not choose.
+
+### When this is the wrong component
+
+| you need                   | reach for               |
+| -------------------------- | ----------------------- |
+| several options, a handful | `Fieldset` + `Checkbox` |
+| several options, many      | a combobox with chips   |
+| search inside the options  | a combobox              |
+| icons or rich rows         | a combobox              |
+
+<Canvas of={SelectStories.WithAnInput} />
+
+## Accessibility
+
+- Role **combobox**, from the element itself: a single-choice `<select>` maps there, with the popup rendered by the OS.
+- The accessible name comes from an associated `<label>` (wrapping or `htmlFor`), or `aria-label`/`aria-labelledby`.
+- Inside a `Field` it picks up `id`, `aria-describedby` and `aria-invalid` automatically; standalone it stays untouched.
+- The invalid look keys off the native `aria-invalid` and is carried by colour **and** border weight (WCAG 1.4.1), so it survives forced-colors; focus restores the system `Highlight` there.

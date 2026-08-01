@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Select > matches the rendered snapshot 1`] = `
+<select
+  aria-label="q"
+  class="_select_rp2eu_4 _md_rp2eu_58"
+>
+  <option
+    value=""
+  >
+    Choose…
+  </option>
+  <option
+    value="it"
+  >
+    Italy
+  </option>
+  <option
+    value="fr"
+  >
+    France
+  </option>
+</select>
+`;
