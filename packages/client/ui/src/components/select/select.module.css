@@ -197,11 +197,17 @@
 
     /* The list is a raised surface once it is ours to draw: it needs the
        elevation and the gap that say "above the page", which the flat UA popup
-       never had. */
+       never had. The gap is on BOTH block sides, not just the start: the engine
+       flips the picker above the control when there is no room below, and a
+       start-only margin then lands on the side facing away from the control —
+       measured, the flipped list sat flush against it, 0px. Only the anchored
+       side is ever used, and the free one costs nothing: with the list flipped
+       or scrolling under a viewport constraint its height is unchanged (154px
+       either way, verified). */
     .select::picker(select) {
       @apply rounded-md border p-1 shadow-lg;
       @apply bg-input text-input-foreground border-input-border;
-      margin-block-start: 0.25rem;
+      margin-block: 0.25rem;
     }
 
     /* A row, not a line of text: the padding and the radius are what stop the
