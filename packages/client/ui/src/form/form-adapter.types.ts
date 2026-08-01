@@ -41,7 +41,35 @@ export type UseFormField = (name: string) => BoundField;
  *
  * Adding a member later is backward compatible, so waiting costs nothing.
  */
-export type UseFormErrors = () => Readonly<Record<string, readonly string[]>>;
+export type UseFormErrors = () => Readonly<Record<string, FieldMessages>>;
+
+/**
+ * What is wrong with ONE field: zero messages or many, never a special case for
+ * one.
+ *
+ * A list, and only a list. An earlier version took the three shapes the
+ * libraries produce — a bare `string`, an array, an object keyed by the rule
+ * that failed — and normalised them here. It cost more than it saved: three
+ * shapes meant three key policies for the same rendered list, so the SAME
+ * messages arriving as a string and as an array remounted differently, and the
+ * array branch had nothing to key by but the index. Normalising is the
+ * adapter's job anyway, which is the one place that knows which library it is
+ * talking to; four of them now do it in a line each.
+ *
+ * It is also, exactly, what `UseFormErrors` reports per field — so the summary
+ * and the field speak one language rather than two that need translating.
+ *
+ * The list is rendered one message per element, never joined: joined, a screen
+ * reader reads "Too short.Needs a digit." as a single run-on statement. Order
+ * is the adapter's, and the key is the message itself — the only stable
+ * identity a message has, so a repeated one is a duplicate and is dropped.
+ *
+ * NOT `ReactNode`: it would accept all of the above and then render an array as
+ * silently concatenated text, with no separator and no way to tell. A rich
+ * message — one with a link in it — is outside this fast path by construction:
+ * compose `Field` + `FieldError`, where a `ReactNode` fits.
+ */
+export type FieldMessages = readonly string[];
 
 export interface BoundField {
   /**
@@ -55,23 +83,11 @@ export interface BoundField {
    */
   control: Omit<ComponentProps<'input'>, 'size'>;
   /**
-   * What is wrong with the field. Absent means valid.
+   * What is wrong with the field — see {@link FieldMessages}. Absent, or empty,
+   * means valid; a field rarely fails in exactly one way, so it is a list.
    *
-   * A field rarely fails in exactly one way, so this takes the three shapes
-   * form libraries actually produce, and the bound components render each
-   * message as its OWN element rather than joining them:
-   *
-   * - **`string`** — one message. react-hook-form, Formik.
-   * - **`string[]`** — several. Conform's `field.errors`.
-   * - **`Record<string, string>`** — several, keyed by the rule that failed.
-   *   react-hook-form's `errors[name].types` under `criteriaMode: 'all'`. The
-   *   key is the stable identity, which is what a list needs and a bare array
-   *   cannot give.
-   *
-   * NOT a `ReactNode`: it would accept all of the above and then render an
-   * array as silently concatenated text, with no separator and no way to tell.
-   * A rich message — one with a link in it — is outside this fast path by
-   * construction: compose `Field` + `FieldError`, where a `ReactNode` fits.
+   * Plural because it is plural. `error?: string` reads as "one message", which
+   * is the misconception this shape exists to correct.
    */
-  error?: string | readonly string[] | Readonly<Record<string, string>>;
+  errors?: FieldMessages;
 }

@@ -25,10 +25,8 @@ function DemoForm({ children }: { children: ReactNode }) {
         }));
       },
     },
-    error:
-      name === 'email' && values.email === ''
-        ? 'Email is required.'
-        : undefined,
+    errors:
+      name === 'email' && values.email === '' ? ['Email is required.'] : [],
   });
   return (
     <div

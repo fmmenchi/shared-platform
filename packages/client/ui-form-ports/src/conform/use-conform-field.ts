@@ -32,7 +32,9 @@ export function createConformField(
         type: types[name] ?? 'text',
         ariaAttributes: false,
       }),
-      error: meta.errors,
+      // Conform already reports a list, which is the port's shape — one of the
+      // reasons the port took that shape.
+      errors: meta.errors,
     };
   };
 }

@@ -1,28 +1,25 @@
-import type { BoundField } from './form-adapter.types.js';
+import type { FieldMessages } from './form-adapter.types.js';
 
 /**
- * Normalise the three shapes an adapter may return into a list of messages with
- * stable keys, so each renders as its own element instead of being joined.
+ * The messages a field will actually render: blanks dropped, duplicates
+ * dropped, order kept.
  *
- * The key matters: for a keyed object it is the rule that failed, which is
- * stable across renders as a list key should be. For an array there is nothing
- * better than the index, and for a lone string nothing is needed.
+ * Both filters are about what reaches a screen reader. A blank message renders
+ * an empty element that still joins `aria-describedby`, so the control gains a
+ * description made of nothing. A repeated message is announced twice — "Email
+ * is required. Email is required." — which is a defect in every case, and it
+ * happens for real: two rules that fail together often carry the same sentence.
+ *
+ * Deduping is also what makes the message its own key. It is the only stable
+ * identity a message has — an index changes when an earlier message is fixed,
+ * remounting the survivors for no reason — and it can only be a key if it is
+ * unique, which is the same property.
  */
-export function toMessages(
-  error: BoundField['error'],
-): ReadonlyArray<{ key: string; message: string }> {
-  if (error == null) return [];
-  if (typeof error === 'string') {
-    return error.trim() === '' ? [] : [{ key: error, message: error }];
+export function toMessages(messages: FieldMessages | undefined): FieldMessages {
+  if (messages == null) return [];
+  const seen = new Set<string>();
+  for (const message of messages) {
+    if (typeof message === 'string' && message.trim() !== '') seen.add(message);
   }
-  if (Array.isArray(error)) {
-    return error
-      .filter((m) => typeof m === 'string' && m.trim() !== '')
-      .map((message, index) => ({ key: `${index}-${message}`, message }));
-  }
-  return Object.entries(error as Record<string, string>)
-    .filter(
-      ([, message]) => typeof message === 'string' && message.trim() !== '',
-    )
-    .map(([key, message]) => ({ key, message }));
+  return [...seen];
 }

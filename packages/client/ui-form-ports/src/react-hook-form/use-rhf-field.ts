@@ -1,6 +1,7 @@
-import { useFormContext, useFormState } from 'react-hook-form';
+import { useFormContext, useFormState, type FieldError } from 'react-hook-form';
 import type { UseFormField } from '@fmmenchi/ui';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
+import { toFieldMessages } from './rhf-messages.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for react-hook-form.
@@ -45,7 +46,7 @@ export function createRhfField(
       control: register(name, {
         valueAsNumber: types[name] === 'number',
       }),
-      error: errors[name]?.message as string | undefined,
+      errors: toFieldMessages(errors[name] as FieldError | undefined),
     };
   };
 }

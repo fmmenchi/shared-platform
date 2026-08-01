@@ -63,7 +63,7 @@ export function createTanstackField(
           field.handleChange(readValue(type, event.target as HTMLInputElement)),
         onBlur: () => field.handleBlur(),
       },
-      error: submitted || meta.isBlurred ? toMessages(meta.errors) : undefined,
+      errors: submitted || meta.isBlurred ? toMessages(meta.errors) : [],
     };
   };
 }

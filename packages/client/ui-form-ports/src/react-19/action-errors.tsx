@@ -40,7 +40,7 @@ export function ActionErrorsProvider(props: {
  */
 export const useActionField: UseFormField = (name) => {
   const errors = useContext(ActionErrorsContext);
-  return { control: { name }, error: errors[name] };
+  return { control: { name }, errors: errors[name] };
 };
 
 export const useActionErrors: UseFormErrors = () =>
