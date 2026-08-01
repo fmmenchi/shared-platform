@@ -3,14 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UiProvider } from '@fmmenchi/ui';
 import { ZodScreen } from './zod.screen.js';
-import { useRhfField, useRhfStatus } from '../adapters/react-hook-form.js';
+import { useRhfField, useRhfErrors } from '../adapters/react-hook-form.js';
 
 const renderScreen = () =>
   render(
     <UiProvider
       adapters={{
         i18n: { locale: 'en' },
-        form: { field: useRhfField, status: useRhfStatus },
+        form: { field: useRhfField, errors: useRhfErrors },
       }}
     >
       <ZodScreen />

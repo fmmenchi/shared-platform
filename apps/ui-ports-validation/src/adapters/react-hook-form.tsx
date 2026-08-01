@@ -6,7 +6,7 @@ import {
   type Resolver,
 } from 'react-hook-form';
 import type { ReactNode } from 'react';
-import type { UseFormField, UseFormStatus } from '@fmmenchi/ui';
+import type { UseFormField, UseFormErrors } from '@fmmenchi/ui';
 import type { SignupValues } from '../screens/signup-fields.js';
 
 /**
@@ -28,18 +28,15 @@ export const useRhfField: UseFormField = (name) => {
   };
 };
 
-export const useRhfStatus: UseFormStatus = () => {
+export const useRhfErrors: UseFormErrors = () => {
   const { control } = useFormContext();
-  const { isSubmitting, errors } = useFormState({ control });
-  return {
-    submitting: isSubmitting,
-    errors: Object.fromEntries(
-      Object.entries(errors).map(([name, error]) => [
-        name,
-        [String(error?.message ?? '')].filter(Boolean),
-      ]),
-    ),
-  };
+  const { errors } = useFormState({ control });
+  return Object.fromEntries(
+    Object.entries(errors).map(([name, error]) => [
+      name,
+      [String(error?.message ?? '')].filter(Boolean),
+    ]),
+  );
 };
 
 /**

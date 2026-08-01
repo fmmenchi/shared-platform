@@ -5,7 +5,6 @@ import {
   FormChoice,
   FormErrorSummary,
   FormInput,
-  FormSubmit,
   Radio,
 } from '@fmmenchi/ui';
 
@@ -61,7 +60,7 @@ export function SignupFields({ register }: { register?: unknown }) {
       </Fieldset>
 
       <FormChoice name="tos" label="I accept the terms and conditions" />
-      <FormSubmit>Create account</FormSubmit>
+      <button type="submit">Create account</button>
     </>
   );
 }

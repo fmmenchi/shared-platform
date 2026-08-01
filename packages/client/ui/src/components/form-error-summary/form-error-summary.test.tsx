@@ -3,21 +3,19 @@ import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FormErrorSummary } from './form-error-summary.component.js';
-import { FormSubmit } from '../form-submit/form-submit.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
 import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 import type {
+  UseFormErrors,
   UseFormField,
-  UseFormStatus,
 } from '../../form/form-adapter.types.js';
 
 /** A hand-rolled "library": the point is that both levels are the app's. */
 function useDemoForm() {
   const [values, setValues] = useState({ email: '', password: '' });
   const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
   const errors: Record<string, string[]> = {};
   if (submitted) {
@@ -38,23 +36,20 @@ function useDemoForm() {
     },
     error: errors[name],
   });
-  const status: UseFormStatus = () => ({ submitting, errors });
+  const formErrors: UseFormErrors = () => errors;
 
-  return { field, status, errors, setSubmitted, setSubmitting };
+  return { field, formErrors, errors, setSubmitted };
 }
 
 function DemoForm({ onValid = vi.fn() }: { onValid?: () => void }) {
-  const { field, status, errors, setSubmitted, setSubmitting } = useDemoForm();
+  const { field, formErrors, errors, setSubmitted } = useDemoForm();
   return (
-    <FormAdapterProvider field={field} status={status}>
+    <FormAdapterProvider field={field} errors={formErrors}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitted(true);
-          if (Object.keys(errors).length === 0) {
-            setSubmitting(true);
-            onValid();
-          }
+          if (Object.keys(errors).length === 0) onValid();
         }}
       >
         <FormErrorSummary
@@ -62,7 +57,7 @@ function DemoForm({ onValid = vi.fn() }: { onValid?: () => void }) {
         />
         <FormInput name="email" label="Email" />
         <FormInput name="password" label="Password" />
-        <FormSubmit>Create account</FormSubmit>
+        <button type="submit">Create account</button>
       </form>
     </FormAdapterProvider>
   );
@@ -124,26 +119,7 @@ describe('the form level of the adapter', () => {
     expect(summary.textContent).not.toContain('email:');
   });
 
-  it('FormSubmit shows the pending state from the form level', async () => {
-    const user = userEvent.setup();
-    render(<DemoForm />);
-    const button = screen.getByRole('button', { name: /Create account/ });
-    expect(button).not.toHaveAttribute('aria-disabled', 'true');
-
-    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
-    await user.type(
-      screen.getByRole('textbox', { name: 'Password' }),
-      'longenough1',
-    );
-    await user.click(button);
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /Create account/ }),
-      ).toHaveAttribute('aria-busy', 'true'),
-    );
-  });
-
-  it('throws by name when the adapter provides no status', () => {
+  it('throws by name when the adapter provides no errors hook', () => {
     const error = vi
       .spyOn(console, 'error')
       .mockImplementation(() => undefined);
@@ -154,7 +130,7 @@ describe('the form level of the adapter', () => {
           <FormErrorSummary />
         </FormAdapterProvider>,
       ),
-    ).toThrow(/provides no `status`/);
+    ).toThrow(/provides no `errors`/);
     error.mockRestore();
   });
 

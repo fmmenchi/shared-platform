@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { UseFormField, UseFormStatus } from './form-adapter.types.js';
+import type { UseFormErrors, UseFormField } from './form-adapter.types.js';
 
 export interface FormAdapterProviderProps {
   /**
@@ -8,10 +8,10 @@ export interface FormAdapterProviderProps {
    */
   field: UseFormField;
   /**
-   * The form-state hook, for `FormSubmit` and `FormErrorSummary`. Optional: a
-   * form that uses neither never needs to supply it, and asking for it when it
-   * was not supplied throws by name rather than rendering something empty.
+   * Every field in error, by name — what `FormErrorSummary` renders. Optional:
+   * a form without a summary never needs it, and asking for it when it was not
+   * supplied throws by name rather than rendering something empty.
    */
-  status?: UseFormStatus;
+  errors?: UseFormErrors;
   children?: ReactNode;
 }

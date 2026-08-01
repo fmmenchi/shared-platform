@@ -1,14 +1,8 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import {
-  Form,
-  FormChoice,
-  FormErrorSummary,
-  FormInput,
-  FormSubmit,
-} from '@fmmenchi/ui';
+import { RhfForm } from '@fmmenchi/ui-form-ports/react-hook-form';
+import { FormChoice, FormErrorSummary, FormInput } from '@fmmenchi/ui';
 
 /* ══════════════════════ app/signup/schema.ts ═══════════════════════════════
    The rules, in one place, in the app. The design system never sees them —
@@ -43,29 +37,31 @@ const LABELS: Record<string, string> = {
   tos: 'Terms and conditions',
 };
 
-/* ══════════════════════ app/signup/signup.tsx ══════════════════════════════ */
+/* ══════════════════════ app/signup/signup.tsx ══════════════════════════════
+   The whole form. No useForm, no FormProvider, no handleSubmit, no <form> —
+   `RhfForm` is those four, written once in the adapter package.
+   ═════════════════════════════════════════════════════════════════════════ */
 
 export function ZodScreen() {
   const [saved, setSaved] = useState<SignupValues | null>(null);
-  const form = useForm<SignupValues>({
-    defaultValues: {
-      email: '',
-      password: '',
-      confirm: '',
-      tos: false as true,
-    },
-    // the ONLY line that says "zod". Nothing below it knows.
-    resolver: zodResolver(SignupSchema),
-  });
 
   return (
-    <FormProvider {...form}>
-      {/* no adapter here: the binding was given once to UiProvider */}
-      <Form
-        onSubmit={form.handleSubmit(async (values) => {
+    <>
+      <RhfForm<SignupValues>
+        options={{
+          defaultValues: {
+            email: '',
+            password: '',
+            confirm: '',
+            tos: false as true,
+          },
+          // the ONE line that says zod
+          resolver: zodResolver(SignupSchema),
+        }}
+        onSubmit={async (values) => {
           await new Promise((r) => setTimeout(r, 600));
           setSaved(values);
-        })}
+        }}
       >
         <FormErrorSummary labelFor={(name) => LABELS[name] ?? name} />
         <FormInput
@@ -88,11 +84,11 @@ export function ZodScreen() {
           autoComplete="new-password"
         />
         <FormChoice name="tos" label="I accept the terms and conditions" />
-        <FormSubmit>Create account</FormSubmit>
-      </Form>
+        <button type="submit">Create account</button>
+      </RhfForm>
       {saved ? (
         <output className="saved">Submitted: {JSON.stringify(saved)}</output>
       ) : null}
-    </FormProvider>
+    </>
   );
 }

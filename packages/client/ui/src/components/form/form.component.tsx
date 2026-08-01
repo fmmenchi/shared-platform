@@ -6,7 +6,7 @@ import type { FormProps } from './form.types.js';
  *
  * Give the form binding ONCE, where the design system is set up:
  *
- *     <UiProvider adapters={{ i18n, form: { field: useRhfField, status: useRhfStatus } }}>
+ *     <UiProvider adapters={{ i18n, form: { field: useRhfField, errors: useRhfErrors } }}>
  *
  * and from then on a form is just a form:
  *
@@ -15,7 +15,7 @@ import type { FormProps } from './form.types.js';
  *       <FormSubmit>Save</FormSubmit>
  *     </Form>
  *
- * `field`/`status` on this component override that, for the rare page binding
+ * `field`/`errors` on this component override that, for the rare page binding
  * two libraries at once.
  *
  * It renders ONE element — the `<form>` — and adds no wrapper: the adapter
@@ -34,7 +34,7 @@ import type { FormProps } from './form.types.js';
  * form state (ADR-0013).
  */
 function Form(props: FormProps) {
-  const { field, status, children, noValidate = true, ...rest } = props;
+  const { field, errors, children, noValidate = true, ...rest } = props;
 
   const element = (
     <form noValidate={noValidate} {...rest}>
@@ -48,7 +48,7 @@ function Form(props: FormProps) {
   return field === undefined ? (
     element
   ) : (
-    <FormAdapterContext value={{ field, status }}>{element}</FormAdapterContext>
+    <FormAdapterContext value={{ field, errors }}>{element}</FormAdapterContext>
   );
 }
 

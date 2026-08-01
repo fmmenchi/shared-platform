@@ -3,11 +3,10 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Form } from './form.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
-import { FormSubmit } from '../form-submit/form-submit.component.js';
 import { FormErrorSummary } from '../form-error-summary/form-error-summary.component.js';
 import type {
+  UseFormErrors,
   UseFormField,
-  UseFormStatus,
 } from '../../form/form-adapter.types.js';
 
 /** A hand-rolled binding, so the stories depend on no form library. */
@@ -35,16 +34,16 @@ function useDemoBinding() {
     },
     error: errors[name],
   });
-  const status: UseFormStatus = () => ({ submitting: false, errors });
-  return { field, status, submit: () => setSubmitted(true) };
+  const formErrors: UseFormErrors = () => errors;
+  return { field, formErrors, submit: () => setSubmitted(true) };
 }
 
 function Demo({ children }: { children: ReactNode }) {
-  const { field, status, submit } = useDemoBinding();
+  const { field, formErrors, submit } = useDemoBinding();
   return (
     <Form
       field={field}
-      status={status}
+      errors={formErrors}
       onSubmit={(e) => {
         e.preventDefault();
         submit();
@@ -70,7 +69,7 @@ const meta: Meta<typeof Form> = {
         'Usually omitted — give it once to `UiProvider` and every form below is wired. Pass it here only to override that.',
       table: { type: { summary: 'UseFormField' } },
     },
-    status: { control: false, table: { type: { summary: 'UseFormStatus' } } },
+    errors: { control: false, table: { type: { summary: 'UseFormErrors' } } },
     noValidate: {
       control: 'boolean',
       description:
@@ -95,7 +94,7 @@ export const Default: Story = {
       />
       <FormInput name="email" label="Email" hint="We’ll never share it." />
       <FormChoice name="tos" label="I accept the terms" />
-      <FormSubmit>Create account</FormSubmit>
+      <button type="submit">Create account</button>
     </Demo>
   ),
 };

@@ -1,0 +1,42 @@
+{
+  "name": "@fmmenchi/ui-form-ports",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./react-hook-form": {
+      "@fmmenchi/source": "./src/react-hook-form/index.ts",
+      "types": "./dist/react-hook-form/index.d.ts",
+      "import": "./dist/react-hook-form.js",
+      "default": "./dist/react-hook-form.js"
+    },
+    "./react-19": {
+      "@fmmenchi/source": "./src/react-19/index.ts",
+      "types": "./dist/react-19/index.d.ts",
+      "import": "./dist/react-19.js",
+      "default": "./dist/react-19.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:client",
+      "type:ui"
+    ]
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "@fmmenchi/ui": ">=0.0.0",
+    "react-hook-form": "^7.0.0"
+  },
+  "devDependencies": {
+    "@fmmenchi/ui": "workspace:*",
+    "react-hook-form": "^7.83.0"
+  },
+  "description": "Form-library implementations of @fmmenchi/ui's form ports — one subpath each.",
+  "peerDependenciesMeta": {
+    "react-hook-form": {
+      "optional": true
+    }
+  }
+}

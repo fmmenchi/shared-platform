@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { UseFormField, UseFormStatus } from '@fmmenchi/ui';
+import type { UseFormField, UseFormErrors } from '@fmmenchi/ui';
 
 /**
  * The same contract with NO form library: a dozen lines of `useState`.
@@ -16,7 +16,6 @@ export function useHandRolledForm<T extends Record<string, unknown>>(options: {
   const { initial, validate, onSubmit } = options;
   const [values, setValues] = useState<T>(initial);
   const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const errors = submitted ? validate(values) : {};
 
   const field: UseFormField = (name) => ({
@@ -33,7 +32,7 @@ export function useHandRolledForm<T extends Record<string, unknown>>(options: {
     error: errors[name],
   });
 
-  const status: UseFormStatus = () => ({ submitting, errors });
+  const formErrors: UseFormErrors = () => errors;
 
   const Host = ({ children }: { children: ReactNode }) => (
     <form
@@ -42,14 +41,12 @@ export function useHandRolledForm<T extends Record<string, unknown>>(options: {
         event.preventDefault();
         setSubmitted(true);
         if (Object.keys(validate(values)).length > 0) return;
-        setSubmitting(true);
         await onSubmit(values);
-        setSubmitting(false);
       }}
     >
       {children}
     </form>
   );
 
-  return { field, status, Host, values };
+  return { field, formErrors, Host, values };
 }

@@ -1,6 +1,6 @@
 import type {
+  UseFormErrors,
   UseFormField,
-  UseFormStatus,
 } from '../form/form-adapter.types.js';
 /**
  * Injection ports — the contracts the app implements so the UI stays
@@ -56,14 +56,14 @@ export type PortalContainer = HTMLElement | (() => HTMLElement);
 /** What a form library provides to the design system, given once at setup. */
 export interface FormBinding {
   field: UseFormField;
-  status?: UseFormStatus;
+  errors?: UseFormErrors;
 }
 
 export interface UiAdapters {
   i18n: I18n;
   /**
    * The form library's binding, given ONCE when the design system is set up —
-   * after which every `Form`, `FormInput`, `FormChoice`, `FormSubmit` and
+   * after which every `Form`, `FormInput`, `FormChoice` and
    * `FormErrorSummary` below works with nothing further to wire.
    *
    * Both members are hooks, called inside the components that render each

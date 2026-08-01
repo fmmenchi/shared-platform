@@ -9,13 +9,13 @@ import type { FormAdapterProviderProps } from './form-adapter-provider.types.js'
  * markup (ADR-0016) and never sits between your `<form>` and its fields.
  */
 function FormAdapterProvider(props: FormAdapterProviderProps) {
-  const { field, status, children } = props;
+  const { field, errors, children } = props;
   // A fresh object each render is deliberate: the members are HOOKS, and a
   // memoised value would be the very trap this design was measured into
   // avoiding — the provider must re-render its consumers when the app's hooks
   // change identity.
   return (
-    <FormAdapterContext value={{ field, status }}>
+    <FormAdapterContext value={{ field, errors }}>
       {children}
     </FormAdapterContext>
   );

@@ -5,9 +5,8 @@ import {
   FormAdapterProvider,
   FormErrorSummary,
   FormInput,
-  FormSubmit,
   type UseFormField,
-  type UseFormStatus,
+  type UseFormErrors,
 } from '@fmmenchi/ui';
 
 import {
@@ -32,18 +31,15 @@ const useRhfField: UseFormField = (name) => {
   };
 };
 
-const useRhfStatus: UseFormStatus = () => {
+const useRhfErrors: UseFormErrors = () => {
   const { control } = useFormContext();
-  const { isSubmitting, errors } = useFormState({ control });
-  return {
-    submitting: isSubmitting,
-    errors: Object.fromEntries(
-      Object.entries(errors).map(([name, error]) => [
-        name,
-        [String(error?.message ?? '')].filter(Boolean),
-      ]),
-    ),
-  };
+  const { errors } = useFormState({ control });
+  return Object.fromEntries(
+    Object.entries(errors).map(([name, error]) => [
+      name,
+      [String(error?.message ?? '')].filter(Boolean),
+    ]),
+  );
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -69,7 +65,7 @@ describe('the adapter over a real library — it reads, it does not replace', ()
     return (
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(onValid)}>
-          <FormAdapterProvider field={useRhfField} status={useRhfStatus}>
+          <FormAdapterProvider field={useRhfField} errors={useRhfErrors}>
             <FormErrorSummary
               labelFor={(n) =>
                 ({ email: 'Email', password: 'Password' })[n] ?? n
@@ -77,7 +73,7 @@ describe('the adapter over a real library — it reads, it does not replace', ()
             />
             <FormInput name="email" label="Email" />
             <FormInput name="password" label="Password" />
-            <FormSubmit>Create account</FormSubmit>
+            <button type="submit">Create account</button>
           </FormAdapterProvider>
         </form>
       </FormProvider>
@@ -137,43 +133,5 @@ describe('the adapter over a real library — it reads, it does not replace', ()
 
     await waitFor(() => expect(onValid).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByRole('group')).toBeNull());
-  });
-});
-
-describe('FormSubmit takes pending from whichever source exists', () => {
-  it('React’s own useFormStatus, with NO adapter at all', async () => {
-    const user = userEvent.setup();
-    let release: () => void = () => undefined;
-    render(
-      <form
-        action={async () => {
-          await new Promise<void>((r) => {
-            release = r;
-          });
-        }}
-      >
-        <FormSubmit>Save</FormSubmit>
-      </form>,
-    );
-    await user.click(screen.getByRole('button', { name: /Save/ }));
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Save/ })).toHaveAttribute(
-        'aria-busy',
-        'true',
-      ),
-    );
-    release();
-  });
-
-  it('an explicit isLoading beats both', () => {
-    render(
-      <form>
-        <FormSubmit isLoading>Save</FormSubmit>
-      </form>,
-    );
-    expect(screen.getByRole('button', { name: /Save/ })).toHaveAttribute(
-      'aria-busy',
-      'true',
-    );
   });
 });

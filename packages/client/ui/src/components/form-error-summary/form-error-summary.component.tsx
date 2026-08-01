@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import { useFormStatus } from '../../form/form-adapter.context.js';
+import { useFormErrors } from '../../form/form-adapter.context.js';
 import type { FormErrorSummaryProps } from './form-error-summary.types.js';
 import styles from './form-error-summary.module.css';
 
@@ -32,7 +32,7 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
     ref,
     ...rest
   } = props;
-  const { errors } = useFormStatus('FormErrorSummary');
+  const errors = useFormErrors('FormErrorSummary');
   const el = useRef<HTMLDivElement>(null);
 
   const entries = Object.entries(errors).filter(

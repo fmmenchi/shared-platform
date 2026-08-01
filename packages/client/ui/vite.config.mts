@@ -64,7 +64,6 @@ export default defineConfig(() => ({
       // (`./button`). New components add an entry here.
       entry: {
         form: 'src/components/form/index.ts',
-        'form-submit': 'src/components/form-submit/index.ts',
         'form-error-summary': 'src/components/form-error-summary/index.ts',
         'form-choice': 'src/components/form-choice/index.ts',
         'form-input': 'src/components/form-input/index.ts',

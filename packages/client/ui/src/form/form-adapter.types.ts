@@ -25,28 +25,23 @@ import type { ComponentProps } from 'react';
 export type UseFormField = (name: string) => BoundField;
 
 /**
- * How a form library reports the state of the WHOLE form. A hook, for the same
- * reason `UseFormField` is one: called inside the component that renders it, so
- * that component subscribes for itself.
+ * Every field currently in error, by name, each with ALL of its messages. A
+ * hook, for the same reason `UseFormField` is one: called inside the component
+ * that renders it, so that component subscribes for itself.
  *
- * Deliberately two members rather than a mirror of any library's form state.
- * Each exists because a component RENDERS it — `FormSubmit` reads `submitting`,
- * `FormErrorSummary` reads `errors`. `isDirty`, `isValid`, `submitCount` and
- * the rest are absent for the opposite reason: nothing here would draw them, so
- * they would be a contract nobody keeps. Adding a member later is backward
- * compatible, so waiting costs nothing.
+ * ONE member, because exactly one component renders it — `FormErrorSummary`,
+ * which needs errors keyed by name and cannot get them from any single field.
+ * `submitting`, `isDirty`, `isValid`, `submitCount` and the rest are absent for
+ * the opposite reason: nothing here would draw them.
+ *
+ * Submission state in particular is deliberately NOT here. React 19 already
+ * reports it — `useFormStatus()` for a `<form action>` — and outside that an
+ * app passes `isLoading` to `Button` in one line. A port member is owed by
+ * every adapter that implements it, so it has to be earned.
+ *
+ * Adding a member later is backward compatible, so waiting costs nothing.
  */
-export type UseFormStatus = () => FormStatus;
-
-export interface FormStatus {
-  /** A submission is in flight — `FormSubmit` shows it and blocks a second one. */
-  submitting: boolean;
-  /**
-   * Every field currently in error, by name, each with ALL of its messages.
-   * Normalised, so a summary does not repeat the per-field shape juggling.
-   */
-  errors: Readonly<Record<string, readonly string[]>>;
-}
+export type UseFormErrors = () => Readonly<Record<string, readonly string[]>>;
 
 export interface BoundField {
   /**

@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Form } from './form.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
-import { FormSubmit } from '../form-submit/form-submit.component.js';
 import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
 import { UiProvider } from '../../i18n/provider.js';
@@ -104,31 +103,6 @@ describe('Form', () => {
     expect(form.getAttribute('method')).toBe('post');
     expect(form.getAttribute('action')).toBe('/signup');
   });
-
-  it('works with a React 19 action, where no adapter status is needed', async () => {
-    const user = userEvent.setup();
-    let release: () => void = () => undefined;
-    render(
-      <Form
-        field={field}
-        action={async () => {
-          await new Promise<void>((r) => {
-            release = r;
-          });
-        }}
-      >
-        <FormSubmit>Save</FormSubmit>
-      </Form>,
-    );
-    await user.click(screen.getByRole('button', { name: /Save/ }));
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: /Save/ })).toHaveAttribute(
-        'aria-busy',
-        'true',
-      ),
-    );
-    release();
-  });
 });
 
 describe('the binding given once at setup', () => {
@@ -144,23 +118,18 @@ describe('the binding given once at setup', () => {
               control: { name },
               error: name === 'email' ? 'Required.' : undefined,
             }),
-            status: () => ({
-              submitting: false,
-              errors: { email: ['Required.'] },
-            }),
+            errors: () => ({ email: ['Required.'] }),
           },
         }}
       >
         <Form>
           <FormInput name="email" label="Email" />
-          <FormSubmit>Save</FormSubmit>
         </Form>
       </UiProvider>,
     );
     const input = screen.getByRole('textbox', { name: 'Email' });
     expect(input).toHaveAttribute('name', 'email');
     await waitFor(() => expect(input).toHaveAccessibleDescription('Required.'));
-    expect(screen.getByRole('button', { name: /Save/ })).toBeInTheDocument();
   });
 
   it('a binding on the Form overrides the one from setup', () => {

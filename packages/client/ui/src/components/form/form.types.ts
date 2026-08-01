@@ -1,7 +1,7 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import type {
   UseFormField,
-  UseFormStatus,
+  UseFormErrors,
 } from '../../form/form-adapter.types.js';
 
 interface FormOwnProps {
@@ -14,8 +14,8 @@ interface FormOwnProps {
    * only to override that — the rare page binding two libraries at once.
    */
   field?: UseFormField;
-  /** The form-state hook, overriding the one given at setup. */
-  status?: UseFormStatus;
+  /** The errors hook, overriding the one given at setup. */
+  errors?: UseFormErrors;
   /**
    * Leave the browser's own validation off, which is the default and almost
    * always right: with it ON, the browser blocks submission before your handler

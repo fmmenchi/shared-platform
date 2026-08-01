@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormErrorSummary } from './form-error-summary.component.js';
-import { FormSubmit } from '../form-submit/form-submit.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
 import { FormAdapterProvider } from '../../form/form-adapter-provider.component.js';
 import type {
+  UseFormErrors,
   UseFormField,
-  UseFormStatus,
 } from '../../form/form-adapter.types.js';
 
 const LABELS: Record<string, string> = {
@@ -47,10 +46,10 @@ function DemoForm() {
     },
     error: errors[name],
   });
-  const status: UseFormStatus = () => ({ submitting: false, errors });
+  const formErrors: UseFormErrors = () => errors;
 
   return (
-    <FormAdapterProvider field={field} status={status}>
+    <FormAdapterProvider field={field} errors={formErrors}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -66,7 +65,7 @@ function DemoForm() {
         <FormInput name="email" label="Email" hint="We’ll never share it." />
         <FormInput name="password" label="Password" type="password" />
         <FormChoice name="tos" label="I accept the terms and conditions" />
-        <FormSubmit>Create account</FormSubmit>
+        <button type="submit">Create account</button>
       </form>
     </FormAdapterProvider>
   );

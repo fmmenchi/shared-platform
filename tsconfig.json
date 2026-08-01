@@ -41,6 +41,9 @@
     },
     {
       "path": "./apps/ui-ports-validation"
+    },
+    {
+      "path": "./packages/client/ui-form-ports"
     }
   ],
   "compilerOptions": {}

@@ -6,7 +6,10 @@ import {
 } from '../screens/signup.screen.js';
 import { PrefilledScreen } from '../screens/prefilled.screen.js';
 import { ZodScreen } from '../screens/zod.screen.js';
-import { useRhfField, useRhfStatus } from '../adapters/react-hook-form.js';
+import {
+  useRhfField,
+  useRhfErrors,
+} from '@fmmenchi/ui-form-ports/react-hook-form';
 
 const SCREENS = {
   zod: {
@@ -47,7 +50,7 @@ export function App() {
     <UiProvider
       adapters={{
         i18n: { locale: 'en' },
-        form: { field: useRhfField, status: useRhfStatus },
+        form: { field: useRhfField, errors: useRhfErrors },
       }}
     >
       <main className="page">

@@ -4,7 +4,7 @@ import type { Resolver } from 'react-hook-form';
 import {
   RhfHost,
   useRhfField,
-  useRhfStatus,
+  useRhfErrors,
 } from '../adapters/react-hook-form.js';
 import { useHandRolledForm } from '../adapters/no-library.js';
 import {
@@ -41,7 +41,7 @@ export function SignupWithRhf({ prefill }: { prefill?: SignupValues }) {
           setSaved(values);
         }}
       >
-        <FormAdapterProvider field={useRhfField} status={useRhfStatus}>
+        <FormAdapterProvider field={useRhfField} errors={useRhfErrors}>
           <SignupFields />
         </FormAdapterProvider>
       </RhfHost>
@@ -53,7 +53,7 @@ export function SignupWithRhf({ prefill }: { prefill?: SignupValues }) {
 /** The same screen, bound with no form library at all. */
 export function SignupWithNoLibrary() {
   const [saved, setSaved] = useState<SignupValues | null>(null);
-  const { field, status, Host } = useHandRolledForm<SignupValues>({
+  const { field, formErrors, Host } = useHandRolledForm<SignupValues>({
     initial: EMPTY,
     validate,
     onSubmit: async (values) => {
@@ -64,7 +64,7 @@ export function SignupWithNoLibrary() {
   return (
     <>
       <Host>
-        <FormAdapterProvider field={field} status={status}>
+        <FormAdapterProvider field={field} errors={formErrors}>
           <SignupFields />
         </FormAdapterProvider>
       </Host>
