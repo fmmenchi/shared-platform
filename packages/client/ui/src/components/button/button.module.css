@@ -136,6 +136,13 @@
   /* Loading spinner — decorative (aria-hidden); the accessible status is the
    localized `.srOnly` text + `aria-busy`. Respects reduced-motion. */
   .spinner {
+    /* A `<span>` is CONTENT-box, and this one carries a 2px ring: without a
+       reset its 1em box measured 1em + 4px, so starting to load widened the
+       button by exactly 4px — the layout shift the 1em sizing exists to
+       prevent. Preflight's `*` rule had been paying for this; the DS ships no
+       reset, so the slot pays for itself. (The `<button>` above needs no such
+       line — it is `border-box` in every UA. The span is not.) */
+    box-sizing: border-box;
     width: 1em;
     height: 1em;
     border: 2px solid currentColor;
