@@ -53,7 +53,13 @@ function resolveLocale(locale: string): UiLocale {
 }
 
 export interface UiProviderProps {
-  adapters: UiAdapters;
+  /**
+   * What this provider declares. Everything omitted is INHERITED from a
+   * provider above, so a nested one states only what it changes; the outermost
+   * must declare `i18n`, which is checked at runtime because no type can see
+   * what is above a component.
+   */
+  adapters: Partial<UiAdapters>;
   /** Reference preset name, applied as `data-theme` on the root. */
   theme?: string;
   children: ReactNode;
@@ -63,19 +69,64 @@ export interface UiProviderProps {
  * The single, thin injection seam: carries the app's adapters + active theme
  * into context. It holds no catalogs of app copy and no locale *state* — it
  * only reads the injected locale and derives `dir`.
+ *
+ * **It composes.** A nested provider INHERITS every adapter it does not declare,
+ * so scoping one of them costs one line and repeats nothing:
+ *
+ *     <UiProvider adapters={{ i18n, form: rhfBinding }}>   // the app, once
+ *       …
+ *       <UiProvider adapters={{ form: tanstackBinding }}>  // one screen
+ *
+ * The merge is per top-level adapter: what you declare replaces that key
+ * whole — `form: { field }` drops an inherited `errors`, deliberately, because
+ * a half-inherited binding is harder to reason about than a stated one.
+ *
+ * That composability is why there is no second, form-only provider: an earlier
+ * version had one and it was removed, since nesting already covered the case
+ * and two mechanisms were read by everyone. What nesting cost — repeating the
+ * locale, and a second wrapper element — is fixed here instead.
+ *
+ * `i18n` is the one adapter that must exist somewhere: the outermost provider
+ * declares it, and it throws rather than degrading, because a design system
+ * that quietly picks a locale gets it wrong in a language nobody on the team
+ * reads.
  */
 export function UiProvider({ adapters, theme, children }: UiProviderProps) {
-  const { i18n } = adapters;
+  const inherited = useContext(UiContext);
+
   const value = useMemo<UiContextValue>(() => {
-    const direction = resolveDirection(i18n.locale, i18n.directionOverride);
-    return { adapters, direction };
-  }, [adapters, i18n]);
+    const merged = { ...inherited?.adapters, ...adapters };
+    if (merged.i18n == null) {
+      throw new Error(
+        'UiProvider: no `i18n` in scope — the outermost provider must declare it.',
+      );
+    }
+    return {
+      adapters: merged as UiAdapters,
+      direction: resolveDirection(
+        merged.i18n.locale,
+        merged.i18n.directionOverride,
+      ),
+    };
+  }, [inherited, adapters]);
+
+  // The wrapper carries `dir` and `data-theme`, so a nested provider that
+  // changes neither would add an element that says exactly what its ancestor
+  // already says — and an extra box in a grid or a flex row is not nothing.
+  const carries =
+    inherited == null ||
+    theme !== undefined ||
+    value.direction !== inherited.direction;
 
   return (
     <UiContext value={value}>
-      <div dir={value.direction} data-theme={theme}>
-        {children}
-      </div>
+      {carries ? (
+        <div dir={value.direction} data-theme={theme}>
+          {children}
+        </div>
+      ) : (
+        children
+      )}
     </UiContext>
   );
 }
