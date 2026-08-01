@@ -54,6 +54,43 @@ validates however it likes and returns errors keyed by name.
 The controls stay entirely native — no `value`, no `onChange` — so `FormData`
 collects them and the form can submit without JavaScript.
 
+## Per-field rules, if you prefer them to a schema
+
+The port binds by **name**, so there is no `rules` prop on `FormInput` — and
+there should not be: the design system cannot type `RegisterOptions` without
+importing react-hook-form, so such a prop would have to be `unknown`, and a typo
+in it would compile.
+
+Three ways to get the rules, in the order worth reaching for them:
+
+1. **A schema.** `useForm({ resolver: zodResolver(Schema) })`. Everything in one
+   place, cross-field rules included, and the port carries the messages by name.
+2. **A wrapper in your app** — six lines, and fully typed, which the design
+   system could not be:
+
+   ```tsx
+   function AppInput({
+     rules,
+     ...rest
+   }: FormInputProps & { rules?: RegisterOptions }) {
+     const { register } = useFormContext();
+     register(rest.name, rules);
+     return <FormInput {...rest} />;
+   }
+
+   <AppInput name="email" label="Email" rules={{ required: 'Required.' }} />;
+   ```
+
+   It works because a plain `register(name)` — what the port does — does **not**
+   wipe rules registered earlier for that name. Measured, both ways.
+
+3. **A rules map in your own adapter**, when the rules are better kept together
+   than beside each field: `register(name, RULES[name])`.
+
+The general shape: your app knows its form library, so your app can type it. Any
+time the design system would have to accept something opaque, a small wrapper on
+the side that knows the library is the better place for it.
+
 ## Adding a library
 
 A new subpath, an optional peer, an entry in the build, a row in the table.

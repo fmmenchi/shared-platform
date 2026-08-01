@@ -27,7 +27,6 @@ function FormInput(props: FormInputProps) {
   // screen reader announces them as separate statements and the eye sees a
   // list — joining them would read as one run-on sentence.
   const messages = toMessages(error);
-
   return (
     <Field label={label} invalid={messages.length > 0}>
       {/* The adapter's props come FIRST so an explicit prop at the call site
