@@ -30,6 +30,9 @@ export default defineConfig(() => ({
       entry: {
         'react-hook-form': 'src/react-hook-form/index.ts',
         'react-19': 'src/react-19/index.ts',
+        conform: 'src/conform/index.ts',
+        formik: 'src/formik/index.ts',
+        tanstack: 'src/tanstack/index.ts',
       },
       name: '@fmmenchi/ui-form-ports',
       // one file per subpath, named after its entry key
@@ -45,6 +48,9 @@ export default defineConfig(() => ({
         'react/jsx-runtime',
         'react-dom',
         'react-hook-form',
+        '@conform-to/react',
+        'formik',
+        '@tanstack/react-form',
         '@fmmenchi/ui',
       ],
     },
