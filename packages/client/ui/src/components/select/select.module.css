@@ -145,6 +145,22 @@
     .select {
       background-image: none;
       @apply pe-3;
+      /* `base-select` also turns the control into a FLEX CONTAINER, and the UA
+         leaves `align-items` at its `normal` initial value — so the label and
+         the `::picker-icon` stretch and draw from the TOP of the box. Measured
+         in Chromium: the arrow's centre sat 4.00 / 3.19 / 4.81 px above the
+         box's at sm / md / lg, while the gradient branch above is centred to
+         within 0.4px by its `background-position: … center`. The same component
+         was landing at two different heights depending on the engine. */
+      @apply items-center;
+      /* And the selected label is now FLOW CONTENT, not the string the UA used
+         to paint into a single line of its own: measured, a label longer than
+         the control wrapped to a second line and spilled out the bottom of a
+         fixed-height field. Clipping to one line is what the native select did
+         before this branch existed. `text-overflow: ellipsis` is not reachable
+         yet — it belongs on `::selectedcontent`, which the engine does not
+         style today (verified: the declaration had no effect). */
+      @apply overflow-hidden whitespace-nowrap;
     }
 
     .select::picker(select) {
