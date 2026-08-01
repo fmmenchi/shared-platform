@@ -35,32 +35,36 @@ function Dialog(props: DialogProps) {
   const { children, onOpenChange } = props;
 
   const surfaceId = useId();
-  const [open, setOpen] = useState(false);
   const [surface, setSurface] = useState<HTMLDialogElement | null>(null);
   const [invoker, setInvoker] = useState<HTMLElement | null>(null);
-  const [headingId, setHeadingId] = useState<string | undefined>(undefined);
+  // A LIST, not the last writer. Measured with two headings mounted: unmounting
+  // either one left the dialog nameless — the second because it held the slot,
+  // the first because the cleanup cleared it regardless. The first still
+  // mounted names the dialog, which is also the reading order.
+  const [headingIds, setHeadingIds] = useState<readonly string[]>([]);
+
+  const registerHeading = useCallback((id: string) => {
+    setHeadingIds((ids) => [...ids, id]);
+    return () => setHeadingIds((ids) => ids.filter((other) => other !== id));
+  }, []);
 
   const reportOpen = useCallback(
-    (next: boolean) => {
-      setOpen(next);
-      onOpenChange?.(next);
-    },
+    (next: boolean) => onOpenChange?.(next),
     [onOpenChange],
   );
 
   const value = useMemo<DialogContextValue>(
     () => ({
       surfaceId,
-      open,
       reportOpen,
       surface,
       setSurface,
       invoker,
       setInvoker,
-      headingId,
-      setHeadingId,
+      headingId: headingIds[0],
+      registerHeading,
     }),
-    [surfaceId, open, reportOpen, surface, invoker, headingId],
+    [surfaceId, reportOpen, surface, invoker, headingIds, registerHeading],
   );
 
   return (

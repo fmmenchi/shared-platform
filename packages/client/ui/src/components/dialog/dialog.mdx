@@ -62,7 +62,7 @@ The list is longer than the component. Measured in Chromium, Firefox and WebKit 
 
 | what a dialog needs         | who does it                                                 |
 | --------------------------- | ----------------------------------------------------------- |
-| open it                     | `command="show-modal"` — no handler, works before hydration |
+| open it                     | `command="show-modal"` — the attribute is the behaviour     |
 | trap the focus              | `showModal()`                                               |
 | make the page behind inert  | `showModal()`                                               |
 | the dimmed backdrop         | `::backdrop`                                                |
@@ -73,7 +73,9 @@ The list is longer than the component. Measured in Chromium, Firefox and WebKit 
 | **stop the page scrolling** | **one CSS rule**, `:root:has(…[open]) { overflow: hidden }` |
 | **put the focus back**      | the platform — except WebKit, which we repair               |
 
-That last pair is everything this component adds. The scroll lock is where libraries reach for a dependency (`react-remove-scroll`) and a backdrop-click handler that compares click coordinates to the dialog's box; `:has()` and `closedby` replace both.
+That last pair is everything this component adds. The backdrop-click handler that compares click coordinates to the dialog's box — the one every library writes — is replaced by `closedby` outright.
+
+The scroll lock is written **inline on `:root`**, not as a stylesheet rule, and that is a correction rather than a preference: as a rule inside `@layer fmmenchi` it was beaten by an ordinary unlayered `html { overflow-y: auto }` on the consumer's page, so the modal opened over a page that still scrolled — ADR-0022 had already rejected that shape for exactly this reason. It also keys on `:modal`, not on the `open` attribute: a non-modal `<dialog open>` leaves the page interactive, and freezing its scroll would trap the user with nothing to dismiss.
 
 <Canvas of={DialogStories.WithAForm} />
 
@@ -81,7 +83,9 @@ That last pair is everything this component adds. The scroll lock is where libra
 
 A modal that lets the page scroll behind it is the commonest defect of the pattern, and `showModal()` does not prevent it — measured, the page scrolled 300px under an open dialog in all three engines. One rule does, scoped to this component's own dialog so it never speaks for somebody else's.
 
-What it deliberately does **not** do is compensate for the scrollbar it hides. On a platform with classic scrollbars, fixed elements shift by its width when the lock engages — measured at 15px, and `scrollbar-gutter: stable` did not cure it. That compensation is a page-level decision and the design system ships no page rules (ADR-0022): if it matters to your app, reserve the gutter on your own `:root`.
+It compensates for the scrollbar it hides, as far as anything can. Hiding the overflow widens the viewport by the scrollbar's width, so the page's content jumps sideways; the lock pads the root by the width it measured, which holds the content in the flow still. Elements positioned `fixed` still move, and nothing written from here can prevent that — `react-remove-scroll` has the same limitation for the same reason.
+
+Measured with a classic scrollbar, the shift is 15px in WebKit, and `scrollbar-gutter: stable` does **not** cure it there even though the engine reports the property as supported. On Chromium it does. There is no remedy that works everywhere; this is the honest state of it, not an omission.
 
 <Canvas of={DialogStories.LongContent} />
 
@@ -92,6 +96,11 @@ What it deliberately does **not** do is compensate for the scrollbar it hides. O
 - **The focus is trapped by the platform**, and the ring is not identical in every engine — Chromium passes through the document on its way round, WebKit lands on the dialog itself. What holds everywhere is the thing that matters: nothing outside is reachable.
 - **The focus comes back.** Chromium and Firefox return it to the trigger; WebKit drops it on `<body>`, so the component puts it back — only ever a repair, never a second guess when the engine already did the right thing.
 - **`Escape` always works**, in every engine, with or without `closedby`.
+- **It says so when it is misused.** In development it warns if the dialog has no accessible name, and if the trigger renders anything other than a `<button>` — `commandfor` works on nothing else, so such a trigger is silently dead, and only on the browsers that have invoker commands.
+
+### Before hydration, and the attribute that has to be there
+
+The trigger carries `command`/`commandfor` **always**, on the server as well as in the browser, and a click handler stands by for browsers that do not have invoker commands yet — it asks the question at click time rather than when the module loads. That sounds like a detail and is not: the first version answered it once, at module scope, where the answer on a server is "no DOM". The attribute never reached the server HTML, React declined to patch it in ("This won't be patched up"), and the fallback stood down because on the client the answer had flipped. The dialog was dead for every SSR consumer.
 
 ### Where it is painted
 

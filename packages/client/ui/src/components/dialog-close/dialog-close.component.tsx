@@ -1,5 +1,6 @@
 import { useCallback, type ElementType } from 'react';
-import { COMMANDS_SUPPORTED, useDialogPart } from '../dialog/dialog.context.js';
+import { useDialogPart } from '../dialog/dialog.context.js';
+import { commandsSupported } from '../dialog/dialog.commands.js';
 import { Button } from '../button/button.component.js';
 import type { DialogCloseProps } from './dialog-close.types.js';
 
@@ -22,7 +23,7 @@ function DialogClose(props: DialogCloseProps) {
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(event);
-      if (COMMANDS_SUPPORTED || event.defaultPrevented) return;
+      if (event.defaultPrevented || commandsSupported()) return;
       surface?.close();
     },
     [onClick, surface],
@@ -33,8 +34,8 @@ function DialogClose(props: DialogCloseProps) {
       type="button"
       {...rest}
       onClick={handleClick}
-      command={COMMANDS_SUPPORTED ? 'close' : undefined}
-      commandfor={COMMANDS_SUPPORTED ? dialog?.surfaceId : undefined}
+      command="close"
+      commandfor={dialog?.surfaceId}
     />
   );
 }

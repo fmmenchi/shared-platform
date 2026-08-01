@@ -16,12 +16,8 @@ function DialogHeading(props: DialogHeadingProps) {
   const dialog = useDialogPart('DialogHeading');
   const id = useId();
 
-  const register = dialog?.setHeadingId;
-  useEffect(() => {
-    if (!register) return;
-    register(id);
-    return () => register(undefined);
-  }, [register, id]);
+  const register = dialog?.registerHeading;
+  useEffect(() => register?.(id), [register, id]);
 
   return (
     <Component {...rest} id={id} className={cn(styles.heading, className)}>

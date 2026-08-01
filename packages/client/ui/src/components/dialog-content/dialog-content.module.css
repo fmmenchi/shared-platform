@@ -6,40 +6,20 @@
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 @layer fmmenchi {
-  /*
-   * THE SCROLL LOCK, and it is CSS. Measured in Chromium, Firefox and WebKit:
-   * `showModal()` makes the page behind inert to clicks and to the keyboard but
-   * NOT to the wheel — the page scrolled 300px under an open modal in all
-   * three. Every library answers this with a scroll-locking dependency
-   * (`react-remove-scroll` in iungo's Dialog); `:has()` answers it with one
-   * rule, and releases it when the dialog closes because the selector stops
-   * matching.
-   *
-   * Scoped to OUR dialog, not to every `dialog[open]` on the page: this is the
-   * one rule in the design system that reaches outside its own component, and
-   * it may not speak for somebody else's.
-   *
-   * What it does NOT do is compensate for the scrollbar it hides. Measured with
-   * a classic scrollbar: fixed elements jump by its width (15px in WebKit), and
-   * `scrollbar-gutter: stable` did not cure it there. That compensation belongs
-   * to the page — the design system ships no page rules (ADR-0022) — and it is
-   * written down in the docs rather than smuggled in here.
-   */
-  /* `:root` is not hashed by CSS Modules — only the class is — so this is the
-     real document element, matched only when OUR dialog is the one open. */
-  :root:has(.content[open]) {
-    overflow: hidden;
-  }
-
   .content {
     margin: auto;
-    padding: 0;
     box-sizing: border-box;
 
     @apply rounded-lg border p-6 shadow-lg;
     /* Plain CSS, not an arbitrary Tailwind value: the gate rejects those, and
        rightly — but a modal's width is geometry, not a token scale. */
     width: min(32rem, calc(100vw - 2rem));
+    /* The UA gives a modal `max-width: calc(100% - 6px - 2em)`, which is
+       TIGHTER than the line above for every viewport under ~550px — measured,
+       the intended 1rem side gap came out as 19px and the declaration never
+       governed where it was written to. `max-height` was overridden and
+       `max-width` was not; stating both keeps the box ours. */
+    max-width: calc(100vw - 2rem);
     /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only, and
        the colour falls back to `currentColor` — nearly black. */
     @apply bg-card text-card-foreground border-border;

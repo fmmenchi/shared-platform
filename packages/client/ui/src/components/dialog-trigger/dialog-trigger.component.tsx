@@ -1,16 +1,20 @@
 import { useCallback, type ElementType } from 'react';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import { COMMANDS_SUPPORTED, useDialogPart } from '../dialog/dialog.context.js';
+import { useDialogPart } from '../dialog/dialog.context.js';
+import { commandsSupported } from '../dialog/dialog.commands.js';
 import { Button } from '../button/button.component.js';
 import type { DialogTriggerProps } from './dialog-trigger.types.js';
 
 /**
- * Opens the dialog. `command="show-modal"` names the dialog and the browser
- * opens it — no handler, and it works before React has hydrated.
+ * Opens the dialog. `command="show-modal"` names it and the browser opens it —
+ * the attribute IS the behaviour, and it is rendered on the server too, so the
+ * control works before React has hydrated.
  *
- * The `onClick` below is the fallback for a browser without invoker commands
+ * The `onClick` is the fallback for a browser without invoker commands
  * (Baseline "newly"), and it is the one place this family takes a script: a
- * dialog that does not open is not a degradation, it is a broken control.
+ * dialog that does not open is not a degradation, it is a broken control. It
+ * asks whether commands exist at CLICK time — asked once when the module loads,
+ * the answer on a server is "no DOM" and it is wrong forever after.
  *
  * `aria-haspopup="dialog"` says what will appear. There is deliberately NO
  * `aria-expanded` — unlike the Popover's trigger, this one is INERT while the
@@ -25,7 +29,7 @@ function DialogTrigger(props: DialogTriggerProps) {
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       onClick?.(event);
-      if (COMMANDS_SUPPORTED || event.defaultPrevented) return;
+      if (event.defaultPrevented || commandsSupported()) return;
       surface?.showModal();
     },
     [onClick, surface],
@@ -37,8 +41,8 @@ function DialogTrigger(props: DialogTriggerProps) {
       {...rest}
       ref={mergeRefs(dialog?.setInvoker, ref)}
       onClick={handleClick}
-      command={COMMANDS_SUPPORTED ? 'show-modal' : undefined}
-      commandfor={COMMANDS_SUPPORTED ? dialog?.surfaceId : undefined}
+      command="show-modal"
+      commandfor={dialog?.surfaceId}
       aria-haspopup="dialog"
     />
   );

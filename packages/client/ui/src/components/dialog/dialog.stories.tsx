@@ -79,8 +79,14 @@ export const WithAForm: Story = {
                 marginBlockStart: 'var(--fm-space-stack-m)',
               }}
             >
-              <Button value="saved">Save</Button>
-              <Button variant="ghost" value="cancelled">
+              {/* `type="submit"` explicitly: the DS `Button` defaults a native
+                  button to `type="button"`, so without this the form never
+                  submits and `returnValue` stays empty — measured, in all three
+                  engines, on this very story. */}
+              <Button type="submit" value="saved">
+                Save
+              </Button>
+              <Button type="submit" variant="ghost" value="cancelled">
                 Cancel
               </Button>
             </div>
