@@ -15,6 +15,16 @@ no headless-behavior lib.
   cannot set from props (`indeterminate`). `value` drives (written whenever it changes), `initial`
   seeds once. Nothing is written when neither is given, so a caller driving the element through its
   own ref is not stomped on.
+- **`useDescendants<Data>()`** (hook) — the parts of a compound component, in the order the user
+  meets them. Parts register with `register(data)` (the ref it returns goes on their element), the
+  root takes `rootRef`, and `items()` answers in DOM order — READ at the moment you ask, by walking
+  the root's subtree, never a list kept in step. Reach's and Chakra's `useDescendants` sort at
+  registration and must re-sort whenever the tree moves; this cannot drift because it keeps nothing.
+  Nesting works by construction: a submenu's parts sit in the outer subtree but are registered with
+  the inner family, and anything not in our own registry is dropped — no scopes, no ids. Registry in
+  a ref: a part appearing or leaving never re-renders the family. Costs a `querySelectorAll` per
+  read, which happens on a keypress, not on a render. First consumer: the Menu (roving focus,
+  typeahead); Combobox and Tabs next.
 - **`useDevWarning(active, message)`** (hook) — dev-only `console.warn` when `active`; no-op in
   prod. Put dev guards here, not in the component body (compute the condition at the call site).
 
