@@ -44,7 +44,17 @@ function Popover(props: PopoverProps) {
   const surfaceId = useId();
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const [headingId, setHeadingId] = useState<string | undefined>(undefined);
+  // A LIST, not the last writer: with two headings mounted, unmounting either
+  // one left the surface nameless — the second because it held the slot, the
+  // first because the cleanup cleared it regardless. Measured on the Dialog,
+  // which had the same shape. The first still mounted names it, which is also
+  // the reading order.
+  const [headingIds, setHeadingIds] = useState<readonly string[]>([]);
+
+  const registerHeading = useCallback((id: string) => {
+    setHeadingIds((ids) => [...ids, id]);
+    return () => setHeadingIds((ids) => ids.filter((other) => other !== id));
+  }, []);
 
   const reportOpen = useCallback(
     (next: boolean) => {
@@ -64,8 +74,8 @@ function Popover(props: PopoverProps) {
       controlled,
       hasOpenChange: onOpenChange !== undefined,
       defaultOpen,
-      headingId,
-      setHeadingId,
+      headingId: headingIds[0],
+      registerHeading,
       placement,
     }),
     [
@@ -76,7 +86,8 @@ function Popover(props: PopoverProps) {
       controlled,
       onOpenChange,
       defaultOpen,
-      headingId,
+      headingIds,
+      registerHeading,
       placement,
     ],
   );

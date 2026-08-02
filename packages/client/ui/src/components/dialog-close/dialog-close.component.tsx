@@ -14,13 +14,6 @@ import type { DialogCloseProps } from './dialog-close.types.js';
  * `<form method="dialog">` is the platform's own answer and needs no part at
  * all: the submit button's `value` lands in `dialog.returnValue`.
  */
-// The prop type is CONCRETE — `Omit<ButtonProps<'button'>, 'as'>` — and not
-// `ComponentPropsWithRef<typeof Button>`, nor a generic with a `typeof Button`
-// default. Measured, both of those resolve through the `ElementType` constraint
-// and degrade the whole bag to a string index signature, so
-// `<Trigger nosuchprop onClick={42} as="a" href="/x">` compiled without a word.
-// Button's own `as` is omitted before the intersection: two `as` props intersect
-// to something nothing satisfies.
 function DialogClose(props: DialogCloseProps) {
   const { as, onClick, ...rest } = props;
   const Component = (as ?? Button) as ElementType;

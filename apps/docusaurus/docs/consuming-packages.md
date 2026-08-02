@@ -73,7 +73,6 @@ import { Button } from '@fmmenchi/ui/button';
 
 ```css
 @import '@fmmenchi/tokens/styles/vars.css';
-@import '@fmmenchi/ui/button/style.css'; /* just the Button's styles */
 ```
 
 `@fmmenchi/ui/style.css` bundles every component's styles (simplest); `@fmmenchi/ui/<name>/style.css`

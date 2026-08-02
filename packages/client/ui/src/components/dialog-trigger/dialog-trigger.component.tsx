@@ -20,13 +20,6 @@ import type { DialogTriggerProps } from './dialog-trigger.types.js';
  * `aria-expanded` — unlike the Popover's trigger, this one is INERT while the
  * dialog is open, so "expanded" describes a state nobody can observe from here.
  */
-// The prop type is CONCRETE — `Omit<ButtonProps<'button'>, 'as'>` — and not
-// `ComponentPropsWithRef<typeof Button>`, nor a generic with a `typeof Button`
-// default. Measured, both of those resolve through the `ElementType` constraint
-// and degrade the whole bag to a string index signature, so
-// `<Trigger nosuchprop onClick={42} as="a" href="/x">` compiled without a word.
-// Button's own `as` is omitted before the intersection: two `as` props intersect
-// to something nothing satisfies.
 function DialogTrigger(props: DialogTriggerProps) {
   const { as, onClick, ref, ...rest } = props;
   const Component = (as ?? Button) as ElementType;

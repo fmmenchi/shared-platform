@@ -128,6 +128,34 @@ describe('Popover', () => {
     });
   });
 
+  it('keeps its name when one of two headings unmounts', async () => {
+    // Found by extracting the heading the Dialog and the Popover had copied:
+    // this one still cleared the registration unconditionally, so unmounting
+    // either heading left the surface nameless with the other still on screen.
+    const { rerender } = render(
+      <Popover>
+        <PopoverTrigger>Share</PopoverTrigger>
+        <PopoverContent>
+          <PopoverHeading key="first">First heading</PopoverHeading>
+          <PopoverHeading key="second">Second heading</PopoverHeading>
+        </PopoverContent>
+      </Popover>,
+    );
+
+    rerender(
+      <Popover>
+        <PopoverTrigger>Share</PopoverTrigger>
+        <PopoverContent>
+          <PopoverHeading key="first">First heading</PopoverHeading>
+        </PopoverContent>
+      </Popover>,
+    );
+
+    await browser.click(screen.getByRole('button', { name: 'Share' }));
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('First heading');
+    await browser.keyboard('{Escape}');
+  });
+
   describe('accessibility (axe)', () => {
     for (const { name, theme } of [
       { name: 'light', theme: undefined },

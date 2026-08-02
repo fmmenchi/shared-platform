@@ -19,13 +19,6 @@ import type { PopoverTriggerProps } from './popover-trigger.types.js';
  * A `Button` by default, so a trigger looks like the rest of the system; `as`
  * takes anything that ends in a `<button>`.
  */
-// The prop type is CONCRETE — `Omit<ButtonProps<'button'>, 'as'>` — and not
-// `ComponentPropsWithRef<typeof Button>`, nor a generic with a `typeof Button`
-// default. Measured, both of those resolve through the `ElementType` constraint
-// and degrade the whole bag to a string index signature, so
-// `<Trigger nosuchprop onClick={42} as="a" href="/x">` compiled without a word.
-// Button's own `as` is omitted before the intersection: two `as` props intersect
-// to something nothing satisfies.
 function PopoverTrigger(props: PopoverTriggerProps) {
   const { as, ref, onClick, ...rest } = props;
   // Cast at the render site, not in the prop type: `as` is CONSTRAINED to
