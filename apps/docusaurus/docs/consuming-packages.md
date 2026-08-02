@@ -58,26 +58,36 @@ import { UiProvider, Button } from '@fmmenchi/ui';
 Switch preset at runtime with `data-theme` on a root element (`<html data-theme="dark">`); the
 token variables re-theme the components, no rebuild.
 
-#### If your app uses Tailwind
+#### Overriding a component's styles
 
-Import the token `@theme` in your own stylesheet and the design system's roles become your
-utilities — `bg-accent`, `text-input-foreground`, `rounded-md`, `shadow-lg` mean in your markup
-exactly what they mean in ours, and they re-theme with `data-theme` for free:
+A plain rule of yours wins. Everything the design system ships lives inside `@layer fmmenchi`, and
+an unlayered rule beats a layered one whatever its specificity (ADR-0011) — no `!important` and no
+specificity war.
+
+If your own CSS is layered too — several frameworks put their utilities in a layer — then it is
+layer against layer, and there the winner is the one declared **last**, not the more specific one.
+Say the order once, at the top of your stylesheet before any import, and yours wins whatever the
+import order:
 
 ```css
-@import 'tailwindcss';
-@import '@fmmenchi/tokens/styles/tailwind.css'; /* our roles, as your theme */
-@import '@fmmenchi/ui/style.css'; /* the components, precompiled */
+@layer app, fmmenchi;
 ```
 
-The components' own styles always come from that precompiled CSS, never from your Tailwind
-scanning the library: their class names are hashed at build time and the shipped JavaScript
-refers to those hashes, so there is nothing for your build to regenerate.
+#### Using the tokens in your own styles
 
-**Restyling ours is a one-liner, and does not need a build of ours.** Everything we ship lives
-inside `@layer fmmenchi`, and an unlayered rule of yours beats a layered one whatever its
-specificity — so your own utility, or a plain rule in your stylesheet, wins without `!important`
-and without a specificity war (ADR-0011).
+The token values are plain custom properties, so nothing is needed beyond the import above:
+
+```css
+.checkout-summary {
+  background: var(--fm-color-card);
+  border-radius: var(--fm-radius-lg);
+}
+```
+
+They follow `data-theme` like the components do. A team that wants those roles as utilities in its
+own build can consume `@fmmenchi/tokens/styles/tailwind.css` — it registers them as a Tailwind
+theme, and it **replaces** Tailwind's own colour, breakpoint, radius, shadow and font scales rather
+than adding to them, so take it only if that trade is one you want.
 
 #### Importing only what you use
 
