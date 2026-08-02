@@ -15,6 +15,25 @@ no headless-behavior lib.
   cannot set from props (`indeterminate`). `value` drives (written whenever it changes), `initial`
   seeds once. Nothing is written when neither is given, so a caller driving the element through its
   own ref is not stomped on.
+- **`useDescendants<Data>()`** + **`useDescendant(family, data)`** (hooks) — the parts of a
+  compound component, in TREE order. The root takes `rootRef`; each part calls `useDescendant` and
+  puts the returned ref on its element; `items()` answers by walking the root's subtree at the
+  moment you ask, keeping only what is in this family's registry. Reach's and Chakra's version
+  sorts at registration and must re-sort when the tree moves; this keeps nothing in step, so it
+  cannot drift. Read cost measured at 0.05ms for 300 parts, paid on a keypress and not on a render.
+  - **Membership ends.** The ref returns a React 19 cleanup: ignoring the detach leaked every
+    element ever registered (1000 created → 1000 retained, measured) and — worse — kept as
+    navigable an element React had detached but left in the document, which is exactly what
+    `<Activity mode="hidden">` produces for an inactive tab panel.
+  - **Nesting works by construction**: a submenu's parts sit in the outer subtree but register with
+    the inner family, and anything not in our registry is dropped. What it really needs is DOM
+    containment — a part moved out by a portal stops being one, which is one more reason nothing
+    in this package portals.
+  - **`items()` returns a fresh array of fresh objects.** Call it inside the handler that needs it;
+    in a dependency array it is a new value every render and spins an effect forever.
+  - Tree order matches the browser's own sequential focus navigation, including under `dir="rtl"`
+    and CSS `order` (measured against real Tab traversal) — mapping ArrowRight to "previous" in RTL
+    is the consuming component's job, not this one's. The root is never among its own items.
 - **`useDevWarning(active, message)`** (hook) — dev-only `console.warn` when `active`; no-op in
   prod. Put dev guards here, not in the component body (compute the condition at the call site).
 
