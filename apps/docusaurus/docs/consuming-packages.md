@@ -56,10 +56,28 @@ import { UiProvider, Button } from '@fmmenchi/ui';
 ```
 
 Switch preset at runtime with `data-theme` on a root element (`<html data-theme="dark">`); the
-token variables re-theme the components, no rebuild. If your app already uses Tailwind you may
-instead consume the token `@theme` (`@fmmenchi/tokens/styles/tailwind.css`) in your own build —
-but the components' styles always come from the precompiled CSS, never from your Tailwind scanning
-the library.
+token variables re-theme the components, no rebuild.
+
+#### If your app uses Tailwind
+
+Import the token `@theme` in your own stylesheet and the design system's roles become your
+utilities — `bg-accent`, `text-input-foreground`, `rounded-md`, `shadow-lg` mean in your markup
+exactly what they mean in ours, and they re-theme with `data-theme` for free:
+
+```css
+@import 'tailwindcss';
+@import '@fmmenchi/tokens/styles/tailwind.css'; /* our roles, as your theme */
+@import '@fmmenchi/ui/style.css'; /* the components, precompiled */
+```
+
+The components' own styles always come from that precompiled CSS, never from your Tailwind
+scanning the library: their class names are hashed at build time and the shipped JavaScript
+refers to those hashes, so there is nothing for your build to regenerate.
+
+**Restyling ours is a one-liner, and does not need a build of ours.** Everything we ship lives
+inside `@layer fmmenchi`, and an unlayered rule of yours beats a layered one whatever its
+specificity — so your own utility, or a plain rule in your stylesheet, wins without `!important`
+and without a specificity war (ADR-0011).
 
 #### Importing only what you use
 
