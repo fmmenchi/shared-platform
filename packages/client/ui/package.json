@@ -145,14 +145,12 @@
       "import": "./dist/form-select.js",
       "default": "./dist/form-select.js"
     },
-    "./form-input/style.css": "./dist/form-input.css",
     "./form-choice": {
       "@fmmenchi/source": "./src/components/form-choice/index.ts",
       "types": "./dist/components/form-choice/index.d.ts",
       "import": "./dist/form-choice.js",
       "default": "./dist/form-choice.js"
     },
-    "./form-choice/style.css": "./dist/form-choice.css",
     "./form-error-summary": {
       "@fmmenchi/source": "./src/components/form-error-summary/index.ts",
       "types": "./dist/components/form-error-summary/index.d.ts",

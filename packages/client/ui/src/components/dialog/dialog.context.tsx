@@ -1,5 +1,4 @@
-import { createContext, useContext } from 'react';
-import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { createPartContext } from '../../primitives/part-context.js';
 
 /**
  * What a `Dialog` provides to its parts. The platform still owns the toggling —
@@ -41,21 +40,15 @@ export interface DialogContextValue {
   registerHeading: (id: string) => () => void;
 }
 
-export const DialogContext = createContext<DialogContextValue | null>(null);
+const { Context, useFamilyContext, usePart } =
+  createPartContext<DialogContextValue>('Dialog');
 
-export const useDialogContext = (): DialogContextValue | null =>
-  useContext(DialogContext);
+export const DialogContext = Context;
+export const useDialogContext = useFamilyContext;
 
 /**
  * Context for a `Dialog` PART, warning (with the part's own name) when it is
  * used outside one. It returns `null` rather than throwing: a misplaced part is
  * worth a loud warning, not a crashed page.
  */
-export function useDialogPart(part: string): DialogContextValue | null {
-  const context = useDialogContext();
-  useDevWarning(
-    context == null,
-    `${part}: used outside a <Dialog>, so it is not wired to anything.`,
-  );
-  return context;
-}
+export const useDialogPart = usePart;
