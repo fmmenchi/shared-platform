@@ -1,4 +1,10 @@
-import { useCallback, useId, type MouseEvent } from 'react';
+import {
+  useCallback,
+  useId,
+  type FocusEvent,
+  type MouseEvent,
+  type PointerEvent,
+} from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDescendant } from '../../primitives/use-descendants.js';
@@ -11,24 +17,36 @@ import styles from './menu-item.module.css';
  * without anyone counting.
  *
  * ONE TAB STOP: only the active item carries `tabindex="0"`; the rest are `-1`
- * and reachable with the arrows. That is the APG contract for a menu, and it is
- * the opposite of what the platform does on its own — measured, `Tab` walked
+ * and reachable with the arrows. That is the APG contract for a menu, and the
+ * opposite of what the platform does on its own — measured, `Tab` walked
  * straight into the items.
+ *
+ * THE ACTIVE ITEM IS THE FOCUSED ITEM, and that is one fact rather than two.
+ * The first version kept `activeId` in state and moved the focus separately: the
+ * arrows read `document.activeElement` while hovering wrote the state, so
+ * hovering a row and pressing Down continued from the OLD row — and both rows
+ * were painted at once, because hover and focus were two CSS rules. Hovering
+ * now focuses, `onFocus` is what sets the active id, and `data-active` paints
+ * exactly one row.
  */
 function MenuItem(props: MenuItemProps) {
-  const { className, children, ref, onClick, onPointerEnter, ...rest } = props;
+  const {
+    className,
+    children,
+    ref,
+    onClick,
+    onFocus,
+    onPointerEnter,
+    ...rest
+  } = props;
   const menu = useMenuPart('MenuItem');
   const id = useId();
 
   const disabled = props.disabled === true;
-  const label = typeof children === 'string' ? children : '';
-  const family = menu?.items;
-  const descendantRef = useDescendant(
-    // The family is always the same object for a given menu; outside one there
-    // is nothing to join, and the part has already warned.
-    family ?? EMPTY_FAMILY,
-    { id, disabled, label },
-  );
+  const descendantRef = useDescendant(menu?.items ?? EMPTY_FAMILY, {
+    id,
+    disabled,
+  });
 
   const setActiveId = menu?.setActiveId;
   const close = menu?.close;
@@ -44,15 +62,23 @@ function MenuItem(props: MenuItemProps) {
     [onClick, close],
   );
 
-  const handlePointerEnter = useCallback(
-    (event: React.PointerEvent<HTMLButtonElement>) => {
-      onPointerEnter?.(event);
-      // The pointer moves the active item, so the keyboard picks up where the
-      // mouse left off (APG). It does NOT focus it: that would fight a user who
-      // is typing while the pointer happens to rest over the menu.
-      if (!disabled) setActiveId?.(id);
+  const handleFocus = useCallback(
+    (event: FocusEvent<HTMLButtonElement>) => {
+      onFocus?.(event);
+      setActiveId?.(id);
     },
-    [onPointerEnter, disabled, setActiveId, id],
+    [onFocus, setActiveId, id],
+  );
+
+  const handlePointerEnter = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      onPointerEnter?.(event);
+      // Hovering FOCUSES (the APG's "the pointer and the keyboard share one
+      // cursor"), so the next arrow continues from the mouse. Setting a state
+      // instead, as the first version did, left the two disagreeing.
+      if (!disabled) event.currentTarget.focus();
+    },
+    [onPointerEnter, disabled],
   );
 
   return (
@@ -63,7 +89,9 @@ function MenuItem(props: MenuItemProps) {
       ref={mergeRefs(descendantRef, ref)}
       id={id}
       tabIndex={menu?.activeId === id ? 0 : -1}
+      data-active={menu?.activeId === id ? '' : undefined}
       onClick={handleClick}
+      onFocus={handleFocus}
       onPointerEnter={handlePointerEnter}
       className={cn(styles.item, className)}
     >

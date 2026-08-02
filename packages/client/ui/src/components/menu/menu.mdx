@@ -50,17 +50,22 @@ So this component owns the contract the WAI-ARIA practices describe, and every l
 - **the arrows move and wrap.** A menu is a ring: `↓` on the last item goes to the first;
 - **`Home` and `End`** go to the ends;
 - **disabled items are stepped over** by every move — but they stay in the DOM, so a screen reader still learns the command exists;
-- **the pointer hands over to the keyboard.** Hovering makes an item active without stealing the focus, so the next arrow continues from where the mouse is — and one CSS rule paints both, so the two can never highlight different rows.
+- **the pointer hands over to the keyboard.** Hovering FOCUSES the item, so the next arrow continues from where the mouse is. That is one fact rather than two: an earlier version kept the active item in state and moved the focus separately, and the arrows then continued from the row the mouse had left. One attribute paints the active row, so exactly one row is ever lit — painting `:hover` and `:focus-visible` separately lit two at once, and lit none at all when the menu was opened with the mouse.
 
 <Canvas of={MenuStories.PointerAndKeyboard} />
 
 ### Choosing a command closes it
 
-Staying open would leave the user looking at a list of things they have already done. `Escape` closes it too, and the focus goes back to the trigger — that part is the platform's, and it does it.
+Staying open would leave the user looking at a list of things they have already done.
+
+`Escape` closes it too, and the focus goes back to the trigger — that part is the platform's. `Tab` and `Shift+Tab` close it and move on to the next and previous control, which is where the user asked to go; a click outside leaves the focus on whatever was clicked. So "the focus returns to the trigger" is true of `Escape` and of choosing a command, and deliberately not of the others.
+
+One caveat worth knowing: a `Tooltip` on a menu item also answers `Escape`, and it answers first — the tooltip is dismissed and the menu stays open, so it takes a second `Escape` to close the menu.
 
 ## Accessibility
 
 - **`role="menu"` with `role="menuitem"` children**, named by the trigger.
 - **The trigger says what will appear and whether it has** — `aria-haspopup="menu"` and `aria-expanded`, mirrored from the platform's own state rather than from a copy of ours. Unlike a dialog's trigger this one stays live while the menu is open, so "expanded" describes something a screen reader user can act on.
 - **`disabled` is the native attribute**, not `aria-disabled`: the item is skipped by the keyboard and still announced.
-- The menu is dismissed by `Escape`, by a click outside and by `Tab`, and the focus returns to the trigger every time.
+- **It never runs out of somewhere to be.** The surface itself is focusable but not tabbable, so a menu whose commands are all disabled — or whose focused command is disabled or removed while it is open — still answers the keyboard. Measured before that existed: the focus fell to `<body>`, and with the handler bound to the surface the menu was open with a dead keyboard and no way out but `Escape`.
+- **It caps itself with the room the geometry measured**, not with the viewport: a long menu that starts halfway down the screen would otherwise run off the bottom, with the keyboard focusing commands nobody can see and no page scroll able to reach them.

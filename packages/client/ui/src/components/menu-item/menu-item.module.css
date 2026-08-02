@@ -12,15 +12,16 @@
     color: inherit;
     cursor: default;
 
-    /* The active item is the one the keyboard is on, and hovering makes an item
-       active — so ONE rule paints both, and the pointer and the keyboard never
-       disagree about what is highlighted. */
+    /* ONE attribute paints the highlight, and the component keeps exactly one
+       item wearing it. Painting `:hover` and `:focus-visible` separately — as
+       the first version did — lit two rows at once when the pointer visited a
+       different one, and lit NONE when the menu was opened with the mouse,
+       because a mouse-focused item is not `:focus-visible`. */
     &:focus-visible {
       @apply outline-none;
     }
 
-    &:hover:not(:disabled),
-    &:focus-visible {
+    &[data-active] {
       @apply bg-accent-subtle text-accent-subtle-foreground;
     }
 
@@ -35,12 +36,7 @@
      `:focus-visible` first to keep the cascade reading top-down by specificity,
      which the `lint-css` gate enforces. */
   @media (forced-colors: active) {
-    .item:focus-visible {
-      background-color: Highlight;
-      color: HighlightText;
-    }
-
-    .item:hover:not(:disabled) {
+    .item[data-active] {
       background-color: Highlight;
       color: HighlightText;
     }

@@ -8,17 +8,34 @@ import type { Descendant } from '../../primitives/use-descendants.types.js';
 import type { MenuContentProps } from './menu-content.types.js';
 import styles from './menu-content.module.css';
 
-/** The first item that can actually take the focus, from `from` onwards. */
-function enabledFrom(
+/**
+ * The next item that can actually take the focus, walking from `from` in
+ * `step`s and wrapping — a menu is a ring, so Down on the last goes to the
+ * first and a user holding the arrow never hits a wall.
+ *
+ * `from` may be `-1`, meaning "nowhere yet": the menu has just opened, or the
+ * focus is on something inside the surface that is not an item. Written as an
+ * explicit start rather than as arithmetic on `-1`, which is how the first
+ * version skipped the last item on ArrowUp from a non-item.
+ */
+function step(
   items: Descendant<MenuItemData>[],
   from: number,
-  step: 1 | -1,
+  direction: 1 | -1,
 ): HTMLElement | null {
   const count = items.length;
+  if (count === 0) return null;
+
+  const start =
+    from >= 0 && from < count
+      ? from
+      : // Nowhere yet: Down starts before the first, Up starts after the last.
+        direction === 1
+        ? -1
+        : count;
+
   for (let hop = 1; hop <= count; hop += 1) {
-    // Wraps, because a menu is a ring: the APG says Down on the last item goes
-    // to the first, and a user holding the arrow should never hit a wall.
-    const index = (from + hop * step + count * (hop + 1)) % count;
+    const index = (((start + hop * direction) % count) + count) % count;
     const candidate = items[index];
     if (candidate && !candidate.data.disabled) return candidate.element;
   }
@@ -31,6 +48,14 @@ function enabledFrom(
  * Measured in all three engines: opening with `popovertarget` leaves the focus
  * on the trigger, the arrows do nothing, and `Tab` walks into the items. A menu
  * is ONE tab stop with the arrows moving between items, so all of that is here.
+ *
+ * THE SURFACE ITSELF IS FOCUSABLE, and that is not decoration. The handler
+ * below lives on the surface, so it only hears a key while the focus is inside
+ * it — and the focus was measured falling out from under it three ways: a menu
+ * whose items are all disabled, a menu whose items have not arrived yet, and
+ * the focused item becoming `disabled` or unmounting, each of which drops the
+ * focus on `<body>` and leaves the menu open with a dead keyboard. When there
+ * is no item to hold the focus, the surface holds it.
  */
 function MenuContent(props: MenuContentProps) {
   const { className, children, ref, onKeyDown, ...rest } = props;
@@ -38,7 +63,6 @@ function MenuContent(props: MenuContentProps) {
   const surface = useRef<HTMLDivElement>(null);
 
   const items = menu?.items;
-  const setActiveId = menu?.setActiveId;
   const reportOpen = menu?.reportOpen;
   const close = menu?.close;
 
@@ -48,14 +72,24 @@ function MenuContent(props: MenuContentProps) {
     onAnchorLost: useCallback(() => close?.(), [close]),
   });
 
-  const focus = useCallback(
-    (element: HTMLElement | null) => {
-      if (!element) return;
-      setActiveId?.(element.id);
-      element.focus();
-    },
-    [setActiveId],
-  );
+  /**
+   * Where the focus goes when it opens. The trigger leaves its intent on the
+   * element itself — `last` when the user pressed ArrowUp, which the APG asks
+   * for and is the only way to reach the end of a long menu in one key — and it
+   * is spent here, so the next open starts at the top again.
+   */
+  const takeOpenAt = useCallback((node: HTMLElement): 'first' | 'last' => {
+    const at = node.dataset.openAt === 'last' ? 'last' : 'first';
+    delete node.dataset.openAt;
+    return at;
+  }, []);
+
+  /** Focus an item, or the surface when there is no item to focus. */
+  const focus = useCallback((element: HTMLElement | null) => {
+    (element ?? surface.current)?.focus();
+  }, []);
+
+  const reportedOpen = useRef(false);
 
   useEffect(() => {
     const node = surface.current;
@@ -64,19 +98,49 @@ function MenuContent(props: MenuContentProps) {
     const onToggle = (event: Event) => {
       const isOpen =
         (event as Event & { newState?: string }).newState === 'open';
+      reportedOpen.current = isOpen;
       reportOpen(isOpen);
 
       // The platform opens the surface and stops there — measured, the focus
       // stayed on the trigger in Chromium and Firefox and on `<body>` in
       // WebKit. A menu that opens without a focused item cannot be used from
       // the keyboard at all.
-      if (isOpen) focus(enabledFrom(items.items(), -1, 1));
-      else setActiveId?.(null);
+      if (isOpen) {
+        const all = items.items();
+        const at = takeOpenAt(node);
+        focus(at === 'last' ? step(all, -1, -1) : step(all, -1, 1));
+      }
     };
 
+    // READ FIRST, then subscribe. A click that lands before React has hydrated
+    // — which is the whole point of a declarative trigger — has already fired
+    // `toggle`, so a component that only subscribed would never learn the menu
+    // was open: no item focused, the arrows dead, and `aria-expanded` saying
+    // "false" over an open menu. The same defect the Popover shipped once.
+    if (node.matches(':popover-open')) {
+      reportedOpen.current = true;
+      reportOpen(true);
+      const all = items.items();
+      const at = takeOpenAt(node);
+      focus(at === 'last' ? step(all, -1, -1) : step(all, -1, 1));
+    }
+
     node.addEventListener('toggle', onToggle);
-    return () => node.removeEventListener('toggle', onToggle);
-  }, [reportOpen, items, focus, setActiveId]);
+    return () => {
+      node.removeEventListener('toggle', onToggle);
+      // Unmounted while open: nothing will ever fire `toggle` again, and the
+      // trigger would go on saying `aria-expanded="true"` for a menu that is
+      // not there — measured, with `close()` unable to repair it because the
+      // element it looks up is gone. Asked of our own bookkeeping and not of
+      // the element: by the time a cleanup runs, React has taken the node out
+      // and the platform has already closed the popover, so `:popover-open`
+      // says no and the repair never happened.
+      if (reportedOpen.current) {
+        reportedOpen.current = false;
+        reportOpen(false);
+      }
+    };
+  }, [reportOpen, items, focus, takeOpenAt]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -89,19 +153,19 @@ function MenuContent(props: MenuContentProps) {
       switch (event.key) {
         case 'ArrowDown':
           event.preventDefault();
-          focus(enabledFrom(all, current, 1));
+          focus(step(all, current, 1));
           break;
         case 'ArrowUp':
           event.preventDefault();
-          focus(enabledFrom(all, current, -1));
+          focus(step(all, current, -1));
           break;
         case 'Home':
           event.preventDefault();
-          focus(enabledFrom(all, -1, 1));
+          focus(step(all, -1, 1));
           break;
         case 'End':
           event.preventDefault();
-          focus(enabledFrom(all, all.length, -1));
+          focus(step(all, -1, -1));
           break;
         case 'Tab':
           // A menu is one tab stop: Tab leaves it rather than walking through
@@ -115,14 +179,34 @@ function MenuContent(props: MenuContentProps) {
     [onKeyDown, items, focus, close],
   );
 
+  // TAKE THE FOCUS BACK, on every render, because the ways it escapes do not
+  // announce themselves: removing the focused element does NOT fire `blur` —
+  // measured, the focus simply reappears on `<body>` — and neither does
+  // disabling it. A handler would never run. Only `<body>` is repaired: focus
+  // that went somewhere real went there for a reason.
+  useEffect(() => {
+    const node = surface.current;
+    if (!node || !node.matches(':popover-open')) return;
+    if (document.activeElement === document.body) node.focus();
+  });
+
   return (
     <div
-      role="menu"
+      // Before the spread, and only what the consumer may reasonably want to
+      // change: the name, if they have a better one than the trigger's.
       aria-labelledby={menu?.anchor?.id || undefined}
       {...rest}
       ref={mergeRefs(surface, items?.rootRef, ref)}
+      // NOT overridable, and both for the same reason: the trigger's
+      // `popovertarget` points at this id, and `role="menu"` is the contract the
+      // keyboard below implements. An earlier version had it backwards — the id
+      // silently dropped, the role silently replaceable.
       id={menu?.surfaceId}
+      role="menu"
       popover="auto"
+      // Focusable but not tabbable: somewhere for the focus to live when no
+      // item can hold it, which is what keeps the keyboard alive.
+      tabIndex={-1}
       onKeyDown={handleKeyDown}
       className={cn(styles.content, className)}
     >

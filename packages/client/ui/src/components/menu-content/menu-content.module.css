@@ -8,6 +8,11 @@
 
 @layer fmmenchi {
   .content {
+    /* Overwritten inline by the geometry once it has measured the room. Not an
+       `--fm-` name: that prefix means a token, and this is a runtime fact about
+       one element. */
+    --anchored-available-height: 100dvh;
+
     position: fixed;
     inset: auto;
     margin: 0;
@@ -23,8 +28,12 @@
     /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only and
        the colour falls back to `currentColor`. */
 
-    /* A long menu scrolls; nothing escapes the box, so it may. */
-    max-height: calc(100dvh - 4rem);
+    /* A long menu scrolls, and it caps itself with the room the geometry
+       measured — not with the viewport. A `100dvh` cap on a box that starts
+       partway down the screen overflows the bottom by exactly how far down it
+       starts: measured at 383px on a 40-item menu, with the keyboard focusing
+       commands nobody could see and no page scroll able to reach them. */
+    max-height: calc(var(--anchored-available-height) - 1rem);
     overflow: auto;
     overscroll-behavior: contain;
 
