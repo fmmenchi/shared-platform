@@ -6,7 +6,14 @@ export interface Descendant<Data> {
   data: Data;
 }
 
-/** What a family's root gets back, to hand to its parts and to read from. */
+/**
+ * What a family's root gets back, to hand to its parts and to read from.
+ *
+ * `items()` returns a NEW array of NEW objects every call. Call it inside the
+ * handler that needs it — a keypress, a pointer move — and never in render or
+ * in a dependency array, where it is a fresh value every time and will spin an
+ * effect forever.
+ */
 export interface Descendants<Data> {
   /**
    * Put this on the element the descendants live inside. A CALLBACK ref, so the
@@ -15,12 +22,24 @@ export interface Descendants<Data> {
    */
   rootRef: RefCallback<HTMLElement>;
   /**
-   * A part announcing itself: returns the ref it must put on its element.
-   * Stable for a given `data` identity, so it can go straight into JSX.
+   * Everyone registered, in TREE order — read at the moment you ask, by walking
+   * the root's subtree. Tree order is what the browser's own sequential focus
+   * navigation follows, so it matches Tab even where CSS `order` or a reversed
+   * flex row disagrees with the eye (measured); a family that reorders visually
+   * has already broken that mapping for every native control on the page.
+   *
+   * The root itself is never among them, even if it registers.
    */
-  register: (data: Data) => RefCallback<HTMLElement>;
-  /** Everyone registered, in DOM ORDER — read at the moment you ask. */
   items: () => Descendant<Data>[];
   /** Where this element sits among them, or `-1` if it is not one of ours. */
   indexOf: (element: HTMLElement | null) => number;
+  /** Internal: how `useDescendant` reaches the registry. Not for parts to call. */
+  readonly registry: DescendantRegistry<Data>;
+}
+
+/** @internal shared between the family and its parts. */
+export interface DescendantRegistry<Data> {
+  add: (element: HTMLElement, data: Data) => void;
+  update: (element: HTMLElement, data: Data) => void;
+  remove: (element: HTMLElement) => void;
 }

@@ -15,16 +15,25 @@ no headless-behavior lib.
   cannot set from props (`indeterminate`). `value` drives (written whenever it changes), `initial`
   seeds once. Nothing is written when neither is given, so a caller driving the element through its
   own ref is not stomped on.
-- **`useDescendants<Data>()`** (hook) — the parts of a compound component, in the order the user
-  meets them. Parts register with `register(data)` (the ref it returns goes on their element), the
-  root takes `rootRef`, and `items()` answers in DOM order — READ at the moment you ask, by walking
-  the root's subtree, never a list kept in step. Reach's and Chakra's `useDescendants` sort at
-  registration and must re-sort whenever the tree moves; this cannot drift because it keeps nothing.
-  Nesting works by construction: a submenu's parts sit in the outer subtree but are registered with
-  the inner family, and anything not in our own registry is dropped — no scopes, no ids. Registry in
-  a ref: a part appearing or leaving never re-renders the family. Costs a `querySelectorAll` per
-  read, which happens on a keypress, not on a render. First consumer: the Menu (roving focus,
-  typeahead); Combobox and Tabs next.
+- **`useDescendants<Data>()`** + **`useDescendant(family, data)`** (hooks) — the parts of a
+  compound component, in TREE order. The root takes `rootRef`; each part calls `useDescendant` and
+  puts the returned ref on its element; `items()` answers by walking the root's subtree at the
+  moment you ask, keeping only what is in this family's registry. Reach's and Chakra's version
+  sorts at registration and must re-sort when the tree moves; this keeps nothing in step, so it
+  cannot drift. Read cost measured at 0.05ms for 300 parts, paid on a keypress and not on a render.
+  - **Membership ends.** The ref returns a React 19 cleanup: ignoring the detach leaked every
+    element ever registered (1000 created → 1000 retained, measured) and — worse — kept as
+    navigable an element React had detached but left in the document, which is exactly what
+    `<Activity mode="hidden">` produces for an inactive tab panel.
+  - **Nesting works by construction**: a submenu's parts sit in the outer subtree but register with
+    the inner family, and anything not in our registry is dropped. What it really needs is DOM
+    containment — a part moved out by a portal stops being one, which is one more reason nothing
+    in this package portals.
+  - **`items()` returns a fresh array of fresh objects.** Call it inside the handler that needs it;
+    in a dependency array it is a new value every render and spins an effect forever.
+  - Tree order matches the browser's own sequential focus navigation, including under `dir="rtl"`
+    and CSS `order` (measured against real Tab traversal) — mapping ArrowRight to "previous" in RTL
+    is the consuming component's job, not this one's. The root is never among its own items.
 - **`useDevWarning(active, message)`** (hook) — dev-only `console.warn` when `active`; no-op in
   prod. Put dev guards here, not in the component body (compute the condition at the call site).
 

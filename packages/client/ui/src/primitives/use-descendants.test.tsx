@@ -1,54 +1,71 @@
 import { describe, it, expect } from 'vitest';
 import { useEffect, type ReactNode } from 'react';
 import { render } from '@testing-library/react';
-import { useDescendants } from './use-descendants.js';
+import { useDescendant, useDescendants } from './use-descendants.js';
 import type { Descendants } from './use-descendants.types.js';
 
 /**
- * A family whose parts announce themselves. The handle is handed to the test
- * directly rather than read through a click: `items()` answers a question about
- * the DOM as it is NOW, so a test that clicks to read is really testing when
- * React re-rendered — which is how the first version of this file failed.
+ * A part, the way a real one joins: through the hook, with a stable ref that
+ * ends its membership when the element goes.
  */
-function Family(props: {
-  children: (register: Descendants<string>['register']) => ReactNode;
-  handle: (api: Descendants<string>) => void;
+function Part(props: {
+  family: Descendants<string>;
+  label: string;
+  children?: ReactNode;
+  attached?: boolean;
 }) {
-  // Destructured: the compiler tracks the whole handle as ref-carrying, so
-  // reaching into it during render is a ref read even when what comes out is a
-  // plain callback.
-  const descendants = useDescendants<string>();
-  const { rootRef, register } = descendants;
-  // In an effect, and with no dependency array: handing a ref-carrying object
-  // to somebody else's function mid-render is a ref read, and naming it in the
-  // deps is the same read one line later. The test wants whatever the latest
-  // render produced, which is exactly what a dep-less effect gives it.
-  const { handle } = props;
-  useEffect(() => {
-    handle(descendants);
-  });
-
-  return <div ref={rootRef}>{props.children(register)}</div>;
+  const ref = useDescendant(props.family, props.label);
+  return (
+    <span
+      ref={props.attached === false ? undefined : ref}
+      data-testid={props.label}
+    >
+      {props.label}
+      {props.children}
+    </span>
+  );
 }
 
+/**
+ * The family. The handle reaches the test through an effect, not through render:
+ * handing a ref-carrying object to somebody else mid-render is a ref read, and
+ * `items()` answers about the DOM as it is NOW — a test that clicks to read is
+ * really testing when React re-rendered, which is how the first version of this
+ * file fooled itself.
+ */
+function Family(props: {
+  children: (family: Descendants<string>) => ReactNode;
+  handle: (api: Descendants<string>) => void;
+}) {
+  const family = useDescendants<string>();
+  const { rootRef } = family;
+  const { handle } = props;
+  useEffect(() => {
+    handle(family);
+  });
+
+  return <div ref={rootRef}>{props.children(family)}</div>;
+}
+
+const labels = (api: Descendants<string>) =>
+  api.items().map((item) => item.data);
+
 describe('useDescendants', () => {
-  it('reads DOM order, through whatever is in the way', () => {
+  it('reads tree order, through whatever is in the way', () => {
     let api!: Descendants<string>;
     render(
       <Family handle={(a) => (api = a)}>
-        {(register) => (
+        {(family) => (
           <>
-            {/* Wrappers and a fragment on purpose: a part is a DESCENDANT, not
-                a child, and nothing between it and the root knows we exist. */}
+            {/* Wrappers on purpose: a part is a DESCENDANT, not a child, and
+                nothing between it and the root knows we exist. */}
             <div>
-              <span ref={register('one')}>one</span>
+              <Part family={family} label="one" />
             </div>
-            <>
-              <span ref={register('two')}>two</span>
-            </>
+            <Part family={family} label="two" />
             <div>
               <div>
-                <span ref={register('three')}>three</span>
+                <Part family={family} label="three" />
               </div>
             </div>
           </>
@@ -56,60 +73,108 @@ describe('useDescendants', () => {
       </Family>,
     );
 
-    expect(api.items().map((item) => item.data)).toEqual([
-      'one',
-      'two',
-      'three',
-    ]);
+    expect(labels(api)).toEqual(['one', 'two', 'three']);
   });
 
   it('follows the DOM when the parts are reordered', () => {
     let api!: Descendants<string>;
     const tree = (order: string[]) => (
       <Family handle={(a) => (api = a)}>
-        {(register) =>
+        {(family) =>
           order.map((label) => (
-            <span key={label} ref={register(label)}>
-              {label}
-            </span>
+            <Part key={label} family={family} label={label} />
           ))
         }
       </Family>
     );
 
     const { rerender } = render(tree(['a', 'b', 'c']));
-    expect(api.items().map((item) => item.data)).toEqual(['a', 'b', 'c']);
+    expect(labels(api)).toEqual(['a', 'b', 'c']);
 
-    // The classic failure of an implementation that sorts at registration: the
-    // parts moved and nothing re-registered, so the order is yesterday's.
+    // The classic failure of a list sorted at registration: the parts moved and
+    // nothing re-registered, so the order is yesterday's.
     rerender(tree(['c', 'a', 'b']));
-    expect(api.items().map((item) => item.data)).toEqual(['c', 'a', 'b']);
+    expect(labels(api)).toEqual(['c', 'a', 'b']);
   });
 
-  it('drops a part that has gone', () => {
+  it('lets go of a part that has left the DOM', () => {
     let api!: Descendants<string>;
     const tree = (withMiddle: boolean) => (
       <Family handle={(a) => (api = a)}>
-        {(register) => (
+        {(family) => (
           <>
-            <span ref={register('first')}>first</span>
-            {withMiddle && <span ref={register('middle')}>middle</span>}
-            <span ref={register('last')}>last</span>
+            <Part family={family} label="first" />
+            {withMiddle && <Part family={family} label="middle" />}
+            <Part family={family} label="last" />
           </>
         )}
       </Family>
     );
 
-    const { rerender } = render(tree(true));
-    expect(api.items().map((item) => item.data)).toEqual([
-      'first',
-      'middle',
-      'last',
-    ]);
+    const { rerender, container } = render(tree(true));
+    const middle = container.querySelector('[data-testid="middle"]');
+    if (!middle) throw new Error('the middle part should be rendered');
+    expect(labels(api)).toEqual(['first', 'middle', 'last']);
 
-    // A stale entry here is what makes "focus the next item" focus nothing.
     rerender(tree(false));
-    expect(api.items().map((item) => item.data)).toEqual(['first', 'last']);
+    expect(labels(api)).toEqual(['first', 'last']);
+
+    // THE assertion the first version of this file was missing: the one above
+    // passes with a registry that never releases anything, because the element
+    // had already left the subtree. Put it back and a leaked entry re-admits it
+    // — silently, with its old data — which is what a virtualiser recycling
+    // rows, or an exit animation holding a node, would do.
+    container.firstElementChild?.append(middle);
+    expect(labels(api)).toEqual(['first', 'last']);
+  });
+
+  it('lets go of a part that stops being one while staying in the DOM', () => {
+    let api!: Descendants<string>;
+    const tree = (attached: boolean) => (
+      <Family handle={(a) => (api = a)}>
+        {(family) => (
+          <>
+            <Part family={family} label="always" />
+            <Part family={family} label="sometimes" attached={attached} />
+          </>
+        )}
+      </Family>
+    );
+
+    const { rerender, container } = render(tree(true));
+    expect(labels(api)).toEqual(['always', 'sometimes']);
+
+    // React detaches the ref and keeps the element — which is exactly what
+    // `<Activity mode="hidden">` does to an inactive tab panel. An item that
+    // stays navigable here is invisible, unfocusable, and offered to the user
+    // as "the next one".
+    rerender(tree(false));
+    expect(container.querySelector('[data-testid="sometimes"]')).not.toBeNull();
+    expect(labels(api)).toEqual(['always']);
+
+    rerender(tree(true));
+    expect(labels(api)).toEqual(['always', 'sometimes']);
+  });
+
+  it('reports the data of this render, not of the one before', () => {
+    let api!: Descendants<string>;
+    // `rerender`, not a click: a click schedules a state update and the read
+    // that follows measures whether React had flushed it, not what the hook
+    // knows. Two tests in this file learned that the hard way.
+    const tree = (version: string) => (
+      <Family handle={(a) => (api = a)}>
+        {(family) => <Part family={family} label={version} />}
+      </Family>
+    );
+
+    const { rerender } = render(tree('v1'));
+    expect(labels(api)).toEqual(['v1']);
+
+    // The ref is stable, so nothing re-registers — the data still has to be
+    // this render's, or a typeahead matches against a label the item no longer
+    // shows.
+    rerender(tree('v2'));
+    expect(labels(api)).toEqual(['v2']);
   });
 
   it('does not swallow a nested family’s parts', () => {
@@ -117,39 +182,32 @@ describe('useDescendants', () => {
     let inner!: Descendants<string>;
     render(
       <Family handle={(a) => (outer = a)}>
-        {(register) => (
+        {(family) => (
           <>
-            <span ref={register('outer-one')}>outer-one</span>
+            <Part family={family} label="outer-one" />
             {/* A submenu, inside the menu: its parts carry the same marker and
                 sit in this subtree, but they are registered with IT. */}
             <Family handle={(a) => (inner = a)}>
-              {(nested) => <span ref={nested('inner-one')}>inner-one</span>}
+              {(nested) => <Part family={nested} label="inner-one" />}
             </Family>
-            <span ref={register('outer-two')}>outer-two</span>
+            <Part family={family} label="outer-two" />
           </>
         )}
       </Family>,
     );
 
-    expect(outer.items().map((item) => item.data)).toEqual([
-      'outer-one',
-      'outer-two',
-    ]);
-    expect(inner.items().map((item) => item.data)).toEqual(['inner-one']);
+    expect(labels(outer)).toEqual(['outer-one', 'outer-two']);
+    expect(labels(inner)).toEqual(['inner-one']);
   });
 
   it('says where a part sits, and that a stranger is not one', () => {
     let api!: Descendants<string>;
     const { getByTestId } = render(
       <Family handle={(a) => (api = a)}>
-        {(register) => (
+        {(family) => (
           <>
-            <span ref={register('a')} data-testid="a">
-              a
-            </span>
-            <span ref={register('b')} data-testid="b">
-              b
-            </span>
+            <Part family={family} label="a" />
+            <Part family={family} label="b" />
             <span data-testid="outsider">outsider</span>
           </>
         )}
@@ -159,5 +217,25 @@ describe('useDescendants', () => {
     expect(api.indexOf(getByTestId('b'))).toBe(1);
     expect(api.indexOf(getByTestId('outsider'))).toBe(-1);
     expect(api.indexOf(null)).toBe(-1);
+  });
+
+  it('leaves no trace on an element it has let go', () => {
+    let api!: Descendants<string>;
+    const tree = (withPart: boolean) => (
+      <Family handle={(a) => (api = a)}>
+        {(family) => (withPart ? <Part family={family} label="only" /> : null)}
+      </Family>
+    );
+
+    const { rerender, container } = render(tree(true));
+    const element = container.querySelector('[data-testid="only"]');
+    if (!element) throw new Error('the part should be rendered');
+    expect(element.hasAttribute('data-fm-descendant')).toBe(true);
+
+    rerender(tree(false));
+    // The marker is written onto somebody else's element; leaving it behind
+    // puts an implementation detail of this package in a consumer's DOM.
+    expect(element.hasAttribute('data-fm-descendant')).toBe(false);
+    expect(labels(api)).toEqual([]);
   });
 });
