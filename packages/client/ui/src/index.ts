@@ -128,3 +128,11 @@ export type { DialogTriggerProps } from './components/dialog-trigger/dialog-trig
 export type { DialogContentProps } from './components/dialog-content/dialog-content.types.js';
 export type { DialogHeadingProps } from './components/dialog-heading/dialog-heading.types.js';
 export type { DialogCloseProps } from './components/dialog-close/dialog-close.types.js';
+export { Menu } from './components/menu/menu.component.js';
+export { MenuTrigger } from './components/menu-trigger/menu-trigger.component.js';
+export { MenuContent } from './components/menu-content/menu-content.component.js';
+export { MenuItem } from './components/menu-item/menu-item.component.js';
+export type { MenuProps } from './components/menu/menu.types.js';
+export type { MenuTriggerProps } from './components/menu-trigger/menu-trigger.types.js';
+export type { MenuContentProps } from './components/menu-content/menu-content.types.js';
+export type { MenuItemProps } from './components/menu-item/menu-item.types.js';

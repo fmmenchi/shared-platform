@@ -1,0 +1,66 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as MenuStories from './menu.stories.tsx';
+
+<Meta of={MenuStories} />
+
+# Menu
+
+Menu is a list of commands, opened from a control. Things to **do** — rename, duplicate, delete — not values to pick and not places to go.
+
+```tsx
+<Menu>
+  <MenuTrigger>Actions</MenuTrigger>
+  <MenuContent>
+    <MenuItem onClick={rename}>Rename…</MenuItem>
+    <MenuItem disabled>Move to…</MenuItem>
+    <MenuItem onClick={remove}>Delete</MenuItem>
+  </MenuContent>
+</Menu>
+```
+
+If the user is choosing a **value**, that is a `Select` — the browser draws it, and on a phone it is the platform's own picker. If they are going **somewhere**, those are links: a nav and a list, where the browser's own Tab order is already right. A menu is neither.
+
+## Anatomy
+
+| part          | what it is                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| `Menu`        | the wiring. It renders **no element** — one that only carries a context has not earned its place |
+| `MenuTrigger` | what opens it: `popovertarget`, plus `aria-haspopup="menu"` and `aria-expanded`                  |
+| `MenuContent` | the surface — `role="menu"` in the top layer, anchored — and the keyboard contract               |
+| `MenuItem`    | one command. A `<button role="menuitem">`; `disabled` is the native attribute                    |
+
+## Props
+
+<Controls of={MenuStories.Default} />
+
+## Usage
+
+<Canvas of={MenuStories.Default} />
+
+### What the platform gives, and what it does not
+
+The surface is the platform's: `popovertarget` opens it with no handler, `popover="auto"` dismisses it on `Escape` and on a click outside, and the top layer means no portal and no `z-index`.
+
+The keyboard is **not**. Measured in Chromium, Firefox and WebKit before any of this was written: opening leaves the focus on the trigger, the arrows do nothing, there is no typeahead — and `Tab` walks straight **into** the items, which is precisely what a menu must not allow. `<menuitem>` was removed from the platform years ago and reports as `HTMLUnknownElement`.
+
+So this component owns the contract the WAI-ARIA practices describe, and every line of it is a test:
+
+- **one Tab stop.** Only the active item is `tabindex="0"`; `Tab` dismisses the menu rather than walking through it;
+- **the arrows move and wrap.** A menu is a ring: `↓` on the last item goes to the first;
+- **`Home` and `End`** go to the ends;
+- **disabled items are stepped over** by every move — but they stay in the DOM, so a screen reader still learns the command exists;
+- **the pointer hands over to the keyboard.** Hovering makes an item active without stealing the focus, so the next arrow continues from where the mouse is — and one CSS rule paints both, so the two can never highlight different rows.
+
+<Canvas of={MenuStories.PointerAndKeyboard} />
+
+### Choosing a command closes it
+
+Staying open would leave the user looking at a list of things they have already done. `Escape` closes it too, and the focus goes back to the trigger — that part is the platform's, and it does it.
+
+## Accessibility
+
+- **`role="menu"` with `role="menuitem"` children**, named by the trigger.
+- **The trigger says what will appear and whether it has** — `aria-haspopup="menu"` and `aria-expanded`, mirrored from the platform's own state rather than from a copy of ours. Unlike a dialog's trigger this one stays live while the menu is open, so "expanded" describes something a screen reader user can act on.
+- **`disabled` is the native attribute**, not `aria-disabled`: the item is skipped by the keyboard and still announced.
+- The menu is dismissed by `Escape`, by a click outside and by `Tab`, and the focus returns to the trigger every time.

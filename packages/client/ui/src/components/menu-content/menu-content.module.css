@@ -1,0 +1,55 @@
+/*
+ * The menu surface. Same platform box to undo as the other anchored surfaces —
+ * the UA gives `[popover]` a border, padding and `inset: 0; margin: auto`, which
+ * centres it in the viewport and would ignore the coordinates the geometry
+ * writes.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .content {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: 0;
+    box-sizing: border-box;
+
+    /* Parked off-screen until the first measurement writes real coordinates. */
+    top: -9999px;
+    left: 0;
+
+    @apply min-w-48 max-w-80 rounded-lg border p-1 shadow-lg;
+    @apply bg-card text-card-foreground border-border;
+    /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only and
+       the colour falls back to `currentColor`. */
+
+    /* A long menu scrolls; nothing escapes the box, so it may. */
+    max-height: calc(100dvh - 4rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+
+    /* Entry only: the exit was measured dead in every engine on this DS's other
+       surfaces. `@starting-style` is Baseline "newly" (ADR-0017) — without it
+       the menu simply appears. */
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+  }
+
+  .content:popover-open {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .content:popover-open {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .content {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+}
