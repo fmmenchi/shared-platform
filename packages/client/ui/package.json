@@ -35,98 +35,84 @@
       "default": "./dist/button.js"
     },
     "./style.css": "./dist/style.css",
-    "./button/style.css": "./dist/button.css",
     "./badge": {
       "@fmmenchi/source": "./src/components/badge/index.ts",
       "types": "./dist/components/badge/index.d.ts",
       "import": "./dist/badge.js",
       "default": "./dist/badge.js"
     },
-    "./badge/style.css": "./dist/badge.css",
     "./input": {
       "@fmmenchi/source": "./src/components/input/index.ts",
       "types": "./dist/components/input/index.d.ts",
       "import": "./dist/input.js",
       "default": "./dist/input.js"
     },
-    "./input/style.css": "./dist/input.css",
     "./field": {
       "@fmmenchi/source": "./src/components/field/index.ts",
       "types": "./dist/components/field/index.d.ts",
       "import": "./dist/field.js",
       "default": "./dist/field.js"
     },
-    "./field/style.css": "./dist/field.css",
     "./fieldset": {
       "@fmmenchi/source": "./src/components/fieldset/index.ts",
       "types": "./dist/components/fieldset/index.d.ts",
       "import": "./dist/fieldset.js",
       "default": "./dist/fieldset.js"
     },
-    "./fieldset/style.css": "./dist/fieldset.css",
     "./field-label": {
       "@fmmenchi/source": "./src/components/field-label/index.ts",
       "types": "./dist/components/field-label/index.d.ts",
       "import": "./dist/field-label.js",
       "default": "./dist/field-label.js"
     },
-    "./field-label/style.css": "./dist/field-label.css",
     "./field-description": {
       "@fmmenchi/source": "./src/components/field-description/index.ts",
       "types": "./dist/components/field-description/index.d.ts",
       "import": "./dist/field-description.js",
       "default": "./dist/field-description.js"
     },
-    "./field-description/style.css": "./dist/field-description.css",
     "./field-error": {
       "@fmmenchi/source": "./src/components/field-error/index.ts",
       "types": "./dist/components/field-error/index.d.ts",
       "import": "./dist/field-error.js",
       "default": "./dist/field-error.js"
     },
-    "./field-error/style.css": "./dist/field-error.css",
     "./fieldset-legend": {
       "@fmmenchi/source": "./src/components/fieldset-legend/index.ts",
       "types": "./dist/components/fieldset-legend/index.d.ts",
       "import": "./dist/fieldset-legend.js",
       "default": "./dist/fieldset-legend.js"
     },
-    "./fieldset-legend/style.css": "./dist/fieldset-legend.css",
     "./fieldset-content": {
       "@fmmenchi/source": "./src/components/fieldset-content/index.ts",
       "types": "./dist/components/fieldset-content/index.d.ts",
       "import": "./dist/fieldset-content.js",
       "default": "./dist/fieldset-content.js"
     },
-    "./fieldset-content/style.css": "./dist/fieldset-content.css",
     "./input-group": {
       "@fmmenchi/source": "./src/components/input-group/index.ts",
       "types": "./dist/components/input-group/index.d.ts",
       "import": "./dist/input-group.js",
       "default": "./dist/input-group.js"
     },
-    "./input-group/style.css": "./dist/input-group.css",
     "./radio": {
       "@fmmenchi/source": "./src/components/radio/index.ts",
       "types": "./dist/components/radio/index.d.ts",
       "import": "./dist/radio.js",
       "default": "./dist/radio.js"
     },
-    "./radio/style.css": "./dist/radio.css",
     "./checkbox": {
       "@fmmenchi/source": "./src/components/checkbox/index.ts",
       "types": "./dist/components/checkbox/index.d.ts",
       "import": "./dist/checkbox.js",
       "default": "./dist/checkbox.js"
     },
-    "./checkbox/style.css": "./dist/checkbox.css",
     "./choice-field": {
       "@fmmenchi/source": "./src/components/choice-field/index.ts",
       "types": "./dist/components/choice-field/index.d.ts",
       "import": "./dist/choice-field.js",
       "default": "./dist/choice-field.js"
     },
-    "./choice-field/style.css": "./dist/choice-field.css",
     "./form-input": {
       "@fmmenchi/source": "./src/components/form-input/index.ts",
       "types": "./dist/components/form-input/index.d.ts",
@@ -157,28 +143,24 @@
       "import": "./dist/form-error-summary.js",
       "default": "./dist/form-error-summary.js"
     },
-    "./form-error-summary/style.css": "./dist/form-error-summary.css",
     "./textarea": {
       "@fmmenchi/source": "./src/components/textarea/index.ts",
       "types": "./dist/components/textarea/index.d.ts",
       "import": "./dist/textarea.js",
       "default": "./dist/textarea.js"
     },
-    "./textarea/style.css": "./dist/textarea.css",
     "./select": {
       "@fmmenchi/source": "./src/components/select/index.ts",
       "types": "./dist/components/select/index.d.ts",
       "import": "./dist/select.js",
       "default": "./dist/select.js"
     },
-    "./select/style.css": "./dist/select.css",
     "./tooltip": {
       "@fmmenchi/source": "./src/components/tooltip/index.ts",
       "types": "./dist/components/tooltip/index.d.ts",
       "import": "./dist/tooltip.js",
       "default": "./dist/tooltip.js"
     },
-    "./tooltip/style.css": "./dist/tooltip.css",
     "./popover": {
       "@fmmenchi/source": "./src/components/popover/index.ts",
       "types": "./dist/components/popover/index.d.ts",
@@ -197,14 +179,12 @@
       "import": "./dist/popover-content.js",
       "default": "./dist/popover-content.js"
     },
-    "./popover-content/style.css": "./dist/popover-content.css",
     "./popover-heading": {
       "@fmmenchi/source": "./src/components/popover-heading/index.ts",
       "types": "./dist/components/popover-heading/index.d.ts",
       "import": "./dist/popover-heading.js",
       "default": "./dist/popover-heading.js"
     },
-    "./popover-heading/style.css": "./dist/popover-heading.css",
     "./popover-close": {
       "@fmmenchi/source": "./src/components/popover-close/index.ts",
       "types": "./dist/components/popover-close/index.d.ts",
@@ -229,14 +209,12 @@
       "import": "./dist/dialog-content.js",
       "default": "./dist/dialog-content.js"
     },
-    "./dialog-content/style.css": "./dist/dialog-content.css",
     "./dialog-heading": {
       "@fmmenchi/source": "./src/components/dialog-heading/index.ts",
       "types": "./dist/components/dialog-heading/index.d.ts",
       "import": "./dist/dialog-heading.js",
       "default": "./dist/dialog-heading.js"
     },
-    "./dialog-heading/style.css": "./dist/dialog-heading.css",
     "./dialog-close": {
       "@fmmenchi/source": "./src/components/dialog-close/index.ts",
       "types": "./dist/components/dialog-close/index.d.ts",

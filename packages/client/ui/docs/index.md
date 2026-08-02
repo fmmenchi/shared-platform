@@ -43,7 +43,7 @@ import { Button } from '@fmmenchi/ui/button';
 ```
 
 ```css
-@import '@fmmenchi/ui/button/style.css'; /* just the Button's styles */
+
 ```
 
 ## Reference

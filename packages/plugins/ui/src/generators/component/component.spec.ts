@@ -101,7 +101,10 @@ describe('component generator', () => {
 
     const pkg = JSON.parse(tree.read(`${UI}/package.json`, 'utf-8') as string);
     expect(pkg.exports['./badge'].import).toBe('./dist/badge.js');
-    expect(pkg.exports['./badge/style.css']).toBe('./dist/badge.css');
+    // No per-component stylesheet subpath: the CSS ships as one file
+    // (ADR-0023), so a component that composes others cannot promise a
+    // granular import it is unable to satisfy.
+    expect(pkg.exports['./badge/style.css']).toBeUndefined();
 
     const vite = tree.read(`${UI}/vite.config.mts`, 'utf-8') as string;
     expect(vite).toContain("badge: 'src/components/badge/index.ts',");

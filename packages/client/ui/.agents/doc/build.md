@@ -10,7 +10,9 @@
   only what it uses. **Adding a component:**
   1. `src/components/<name>/index.ts` (barrel re-exporting the component).
   2. add `<name>: 'src/components/<name>/index.ts'` to `build.lib.entry` in `vite.config.mts`.
-  3. add `"./<name>"` (+ `"./<name>/style.css"`) to `exports` in `package.json`.
-- **CSS**: per-component `dist/<name>.css` **plus** a concatenated `dist/style.css` (via the
-  `fm-combined-css` plugin). Consumers pick `@fmmenchi/ui/style.css` (all) or
-  `@fmmenchi/ui/<name>/style.css` (granular).
+  3. add `"./<name>"` to `exports` in `package.json` — JS only.
+- **CSS**: ONE entry point, `@fmmenchi/ui/style.css` (concatenated by the `fm-combined-css`
+  plugin from the per-component `dist/<name>.css` the build still emits). There is no
+  `@fmmenchi/ui/<name>/style.css` and there must not be: 16 of 32 entries render other
+  components, so a per-component stylesheet cannot carry what its component needs, and the
+  consumer has no way to know what is missing (ADR-0023). The whole stylesheet is 4.5 kB gzip.

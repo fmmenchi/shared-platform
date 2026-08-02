@@ -16,7 +16,7 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## In force
 
-Read these. Twelve decisions, grouped as they are actually made.
+Read these. Thirteen decisions, grouped as they are actually made.
 
 | ADR                                                   | Title                                                                 |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
@@ -32,6 +32,7 @@ Read these. Twelve decisions, grouped as they are actually made.
 | [0020](./0020-where-things-live.md)                   | Where things live: `packages/` published, `apps/` not, docs with code |
 | [0021](./0021-anchored-surfaces.md)                   | Anchored surfaces: platform layer, imported geometry, our behaviour   |
 | [0022](./0022-browser-defaults-no-reset.md)           | Browser defaults: components normalise themselves, baseline optional  |
+| [0023](./0023-one-stylesheet.md)                      | The design system ships one stylesheet; JS subpaths stay              |
 
 ## Superseded
 

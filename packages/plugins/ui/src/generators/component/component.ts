@@ -24,7 +24,8 @@ const UI_ROOT = 'packages/client/ui';
  * this generator again — there is no compound mode.
  *
  * - `src/index.ts` (root barrel) re-exports the component/variants/types;
- * - `package.json` gains the `./<name>` and `./<name>/style.css` subpaths;
+ * - `package.json` gains the `./<name>` subpath (JS only — the CSS ships as one
+ *   stylesheet, see ADR-0023);
  * - `vite.config.mts` gains the component's build entry.
  *
  * Throws if the component folder already exists.
@@ -95,7 +96,7 @@ function addToRootBarrel(
   );
 }
 
-/** Add the `./<name>` and `./<name>/style.css` subpath exports (tree-shaking). */
+/** Add the `./<name>` subpath export (JS tree-shaking; the CSS is one file). */
 function addPackageExports(tree: Tree, fileName: string): void {
   const pkgPath = joinPathFragments(UI_ROOT, 'package.json');
   const raw = tree.read(pkgPath, 'utf-8');
@@ -108,7 +109,6 @@ function addPackageExports(tree: Tree, fileName: string): void {
     import: `./dist/${fileName}.js`,
     default: `./dist/${fileName}.js`,
   };
-  pkg.exports[`./${fileName}/style.css`] = `./dist/${fileName}.css`;
   tree.write(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
 }
 
