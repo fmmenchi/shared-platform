@@ -42,7 +42,13 @@ describe('Menu', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
     await open();
-    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // `waitFor`, because "expanded" is not written by the click: the platform
+    // opens the popover, `toggle` tells us, and React renders after that. Read
+    // synchronously it passes on a quiet machine and flakes on a busy one —
+    // measured, once in about twenty runs.
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
     expect(screen.getByRole('menu')).toBeVisible();
   });
 
@@ -370,6 +376,179 @@ describe('Menu', () => {
     ).getBoundingClientRect();
     // …and the command the keyboard lands on is one the user can see.
     expect(last.bottom).toBeLessThanOrEqual(window.innerHeight);
+  });
+
+  describe('typeahead', () => {
+    /**
+     * Two commands sharing a prefix (so a search can refine and a repeated
+     * letter can walk), a disabled one in the middle of the letter it shares,
+     * and one whose text is not its only content.
+     */
+    const commands = (onCopy?: () => void) => (
+      <Menu>
+        <MenuTrigger>Actions</MenuTrigger>
+        <MenuContent>
+          <MenuItem onClick={onCopy}>Copy</MenuItem>
+          <MenuItem>Copy link</MenuItem>
+          <MenuItem>Cut</MenuItem>
+          <MenuItem disabled>Delete</MenuItem>
+          <MenuItem>Duplicate</MenuItem>
+          <MenuItem>Rename</MenuItem>
+        </MenuContent>
+      </Menu>
+    );
+
+    /** Open, and wait for the focus to be somewhere known. */
+    const openAtCopy = async () => {
+      await open();
+      await waitFor(() => expect(document.activeElement).toBe(item('Copy')));
+    };
+
+    it('goes to the command you type', async () => {
+      render(commands());
+      await openAtCopy();
+
+      await browser.keyboard('r');
+      expect(document.activeElement).toBe(item('Rename'));
+    });
+
+    it('keeps refining while you go on typing', async () => {
+      render(commands());
+      await openAtCopy();
+
+      // A handler that treated each letter on its own would answer 'c' with
+      // Copy and then find nothing starting with 'u' — the whole point of a
+      // buffer is that the second letter narrows the first.
+      await browser.keyboard('c');
+      await browser.keyboard('u');
+      expect(document.activeElement).toBe(item('Cut'));
+    });
+
+    it('walks the commands that share a letter when you repeat it', async () => {
+      render(commands());
+      await openAtCopy();
+
+      // The same letter over and over is a user WALKING, not searching: it must
+      // move on each press instead of matching the item it is already on.
+      await browser.keyboard('c');
+      expect(document.activeElement).toBe(item('Copy'));
+      await browser.keyboard('c');
+      expect(document.activeElement).toBe(item('Copy link'));
+      await browser.keyboard('c');
+      expect(document.activeElement).toBe(item('Cut'));
+      // …and round, past the ones that do not share it.
+      await browser.keyboard('c');
+      expect(document.activeElement).toBe(item('Copy'));
+    });
+
+    it('forgets what was typed once the user has stopped', async () => {
+      render(commands());
+      await openAtCopy();
+
+      await browser.keyboard('c');
+      await browser.keyboard('u');
+      expect(document.activeElement).toBe(item('Cut'));
+
+      // A buffer that never expired would be searching for 'cud' by now, match
+      // nothing, and the menu would go quiet for the rest of its life.
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await browser.keyboard('d');
+      expect(document.activeElement).toBe(item('Duplicate'));
+    });
+
+    it('steps over a disabled command it would otherwise have matched', async () => {
+      render(commands());
+      await openAtCopy();
+
+      // Delete comes first and starts with the letter: typeahead must not park
+      // the focus on something that cannot take it.
+      await browser.keyboard('d');
+      expect(document.activeElement).toBe(item('Duplicate'));
+    });
+
+    it('leaves the focus alone when nothing matches', async () => {
+      render(commands());
+      await openAtCopy();
+
+      // Measured on the first version, which reused the "focus this, or the
+      // surface" helper: a mistyped letter took the focus OFF the command the
+      // user was on and put it on the surface — the arrows still worked, but
+      // Enter had nothing to run.
+      await browser.keyboard('z');
+      expect(document.activeElement).toBe(item('Copy'));
+    });
+
+    it('reads what the command shows, not what it was written as', async () => {
+      render(
+        <Menu>
+          <MenuTrigger>Actions</MenuTrigger>
+          <MenuContent>
+            <MenuItem>Rename</MenuItem>
+            <MenuItem>
+              <svg aria-hidden="true" width="12" height="12" />
+              {/* The space is written out because it is REAL: an icon and a
+                  label on one line leaves the text " Archive", and a search
+                  comparing that against "a" finds nothing. */}{' '}
+              Archive
+            </MenuItem>
+            <MenuItem textValue="Duplicate">
+              <span>New</span> Duplicate
+            </MenuItem>
+          </MenuContent>
+        </Menu>,
+      );
+      await open();
+      await waitFor(() => expect(document.activeElement).toBe(item('Rename')));
+
+      // An icon and a label is what a menu command normally IS, and its
+      // `children` is an array whose text is not a string — a label collected
+      // from the props was the empty string for every one of them.
+      await browser.keyboard('a');
+      expect(document.activeElement).toBe(item('Archive'));
+
+      // The one case the DOM gets wrong is other text FIRST, and that is what
+      // `textValue` is for: without it this command answers to "n". A second
+      // search, so let the first one expire — 'a' and 'd' in the same window
+      // are the search "ad", which is the buffer working.
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      await browser.keyboard('d');
+      expect(document.activeElement).toBe(
+        screen.getByRole('menuitem', { name: 'New Duplicate' }),
+      );
+    });
+
+    it('leaves Space to the command, unless a search is running', async () => {
+      const onCopy = vi.fn();
+      render(commands(onCopy));
+      await openAtCopy();
+
+      // Mid-search a space is a space — "Copy link" cannot be reached without
+      // it — and it must not fire the command the focus is on.
+      await browser.keyboard('c');
+      await browser.keyboard('o');
+      await browser.keyboard('p');
+      await browser.keyboard('y');
+      expect(document.activeElement).toBe(item('Copy'));
+      await browser.keyboard(' ');
+      expect(document.activeElement).toBe(item('Copy link'));
+      expect(onCopy).not.toHaveBeenCalled();
+
+      // With nothing being typed it is the button's own key again.
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      item('Copy').focus();
+      await browser.keyboard(' ');
+      expect(onCopy).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores a letter a modifier has turned into a shortcut', async () => {
+      render(commands());
+      await openAtCopy();
+
+      // Cmd/Ctrl+A is "select all", not "go to Archive". Swallowing it would
+      // take a browser shortcut away from the user inside our menu.
+      await browser.keyboard('{Control>}r{/Control}');
+      expect(document.activeElement).toBe(item('Copy'));
+    });
   });
 
   describe('accessibility (axe)', () => {

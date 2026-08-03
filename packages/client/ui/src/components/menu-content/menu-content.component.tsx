@@ -42,6 +42,52 @@ function step(
   return null;
 }
 
+/** How long a typed run stays one search. The APG's figure, and everyone's. */
+const TYPEAHEAD_WINDOW = 500;
+
+/**
+ * The item whose text starts with what has been typed, searching forward from
+ * `from` and wrapping. `null` when nothing matches, which must leave the focus
+ * where it is: a mistyped letter moving the focus somewhere arbitrary is worse
+ * than a mistyped letter doing nothing.
+ *
+ * The text is read from the ELEMENT, not from a label collected when the item
+ * registered — an item is `<MenuItem><Icon />Delete</MenuItem>` as often as not,
+ * and `children` there is an array whose text is not a string. What the user
+ * SEES is in the DOM, and the DOM is what the user is looking at. `textValue`
+ * overrides it for the one case the DOM gets wrong: other text, first.
+ */
+function byPrefix(
+  items: Descendant<MenuItemData>[],
+  query: string,
+  from: number,
+): HTMLElement | null {
+  const count = items.length;
+  if (count === 0 || query === '') return null;
+
+  // The same letter over and over means "the next one starting with it", which
+  // is how a user walks a menu of similar commands; anything else is a search
+  // that may still be refining the item it is already on.
+  const repeated = query.length > 1 && [...query].every((c) => c === query[0]);
+  const needle = repeated ? query[0] : query;
+  const start = repeated ? from + 1 : Math.max(from, 0);
+
+  for (let hop = 0; hop < count; hop += 1) {
+    const index = (((start + hop) % count) + count) % count;
+    const candidate = items[index];
+    if (candidate === undefined || candidate.data.disabled) continue;
+    const text = (
+      candidate.data.textValue ??
+      candidate.element.textContent ??
+      ''
+    )
+      .trim()
+      .toLowerCase();
+    if (text.startsWith(needle)) return candidate.element;
+  }
+  return null;
+}
+
 /**
  * The surface, and the keyboard contract the platform does not provide.
  *
@@ -78,6 +124,9 @@ function MenuContent(props: MenuContentProps) {
    * for and is the only way to reach the end of a long menu in one key — and it
    * is spent here, so the next open starts at the top again.
    */
+  const query = useRef('');
+  const queryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const takeOpenAt = useCallback((node: HTMLElement): 'first' | 'last' => {
     const at = node.dataset.openAt === 'last' ? 'last' : 'first';
     delete node.dataset.openAt;
@@ -172,8 +221,28 @@ function MenuContent(props: MenuContentProps) {
           // it, which is what the platform does when nobody intervenes.
           close?.();
           break;
-        default:
+        default: {
+          // TYPEAHEAD. A printable character, and nothing that a modifier has
+          // turned into a shortcut.
+          if (event.key.length !== 1) break;
+          if (event.metaKey || event.ctrlKey || event.altKey) break;
+          // Space belongs to the search only while a search is running;
+          // otherwise it activates the command, which is what it is for.
+          if (event.key === ' ' && query.current === '') break;
+
+          event.preventDefault();
+          query.current += event.key.toLowerCase();
+          clearTimeout(queryTimer.current);
+          queryTimer.current = setTimeout(() => {
+            query.current = '';
+          }, TYPEAHEAD_WINDOW);
+
+          // NOT `focus(...)`: that falls back to the surface when there is
+          // nothing, and a search that found nothing would then pull the focus
+          // off the command the user was on.
+          byPrefix(all, query.current, current)?.focus();
           break;
+        }
       }
     },
     [onKeyDown, items, focus, close],
@@ -189,6 +258,9 @@ function MenuContent(props: MenuContentProps) {
     if (!node || !node.matches(':popover-open')) return;
     if (document.activeElement === document.body) node.focus();
   });
+
+  // A search that outlives the menu would greet the next open half-typed.
+  useEffect(() => () => clearTimeout(queryTimer.current), []);
 
   return (
     <div

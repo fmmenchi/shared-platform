@@ -8,6 +8,8 @@ export interface MenuItemData {
   id: string;
   /** Skipped by every keyboard move, and by typeahead. */
   disabled: boolean;
+  /** What typeahead matches, when the item's own text is not what to match. */
+  textValue?: string;
 }
 
 /**

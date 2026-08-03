@@ -30,6 +30,8 @@ If the user is choosing a **value**, that is a `Select` — the browser draws it
 | `MenuContent` | the surface — `role="menu"` in the top layer, anchored — and the keyboard contract               |
 | `MenuItem`    | one command. A `<button role="menuitem">`; `disabled` is the native attribute                    |
 
+`MenuItem` takes everything a `<button>` takes, plus `textValue` — what typing should match when the command's own text is not it. It is rarely needed: the search reads the item's **text**, and an icon contributes none, so `<MenuItem><Icon />Delete</MenuItem>` answers to "d" already. Reach for it when other text comes first, as in `<MenuItem textValue="Duplicate"><Badge>New</Badge> Duplicate</MenuItem>`, which would otherwise answer to "n".
+
 ## Props
 
 <Controls of={MenuStories.Default} />
@@ -49,6 +51,7 @@ So this component owns the contract the WAI-ARIA practices describe, and every l
 - **one Tab stop.** Only the active item is `tabindex="0"`; `Tab` dismisses the menu rather than walking through it;
 - **the arrows move and wrap.** A menu is a ring: `↓` on the last item goes to the first;
 - **`Home` and `End`** go to the ends;
+- **typing goes to the command.** A letter or two moves the focus to the first command that starts with them; the same letter repeated walks the ones that share it, and the search forgets itself half a second after the last key. `Space` belongs to the search while one is running — `Copy link` cannot be reached without it — and activates the command the rest of the time. A letter under `Ctrl`/`Cmd`/`Alt` is left alone: it is the browser's shortcut, not ours;
 - **disabled items are stepped over** by every move — but they stay in the DOM, so a screen reader still learns the command exists;
 - **the pointer hands over to the keyboard.** Hovering FOCUSES the item, so the next arrow continues from where the mouse is. That is one fact rather than two: an earlier version kept the active item in state and moved the focus separately, and the arrows then continued from the row the mouse had left. One attribute paints the active row, so exactly one row is ever lit — painting `:hover` and `:focus-visible` separately lit two at once, and lit none at all when the menu was opened with the mouse.
 

@@ -63,6 +63,30 @@ export const Default: Story = {
   ),
 };
 
+/**
+ * Type a letter or two with it open: the focus goes to the command that starts
+ * with what you typed. The same letter over and over walks the ones that share
+ * it, and the search forgets itself half a second after you stop.
+ */
+export const Typeahead: Story = {
+  render: () => (
+    <div style={{ padding: 'var(--fm-space-stack-xl)' }}>
+      <Menu>
+        <MenuTrigger>Insert</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Chart</MenuItem>
+          <MenuItem>Checklist</MenuItem>
+          <MenuItem>Code block</MenuItem>
+          <MenuItem>Divider</MenuItem>
+          <MenuItem disabled>Equation</MenuItem>
+          <MenuItem>Image</MenuItem>
+          <MenuItem>Table</MenuItem>
+        </MenuContent>
+      </Menu>
+    </div>
+  ),
+};
+
 /** The pointer and the keyboard highlight the same item, never two. */
 export const PointerAndKeyboard: Story = {
   render: () => (

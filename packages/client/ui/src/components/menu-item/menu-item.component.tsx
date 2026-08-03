@@ -37,6 +37,7 @@ function MenuItem(props: MenuItemProps) {
     onClick,
     onFocus,
     onPointerEnter,
+    textValue,
     ...rest
   } = props;
   const menu = useMenuPart('MenuItem');
@@ -46,6 +47,7 @@ function MenuItem(props: MenuItemProps) {
   const descendantRef = useDescendant(menu?.items ?? EMPTY_FAMILY, {
     id,
     disabled,
+    textValue,
   });
 
   const setActiveId = menu?.setActiveId;
