@@ -25,7 +25,11 @@
       @apply bg-accent-subtle text-accent-subtle-foreground;
     }
 
-    &:disabled {
+    /* `aria-disabled`, not `:disabled` — the command is focusable and inert, so
+       the row is still the one the cursor is on and still says it cannot be
+       used. Written after `[data-active]` on purpose: same specificity, so the
+       later rule takes the text colour back from the highlight. */
+    &[aria-disabled='true'] {
       @apply text-disabled-foreground;
       cursor: not-allowed;
     }
@@ -39,6 +43,10 @@
     .item[data-active] {
       background-color: Highlight;
       color: HighlightText;
+    }
+
+    .item[aria-disabled='true'] {
+      color: GrayText;
     }
   }
 }

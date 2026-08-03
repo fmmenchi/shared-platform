@@ -74,13 +74,22 @@ describe('Menu', () => {
     expect(item('Delete')).toHaveAttribute('tabindex', '-1');
   });
 
-  it('moves with the arrows, skips what is disabled, and wraps', async () => {
+  it('moves with the arrows onto every command, and wraps', async () => {
     render(example());
     await open();
     await waitFor(() => expect(document.activeElement).toBe(item('Rename')));
 
-    // Duplicate is disabled: the arrows step over it, and it stays in the DOM
-    // so a screen reader still learns the command exists.
+    // Duplicate is disabled and the arrows land on it anyway (APG: "focusable
+    // but cannot be activated"). With `role="menu"` a screen reader is in focus
+    // mode, where the arrows are the only way through — a command they skip is
+    // a command its user is never told about.
+    await browser.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(item('Duplicate'));
+    expect(item('Duplicate')).toHaveAttribute('aria-disabled', 'true');
+    // …and NOT the native attribute, which would have taken it out of the
+    // focus order and undone all of the above.
+    expect(item('Duplicate')).not.toBeDisabled();
+
     await browser.keyboard('{ArrowDown}');
     expect(document.activeElement).toBe(item('Delete'));
 
@@ -90,6 +99,45 @@ describe('Menu', () => {
 
     await browser.keyboard('{ArrowUp}');
     expect(document.activeElement).toBe(item('Delete'));
+  });
+
+  it('will not run a disabled command, by any means', async () => {
+    const onDuplicate = vi.fn();
+    render(
+      <Menu>
+        <MenuTrigger>Actions</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Rename</MenuItem>
+          <MenuItem disabled onClick={onDuplicate}>
+            Duplicate
+          </MenuItem>
+        </MenuContent>
+      </Menu>,
+    );
+    await open();
+    await waitFor(() => expect(document.activeElement).toBe(item('Rename')));
+
+    // Inert has to be said in code now: as far as the platform is concerned
+    // this button is not disabled, so a click, `Enter` and `Space` all reach
+    // it. Nothing runs, and the menu stays open — nothing happened.
+    await browser.keyboard('{ArrowDown}');
+    await browser.keyboard('{Enter}');
+    await browser.keyboard(' ');
+    // A programmatic click, and the reason is worth knowing: the harness
+    // REFUSES to drive a real pointer at an `aria-disabled` element ("element
+    // is not enabled"), while a browser does no such thing — a user can click
+    // this button, which is exactly why the guard has to exist.
+    item('Duplicate').click();
+
+    expect(onDuplicate).not.toHaveBeenCalled();
+    expect(screen.getByRole('menu').matches(':popover-open')).toBe(true);
+
+    // The pointer hands over to it too. There is ONE cursor, and leaving it
+    // behind on the row the mouse has left is the disagreement that rule exists
+    // to prevent — being unable to run the command does not change where it is.
+    item('Rename').focus();
+    await browser.hover(item('Duplicate'));
+    await waitFor(() => expect(document.activeElement).toBe(item('Duplicate')));
   });
 
   it('goes to the ends with Home and End', async () => {
@@ -207,8 +255,9 @@ describe('Menu', () => {
       <Menu>
         <MenuTrigger>Actions</MenuTrigger>
         <MenuContent>
-          <MenuItem disabled>Rename</MenuItem>
-          <MenuItem disabled>Delete</MenuItem>
+          {/* No commands: the list has not arrived, or there is nothing to
+              show. A disabled one would not do — it is focusable now. */}
+          <span>Nothing here yet</span>
         </MenuContent>
       </Menu>,
     );
@@ -504,14 +553,15 @@ describe('Menu', () => {
       expect(document.activeElement).toBe(item('Aanmaken'));
     });
 
-    it('steps over a disabled command it would otherwise have matched', async () => {
+    it('reaches a disabled command, which is focusable', async () => {
       render(commands());
       await openAtCopy();
 
-      // Delete comes first and starts with the letter: typeahead must not park
-      // the focus on something that cannot take it.
+      // Delete comes first and is disabled. Typing lands on it, because it can
+      // take the focus and because a user who cannot see the menu learns the
+      // command exists no other way.
       await browser.keyboard('d');
-      expect(document.activeElement).toBe(item('Duplicate'));
+      expect(document.activeElement).toBe(item('Delete'));
     });
 
     it('leaves the focus alone when nothing matches', async () => {
@@ -736,7 +786,7 @@ describe('Menu', () => {
       // nothing but the timer was ever going to clear this. Escape and reopen
       // inside the window and the next menu was answering to "dr".
       await browser.keyboard('d');
-      expect(document.activeElement).toBe(item('Duplicate'));
+      expect(document.activeElement).toBe(item('Delete'));
       await browser.keyboard('{Escape}');
       await openAtCopy();
 

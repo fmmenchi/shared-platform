@@ -21,6 +21,16 @@ import styles from './menu-item.module.css';
  * opposite of what the platform does on its own — measured, `Tab` walked
  * straight into the items.
  *
+ * A DISABLED COMMAND IS `aria-disabled`, NOT `disabled`, which is the one place
+ * this design system does not take the native attribute. The APG is explicit —
+ * "disabled menu items are focusable but cannot be activated" — and the reason
+ * is what `role="menu"` does to a screen reader: NVDA and JAWS switch into
+ * focus mode, where the virtual cursor is off and the arrows are the only way
+ * through. A natively disabled item is skipped by those arrows, so the user is
+ * never told the command exists. Native `disabled` announces it only to
+ * VoiceOver, whose reading cursor walks the tree regardless. Focusable and
+ * inert loses nothing and tells everybody.
+ *
  * THE ACTIVE ITEM IS THE FOCUSED ITEM, and that is one fact rather than two.
  * The first version kept `activeId` in state and moved the focus separately: the
  * arrows read `document.activeElement` while hovering wrote the state, so
@@ -38,15 +48,18 @@ function MenuItem(props: MenuItemProps) {
     onFocus,
     onPointerEnter,
     textValue,
+    // OUT of the spread, and that is the whole mechanism: reaching the element,
+    // the native attribute would take the button out of the focus order and
+    // undo everything below.
+    disabled: inert,
     ...rest
   } = props;
   const menu = useMenuPart('MenuItem');
   const id = useId();
 
-  const disabled = props.disabled === true;
+  const disabled = inert === true;
   const descendantRef = useDescendant(menu?.items ?? EMPTY_FAMILY, {
     id,
-    disabled,
     textValue,
   });
 
@@ -55,13 +68,21 @@ function MenuItem(props: MenuItemProps) {
 
   const handleClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {
+      // INERT, and it has to be said in code: the button is not disabled as far
+      // as the platform is concerned, so a click, `Enter` and `Space` all reach
+      // it. The consumer's handler is never called, and the menu stays open —
+      // nothing happened.
+      if (disabled) {
+        event.preventDefault();
+        return;
+      }
       onClick?.(event);
       if (event.defaultPrevented) return;
       // A command runs and the menu goes: staying open would leave the user
       // looking at a list of things they have already done.
       close?.();
     },
-    [onClick, close],
+    [onClick, close, disabled],
   );
 
   const handleFocus = useCallback(
@@ -77,10 +98,13 @@ function MenuItem(props: MenuItemProps) {
       onPointerEnter?.(event);
       // Hovering FOCUSES (the APG's "the pointer and the keyboard share one
       // cursor"), so the next arrow continues from the mouse. Setting a state
-      // instead, as the first version did, left the two disagreeing.
-      if (!disabled) event.currentTarget.focus();
+      // instead, as the first version did, left the two disagreeing. A disabled
+      // command takes the focus like any other — it is the ONE cursor, and
+      // leaving it behind on the row the mouse has left is the disagreement
+      // this exists to avoid.
+      event.currentTarget.focus();
     },
-    [onPointerEnter, disabled],
+    [onPointerEnter],
   );
 
   return (
@@ -90,6 +114,7 @@ function MenuItem(props: MenuItemProps) {
       {...rest}
       ref={mergeRefs(descendantRef, ref)}
       id={id}
+      aria-disabled={disabled || undefined}
       tabIndex={menu?.activeId === id ? 0 : -1}
       data-active={menu?.activeId === id ? '' : undefined}
       onClick={handleClick}

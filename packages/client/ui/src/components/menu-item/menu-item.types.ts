@@ -3,9 +3,13 @@ import type { ComponentPropsWithRef } from 'react';
 /**
  * One command in the menu. A `<button>`, with everything a button takes.
  *
- * `disabled` uses the NATIVE attribute, and that is deliberate: a disabled item
- * is skipped by the arrows and by typeahead, but it stays in the reading order
- * so a screen reader user still learns the command exists.
+ * `disabled` does NOT use the native attribute, and that is deliberate: the
+ * command is `aria-disabled` and stays focusable, so the arrows and typing
+ * reach it and it announces itself — it simply cannot be run. The APG asks for
+ * this ("disabled menu items are focusable but cannot be activated") because
+ * `role="menu"` puts a screen reader into focus mode, where the arrows are the
+ * only way through and a natively disabled item is skipped by them: the user
+ * would never be told the command exists.
  */
 export type MenuItemProps = ComponentPropsWithRef<'button'> & {
   /**

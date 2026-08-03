@@ -16,9 +16,13 @@ import type { MenuContentProps } from './menu-content.types.js';
 import styles from './menu-content.module.css';
 
 /**
- * The next item that can actually take the focus, walking from `from` in
- * `step`s and wrapping — a menu is a ring, so Down on the last goes to the
- * first and a user holding the arrow never hits a wall.
+ * The item `direction` away from `from`, wrapping — a menu is a ring, so Down on
+ * the last goes to the first and a user holding the arrow never hits a wall.
+ *
+ * Nothing is stepped OVER. A disabled command is `aria-disabled` and focusable
+ * (the APG's "focusable but cannot be activated"), so the arrows walk onto it
+ * like any other: with `role="menu"` a screen reader is in focus mode, and an
+ * item the arrows skip is an item its user is never told about.
  *
  * `from` may be `-1`, meaning "nowhere yet": the menu has just opened, or the
  * focus is on something inside the surface that is not an item. Written as an
@@ -41,12 +45,8 @@ function step(
         ? -1
         : count;
 
-  for (let hop = 1; hop <= count; hop += 1) {
-    const index = (((start + hop * direction) % count) + count) % count;
-    const candidate = items[index];
-    if (candidate && !candidate.data.disabled) return candidate.element;
-  }
-  return null;
+  const index = (((start + direction) % count) + count) % count;
+  return items[index]?.element ?? null;
 }
 
 /**
@@ -124,7 +124,7 @@ function firstMatch(
 
   for (let hop = 0; hop < count; hop += 1) {
     const candidate = items[(start + hop) % count];
-    if (candidate === undefined || candidate.data.disabled) continue;
+    if (candidate === undefined) continue;
     // Sliced by CHARACTER, not by code unit, so a name beginning with an emoji
     // or a surrogate pair is compared whole rather than cut in half.
     const head = [...labelOf(candidate)].slice(0, chars.length).join('');
@@ -176,11 +176,10 @@ function byPrefix(
  *
  * THE SURFACE ITSELF IS FOCUSABLE, and that is not decoration. The handler
  * below lives on the surface, so it only hears a key while the focus is inside
- * it — and the focus was measured falling out from under it three ways: a menu
- * whose items are all disabled, a menu whose items have not arrived yet, and
- * the focused item becoming `disabled` or unmounting, each of which drops the
- * focus on `<body>` and leaves the menu open with a dead keyboard. When there
- * is no item to hold the focus, the surface holds it.
+ * it — and the focus was measured falling out from under it: a menu whose items
+ * have not arrived yet, and the focused item unmounting, each of which drops
+ * the focus on `<body>` and leaves the menu open with a dead keyboard. When
+ * there is no item to hold the focus, the surface holds it.
  */
 function MenuContent(props: MenuContentProps) {
   const { className, children, ref, onKeyDown, ...rest } = props;
