@@ -9,11 +9,17 @@ import type { ComponentPropsWithRef } from 'react';
  */
 export type MenuItemProps = ComponentPropsWithRef<'button'> & {
   /**
-   * What typing on the keyboard should match, when the command's own text is
-   * not it. Typeahead reads the item's text — which covers an icon, since an
-   * `<svg>` contributes none — so this is only for a command whose markup puts
-   * OTHER text first: `<MenuItem textValue="Duplicate"><Badge>New</Badge>
-   * Duplicate</MenuItem>` would otherwise answer to "n".
+   * What typing on the keyboard should match.
+   *
+   * Typing matches the name the command is ANNOUNCED by — an `aria-label`, else
+   * its text without what the accessibility tree ignores — so a decorative icon
+   * costs nothing and this is rarely needed. Reach for it when the name starts
+   * somewhere else: an icon carrying its own name, a badge, a visually-hidden
+   * prefix. `<MenuItem textValue="Duplicate"><Badge>New</Badge> Duplicate</…>`
+   * would otherwise answer to "n".
+   *
+   * It must be text the user can READ on the command. It reorders what typing
+   * sees; it does not invent a keyword nobody can discover.
    */
   textValue?: string;
 };

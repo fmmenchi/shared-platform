@@ -1,7 +1,14 @@
-import { useCallback, useEffect, useRef, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type KeyboardEvent,
+} from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
+import { useUiAdapters } from '../../i18n/provider.js';
 import { useMenuPart } from '../menu/menu.context.js';
 import type { MenuItemData } from '../menu/menu.context.js';
 import type { Descendant } from '../../primitives/use-descendants.types.js';
@@ -42,50 +49,122 @@ function step(
   return null;
 }
 
-/** How long a typed run stays one search. The APG's figure, and everyone's. */
-const TYPEAHEAD_WINDOW = 500;
+/**
+ * How long a typed run stays one search.
+ *
+ * Radix and React Aria both use a second, and a slower typist is exactly who
+ * the buffer is for: at half that, someone driving a head pointer types "c",
+ * "u" as two one-letter searches, lands on the wrong command, and is told
+ * nothing about why. The APG has no figure — its own menu-button example has no
+ * buffer at all, matching a single character and always advancing.
+ */
+const TYPEAHEAD_WINDOW = 1000;
 
 /**
- * The item whose text starts with what has been typed, searching forward from
- * `from` and wrapping. `null` when nothing matches, which must leave the focus
- * where it is: a mistyped letter moving the focus somewhere arbitrary is worse
- * than a mistyped letter doing nothing.
+ * What typing at a command should match: the name it is ANNOUNCED by, because
+ * that is the name the user has heard and is now typing.
  *
- * The text is read from the ELEMENT, not from a label collected when the item
- * registered — an item is `<MenuItem><Icon />Delete</MenuItem>` as often as not,
- * and `children` there is an array whose text is not a string. What the user
- * SEES is in the DOM, and the DOM is what the user is looking at. `textValue`
- * overrides it for the one case the DOM gets wrong: other text, first.
+ * Reading `children` is not it — a command is `<MenuItem><Icon />Delete</…>` as
+ * often as not, and its children are an array whose text is not a string, so a
+ * label collected from the props was the empty string for every command with an
+ * icon. Reading the element's text alone is not it either: `aria-hidden`
+ * decoration is IN the text and is not in the name, so a leading `<span
+ * aria-hidden>🗑</span>` made "Delete" unmatchable while a screen reader went on
+ * announcing it "Delete".
+ *
+ * So: what the author declared, else the name they gave it, else its text
+ * without what the accessibility tree ignores. An icon that carries its own
+ * name — an `<svg>` with a `<title>`, which this design system's icon port
+ * sanctions — is IN the name and so is in here; that is why `textValue` exists.
+ */
+function labelOf({ element, data }: Descendant<MenuItemData>): string {
+  const declared = data.textValue ?? element.getAttribute('aria-label');
+  return (declared ?? visibleText(element)).trim();
+}
+
+/** The element's text, skipping what is hidden from the accessibility tree. */
+function visibleText(element: Element): string {
+  let text = '';
+  for (const node of element.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) text += node.nodeValue ?? '';
+    else if (node instanceof Element) {
+      if (node.getAttribute('aria-hidden') === 'true') continue;
+      text += visibleText(node);
+    }
+  }
+  return text;
+}
+
+/**
+ * The first command at or after `from` whose name begins with `needle`,
+ * wrapping. `excludeCurrent` starts the search one PAST the focus, which is
+ * what "the next command starting with…" means.
+ *
+ * The comparison is the locale's, not `toLowerCase`'s. Measured: "Élève" does
+ * not start with "e", "Ładuj" does not start with "l", so on a French or Polish
+ * menu the accented commands answered to no keystroke at all — and lowercasing
+ * per-locale cannot fix it, since Turkish maps "I" to "ı" and then breaks the
+ * user who types "i". A collator at base sensitivity settles case, accents,
+ * "ß"/"ss" and Arabic hamza forms in one primitive, and keeps "ı" and "i"
+ * distinct in Turkish, where they are different letters.
+ */
+function firstMatch(
+  items: Descendant<MenuItemData>[],
+  needle: string,
+  from: number,
+  collator: Intl.Collator,
+  excludeCurrent: boolean,
+): HTMLElement | null {
+  const count = items.length;
+  const chars = [...needle];
+  // After the focus, or at the top when nothing holds it. One expression rather
+  // than a branch per case: `from` is `-1` when the surface itself has the
+  // focus, and both readings of that are "start at the first command".
+  const start = Math.max(from + (excludeCurrent ? 1 : 0), 0);
+
+  for (let hop = 0; hop < count; hop += 1) {
+    const candidate = items[(start + hop) % count];
+    if (candidate === undefined || candidate.data.disabled) continue;
+    // Sliced by CHARACTER, not by code unit, so a name beginning with an emoji
+    // or a surrogate pair is compared whole rather than cut in half.
+    const head = [...labelOf(candidate)].slice(0, chars.length).join('');
+    if (collator.compare(head, needle) === 0) return candidate.element;
+  }
+  return null;
+}
+
+/**
+ * The item to go to for what has been typed. `null` when nothing matches, which
+ * must leave the focus where it is: a mistyped letter moving the focus
+ * somewhere arbitrary is worse than a mistyped letter doing nothing.
  */
 function byPrefix(
   items: Descendant<MenuItemData>[],
   query: string,
   from: number,
+  collator: Intl.Collator,
 ): HTMLElement | null {
-  const count = items.length;
-  if (count === 0 || query === '') return null;
+  const chars = [...query];
 
-  // The same letter over and over means "the next one starting with it", which
-  // is how a user walks a menu of similar commands; anything else is a search
-  // that may still be refining the item it is already on.
-  const repeated = query.length > 1 && [...query].every((c) => c === query[0]);
-  const needle = repeated ? query[0] : query;
-  const start = repeated ? from + 1 : Math.max(from, 0);
+  // WHAT WAS TYPED, first. A single character always moves on — that is what
+  // the APG's "the NEXT item whose label begins with it" means, and its own
+  // example does it unconditionally. Asking instead whether the buffer was a
+  // repeat made the answer depend on typing SPEED: presses further apart than
+  // the window each arrive as a fresh one-letter search, which matched the
+  // command the focus was already on, so pressing "c" at a human pace on a menu
+  // of three "c" commands never left the first one.
+  const direct = firstMatch(items, query, from, collator, chars.length === 1);
+  if (direct) return direct;
 
-  for (let hop = 0; hop < count; hop += 1) {
-    const index = (((start + hop) % count) + count) % count;
-    const candidate = items[index];
-    if (candidate === undefined || candidate.data.disabled) continue;
-    const text = (
-      candidate.data.textValue ??
-      candidate.element.textContent ??
-      ''
-    )
-      .trim()
-      .toLowerCase();
-    if (text.startsWith(needle)) return candidate.element;
-  }
-  return null;
+  // Only when nothing answers to what was typed is a run of one letter a user
+  // WALKING the commands that share it. Deciding that up front — on the shape
+  // of the buffer alone — broke every language where a doubled letter starts a
+  // word: a Dutch user typing "Aanmaken" was thrown to "Archiveren" on the
+  // second "a", which a screen reader reads out, mid-word.
+  const repeated = chars.length > 1 && chars.every((c) => c === chars[0]);
+  return repeated
+    ? firstMatch(items, chars[0] as string, from, collator, true)
+    : null;
 }
 
 /**
@@ -127,6 +206,18 @@ function MenuContent(props: MenuContentProps) {
   const query = useRef('');
   const queryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // The locale is an adapter the design system already requires, and typing is
+  // the one place a component has to compare two strings the way its user's
+  // language does. Read tolerantly: a component that merely ASKS for an adapter
+  // must not require the provider to exist.
+  const locale = useUiAdapters()?.i18n.locale;
+  const collator = useMemo(
+    // `base` sensitivity is what makes "e" find "Élève": it settles case and
+    // accents together, which no pair of lowercasing rules can.
+    () => new Intl.Collator(locale, { usage: 'search', sensitivity: 'base' }),
+    [locale],
+  );
+
   const takeOpenAt = useCallback((node: HTMLElement): 'first' | 'last' => {
     const at = node.dataset.openAt === 'last' ? 'last' : 'first';
     delete node.dataset.openAt;
@@ -149,6 +240,15 @@ function MenuContent(props: MenuContentProps) {
         (event as Event & { newState?: string }).newState === 'open';
       reportedOpen.current = isOpen;
       reportOpen(isOpen);
+
+      // A search does not outlive the menu it was typed into. Closing is not
+      // unmounting — the surface stays in the document — so nothing else was
+      // ever going to clear this, and a quick Escape-and-reopen left the next
+      // menu answering to half a word typed at the last one.
+      if (!isOpen) {
+        clearTimeout(queryTimer.current);
+        query.current = '';
+      }
 
       // The platform opens the surface and stops there — measured, the focus
       // stayed on the trigger in Chromium and Firefox and on `<body>` in
@@ -222,16 +322,42 @@ function MenuContent(props: MenuContentProps) {
           close?.();
           break;
         default: {
-          // TYPEAHEAD. A printable character, and nothing that a modifier has
-          // turned into a shortcut.
-          if (event.key.length !== 1) break;
-          if (event.metaKey || event.ctrlKey || event.altKey) break;
-          // Space belongs to the search only while a search is running;
-          // otherwise it activates the command, which is what it is for.
-          if (event.key === ' ' && query.current === '') break;
+          // TYPEAHEAD, and only for a key that is ours to take. A printable
+          // character is TEXT, and text belongs to whatever holds the focus:
+          // measured, a field a consumer had put inside the surface could not
+          // be typed into AT ALL, every character swallowed and the focus
+          // pulled onto a command. The arrows stay unconditional — inside a
+          // menu they are navigation, not text.
+          if (event.target !== event.currentTarget && current < 0) break;
+          // By CHARACTER: `length` counts code units, so an astral one — an
+          // emoji, CJK Ext-B — reads as two and was dropped.
+          if ([...event.key].length !== 1) break;
+          // Nothing a modifier has turned into a shortcut. AltGr is the
+          // exception the guard has to know about: Windows delivers it as
+          // Ctrl+Alt, and it is how every Polish, Czech and Croatian diacritic
+          // is typed — so those letters reached nothing at all. No web shortcut
+          // uses Ctrl+Alt+letter, which is why the pair alone is enough where
+          // `getModifierState` is not reported.
+          const altGraph =
+            event.getModifierState('AltGraph') ||
+            (event.ctrlKey && event.altKey);
+          if ((event.metaKey || event.ctrlKey || event.altKey) && !altGraph) {
+            break;
+          }
+
+          // Searched BEFORE the key is committed, because whether Space belongs
+          // to the search is the answer to that search: it does while the
+          // search still finds something — `Copy link` cannot be reached
+          // without one — and otherwise it is the command's own key. Asking
+          // instead whether a search was merely RUNNING left a slow typist who
+          // pressed "d", "e", Space with the focus unmoved and the command not
+          // run, because "de " matches nothing.
+          const next = query.current + event.key;
+          const match = byPrefix(all, next, current, collator);
+          if (event.key === ' ' && !match) break;
 
           event.preventDefault();
-          query.current += event.key.toLowerCase();
+          query.current = next;
           clearTimeout(queryTimer.current);
           queryTimer.current = setTimeout(() => {
             query.current = '';
@@ -240,12 +366,12 @@ function MenuContent(props: MenuContentProps) {
           // NOT `focus(...)`: that falls back to the surface when there is
           // nothing, and a search that found nothing would then pull the focus
           // off the command the user was on.
-          byPrefix(all, query.current, current)?.focus();
+          match?.focus();
           break;
         }
       }
     },
-    [onKeyDown, items, focus, close],
+    [onKeyDown, items, focus, close, collator],
   );
 
   // TAKE THE FOCUS BACK, on every render, because the ways it escapes do not
@@ -258,9 +384,6 @@ function MenuContent(props: MenuContentProps) {
     if (!node || !node.matches(':popover-open')) return;
     if (document.activeElement === document.body) node.focus();
   });
-
-  // A search that outlives the menu would greet the next open half-typed.
-  useEffect(() => () => clearTimeout(queryTimer.current), []);
 
   return (
     <div
