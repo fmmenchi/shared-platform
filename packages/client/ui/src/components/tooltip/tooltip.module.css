@@ -52,8 +52,11 @@
        place and fires a `pointerenter` that reopens what a click just closed.
        Measured: the same test passed or failed depending on where the trigger
        sat in the viewport. */
-    top: -9999px;
-    left: 0;
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+
+    top: var(--anchored-y);
+    left: var(--anchored-x);
 
     @apply max-w-64 rounded-md px-2 py-1;
     @apply bg-tooltip text-tooltip-foreground text-xs;

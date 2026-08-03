@@ -23,9 +23,13 @@
     box-sizing: border-box;
 
     /* Parked off-screen until the first measurement writes real coordinates,
-       so the first frame is never at the UA's static position. */
-    top: -9999px;
-    left: 0;
+       so the first frame is never at the UA's static position — the park is the
+       INITIAL VALUE of the properties the geometry reports into. */
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+
+    top: var(--anchored-y);
+    left: var(--anchored-x);
 
     @apply max-w-80 rounded-lg border p-4 shadow-lg;
     /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only, and

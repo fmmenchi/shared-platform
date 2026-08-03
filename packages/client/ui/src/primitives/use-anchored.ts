@@ -25,7 +25,14 @@ import type { AnchoredOptions } from './use-anchored.types.js';
  * - **It never sets React state.** Coordinates are written straight to the
  *   element's style, because `autoUpdate` fires on every scroll frame and a
  *   `setState` there would re-render the subtree sixty times a second to move
- *   two pixels.
+ *   two pixels. They go into `--anchored-x` and `--anchored-y` rather than into
+ *   `left` and `top`, which is what keeps the POLICY in the stylesheet: an
+ *   inline `left` is unbeatable by any rule, so a surface that wants a
+ *   different shape somewhere — a sheet on a touch screen, say — would have
+ *   needed `!important`, and an `!important` inside `@layer fmmenchi` beats a
+ *   consumer's plain rule, which is the one promise ADR-0011 makes. Reported as
+ *   properties, the coordinates are there for a stylesheet that wants them and
+ *   ignorable by one that does not.
  * - **It does not show or hide anything.** Visibility belongs to the component:
  *   a tooltip's is hover and focus, a popover's is a click. This only measures —
  *   including when the anchor has gone — scrolled out of a clipping ancestor,
@@ -108,8 +115,8 @@ export function useAnchored(
         ],
       }).then(({ x, y, placement: resolved, middlewareData }) => {
         // Written to the element, not to state — see the note above.
-        surface.style.left = `${x}px`;
-        surface.style.top = `${y}px`;
+        surface.style.setProperty('--anchored-x', `${x}px`);
+        surface.style.setProperty('--anchored-y', `${y}px`);
 
         // Where it ENDED UP, which is not what was asked for once `flip()` has
         // had its say — a stylesheet drawing an arrow needs the resolved side,
@@ -145,8 +152,8 @@ export function useAnchored(
       // after a scroll put the surface where the anchor USED to be. Clearing
       // them returns it to wherever the stylesheet parks a closed surface,
       // which is the only position that is right by construction.
-      surface.style.left = '';
-      surface.style.top = '';
+      surface.style.removeProperty('--anchored-x');
+      surface.style.removeProperty('--anchored-y');
       delete surface.dataset.placement;
       surface.style.removeProperty('--anchor-centre');
       surface.style.removeProperty('--anchored-available-height');

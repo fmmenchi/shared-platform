@@ -138,6 +138,38 @@ export default defineConfig(() => ({
             instances: [{ browser: 'chromium' as const }],
           },
           include: ['{src,tests}/**/*.{test,spec}.{ts,tsx}'],
+          // `*.touch.test.tsx` belongs to the project below, which is the only
+          // one that runs a browser reporting a coarse pointer.
+          exclude: ['**/*.touch.test.{ts,tsx}'],
+          reporters: ['default'],
+        },
+      },
+      {
+        // THE TOUCH PROJECT. A component whose touch form is a media query has
+        // nothing to assert in a browser that reports `pointer: fine` — and
+        // `hasTouch` is what flips it: measured, that option alone turns
+        // `(pointer: coarse)` on and `(hover: hover)` off, with `isMobile` and
+        // the viewport making no further difference. The viewport is a phone's
+        // so that "it spans the screen" is a claim about a screen.
+        extends: true as const,
+        test: {
+          name: 'touch',
+          watch: false,
+          globals: true,
+          setupFiles: ['./src/test-setup.ts'],
+          browser: {
+            enabled: true,
+            // On the PROVIDER, not on the instance: `contextOptions` belongs to
+            // `browser.newContext`, and an instance quietly ignores it — the
+            // first version of this ran the whole touch suite in a browser
+            // reporting `pointer: fine`, measuring the desktop form under the
+            // touch form's name.
+            provider: playwright({ contextOptions: { hasTouch: true } }),
+            headless: true,
+            viewport: { width: 390, height: 664 },
+            instances: [{ browser: 'chromium' as const }],
+          },
+          include: ['src/**/*.touch.test.{ts,tsx}'],
           reporters: ['default'],
         },
       },

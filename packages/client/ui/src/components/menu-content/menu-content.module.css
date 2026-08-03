@@ -19,9 +19,16 @@
     border: 0;
     box-sizing: border-box;
 
-    /* Parked off-screen until the first measurement writes real coordinates. */
-    top: -9999px;
-    left: 0;
+    /* Where the geometry measured, declared here with the PARK as its initial
+       value: unmeasured is off-screen, and the first measurement overwrites it
+       on the element. Reported as properties rather than written to
+       `left`/`top`, so that a stylesheet can decline them — which is what the
+       touch form below does. */
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+
+    top: var(--anchored-y);
+    left: var(--anchored-x);
 
     @apply min-w-48 max-w-80 rounded-lg border p-1 shadow-lg;
     @apply bg-card text-card-foreground border-border;
@@ -53,6 +60,69 @@
   @starting-style {
     .content:popover-open {
       opacity: 0;
+    }
+  }
+
+  /*
+   * THE TOUCH FORM — a sheet along the bottom edge, and the one place the
+   * geometry's coordinates are DECLINED. They are still reported, in properties
+   * this block simply does not read, which is why declining them takes no
+   * `!important` and leaves a consumer free to take them back:
+   *
+   *   @media (pointer: coarse) {
+   *     .my-menu { inset: auto; top: var(--anchored-y); left: var(--anchored-x); }
+   *   }
+   *
+   * Why decline them at all: a dropdown pinned to its control sits under the
+   * thumb that opened it, and on a phone the control is as often as not in the
+   * bottom half of the screen. The sheet is where the thumb already is, and it
+   * has the width to give a command a line of its own.
+   *
+   * There is no scrim, and that is measured rather than chosen: a tap that
+   * light-dismisses a `popover=auto` ALSO activates whatever is underneath it —
+   * in Chromium, Gecko and WebKit alike. A scrim would promise a modality the
+   * surface does not have, and the promise would be broken by the first tap.
+   */
+  @media (pointer: coarse) {
+    .content {
+      top: auto;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      max-width: none;
+
+      /* The UA gives `[popover]` `width: fit-content`, and a fit-content box
+         does not stretch to meet two insets — measured, the sheet sat 192px
+         wide against a 390px screen with `left: 0; right: 0` both honoured. */
+      width: auto;
+
+      /* NOT the room the geometry measured: that is the room beside the anchor,
+         and this box does not sit beside the anchor. */
+      max-height: 70dvh;
+
+      /* It meets three edges, so it borders on one. */
+      border-inline-width: 0;
+      border-end-start-radius: 0;
+      border-end-end-radius: 0;
+      border-block-end-width: 0;
+
+      /* The home indicator sits over the last command otherwise. */
+      padding-block-end: calc(0.25rem + env(safe-area-inset-bottom, 0px));
+
+      /* It arrives from the edge it belongs to. `translate` and not
+         `transform`, so nothing here has to know what else is transformed. */
+      translate: 0 100%;
+      transition-property: opacity, translate;
+    }
+
+    .content:popover-open {
+      translate: 0 0;
+    }
+
+    @starting-style {
+      .content:popover-open {
+        translate: 0 100%;
+      }
     }
   }
 

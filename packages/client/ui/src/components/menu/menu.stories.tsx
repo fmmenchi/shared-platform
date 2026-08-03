@@ -87,6 +87,28 @@ export const Typeahead: Story = {
   ),
 };
 
+/**
+ * The same menu on a touch screen. Open this story in a device toolbar (or on a
+ * phone) and it is a sheet on the bottom edge, full width, with rows sized for a
+ * finger — one media query, no JavaScript, so it follows the INPUT rather than
+ * the screen width.
+ */
+export const OnTouch: Story = {
+  render: () => (
+    <div style={{ padding: 'var(--fm-space-stack-xl)' }}>
+      <Menu>
+        <MenuTrigger>Actions</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Rename…</MenuItem>
+          <MenuItem>Duplicate</MenuItem>
+          <MenuItem disabled>Move to…</MenuItem>
+          <MenuItem>Delete</MenuItem>
+        </MenuContent>
+      </Menu>
+    </div>
+  ),
+};
+
 /** The pointer and the keyboard highlight the same item, never two. */
 export const PointerAndKeyboard: Story = {
   render: () => (

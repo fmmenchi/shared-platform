@@ -35,6 +35,16 @@
     }
   }
 
+  /* A finger is not a cursor. 44px is the size every touch platform asks for
+     and WCAG's enhanced target size (2.5.5); the row is full width already, so
+     only its height is short of it. */
+  @media (pointer: coarse) {
+    .item {
+      @apply gap-3 px-4 text-base;
+      min-height: 2.75rem;
+    }
+  }
+
   /* Forced colours: the token fill is replaced by a system colour, so the
      highlight has to be the system's own pair or it disappears. Ordered
      `:focus-visible` first to keep the cascade reading top-down by specificity,

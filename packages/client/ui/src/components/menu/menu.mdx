@@ -73,6 +73,26 @@ Staying open would leave the user looking at a list of things they have already 
 
 One caveat worth knowing: a `Tooltip` on a menu item also answers `Escape`, and it answers first — the tooltip is dismissed and the menu stays open, so it takes a second `Escape` to close the menu.
 
+### On a touch screen it is a sheet
+
+Below a coarse pointer the menu stops being a dropdown and becomes a **sheet along the bottom edge**: full width, a command per line, and rows tall enough for a finger (44px, which is what every touch platform asks for and WCAG's enhanced target size). A dropdown pinned to its control sits under the thumb that opened it, and on a phone the control is as often as not in the bottom half of the screen.
+
+It is one media query and no JavaScript, so it follows the input rather than the screen — a tablet with a keyboard and trackpad gets the dropdown, and the same tablet used with a finger gets the sheet.
+
+There is **no scrim**, and that is measured rather than chosen: a tap that light-dismisses a popover also activates whatever is underneath it, in all three engines. A scrim would promise a modality this surface does not have, and the first tap would break the promise.
+
+The geometry still runs and still reports where the menu _would_ have been anchored — the sheet simply does not read it. That is what lets you take the anchored form back, with no `!important` anywhere:
+
+```css
+@media (pointer: coarse) {
+  .my-menu {
+    inset: auto;
+    top: var(--anchored-y);
+    left: var(--anchored-x);
+  }
+}
+```
+
 ## Accessibility
 
 - **`role="menu"` with `role="menuitem"` children**, named by the trigger.
