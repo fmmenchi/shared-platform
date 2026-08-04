@@ -331,23 +331,27 @@ describe('Menu', () => {
     expect(document.activeElement).toBe(item('Rename'));
   });
 
-  it('highlights exactly one row', async () => {
+  it('paints the row the pointer is on, and only that one', async () => {
     render(example());
     await open();
     await waitFor(() => expect(document.activeElement).toBe(item('Rename')));
 
+    // The stylesheet paints `:focus`, so "exactly one row" is the engine's
+    // guarantee rather than ours — this says WHICH row, which is the part
+    // bookkeeping used to get wrong: two rules, `:hover` and `:focus-visible`,
+    // lit two rows at once and lit none at all when the menu was opened with
+    // the mouse.
     await browser.hover(item('Delete'));
-    // Two rules — `:hover` and `:focus-visible` — lit two rows at once, and lit
-    // none at all when the menu was opened with the mouse. One attribute now
-    // says which row is the one.
-    await waitFor(() =>
-      expect(
-        screen
-          .getAllByRole('menuitem')
-          .filter((row) => row.hasAttribute('data-active')),
-      ).toHaveLength(1),
-    );
-    expect(item('Delete')).toHaveAttribute('data-active');
+    await waitFor(() => expect(item('Delete').matches(':focus')).toBe(true));
+    expect(item('Rename').matches(':focus')).toBe(false);
+
+    // And it is PAINTED, which nothing asserted before this — neither the
+    // attribute the highlight used to hang on nor the focus it hangs on now
+    // says anything about what the user sees. Compared against a sibling rather
+    // than against a literal colour, so it survives a token being retuned.
+    const lit = getComputedStyle(item('Delete')).backgroundColor;
+    const dark = getComputedStyle(item('Rename')).backgroundColor;
+    expect(lit).not.toBe(dark);
   });
 
   it('stops saying it is open when the menu is taken away', async () => {

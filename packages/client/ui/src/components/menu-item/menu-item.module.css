@@ -12,23 +12,24 @@
     color: inherit;
     cursor: default;
 
-    /* ONE attribute paints the highlight, and the component keeps exactly one
-       item wearing it. Painting `:hover` and `:focus-visible` separately — as
-       the first version did — lit two rows at once when the pointer visited a
-       different one, and lit NONE when the menu was opened with the mouse,
-       because a mouse-focused item is not `:focus-visible`. */
-    &:focus-visible {
-      @apply outline-none;
-    }
+    /* THE FOCUS IS THE HIGHLIGHT, and a document has one focused element, so
+       exactly one row is lit and nothing has to keep it that way. Painting
+       `:hover` and `:focus-visible` separately — as the first version did — lit
+       two rows at once when the pointer visited a different one, and NONE when
+       the menu was opened with the mouse, because a mouse-focused item is not
+       `:focus-visible`. Hovering moves the focus, so `:focus` covers both.
 
-    &[data-active] {
+       Not `:focus-visible`: the pointer hands the cursor over to the keyboard
+       here, and a row the mouse focused would otherwise go dark. */
+    &:focus {
       @apply bg-accent-subtle text-accent-subtle-foreground;
+      @apply outline-none;
     }
 
     /* `aria-disabled`, not `:disabled` — the command is focusable and inert, so
        the row is still the one the cursor is on and still says it cannot be
-       used. Written after `[data-active]` on purpose: same specificity, so the
-       later rule takes the text colour back from the highlight. */
+       used. Written after `:focus` on purpose: same specificity, so the later
+       rule takes the text colour back from the highlight. */
     &[aria-disabled='true'] {
       @apply text-disabled-foreground;
       cursor: not-allowed;
@@ -46,11 +47,10 @@
   }
 
   /* Forced colours: the token fill is replaced by a system colour, so the
-     highlight has to be the system's own pair or it disappears. Ordered
-     `:focus-visible` first to keep the cascade reading top-down by specificity,
-     which the `lint-css` gate enforces. */
+     highlight has to be the system's own pair or it disappears, and the
+     disabled colour again comes after it. */
   @media (forced-colors: active) {
-    .item[data-active] {
+    .item:focus {
       background-color: Highlight;
       color: HighlightText;
     }

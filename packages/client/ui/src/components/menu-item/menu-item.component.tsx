@@ -36,8 +36,8 @@ import styles from './menu-item.module.css';
  * arrows read `document.activeElement` while hovering wrote the state, so
  * hovering a row and pressing Down continued from the OLD row — and both rows
  * were painted at once, because hover and focus were two CSS rules. Hovering
- * now focuses, `onFocus` is what sets the active id, and `data-active` paints
- * exactly one row.
+ * now focuses, and the stylesheet paints `:focus`: one fact, owned by the
+ * engine, so two rows cannot be lit even by mistake.
  */
 function MenuItem(props: MenuItemProps) {
   const {
@@ -115,8 +115,13 @@ function MenuItem(props: MenuItemProps) {
       ref={mergeRefs(descendantRef, ref)}
       id={id}
       aria-disabled={disabled || undefined}
+      // The one thing left that the DOM cannot say for itself: which command is
+      // tabbable. CSS has no way to write `tabindex`, so React must render it,
+      // and rendering it needs the focused command's identity in state. The
+      // HIGHLIGHT is not here for the same reason it once was — the stylesheet
+      // reads `:focus`, so exactly one row is lit by the engine rather than by
+      // our bookkeeping.
       tabIndex={menu?.activeId === id ? 0 : -1}
-      data-active={menu?.activeId === id ? '' : undefined}
       onClick={handleClick}
       onFocus={handleFocus}
       onPointerEnter={handlePointerEnter}
