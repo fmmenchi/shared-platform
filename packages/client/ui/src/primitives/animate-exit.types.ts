@@ -20,4 +20,11 @@ export interface AnimateExitOptions {
   ease?: MotionEase;
   /** Custom WAAPI keyframes — the escape hatch; wins over `preset`. */
   keyframes?: Keyframe[];
+  /**
+   * Animate a pseudo-element instead of the element — `'::backdrop'`, which is
+   * the only one that has come up: a modal fading out while its scrim vanishes
+   * on the first frame looks broken rather than animated. Measured animatable
+   * in Chromium, Gecko and WebKit.
+   */
+  pseudoElement?: string;
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Dialog } from '../dialog/dialog.component.js';
 import { DialogTrigger } from '../dialog-trigger/dialog-trigger.component.js';
@@ -68,7 +68,14 @@ describe('DialogContent', () => {
       );
 
       await browser.keyboard('{Escape}');
-      expect(getComputedStyle(document.documentElement).overflowY).toBe('auto');
+      // Released at the END of the exit, not at the key: the dialog is still
+      // open — and still modal — while it fades, so the page underneath stays
+      // frozen for exactly as long as there is something over it.
+      await waitFor(() =>
+        expect(getComputedStyle(document.documentElement).overflowY).toBe(
+          'auto',
+        ),
+      );
     } finally {
       pageCss.remove();
       tall.remove();
@@ -177,7 +184,7 @@ describe('DialogContent', () => {
       (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement).open,
     ).toBe(false);
   });
-  it('opens and closes from the `open` prop', () => {
+  it('opens and closes from the `open` prop', async () => {
     const noop = () => undefined;
     const { rerender } = render(
       <Dialog open={false} onOpenChange={noop}>
@@ -202,7 +209,10 @@ describe('DialogContent', () => {
         <DialogContent>content</DialogContent>
       </Dialog>,
     );
-    expect(surface.open).toBe(false);
+    // Opening is immediate and closing is not: the surface plays its exit
+    // first, so the prop going false is a request that is granted at the end
+    // of it rather than in the same frame.
+    await waitFor(() => expect(surface.open).toBe(false));
   });
 
   it('grants a close the platform performs, even while `open` is true', async () => {

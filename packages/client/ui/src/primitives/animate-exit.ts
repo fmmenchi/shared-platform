@@ -23,6 +23,7 @@ export async function animateExit(
     duration = 'm',
     ease = 'exit',
     keyframes = PRESETS[preset],
+    pseudoElement,
   } = options;
   if (typeof el.animate !== 'function') return;
 
@@ -38,7 +39,7 @@ export async function animateExit(
     style.getPropertyValue(`--fm-ease-${ease}`).trim() || 'ease-in';
 
   try {
-    await el.animate(frames, { duration: ms, easing }).finished;
+    await el.animate(frames, { duration: ms, easing, pseudoElement }).finished;
   } catch {
     // Canceled (element removed, animation interrupted) — exit proceeds.
   }
