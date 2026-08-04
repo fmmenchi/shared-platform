@@ -19,19 +19,24 @@ import type { Descendant } from '../../primitives/use-descendants.types.js';
  * would mean guessing at a caller nobody has written.
  */
 
+/** The first command, and the last. A menu's two ends. */
+export function first(items: Descendant<MenuItemData>[]): HTMLElement | null {
+  return items[0]?.element ?? null;
+}
+
+export function last(items: Descendant<MenuItemData>[]): HTMLElement | null {
+  return items[items.length - 1]?.element ?? null;
+}
+
 /**
- * The item `direction` away from `from`, wrapping — a menu is a ring, so Down on
- * the last goes to the first and a user holding the arrow never hits a wall.
+ * The command `direction` away from `from`, wrapping — a menu is a ring, so
+ * Down on the last goes to the first and a user holding the arrow never hits a
+ * wall.
  *
  * Nothing is stepped OVER. A disabled command is `aria-disabled` and focusable
  * (the APG's "focusable but cannot be activated"), so the arrows walk onto it
- * like any other: with `role="menu"` a screen reader is in focus mode, and an
- * item the arrows skip is an item its user is never told about.
- *
- * `from` may be `-1`, meaning "nowhere yet": the menu has just opened, or the
- * focus is on something inside the surface that is not an item. Written as an
- * explicit start rather than as arithmetic on `-1`, which is how the first
- * version skipped the last item on ArrowUp from a non-item.
+ * like any other: with `role="menu"` a screen reader is in focus mode, and a
+ * command the arrows skip is one its user is never told about.
  */
 export function step(
   items: Descendant<MenuItemData>[],
@@ -41,16 +46,13 @@ export function step(
   const count = items.length;
   if (count === 0) return null;
 
-  const start =
-    from >= 0 && from < count
-      ? from
-      : // Nowhere yet: Down starts before the first, Up starts after the last.
-        direction === 1
-        ? -1
-        : count;
+  // Nowhere yet — the menu has just opened, or the focus is on the surface
+  // because no command can hold it. Said outright, rather than as arithmetic on
+  // `-1`: treating it as an index is how the first version answered ArrowUp
+  // with the second-to-last command.
+  if (from < 0) return direction === 1 ? first(items) : last(items);
 
-  const index = (((start + direction) % count) + count) % count;
-  return items[index]?.element ?? null;
+  return items[(from + direction + count) % count]?.element ?? null;
 }
 
 /**

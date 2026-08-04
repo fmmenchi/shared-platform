@@ -64,6 +64,66 @@ describe('Popover', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
+  it('opens on its own when asked, and the trigger knows', async () => {
+    render(
+      <Popover defaultOpen>
+        <PopoverTrigger>Share</PopoverTrigger>
+        <PopoverContent>
+          <PopoverHeading>Share this page</PopoverHeading>
+        </PopoverContent>
+      </Popover>,
+    );
+
+    const surface = screen.getByRole('dialog');
+    await waitFor(() => expect(surface.matches(':popover-open')).toBe(true));
+
+    // The second half is the one that had no test: the surface is opened by an
+    // effect, so by the time anything subscribes to `toggle` the event has
+    // already been and gone. Read the state or the trigger offers an expanded
+    // surface as closed — which is exactly what a click landing before
+    // hydration does, and this is the same shape.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Share' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      ),
+    );
+  });
+
+  it('stops saying it is open when the surface is taken away', async () => {
+    const Vanishing = () => {
+      const [mounted, setMounted] = useState(true);
+      return (
+        <Popover>
+          <PopoverTrigger>Share</PopoverTrigger>
+          {mounted && (
+            <PopoverContent>
+              <PopoverHeading>Share this page</PopoverHeading>
+              <button type="button" onClick={() => setMounted(false)}>
+                drop
+              </button>
+            </PopoverContent>
+          )}
+        </Popover>
+      );
+    };
+    render(<Vanishing />);
+    const trigger = screen.getByRole('button', { name: 'Share' });
+
+    await browser.click(trigger);
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'true'),
+    );
+
+    // Unmounted while open, nothing will ever fire `toggle` again — measured
+    // before the mirror was shared with the menu, which had already fixed it:
+    // the trigger went on offering an expanded surface that was not there.
+    await browser.click(screen.getByRole('button', { name: 'drop' }));
+    await waitFor(() =>
+      expect(trigger).toHaveAttribute('aria-expanded', 'false'),
+    );
+  });
+
   it('holds content a tooltip could never hold', async () => {
     render(example());
     await browser.click(screen.getByRole('button', { name: 'Share' }));

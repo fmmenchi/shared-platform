@@ -8,11 +8,14 @@ import {
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
+import { useOpenMirror } from '../../primitives/use-open-mirror.js';
 import { useUiAdapters } from '../../i18n/provider.js';
 import { useMenuPart } from '../menu/menu.context.js';
 import {
   byPrefix,
+  first,
   isSearchKey,
+  last,
   step,
   TYPEAHEAD_WINDOW,
 } from '../menu/menu.keyboard.js';
@@ -48,12 +51,6 @@ function MenuContent(props: MenuContentProps) {
     onAnchorLost: useCallback(() => close?.(), [close]),
   });
 
-  /**
-   * Where the focus goes when it opens. The trigger leaves its intent on the
-   * element itself — `last` when the user pressed ArrowUp, which the APG asks
-   * for and is the only way to reach the end of a long menu in one key — and it
-   * is spent here, so the next open starts at the top again.
-   */
   const query = useRef('');
   const queryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -69,78 +66,50 @@ function MenuContent(props: MenuContentProps) {
     [locale],
   );
 
-  const takeOpenAt = useCallback((node: HTMLElement): 'first' | 'last' => {
-    const at = node.dataset.openAt === 'last' ? 'last' : 'first';
-    delete node.dataset.openAt;
-    return at;
-  }, []);
-
-  /** Focus an item, or the surface when there is no item to focus. */
+  /** Focus a command, or the surface when there is no command to focus. */
   const focus = useCallback((element: HTMLElement | null) => {
     (element ?? surface.current)?.focus();
   }, []);
 
-  const reportedOpen = useRef(false);
+  /**
+   * WHAT THE PLATFORM DID, and what this menu does about it.
+   *
+   * On OPENING, the focus. The platform opens the surface and stops there —
+   * measured in all three engines, the focus stayed on the trigger in Chromium
+   * and Firefox and on `<body>` in WebKit, and a menu that opens without a
+   * focused command cannot be used from the keyboard at all. The trigger leaves
+   * its intent on the element itself — `last` when the user pressed ArrowUp,
+   * which the APG asks for and is the only way to reach the end of a long menu
+   * in one key — and it is spent here, so the next open starts at the top
+   * again. On the element and not in React state: the `toggle` that follows the
+   * trigger's `showPopover()` fires BEFORE a re-render, so a state update would
+   * be read by a handler still closed over the previous value.
+   *
+   * On CLOSING, the search. A search does not outlive the menu it was typed
+   * into — and closing is not unmounting, the surface stays in the document, so
+   * nothing else was ever going to clear it: measured, a quick Escape-and-
+   * reopen left the next menu answering to half a word typed at the last one.
+   */
+  const report = useCallback(
+    (open: boolean) => {
+      reportOpen?.(open);
 
-  useEffect(() => {
-    const node = surface.current;
-    if (!node || !reportOpen || !items) return;
-
-    const onToggle = (event: Event) => {
-      const isOpen =
-        (event as Event & { newState?: string }).newState === 'open';
-      reportedOpen.current = isOpen;
-      reportOpen(isOpen);
-
-      // A search does not outlive the menu it was typed into. Closing is not
-      // unmounting — the surface stays in the document — so nothing else was
-      // ever going to clear this, and a quick Escape-and-reopen left the next
-      // menu answering to half a word typed at the last one.
-      if (!isOpen) {
+      if (!open) {
         clearTimeout(queryTimer.current);
         query.current = '';
+        return;
       }
 
-      // The platform opens the surface and stops there — measured, the focus
-      // stayed on the trigger in Chromium and Firefox and on `<body>` in
-      // WebKit. A menu that opens without a focused item cannot be used from
-      // the keyboard at all.
-      if (isOpen) {
-        const all = items.items();
-        const at = takeOpenAt(node);
-        focus(at === 'last' ? step(all, -1, -1) : step(all, -1, 1));
-      }
-    };
+      const node = surface.current;
+      const at = node?.dataset.openAt;
+      if (node) delete node.dataset.openAt;
+      const all = items?.items() ?? [];
+      focus(at === 'last' ? last(all) : first(all));
+    },
+    [reportOpen, items, focus],
+  );
 
-    // READ FIRST, then subscribe. A click that lands before React has hydrated
-    // — which is the whole point of a declarative trigger — has already fired
-    // `toggle`, so a component that only subscribed would never learn the menu
-    // was open: no item focused, the arrows dead, and `aria-expanded` saying
-    // "false" over an open menu. The same defect the Popover shipped once.
-    if (node.matches(':popover-open')) {
-      reportedOpen.current = true;
-      reportOpen(true);
-      const all = items.items();
-      const at = takeOpenAt(node);
-      focus(at === 'last' ? step(all, -1, -1) : step(all, -1, 1));
-    }
-
-    node.addEventListener('toggle', onToggle);
-    return () => {
-      node.removeEventListener('toggle', onToggle);
-      // Unmounted while open: nothing will ever fire `toggle` again, and the
-      // trigger would go on saying `aria-expanded="true"` for a menu that is
-      // not there — measured, with `close()` unable to repair it because the
-      // element it looks up is gone. Asked of our own bookkeeping and not of
-      // the element: by the time a cleanup runs, React has taken the node out
-      // and the platform has already closed the popover, so `:popover-open`
-      // says no and the repair never happened.
-      if (reportedOpen.current) {
-        reportedOpen.current = false;
-        reportOpen(false);
-      }
-    };
-  }, [reportOpen, items, focus, takeOpenAt]);
+  useOpenMirror(surface, report);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -161,11 +130,11 @@ function MenuContent(props: MenuContentProps) {
           break;
         case 'Home':
           event.preventDefault();
-          focus(step(all, -1, 1));
+          focus(first(all));
           break;
         case 'End':
           event.preventDefault();
-          focus(step(all, -1, -1));
+          focus(last(all));
           break;
         case 'Tab':
           // A menu is one tab stop: Tab leaves it rather than walking through

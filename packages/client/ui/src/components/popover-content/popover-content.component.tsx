@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
+import { useOpenMirror } from '../../primitives/use-open-mirror.js';
 import { usePopoverPart } from '../popover/popover.context.js';
 import { usePopoverControlWarnings } from './popover-content.guards.js';
 import type { PopoverContentProps } from './popover-content.types.js';
@@ -72,28 +73,17 @@ function PopoverContent(props: PopoverContentProps) {
     onAnchorLost: close,
   });
 
+  // Everything that opens or closes this surface — the trigger, `Esc`, a click
+  // outside, another popover taking the layer — arrives as one `toggle` event,
+  // which is why there is no handler anywhere else. The primitive reads the
+  // state before it subscribes, and reports closed if the surface is taken away
+  // while open; both were defects here, and the second one shipped.
   const reportOpen = popover?.reportOpen;
-  useEffect(() => {
-    const node = surface.current;
-    if (!node || !reportOpen) return;
-
-    // READ FIRST, then subscribe. Measured: a popover opened before hydration
-    // — which is the whole point of a declarative trigger — had already fired
-    // its `toggle`, so a component that only subscribed never learnt it was
-    // open, and told assistive tech `aria-expanded="false"` over a live dialog.
-    // Nothing paints from this: the stylesheet keys off `:popover-open`, so
-    // arriving late costs an announcement, not a visible surface.
-    reportOpen(node.matches(':popover-open'));
-
-    // Everything that opens or closes this surface — the trigger, `Esc`, a
-    // click outside, another popover taking the layer — arrives here as one
-    // event, which is why there is no handler anywhere else.
-    const onToggle = (event: Event) => {
-      reportOpen((event as Event & { newState?: string }).newState === 'open');
-    };
-    node.addEventListener('toggle', onToggle);
-    return () => node.removeEventListener('toggle', onToggle);
-  }, [reportOpen]);
+  const report = useCallback(
+    (open: boolean) => reportOpen?.(open),
+    [reportOpen],
+  );
+  useOpenMirror(surface, report);
 
   useEffect(() => {
     // Written as an ATTRIBUTE, not React's `autoFocus` prop, which focuses at
