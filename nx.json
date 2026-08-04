@@ -125,7 +125,13 @@
       "cache": false
     },
     "typecheck": {
-      "dependsOn": ["codegen", "build", "^typecheck"]
+      "dependsOn": ["codegen", "build", "^typecheck"],
+      "//": "`default`, not `production`: the plugin infers `production` inputs, which EXCLUDE *.test.*, *.stories.* and test-setup — while `tsc --build` compiles every one of them. A type error introduced in a test was therefore served a green cache hit; measured, one reached a commit that way. Upstream projects keep `^production`: their tests cannot change our types.",
+      "inputs": [
+        "default",
+        "^production",
+        { "externalDependencies": ["typescript"] }
+      ]
     },
     "build-storybook": {
       "dependsOn": ["codegen"]
