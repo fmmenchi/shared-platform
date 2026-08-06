@@ -43,7 +43,25 @@ export default defineConfig(() => ({
     // path doesn't apply here). Applied at the library build, so the published
     // output ships already memoized (`react/compiler-runtime`, present in the
     // React 19 peer dep) — every consumer benefits, compiler or not.
-    babel({ presets: [reactCompilerPreset()] }),
+    // `panicThreshold: 'all_errors'` is the GUARD, and it exists because the
+    // failure it guards is SILENT: the compiler skips a function it cannot
+    // handle and says nothing, so a component stops being memoized and the
+    // build stays green. Measured after that had already happened twice — a
+    // `case` whose value was a conditional expression cost `MenuContent` its
+    // compilation, and a Babel version mismatch cost five more components
+    // theirs, for months, with nobody able to notice.
+    //
+    // A function that genuinely cannot be compiled says so where it is
+    // written, with `'use no memo'` and a reason. That is two hooks in one
+    // file today, and the reason is that they call a hook the APP injects.
+    // Tests and stories are EXCLUDED, and not as an escape hatch: they are not
+    // shipped, so compiling them buys nothing — while `panicThreshold` would
+    // turn an inline component written for one assertion into a failed
+    // transform, which reads as forty-five unrelated test failures. Measured.
+    babel({
+      presets: [reactCompilerPreset({ panicThreshold: 'all_errors' })],
+      exclude: [/\.test\.tsx?$/, /\.stories\.tsx?$/, /test-setup\.ts$/],
+    }),
     tailwindcss(),
     combinedCssPlugin(),
     dts({
@@ -64,6 +82,11 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'menu-item': 'src/components/menu-item/index.ts',
+        'menu-item-trigger': 'src/components/menu-item-trigger/index.ts',
+        'menu-content': 'src/components/menu-content/index.ts',
+        'menu-trigger': 'src/components/menu-trigger/index.ts',
+        menu: 'src/components/menu/index.ts',
         'dialog-close': 'src/components/dialog-close/index.ts',
         'dialog-heading': 'src/components/dialog-heading/index.ts',
         'dialog-content': 'src/components/dialog-content/index.ts',
@@ -134,6 +157,38 @@ export default defineConfig(() => ({
             instances: [{ browser: 'chromium' as const }],
           },
           include: ['{src,tests}/**/*.{test,spec}.{ts,tsx}'],
+          // `*.touch.test.tsx` belongs to the project below, which is the only
+          // one that runs a browser reporting a coarse pointer.
+          exclude: ['**/*.touch.test.{ts,tsx}'],
+          reporters: ['default'],
+        },
+      },
+      {
+        // THE TOUCH PROJECT. A component whose touch form is a media query has
+        // nothing to assert in a browser that reports `pointer: fine` — and
+        // `hasTouch` is what flips it: measured, that option alone turns
+        // `(pointer: coarse)` on and `(hover: hover)` off, with `isMobile` and
+        // the viewport making no further difference. The viewport is a phone's
+        // so that "it spans the screen" is a claim about a screen.
+        extends: true as const,
+        test: {
+          name: 'touch',
+          watch: false,
+          globals: true,
+          setupFiles: ['./src/test-setup.ts'],
+          browser: {
+            enabled: true,
+            // On the PROVIDER, not on the instance: `contextOptions` belongs to
+            // `browser.newContext`, and an instance quietly ignores it — the
+            // first version of this ran the whole touch suite in a browser
+            // reporting `pointer: fine`, measuring the desktop form under the
+            // touch form's name.
+            provider: playwright({ contextOptions: { hasTouch: true } }),
+            headless: true,
+            viewport: { width: 390, height: 664 },
+            instances: [{ browser: 'chromium' as const }],
+          },
+          include: ['src/**/*.touch.test.{ts,tsx}'],
           reporters: ['default'],
         },
       },

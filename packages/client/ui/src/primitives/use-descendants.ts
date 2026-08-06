@@ -62,12 +62,25 @@ export function useDescendants<Data = undefined>(): Descendants<Data> {
     const element = root.current;
     if (!element) return [];
 
-    return Array.from(element.querySelectorAll<HTMLElement>(`[${MARKER}]`))
-      .filter((node) => entries.current.has(node))
-      .map((node) => ({
-        element: node,
-        data: entries.current.get(node) as Data,
-      }));
+    return (
+      Array.from(element.querySelectorAll<HTMLElement>(`[${MARKER}]`))
+        .filter((node) => entries.current.has(node))
+        // NOT RENDERED, NOT NAVIGABLE. `display: none` is the same hazard this
+        // hook already guards against when React detaches a ref and keeps the
+        // node: an item nobody can see, offered to the keyboard as "the next
+        // one". A part that a media query has taken out of the layout — a
+        // control that exists only on a touch screen, say — is exactly that.
+        //
+        // `checkVisibility()` at its default, which asks about `display` and
+        // `content-visibility` and NOT about `visibility` — deliberately: a
+        // family that has stepped aside for one nested inside it is still the
+        // family the focus comes back to.
+        .filter((node) => node.checkVisibility())
+        .map((node) => ({
+          element: node,
+          data: entries.current.get(node) as Data,
+        }))
+    );
   }, []);
 
   const indexOf = useCallback(

@@ -1,5 +1,14 @@
 # Build & packaging (agent)
 
+- **The compiler is GUARDED.** `panicThreshold: 'all_errors'` turns a bailout into a build failure,
+  because the failure is otherwise SILENT: the compiler skips a function it cannot handle and says
+  nothing, so a component stops being memoized and nobody can tell. Measured after that had happened
+  twice — a `case` whose value was a conditional expression cost `MenuContent` its compilation, and
+  a Babel version mismatch cost eight more functions theirs. A function that genuinely cannot be
+  compiled declares `'use no memo'` where it is written, with a reason; today that is the two hooks
+  calling an INJECTED hook from the form port, which the compiler cannot name and rightly refuses to
+  reason about. The plugin is a **Babel 7** plugin and the root pins `@babel/core` accordingly —
+  [known-issues](../../../../.agents/doc/known-issues.md).
 - **React Compiler** is on — memoizes at the lib build, so the published output ships already
   memoized (every consumer benefits). Rolldown-vite gotcha: wire it via `react()` +
   `babel({ presets: [reactCompilerPreset()] })` (`@rolldown/plugin-babel`), NOT `react({ babel })`.

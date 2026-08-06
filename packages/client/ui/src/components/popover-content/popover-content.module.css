@@ -9,6 +9,11 @@
 
 @layer fmmenchi {
   .content {
+    /* Overwritten inline by the geometry once it has measured the room. Not an
+       `--fm-` name: that prefix means a token, and this is a runtime fact about
+       one element. */
+    --anchored-available-height: 100dvh;
+
     /* Undo the UA popover box before positioning it: `inset: auto` frees the
        four sides, `margin: 0` stops it being re-centred in the viewport. */
     position: fixed;
@@ -18,9 +23,13 @@
     box-sizing: border-box;
 
     /* Parked off-screen until the first measurement writes real coordinates,
-       so the first frame is never at the UA's static position. */
-    top: -9999px;
-    left: 0;
+       so the first frame is never at the UA's static position — the park is the
+       INITIAL VALUE of the properties the geometry reports into. */
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+
+    top: var(--anchored-y);
+    left: var(--anchored-x);
 
     @apply max-w-80 rounded-lg border p-4 shadow-lg;
     /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only, and
@@ -35,7 +44,10 @@
        dismiss button, painted below the viewport and reachable by nothing —
        the surface is `fixed` in the top layer, so no page scroll brings it
        back. A card that scrolls is worth more than a triangle. */
-    max-height: calc(100dvh - 2rem);
+    /* Capped by the room the geometry measured, not by the viewport: a
+       viewport-sized cap on a box that does not start at the top overflows the
+       bottom by however far down it starts. */
+    max-height: calc(var(--anchored-available-height) - 1rem);
     overflow: auto;
     overscroll-behavior: contain;
 

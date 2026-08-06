@@ -1,0 +1,62 @@
+/* One command in the menu. A full-width row, because the whole row is the
+   target — a menu is pointed at in a hurry. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .item {
+    @apply control-base;
+    @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: default;
+
+    /* THE FOCUS IS THE HIGHLIGHT, and a document has one focused element, so
+       exactly one row is lit and nothing has to keep it that way. Painting
+       `:hover` and `:focus-visible` separately — as the first version did — lit
+       two rows at once when the pointer visited a different one, and NONE when
+       the menu was opened with the mouse, because a mouse-focused item is not
+       `:focus-visible`. Hovering moves the focus, so `:focus` covers both.
+
+       Not `:focus-visible`: the pointer hands the cursor over to the keyboard
+       here, and a row the mouse focused would otherwise go dark. */
+    &:focus {
+      @apply bg-accent-subtle text-accent-subtle-foreground;
+      @apply outline-none;
+    }
+
+    /* `aria-disabled`, not `:disabled` — the command is focusable and inert, so
+       the row is still the one the cursor is on and still says it cannot be
+       used. Written after `:focus` on purpose: same specificity, so the later
+       rule takes the text colour back from the highlight. */
+    &[aria-disabled='true'] {
+      @apply text-disabled-foreground;
+      cursor: not-allowed;
+    }
+  }
+
+  /* A finger is not a cursor. 44px is the size every touch platform asks for
+     and WCAG's enhanced target size (2.5.5); the row is full width already, so
+     only its height is short of it. */
+  @media (pointer: coarse) {
+    .item {
+      @apply gap-3 px-4 text-base;
+      min-height: 2.75rem;
+    }
+  }
+
+  /* Forced colours: the token fill is replaced by a system colour, so the
+     highlight has to be the system's own pair or it disappears, and the
+     disabled colour again comes after it. */
+  @media (forced-colors: active) {
+    .item:focus {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .item[aria-disabled='true'] {
+      color: GrayText;
+    }
+  }
+}

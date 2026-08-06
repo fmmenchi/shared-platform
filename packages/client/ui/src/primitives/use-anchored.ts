@@ -6,6 +6,7 @@ import {
   hide,
   offset,
   shift,
+  size,
 } from '@floating-ui/dom';
 import type { AnchoredOptions } from './use-anchored.types.js';
 
@@ -24,7 +25,14 @@ import type { AnchoredOptions } from './use-anchored.types.js';
  * - **It never sets React state.** Coordinates are written straight to the
  *   element's style, because `autoUpdate` fires on every scroll frame and a
  *   `setState` there would re-render the subtree sixty times a second to move
- *   two pixels.
+ *   two pixels. They go into `--anchored-x` and `--anchored-y` rather than into
+ *   `left` and `top`, which is what keeps the POLICY in the stylesheet: an
+ *   inline `left` is unbeatable by any rule, so a surface that wants a
+ *   different shape somewhere — a sheet on a touch screen, say — would have
+ *   needed `!important`, and an `!important` inside `@layer fmmenchi` beats a
+ *   consumer's plain rule, which is the one promise ADR-0011 makes. Reported as
+ *   properties, the coordinates are there for a stylesheet that wants them and
+ *   ignorable by one that does not.
  * - **It does not show or hide anything.** Visibility belongs to the component:
  *   a tooltip's is hover and focus, a popover's is a click. This only measures —
  *   including when the anchor has gone — scrolled out of a clipping ancestor,
@@ -32,7 +40,9 @@ import type { AnchoredOptions } from './use-anchored.types.js';
  *   component to answer, because the answer is always to close and only the
  *   component can. Same for the side it settled on (`data-placement`) and where
  *   the anchor's centre falls along the surface (`--anchor-centre`): facts an
- *   arrow needs, drawn by whoever wants one.
+ *   arrow needs, drawn by whoever wants one — and `--anchored-available-height`,
+ *   the room that is actually left below or above the anchor, which a surface
+ *   caps itself with instead of guessing from the viewport.
  *
  * CSS anchor positioning does all of this declaratively and recomputes natively,
  * and all three current engines implement it correctly — measured. It is not
@@ -76,6 +86,27 @@ export function useAnchored(
           offset(gap),
           flip(),
           shift({ padding: 8 }),
+          // HOW MUCH ROOM THERE ACTUALLY IS, reported as a custom property for
+          // the stylesheet to cap itself with. A surface that caps itself with
+          // `100dvh` minus a margin is measuring the WRONG box: measured on a
+          // 40-item menu, a viewport-sized cap on a box that starts 447px down
+          // the screen ran 383px past the bottom edge, and the keyboard
+          // happily focused a command nobody could see. Nothing else can bring
+          // it back either — the surface is `fixed` in the top layer, so no
+          // page scroll reaches it.
+          size({
+            padding: 8,
+            apply: ({ availableHeight, availableWidth, elements }) => {
+              elements.floating.style.setProperty(
+                '--anchored-available-height',
+                `${Math.max(availableHeight, 0)}px`,
+              );
+              elements.floating.style.setProperty(
+                '--anchored-available-width',
+                `${Math.max(availableWidth, 0)}px`,
+              );
+            },
+          }),
           // The top layer is not clipped by anything, which is the point of it
           // and also this: measured, an anchor scrolled halfway out of its
           // `overflow: auto` container left the surface painted in full over
@@ -84,8 +115,8 @@ export function useAnchored(
         ],
       }).then(({ x, y, placement: resolved, middlewareData }) => {
         // Written to the element, not to state — see the note above.
-        surface.style.left = `${x}px`;
-        surface.style.top = `${y}px`;
+        surface.style.setProperty('--anchored-x', `${x}px`);
+        surface.style.setProperty('--anchored-y', `${y}px`);
 
         // Where it ENDED UP, which is not what was asked for once `flip()` has
         // had its say — a stylesheet drawing an arrow needs the resolved side,
@@ -121,10 +152,12 @@ export function useAnchored(
       // after a scroll put the surface where the anchor USED to be. Clearing
       // them returns it to wherever the stylesheet parks a closed surface,
       // which is the only position that is right by construction.
-      surface.style.left = '';
-      surface.style.top = '';
+      surface.style.removeProperty('--anchored-x');
+      surface.style.removeProperty('--anchored-y');
       delete surface.dataset.placement;
       surface.style.removeProperty('--anchor-centre');
+      surface.style.removeProperty('--anchored-available-height');
+      surface.style.removeProperty('--anchored-available-width');
     };
   }, [anchor, surfaceRef, placement, gap, open, onAnchorLost]);
 }

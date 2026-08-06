@@ -220,6 +220,36 @@
       "types": "./dist/components/dialog-close/index.d.ts",
       "import": "./dist/dialog-close.js",
       "default": "./dist/dialog-close.js"
+    },
+    "./menu": {
+      "@fmmenchi/source": "./src/components/menu/index.ts",
+      "types": "./dist/components/menu/index.d.ts",
+      "import": "./dist/menu.js",
+      "default": "./dist/menu.js"
+    },
+    "./menu-trigger": {
+      "@fmmenchi/source": "./src/components/menu-trigger/index.ts",
+      "types": "./dist/components/menu-trigger/index.d.ts",
+      "import": "./dist/menu-trigger.js",
+      "default": "./dist/menu-trigger.js"
+    },
+    "./menu-content": {
+      "@fmmenchi/source": "./src/components/menu-content/index.ts",
+      "types": "./dist/components/menu-content/index.d.ts",
+      "import": "./dist/menu-content.js",
+      "default": "./dist/menu-content.js"
+    },
+    "./menu-item": {
+      "@fmmenchi/source": "./src/components/menu-item/index.ts",
+      "types": "./dist/components/menu-item/index.d.ts",
+      "import": "./dist/menu-item.js",
+      "default": "./dist/menu-item.js"
+    },
+    "./menu-item-trigger": {
+      "@fmmenchi/source": "./src/components/menu-item-trigger/index.ts",
+      "types": "./dist/components/menu-item-trigger/index.d.ts",
+      "import": "./dist/menu-item-trigger.js",
+      "default": "./dist/menu-item-trigger.js"
     }
   },
   "nx": {

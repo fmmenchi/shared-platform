@@ -26,6 +26,20 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
   icons must satisfy the contract documented on `IconRenderer` (`currentColor`, square viewBox,
   `em`-sized, decorative-by-default). Functional glyphs a component needs to work (spinner, a future
   chevron/✕) are drawn **inline in the component** — never from an icon set.
+- **One fact, one owner.** Never keep a second copy of something the platform already knows — which
+  element has focus, whether a popover is open, what a control's value is. Six of the eight design
+  defects found building the Menu were one copy drifting from its original: an `activeId` the arrows
+  read while the pointer wrote it, a label captured at registration while the DOM said otherwise, an
+  intent put in state that a `toggle` firing before the re-render read stale. Three consequences, in
+  the order to reach for them:
+  - **Let CSS read the fact.** `:focus`, `:popover-open`, `:checked`, `:disabled`. An invariant the
+    engine enforces cannot drift; one an attribute enforces is only as good as the code writing it.
+  - **Where React must RENDER from a platform fact** — `aria-expanded` sits on a different element,
+    `tabindex` cannot be expressed in CSS — mirror it in ONE direction, from the platform, and never
+    command the platform from the mirror (`useOpenMirror`).
+  - **Where a fact has to travel between parts before React can re-render**, put it on the element,
+    not in state: `toggle` fires before the re-render, so a state update is read stale by the handler
+    that follows it.
 - **Structure.** Folder-per-component, one concern per file; component files export **only** the
   component (Fast Refresh), types always in `<name>.types.ts`.
 - **Tests split by kind.** Component behaviour (semantics, interaction, a11y via axe, snapshot) vs

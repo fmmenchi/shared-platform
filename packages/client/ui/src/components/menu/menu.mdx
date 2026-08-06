@@ -1,0 +1,136 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as MenuStories from './menu.stories.tsx';
+
+<Meta of={MenuStories} />
+
+# Menu
+
+Menu is a list of commands, opened from a control. Things to **do** — rename, duplicate, delete — not values to pick and not places to go.
+
+```tsx
+<Menu>
+  <MenuTrigger>Actions</MenuTrigger>
+  <MenuContent>
+    <MenuItem onClick={rename}>Rename…</MenuItem>
+    <MenuItem disabled>Move to…</MenuItem>
+    <MenuItem onClick={remove}>Delete</MenuItem>
+  </MenuContent>
+</Menu>
+```
+
+If the user is choosing a **value**, that is a `Select` — the browser draws it, and on a phone it is the platform's own picker. If they are going **somewhere**, those are links: a nav and a list, where the browser's own Tab order is already right. A menu is neither.
+
+## Anatomy
+
+| part          | what it is                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| `Menu`        | the wiring. It renders **no element** — one that only carries a context has not earned its place |
+| `MenuTrigger` | what opens it: `popovertarget`, plus `aria-haspopup="menu"` and `aria-expanded`                  |
+| `MenuContent` | the surface — `role="menu"` in the top layer, anchored — and the keyboard contract               |
+| `MenuItem`    | one command. A `<button role="menuitem">`; `disabled` makes it focusable and inert               |
+
+`MenuItem` takes everything a `<button>` takes, plus `textValue` — what typing should match. Typing matches the name the command is **announced by**, so decoration (`aria-hidden`) is left out and `<MenuItem><TrashIcon aria-hidden />Delete</MenuItem>` answers to "d" on its own. Reach for `textValue` when the name starts somewhere else — an icon that carries its own name, a badge, a visually-hidden prefix:
+
+```tsx
+<MenuItem textValue="Duplicate">
+  <Badge>New</Badge> Duplicate
+</MenuItem>
+```
+
+It must be text the user can read on the command. It reorders what typing sees; it does not invent a keyword, and a search key with nothing on screen to suggest it is one nobody will ever press.
+
+## Props
+
+<Controls of={MenuStories.Default} />
+
+## Usage
+
+<Canvas of={MenuStories.Default} />
+
+### What the platform gives, and what it does not
+
+The surface is the platform's: `popovertarget` opens it with no handler, `popover="auto"` dismisses it on `Escape` and on a click outside, and the top layer means no portal and no `z-index`.
+
+The keyboard is **not**. Measured in Chromium, Firefox and WebKit before any of this was written: opening leaves the focus on the trigger, the arrows do nothing, there is no typeahead — and `Tab` walks straight **into** the items, which is precisely what a menu must not allow. `<menuitem>` was removed from the platform years ago and reports as `HTMLUnknownElement`.
+
+So this component owns the contract the WAI-ARIA practices describe, and every line of it is a test:
+
+- **one Tab stop.** Only the active command is `tabindex="0"` — the way back out of a submenu included, since it is a command like any other; `Tab` dismisses the menu rather than walking through it;
+- **the arrows move and wrap.** A menu is a ring: `↓` on the last item goes to the first;
+- **`Home` and `End`** go to the ends;
+- **typing goes to the command.** A letter or two moves the focus to the first command **at or after the one you are on** whose name begins with them, wrapping round — so a single letter always moves, and pressing it again walks the commands that share it. The search forgets itself a second after the last key. `Space` belongs to it while it is still finding something — `Copy link` cannot be reached without one — and is the command's own key otherwise, so typing a name and then pressing `Space` runs it. A letter under `Ctrl`/`Cmd`/`Alt` is the browser's shortcut and is left alone (`AltGr` is not: on Windows it arrives as `Ctrl+Alt`, and it is how half of Europe types its own alphabet). Names are compared the way the reader's language compares them, from the `locale` you inject, so "e" finds "Élève" and "l" finds "Ładuj";
+- **disabled commands are reached, not skipped.** They are `aria-disabled` and focusable, so the arrows and typing land on them and they announce themselves — they just cannot be run. The APG asks for this, and the reason is what `role="menu"` does to a screen reader: NVDA and JAWS switch into focus mode, where the arrows are the only way through, so a natively disabled command is one its user is never told about;
+- **the pointer hands over to the keyboard.** Hovering FOCUSES the item, so the next arrow continues from where the mouse is. That is one fact rather than two: an earlier version kept the active item in state and moved the focus separately, and the arrows then continued from the row the mouse had left. One attribute paints the active row, so exactly one row is ever lit — painting `:hover` and `:focus-visible` separately lit two at once, and lit none at all when the menu was opened with the mouse.
+
+<Canvas of={MenuStories.PointerAndKeyboard} />
+
+### Choosing a command closes it
+
+Staying open would leave the user looking at a list of things they have already done.
+
+`Escape` closes it too, and the focus goes back to the trigger — that part is the platform's. `Tab` and `Shift+Tab` close it and move on to the next and previous control, which is where the user asked to go; a click outside leaves the focus on whatever was clicked. So "the focus returns to the trigger" is true of `Escape` and of choosing a command, and deliberately not of the others.
+
+One caveat worth knowing: a `Tooltip` on a menu item also answers `Escape`, and it answers first — the tooltip is dismissed and the menu stays open, so it takes a second `Escape` to close the menu.
+
+### A submenu is a Menu
+
+There is no `MenuSub`, and nothing declares a submenu: a `Menu` inside a `MenuContent` **is** one.
+
+```tsx
+<Menu>
+  <MenuTrigger>Actions</MenuTrigger>
+  <MenuContent>
+    <MenuItem onClick={rename}>Rename</MenuItem>
+
+    <Menu>
+      <MenuItemTrigger>Share</MenuItemTrigger>
+      <MenuContent>
+        <MenuItem onClick={email}>Email</MenuItem>
+        <MenuItem onClick={copy}>Copy link</MenuItem>
+      </MenuContent>
+    </Menu>
+
+    <MenuItem onClick={remove}>Delete</MenuItem>
+  </MenuContent>
+</Menu>
+```
+
+It is the same component, so it is the same everything: `role="menu"`, the arrows, `Home`/`End`, typing, the disabled rule, and the sheet on a touch screen. The one part that did not exist before is `MenuItemTrigger` — a command of the menu it sits in, and the trigger of the one it opens.
+
+- **`→` goes in, `←` comes back** — mirrored for a right-to-left reader, from the locale you inject. `Enter` and `Space` open it too, because it is a button.
+- **`Escape` unwinds one level at a time**, and a click outside closes the lot. That is the platform's own stack: nesting two popovers is what an invoker inside a popover means, so nothing here keeps a list of what is open. Measured in Chromium, Gecko and WebKit.
+- **choosing a command closes everything**, not just the menu it was in — one call, because hiding the root hides what is nested in it.
+- **the commands of the two menus never mix.** Typing `c` in a submenu reaches the submenu's commands only, and the parent's arrows step over the whole submenu as if it were one row — which it is.
+- **a disabled `MenuItemTrigger` does not open.** Like any command it stays focusable and announced; `popovertarget` comes off it, or the platform would open the submenu without asking anybody.
+
+One thing this component adds that the platform does not: **closing a submenu returns the focus to the command that opened it.** Measured in all three engines, a nested popover drops the focus on `<body>` when it closes — while a top-level one hands it back to its trigger correctly.
+
+### On a touch screen it is a sheet
+
+Below a coarse pointer the menu stops being a dropdown and becomes a **sheet along the bottom edge**: full width, a command per line, and rows tall enough for a finger (44px, which is what every touch platform asks for and WCAG's enhanced target size). A dropdown pinned to its control sits under the thumb that opened it, and on a phone the control is as often as not in the bottom half of the screen.
+
+It is one media query and no JavaScript, so it follows the input rather than the screen — a tablet with a keyboard and trackpad gets the dropdown, and the same tablet used with a finger gets the sheet.
+
+There is **no scrim**, and that is measured rather than chosen: a tap that light-dismisses a popover also activates whatever is underneath it, in all three engines. A scrim would promise a modality this surface does not have, and the first tap would break the promise.
+
+The geometry still runs and still reports where the menu _would_ have been anchored — the sheet simply does not read it. That is what lets you take the anchored form back, with no `!important` anywhere:
+
+```css
+@media (pointer: coarse) {
+  .my-menu {
+    inset: auto;
+    top: var(--anchored-y);
+    left: var(--anchored-x);
+  }
+}
+```
+
+## Accessibility
+
+- **`role="menu"` with `role="menuitem"` children**, named by the trigger.
+- **Typing matches the announced name**, not the raw text: an `aria-label`, else the text without what the accessibility tree ignores. So a command labelled only by an icon is reachable, and one whose text begins with hidden decoration still answers to the word the user heard. Two things typing cannot do, in any library: it cannot reach a command whose script needs an input method to compose — a Japanese or Chinese name is unreachable by keystroke, and `textValue` only helps if the romanisation is on screen — and it will not tell you when nothing matched. `Enter` always activates; `Space` may be part of a search.
+- **The trigger says what will appear and whether it has** — `aria-haspopup="menu"` and `aria-expanded`, mirrored from the platform's own state rather than from a copy of ours. Unlike a dialog's trigger this one stays live while the menu is open, so "expanded" describes something a screen reader user can act on — except for a `MenuItemTrigger` on a touch screen, where the menu it sits in has stepped aside and taken it out of the accessibility tree with it.
+- **`disabled` is `aria-disabled`**, not the native attribute: the command keeps its place in the keyboard's walk and is announced as unavailable. Native `disabled` reads correctly only in VoiceOver, whose cursor walks the tree regardless of focus.
+- **It never runs out of somewhere to be.** The surface itself is focusable but not tabbable, so a menu with no commands yet — or whose focused command is removed while it is open — still answers the keyboard. Measured before that existed: the focus fell to `<body>`, and with the handler bound to the surface the menu was open with a dead keyboard and no way out but `Escape`.
+- **It caps itself with the room the geometry measured**, not with the viewport: a long menu that starts halfway down the screen would otherwise run off the bottom, with the keyboard focusing commands nobody can see and no page scroll able to reach them.

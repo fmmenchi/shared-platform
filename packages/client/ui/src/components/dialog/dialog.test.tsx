@@ -105,20 +105,108 @@ describe('Dialog', () => {
     await browser.click(trigger);
     await browser.keyboard('{Escape}');
 
-    expect(
-      (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement).open,
-    ).toBe(false);
+    // `waitFor`, because the dismissal is GRANTED and then played: the surface
+    // and its scrim fade before the dialog actually closes, so everything that
+    // hangs off the `close` event — the focus coming back, the scroll lock
+    // being released — happens at the end of the exit rather than at the key.
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement)
+          .open,
+      ).toBe(false),
+    );
     expect(document.activeElement).toBe(trigger);
+  });
+
+  it('plays its way out, scrim and all', async () => {
+    render(example());
+    await browser.click(screen.getByRole('button', { name: 'Delete…' }));
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+
+    await browser.keyboard('{Escape}');
+
+    // GRANTED, then performed. Measured in all three engines before this
+    // existed: a closing `<dialog>` goes to `display: none`, and the CSS answer
+    // — `transition-behavior: allow-discrete` — runs in Chromium alone, with
+    // Gecko and WebKit reporting support for the property and then jumping
+    // straight to `0/none`, no frames at all.
+    expect(surface.open).toBe(true);
+    const playing = surface.getAnimations({ subtree: true });
+    expect(playing.length).toBeGreaterThan(0);
+
+    // The scrim leaves with it: a modal that fades while its backdrop vanishes
+    // on the first frame reads as broken, not as animated.
+    expect(
+      playing.some(
+        (a) =>
+          a.effect instanceof KeyframeEffect &&
+          a.effect.pseudoElement === '::backdrop',
+      ),
+    ).toBe(true);
+
+    await waitFor(() => expect(surface.open).toBe(false));
+  });
+
+  it('is never harder to close because it is leaving', async () => {
+    render(example());
+    await browser.click(screen.getByRole('button', { name: 'Delete…' }));
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+
+    await browser.keyboard('{Escape}');
+    expect(surface.open).toBe(true);
+
+    // Asked again while it is on the way out, the request is let THROUGH to
+    // the platform rather than swallowed. There must be no state in which a
+    // modal cannot be closed — an undismissable one is a keyboard trap, and an
+    // animation is not a reason to introduce one.
+    await browser.keyboard('{Escape}');
+    expect(surface.open).toBe(false);
   });
 
   it('is dismissed by its close button', async () => {
     render(example());
 
     await browser.click(screen.getByRole('button', { name: 'Delete…' }));
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
     await browser.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(
-      (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement).open,
-    ).toBe(false);
+
+    // It leaves the same way Escape does. The button closes DECLARATIVELY —
+    // `command="close"`, so it works before React has hydrated — and the
+    // command event is cancelable in all three engines, which is what lets the
+    // exit be played without giving that up: unhydrated, it simply closes at
+    // once.
+    expect(surface.open).toBe(true);
+    expect(surface.getAnimations({ subtree: true }).length).toBeGreaterThan(0);
+
+    await waitFor(() =>
+      expect(
+        (screen.getByRole('dialog', { hidden: true }) as HTMLDialogElement)
+          .open,
+      ).toBe(false),
+    );
+  });
+
+  it('does not close a dialog that was asked for again while leaving', async () => {
+    const noop = () => undefined;
+    const controlled = (open: boolean) => (
+      <Dialog open={open} onOpenChange={noop}>
+        <DialogContent>
+          <DialogHeading>Still here</DialogHeading>
+        </DialogContent>
+      </Dialog>
+    );
+    const { rerender } = render(controlled(true));
+    const surface = screen.getByRole('dialog') as HTMLDialogElement;
+    await waitFor(() => expect(surface.open).toBe(true));
+
+    // Out, and back in before it has finished leaving. The pending close has
+    // to be called off: a dialog that shuts itself after its consumer asked
+    // for it back is worse than one that does not animate at all.
+    rerender(controlled(false));
+    rerender(controlled(true));
+
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(surface.open).toBe(true);
   });
 
   it('reports what the platform did, and never commands it', async () => {
@@ -129,7 +217,10 @@ describe('Dialog', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(true);
 
     await browser.keyboard('{Escape}');
-    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    // At the END of the exit: the consumer is told when the dialog has closed,
+    // not when the user asked. Told at the key it would have to guess how long
+    // the surface stays on screen.
+    await waitFor(() => expect(onOpenChange).toHaveBeenLastCalledWith(false));
   });
 
   it('keeps the page behind it out of reach', async () => {

@@ -1,0 +1,86 @@
+import type { Placement } from '@floating-ui/dom';
+import { createPartContext } from '../../primitives/part-context.js';
+import type { Descendants } from '../../primitives/use-descendants.types.js';
+
+/** What an item tells its menu about itself. */
+export interface MenuItemData {
+  /** The item's own id — what says which one is currently tabbable. */
+  id: string;
+  /** What typeahead matches, when the item's own text is not what to match. */
+  textValue?: string;
+  /**
+   * The way OUT of a submenu, rather than something to do in it.
+   *
+   * It is a command like any other — the arrows reach it, typing reaches it,
+   * it takes the focus — with one exception: a menu does not OPEN on it. The
+   * user has just come in; the first thing they should be offered is the first
+   * thing they came for.
+   */
+  back?: boolean;
+}
+
+/**
+ * What a `Menu` provides to its parts.
+ *
+ * The surface is the platform's, like the Popover's: `popovertarget` opens it,
+ * `popover="auto"` dismisses it. Everything else in here exists because the
+ * platform offers NOTHING for the keyboard contract a menu owes — measured in
+ * all three engines: focus does not enter, the arrows do nothing, Tab walks
+ * INTO the items (which a menu must not allow), and there is no typeahead.
+ */
+export interface MenuContextValue {
+  /** The surface's id: what the trigger targets. */
+  surfaceId: string;
+  /** Whether the platform has it open. Mirrored from `toggle`, never commanded. */
+  open: boolean;
+  reportOpen: (open: boolean) => void;
+  /** The trigger's node, which the surface anchors to. */
+  anchor: HTMLElement | null;
+  setAnchor: (node: HTMLElement | null) => void;
+  placement: Placement;
+  /** The items, in tree order — the roving focus reads its neighbours here. */
+  items: Descendants<MenuItemData>;
+  /**
+   * The ONE item that is tabbable. A menu is a single tab stop (APG): every
+   * other item is `tabindex="-1"` and reachable only with the arrows.
+   *
+   * An id and not the element: an item comparing its own node would be reading
+   * a ref during render, which the React Compiler forbids and is right to.
+   */
+  activeId: string | null;
+  setActiveId: (id: string | null) => void;
+  /**
+   * Close THIS surface. What "back" does in a submenu, and what `Tab` does
+   * anywhere: one level, like the platform's own `Escape`.
+   */
+  close: () => void;
+  /**
+   * Close the whole stack — what a command does after it has run, because
+   * leaving the menu it was chosen from standing would show the user a list of
+   * things they have already done. One call: hiding the root hides everything
+   * nested inside it, measured in all three engines.
+   */
+  closeAll: () => void;
+  /**
+   * The menu this one hangs off, or `null` at the root.
+   *
+   * A submenu is a `Menu` inside a `MenuContent`, so its provider SHADOWS the
+   * outer one — and its trigger needs both: the outer family to register in, so
+   * the parent's arrows reach it, and this one to open. Without a way back up,
+   * the trigger could only see the menu it opens.
+   */
+  parent: MenuContextValue | null;
+}
+
+const { Context, useFamilyContext, usePart } =
+  createPartContext<MenuContextValue>('Menu');
+
+export const MenuContext = Context;
+export const useMenuContext = useFamilyContext;
+
+/**
+ * Context for a `Menu` PART, warning (with the part's own name) when it is used
+ * outside one. It returns `null` rather than throwing: a misplaced part is worth
+ * a loud warning, not a crashed page.
+ */
+export const useMenuPart = usePart;

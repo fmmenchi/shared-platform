@@ -1,0 +1,171 @@
+/*
+ * The menu surface. Same platform box to undo as the other anchored surfaces —
+ * the UA gives `[popover]` a border, padding and `inset: 0; margin: auto`, which
+ * centres it in the viewport and would ignore the coordinates the geometry
+ * writes.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .content {
+    /* Overwritten inline by the geometry once it has measured the room. Not an
+       `--fm-` name: that prefix means a token, and this is a runtime fact about
+       one element. */
+    --anchored-available-height: 100dvh;
+
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: 0;
+    box-sizing: border-box;
+
+    /* Where the geometry measured, declared here with the PARK as its initial
+       value: unmeasured is off-screen, and the first measurement overwrites it
+       on the element. Reported as properties rather than written to
+       `left`/`top`, so that a stylesheet can decline them — which is what the
+       touch form below does. */
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+
+    top: var(--anchored-y);
+    left: var(--anchored-x);
+
+    @apply min-w-48 max-w-80 rounded-lg border p-1 shadow-lg;
+    @apply bg-card text-card-foreground border-border;
+    /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only and
+       the colour falls back to `currentColor`. */
+
+    /* A long menu scrolls, and it caps itself with the room the geometry
+       measured — not with the viewport. A `100dvh` cap on a box that starts
+       partway down the screen overflows the bottom by exactly how far down it
+       starts: measured at 383px on a 40-item menu, with the keyboard focusing
+       commands nobody could see and no page scroll able to reach them. */
+    max-height: calc(var(--anchored-available-height) - 1rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+
+    /* Entry only: the exit was measured dead in every engine on this DS's other
+       surfaces. `@starting-style` is Baseline "newly" (ADR-0017) — without it
+       the menu simply appears. */
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+  }
+
+  .content:popover-open {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .content:popover-open {
+      opacity: 0;
+    }
+  }
+
+  /* The way back out of a submenu. Not drawn where the arrows do the job: a
+     row nobody can see is a row the keyboard should not walk onto either, and
+     `display: none` says both at once. */
+  .back {
+    display: none;
+    align-items: center;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 0;
+    border-block-end: 1px solid var(--fm-color-border);
+    background: none;
+    font: inherit;
+    text-align: start;
+
+    @apply gap-2 px-4 py-2 text-muted-foreground;
+  }
+
+  /*
+   * THE TOUCH FORM — a sheet along the bottom edge, and the one place the
+   * geometry's coordinates are DECLINED. They are still reported, in properties
+   * this block simply does not read, which is why declining them takes no
+   * `!important` and leaves a consumer free to take them back:
+   *
+   *   @media (pointer: coarse) {
+   *     .my-menu { inset: auto; top: var(--anchored-y); left: var(--anchored-x); }
+   *   }
+   *
+   * Why decline them at all: a dropdown pinned to its control sits under the
+   * thumb that opened it, and on a phone the control is as often as not in the
+   * bottom half of the screen. The sheet is where the thumb already is, and it
+   * has the width to give a command a line of its own.
+   *
+   * There is no scrim, and that is measured rather than chosen: a tap that
+   * light-dismisses a `popover=auto` ALSO activates whatever is underneath it —
+   * in Chromium, Gecko and WebKit alike. A scrim would promise a modality the
+   * surface does not have, and the promise would be broken by the first tap.
+   */
+  @media (pointer: coarse) {
+    .back {
+      display: flex;
+    }
+
+    .content {
+      /* Turned back ON for itself: `visibility` inherits, and a submenu is a
+         DOM descendant of the menu that stands aside for it below. */
+      visibility: visible;
+
+      top: auto;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      max-width: none;
+
+      /* The UA gives `[popover]` `width: fit-content`, and a fit-content box
+         does not stretch to meet two insets — measured, the sheet sat 192px
+         wide against a 390px screen with `left: 0; right: 0` both honoured. */
+      width: auto;
+
+      /* NOT the room the geometry measured: that is the room beside the anchor,
+         and this box does not sit beside the anchor. */
+      max-height: 70dvh;
+
+      /* It meets three edges, so it borders on one. */
+      border-inline-width: 0;
+      border-end-start-radius: 0;
+      border-end-end-radius: 0;
+      border-block-end-width: 0;
+
+      /* The home indicator sits over the last command otherwise. */
+      padding-block-end: calc(0.25rem + env(safe-area-inset-bottom, 0px));
+
+      /* It arrives from the edge it belongs to. `translate` and not
+         `transform`, so nothing here has to know what else is transformed. */
+      translate: 0 100%;
+      transition-property: opacity, translate;
+    }
+
+    .content:popover-open {
+      translate: 0 0;
+    }
+
+    @starting-style {
+      .content:popover-open {
+        translate: 0 100%;
+      }
+    }
+
+    /* THE PARENT STEPS ASIDE for the submenu it opened. Two sheets on one
+       bottom edge read as a single list with two of its rows silently
+       swapped — measured on a phone: the child covered the parent from below,
+       and what showed above it were the rows the user had NOT chosen.
+
+       `visibility` and not `display`: the parent popover stays OPEN, so the
+       nesting, the level-at-a-time `Escape` and the whole-stack close all
+       remain the platform's. We hide the paint, not the state. */
+    .content:has(.content:popover-open) {
+      visibility: hidden;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .content {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+}
