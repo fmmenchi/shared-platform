@@ -9,7 +9,12 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
-import { useDirection, useUiAdapters } from '../../i18n/provider.js';
+import {
+  useDirection,
+  useMessages,
+  useUiAdapters,
+} from '../../i18n/provider.js';
+import { menuContentMessages } from './menu-content.messages.js';
 import { useMenuPart } from '../menu/menu.context.js';
 import {
   byPrefix,
@@ -45,6 +50,7 @@ function MenuContent(props: MenuContentProps) {
   const reportOpen = menu?.reportOpen;
   const close = menu?.close;
   const direction = useDirection();
+  const t = useMessages(menuContentMessages);
   // A submenu, and the one thing that follows from it: a way back to the
   // command that opened it.
   const parent = menu?.parent ?? null;
@@ -131,6 +137,16 @@ function MenuContent(props: MenuContentProps) {
 
   useOpenMirror(surface, report);
 
+  /**
+   * Back to the menu this one opened from: close a level, and hand the focus to
+   * the command that led here. The same thing the inline arrow does — one
+   * function, so the row and the key cannot drift apart.
+   */
+  const goBack = useCallback(() => {
+    close?.();
+    anchor?.focus();
+  }, [close, anchor]);
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
       onKeyDown?.(event);
@@ -163,8 +179,7 @@ function MenuContent(props: MenuContentProps) {
           // would have taken it there anyway.
           if (!parent) break;
           event.preventDefault();
-          close?.();
-          anchor?.focus();
+          goBack();
           break;
         }
         case 'Tab':
@@ -208,7 +223,7 @@ function MenuContent(props: MenuContentProps) {
         }
       }
     },
-    [onKeyDown, items, focus, close, collator, direction, parent, anchor],
+    [onKeyDown, items, focus, close, collator, direction, parent, goBack],
   );
 
   // TAKE THE FOCUS BACK, on every render, because the ways it escapes do not
@@ -242,6 +257,27 @@ function MenuContent(props: MenuContentProps) {
       onKeyDown={handleKeyDown}
       className={cn(styles.content, className)}
     >
+      {/* THE WAY BACK, and it exists only where the arrows do not: on a touch
+          screen the parent steps aside for the submenu it opened, so without
+          this the only way out would be to close the lot. `display: none`
+          everywhere else, which is also what keeps it out of the keyboard's
+          walk — a part that is not rendered is not a descendant.
+
+          The word on it is the command that opened this menu, read from that
+          element rather than passed down: the DOM already holds it, and a copy
+          in a context is a copy that can be wrong. */}
+      {parent && (
+        <button
+          type="button"
+          role="menuitem"
+          className={styles.back}
+          aria-label={`${t('back')} ${anchor?.textContent ?? ''}`.trim()}
+          onClick={goBack}
+        >
+          <span aria-hidden="true">{direction === 'rtl' ? '›' : '‹'}</span>
+          {anchor?.textContent}
+        </button>
+      )}
       {children}
     </div>
   );

@@ -63,6 +63,23 @@
     }
   }
 
+  /* The way back out of a submenu. Not drawn where the arrows do the job: a
+     row nobody can see is a row the keyboard should not walk onto either, and
+     `display: none` says both at once. */
+  .back {
+    display: none;
+    align-items: center;
+    width: 100%;
+    min-height: 2.75rem;
+    border: 0;
+    border-block-end: 1px solid var(--fm-color-border);
+    background: none;
+    font: inherit;
+    text-align: start;
+
+    @apply gap-2 px-4 py-2 text-muted-foreground;
+  }
+
   /*
    * THE TOUCH FORM — a sheet along the bottom edge, and the one place the
    * geometry's coordinates are DECLINED. They are still reported, in properties
@@ -84,7 +101,15 @@
    * surface does not have, and the promise would be broken by the first tap.
    */
   @media (pointer: coarse) {
+    .back {
+      display: flex;
+    }
+
     .content {
+      /* Turned back ON for itself: `visibility` inherits, and a submenu is a
+         DOM descendant of the menu that stands aside for it below. */
+      visibility: visible;
+
       top: auto;
       right: 0;
       bottom: 0;
@@ -123,6 +148,18 @@
       .content:popover-open {
         translate: 0 100%;
       }
+    }
+
+    /* THE PARENT STEPS ASIDE for the submenu it opened. Two sheets on one
+       bottom edge read as a single list with two of its rows silently
+       swapped — measured on a phone: the child covered the parent from below,
+       and what showed above it were the rows the user had NOT chosen.
+
+       `visibility` and not `display`: the parent popover stays OPEN, so the
+       nesting, the level-at-a-time `Escape` and the whole-stack close all
+       remain the platform's. We hide the paint, not the state. */
+    .content:has(.content:popover-open) {
+      visibility: hidden;
     }
   }
 
