@@ -19,8 +19,12 @@ import type { MenuTriggerProps } from './menu-trigger.types.js';
  *
  * `aria-haspopup="menu"` says what will appear and `aria-expanded` whether it
  * has — both things the platform keeps and does not expose. There is
- * deliberately no `aria-controls`: the pattern does not ask for it, and axe
- * cannot even verify it against a popover, reporting an "incomplete" forever.
+ * deliberately no `aria-controls`: the pattern does not ask for it, and the DOM
+ * adjacency it prescribes — the surface is the trigger's next sibling — already
+ * carries the association. (An earlier note here blamed axe for being unable to
+ * verify it; that was wrong, `aria-valid-attr-value` exempts a hidden target
+ * when the element carries `aria-expanded`. The conclusion stood on the wrong
+ * reason.)
  */
 function MenuTrigger(props: MenuTriggerProps) {
   const { as, ref, onKeyDown, ...rest } = props;

@@ -46,7 +46,7 @@ type Story = StoryObj<typeof Menu>;
 
 /**
  * Open it and use the arrows: one Tab stop, `Home`/`End`, wrapping at the ends,
- * and the disabled command stepped over but still announced.
+ * and the disabled command reached like any other, and inert.
  */
 export const Default: Story = {
   render: (args) => (
@@ -102,7 +102,7 @@ export const Submenu: Story = {
 /**
  * Type a letter or two with it open: the focus goes to the command that starts
  * with what you typed. The same letter over and over walks the ones that share
- * it, and the search forgets itself half a second after you stop.
+ * it, and the search forgets itself a second after you stop.
  */
 export const Typeahead: Story = {
   render: () => (

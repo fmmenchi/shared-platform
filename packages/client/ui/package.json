@@ -244,6 +244,12 @@
       "types": "./dist/components/menu-item/index.d.ts",
       "import": "./dist/menu-item.js",
       "default": "./dist/menu-item.js"
+    },
+    "./menu-item-trigger": {
+      "@fmmenchi/source": "./src/components/menu-item-trigger/index.ts",
+      "types": "./dist/components/menu-item-trigger/index.d.ts",
+      "import": "./dist/menu-item-trigger.js",
+      "default": "./dist/menu-item-trigger.js"
     }
   },
   "nx": {

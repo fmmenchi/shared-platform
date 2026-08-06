@@ -11,6 +11,7 @@ import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDescendant } from '../../primitives/use-descendants.js';
 import { useDirection } from '../../i18n/provider.js';
 import { useMenuPart } from '../menu/menu.context.js';
+import { inlineEnd } from '../menu/menu.keyboard.js';
 import type { MenuItemTriggerProps } from './menu-item-trigger.types.js';
 import styles from '../menu-item/menu-item.module.css';
 
@@ -100,7 +101,7 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
       // reader's language: the submenu opens on the inline-end side, so it is
       // ArrowRight where text runs left to right and ArrowLeft where it does
       // not. Enter and Space need nothing — they click, and the click opens it.
-      const forward = direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+      const forward = inlineEnd(direction).forward;
       if (event.key !== forward) return;
 
       event.preventDefault();

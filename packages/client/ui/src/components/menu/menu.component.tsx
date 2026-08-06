@@ -1,6 +1,7 @@
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useDescendants } from '../../primitives/use-descendants.js';
 import { useDirection } from '../../i18n/provider.js';
+import { inlineEnd } from './menu.keyboard.js';
 import { MenuContext, useMenuContext } from './menu.context.js';
 import type { MenuContextValue, MenuItemData } from './menu.context.js';
 import type { MenuProps } from './menu.types.js';
@@ -66,12 +67,7 @@ function Menu(props: MenuProps) {
   // depends on the reader's language, not on the screen: the inline direction
   // comes from the locale the design system already requires.
   const resolved =
-    placement ??
-    (parent
-      ? direction === 'rtl'
-        ? 'left-start'
-        : 'right-start'
-      : 'bottom-start');
+    placement ?? (parent ? inlineEnd(direction).placement : 'bottom-start');
 
   const value = useMemo<MenuContextValue>(
     () => ({

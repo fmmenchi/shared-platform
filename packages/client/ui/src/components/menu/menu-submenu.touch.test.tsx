@@ -101,6 +101,55 @@ describe('A submenu on a touch screen', () => {
     );
   });
 
+  it('makes the way back a command like any other', async () => {
+    await openBoth();
+    const back = screen.getByRole('menuitem', { name: /Back to Share/i });
+
+    // A `role="menuitem"` the arrows cannot reach is the exact thing this
+    // package refuses everywhere else, and it was one: not registered, so
+    // `step()` walked past it, and tabbable by default, so a menu that is one
+    // Tab stop had two.
+    expect(back.tabIndex).toBe(-1);
+    expect(document.activeElement).toBe(item('Email'));
+
+    // Reachable, and NOT where the submenu opens: the user has just come in.
+    await browser.keyboard('{ArrowUp}');
+    expect(document.activeElement).toBe(back);
+    expect(back.tabIndex).toBe(0);
+    await browser.keyboard('{ArrowDown}');
+    expect(document.activeElement).toBe(item('Email'));
+  });
+
+  it('calls the command by the name it is announced by', async () => {
+    render(
+      <Menu>
+        <MenuTrigger>Actions</MenuTrigger>
+        <MenuContent>
+          <Menu>
+            <MenuItemTrigger aria-label="Share">
+              <span aria-hidden="true">↗</span>
+            </MenuItemTrigger>
+            <MenuContent>
+              <MenuItem>Email</MenuItem>
+            </MenuContent>
+          </Menu>
+        </MenuContent>
+      </Menu>,
+    );
+    await browser.click(screen.getByRole('button', { name: 'Actions' }));
+    await waitFor(() => expect(document.activeElement).toBe(item('Share')));
+    await browser.click(item('Share'));
+
+    // Read from `textContent`, this announced "Back to" and drew a bare
+    // chevron — for a trigger whose whole label is an `aria-label`, which is
+    // what an icon-only command is. Typing already had the right answer.
+    await waitFor(() =>
+      expect(
+        screen.getByRole('menuitem', { name: /Back to Share/i }),
+      ).toBeInTheDocument(),
+    );
+  });
+
   it('gives the way back a finger to hit', async () => {
     await openBoth();
     const back = screen.getByRole('menuitem', { name: /Back to Share/i });

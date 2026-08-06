@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   type KeyboardEvent,
@@ -21,11 +22,26 @@ import {
   first,
   isSearchKey,
   last,
+  inlineEnd,
+  nameOf,
   step,
   TYPEAHEAD_WINDOW,
 } from '../menu/menu.keyboard.js';
+import { useDescendant } from '../../primitives/use-descendants.js';
 import type { MenuContentProps } from './menu-content.types.js';
 import styles from './menu-content.module.css';
+
+/** Outside a `Menu` there is no family to join; the warning has already fired. */
+const EMPTY_FAMILY = {
+  rootRef: () => undefined,
+  items: () => [],
+  indexOf: () => -1,
+  registry: {
+    add: () => undefined,
+    update: () => undefined,
+    remove: () => undefined,
+  },
+};
 
 /**
  * The surface, and the keyboard contract the platform does not provide.
@@ -55,6 +71,31 @@ function MenuContent(props: MenuContentProps) {
   // command that opened it.
   const parent = menu?.parent ?? null;
   const anchor = menu?.anchor ?? null;
+
+  // What the command that opened this menu is CALLED, by the same rule typing
+  // uses: its `aria-label`, else its text without the decoration the
+  // accessibility tree ignores. Reading `textContent` instead announced "Back
+  // to" for an icon-only trigger and "Back to 🗑Share" for a decorated one.
+  const anchorName = anchor ? nameOf(anchor) : '';
+
+  /**
+   * The two facts the close path needs, held where reading them costs the
+   * subscription NOTHING.
+   *
+   * `useOpenMirror` requires a stable callback and says why: a new identity
+   * resubscribes, and the cleanup reports CLOSED on the way past. `parent` is
+   * the parent's whole context object, which is re-made whenever its active
+   * command changes — so putting it in the dependency list, which is what the
+   * exhaustive-deps rule asked for, meant that moving the pointer anywhere in
+   * the parent menu tore the subscription down and built it again. Measured:
+   * a phantom close+open pair reached the consumer's `onOpenChange` twice, and
+   * the focus was dragged back to the submenu's first command. With a submenu
+   * open you could not move in the menu that owned it.
+   */
+  const latest = useRef({ parent, anchor });
+  useEffect(() => {
+    latest.current = { parent, anchor };
+  });
 
   useAnchored(menu?.anchor ?? null, surface, {
     placement: menu?.placement ?? 'bottom-start',
@@ -119,20 +160,27 @@ function MenuContent(props: MenuContentProps) {
         // Not conditioned on where the focus IS: `toggle` arrives before the
         // platform has dropped it, so asking here answers about the frame
         // before — measured, the command was still focused and the repair
-        // never ran. The condition is whether the command is still ON SCREEN,
-        // which is false exactly when the whole stack is going and the root is
-        // about to hand the focus to its own trigger.
-        if (parent && anchor?.checkVisibility()) anchor.focus();
+        // never ran.
+        //
+        // Nor on whether the command is still on screen, which an earlier
+        // version guarded on at length: when the whole stack goes, the command
+        // is inside a closed popover, and focusing an element in a closed
+        // popover is a NO-OP — measured in all three engines, the focus stays
+        // exactly where the platform put it. The guard could not be given a
+        // failing test because there is nothing for it to prevent.
+        if (latest.current.parent) latest.current.anchor?.focus();
         return;
       }
 
       const node = surface.current;
       const at = node?.dataset.openAt;
       if (node) delete node.dataset.openAt;
-      const all = items?.items() ?? [];
+      // Everything but the way out: a submenu opens on the first thing the
+      // user came for, not on the door they came through.
+      const all = (items?.items() ?? []).filter((c) => !c.data.back);
       focus(at === 'last' ? last(all) : first(all));
     },
-    [reportOpen, items, focus, parent, anchor],
+    [reportOpen, items, focus],
   );
 
   useOpenMirror(surface, report);
@@ -142,10 +190,30 @@ function MenuContent(props: MenuContentProps) {
    * the command that led here. The same thing the inline arrow does — one
    * function, so the row and the key cannot drift apart.
    */
+  /**
+   * The way back is a COMMAND of this menu, registered like any other, so the
+   * arrows reach it where it is drawn — a `role="menuitem"` the arrows skip is
+   * exactly what this package refuses elsewhere. Registered unconditionally and
+   * ATTACHED only when it is drawn: a part that is not rendered is not a
+   * descendant, which is what the visibility filter in `useDescendants` is for.
+   */
+  const backId = useId();
+  const backRef = useDescendant(items ?? EMPTY_FAMILY, {
+    id: backId,
+    back: true,
+  });
+  const setActiveId = menu?.setActiveId;
+  const onBackFocus = useCallback(
+    () => setActiveId?.(backId),
+    [setActiveId, backId],
+  );
+
   const goBack = useCallback(() => {
+    // Only the close. The focus comes back through the mirror above, which is
+    // the same path `Escape` and a tap outside take — one mechanism for one
+    // outcome, rather than two that happen to agree.
     close?.();
-    anchor?.focus();
-  }, [close, anchor]);
+  }, [close]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -153,7 +221,19 @@ function MenuContent(props: MenuContentProps) {
       if (event.defaultPrevented || !items) return;
 
       const all = items.items();
-      const current = items.indexOf(document.activeElement as HTMLElement);
+      // ONE walk, not two: `indexOf` walks and filters the subtree again, and
+      // that filter now resolves a style per node.
+      const current = all.findIndex(
+        (candidate) => candidate.element === document.activeElement,
+      );
+
+      // Hoisted out of the `switch`, and not for taste: a `case` whose value is
+      // a conditional expression makes the React Compiler give up on the WHOLE
+      // component — `ConditionalExpression cannot be safely reordered`, measured
+      // by running the compiler over every source in this package. It was the
+      // only file of fifty-nine that did not compile, so the one with the most
+      // hooks in the family was also the only one memoizing nothing.
+      const backKey = inlineEnd(direction).back;
 
       switch (event.key) {
         case 'ArrowDown':
@@ -172,12 +252,18 @@ function MenuContent(props: MenuContentProps) {
           event.preventDefault();
           focus(last(all));
           break;
-        case direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft': {
+        case backKey: {
           // BACK, in a submenu only — elsewhere the inline arrows are nobody's
           // and a consumer may want them. One level, like Escape: the command
           // that opened this gets the focus, and the platform's own close
           // would have taken it there anyway.
+          //
+          // And only when the key was aimed at one of OUR commands: measured, a
+          // field a consumer had put inside a submenu could not be walked with
+          // the caret — the arrow moved nothing and destroyed the surface. The
+          // same guard typing already has, for the same reason.
           if (!parent) break;
+          if (event.target !== event.currentTarget && current < 0) break;
           event.preventDefault();
           goBack();
           break;
@@ -270,12 +356,16 @@ function MenuContent(props: MenuContentProps) {
         <button
           type="button"
           role="menuitem"
+          ref={backRef}
           className={styles.back}
-          aria-label={`${t('back')} ${anchor?.textContent ?? ''}`.trim()}
+          tabIndex={menu?.activeId === backId ? 0 : -1}
+          data-active={menu?.activeId === backId ? '' : undefined}
+          aria-label={`${t('back')} ${anchorName}`.trim()}
+          onFocus={onBackFocus}
           onClick={goBack}
         >
           <span aria-hidden="true">{direction === 'rtl' ? '›' : '‹'}</span>
-          {anchor?.textContent}
+          {anchorName}
         </button>
       )}
       {children}

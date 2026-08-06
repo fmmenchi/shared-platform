@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { byPrefix, isSearchKey, step } from './menu.keyboard.js';
+import { byPrefix, inlineEnd, isSearchKey, step } from './menu.keyboard.js';
 import type { MenuItemData } from './menu.context.js';
 import type { Descendant } from '../../primitives/use-descendants.types.js';
 
@@ -142,6 +142,25 @@ describe('byPrefix', () => {
   it('has nothing to answer with in an empty menu', () => {
     expect(find(items(), 'a', -1)).toBeNull();
     expect(find(items('one'), 'z', 0)).toBeNull();
+  });
+});
+
+describe('inlineEnd', () => {
+  it('puts a submenu where the reader is going, and names the keys for it', () => {
+    // UNTESTABLE through the rendered surface: `flip()` moves it when there is
+    // no room, so on a phone-width viewport a right-hand submenu ends up on the
+    // left whatever was asked for — measured, a hardcoded LTR placement passed
+    // an RTL test for that reason alone.
+    expect(inlineEnd('ltr')).toEqual({
+      placement: 'right-start',
+      forward: 'ArrowRight',
+      back: 'ArrowLeft',
+    });
+    expect(inlineEnd('rtl')).toEqual({
+      placement: 'left-start',
+      forward: 'ArrowLeft',
+      back: 'ArrowRight',
+    });
   });
 });
 

@@ -8,6 +8,15 @@ export interface MenuItemData {
   id: string;
   /** What typeahead matches, when the item's own text is not what to match. */
   textValue?: string;
+  /**
+   * The way OUT of a submenu, rather than something to do in it.
+   *
+   * It is a command like any other — the arrows reach it, typing reaches it,
+   * it takes the focus — with one exception: a menu does not OPEN on it. The
+   * user has just come in; the first thing they should be offered is the first
+   * thing they came for.
+   */
+  back?: boolean;
 }
 
 /**

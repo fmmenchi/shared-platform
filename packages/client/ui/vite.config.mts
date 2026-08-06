@@ -65,6 +65,7 @@ export default defineConfig(() => ({
       // (`./button`). New components add an entry here.
       entry: {
         'menu-item': 'src/components/menu-item/index.ts',
+        'menu-item-trigger': 'src/components/menu-item-trigger/index.ts',
         'menu-content': 'src/components/menu-content/index.ts',
         'menu-trigger': 'src/components/menu-trigger/index.ts',
         menu: 'src/components/menu/index.ts',
