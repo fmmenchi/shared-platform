@@ -43,7 +43,25 @@ export default defineConfig(() => ({
     // path doesn't apply here). Applied at the library build, so the published
     // output ships already memoized (`react/compiler-runtime`, present in the
     // React 19 peer dep) — every consumer benefits, compiler or not.
-    babel({ presets: [reactCompilerPreset()] }),
+    // `panicThreshold: 'all_errors'` is the GUARD, and it exists because the
+    // failure it guards is SILENT: the compiler skips a function it cannot
+    // handle and says nothing, so a component stops being memoized and the
+    // build stays green. Measured after that had already happened twice — a
+    // `case` whose value was a conditional expression cost `MenuContent` its
+    // compilation, and a Babel version mismatch cost five more components
+    // theirs, for months, with nobody able to notice.
+    //
+    // A function that genuinely cannot be compiled says so where it is
+    // written, with `'use no memo'` and a reason. That is two hooks in one
+    // file today, and the reason is that they call a hook the APP injects.
+    // Tests and stories are EXCLUDED, and not as an escape hatch: they are not
+    // shipped, so compiling them buys nothing — while `panicThreshold` would
+    // turn an inline component written for one assertion into a failed
+    // transform, which reads as forty-five unrelated test failures. Measured.
+    babel({
+      presets: [reactCompilerPreset({ panicThreshold: 'all_errors' })],
+      exclude: [/\.test\.tsx?$/, /\.stories\.tsx?$/, /test-setup\.ts$/],
+    }),
     tailwindcss(),
     combinedCssPlugin(),
     dts({

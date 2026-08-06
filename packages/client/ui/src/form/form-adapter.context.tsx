@@ -34,6 +34,19 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
   component: string,
   tag: Tag = 'input' as Tag,
 ): BoundField<Tag> {
+  /*
+   * OPT OUT of the React Compiler, declared where it happens rather than
+   * skipped in silence: the hook this calls comes from the INJECTED form
+   * adapter, so it is a different function in a different app. The compiler
+   * rightly refuses to reason about a hook it cannot name — "hooks must be the
+   * same function on every render" — and it is stable by the port's own
+   * contract, which is a promise the app makes and no analysis can see.
+   *
+   * The build treats every other bailout as an error (`panicThreshold`), so
+   * these two are the only unmemoized functions in the package.
+   */
+  'use no memo';
+
   const binding = useFormBinding();
   const useFormField = binding?.field;
   if (useFormField == null) {
@@ -72,6 +85,9 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
 export function useFormErrors(
   component: string,
 ): Readonly<Record<string, readonly string[]>> {
+  /* Same reason as `useBoundField` above: the hook belongs to the app. */
+  'use no memo';
+
   const binding = useFormBinding();
   if (binding == null) {
     throw new Error(
