@@ -1,6 +1,7 @@
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useDescendants } from '../../primitives/use-descendants.js';
-import { MenuContext } from './menu.context.js';
+import { useDirection } from '../../i18n/provider.js';
+import { MenuContext, useMenuContext } from './menu.context.js';
 import type { MenuContextValue, MenuItemData } from './menu.context.js';
 import type { MenuProps } from './menu.types.js';
 
@@ -29,7 +30,13 @@ import type { MenuProps } from './menu.types.js';
  * them). It is a list of things to DO.
  */
 function Menu(props: MenuProps) {
-  const { children, placement = 'bottom-start', onOpenChange } = props;
+  const { children, placement, onOpenChange } = props;
+
+  // A `Menu` inside another one IS a submenu — there is nothing else to
+  // declare. Read before this component provides its own, so it is the OUTER
+  // family: the provider below shadows it for everything underneath.
+  const parent = useMenuContext();
+  const direction = useDirection();
 
   const surfaceId = useId();
   const [open, setOpen] = useState(false);
@@ -50,6 +57,22 @@ function Menu(props: MenuProps) {
     document.getElementById(surfaceId)?.hidePopover();
   }, [surfaceId]);
 
+  // Closing the root closes everything nested in it — measured in Chromium,
+  // Gecko and WebKit — so the whole stack goes in ONE call and nothing here
+  // keeps a list of what is open.
+  const closeAll = parent?.closeAll ?? close;
+
+  // A submenu sits BESIDE the command that opens it, and which side that is
+  // depends on the reader's language, not on the screen: the inline direction
+  // comes from the locale the design system already requires.
+  const resolved =
+    placement ??
+    (parent
+      ? direction === 'rtl'
+        ? 'left-start'
+        : 'right-start'
+      : 'bottom-start');
+
   const value = useMemo<MenuContextValue>(
     () => ({
       surfaceId,
@@ -57,13 +80,26 @@ function Menu(props: MenuProps) {
       reportOpen,
       anchor,
       setAnchor,
-      placement,
+      placement: resolved,
       items,
       activeId,
       setActiveId,
       close,
+      closeAll,
+      parent,
     }),
-    [surfaceId, open, reportOpen, anchor, placement, items, activeId, close],
+    [
+      surfaceId,
+      open,
+      reportOpen,
+      anchor,
+      resolved,
+      items,
+      activeId,
+      close,
+      closeAll,
+      parent,
+    ],
   );
 
   return <MenuContext.Provider value={value}>{children}</MenuContext.Provider>;

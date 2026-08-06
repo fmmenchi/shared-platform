@@ -3,6 +3,7 @@ import { Menu } from './menu.component.js';
 import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
 import { MenuContent } from '../menu-content/menu-content.component.js';
 import { MenuItem } from '../menu-item/menu-item.component.js';
+import { MenuItemTrigger } from '../menu-item-trigger/menu-item-trigger.component.js';
 
 const meta: Meta<typeof Menu> = {
   title: 'Components/Overlays/Menu',
@@ -55,6 +56,41 @@ export const Default: Story = {
         <MenuContent>
           <MenuItem>Rename…</MenuItem>
           <MenuItem>Duplicate</MenuItem>
+          <MenuItem disabled>Move to…</MenuItem>
+          <MenuItem>Delete</MenuItem>
+        </MenuContent>
+      </Menu>
+    </div>
+  ),
+};
+
+/**
+ * A submenu is a `Menu` inside a `MenuContent` — same component, so same
+ * arrows, same typing, same sheet on a phone. `→` goes in and `←` comes back
+ * (mirrored for a right-to-left reader); `Escape` unwinds one level at a time,
+ * and choosing a command closes the lot.
+ */
+export const Submenu: Story = {
+  render: () => (
+    <div style={{ padding: 'var(--fm-space-stack-xl)' }}>
+      <Menu>
+        <MenuTrigger variant="secondary">Actions</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Rename…</MenuItem>
+          <Menu>
+            <MenuItemTrigger>Share</MenuItemTrigger>
+            <MenuContent>
+              <MenuItem>Email</MenuItem>
+              <MenuItem>Copy link</MenuItem>
+              <Menu>
+                <MenuItemTrigger>Social</MenuItemTrigger>
+                <MenuContent>
+                  <MenuItem>Mastodon</MenuItem>
+                  <MenuItem>Bluesky</MenuItem>
+                </MenuContent>
+              </Menu>
+            </MenuContent>
+          </Menu>
           <MenuItem disabled>Move to…</MenuItem>
           <MenuItem>Delete</MenuItem>
         </MenuContent>

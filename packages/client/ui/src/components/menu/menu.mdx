@@ -73,6 +73,39 @@ Staying open would leave the user looking at a list of things they have already 
 
 One caveat worth knowing: a `Tooltip` on a menu item also answers `Escape`, and it answers first — the tooltip is dismissed and the menu stays open, so it takes a second `Escape` to close the menu.
 
+### A submenu is a Menu
+
+There is no `MenuSub`, and nothing declares a submenu: a `Menu` inside a `MenuContent` **is** one.
+
+```tsx
+<Menu>
+  <MenuTrigger>Actions</MenuTrigger>
+  <MenuContent>
+    <MenuItem onClick={rename}>Rename</MenuItem>
+
+    <Menu>
+      <MenuItemTrigger>Share</MenuItemTrigger>
+      <MenuContent>
+        <MenuItem onClick={email}>Email</MenuItem>
+        <MenuItem onClick={copy}>Copy link</MenuItem>
+      </MenuContent>
+    </Menu>
+
+    <MenuItem onClick={remove}>Delete</MenuItem>
+  </MenuContent>
+</Menu>
+```
+
+It is the same component, so it is the same everything: `role="menu"`, the arrows, `Home`/`End`, typing, the disabled rule, and the sheet on a touch screen. The one part that did not exist before is `MenuItemTrigger` — a command of the menu it sits in, and the trigger of the one it opens.
+
+- **`→` goes in, `←` comes back** — mirrored for a right-to-left reader, from the locale you inject. `Enter` and `Space` open it too, because it is a button.
+- **`Escape` unwinds one level at a time**, and a click outside closes the lot. That is the platform's own stack: nesting two popovers is what an invoker inside a popover means, so nothing here keeps a list of what is open. Measured in Chromium, Gecko and WebKit.
+- **choosing a command closes everything**, not just the menu it was in — one call, because hiding the root hides what is nested in it.
+- **the commands of the two menus never mix.** Typing `c` in a submenu reaches the submenu's commands only, and the parent's arrows step over the whole submenu as if it were one row — which it is.
+- **a disabled `MenuItemTrigger` does not open.** Like any command it stays focusable and announced; `popovertarget` comes off it, or the platform would open the submenu without asking anybody.
+
+One thing this component adds that the platform does not: **closing a submenu returns the focus to the command that opened it.** Measured in all three engines, a nested popover drops the focus on `<body>` when it closes — while a top-level one hands it back to its trigger correctly.
+
 ### On a touch screen it is a sheet
 
 Below a coarse pointer the menu stops being a dropdown and becomes a **sheet along the bottom edge**: full width, a command per line, and rows tall enough for a finger (44px, which is what every touch platform asks for and WCAG's enhanced target size). A dropdown pinned to its control sits under the thumb that opened it, and on a phone the control is as often as not in the bottom half of the screen.

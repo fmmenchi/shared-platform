@@ -9,7 +9,7 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
-import { useUiAdapters } from '../../i18n/provider.js';
+import { useDirection, useUiAdapters } from '../../i18n/provider.js';
 import { useMenuPart } from '../menu/menu.context.js';
 import {
   byPrefix,
@@ -44,6 +44,11 @@ function MenuContent(props: MenuContentProps) {
   const items = menu?.items;
   const reportOpen = menu?.reportOpen;
   const close = menu?.close;
+  const direction = useDirection();
+  // A submenu, and the one thing that follows from it: a way back to the
+  // command that opened it.
+  const parent = menu?.parent ?? null;
+  const anchor = menu?.anchor ?? null;
 
   useAnchored(menu?.anchor ?? null, surface, {
     placement: menu?.placement ?? 'bottom-start',
@@ -97,6 +102,21 @@ function MenuContent(props: MenuContentProps) {
       if (!open) {
         clearTimeout(queryTimer.current);
         query.current = '';
+
+        // A SUBMENU hands the focus back itself, which the APG asks for and
+        // the platform does not do: measured in Chromium, Gecko and WebKit,
+        // closing a NESTED popover drops the focus on `<body>` instead of
+        // returning it to the invoker — while a top-level one is returned
+        // correctly, so the menu's own Escape needs nothing and only this
+        // level does.
+        //
+        // Not conditioned on where the focus IS: `toggle` arrives before the
+        // platform has dropped it, so asking here answers about the frame
+        // before — measured, the command was still focused and the repair
+        // never ran. The condition is whether the command is still ON SCREEN,
+        // which is false exactly when the whole stack is going and the root is
+        // about to hand the focus to its own trigger.
+        if (parent && anchor?.checkVisibility()) anchor.focus();
         return;
       }
 
@@ -106,7 +126,7 @@ function MenuContent(props: MenuContentProps) {
       const all = items?.items() ?? [];
       focus(at === 'last' ? last(all) : first(all));
     },
-    [reportOpen, items, focus],
+    [reportOpen, items, focus, parent, anchor],
   );
 
   useOpenMirror(surface, report);
@@ -136,6 +156,17 @@ function MenuContent(props: MenuContentProps) {
           event.preventDefault();
           focus(last(all));
           break;
+        case direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft': {
+          // BACK, in a submenu only — elsewhere the inline arrows are nobody's
+          // and a consumer may want them. One level, like Escape: the command
+          // that opened this gets the focus, and the platform's own close
+          // would have taken it there anyway.
+          if (!parent) break;
+          event.preventDefault();
+          close?.();
+          anchor?.focus();
+          break;
+        }
         case 'Tab':
           // A menu is one tab stop: Tab leaves it rather than walking through
           // it, which is what the platform does when nobody intervenes.
@@ -177,7 +208,7 @@ function MenuContent(props: MenuContentProps) {
         }
       }
     },
-    [onKeyDown, items, focus, close, collator],
+    [onKeyDown, items, focus, close, collator, direction, parent, anchor],
   );
 
   // TAKE THE FOCUS BACK, on every render, because the ways it escapes do not

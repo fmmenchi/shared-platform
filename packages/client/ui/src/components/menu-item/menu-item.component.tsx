@@ -64,7 +64,9 @@ function MenuItem(props: MenuItemProps) {
   });
 
   const setActiveId = menu?.setActiveId;
-  const close = menu?.close;
+  // The whole stack, not this surface: a command chosen in a submenu leaves
+  // nothing standing behind it.
+  const close = menu?.closeAll;
 
   const handleClick = useCallback(
     (event: MouseEvent<HTMLButtonElement>) => {

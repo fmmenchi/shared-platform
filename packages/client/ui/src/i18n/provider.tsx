@@ -141,6 +141,16 @@ export function useUiAdapters(): UiAdapters | undefined {
   return useContext(UiContext)?.adapters;
 }
 
+/**
+ * The text direction, or `'ltr'` outside a provider — the tolerant counterpart
+ * of `useUi().direction`, for a component that must keep working without one.
+ * A menu needs it to know which arrow means "into the submenu": that is the
+ * INLINE direction, and the physical key depends on the reader's language.
+ */
+export function useDirection(): Direction {
+  return useContext(UiContext)?.direction ?? 'ltr';
+}
+
 export function useUi(): UiContextValue {
   const ctx = useContext(UiContext);
   if (!ctx) throw new Error('useUi must be used within <UiProvider>');

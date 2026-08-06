@@ -40,8 +40,27 @@ export interface MenuContextValue {
    */
   activeId: string | null;
   setActiveId: (id: string | null) => void;
-  /** Close it — what an item does after it has run. */
+  /**
+   * Close THIS surface. What "back" does in a submenu, and what `Tab` does
+   * anywhere: one level, like the platform's own `Escape`.
+   */
   close: () => void;
+  /**
+   * Close the whole stack — what a command does after it has run, because
+   * leaving the menu it was chosen from standing would show the user a list of
+   * things they have already done. One call: hiding the root hides everything
+   * nested inside it, measured in all three engines.
+   */
+  closeAll: () => void;
+  /**
+   * The menu this one hangs off, or `null` at the root.
+   *
+   * A submenu is a `Menu` inside a `MenuContent`, so its provider SHADOWS the
+   * outer one — and its trigger needs both: the outer family to register in, so
+   * the parent's arrows reach it, and this one to open. Without a way back up,
+   * the trigger could only see the menu it opens.
+   */
+  parent: MenuContextValue | null;
 }
 
 const { Context, useFamilyContext, usePart } =
