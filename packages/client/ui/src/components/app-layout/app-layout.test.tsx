@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
+import { useAppLayoutNavForm } from '../app-layout-nav/app-layout-nav.context.js';
 import { AppLayoutMain } from '../app-layout-main/app-layout-main.component.js';
 import { Nav } from '../nav/nav.component.js';
 import { NavLink } from '../nav-link/nav-link.component.js';
@@ -75,6 +76,33 @@ describe('AppLayout', () => {
     const hidden = skip.getBoundingClientRect();
     expect(hidden.height).toBeLessThan(4);
     expect(getComputedStyle(skip).clipPath).not.toBe('none');
+  });
+
+  it('says which form it is in, for the content that differs', () => {
+    function Form() {
+      return <span data-testid="form">{useAppLayoutNavForm() ?? 'none'}</span>;
+    }
+    render(
+      <AppLayout>
+        <AppLayoutNav label="Main">
+          <Nav label="Main" orientation="vertical">
+            <NavLink href="#a">A</NavLink>
+          </Nav>
+          <Form />
+        </AppLayoutNav>
+        <AppLayoutMain>Body</AppLayoutMain>
+      </AppLayout>,
+    );
+
+    // The shell swaps the CONTAINER; what goes in it is the product's, and a
+    // rail and a drawer are rarely identical — a rail collapses to icons, a
+    // drawer carries a brand the header already shows. So the shell says which
+    // one is up rather than deciding they are the same thing.
+    expect(screen.getByTestId('form')).toHaveTextContent('drawer');
+    expect(document.querySelector('[data-region="nav"]')).toHaveAttribute(
+      'data-form',
+      'drawer',
+    );
   });
 
   it('stacks its regions in reading order', () => {

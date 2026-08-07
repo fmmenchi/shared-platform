@@ -77,6 +77,18 @@ So JavaScript picks the form, but it is **not told the breakpoint**: the stylesh
 
 One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button. Its trigger is also not inside `<header>`, so a reader navigating by landmark will not meet it; if that matters for your product, render your own trigger inside the header and reach the dialog with `commandfor`.
 
+### The two forms are not the same content
+
+The shell swaps the **container**. What goes inside it is yours — and the two are rarely identical: a rail collapses to icons and a drawer does not, a drawer often carries a brand the header already shows on a wide screen, and on a phone it usually absorbs the account and search links that live in the header on desktop. Even the implementation this was modelled on passes `collapsible={false}` to its own drawer.
+
+So the shell does not decide they are the same thing. It says which form is up:
+
+```tsx
+const form = useAppLayoutNavForm(); // 'column' | 'drawer' | null
+```
+
+and the same fact is on the region as `data-form`, for the many cases where the difference is only styling and no JavaScript is needed at all. Divergence is the exception, so `children` stays one slot and the ones who need it branch.
+
 ### A sticky header is the consumer's, and it covers things
 
 If your `<header>` is sticky, set `--app-layout-header-offset` to its height on the layout. The shell cannot know it, and without it the sticky column's first link — and anything the browser scrolls to — lands underneath the banner, which is WCAG 2.4.11. The skip link needs no such help: it takes the top of the layer stack.

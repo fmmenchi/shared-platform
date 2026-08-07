@@ -6,6 +6,7 @@ import { expectNoA11yViolations } from '../../test/axe.js';
 import { userEvent as browser } from '@vitest/browser/context';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
+import { useAppLayoutNavForm } from '../app-layout-nav/app-layout-nav.context.js';
 import { AppLayoutMain } from '../app-layout-main/app-layout-main.component.js';
 import { Nav } from '../nav/nav.component.js';
 import { NavLink } from '../nav-link/nav-link.component.js';
@@ -121,6 +122,26 @@ describe('AppLayout, above the breakpoint', () => {
     const main = screen.getByRole('main');
     main.focus();
     expect(document.activeElement).toBe(main);
+  });
+
+  it('says which form it is in, for the content that differs', () => {
+    function Form() {
+      return <span data-testid="form">{useAppLayoutNavForm() ?? 'none'}</span>;
+    }
+    render(
+      <AppLayout>
+        <AppLayoutNav label="Main">
+          {nav}
+          <Form />
+        </AppLayoutNav>
+        <AppLayoutMain>Body</AppLayoutMain>
+      </AppLayout>,
+    );
+    expect(screen.getByTestId('form')).toHaveTextContent('column');
+    expect(document.querySelector('[data-region="nav"]')).toHaveAttribute(
+      'data-form',
+      'column',
+    );
   });
 
   it('swaps at the width the token declares', async () => {

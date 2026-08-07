@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { useMessages } from '../../i18n/provider.js';
 import { appLayoutMessages } from '../app-layout/app-layout.messages.js';
@@ -6,6 +6,8 @@ import { Dialog } from '../dialog/dialog.component.js';
 import { DialogTrigger } from '../dialog-trigger/dialog-trigger.component.js';
 import { DialogContent } from '../dialog-content/dialog-content.component.js';
 import { DialogClose } from '../dialog-close/dialog-close.component.js';
+import { AppLayoutNavContext } from './app-layout-nav.context.js';
+import type { AppLayoutNavContextValue } from './app-layout-nav.context.js';
 import type { AppLayoutNavProps } from './app-layout-nav.types.js';
 import styles from './app-layout-nav.module.css';
 
@@ -39,6 +41,11 @@ import styles from './app-layout-nav.module.css';
  *
  * It renders no `<nav>`: the navigation inside brings its own landmark, and a
  * `<nav>` around a `<nav>` is announced twice.
+ *
+ * And it does NOT assume the two forms hold the same thing. What goes inside is
+ * the product's, and a rail and a drawer are rarely identical — so the form is
+ * published, as `data-form` for styling and through `useAppLayoutNavForm()` for
+ * anything that needs to render differently.
  */
 function AppLayoutNav(props: AppLayoutNavProps) {
   const { className, children, label } = props;
@@ -76,27 +83,31 @@ function AppLayoutNav(props: AppLayoutNavProps) {
     return () => observer.disconnect();
   }, []);
 
+  const value = useMemo<AppLayoutNavContextValue>(() => ({ form }), [form]);
+
   return (
-    <div
-      ref={region}
-      // The hook the shell's own stylesheet reads, on the element it owns — a
-      // hashed class from this file could not be named from that one.
-      data-region="nav"
-      data-form={form}
-      className={cn(styles.region, className)}
-    >
-      {form === 'column' ? (
-        children
-      ) : (
-        <Dialog>
-          <DialogTrigger variant="ghost">{t('openNav')}</DialogTrigger>
-          <DialogContent side="inline-start" aria-label={label}>
-            <DialogClose variant="ghost">{t('close')}</DialogClose>
-            {children}
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+    <AppLayoutNavContext.Provider value={value}>
+      <div
+        ref={region}
+        // The hook the shell's own stylesheet reads, on the element it owns — a
+        // hashed class from this file could not be named from that one.
+        data-region="nav"
+        data-form={form}
+        className={cn(styles.region, className)}
+      >
+        {form === 'column' ? (
+          children
+        ) : (
+          <Dialog>
+            <DialogTrigger variant="ghost">{t('openNav')}</DialogTrigger>
+            <DialogContent side="inline-start" aria-label={label}>
+              <DialogClose variant="ghost">{t('close')}</DialogClose>
+              {children}
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+    </AppLayoutNavContext.Provider>
   );
 }
 
