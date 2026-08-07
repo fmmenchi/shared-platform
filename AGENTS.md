@@ -56,9 +56,24 @@ Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`. 
 
 CI also runs a **workspace security scan** (`@fmmenchi/nx-trivy`, Trivy) that fails on CRITICAL/HIGH
 dependency vulnerabilities. Run it locally with `pnpm nx run @fmmenchi/nx-trivy:scan` (needs the
-`trivy` CLI) or `:scan-docker` (needs only Docker). Remediate by bumping the dep — a
-`pnpm-workspace.yaml` `overrides` entry for a transitive one (scope it to the vulnerable version
-line) — and suppress only unfixable findings in the root `.trivyignore.yaml`.
+`trivy` CLI) or `:scan-docker` (needs only Docker). Remediate by bumping the dep; for a **transitive**
+one that means a `pnpm-workspace.yaml` `overrides` entry, scoped to the vulnerable version line.
+
+**An override is not always available, and pnpm will not tell you.** It FORCES a version on every
+dependent regardless of the range they declared, and installs quietly when that range excludes it —
+so the break, if there is one, is at runtime and in somebody else's package. Before writing one, ask
+whether the fix is inside the dependents' ranges (usually: is it the same major?):
+
+- **inside** — it is an ordinary bump. Apply it.
+- **outside**, or a dependent pins exactly — the override changes another package's dependency
+  contract, so it has to be **proven rather than assumed**: apply it, run the full gate, and exercise
+  whatever actually uses that dependency. Say in the commit what you ran, because the next person
+  cannot re-derive it from the diff.
+- **cannot be proven** — do not force it. Record it in the root `.trivyignore.yaml` with the reason
+  and the condition that retires it (an upstream release, a major bump), which is also what
+  `.trivyignore.yaml` is for: findings with no fix available yet.
+
+A vulnerability left visible with a reason beats one hidden behind an override nobody tested.
 
 ## Conventions (essentials)
 
