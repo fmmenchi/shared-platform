@@ -91,22 +91,25 @@ Both halves are imperative underneath, and that is forced: `<dialog open>` is a 
 
 <Canvas of={DialogStories.Drawer} />
 
-`side` pins the surface to an edge instead of centring it, which is the whole of what a drawer is here. There is no second family, and that is deliberate: `showModal()` traps the focus, makes the page inert, draws the backdrop, locks the scroll and hands the focus back on close — every one of which a drawer wants unchanged. What differs is geometry, so the prop is geometry.
+`side` pins the surface to an edge instead of centring it, which is the whole of what a drawer is here. There is no second family, and that is deliberate: `showModal()` traps the focus, makes the page inert and draws the backdrop, and this component adds the scroll lock and the focus-return repair on top of it — a drawer wants every one of those unchanged. What differs is geometry, so the prop is geometry.
 
 ```tsx
 <DialogContent side="inline-start" aria-label="Navigation menu">
+  <DialogClose>Close</DialogClose>
   <Nav label="Main" orientation="vertical">
     …
   </Nav>
 </DialogContent>
 ```
 
-The edges are **logical**: `inline-start` is the left in English and the right in Arabic, and the panel slides in from the side it is pinned to either way. `block-end` is the bottom sheet a phone expects.
+The edges are **logical**: `inline-start` is the left in English and the right in Arabic, and the panel both pins and slides in from that side either way. `block-end` puts it along the bottom, where a phone expects a sheet.
 
-Two things to know:
+Four things to know:
 
-- **name it.** A drawer usually shows no heading — a navigation one is a list of links — and a `<dialog>` with no accessible name is announced as just "dialog". `aria-label` on the content is enough.
-- **no swipe to dismiss.** The platform offers no gesture for it and this package ships no gesture engine, so a drawer closes the way every dialog closes: the backdrop, `Escape`, or a control you put inside it.
+- **name it.** A drawer usually shows no heading — a navigation one is a list of links — and a `<dialog>` with no accessible name is announced as just "dialog". `aria-label` on the content is enough, and the component warns in dev when neither that nor `aria-labelledby` is there.
+- **give it a close control.** Not one option of three: the APG asks for a visible one in every modal, and on a phone it is the only one of the three that exists. There is no `Escape` key there, and the backdrop depends on `closedby` — Baseline "newly", and switchable off with `closedby="none"`.
+- **close it yourself when a link is chosen.** `NavLink` adds no handler, because a link is the one control the browser does perfectly — so with a client router the route changes underneath and the drawer stays open over the page it just navigated to. One handler on the nav does it; the story shows it.
+- **no swipe to dismiss.** The platform offers no gesture for it and this package ships no gesture engine.
 
 ### Scrolling, and the scrollbar
 

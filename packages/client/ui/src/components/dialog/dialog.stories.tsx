@@ -132,7 +132,20 @@ export const Drawer: Story = {
     <Dialog {...args}>
       <DialogTrigger variant="secondary">Menu</DialogTrigger>
       <DialogContent side="inline-start" aria-label="Navigation menu">
-        <Nav label="Main" orientation="vertical">
+        <DialogClose variant="secondary">Close</DialogClose>
+        <Nav
+          label="Main"
+          orientation="vertical"
+          // CHOOSING A DESTINATION CLOSES IT. `NavLink` adds no handler on
+          // purpose — a link is the one control the browser does perfectly —
+          // so with a client router the route changes underneath and the
+          // drawer would stay open over the page it just navigated to.
+          onClick={(event) => {
+            if ((event.target as Element).closest('a')) {
+              event.currentTarget.closest('dialog')?.close();
+            }
+          }}
+        >
           <NavLink href="#home" current>
             Home
           </NavLink>
@@ -147,12 +160,13 @@ export const Drawer: Story = {
   ),
 };
 
-/** The same thing from the bottom, which is where a phone expects it. */
+/** The same thing along the bottom, where a phone expects a sheet. */
 export const Sheet: Story = {
   render: (args) => (
     <Dialog {...args}>
       <DialogTrigger variant="secondary">Options</DialogTrigger>
       <DialogContent side="block-end" aria-label="Options">
+        <DialogClose variant="secondary">Close</DialogClose>
         <Nav label="Options" orientation="vertical">
           <NavLink href="#share">Share</NavLink>
           <NavLink href="#rename">Rename</NavLink>
