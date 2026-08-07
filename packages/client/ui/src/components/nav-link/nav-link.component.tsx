@@ -32,8 +32,12 @@ function NavLink(props: NavLinkProps) {
   return (
     <li className={styles.item}>
       <Component
+        // BEFORE the spread. After it, an `undefined` from a link that is not
+        // current DELETED a consumer's own `aria-current` — the attribute has
+        // seven legal values and this prop expressed one, so the escape hatch
+        // was not merely unused but unreachable.
+        aria-current={current === true ? 'page' : current || undefined}
         {...rest}
-        aria-current={current ? 'page' : undefined}
         className={cn(styles.link, className)}
       >
         {children}

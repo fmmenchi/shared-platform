@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type FocusEvent } from 'react';
+import { useMemo } from 'react';
 import { cn } from '../../util/cn.js';
 import { NavContext } from './nav.context.js';
 import type { NavContextValue } from './nav.context.js';
@@ -18,17 +18,25 @@ import styles from './nav.module.css';
  *
  * NOT a menu, and the difference is not cosmetic. A `Menu` and a `Menubar` are
  * lists of COMMANDS: one tab stop, arrows to walk them, `Tab` to leave. This is
- * a list of LINKS, so the browser's own tab order is already right, and the W3C
- * navigation tutorial says why taking it over is wrong: "submenus should not
- * open when using the tab key to navigate through the menu, as keyboard users
- * would then have to step through all submenu items to get to the next
- * top-level item".
+ * a list of LINKS, so the browser's own tab order is already right, and taking
+ * it over is what the `menu` roles would commit us to. The published reason for
+ * refusing them is aria-practices issue #353 — the roles are "often considered
+ * unnecessary for website navigation and at worst can confuse users who are
+ * familiar with established website patterns" — which is the reason Radix gives
+ * for its own navigation component.
  *
  * So there is no `role="menu"` in this family, no roving focus, and nothing to
  * learn: `Tab` walks the links, `Enter` opens a group, `Escape` closes it.
  *
  * It renders the landmark and the list — `<nav><ul>` — because a list is what a
- * screen reader counts ("list, 5 items") and what the tutorial marks up.
+ * screen reader counts ("list, 5 items") and what the W3C navigation tutorial
+ * marks up.
+ *
+ * IT HOLDS NO STATE. Which group is open is the group's own business, and for
+ * a bar it is the PLATFORM's: a flyout is a popover, so opening one closes the
+ * others without anything here arbitrating. What used to be a record of open
+ * ids, a toggle, a per-id close and a focus-out sweep is now this component's
+ * two elements and one context field.
  */
 function Nav(props: NavProps) {
   const {
@@ -36,62 +44,33 @@ function Nav(props: NavProps) {
     orientation = 'horizontal',
     className,
     children,
-    onBlur,
     ...rest
   } = props;
 
-  // The ONE record of what is open. A group asking itself would let two of them
-  // disagree, and the horizontal rule — at most one — could not be kept at all.
-  const [open, setOpen] = useState<readonly string[]>([]);
-
-  const toggle = useCallback(
-    (id: string) => {
-      setOpen((current) =>
-        current.includes(id)
-          ? current.filter((other) => other !== id)
-          : orientation === 'horizontal'
-            ? [id]
-            : [...current, id],
-      );
-    },
-    [orientation],
-  );
-
-  const close = useCallback((id: string) => {
-    setOpen((current) => current.filter((other) => other !== id));
-  }, []);
-
-  const handleBlur = useCallback(
-    (event: FocusEvent<HTMLElement>) => {
-      onBlur?.(event);
-      // "Moving focus out of the navigation region also closes an open
-      // dropdown" (APG) — and only a flyout: a sidebar section that shut itself
-      // because the reader tabbed into the page would lose their place.
-      if (orientation !== 'horizontal') return;
-      if (event.currentTarget.contains(event.relatedTarget as Node | null)) {
-        return;
-      }
-      setOpen([]);
-    },
-    [onBlur, orientation],
-  );
-
   const value = useMemo<NavContextValue>(
-    () => ({ orientation, open, toggle, close }),
-    [orientation, open, toggle, close],
+    () => ({ orientation }),
+    [orientation],
   );
 
   return (
     <NavContext.Provider value={value}>
       <nav
+        // BEFORE the spread, unlike the contract attributes elsewhere in this
+        // family: `label` is a NAME, and a consumer who has a better one — an
+        // `aria-labelledby` pointing at a heading they already show — should
+        // win. `aria-expanded` and `aria-controls` come after their spread
+        // because those are not opinions.
         aria-label={label}
         {...rest}
-        // The hook the group's own stylesheet reads. A DATA ATTRIBUTE and not
+        // The hook this module's own stylesheet reads. A DATA ATTRIBUTE and not
         // this module's class, because that class is hashed at build time: a
-        // `:global(.horizontal)` in the other file would compile to a selector
-        // that matches nothing, silently.
+        // `:global(.horizontal)` in another file would compile to a selector
+        // that matches nothing, silently. Each part carries its own copy on its
+        // own element for the same reason — see `NavGroup`, which cannot select
+        // on an ancestor's hashed class either, and must not select on a bare
+        // `[data-orientation]` because that attribute belongs to half the
+        // component libraries in the world.
         data-orientation={orientation}
-        onBlur={handleBlur}
         className={cn(styles.nav, className)}
       >
         <ul className={styles.list}>{children}</ul>

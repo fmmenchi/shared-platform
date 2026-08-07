@@ -12,20 +12,24 @@ export type NavOrientation = 'horizontal' | 'vertical';
  * button, and Radix says the same about the component it ships for it — "it
  * does not use the WAI-ARIA menu role". The consequence a consumer feels is the
  * one that matters: **Tab walks the links**, and in a `Menubar` it leaves.
+ *
+ * ONE FIELD, and it used to be four. A record of which groups were open lived
+ * here so that the bar could keep at most one — until the flyout became a
+ * popover, and the platform started keeping that rule itself: opening one auto
+ * popover closes every other that is not its ancestor, measured. The record was
+ * a second copy of something the platform already knew, and everything built on
+ * it (the toggle, the per-id close, the focus-out sweep) was scaffolding for
+ * the copy rather than for the user.
  */
 export interface NavContextValue {
-  orientation: NavOrientation;
   /**
-   * The groups that are open, and the ONE place that is recorded.
-   *
-   * Horizontal keeps at most one: a flyout that stays open while another opens
-   * leaves two panels over the page. Vertical keeps as many as the user opened,
-   * because an indented sidebar that shuts one section to open another loses
-   * the place the user was keeping.
+   * Which FORM the groups take, which is a real difference and not a skin: a
+   * bar's group is a surface OVER the page, so it is a popover — the platform
+   * dismisses it on a click outside, on `Escape` from anywhere, and when
+   * another opens. A sidebar's group is part of the page, opening in place and
+   * indented, so it is a plain disclosure and nothing about it is transient.
    */
-  open: readonly string[];
-  toggle: (id: string) => void;
-  close: (id: string) => void;
+  orientation: NavOrientation;
 }
 
 const { Context, useFamilyContext, usePart } =

@@ -12,11 +12,14 @@ export interface NavProps extends ComponentPropsWithRef<'nav'> {
   label: string;
   /**
    * `'horizontal'` (default) — a bar, where a group opens as a flyout over the
-   * page: at most one at a time, and it closes when the focus leaves.
+   * page. The flyout is a `popover`, so the platform dismisses it: on a click
+   * outside, on `Escape` from anywhere, and when another group opens. At most
+   * one is ever open and nothing of ours arbitrates that.
    *
    * `'vertical'` — a sidebar, where a group opens IN PLACE and indented: as
    * many as the reader opened, and none of them closes on its own. Shutting one
-   * section to open another loses the place they were keeping.
+   * section to open another loses the place they were keeping, and a block of
+   * the page does not take `Escape` off whatever it is sitting in.
    */
   orientation?: NavOrientation;
 }

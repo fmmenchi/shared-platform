@@ -14,8 +14,13 @@
     list-style: none;
   }
 
-  /* A BAR: the groups sit side by side and open over the page. */
-  [data-orientation='horizontal'] > .list {
+  /* A BAR: the groups sit side by side and open over the page.
+
+     Anchored to this module's OWN class, so the attribute is read on the
+     element this stylesheet owns rather than on any ancestor that happens to
+     carry `data-orientation` — which is the convention for Tabs, Slider and
+     ToggleGroup in most component libraries. */
+  .nav[data-orientation='horizontal'] > .list {
     @apply gap-1;
     flex-direction: row;
     align-items: center;
@@ -25,7 +30,7 @@
   /* A SIDEBAR: the groups sit above one another and open in place, so the list
      grows downward and the page scrolls. Nothing is anchored, nothing is in the
      top layer — an indented tree is part of the page, not a surface over it. */
-  [data-orientation='vertical'] > .list {
+  .nav[data-orientation='vertical'] > .list {
     flex-direction: column;
     align-items: stretch;
   }

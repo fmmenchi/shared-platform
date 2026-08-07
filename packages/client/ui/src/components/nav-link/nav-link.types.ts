@@ -13,9 +13,14 @@ export interface NavLinkProps extends ComponentPropsWithRef<'a'> {
    */
   as?: ElementType;
   /**
-   * Marks the link to the page the reader is already on. Rendered as
-   * `aria-current="page"`, which is what a screen reader announces — a colour
-   * alone says it only to those who can see it (WCAG 1.4.1).
+   * Marks where the reader already is. Rendered as `aria-current`, which is
+   * what a screen reader announces — a colour alone says it only to those who
+   * can see it (WCAG 1.4.1).
+   *
+   * `true` means `'page'`, the common case. The other tokens are there because
+   * a navigation asks for them: `'location'` for the SECTION you are inside —
+   * the parent entry of a sidebar tree, which is not the page you are on —
+   * and `'step'` in a flow. Passing `aria-current` directly works too.
    */
-  current?: boolean;
+  current?: boolean | 'page' | 'step' | 'location' | 'date' | 'time';
 }

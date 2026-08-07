@@ -1,16 +1,30 @@
-/* A set of links that opens: a disclosure button and the list it controls. */
+/* A set of links that opens: a disclosure button and the list it controls.
+   The two orientations are two different KINDS of box — a surface over the page
+   and a block in it — so they are two rules and not one with overrides.
+
+   Both are keyed off `[data-orientation]` on the group's own `<li>`, which the
+   component renders for this. Not off the `<nav>`: a descendant selector on a
+   bare `[data-orientation]` matches ANY ancestor carrying it, and that
+   attribute is the convention for Tabs, Slider and ToggleGroup in most
+   component libraries — a nav inside one of those would have matched both
+   rules at once. */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 @reference '../../styles/utilities.css';
 
 @layer fmmenchi {
   .item {
     display: block;
-    position: relative;
   }
 
   .button {
     @apply control-base;
     @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-left;
+    /* The UA's button appearance is removed here, so the UA's focus ring goes
+       with it on some engines — and this package promises to "render the same
+       regardless of the page hosting me" (../../styles/utilities.css), which a
+       component leaning on the host page's outline cannot keep. Every other
+       control in this DS draws its own; this one drew none. */
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
     border: 0;
     background: none;
     color: inherit;
@@ -32,23 +46,72 @@
     list-style: none;
   }
 
-  /* A BAR: the group's links fly out over the page, so they need a surface of
-     their own — a border, a shadow and somewhere to sit. */
-  [data-orientation='horizontal'] .list {
-    @apply bg-card text-card-foreground border-border rounded-lg border p-1 shadow-lg;
-    position: absolute;
-    inset-inline-start: 0;
-    top: 100%;
-    z-index: 1;
-    min-width: 12rem;
-  }
-
   /* A SIDEBAR: the links appear INDENTED under the group, in the page's own
      flow. The indent is what says "these belong to that", so it is a rule and
-     not a decoration. */
-  [data-orientation='vertical'] .list {
+     not a decoration. Nothing is anchored and nothing is in the top layer. */
+  .item[data-orientation='vertical'] .list {
     padding-inline-start: 1rem;
     border-inline-start: 1px solid var(--fm-color-border);
     margin-inline-start: 0.75rem;
+  }
+
+  /* A BAR: the list is a POPOVER, so this undoes the platform's box the same
+     way every other anchored surface here does — the UA gives `[popover]` a
+     border, padding and `inset: 0; margin: auto`, which centres it in the
+     viewport and would ignore the coordinates the geometry writes. Measured
+     before this existed: the `<li>` sat at y=31 and its `position: absolute;
+     top: 100%` flyout at y=846, because a top-layer box is positioned against
+     the viewport and not against its DOM parent. */
+  .item[data-orientation='horizontal'] .list {
+    /* Overwritten inline by the geometry once it has measured the room. */
+    --anchored-available-height: 100dvh;
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: 0;
+    box-sizing: border-box;
+    top: var(--anchored-y);
+    left: var(--anchored-x);
+
+    @apply bg-card text-card-foreground border-border;
+    @apply min-w-48 rounded-lg border p-1 shadow-lg;
+
+    /* A long group scrolls, and it caps itself with the room the geometry
+       measured rather than with the viewport. */
+    max-height: calc(var(--anchored-available-height) - 1rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+
+    /* Entry only: the exit was measured dead in every engine on this DS's
+       other surfaces. `@starting-style` is Baseline "newly" (ADR-0017) —
+       without it the flyout simply appears. */
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+  }
+
+  .item[data-orientation='horizontal'] .list:popover-open {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .item[data-orientation='horizontal'] .list:popover-open {
+      opacity: 0;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .button:focus-visible {
+      outline-color: Highlight;
+    }
+    /* The token fills are replaced by system colours, so the flyout would lose
+       its edge against the page it floats over. */
+    .item[data-orientation='horizontal'] .list {
+      border: 1px solid CanvasText;
+    }
   }
 }
