@@ -146,3 +146,28 @@ export function useDescendant<Data>(
     [registry],
   );
 }
+
+/**
+ * The handle a part joins when there is no family above it — a misplaced part,
+ * or one whose provider is legitimately absent.
+ *
+ * Here rather than in each part, which is where it lived in three copies. It
+ * registers nothing and answers nothing, so a component outside its family
+ * still renders instead of crashing: the warning has already been given by
+ * name, and a loud console line beats a blank page.
+ */
+const EMPTY: Descendants<unknown> = {
+  rootRef: () => undefined,
+  items: () => [],
+  indexOf: () => -1,
+  registry: {
+    add: () => undefined,
+    update: () => undefined,
+    remove: () => undefined,
+  },
+};
+
+/** Typed to whatever the caller's family holds; it is the same empty object. */
+export function emptyDescendants<Data>(): Descendants<Data> {
+  return EMPTY as Descendants<Data>;
+}

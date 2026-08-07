@@ -107,6 +107,27 @@
     @apply h-11 px-5 text-base;
   }
 
+  /* A FINGER GETS 44px — which is the height `lg` already is, so this raises
+     the other two to the design system's own number rather than inventing one.
+     `menu-item`, `nav-link` and `nav-group` have said it since they shipped;
+     the control most likely to be the ONLY way out of a modal on a phone had
+     not, and measured 36px there.
+
+     The consequence, stated rather than left to be discovered: the three sizes
+     are the same HEIGHT under a coarse pointer. A size scale is a hierarchy for
+     a cursor, and a thumb has one size. The horizontal padding and the type
+     scale are untouched, so `sm` keeps its narrower shape and its smaller text
+     — what changes is the target, not the emphasis.
+
+     Icon-only buttons are `aspect-square`, so their width follows the height
+     and a 44px tall one is 44px wide. */
+  @media (pointer: coarse) {
+    .sm,
+    .md {
+      @apply h-11;
+    }
+  }
+
   /* Icon-only buttons are square: the fixed height defines the width
    (aspect-ratio), horizontal padding would only skew the glyph. */
   .iconOnly {

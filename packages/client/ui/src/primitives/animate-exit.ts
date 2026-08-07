@@ -60,7 +60,19 @@ const PRESETS: Record<ExitPreset, Keyframe[]> = {
  * transform-only animation reduces to no animation at all).
  */
 export function reducedMotionKeyframes(frames: Keyframe[]): Keyframe[] | null {
-  const stripped = frames.map(({ transform: _transform, ...rest }) => rest);
+  // The INDIVIDUAL transform properties too, not `transform` alone: `translate`,
+  // `rotate` and `scale` move an element exactly as much, and a caller reaching
+  // for the one that composes cleanly would otherwise have its movement kept for
+  // a user who asked for none.
+  const stripped = frames.map(
+    ({
+      transform: _transform,
+      translate: _translate,
+      rotate: _rotate,
+      scale: _scale,
+      ...rest
+    }) => rest,
+  );
   const animatable = stripped.some((frame) =>
     Object.keys(frame).some((k) => k !== 'offset' && k !== 'easing'),
   );

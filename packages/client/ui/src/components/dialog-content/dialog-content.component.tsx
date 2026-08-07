@@ -19,7 +19,7 @@ import styles from './dialog-content.module.css';
  * way out.
  */
 function DialogContent(props: DialogContentProps) {
-  const { className, children, ref, ...rest } = props;
+  const { className, children, ref, side, ...rest } = props;
   const dialog = useDialogPart('DialogContent');
   const surface = useRef<HTMLDialogElement>(null);
   const locked = useRef(false);
@@ -146,7 +146,7 @@ function DialogContent(props: DialogContentProps) {
   const closeWithExit = useCallback(async (node: HTMLDialogElement) => {
     exiting.current = true;
     await Promise.all([
-      animateExit(node),
+      animateExit(node, { keyframes: exitFrames(node) }),
       animateExit(node, { preset: 'fade', pseudoElement: '::backdrop' }),
     ]);
     // Asked again on the way out: the surface may have been reopened while it
@@ -232,11 +232,52 @@ function DialogContent(props: DialogContentProps) {
       // NOT overridable: the trigger's `commandfor` points here, so an id from
       // outside would cut the wire. Documented on the type.
       id={dialog?.surfaceId}
+      // The hook this module's own stylesheet reads, on the element it owns —
+      // an edge is a fact about the box, and CSS is where a box is decided.
+      data-side={side}
       className={cn(styles.content, className)}
     >
       {children}
     </dialog>
   );
 }
+
+/**
+ * HOW A DRAWER LEAVES: back out through the edge it is pinned to.
+ *
+ * The centred dialog's exit is a `scale(0.97)`, which on a pinned box pulls
+ * away from all FOUR screen edges at once — measured, a growing sliver of bare
+ * backdrop running down the edge it is supposed to be attached to. It is the
+ * same tell the entry test exists to catch, arriving on the way out.
+ *
+ * Read off the ELEMENT rather than taken from props: the side is already an
+ * attribute, and the direction wanted here is the COMPUTED one — which is what
+ * `inset-inline` resolved the position from, and what an attribute selector
+ * would have got wrong for `dir="auto"`. It also keeps this out of the
+ * callback's dependencies, which is what lets the close path stay stable.
+ *
+ * `undefined` for a dialog with no side, which then keeps the scale it wants.
+ */
+function exitFrames(node: HTMLDialogElement): Keyframe[] | undefined {
+  const side = node.dataset.side;
+  if (!side) return undefined;
+
+  const rtl = getComputedStyle(node).direction === 'rtl';
+  const away: Record<string, string> = {
+    'inline-start': rtl ? '100% 0' : '-100% 0',
+    'inline-end': rtl ? '-100% 0' : '100% 0',
+    'block-start': '0 -100%',
+    'block-end': '0 100%',
+  };
+  const to = away[side];
+  if (!to) return undefined;
+
+  return [
+    { opacity: 1, translate: '0 0' },
+    { opacity: 0, translate: to },
+  ];
+}
+
+/** Outside a `Dialog` there is no family to join; the warning has already fired. */
 
 export { DialogContent };

@@ -54,6 +54,16 @@
   .lg {
     @apply h-11 text-base;
   }
+  /* A FINGER GETS 44px, the height `lg` already is — the same rule `Button`
+     carries, and it has to be the same rule: `InputGroup` centres its children
+     rather than stretching them, so a button that grew alone would sit taller
+     than the field beside it. Measured: 44 against 36. A target-size policy
+     belongs to the control family or to none of it. */
+  @media (pointer: coarse) {
+    .md {
+      @apply h-11;
+    }
+  }
 
   /* Forced colors: the token fill/border are replaced by system colours; the
      border keeps the field bounded, and the invalid state — otherwise a colour

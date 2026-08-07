@@ -9,9 +9,13 @@ import {
 } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import { useDescendant } from '../../primitives/use-descendants.js';
+import {
+  useDescendant,
+  emptyDescendants,
+} from '../../primitives/use-descendants.js';
 import { useDirection } from '../../i18n/provider.js';
 import { useMenuPart } from '../menu/menu.context.js';
+import type { MenuItemData } from '../menu/menu.context.js';
 import { inlineEnd } from '../menu/menu.keyboard.js';
 import { isOpen, surfaceOf } from '../menu/surface-of.js';
 import type { MenuItemTriggerProps } from './menu-item-trigger.types.js';
@@ -58,10 +62,13 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
 
   // The OUTER family: this is a command of the menu it sits in, not of the one
   // it opens.
-  const descendantRef = useDescendant(parent?.items ?? EMPTY_FAMILY, {
-    id,
-    textValue,
-  });
+  const descendantRef = useDescendant(
+    parent?.items ?? emptyDescendants<MenuItemData>(),
+    {
+      id,
+      textValue,
+    },
+  );
 
   const setActiveId = parent?.setActiveId;
 
@@ -179,18 +186,6 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
 const OPEN_AT_ON_A_BAR: Record<string, 'first' | 'last' | undefined> = {
   ArrowDown: 'first',
   ArrowUp: 'last',
-};
-
-/** Outside a `Menu` there is no family to join; the warning has already fired. */
-const EMPTY_FAMILY = {
-  rootRef: () => undefined,
-  items: () => [],
-  indexOf: () => -1,
-  registry: {
-    add: () => undefined,
-    update: () => undefined,
-    remove: () => undefined,
-  },
 };
 
 export { MenuItemTrigger };

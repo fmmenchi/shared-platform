@@ -1,24 +1,16 @@
 import { useCallback, useId } from 'react';
-import { useDescendant } from '../../primitives/use-descendants.js';
+import {
+  useDescendant,
+  emptyDescendants,
+} from '../../primitives/use-descendants.js';
 import { useMenuContext } from './menu.context.js';
+import type { MenuItemData } from './menu.context.js';
 import { useMenubarContext } from '../menubar/menubar.context.js';
 import type {
   MenuCommandProps,
   UseMenuCommandOptions,
   UseMenuCommandResult,
 } from './use-menu-command.types.js';
-
-/** Outside a family there is nothing to join; the row still renders. */
-const EMPTY_FAMILY = {
-  rootRef: () => undefined,
-  items: () => [],
-  indexOf: () => -1,
-  registry: {
-    add: () => undefined,
-    update: () => undefined,
-    remove: () => undefined,
-  },
-};
 
 /**
  * EVERYTHING A ROW IN A MENU OWES, for whatever element the row happens to be.
@@ -49,10 +41,13 @@ export function useMenuCommand(
 
   const id = useId();
   const disabled = inert === true;
-  const descendantRef = useDescendant(family?.items ?? EMPTY_FAMILY, {
-    id,
-    textValue,
-  });
+  const descendantRef = useDescendant(
+    family?.items ?? emptyDescendants<MenuItemData>(),
+    {
+      id,
+      textValue,
+    },
+  );
 
   const setActiveId = family?.setActiveId;
   const active = family?.activeId === id;

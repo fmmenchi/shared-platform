@@ -53,6 +53,114 @@
     background-color: var(--fm-color-scrim);
   }
 
+  /* A DRAWER: the same modal, pinned to an edge instead of centred.
+     The machinery is untouched — `showModal()` traps the focus, makes the page
+     inert and draws the backdrop, and this component adds the scroll lock and
+     the focus-return repair on top — so what is left is geometry.
+
+     SIZED `auto`, NOT `100dvh`. Two insets and a definite size is the
+     over-constrained case, and CSS 2.1 §10.6.4 resolves it by giving the two
+     `auto` margins EQUAL values — so any disagreement between `100dvh` and the
+     fixed containing block re-centres the panel with a strip of backdrop at
+     each end. `dvh` is the length that changes as a phone's URL bar retracts,
+     so that disagreement is the normal state on the device this is for; a
+     headless browser, where `dvh` and the containing block are the same number,
+     can never show it. `auto` between two insets has no equation to
+     over-constrain. (It cannot simply be omitted: the UA gives `<dialog>`
+     `height: fit-content`, and a fit-content box does not stretch to two
+     insets — the same finding `menu-content` records for its own sheet.) */
+  .content[data-side] {
+    /* The UA only makes a MODAL dialog `fixed`; a plain `<dialog open>` would
+       otherwise be pinned to the document and scroll away with the page. */
+    position: fixed;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    /* It meets three edges, so it borders on one — set per side below. */
+    border: 0;
+    transition-property: opacity, translate;
+  }
+
+  .content[data-side='inline-start'],
+  .content[data-side='inline-end'] {
+    inset-block: 0;
+    block-size: auto;
+    /* A strip of page stays visible, which is what says the drawer is over
+       something rather than being the whole screen. */
+    inline-size: min(20rem, calc(100vw - 3rem));
+    /* Pinned to the physical edge of the display, so the notch and the home
+       indicator are its problem — as they are `menu-content`'s. */
+    padding-block: calc(1.5rem + env(safe-area-inset-top, 0px))
+      calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .content[data-side='block-start'],
+  .content[data-side='block-end'] {
+    inset-inline: 0;
+    inline-size: auto;
+    max-block-size: 90dvh;
+  }
+
+  .content[data-side='inline-start'] {
+    inset-inline: 0 auto;
+    border-inline-end: 1px solid var(--fm-color-border);
+    padding-inline: calc(1.5rem + env(safe-area-inset-left, 0px)) 1.5rem;
+  }
+
+  .content[data-side='inline-end'] {
+    inset-inline: auto 0;
+    border-inline-start: 1px solid var(--fm-color-border);
+    padding-inline: 1.5rem calc(1.5rem + env(safe-area-inset-right, 0px));
+  }
+
+  .content[data-side='block-start'] {
+    inset-block: 0 auto;
+    border-block-end: 1px solid var(--fm-color-border);
+  }
+
+  .content[data-side='block-end'] {
+    inset-block: auto 0;
+    border-block-start: 1px solid var(--fm-color-border);
+    padding-block-end: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* WHERE IT COMES FROM, stated per side rather than through a custom property:
+     an unprefixed `--from-x` INHERITS, so a consumer's ancestor could redirect
+     the slide, and `var(…, 0)` does not protect against that — a fallback only
+     fires for a guaranteed-invalid value.
+
+     `:dir()` and not `[dir='rtl']`: `inset-inline` resolves from the COMPUTED
+     direction while an attribute selector matches the attribute, and the two
+     diverge exactly where it matters — `dir="auto"` on user content, and an
+     `ltr` island inside an `rtl` page. Measured on both: the attribute form let
+     the panel pin to one edge and arrive from the other, all the way across the
+     screen. */
+  @starting-style {
+    .content[data-side='inline-start'][open] {
+      translate: -100% 0;
+    }
+
+    .content[data-side='inline-end'][open] {
+      translate: 100% 0;
+    }
+
+    .content[data-side='block-start'][open] {
+      translate: 0 -100%;
+    }
+
+    .content[data-side='block-end'][open] {
+      translate: 0 100%;
+    }
+
+    .content[data-side='inline-start']:dir(rtl)[open] {
+      translate: 100% 0;
+    }
+
+    .content[data-side='inline-end']:dir(rtl)[open] {
+      translate: -100% 0;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .content {
       transition-duration: var(--fm-duration-none);
