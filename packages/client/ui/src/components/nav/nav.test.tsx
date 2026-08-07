@@ -5,6 +5,7 @@ import { Nav } from './nav.component.js';
 import { NavGroup } from '../nav-group/nav-group.component.js';
 import { NavLink } from '../nav-link/nav-link.component.js';
 import { renderUi } from '../../test/render.js';
+import { UiProvider } from '../../i18n/provider.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
 const example = (orientation?: 'horizontal' | 'vertical') => (
@@ -161,21 +162,38 @@ describe('Nav', () => {
     expect(link('Contact')).not.toHaveAttribute('aria-current');
   });
 
-  it('renders the router’s own link when given one', () => {
-    const RouterLink = (p: { to: string; children?: React.ReactNode }) => (
-      <a href={p.to} data-router="">
+  it('takes the router from the provider, once', () => {
+    const RouterLink = (p: { href: string; children?: React.ReactNode }) => (
+      <a href={p.href} data-router="">
         {p.children}
       </a>
     );
     render(
+      <UiProvider adapters={{ i18n: { locale: 'en' }, Link: RouterLink }}>
+        <Nav label="Main">
+          <NavLink href="/tea">Tea</NavLink>
+          <NavLink href="https://example.com" as="a">
+            Elsewhere
+          </NavLink>
+        </Nav>
+      </UiProvider>,
+    );
+
+    // The adapter the design system already declared, put to work: injected
+    // once, and no call site repeats it.
+    expect(link('Tea')).toHaveAttribute('data-router');
+    // …and `as` is the exception, for a destination that must not go through
+    // the router at all.
+    expect(link('Elsewhere')).not.toHaveAttribute('data-router');
+  });
+
+  it('is a plain anchor with no router in scope', () => {
+    render(
       <Nav label="Main">
-        <NavLink as={RouterLink} {...{ to: '/tea' }}>
-          Tea
-        </NavLink>
+        <NavLink href="/tea">Tea</NavLink>
       </Nav>,
     );
-    // The design system ships no router: this is the seam that keeps it that way.
-    expect(link('Tea')).toHaveAttribute('data-router');
+    expect(link('Tea').tagName).toBe('A');
   });
 
   describe('accessibility (axe)', () => {

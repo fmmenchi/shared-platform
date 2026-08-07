@@ -57,9 +57,17 @@ So there is nothing to learn: `Tab` moves, `Enter` opens a group, `Escape` close
 
 **Vertical** is a sidebar. A group opens **in place and indented**, in the page's own flow: nothing is anchored, nothing is in the top layer. Every section the reader opened stays open, and none closes on its own — shutting one section to open another loses the place they were keeping.
 
-### It ships no router
+### It ships no router — you inject one, once
 
-`NavLink` renders an `<a>`, and `as` is the seam for your own: `as={Link}` for React Router, `as={NextLink}` for Next. The design system depends on no framework (ADR-0001), so the one thing it will not do is navigate for you.
+The design system depends on no framework (ADR-0001), so the one thing it will not do is navigate for you. Your router's link arrives through the **`Link` adapter**, beside the locale and the form binding:
+
+```tsx
+<UiProvider adapters={{ i18n: { locale }, Link }}>
+```
+
+After that every `NavLink` uses it, and no call site repeats it. With no provider in scope it is a plain `<a>`.
+
+`as` is the exception rather than the seam: a destination that must **not** go through the router — another site, a download, a `mailto:` — takes `as="a"` and gets the anchor back.
 
 A link is also the control the browser already does perfectly — middle-click, open in a new tab, long-press, the status bar showing the destination. `NavLink` adds no handler that would take any of that away.
 

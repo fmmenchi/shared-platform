@@ -1,5 +1,6 @@
 import type { ElementType } from 'react';
 import { cn } from '../../util/cn.js';
+import { useUiAdapters } from '../../i18n/provider.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -14,7 +15,19 @@ import styles from './nav-link.module.css';
  */
 function NavLink(props: NavLinkProps) {
   const { as, current, className, children, ...rest } = props;
-  const Component = (as ?? 'a') as ElementType;
+
+  /*
+   * THE ROUTER COMES FROM THE PROVIDER, not from every call site. `Link` is an
+   * adapter this design system already declares — injected once, next to the
+   * locale and the form binding — and this is its first consumer, so it is also
+   * the first time that port is put to work rather than described.
+   *
+   * `as` stays as the per-call override, for the link that must NOT go through
+   * the router: an absolute URL to another site, a download, a `mailto:`. Read
+   * tolerantly, so a `NavLink` outside a provider is still a plain anchor.
+   */
+  const injected = useUiAdapters()?.Link;
+  const Component = (as ?? injected ?? 'a') as ElementType;
 
   return (
     <li className={styles.item}>
