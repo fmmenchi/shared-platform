@@ -15,7 +15,7 @@
     display: block;
   }
 
-  @container app-layout (width >= 48rem) {
+  @variant @xl {
     .rail {
       @apply border-border p-inset-m;
       display: block;

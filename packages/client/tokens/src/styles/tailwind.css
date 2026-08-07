@@ -32,6 +32,7 @@
   --container-sm: 24rem;
   --container-md: 28rem;
   --container-lg: 32rem;
+  --container-xl: 48rem;
 }
 
 @theme inline {

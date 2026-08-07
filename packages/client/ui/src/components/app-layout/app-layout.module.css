@@ -18,8 +18,11 @@
      a narrow panel behaves narrow, and nobody has to override a media query
      that a custom property cannot reach. */
   .container {
-    container-type: inline-size;
-    container-name: app-layout;
+    /* The token's own container utility, so the swap point is the DECLARED
+       `xl` (48rem) rather than a number retyped here. It had been retyped, and
+       it happened to equal `--breakpoint-tablet` — two places saying 48rem
+       with nothing keeping them in step. */
+    @apply @container;
   }
 
   .layout {
@@ -131,7 +134,7 @@
      names nothing would ship unresolved and always fall back — the `lint-css`
      gate rejects it, and rightly: the promise that a consumer can retune it
      would have been a lie. */
-  @container app-layout (width >= 48rem) {
+  @variant @xl {
     .layout {
       grid-template-columns: 1fr;
       grid-template-areas:

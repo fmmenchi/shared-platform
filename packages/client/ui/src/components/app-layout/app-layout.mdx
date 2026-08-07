@@ -58,6 +58,8 @@ The swap is a **container query**, which is the package's own stated order — a
 
 It also matters practically. A media query would hand a 16rem rail to a 380px panel, and a product whose breakpoint is not 48rem would have to override the rule — which a token cannot reach, because a media query cannot read a custom property. A container query asks the width the layout actually has, so a shell inside a narrow panel behaves narrow with nothing configured.
 
+The swap point is the declared **`xl` container breakpoint** (48rem), reached through Tailwind's `@variant` — so it is compiled from the token rather than retyped. The condition itself cannot read a custom property (no media or container query can), but the value still has one home.
+
 The cost is one element: a container query cannot interrogate the container it is written on, and every rule that decides this layout is a `grid-template-*` on the grid. So the outer element is the container and the inner one is the grid that asks it.
 
 ### The column becomes a drawer, and nothing in JavaScript decides it
