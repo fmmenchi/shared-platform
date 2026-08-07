@@ -82,6 +82,9 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'app-layout-main': 'src/components/app-layout-main/index.ts',
+        'app-layout-nav': 'src/components/app-layout-nav/index.ts',
+        'app-layout': 'src/components/app-layout/index.ts',
         'menu-separator': 'src/components/menu-separator/index.ts',
         'menu-group': 'src/components/menu-group/index.ts',
         'menu-item-radio': 'src/components/menu-item-radio/index.ts',
@@ -165,9 +168,10 @@ export default defineConfig(() => ({
             instances: [{ browser: 'chromium' as const }],
           },
           include: ['{src,tests}/**/*.{test,spec}.{ts,tsx}'],
-          // `*.touch.test.tsx` belongs to the project below, which is the only
-          // one that runs a browser reporting a coarse pointer.
-          exclude: ['**/*.touch.test.{ts,tsx}'],
+          // `*.touch.test.tsx` and `*.desktop.test.tsx` belong to the projects
+          // below — the only ones that run a browser a media query has anything
+          // to say to.
+          exclude: ['**/*.touch.test.{ts,tsx}', '**/*.desktop.test.{ts,tsx}'],
           reporters: ['default'],
         },
       },
@@ -197,6 +201,29 @@ export default defineConfig(() => ({
             instances: [{ browser: 'chromium' as const }],
           },
           include: ['src/**/*.touch.test.{ts,tsx}'],
+          reporters: ['default'],
+        },
+      },
+      {
+        // THE DESKTOP PROJECT. The default project runs at 414px — BELOW the
+        // `tablet` breakpoint (48rem) — so a component whose whole value is the
+        // swap at that breakpoint would only ever be measured on one side of
+        // it, which is the mistake the touch project above exists to prevent.
+        // Same reasoning, other end of the scale.
+        extends: true as const,
+        test: {
+          name: 'desktop',
+          watch: false,
+          globals: true,
+          setupFiles: ['./src/test-setup.ts'],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            viewport: { width: 1280, height: 800 },
+            instances: [{ browser: 'chromium' as const }],
+          },
+          include: ['src/**/*.desktop.test.{ts,tsx}'],
           reporters: ['default'],
         },
       },

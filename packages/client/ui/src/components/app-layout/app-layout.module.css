@@ -1,0 +1,169 @@
+/*
+ * The page shell. One grid, and it asks what is actually there rather than
+ * taking a `columns` prop: an admin panel, a documentation site and a marketing
+ * page are the same skeleton with different regions present.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /* THE CONTAINER, and the reason this component renders two elements rather
+     than one: a container query cannot interrogate the container it is written
+     on, and every rule that decides this layout is a `grid-template-*` on the
+     grid. So the outer element is queried and the inner one answers.
+
+     A CONTAINER query and not a media query, which is the package's own stated
+     order — a component adapts to its container before the viewport. It is also
+     what makes the shell usable at all in a product whose breakpoint is not
+     ours: the swap follows the width the layout actually HAS, so a shell inside
+     a narrow panel behaves narrow, and nobody has to override a media query
+     that a custom property cannot reach. */
+  .container {
+    container-type: inline-size;
+    container-name: app-layout;
+  }
+
+  .layout {
+    display: grid;
+    min-block-size: 100dvh;
+    /* MOBILE FIRST. One column, and the drawer's trigger shares the header's
+       row — which is where a phone expects it, and where the header is already
+       looking. */
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      'menu header'
+      'main main'
+      'footer footer';
+  }
+
+  /* Placed by what they ARE. `<header>`, `<aside>` and `<footer>` are the
+     consumer's own elements — the shell needs no component around a landmark
+     that carries no behaviour. The two regions that do are marked with an
+     attribute, because a hashed class from their own stylesheet could not be
+     named from this one. */
+  .layout > header {
+    grid-area: header;
+  }
+
+  .layout > main {
+    grid-area: main;
+    /* A grid item's default `min-width: auto` lets wide content — a table, a
+       long line of code — push the column instead of scrolling inside it. */
+    min-inline-size: 0;
+  }
+
+  /* THE PAGE SCROLLS, and the column stays put by sticking rather than by
+     being its own scroll container.
+
+     Measured before choosing: with `min-block-size: 100dvh` and a `1fr` row the
+     grid simply GROWS, so an `overflow: auto` on the regions never fires — the
+     document scrolled 4180px while `main.scrollHeight === main.clientHeight`.
+     The first version claimed the column "stays put while the content moves"
+     and it did no such thing; it scrolled away with everything else.
+
+     Viewport-locked regions were the other option, and they are the more
+     SPECIALISED one: they suit an operator panel and are wrong for a page,
+     they take the scroll away from the document — so a phone's address bar
+     never retracts — and they put the footer somewhere the reader cannot get
+     to. Sticky serves both shapes with one model. */
+  .layout > [data-region='nav'] {
+    grid-area: nav;
+    position: sticky;
+    inset-block-start: 0;
+    /* Without this the item stretches to the row's full height and there is
+       nothing left for `sticky` to do. */
+    align-self: start;
+    max-block-size: 100dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  .layout > aside {
+    grid-area: aside;
+  }
+
+  .layout > footer {
+    grid-area: footer;
+  }
+
+  .layout > [data-region='nav-drawer'] {
+    grid-area: menu;
+  }
+
+  /* WCAG 2.4.1. Out of the way until it has the focus, and then unmistakably
+     there — a skip link that stays invisible while focused is the commonest way
+     to ship one that helps nobody. */
+  .skip {
+    @apply sr-only;
+  }
+
+  .skip:focus-visible {
+    @apply bg-card text-card-foreground rounded-md px-4 py-2 shadow-lg;
+    @apply outline-ring outline-2 outline-offset-2;
+    position: fixed;
+    inset-block-start: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: 1;
+    /* Undo `sr-only`'s clip, which would otherwise hide what it just revealed. */
+    clip-path: none;
+    inline-size: auto;
+    block-size: auto;
+    margin: 0;
+    overflow: visible;
+    white-space: nowrap;
+  }
+
+  /* The skip link is the one thing here that PAINTS: a fill and a focus ring,
+     and forced colours take both — the fill collapses to `Canvas` and the ring
+     is forced to the same system colour as everything around it. A skip link
+     nobody can see while it has the focus is a skip link that helps nobody,
+     which is the whole failure this component exists to prevent. */
+  @media (forced-colors: active) {
+    .skip:focus-visible {
+      border: 1px solid CanvasText;
+      outline-color: Highlight;
+    }
+  }
+
+  /* FROM TABLET UP the regions become columns. The sizes are custom properties
+     rather than props: a sidebar's width is a measurement, so it is a TOKEN,
+     retuned by a theme exactly the way a colour is. A hand-written `var()` that
+     names nothing would ship unresolved and always fall back — the `lint-css`
+     gate rejects it, and rightly: the promise that a consumer can retune it
+     would have been a lie. */
+  @container app-layout (width >= 48rem) {
+    .layout {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        'header'
+        'main'
+        'footer';
+    }
+
+    .layout:has(> aside) {
+      grid-template-columns: 1fr var(--fm-size-aside);
+      grid-template-areas:
+        'header header'
+        'main aside'
+        'footer footer';
+    }
+
+    .layout:has(> [data-region='nav']) {
+      grid-template-columns: var(--fm-size-nav) 1fr;
+      grid-template-areas:
+        'header header'
+        'nav main'
+        'footer footer';
+    }
+
+    .layout:has(> [data-region='nav']):has(> aside) {
+      grid-template-columns:
+        var(--fm-size-nav) 1fr
+        var(--fm-size-aside);
+      grid-template-areas:
+        'header header header'
+        'nav main aside'
+        'footer footer footer';
+    }
+  }
+}

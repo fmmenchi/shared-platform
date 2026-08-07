@@ -298,6 +298,24 @@
       "types": "./dist/components/menu-separator/index.d.ts",
       "import": "./dist/menu-separator.js",
       "default": "./dist/menu-separator.js"
+    },
+    "./app-layout": {
+      "@fmmenchi/source": "./src/components/app-layout/index.ts",
+      "types": "./dist/components/app-layout/index.d.ts",
+      "import": "./dist/app-layout.js",
+      "default": "./dist/app-layout.js"
+    },
+    "./app-layout-nav": {
+      "@fmmenchi/source": "./src/components/app-layout-nav/index.ts",
+      "types": "./dist/components/app-layout-nav/index.d.ts",
+      "import": "./dist/app-layout-nav.js",
+      "default": "./dist/app-layout-nav.js"
+    },
+    "./app-layout-main": {
+      "@fmmenchi/source": "./src/components/app-layout-main/index.ts",
+      "types": "./dist/components/app-layout-main/index.d.ts",
+      "import": "./dist/app-layout-main.js",
+      "default": "./dist/app-layout-main.js"
     }
   },
   "nx": {
