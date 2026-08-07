@@ -87,6 +87,27 @@ Uncontrolled is the default and the one to reach for: leave `open` out and the s
 
 Both halves are imperative underneath, and that is forced: `<dialog open>` is a **non-modal** dialog — no backdrop, the page behind stays clickable, `Escape` does not close it — so modality can only be asked for with `showModal()`. The component calls it for you; you can still call it yourself through the content's ref.
 
+### A drawer is this component with a side
+
+<Canvas of={DialogStories.Drawer} />
+
+`side` pins the surface to an edge instead of centring it, which is the whole of what a drawer is here. There is no second family, and that is deliberate: `showModal()` traps the focus, makes the page inert, draws the backdrop, locks the scroll and hands the focus back on close — every one of which a drawer wants unchanged. What differs is geometry, so the prop is geometry.
+
+```tsx
+<DialogContent side="inline-start" aria-label="Navigation menu">
+  <Nav label="Main" orientation="vertical">
+    …
+  </Nav>
+</DialogContent>
+```
+
+The edges are **logical**: `inline-start` is the left in English and the right in Arabic, and the panel slides in from the side it is pinned to either way. `block-end` is the bottom sheet a phone expects.
+
+Two things to know:
+
+- **name it.** A drawer usually shows no heading — a navigation one is a list of links — and a `<dialog>` with no accessible name is announced as just "dialog". `aria-label` on the content is enough.
+- **no swipe to dismiss.** The platform offers no gesture for it and this package ships no gesture engine, so a drawer closes the way every dialog closes: the backdrop, `Escape`, or a control you put inside it.
+
 ### Scrolling, and the scrollbar
 
 A modal that lets the page scroll behind it is the commonest defect of the pattern, and `showModal()` does not prevent it — measured, the page scrolled 300px under an open dialog in all three engines. One rule does, scoped to this component's own dialog so it never speaks for somebody else's.

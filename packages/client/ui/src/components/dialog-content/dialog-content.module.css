@@ -53,6 +53,90 @@
     background-color: var(--fm-color-scrim);
   }
 
+  /* A DRAWER: the same modal, pinned to an edge instead of centred.
+     Nothing about the machinery changes — `showModal()` still traps the focus,
+     makes the page inert, draws the backdrop, locks the scroll and hands the
+     focus back — so this is geometry, and a second component for it would be a
+     second machine for the same job.
+
+     The UA centres a modal with `inset: 0; margin: auto`, so a drawer undoes
+     exactly that and pins two edges instead. */
+  .content[data-side] {
+    /* No `margin: 0` here: with one inset `auto` and a definite size, the
+       spec resolves an `auto` margin to zero on its own, so undoing the
+       centring above takes nothing — measured, no mutation of it could be made
+       to fail. */
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+    /* It meets three edges, so it borders on one — set per side below. */
+    border: 0;
+    translate: 0 0;
+    transition-property: opacity, translate;
+  }
+
+  .content[data-side='inline-start'],
+  .content[data-side='inline-end'] {
+    inset-block: 0;
+    block-size: 100dvh;
+    /* A strip of page stays visible, which is what says the drawer is over
+       something rather than being the whole screen. */
+    inline-size: min(20rem, calc(100vw - 3rem));
+  }
+
+  .content[data-side='block-start'],
+  .content[data-side='block-end'] {
+    inset-inline: 0;
+    inline-size: 100vw;
+    max-block-size: 90dvh;
+  }
+
+  /* `--from-*` and not `--fm-from-*`: that prefix means a token, and this is a
+     runtime fact about one element. It is where the panel comes FROM, which is
+     the edge it is pinned to — and in Arabic that is the other side of the
+     screen, so the flip is by direction and not by hand. */
+  .content[data-side='inline-start'] {
+    inset-inline: 0 auto;
+    border-inline-end: 1px solid var(--fm-color-border);
+    --from-x: -100%;
+  }
+
+  .content[data-side='inline-end'] {
+    inset-inline: auto 0;
+    border-inline-start: 1px solid var(--fm-color-border);
+    --from-x: 100%;
+  }
+
+  /* Both forms, like `select`: an ancestor carries `dir` from the provider, and
+     a single rtl surface inside an ltr page carries it on itself. */
+  [dir='rtl'] .content[data-side='inline-start'],
+  .content[data-side='inline-start'][dir='rtl'] {
+    --from-x: 100%;
+  }
+
+  [dir='rtl'] .content[data-side='inline-end'],
+  .content[data-side='inline-end'][dir='rtl'] {
+    --from-x: -100%;
+  }
+
+  .content[data-side='block-start'] {
+    inset-block: 0 auto;
+    border-block-end: 1px solid var(--fm-color-border);
+    --from-y: -100%;
+  }
+
+  .content[data-side='block-end'] {
+    inset-block: auto 0;
+    border-block-start: 1px solid var(--fm-color-border);
+    --from-y: 100%;
+  }
+
+  @starting-style {
+    .content[data-side][open] {
+      translate: var(--from-x, 0) var(--from-y, 0);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .content {
       transition-duration: var(--fm-duration-none);

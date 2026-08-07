@@ -2,6 +2,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Dialog } from './dialog.component.js';
 import { DialogTrigger } from '../dialog-trigger/dialog-trigger.component.js';
 import { DialogContent } from '../dialog-content/dialog-content.component.js';
+import { Nav } from '../nav/nav.component.js';
+import { NavLink } from '../nav-link/nav-link.component.js';
+import { NavGroup } from '../nav-group/nav-group.component.js';
 import { DialogHeading } from '../dialog-heading/dialog-heading.component.js';
 import { DialogClose } from '../dialog-close/dialog-close.component.js';
 import { Button } from '../button/button.component.js';
@@ -112,5 +115,49 @@ export const LongContent: Story = {
         </DialogContent>
       </Dialog>
     </div>
+  ),
+};
+
+/**
+ * A DRAWER: `side` pins the same modal to an edge instead of centring it.
+ * Everything that makes a dialog a dialog is unchanged — the focus is trapped,
+ * the page is inert and unscrollable, `Escape` and the backdrop dismiss it —
+ * so this is geometry, not a second component.
+ *
+ * The edges are LOGICAL: switch the locale to Arabic and it pins, and slides
+ * in, from the other side.
+ */
+export const Drawer: Story = {
+  render: (args) => (
+    <Dialog {...args}>
+      <DialogTrigger variant="secondary">Menu</DialogTrigger>
+      <DialogContent side="inline-start" aria-label="Navigation menu">
+        <Nav label="Main" orientation="vertical">
+          <NavLink href="#home" current>
+            Home
+          </NavLink>
+          <NavGroup label="Products">
+            <NavLink href="#tea">Tea</NavLink>
+            <NavLink href="#coffee">Coffee</NavLink>
+          </NavGroup>
+          <NavLink href="#contact">Contact</NavLink>
+        </Nav>
+      </DialogContent>
+    </Dialog>
+  ),
+};
+
+/** The same thing from the bottom, which is where a phone expects it. */
+export const Sheet: Story = {
+  render: (args) => (
+    <Dialog {...args}>
+      <DialogTrigger variant="secondary">Options</DialogTrigger>
+      <DialogContent side="block-end" aria-label="Options">
+        <Nav label="Options" orientation="vertical">
+          <NavLink href="#share">Share</NavLink>
+          <NavLink href="#rename">Rename</NavLink>
+        </Nav>
+      </DialogContent>
+    </Dialog>
   ),
 };

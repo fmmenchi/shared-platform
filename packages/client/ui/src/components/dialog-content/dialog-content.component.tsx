@@ -19,7 +19,7 @@ import styles from './dialog-content.module.css';
  * way out.
  */
 function DialogContent(props: DialogContentProps) {
-  const { className, children, ref, ...rest } = props;
+  const { className, children, ref, side, ...rest } = props;
   const dialog = useDialogPart('DialogContent');
   const surface = useRef<HTMLDialogElement>(null);
   const locked = useRef(false);
@@ -232,6 +232,9 @@ function DialogContent(props: DialogContentProps) {
       // NOT overridable: the trigger's `commandfor` points here, so an id from
       // outside would cut the wire. Documented on the type.
       id={dialog?.surfaceId}
+      // The hook this module's own stylesheet reads, on the element it owns —
+      // an edge is a fact about the box, and CSS is where a box is decided.
+      data-side={side}
       className={cn(styles.content, className)}
     >
       {children}
