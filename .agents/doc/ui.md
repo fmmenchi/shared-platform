@@ -40,6 +40,22 @@ This spoke is the **cross-package doctrine** (the why/what). For **how to author
   - **Where a fact has to travel between parts before React can re-render**, put it on the element,
     not in state: `toggle` fires before the re-render, so a state update is read stale by the handler
     that follows it.
+- **Compose what exists; never half-copy it.** If a component needs a button, it uses **our
+  `Button`** — `DialogTrigger`, `DialogClose`, `PopoverTrigger`, `PopoverClose` and `MenuTrigger` all
+  do. Reach for a raw `<button>` only when the SEMANTICS differ (`role="menuitem"` is not a button
+  variant), and then the obligation does not go away: take the shared part into a primitive or a
+  shared stylesheet — the way `MenuItemTrigger` imports `menu-item.module.css` rather than restating
+  a row — instead of re-deriving it.
+  - **Half a copy is the dangerous kind.** `NavGroup` hand-rolled its button with `border: 0;
+background: none` — the first two lines of what `button.module.css` does — and stopped there,
+    so it shipped with no `focus-visible` ring at all. Found by review, invisible to every test,
+    because the test page has no Preflight (ADR-0022): the defect only appears on a consumer's page.
+  - **A policy copied N times needs N places to change.** `min-height: 2.75rem` under
+    `(pointer: coarse)` is written in `menu-item`, `nav-link` and `nav-group` — three copies of one
+    decision — which is why the controls' own 44px rule had to be held together by a cross-cutting
+    test (`src/test/target-size.touch.test.tsx`) rather than by the code.
+  - The same applies to plain values: an `EMPTY_FAMILY` fallback, a keyframe set, a guard. Two
+    consumers is when it moves; the workspace's own rule for abstractions, applied to components.
 - **Structure.** Folder-per-component, one concern per file; component files export **only** the
   component (Fast Refresh), types always in `<name>.types.ts`.
 - **Tests split by kind.** Component behaviour (semantics, interaction, a11y via axe, snapshot) vs

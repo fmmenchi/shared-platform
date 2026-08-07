@@ -12,23 +12,15 @@ import { useOpenMirror } from '../../primitives/use-open-mirror.js';
 import { useDirection, useMessages } from '../../i18n/provider.js';
 import { menuContentMessages } from './menu-content.messages.js';
 import { useMenuPart } from '../menu/menu.context.js';
+import type { MenuItemData } from '../menu/menu.context.js';
 import { first, last, inlineEnd, nameOf, step } from '../menu/menu.keyboard.js';
 import { useTypeahead } from '../menu/use-typeahead.js';
-import { useDescendant } from '../../primitives/use-descendants.js';
+import {
+  useDescendant,
+  emptyDescendants,
+} from '../../primitives/use-descendants.js';
 import type { MenuContentProps } from './menu-content.types.js';
 import styles from './menu-content.module.css';
-
-/** Outside a `Menu` there is no family to join; the warning has already fired. */
-const EMPTY_FAMILY = {
-  rootRef: () => undefined,
-  items: () => [],
-  indexOf: () => -1,
-  registry: {
-    add: () => undefined,
-    update: () => undefined,
-    remove: () => undefined,
-  },
-};
 
 /**
  * The surface, and the keyboard contract the platform does not provide.
@@ -176,7 +168,7 @@ function MenuContent(props: MenuContentProps) {
    * descendant, which is what the visibility filter in `useDescendants` is for.
    */
   const backId = useId();
-  const backRef = useDescendant(items ?? EMPTY_FAMILY, {
+  const backRef = useDescendant(items ?? emptyDescendants<MenuItemData>(), {
     id: backId,
     back: true,
   });
