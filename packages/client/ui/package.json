@@ -274,6 +274,30 @@
       "types": "./dist/components/menubar/index.d.ts",
       "import": "./dist/menubar.js",
       "default": "./dist/menubar.js"
+    },
+    "./menu-item-checkbox": {
+      "@fmmenchi/source": "./src/components/menu-item-checkbox/index.ts",
+      "types": "./dist/components/menu-item-checkbox/index.d.ts",
+      "import": "./dist/menu-item-checkbox.js",
+      "default": "./dist/menu-item-checkbox.js"
+    },
+    "./menu-item-radio": {
+      "@fmmenchi/source": "./src/components/menu-item-radio/index.ts",
+      "types": "./dist/components/menu-item-radio/index.d.ts",
+      "import": "./dist/menu-item-radio.js",
+      "default": "./dist/menu-item-radio.js"
+    },
+    "./menu-group": {
+      "@fmmenchi/source": "./src/components/menu-group/index.ts",
+      "types": "./dist/components/menu-group/index.d.ts",
+      "import": "./dist/menu-group.js",
+      "default": "./dist/menu-group.js"
+    },
+    "./menu-separator": {
+      "@fmmenchi/source": "./src/components/menu-separator/index.ts",
+      "types": "./dist/components/menu-separator/index.d.ts",
+      "import": "./dist/menu-separator.js",
+      "default": "./dist/menu-separator.js"
     }
   },
   "nx": {

@@ -21,7 +21,11 @@
 
        Not `:focus-visible`: the pointer hands the cursor over to the keyboard
        here, and a row the mouse focused would otherwise go dark. */
-    &:focus {
+    /* `:focus-WITHIN`, because the focusable thing is not always this element:
+       a checkable row is a `<label>` around a real `<input>`, and the input is
+       what the arrows focus. On a `<button>` row the two match identically —
+       an element is `:focus-within` when it is itself focused. */
+    &:focus-within {
       @apply bg-accent-subtle text-accent-subtle-foreground;
       @apply outline-none;
     }
@@ -50,7 +54,7 @@
      highlight has to be the system's own pair or it disappears, and the
      disabled colour again comes after it. */
   @media (forced-colors: active) {
-    .item:focus {
+    .item:focus-within {
       background-color: Highlight;
       color: HighlightText;
     }

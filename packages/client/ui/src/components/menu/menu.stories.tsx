@@ -4,6 +4,10 @@ import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
 import { MenuContent } from '../menu-content/menu-content.component.js';
 import { MenuItem } from '../menu-item/menu-item.component.js';
 import { MenuItemTrigger } from '../menu-item-trigger/menu-item-trigger.component.js';
+import { MenuItemCheckbox } from '../menu-item-checkbox/menu-item-checkbox.component.js';
+import { MenuItemRadio } from '../menu-item-radio/menu-item-radio.component.js';
+import { MenuGroup } from '../menu-group/menu-group.component.js';
+import { MenuSeparator } from '../menu-separator/menu-separator.component.js';
 
 const meta: Meta<typeof Menu> = {
   title: 'Components/Overlays/Menu',
@@ -155,6 +159,39 @@ export const PointerAndKeyboard: Story = {
           <MenuItem>Name</MenuItem>
           <MenuItem>Date modified</MenuItem>
           <MenuItem>Size</MenuItem>
+        </MenuContent>
+      </Menu>
+    </div>
+  ),
+};
+
+/**
+ * Commands that carry a STATE. The mark is a real `<input>` wearing the menu's
+ * role — which "ARIA in HTML" allows — so the browser draws the box, the tick
+ * and the dot exactly as it draws them in a form, and a radio set is grouped by
+ * `name` by the browser rather than by us.
+ */
+export const Checkable: Story = {
+  render: (args) => (
+    <div style={{ padding: 'var(--fm-space-stack-xl)' }}>
+      <Menu {...args}>
+        <MenuTrigger variant="secondary">View</MenuTrigger>
+        <MenuContent>
+          <MenuItem>Reload</MenuItem>
+          <MenuSeparator />
+          <MenuItemCheckbox defaultChecked closeOnSelect={false}>
+            Show sidebar
+          </MenuItemCheckbox>
+          <MenuItemCheckbox closeOnSelect={false}>Word wrap</MenuItemCheckbox>
+          <MenuItemCheckbox disabled>Minimap</MenuItemCheckbox>
+          <MenuSeparator />
+          <MenuGroup label="Sort by">
+            <MenuItemRadio name="sort" defaultChecked>
+              Date
+            </MenuItemRadio>
+            <MenuItemRadio name="sort">Name</MenuItemRadio>
+            <MenuItemRadio name="sort">Size</MenuItemRadio>
+          </MenuGroup>
         </MenuContent>
       </Menu>
     </div>

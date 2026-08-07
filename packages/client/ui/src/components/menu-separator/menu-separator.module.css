@@ -1,0 +1,21 @@
+/* The line between two groups of commands. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .separator {
+    @apply my-1;
+    border: 0;
+    border-block-start: 1px solid var(--fm-color-border);
+    /* The UA gives `<hr>` an inline margin and a `block-size`; both would show
+       as a gap at the ends of the line. Reset here rather than relying on a
+       page reset: this CSS ships to apps that run no Preflight (ADR-0002). */
+    margin-inline: 0;
+    block-size: 0;
+  }
+
+  @media (forced-colors: active) {
+    .separator {
+      border-block-start-color: CanvasText;
+    }
+  }
+}

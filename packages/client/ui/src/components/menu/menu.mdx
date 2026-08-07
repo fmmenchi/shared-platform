@@ -23,12 +23,16 @@ If the user is choosing a **value**, that is a `Select` — the browser draws it
 
 ## Anatomy
 
-| part          | what it is                                                                                       |
-| ------------- | ------------------------------------------------------------------------------------------------ |
-| `Menu`        | the wiring. It renders **no element** — one that only carries a context has not earned its place |
-| `MenuTrigger` | what opens it: `popovertarget`, plus `aria-haspopup="menu"` and `aria-expanded`                  |
-| `MenuContent` | the surface — `role="menu"` in the top layer, anchored — and the keyboard contract               |
-| `MenuItem`    | one command. A `<button role="menuitem">`; `disabled` makes it focusable and inert               |
+| part               | what it is                                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| `Menu`             | the wiring. It renders **no element** — one that only carries a context has not earned its place     |
+| `MenuTrigger`      | what opens it: `popovertarget`, plus `aria-haspopup="menu"` and `aria-expanded`                      |
+| `MenuContent`      | the surface — `role="menu"` in the top layer, anchored — and the keyboard contract                   |
+| `MenuItem`         | one command. A `<button role="menuitem">`; `disabled` makes it focusable and inert                   |
+| `MenuItemCheckbox` | a command that is also a switch — a real `<input type="checkbox">` wearing `role="menuitemcheckbox"` |
+| `MenuItemRadio`    | one choice of a set — a real `<input type="radio">` wearing `role="menuitemradio"`                   |
+| `MenuGroup`        | a NAMED set of commands, which is what makes "1 of 3" sayable                                        |
+| `MenuSeparator`    | the line between two groups. An `<hr>`, whose implicit role is already `separator`                   |
 
 `MenuItem` takes everything a `<button>` takes, plus `textValue` — what typing should match. Typing matches the name the command is **announced by**, so decoration (`aria-hidden`) is left out and `<MenuItem><TrashIcon aria-hidden />Delete</MenuItem>` answers to "d" on its own. Reach for `textValue` when the name starts somewhere else — an icon that carries its own name, a badge, a visually-hidden prefix:
 
@@ -105,6 +109,35 @@ It is the same component, so it is the same everything: `role="menu"`, the arrow
 - **a disabled `MenuItemTrigger` does not open.** Like any command it stays focusable and announced; `popovertarget` comes off it, or the platform would open the submenu without asking anybody.
 
 One thing this component adds that the platform does not: **closing a submenu returns the focus to the command that opened it.** Measured in all three engines, a nested popover drops the focus on `<body>` when it closes — while a top-level one hands it back to its trigger correctly.
+
+### Commands that carry a state
+
+A menu is not only verbs. "Show sidebar" is a switch, and "Sort by → Date" is one answer of three, and both have to say what they currently ARE — which is the thing a user needs **before** choosing, not after.
+
+```tsx
+<MenuContent>
+  <MenuItemCheckbox defaultChecked>Show sidebar</MenuItemCheckbox>
+  <MenuItemCheckbox>Word wrap</MenuItemCheckbox>
+  <MenuSeparator />
+  <MenuGroup label="Sort by">
+    <MenuItemRadio name="sort" defaultChecked>
+      Date
+    </MenuItemRadio>
+    <MenuItemRadio name="sort">Name</MenuItemRadio>
+    <MenuItemRadio name="sort">Size</MenuItemRadio>
+  </MenuGroup>
+</MenuContent>
+```
+
+**The mark is a real checkbox**, not a drawn tick — and that is the platform's own instruction rather than a preference: [ARIA in HTML](https://www.w3.org/TR/html-aria/) lists `menuitemcheckbox` among the roles allowed on `<input type="checkbox">`, and `menuitemradio` on `<input type="radio">`. So the browser goes on drawing the box, the tick, the disabled shading and the High Contrast treatment, and a tick in a menu is the same tick as a tick in a form — by construction, not by imitation.
+
+Three consequences worth knowing:
+
+- **the state lives in the DOM**, as it does for `Checkbox`: the props are that component's own (`checked`, `defaultChecked`, `onChange`), `form.reset()` works, and there is no second copy to drift;
+- **a radio set is grouped by `name`**, by the browser, which is the only thing that can guarantee the one invariant that matters — that two rows never both read "selected";
+- **`MenuGroup` adds the NAME**, and that is not decoration: without it a reader hears "Date, selected" and is told neither what was selected nor that there are two other answers. With it: "Sort by, Date, 1 of 3, selected".
+
+Choosing one closes the menu, which is the APG's default. To keep it open for a second toggle, `event.preventDefault()` in your `onClick`.
 
 ### On a touch screen it is a sheet
 
