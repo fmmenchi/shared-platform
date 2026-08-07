@@ -29,4 +29,20 @@
   .link:hover {
     @apply no-underline;
   }
+
+  /* Forced colors takes away exactly what tells this box apart: the subtle
+     error fill collapses to `Canvas`, so the border is all that is left of the
+     boundary and it needs stating outright. The focus ring needs the OS
+     convention too — without it the outline is forced to the same system
+     colour as that border, and a summary that takes the focus programmatically
+     would announce itself with nothing visible to match. */
+  @media (forced-colors: active) {
+    .summary {
+      border: 1px solid CanvasText;
+    }
+
+    .summary:focus-visible {
+      outline-color: Highlight;
+    }
+  }
 }

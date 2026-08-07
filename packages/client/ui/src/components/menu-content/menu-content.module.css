@@ -33,7 +33,15 @@
     @apply min-w-48 max-w-80 rounded-lg border p-1 shadow-lg;
     @apply bg-card text-card-foreground border-border;
     /* `border-border` explicitly: Tailwind's `border` sets the WIDTH only and
-       the colour falls back to `currentColor`. */
+       the colour falls back to `currentColor`.
+
+       It is also what makes a `forced-colors` block unnecessary here, which is
+       recorded rather than omitted: the shadow above IS removed in forced
+       colors, and a surface floating over the page with nothing but a shadow
+       would lose its edge — this one has a real border, so it comes out
+       `Canvas` on `CanvasText` with a boundary, the same reasoning as
+       `dialog-content` and `popover-content`. Nothing here takes the focus
+       ring, so there is no outline convention to restore either. */
 
     /* A long menu scrolls, and it caps itself with the room the geometry
        measured — not with the viewport. A `100dvh` cap on a box that starts
