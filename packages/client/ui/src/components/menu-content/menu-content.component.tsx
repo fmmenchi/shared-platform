@@ -335,7 +335,7 @@ function MenuContent(props: MenuContentProps) {
           className={styles.back}
           tabIndex={menu?.activeId === backId ? 0 : -1}
           data-active={menu?.activeId === backId ? '' : undefined}
-          aria-label={`${t('back')} ${anchorName}`.trim()}
+          aria-label={t('back', { name: anchorName })}
           onFocus={onBackFocus}
           onClick={goBack}
         >
