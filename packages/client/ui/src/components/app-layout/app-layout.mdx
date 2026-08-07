@@ -52,6 +52,14 @@ The grid asks what is actually there. Add an `<aside>` and it is three columns; 
 
 <Canvas of={AppLayoutStories.WithoutNav} />
 
+### It answers to its own width, not the window's
+
+The swap is a **container query**, which is the package's own stated order — a component adapts to its container before the viewport — and until this component nothing had exercised it: every other media query in the package asks about the _user's environment_ (forced colours, pointer, reduced motion), which no container can answer.
+
+It also matters practically. A media query would hand a 16rem rail to a 380px panel, and a product whose breakpoint is not 48rem would have to override the rule — which a token cannot reach, because a media query cannot read a custom property. A container query asks the width the layout actually has, so a shell inside a narrow panel behaves narrow with nothing configured.
+
+The cost is one element: a container query cannot interrogate the container it is written on, and every rule that decides this layout is a `grid-template-*` on the grid. So the outer element is the container and the inner one is the grid that asks it.
+
 ### The column becomes a drawer, and nothing in JavaScript decides it
 
 Below `tablet` (48rem) the navigation region is a `Dialog` pinned to the inline-start edge, with its own trigger. Both forms are rendered and the stylesheet shows one — the alternative is a media query in JavaScript, which has to guess on the first render and then correct itself, a hydration mismatch on every page load.

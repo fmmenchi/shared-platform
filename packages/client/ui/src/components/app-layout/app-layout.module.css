@@ -6,6 +6,22 @@
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 @layer fmmenchi {
+  /* THE CONTAINER, and the reason this component renders two elements rather
+     than one: a container query cannot interrogate the container it is written
+     on, and every rule that decides this layout is a `grid-template-*` on the
+     grid. So the outer element is queried and the inner one answers.
+
+     A CONTAINER query and not a media query, which is the package's own stated
+     order — a component adapts to its container before the viewport. It is also
+     what makes the shell usable at all in a product whose breakpoint is not
+     ours: the swap follows the width the layout actually HAS, so a shell inside
+     a narrow panel behaves narrow, and nobody has to override a media query
+     that a custom property cannot reach. */
+  .container {
+    container-type: inline-size;
+    container-name: app-layout;
+  }
+
   .layout {
     display: grid;
     min-block-size: 100dvh;
@@ -115,7 +131,7 @@
      names nothing would ship unresolved and always fall back — the `lint-css`
      gate rejects it, and rightly: the promise that a consumer can retune it
      would have been a lie. */
-  @media (width >= 48rem) {
+  @container app-layout (width >= 48rem) {
     .layout {
       grid-template-columns: 1fr;
       grid-template-areas:

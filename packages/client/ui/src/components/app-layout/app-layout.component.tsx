@@ -46,17 +46,24 @@ function AppLayout(props: AppLayoutProps) {
 
   return (
     <AppLayoutContext.Provider value={value}>
-      <div {...rest} className={cn(styles.layout, className)}>
-        {/* WCAG 2.4.1, and the reason this component exists at all: the first
+      {/* TWO ELEMENTS, and the outer one earns its place: a container query
+          cannot interrogate the container it is written on, only its
+          descendants — and every rule that decides this layout is a
+          `grid-template-*` on the grid itself. So the outer element IS the
+          container and the inner one is the grid that asks it. */}
+      <div {...rest} className={cn(styles.container, className)}>
+        <div className={styles.layout}>
+          {/* WCAG 2.4.1, and the reason this component exists at all: the first
             focusable thing on the page, invisible until it has the focus. A
             keyboard user who has read the same navigation on every page needs
             one key to get past it — and the id is owned here rather than asked
             of the consumer, because a skip link pointing at an id nobody set
             goes nowhere and says nothing while doing it. */}
-        <a href={`#${mainId}`} className={styles.skip}>
-          {t('skip')}
-        </a>
-        {children}
+          <a href={`#${mainId}`} className={styles.skip}>
+            {t('skip')}
+          </a>
+          {children}
+        </div>
       </div>
     </AppLayoutContext.Provider>
   );

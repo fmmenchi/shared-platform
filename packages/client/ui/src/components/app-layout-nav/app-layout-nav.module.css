@@ -15,7 +15,7 @@
     display: block;
   }
 
-  @media (width >= 48rem) {
+  @container app-layout (width >= 48rem) {
     .rail {
       @apply border-border p-inset-m;
       display: block;

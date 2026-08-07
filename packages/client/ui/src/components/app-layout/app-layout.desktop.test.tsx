@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import { userEvent as browser } from '@vitest/browser/context';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
 import { AppLayoutMain } from '../app-layout-main/app-layout-main.component.js';
@@ -84,6 +85,43 @@ describe('AppLayout, above the breakpoint', () => {
     expect(box(rail).right).toBeLessThanOrEqual(box(main).left);
     expect(box(main).right).toBeLessThanOrEqual(box(aside).left);
     expect(Math.round(box(aside).top)).toBe(Math.round(box(main).top));
+  });
+
+  it("answers to its own width, not the window's", () => {
+    // A WIDE viewport (this project is 1280px) and a NARROW container. A media
+    // query would put the column up regardless and hand a 16rem rail to a
+    // 380px panel; a container query asks the width the layout actually has.
+    render(<div style={{ inlineSize: 380 }}>{shell()}</div>);
+
+    expect(screen.queryAllByRole('navigation')).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /menu/i })).toBeVisible();
+  });
+
+  it('still gives the drawer the whole viewport', async () => {
+    // `container-type` implies containment, and containment makes an element
+    // the containing block for its `position: fixed` descendants — so a modal
+    // pinned to "the edges" could quietly have become pinned to a 380px panel.
+    // Measured: the top layer escapes it, and the drawer is the viewport's.
+    render(
+      <div style={{ inlineSize: 380, marginInlineStart: 200 }}>{shell()}</div>,
+    );
+
+    await browser.click(screen.getByRole('button', { name: /menu/i }));
+    const dialog = document.querySelector('dialog') as HTMLDialogElement;
+    await waitFor(() => expect(dialog.open).toBe(true));
+    await Promise.all(dialog.getAnimations().map((a) => a.finished));
+
+    const box = dialog.getBoundingClientRect();
+    expect(Math.round(box.left)).toBe(0);
+    expect(Math.round(box.top)).toBe(0);
+    expect(Math.round(box.height)).toBe(window.innerHeight);
+  });
+
+  it('is a column again when its container is wide enough', () => {
+    render(<div style={{ inlineSize: 1000 }}>{shell()}</div>);
+
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /menu/i })).toBeNull();
   });
 
   it('lets the PAGE scroll, and keeps the column in view while it does', async () => {
