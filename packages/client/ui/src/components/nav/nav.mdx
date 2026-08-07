@@ -1,0 +1,73 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as NavStories from './nav.stories.tsx';
+
+<Meta of={NavStories} />
+
+# Nav
+
+Nav is a set of **links**, with groups that open. Places to go — not things to do.
+
+```tsx
+<Nav label="Main">
+  <NavLink href="/">Home</NavLink>
+  <NavGroup label="Products">
+    <NavLink href="/tea">Tea</NavLink>
+    <NavLink href="/coffee">Coffee</NavLink>
+  </NavGroup>
+</Nav>
+```
+
+If the user is going to **do** something — rename, duplicate, delete — that is a `Menu` or a `Menubar`. The difference is not cosmetic, and it is the reason this family exists separately.
+
+## Anatomy
+
+| part       | what it is                                                                     |
+| ---------- | ------------------------------------------------------------------------------ |
+| `Nav`      | the landmark and the list: `<nav aria-label>` around a `<ul>`                  |
+| `NavLink`  | one destination. An `<li>` around an `<a>` — `as` takes your router's link     |
+| `NavGroup` | a set of links that opens: a `<button aria-expanded>` and the list it controls |
+
+## Props
+
+<Controls of={NavStories.Default} />
+
+## Usage
+
+<Canvas of={NavStories.Default} />
+
+### Why this is not a menu
+
+Nothing here carries `role="menu"`, and that is deliberate. Radix says the same about the component it ships for navigation — "it does not use the WAI-ARIA menu role" — and the W3C's navigation tutorial marks this pattern up as `<nav>` + lists + links with `aria-expanded` on a button.
+
+The consequence a reader feels is **what `Tab` does**:
+
+- in a `Menu` or a `Menubar`, `Tab` **leaves**: they are one tab stop, and the arrows walk the commands;
+- here, `Tab` **walks the links**, because the browser's own order is already right.
+
+The tutorial gives the reason for refusing the menu roles: _"submenus should not open when using the tab key to navigate through the menu, as keyboard users would then have to step through all submenu items to get to the next top-level item."_ A menu solves that with roving focus. A navigation does not have the problem, because the links are where the reader expects them.
+
+So there is nothing to learn: `Tab` moves, `Enter` opens a group, `Escape` closes it and puts the focus back on the button that opens it.
+
+### The orientation changes the behaviour, not only the layout
+
+<Canvas of={NavStories.Sidebar} />
+
+**Horizontal** is a bar. A group opens as a flyout over the page, so at most **one** is open at a time, and it closes when the focus leaves the navigation — two panels floating over a page are two answers to "where am I".
+
+**Vertical** is a sidebar. A group opens **in place and indented**, in the page's own flow: nothing is anchored, nothing is in the top layer. Every section the reader opened stays open, and none closes on its own — shutting one section to open another loses the place they were keeping.
+
+### It ships no router
+
+`NavLink` renders an `<a>`, and `as` is the seam for your own: `as={Link}` for React Router, `as={NextLink}` for Next. The design system depends on no framework (ADR-0001), so the one thing it will not do is navigate for you.
+
+A link is also the control the browser already does perfectly — middle-click, open in a new tab, long-press, the status bar showing the destination. `NavLink` adds no handler that would take any of that away.
+
+## Accessibility
+
+- **A named landmark.** `label` is required: a page with more than one navigation gives a screen reader user a list of entries all called "navigation".
+- **A list, kept as a list.** The bullets are gone and the semantics are not, so it is still announced as "list, 5 items".
+- **The group is a disclosure**, announced as "button, collapsed" — which is what it is. `aria-controls` points at a list that is always rendered and hidden when closed, because a reference to an element that does not exist yet is a relationship the button claims and does not have.
+- **`Escape` closes and hands the focus back** to the button that opened the group. By then the focus is usually on a link inside, so nothing else would bring it back.
+- **Where you are is not said with colour alone** (WCAG 1.4.1): `current` renders `aria-current="page"`, which a screen reader announces, and the highlight paints the same fact. In forced colours it becomes the system's own pair.
+- **A finger gets 44px**, the size every touch platform asks for, on links and on group buttons alike.

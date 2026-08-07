@@ -250,6 +250,24 @@
       "types": "./dist/components/menu-item-trigger/index.d.ts",
       "import": "./dist/menu-item-trigger.js",
       "default": "./dist/menu-item-trigger.js"
+    },
+    "./nav": {
+      "@fmmenchi/source": "./src/components/nav/index.ts",
+      "types": "./dist/components/nav/index.d.ts",
+      "import": "./dist/nav.js",
+      "default": "./dist/nav.js"
+    },
+    "./nav-group": {
+      "@fmmenchi/source": "./src/components/nav-group/index.ts",
+      "types": "./dist/components/nav-group/index.d.ts",
+      "import": "./dist/nav-group.js",
+      "default": "./dist/nav-group.js"
+    },
+    "./nav-link": {
+      "@fmmenchi/source": "./src/components/nav-link/index.ts",
+      "types": "./dist/components/nav-link/index.d.ts",
+      "import": "./dist/nav-link.js",
+      "default": "./dist/nav-link.js"
     }
   },
   "nx": {

@@ -1,0 +1,54 @@
+/* A set of links that opens: a disclosure button and the list it controls. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .item {
+    display: block;
+    position: relative;
+  }
+
+  .button {
+    @apply control-base;
+    @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-left;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+
+    @media (pointer: coarse) {
+      min-height: 2.75rem;
+      @apply px-4 text-base;
+    }
+  }
+
+  .button:hover {
+    @apply bg-accent-subtle text-accent-subtle-foreground;
+  }
+
+  .list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A BAR: the group's links fly out over the page, so they need a surface of
+     their own — a border, a shadow and somewhere to sit. */
+  [data-orientation='horizontal'] .list {
+    @apply bg-card text-card-foreground border-border rounded-lg border p-1 shadow-lg;
+    position: absolute;
+    inset-inline-start: 0;
+    top: 100%;
+    z-index: 1;
+    min-width: 12rem;
+  }
+
+  /* A SIDEBAR: the links appear INDENTED under the group, in the page's own
+     flow. The indent is what says "these belong to that", so it is a rule and
+     not a decoration. */
+  [data-orientation='vertical'] .list {
+    padding-inline-start: 1rem;
+    border-inline-start: 1px solid var(--fm-color-border);
+    margin-inline-start: 0.75rem;
+  }
+}

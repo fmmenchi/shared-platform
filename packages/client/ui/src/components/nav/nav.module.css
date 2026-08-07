@@ -1,0 +1,32 @@
+/* The navigation landmark and its list. The list is the structure a screen
+   reader counts, so it stays a list and loses only its bullets. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .nav {
+    @apply text-sm;
+  }
+
+  .list {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A BAR: the groups sit side by side and open over the page. */
+  [data-orientation='horizontal'] > .list {
+    @apply gap-1;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  /* A SIDEBAR: the groups sit above one another and open in place, so the list
+     grows downward and the page scrolls. Nothing is anchored, nothing is in the
+     top layer — an indented tree is part of the page, not a surface over it. */
+  [data-orientation='vertical'] > .list {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
