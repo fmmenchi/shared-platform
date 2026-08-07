@@ -24,11 +24,13 @@ The page shell: the regions a product page is made of, and the things every prod
 
 ## Anatomy
 
-| part            | what it is                                                      |
-| --------------- | --------------------------------------------------------------- |
-| `AppLayout`     | the grid, the skip link, and the id the skip link points at     |
-| `AppLayoutNav`  | the navigation region — a column above `@xl`, a drawer below it |
-| `AppLayoutMain` | the page's one `<main>`, and the skip link's target             |
+| part                 | what it is                                                     |
+| -------------------- | -------------------------------------------------------------- |
+| `AppLayout`          | the grid, the skip link, and the id the skip link points at    |
+| `AppLayoutNav`       | the navigation region — it owns the swap between the two forms |
+| `AppLayoutNavColumn` | what the navigation is as a column, above `@xl`                |
+| `AppLayoutNavDrawer` | what it is inside the drawer, below `@xl`                      |
+| `AppLayoutMain`      | the page's one `<main>`, and the skip link's target            |
 
 `<header>`, `<aside>` and `<footer>` are **your own elements**, not parts. They are landmarks with no behaviour, and a component around one would be an element that had not earned its place.
 
@@ -81,13 +83,44 @@ One consequence worth knowing: on a narrow screen, with the drawer shut, there i
 
 The shell swaps the **container**. What goes inside it is yours — and the two are rarely identical: a rail collapses to icons and a drawer does not, a drawer often carries a brand the header already shows on a wide screen, and on a phone it usually absorbs the account and search links that live in the header on desktop. Even the implementation this was modelled on passes `collapsible={false}` to its own drawer.
 
-So the shell does not decide they are the same thing. It says which form is up:
+So the shell does not decide they are the same thing. It gives each form **its own slot**, and keeps the swap:
+
+```tsx
+<AppLayoutNav label="Main">
+  <AppLayoutNavColumn>
+    <Nav label="Main" orientation="vertical">
+      …
+    </Nav>
+  </AppLayoutNavColumn>
+  <AppLayoutNavDrawer>
+    <Nav label="Main" orientation="vertical">
+      …
+    </Nav>
+    <AccountLinks /> {/* on a wide screen these live in the header */}
+  </AppLayoutNavDrawer>
+</AppLayoutNav>
+```
+
+<Canvas of={AppLayoutStories.DivergentForms} />
+
+Only the form in play is mounted, so the slot that is not up leaves nothing behind — no hidden element, no duplicated `id`, no state to diverge.
+
+Two things that does **not** mean, both measured rather than assumed:
+
+- a **closed `<dialog>` still holds its subtree**, so on a narrow screen the drawer's slot is mounted from the first render even if nobody opens it. If what you put in it fetches, it fetches on load;
+- the form starts at `drawer` and is corrected once `--nav-form` has been read, so on a wide screen the drawer's slot lives for exactly **one commit** before the column replaces it.
+
+Neither is the old defect — but a slot is not free just because its form is not showing.
+
+**Give one slot and it serves both forms**; give none and `children` does, which keeps the simple case one line long. The **container** always follows the form and only the contents fall back — otherwise the shorthand for "my two forms are the same" would put a 16rem rail on a phone. Passing the same element to both slots is your business, and free.
+
+A slot has to be a **direct child**: `AppLayoutNav` finds it by type, so a slot wrapped in a component of your own is a slot it cannot see, and the wrapper is read as loose children. Fragments are the exception and are looked through — `React.Children` does not flatten them, and the first version of this rendered an empty navigation for `<><AppLayoutNavColumn/><AppLayoutNavDrawer/></>` without complaining.
+
+When the difference is only styling, no slot is needed at all — the form is on the region as `data-form`, and in JavaScript:
 
 ```tsx
 const form = useAppLayoutNavForm(); // 'column' | 'drawer' | null
 ```
-
-and the same fact is on the region as `data-form`, for the many cases where the difference is only styling and no JavaScript is needed at all. Divergence is the exception, so `children` stays one slot and the ones who need it branch.
 
 ### A sticky header is the consumer's, and it covers things
 

@@ -161,3 +161,7 @@ export { AppLayoutNav } from './components/app-layout-nav/app-layout-nav.compone
 export type { AppLayoutNavProps } from './components/app-layout-nav/app-layout-nav.types.js';
 export { AppLayoutMain } from './components/app-layout-main/app-layout-main.component.js';
 export type { AppLayoutMainProps } from './components/app-layout-main/app-layout-main.types.js';
+export { AppLayoutNavColumn } from './components/app-layout-nav-column/app-layout-nav-column.component.js';
+export type { AppLayoutNavColumnProps } from './components/app-layout-nav-column/app-layout-nav-column.types.js';
+export { AppLayoutNavDrawer } from './components/app-layout-nav-drawer/app-layout-nav-drawer.component.js';
+export type { AppLayoutNavDrawerProps } from './components/app-layout-nav-drawer/app-layout-nav-drawer.types.js';

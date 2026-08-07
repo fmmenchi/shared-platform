@@ -7,7 +7,12 @@ export interface AppLayoutNavProps {
    * announced as just "dialog".
    */
   label: string;
-  /** The navigation itself, usually a `Nav orientation="vertical"`. */
+  /**
+   * An `AppLayoutNavColumn`, an `AppLayoutNavDrawer`, or both — what the
+   * navigation is in each form, of which only the one in play is mounted. Give
+   * one and it serves both; give neither, and these children are the
+   * navigation in both forms.
+   */
   children: ReactNode;
   /** Applied to the region, in both of its forms. */
   className?: string;
