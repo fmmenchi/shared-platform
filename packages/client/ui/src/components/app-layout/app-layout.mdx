@@ -1,0 +1,72 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as AppLayoutStories from './app-layout.stories.tsx';
+
+<Meta of={AppLayoutStories} />
+
+# AppLayout
+
+The page shell: the regions a product page is made of, and the things every product otherwise gets wrong about them.
+
+```tsx
+<AppLayout>
+  <header>…</header>
+  <AppLayoutNav label="Main">
+    <Nav label="Main" orientation="vertical">
+      …
+    </Nav>
+  </AppLayoutNav>
+  <AppLayoutMain>…</AppLayoutMain>
+  <aside>…</aside>
+  <footer>…</footer>
+</AppLayout>
+```
+
+## Anatomy
+
+| part            | what it is                                                           |
+| --------------- | -------------------------------------------------------------------- |
+| `AppLayout`     | the grid, the skip link, and the id the skip link points at          |
+| `AppLayoutNav`  | the navigation region — a column from `tablet` up, a drawer below it |
+| `AppLayoutMain` | the page's one `<main>`, and the skip link's target                  |
+
+`<header>`, `<aside>` and `<footer>` are **your own elements**, not parts. They are landmarks with no behaviour, and a component around one would be an element that had not earned its place.
+
+## Props
+
+<Controls of={AppLayoutStories.Default} />
+
+## Usage
+
+<Canvas of={AppLayoutStories.Default} />
+
+### It decides nothing about content
+
+No brand, no user block, no icon set, no `items` array. The moment a shell takes a list of links it has invented a second markup language, and every product then needs one more field on it — which is why a ready-made sidebar belongs in the app that has a brand, not in a layer shared by products that do not.
+
+### There is no `columns` prop
+
+<Canvas of={AppLayoutStories.WithAside} />
+
+The grid asks what is actually there. Add an `<aside>` and it is three columns; leave out `AppLayoutNav` and the content takes the whole width. An admin panel, a documentation site and a marketing page are the **same skeleton with different regions present** — naming them as three components would be three names for one grid, and the day one grew a prop the other lacked they would have stopped being it.
+
+<Canvas of={AppLayoutStories.WithoutNav} />
+
+### The column becomes a drawer, and nothing in JavaScript decides it
+
+Below `tablet` (48rem) the navigation region is a `Dialog` pinned to the inline-start edge, with its own trigger. Both forms are rendered and the stylesheet shows one — the alternative is a media query in JavaScript, which has to guess on the first render and then correct itself, a hydration mismatch on every page load.
+
+The cost is that the navigation is rendered twice; the guard is `display: none`, which takes the hidden copy out of the accessibility tree, so **two navigation landmarks can never be exposed at once**. There is a test for that, because "exactly one" is the kind of claim that quietly becomes two.
+
+One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button.
+
+### Sizes are tokens, not props
+
+`--fm-size-nav` and `--fm-size-aside` set the two columns. A sidebar's width is a measurement, so a theme retunes it exactly the way it retunes a colour; an API taking pixels would have to anticipate every product that ever asks.
+
+## Accessibility
+
+- **A skip link, first** (WCAG 2.4.1) — invisible until it has the focus, and then unmistakably there. `AppLayoutMain` carries `tabindex="-1"` so following it **moves the focus**, which is the half a skip link usually gets wrong: the browser scrolls and leaves the focus behind, so the next `Tab` returns the reader to the navigation they just skipped.
+- **The id is the shell's**, not yours. A skip link pointing at an id nobody set goes nowhere, and says nothing while doing it.
+- **One `<main>`, one `<header>`, one `<footer>`** — the landmark set is the structure, and the regions are placed by what they are.
+- **The drawer is a modal dialog**, so it brings the focus trap, the inert page and the scroll lock with it; it is named from `label`, because a `<dialog>` with no accessible name is announced as just "dialog".

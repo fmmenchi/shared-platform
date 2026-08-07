@@ -1,0 +1,31 @@
+/* The navigation region: a column from tablet up, a drawer below it. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /* BOTH are rendered and the stylesheet shows one — `display: none` and not
+     `visibility`, because only `display: none` takes the hidden copy out of the
+     accessibility tree. Exactly one navigation landmark is exposed at a time,
+     which is the whole reason this is safe to do rather than a JS media query
+     that guesses on the first render. */
+  .rail {
+    display: none;
+  }
+
+  .drawer {
+    display: block;
+  }
+
+  @media (width >= 48rem) {
+    .rail {
+      @apply border-border p-inset-m;
+      display: block;
+      border-inline-end: 1px solid var(--fm-color-border);
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
+
+    .drawer {
+      display: none;
+    }
+  }
+}

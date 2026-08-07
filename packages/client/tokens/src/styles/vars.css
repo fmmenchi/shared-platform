@@ -218,6 +218,12 @@
 
   --fm-size-container: 80rem;
   --fm-size-prose: 42rem;
+  /* The page shell's columns. Measurements, so they live here with the other
+     two rather than as props on a layout: a product retunes a sidebar the way
+     it retunes a colour, and an API that took pixels would have to anticipate
+     every product that ever asks. */
+  --fm-size-nav: 16rem;
+  --fm-size-aside: 18rem;
 
   /* ==========================================================
      MOTION — by intent, not by value

@@ -1,0 +1,20 @@
+/* The content region. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .main {
+    @apply p-inset-m;
+    /* Its own scroll, so the navigation column stays put while the content
+       moves — and `-1` on the element (set by the component) is what lets the
+       keyboard scroll it after the skip link has landed there. */
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* The skip link puts the focus here; the ring would be a box around the whole
+     page, which says nothing useful. The reader knows where they are because
+     the content is now what reads next. */
+  .main:focus {
+    outline: none;
+  }
+}
