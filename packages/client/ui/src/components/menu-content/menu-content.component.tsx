@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useMemo,
   useRef,
   type KeyboardEvent,
 } from 'react';
@@ -10,23 +9,11 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
-import {
-  useDirection,
-  useMessages,
-  useUiAdapters,
-} from '../../i18n/provider.js';
+import { useDirection, useMessages } from '../../i18n/provider.js';
 import { menuContentMessages } from './menu-content.messages.js';
 import { useMenuPart } from '../menu/menu.context.js';
-import {
-  byPrefix,
-  first,
-  isSearchKey,
-  last,
-  inlineEnd,
-  nameOf,
-  step,
-  TYPEAHEAD_WINDOW,
-} from '../menu/menu.keyboard.js';
+import { first, last, inlineEnd, nameOf, step } from '../menu/menu.keyboard.js';
+import { useTypeahead } from '../menu/use-typeahead.js';
 import { useDescendant } from '../../primitives/use-descendants.js';
 import type { MenuContentProps } from './menu-content.types.js';
 import styles from './menu-content.module.css';
@@ -67,9 +54,11 @@ function MenuContent(props: MenuContentProps) {
   const close = menu?.close;
   const direction = useDirection();
   const t = useMessages(menuContentMessages);
-  // A submenu, and the one thing that follows from it: a way back to the
-  // command that opened it.
-  const parent = menu?.parent ?? null;
+  // INSIDE another surface, and the one thing that follows from it: a way back
+  // to the command that opened it. Not "has a family above it" — a menu of a
+  // MENUBAR has one of those and is still a top-level surface.
+  const nested = menu?.nested ?? false;
+  const family = menu?.parent ?? null;
   const anchor = menu?.anchor ?? null;
 
   // What the command that opened this menu is CALLED, by the same rule typing
@@ -83,18 +72,19 @@ function MenuContent(props: MenuContentProps) {
    * subscription NOTHING.
    *
    * `useOpenMirror` requires a stable callback and says why: a new identity
-   * resubscribes, and the cleanup reports CLOSED on the way past. `parent` is
-   * the parent's whole context object, which is re-made whenever its active
-   * command changes — so putting it in the dependency list, which is what the
-   * exhaustive-deps rule asked for, meant that moving the pointer anywhere in
-   * the parent menu tore the subscription down and built it again. Measured:
-   * a phantom close+open pair reached the consumer's `onOpenChange` twice, and
-   * the focus was dragged back to the submenu's first command. With a submenu
-   * open you could not move in the menu that owned it.
+   * resubscribes, and the cleanup reports CLOSED on the way past. The anchor is
+   * an element the family hands down, and this used to hold the parent's whole
+   * context object — which is re-made whenever its active command changes, so
+   * putting it in the dependency list, which is what the exhaustive-deps rule
+   * asked for, meant that moving the pointer anywhere in the parent menu tore
+   * the subscription down and built it again. Measured: a phantom close+open
+   * pair reached the consumer's `onOpenChange` twice, and the focus was dragged
+   * back to the submenu's first command. With a submenu open you could not move
+   * in the menu that owned it.
    */
-  const latest = useRef({ parent, anchor });
+  const latest = useRef({ nested, anchor });
   useEffect(() => {
-    latest.current = { parent, anchor };
+    latest.current = { nested, anchor };
   });
 
   useAnchored(menu?.anchor ?? null, surface, {
@@ -103,20 +93,9 @@ function MenuContent(props: MenuContentProps) {
     onAnchorLost: useCallback(() => close?.(), [close]),
   });
 
-  const query = useRef('');
-  const queryTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // The locale is an adapter the design system already requires, and typing is
-  // the one place a component has to compare two strings the way its user's
-  // language does. Read tolerantly: a component that merely ASKS for an adapter
-  // must not require the provider to exist.
-  const locale = useUiAdapters()?.i18n.locale;
-  const collator = useMemo(
-    // `base` sensitivity is what makes "e" find "Élève": it settles case and
-    // accents together, which no pair of lowercasing rules can.
-    () => new Intl.Collator(locale, { usage: 'search', sensitivity: 'base' }),
-    [locale],
-  );
+  // Typing to reach a command, which a menubar owes identically — one hook, so
+  // the two cannot drift on the rules that make it correct.
+  const typeahead = useTypeahead();
 
   /** Focus a command, or the surface when there is no command to focus. */
   const focus = useCallback((element: HTMLElement | null) => {
@@ -147,8 +126,7 @@ function MenuContent(props: MenuContentProps) {
       reportOpen?.(open);
 
       if (!open) {
-        clearTimeout(queryTimer.current);
-        query.current = '';
+        typeahead.clear();
 
         // A SUBMENU hands the focus back itself, which the APG asks for and
         // the platform does not do: measured in Chromium, Gecko and WebKit,
@@ -168,7 +146,7 @@ function MenuContent(props: MenuContentProps) {
         // popover is a NO-OP — measured in all three engines, the focus stays
         // exactly where the platform put it. The guard could not be given a
         // failing test because there is nothing for it to prevent.
-        if (latest.current.parent) latest.current.anchor?.focus();
+        if (latest.current.nested) latest.current.anchor?.focus();
         return;
       }
 
@@ -180,7 +158,7 @@ function MenuContent(props: MenuContentProps) {
       const all = (items?.items() ?? []).filter((c) => !c.data.back);
       focus(at === 'last' ? last(all) : first(all));
     },
-    [reportOpen, items, focus],
+    [reportOpen, items, focus, typeahead],
   );
 
   useOpenMirror(surface, report);
@@ -262,8 +240,19 @@ function MenuContent(props: MenuContentProps) {
           // field a consumer had put inside a submenu could not be walked with
           // the caret — the arrow moved nothing and destroyed the surface. The
           // same guard typing already has, for the same reason.
-          if (!parent) break;
+          // AIMED AT ONE OF OUR COMMANDS, asked FIRST — before the bar rule
+          // below, which would otherwise hand the key upward and let the bar
+          // take it. Measured: a field a consumer had put inside a menu could
+          // not be walked with the caret, the arrow moving nothing and
+          // destroying the surface. The bar asks the same question again for
+          // the keys that do reach it.
           if (event.target !== event.currentTarget && current < 0) break;
+          // On a HORIZONTAL bar this key is the bar's: it walks the commands
+          // along it, closing this menu and opening the next — so nothing is
+          // done here and nothing is prevented, and the event reaches the bar
+          // by bubbling. A submenu, and a menu of a VERTICAL bar, both go back
+          // one level the way they came.
+          if (!family || family.bar === 'horizontal') break;
           event.preventDefault();
           goBack();
           break;
@@ -281,26 +270,12 @@ function MenuContent(props: MenuContentProps) {
           // pulled onto a command. The arrows stay unconditional — inside a
           // menu they are navigation, not text.
           if (event.target !== event.currentTarget && current < 0) break;
-          if (!isSearchKey(event)) break;
 
-          // Searched BEFORE the key is committed, because whether Space belongs
-          // to the search is the answer to that search: it does while the
-          // search still finds something — `Copy link` cannot be reached
-          // without one — and otherwise it is the command's own key. Asking
-          // instead whether a search was merely RUNNING left a slow typist who
-          // pressed "d", "e", Space with the focus unmoved and the command not
-          // run, because "de " matches nothing.
-          const next = query.current + event.key;
-          const match = byPrefix(all, next, current, collator);
-          if (event.key === ' ' && !match) break;
+          const match = typeahead.search(event, all, current);
+          // Not a search at all — the key belongs to whoever has the focus.
+          if (match === undefined) break;
 
           event.preventDefault();
-          query.current = next;
-          clearTimeout(queryTimer.current);
-          queryTimer.current = setTimeout(() => {
-            query.current = '';
-          }, TYPEAHEAD_WINDOW);
-
           // NOT `focus(...)`: that falls back to the surface when there is
           // nothing, and a search that found nothing would then pull the focus
           // off the command the user was on.
@@ -309,7 +284,7 @@ function MenuContent(props: MenuContentProps) {
         }
       }
     },
-    [onKeyDown, items, focus, close, collator, direction, parent, goBack],
+    [onKeyDown, items, focus, close, typeahead, direction, family, goBack],
   );
 
   // TAKE THE FOCUS BACK, on every render, because the ways it escapes do not
@@ -352,7 +327,7 @@ function MenuContent(props: MenuContentProps) {
           The word on it is the command that opened this menu, read from that
           element rather than passed down: the DOM already holds it, and a copy
           in a context is a copy that can be wrong. */}
-      {parent && (
+      {nested && (
         <button
           type="button"
           role="menuitem"

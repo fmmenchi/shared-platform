@@ -1,0 +1,43 @@
+/*
+ * The bar itself: layout, and the fact that it is a strip of commands rather
+ * than a surface over the page. The menus it opens are `MenuContent`s and bring
+ * their own stylesheet.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .menubar {
+    @apply gap-1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .menubar[data-orientation='vertical'] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* A COMMAND IS AS WIDE AS ITS WORD on a bar. `MenuItemTrigger` borrows the
+     menu row's stylesheet, which is `w-full` — right for a row in a menu, and
+     on a wrapping flex line it makes every command take a line of its own:
+     measured, a horizontal bar came out as three stacked rows 350px wide,
+     announced as horizontal and walked with the inline arrows. */
+  .menubar[data-orientation='horizontal'] > [role='menuitem'] {
+    width: auto;
+  }
+
+  /* The bar is focusable only while no command carries the tab stop, and it
+     hands the focus straight on when there IS one — so this ring is seen only
+     in the case where there is not, which is exactly the case where a tab stop
+     with no indicator would be a trap. */
+  .menubar:focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+
+  @media (forced-colors: active) {
+    .menubar:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

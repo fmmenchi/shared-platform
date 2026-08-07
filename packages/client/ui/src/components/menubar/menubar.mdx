@@ -1,0 +1,110 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as MenubarStories from './menubar.stories.tsx';
+
+<Meta of={MenubarStories} />
+
+# Menubar
+
+A permanently visible bar of menus — the application menu of a desktop-class app: **File, Edit, View**.
+
+```tsx
+<Menubar label="Editor">
+  <Menu>
+    <MenuItemTrigger>File</MenuItemTrigger>
+    <MenuContent>
+      <MenuItem onClick={save}>Save</MenuItem>
+    </MenuContent>
+  </Menu>
+</Menubar>
+```
+
+## When it is the wrong component
+
+**If the reader is going somewhere, not doing something, this is a `Nav`.** A bar of links that happens to look like this one is a navigation, and the roles here would tell a screen reader otherwise — the arrows would become the only way to walk it and `Tab` would jump straight past. Ask what the entries are: places, or verbs.
+
+**If there is one menu rather than a bar of them, that is a `Menu`** with a `MenuTrigger`. A menubar earns its keyboard contract by having several.
+
+## Anatomy
+
+It adds exactly one part. Everything inside it is the `Menu` family, unchanged:
+
+| part              | what it is                                                      |
+| ----------------- | --------------------------------------------------------------- |
+| `Menubar`         | the bar: `<div role="menubar" aria-label>` and the family in it |
+| `Menu`            | one menu of the bar — the same component as anywhere else       |
+| `MenuItemTrigger` | the command on the bar that opens it                            |
+| `MenuContent`     | the menu's surface                                              |
+| `MenuItem`        | a command on the bar that opens NOTHING — Help, About           |
+
+Use `MenuItemTrigger`, never `MenuTrigger` — the trigger a standalone `Menu`
+uses. The wrong one **works**: it opens its menu perfectly well while never
+joining the bar, so the arrows and typing cannot reach it and it becomes a
+second tab stop in something whose whole contract is having one. It says so in
+development.
+
+Most commands on a bar open a menu, so most are a `Menu`. One that simply acts —
+Help opening a dialog, About — is a `MenuItem` put straight on the bar, which the
+APG provides for and which works here for the same reason the trigger does: a
+command belongs to a **family**, and a bar is one.
+
+`MenuItemTrigger` is the same component that opens a **submenu**, with nothing added. A command that belongs to one set of commands and opens another is the same thing in both places, and the design says so: the bar hands its parts the same family interface a menu hands its own, so the trigger cannot tell which it is standing in. The one thing it asks is whether that family is a bar — because that decides which key opens the menu, and nothing else.
+
+## Props
+
+<Controls of={MenubarStories.Default} />
+
+## Usage
+
+<Canvas of={MenubarStories.Default} />
+
+### The keyboard
+
+This is where a menubar differs from everything else on a page, and the contract is the APG's. **The table is the horizontal bar's**; what changes when it stands on its end is below it.
+
+| key                      | what it does                                                        |
+| ------------------------ | ------------------------------------------------------------------- |
+| `Tab`                    | enters the bar **once**, and the next `Tab` **leaves** it           |
+| `←` `→`                  | walk the commands on the bar, wrapping at either end                |
+| `Home` `End`             | the first, the last                                                 |
+| `↓` `↑`                  | open the menu at its **first** command, or at its **last**          |
+| `Enter` `Space`          | open it                                                             |
+| typing                   | jump to a command by name, on the bar and inside the menus alike    |
+| `Escape`                 | close the menu and put the focus back on the command that opened it |
+| `←` `→` with a menu open | **carry it along the bar** — close this menu and open the next      |
+
+The last row is the one people do not expect and then rely on: a reader browsing an application menu is looking through several, not opening one at a time. The APG sanctions two endings for it, and this takes the second: the focus goes **into** the menu that opens, rather than staying on the command. The reason is the menu's own contract — a menu that opens without a focused command cannot be used from the keyboard at all — and walking on from there still works, because the key reaches the bar from inside the open menu.
+
+`Tab` from inside an open menu leaves the **whole stack**, however deep, closing every menu on the way out.
+
+**One tab stop.** Every command is `tabindex="-1"` except the one last used, so leaving the bar and coming back returns the reader where they were rather than to the beginning. Until any has been used there is nothing for `Tab` to land on, so the bar itself takes that first landing and hands it straight to the first command.
+
+### Standing it on its end
+
+<Canvas of={MenubarStories.Vertical} />
+
+`orientation="vertical"` moves the walking keys by one axis — the commands are walked with `↑`/`↓` — and the geometry follows: a menu opens **beside** its command on the inline-end side rather than below it, which is the same shape as a submenu and uses the same key to open.
+
+Two rows of the table above do **not** carry over, and the reason is that the axes now collide:
+
+- **the menu opens at its first command only.** Below a horizontal command there are two free keys, `↓` and `↑`, so one can mean "at the end". Beside it there is one.
+- **there is no carrying.** With a menu open, `↑`/`↓` belong to that menu, so the bar's own walking keys are the menu's for as long as it is open — `Escape` first, then walk.
+
+### Direction
+
+The keys that walk a horizontal bar are the **inline** arrows, so in Arabic or Hebrew the bar runs the other way and `←` is forward. Nothing is configured for this: the direction comes from the locale the design system already requires.
+
+### On a touch screen
+
+Nothing here is touch-specific, and that is the point of the bar adding one part rather than a second machine: its commands are menu rows, so they are **44px** where the primary pointer is coarse, and its menus are `MenuContent`s, so they arrive as **bottom sheets** rather than as panels pinned under a thumb. The bar itself wraps — an application menu has more words than a phone has width — so consider whether a bar is the right shape there at all, rather than a single `Menu`.
+
+What a bar's menu does NOT get is the sheet's **"Back to …"** row. That row exists for a submenu, whose parent steps aside for it on a small screen; a menu of the bar came from no menu, and offering to return to one would be a lie.
+
+## Accessibility
+
+- **A named bar.** `label` is required: a screen reader announces "menu bar", and two of them on a page would otherwise give the reader two entries by the same name. Pass your own `aria-label` or `aria-labelledby` and it wins.
+- **The tab stop sits on the first command**, which is what the APG asks: "each item has `tabindex` set to `-1`, except in a menubar, where the first item has `tabindex` set to `0`". The bar itself stays focusable only for the case that leaves — a bar with no commands to put it on, gated by a permission or hidden at a breakpoint — where it keeps the focus and draws a ring rather than becoming an invisible stop.
+- **`aria-orientation` only when vertical**, because horizontal is what `role="menubar"` already means and saying it again is noise.
+- **Each command says what it opens** — `aria-haspopup="menu"` and `aria-expanded`, kept by the platform and mirrored from it.
+- **The focus comes back.** `Escape` closes the menu and returns the focus to the command on the bar, which the platform does for a top-level popover; a submenu's return is the menu family's own, because the platform declines it for a popover inside a popover.
+- **A disabled command is `aria-disabled` and focusable** — the APG's "focusable but cannot be activated". The arrows walk onto it like any other, because with `role="menu"` a screen reader is in focus mode and a command the arrows skip is one its user is never told about.

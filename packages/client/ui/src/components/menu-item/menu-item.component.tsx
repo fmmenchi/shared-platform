@@ -8,7 +8,9 @@ import {
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDescendant } from '../../primitives/use-descendants.js';
-import { useMenuPart } from '../menu/menu.context.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { useMenuContext } from '../menu/menu.context.js';
+import { useMenubarContext } from '../menubar/menubar.context.js';
 import type { MenuItemProps } from './menu-item.types.js';
 import styles from './menu-item.module.css';
 
@@ -54,18 +56,32 @@ function MenuItem(props: MenuItemProps) {
     disabled: inert,
     ...rest
   } = props;
-  const menu = useMenuPart('MenuItem');
+  // A command belongs to a FAMILY, and a family is a menu or a menubar. On a
+  // bar it is the command that opens nothing — Help, About — which the APG
+  // provides for and which this could not express while it read the menu
+  // context alone: it registered with nobody, stayed `tabindex="-1"` for ever,
+  // and announced itself as a command of a bar that could never reach it.
+  const menu = useMenuContext();
+  const bar = useMenubarContext();
+  // The NEAREST one: a command inside a menu belongs to that menu even when the
+  // menu hangs off a bar.
+  const family = menu ?? bar;
+  useDevWarning(
+    family == null,
+    'MenuItem: used outside a <Menu> or a <Menubar>, so it is not wired to anything.',
+  );
   const id = useId();
 
   const disabled = inert === true;
-  const descendantRef = useDescendant(menu?.items ?? EMPTY_FAMILY, {
+  const descendantRef = useDescendant(family?.items ?? EMPTY_FAMILY, {
     id,
     textValue,
   });
 
-  const setActiveId = menu?.setActiveId;
+  const setActiveId = family?.setActiveId;
   // The whole stack, not this surface: a command chosen in a submenu leaves
-  // nothing standing behind it.
+  // nothing standing behind it. A command on a BAR closes nothing, because
+  // nothing was opened to reach it.
   const close = menu?.closeAll;
 
   const handleClick = useCallback(
@@ -123,7 +139,7 @@ function MenuItem(props: MenuItemProps) {
       // HIGHLIGHT is not here for the same reason it once was — the stylesheet
       // reads `:focus`, so exactly one row is lit by the engine rather than by
       // our bookkeeping.
-      tabIndex={menu?.activeId === id ? 0 : -1}
+      tabIndex={family?.activeId === id ? 0 : -1}
       onClick={handleClick}
       onFocus={handleFocus}
       onPointerEnter={handlePointerEnter}
@@ -134,7 +150,7 @@ function MenuItem(props: MenuItemProps) {
   );
 }
 
-/** Outside a `Menu` there is no family to join; the warning has already fired. */
+/** Outside a family there is nothing to join; the warning has already fired. */
 const EMPTY_FAMILY = {
   rootRef: () => undefined,
   items: () => [],

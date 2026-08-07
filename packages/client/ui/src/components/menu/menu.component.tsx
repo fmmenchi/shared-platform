@@ -3,6 +3,7 @@ import { useDescendants } from '../../primitives/use-descendants.js';
 import { useDirection } from '../../i18n/provider.js';
 import { inlineEnd } from './menu.keyboard.js';
 import { MenuContext, useMenuContext } from './menu.context.js';
+import { useMenubarContext } from '../menubar/menubar.context.js';
 import type { MenuContextValue, MenuItemData } from './menu.context.js';
 import type { MenuProps } from './menu.types.js';
 
@@ -36,7 +37,14 @@ function Menu(props: MenuProps) {
   // A `Menu` inside another one IS a submenu — there is nothing else to
   // declare. Read before this component provides its own, so it is the OUTER
   // family: the provider below shadows it for everything underneath.
-  const parent = useMenuContext();
+  const parentMenu = useMenuContext();
+  // …and a `Menu` inside a `Menubar` is one of the bar's menus, which is a
+  // different thing: it has a family above it but is not INSIDE anything.
+  const menubar = useMenubarContext();
+  // The NEAREST wins — a submenu of a bar's menu belongs to that menu, not to
+  // the bar, even though both are above it.
+  const parent = parentMenu ?? menubar;
+  const nested = parentMenu !== null;
   const direction = useDirection();
 
   const surfaceId = useId();
@@ -60,14 +68,20 @@ function Menu(props: MenuProps) {
 
   // Closing the root closes everything nested in it — measured in Chromium,
   // Gecko and WebKit — so the whole stack goes in ONE call and nothing here
-  // keeps a list of what is open.
-  const closeAll = parent?.closeAll ?? close;
+  // keeps a list of what is open. A menu of a MENUBAR is already the root: the
+  // bar is not a surface, so there is nothing above it to close.
+  const closeAll = parentMenu ? parentMenu.closeAll : close;
 
   // A submenu sits BESIDE the command that opens it, and which side that is
   // depends on the reader's language, not on the screen: the inline direction
-  // comes from the locale the design system already requires.
+  // comes from the locale the design system already requires. A menu of a
+  // HORIZONTAL bar hangs BELOW its command instead, because that is where the
+  // room is — which is the only placement question the bar changes.
   const resolved =
-    placement ?? (parent ? inlineEnd(direction).placement : 'bottom-start');
+    placement ??
+    (parent && parent.bar !== 'horizontal'
+      ? inlineEnd(direction).placement
+      : 'bottom-start');
 
   const value = useMemo<MenuContextValue>(
     () => ({
@@ -83,6 +97,8 @@ function Menu(props: MenuProps) {
       close,
       closeAll,
       parent,
+      nested,
+      bar: null,
     }),
     [
       surfaceId,
@@ -95,6 +111,7 @@ function Menu(props: MenuProps) {
       close,
       closeAll,
       parent,
+      nested,
     ],
   );
 

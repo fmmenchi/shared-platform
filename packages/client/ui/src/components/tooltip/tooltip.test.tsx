@@ -218,7 +218,13 @@ describe('Tooltip', () => {
               hovered — focus would open the tooltip immediately and legitimately
               spend the key. */}
           <Button aria-label="Elsewhere">E</Button>
-          <Tooltip content="Delete" openDelay={400}>
+          {/* A LONG delay, and it is the test's precondition rather than a
+              detail: the key has to be pressed while the open is still
+              pending. At 400ms the flake was real — under the full gate's load
+              the hover and the keypress together outran it, the tooltip opened,
+              and it then spent the Escape legitimately, failing the assertion
+              below on the dialog. Measured: `tooltip.test.tsx:233`. */}
+          <Tooltip content="Delete" openDelay={2000}>
             <Button aria-label="Delete">D</Button>
           </Tooltip>
         </dialog>,
@@ -231,8 +237,9 @@ describe('Tooltip', () => {
 
       await browser.keyboard('{Escape}');
       await waitFor(() => expect(dialog.open).toBe(false));
-      // …and the tooltip that was on its way never arrives.
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // …and the tooltip that was on its way never arrives — waited PAST the
+      // delay, or this would pass on a pending open that was never cancelled.
+      await new Promise((resolve) => setTimeout(resolve, 2400));
       expect(isOpen()).toBe(false);
       if (dialog.open) dialog.close();
     });

@@ -5,6 +5,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { mergeRefs } from '../../primitives/merge-refs.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { Button } from '../button/button.component.js';
 import { useMenuPart } from '../menu/menu.context.js';
 import type { MenuTriggerProps } from './menu-trigger.types.js';
@@ -31,6 +32,17 @@ function MenuTrigger(props: MenuTriggerProps) {
   const Component = (as ?? Button) as ElementType;
   const menu = useMenuPart('MenuTrigger');
   const id = useId();
+
+  // THE WRONG TRIGGER, said out loud, because the wrong one WORKS. A `Menu`
+  // with a family above it — inside another menu, or on a menubar — needs a
+  // `MenuItemTrigger`, which joins that family. This one does not: it opens its
+  // menu perfectly well while the arrows and typing cannot reach it, and being
+  // an ordinary button it is a second tab stop in something whose whole
+  // contract is having one. Nothing about it looks broken.
+  useDevWarning(
+    menu?.parent != null,
+    'MenuTrigger: this `Menu` sits inside another `Menu` or a `Menubar`, so its trigger must be a `MenuItemTrigger`. A `MenuTrigger` does not join the family above it — the arrows and typing cannot reach it, and it adds a second tab stop.',
+  );
 
   const surfaceId = menu?.surfaceId;
 

@@ -1,0 +1,91 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as NavStories from './nav.stories.tsx';
+
+<Meta of={NavStories} />
+
+# Nav
+
+Nav is a set of **links**, with groups that open. Places to go — not things to do.
+
+```tsx
+<Nav label="Main">
+  <NavLink href="/">Home</NavLink>
+  <NavGroup label="Products">
+    <NavLink href="/tea">Tea</NavLink>
+    <NavLink href="/coffee">Coffee</NavLink>
+  </NavGroup>
+</Nav>
+```
+
+If the user is going to **do** something — rename, duplicate, delete — that is a `Menu` or a `Menubar`. The difference is not cosmetic, and it is the reason this family exists separately.
+
+## Anatomy
+
+| part       | what it is                                                                     |
+| ---------- | ------------------------------------------------------------------------------ |
+| `Nav`      | the landmark and the list: `<nav aria-label>` around a `<ul>`                  |
+| `NavLink`  | one destination. An `<li>` around an `<a>`, using the injected `Link` adapter  |
+| `NavGroup` | a set of links that opens: a `<button aria-expanded>` and the list it controls |
+
+## Props
+
+<Controls of={NavStories.Default} />
+
+## Usage
+
+<Canvas of={NavStories.Default} />
+
+### Why this is not a menu
+
+Nothing here carries `role="menu"`, and that is deliberate. Radix says the same about the component it ships for navigation — "it does not use the WAI-ARIA menu role" — and the W3C's navigation tutorial marks this pattern up as `<nav>` + lists + links with `aria-expanded` on a button.
+
+The consequence a reader feels is **what `Tab` does**:
+
+- in a `Menu` or a `Menubar`, `Tab` **leaves**: they are one tab stop, and the arrows walk the commands;
+- here, `Tab` **walks the links**, because the browser's own order is already right.
+
+The published reason for refusing the roles is [aria-practices #353](https://github.com/w3c/aria-practices/issues/353): they are _"often considered unnecessary for website navigation and at worst can confuse users who are familiar with established website patterns"_ — the same issue Radix cites for its own navigation component.
+
+So there is nothing to learn: `Tab` moves, `Enter` opens a group, `Escape` closes it and puts the focus back on the button that opens it. Arrow keys are listed as **optional** by the APG's disclosure-navigation pattern and this family does not take them; a reader who presses Down inside an open group scrolls the page, as they would anywhere else on it.
+
+### The orientation changes the behaviour, not only the layout
+
+<Canvas of={NavStories.Sidebar} />
+
+**Horizontal** is a bar, and its flyout is a **`popover`** — so the platform owns it, and everything a floating panel owes comes from there rather than from handlers of ours:
+
+- a click anywhere outside **dismisses** it;
+- `Escape` dismisses it **from anywhere**, including when the focus never entered it;
+- opening another group **closes this one**, so two panels over the page — two answers to "where am I" — cannot happen;
+- it sits in the **top layer**, so no ancestor's `overflow: hidden` clips it and no `z-index` on the page paints over it;
+- and its position is measured, so a group near the edge of a narrow screen **flips** instead of hanging off it.
+
+That is not a preference. Measured: the hand-written version this replaced could not be closed **at all** on Safari or Firefox, because neither focuses a `<button>` when it is clicked, and a focus-out handler was the only thing listening.
+
+One thing the platform does not do, so this family does: choosing a destination closes the flyout. A click _inside_ a popover is not a dismissal, and with a router injected the page never unloads — the panel would stay open over the page it just navigated to.
+
+**Vertical** is a sidebar, and none of the above applies to it, because a section of a page is not a surface over one. It opens **in place and indented**, in the page's own flow. Every section the reader opened stays open and none closes on its own — shutting one to open another loses the place they were keeping — a click elsewhere leaves it alone, and it does not take `Escape` off whatever the page has put it inside.
+
+### It ships no router — you inject one, once
+
+The design system depends on no framework (ADR-0001), so the one thing it will not do is navigate for you. Your router's link arrives through the **`Link` adapter**, beside the locale and the form binding:
+
+```tsx
+<UiProvider adapters={{ i18n: { locale }, Link }}>
+```
+
+After that every `NavLink` uses it, and no call site repeats it. With no provider in scope it is a plain `<a>`.
+
+`as` is the exception rather than the seam: a destination that must **not** go through the router — another site, a download, a `mailto:` — takes `as="a"` and gets the anchor back.
+
+A link is also the control the browser already does perfectly — middle-click, open in a new tab, long-press, the status bar showing the destination. `NavLink` adds no handler that would take any of that away.
+
+## Accessibility
+
+- **A named landmark.** `label` is required: a page with more than one navigation gives a screen reader user a list of entries all called "navigation".
+- **A list, kept as a list.** The bullets are gone and the semantics are not, so it is still announced as "list, 5 items". (Removing the markers normally costs the list role in Safari — inside a `<nav>` it does not, which is where these lists are.)
+- **The group is a disclosure**, announced as "button, collapsed" — which is what it is. `aria-controls` points at a list that is always rendered and hidden when closed, because a reference to an element that does not exist yet is a relationship the button claims and does not have. The list is also **named by its button**, because `aria-controls` is ignored by nearly every screen reader for navigation: without it, tabbing into the panel announces "list, 3 items" and nothing about which group you have entered.
+- **`Escape` closes and hands the focus back** to the button that opened the group. By then the focus is usually on a link inside, so nothing else would bring it back.
+- **Where you are is not said with colour alone** (WCAG 1.4.1): `current` renders `aria-current`, which a screen reader announces, and the highlight paints the same fact. In forced colours it becomes the system's own pair. `current` also takes the other tokens — `"location"` for the **section** you are inside, which is what a sidebar's parent entry usually is, and `"step"` in a flow.
+- **A finger gets 44px** on links and on group buttons alike, where the **primary** pointer is coarse (`pointer: coarse`). A laptop with a touchscreen attached keeps the cursor-sized rows it is mostly driven with.
