@@ -72,5 +72,11 @@ export function useTypeahead() {
     [collator],
   );
 
-  return { search, clear };
+  // MEMOIZED, because `MenuContent` puts this object in the dependency list of
+  // the callback `useOpenMirror` requires to be stable, and that hook's own
+  // file records what a new identity costs: the subscription is torn down and
+  // rebuilt, reporting CLOSED on the way past. The React Compiler does memoize
+  // it — read in the shipped output — but a documented contract should not
+  // rest on an optimisation that has silently lapsed twice in this package.
+  return useMemo(() => ({ search, clear }), [search, clear]);
 }

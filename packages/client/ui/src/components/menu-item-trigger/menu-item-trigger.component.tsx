@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useId,
   type FocusEvent,
   type KeyboardEvent,
@@ -12,6 +13,7 @@ import { useDescendant } from '../../primitives/use-descendants.js';
 import { useDirection } from '../../i18n/provider.js';
 import { useMenuPart } from '../menu/menu.context.js';
 import { inlineEnd } from '../menu/menu.keyboard.js';
+import { isOpen, surfaceOf } from '../menu/surface-of.js';
 import type { MenuItemTriggerProps } from './menu-item-trigger.types.js';
 import styles from '../menu-item/menu-item.module.css';
 
@@ -63,6 +65,16 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
 
   const setActiveId = parent?.setActiveId;
 
+  // GOING AWAY, and saying so. The tab stop is an id in the family's state, and
+  // a command that unmounts while holding it leaves it pointing at nothing:
+  // measured on a bar, no command then carried `tabindex="0"` and the whole bar
+  // dropped out of the tab order. A menu recovers because its surface takes the
+  // focus; a bar has no surface to fall back on.
+  useEffect(
+    () => () => setActiveId?.((current) => (current === id ? null : current)),
+    [setActiveId, id],
+  );
+
   const handleFocus = useCallback(
     (event: FocusEvent<HTMLButtonElement>) => {
       onFocus?.(event);
@@ -75,8 +87,18 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
     (event: PointerEvent<HTMLButtonElement>) => {
       onPointerEnter?.(event);
       event.currentTarget.focus();
+
+      // ON A BAR, the pointer carries an open menu the way the arrows do. Not
+      // hover-to-open — nothing opens if nothing was open — but once the reader
+      // has opened one, sweeping along the bar is how an application menu is
+      // read, and focusing without carrying left the menu they had walked away
+      // from standing over the page with the tab stop somewhere else.
+      if (!bar || !parent) return;
+      if (!parent.items.items().some((c) => isOpen(c.element))) return;
+      const surface = surfaceOf(event.currentTarget);
+      if (surface && !surface.matches(':popover-open')) surface.showPopover();
     },
-    [onPointerEnter],
+    [onPointerEnter, bar, parent],
   );
 
   const handleClick = useCallback(

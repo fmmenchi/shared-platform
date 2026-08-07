@@ -240,13 +240,19 @@ function MenuContent(props: MenuContentProps) {
           // field a consumer had put inside a submenu could not be walked with
           // the caret — the arrow moved nothing and destroyed the surface. The
           // same guard typing already has, for the same reason.
+          // AIMED AT ONE OF OUR COMMANDS, asked FIRST — before the bar rule
+          // below, which would otherwise hand the key upward and let the bar
+          // take it. Measured: a field a consumer had put inside a menu could
+          // not be walked with the caret, the arrow moving nothing and
+          // destroying the surface. The bar asks the same question again for
+          // the keys that do reach it.
+          if (event.target !== event.currentTarget && current < 0) break;
           // On a HORIZONTAL bar this key is the bar's: it walks the commands
           // along it, closing this menu and opening the next — so nothing is
           // done here and nothing is prevented, and the event reaches the bar
           // by bubbling. A submenu, and a menu of a VERTICAL bar, both go back
           // one level the way they came.
           if (!family || family.bar === 'horizontal') break;
-          if (event.target !== event.currentTarget && current < 0) break;
           event.preventDefault();
           goBack();
           break;

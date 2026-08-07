@@ -1,3 +1,4 @@
+import type { Dispatch, SetStateAction } from 'react';
 import type { Placement } from '@floating-ui/dom';
 import { createPartContext } from '../../primitives/part-context.js';
 import type { Descendants } from '../../primitives/use-descendants.types.js';
@@ -43,7 +44,12 @@ export interface MenuFamily {
    * to.
    */
   activeId: string | null;
-  setActiveId: (id: string | null) => void;
+  /**
+   * A SETTER, updater and all: a command leaving has to say "clear this only if
+   * it is still me", which it cannot ask without reading a value it would then
+   * be acting on one render late.
+   */
+  setActiveId: Dispatch<SetStateAction<string | null>>;
   /**
    * The BAR this family is, or `null` when it is a menu.
    *
