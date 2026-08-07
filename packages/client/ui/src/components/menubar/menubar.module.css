@@ -1,0 +1,26 @@
+/*
+ * The bar itself: layout, and the fact that it is a strip of commands rather
+ * than a surface over the page. The menus it opens are `MenuContent`s and bring
+ * their own stylesheet.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .menubar {
+    @apply gap-1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .menubar[data-orientation='vertical'] {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* The bar takes the first `Tab` only while no command has been used, and it
+     hands it straight on — so it must not be drawn as somewhere to stand. */
+  .menubar:focus {
+    outline: none;
+  }
+}

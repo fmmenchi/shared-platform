@@ -268,6 +268,12 @@
       "types": "./dist/components/nav-link/index.d.ts",
       "import": "./dist/nav-link.js",
       "default": "./dist/nav-link.js"
+    },
+    "./menubar": {
+      "@fmmenchi/source": "./src/components/menubar/index.ts",
+      "types": "./dist/components/menubar/index.d.ts",
+      "import": "./dist/menubar.js",
+      "default": "./dist/menubar.js"
     }
   },
   "nx": {

@@ -51,6 +51,7 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
 
   const disabled = inert === true;
   const parent = menu?.parent;
+  const bar = parent?.bar;
   const surfaceId = menu?.surfaceId;
 
   // The OUTER family: this is a command of the menu it sits in, not of the one
@@ -97,18 +98,36 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
       onKeyDown?.(event);
       if (event.defaultPrevented || disabled) return;
 
-      // INTO the submenu, and which physical key that is depends on the
-      // reader's language: the submenu opens on the inline-end side, so it is
+      // INTO the menu this command opens, and which key that is depends on
+      // where the menu will BE.
+      //
+      // Hanging off a horizontal bar it is below, so Down opens it at the first
+      // command and Up at the LAST — the APG's rule for a menubar, and the only
+      // way to reach the end of a long menu in one key. Beside its command —
+      // a submenu, or a vertical bar — it is the inline-end arrow, which is
       // ArrowRight where text runs left to right and ArrowLeft where it does
-      // not. Enter and Space need nothing — they click, and the click opens it.
-      const forward = inlineEnd(direction).forward;
-      if (event.key !== forward) return;
+      // not. On a horizontal bar the inline arrows are the BAR's: they walk the
+      // commands along it, so this must not take them.
+      //
+      // Enter and Space need nothing — they click, and the click opens it.
+      const at =
+        bar === 'horizontal'
+          ? OPEN_AT_ON_A_BAR[event.key]
+          : event.key === inlineEnd(direction).forward
+            ? 'first'
+            : undefined;
+      if (!at) return;
 
       event.preventDefault();
       const surface = surfaceId ? document.getElementById(surfaceId) : null;
-      if (surface && !surface.matches(':popover-open')) surface.showPopover();
+      if (!surface || surface.matches(':popover-open')) return;
+      // Written ON THE SURFACE, not into React state: the `toggle` that follows
+      // fires before a re-render, so a state update here would be read by a
+      // handler still closed over the previous value.
+      surface.dataset.openAt = at;
+      surface.showPopover();
     },
-    [onKeyDown, disabled, direction, surfaceId],
+    [onKeyDown, disabled, direction, surfaceId, bar],
   );
 
   return (
@@ -133,6 +152,12 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
     </button>
   );
 }
+
+/** Which end of a bar's menu the two vertical arrows open it at. */
+const OPEN_AT_ON_A_BAR: Record<string, 'first' | 'last' | undefined> = {
+  ArrowDown: 'first',
+  ArrowUp: 'last',
+};
 
 /** Outside a `Menu` there is no family to join; the warning has already fired. */
 const EMPTY_FAMILY = {

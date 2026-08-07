@@ -1,0 +1,84 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as MenubarStories from './menubar.stories.tsx';
+
+<Meta of={MenubarStories} />
+
+# Menubar
+
+A permanently visible bar of menus — the application menu of a desktop-class app: **File, Edit, View**.
+
+```tsx
+<Menubar label="Editor">
+  <Menu>
+    <MenuItemTrigger>File</MenuItemTrigger>
+    <MenuContent>
+      <MenuItem onClick={save}>Save</MenuItem>
+    </MenuContent>
+  </Menu>
+</Menubar>
+```
+
+## When it is the wrong component
+
+**If the reader is going somewhere, not doing something, this is a `Nav`.** A bar of links that happens to look like this one is a navigation, and the roles here would tell a screen reader otherwise — the arrows would become the only way to walk it and `Tab` would jump straight past. Ask what the entries are: places, or verbs.
+
+**If there is one menu rather than a bar of them, that is a `Menu`** with a `MenuTrigger`. A menubar earns its keyboard contract by having several.
+
+## Anatomy
+
+It adds exactly one part. Everything inside it is the `Menu` family, unchanged:
+
+| part              | what it is                                                      |
+| ----------------- | --------------------------------------------------------------- |
+| `Menubar`         | the bar: `<div role="menubar" aria-label>` and the family in it |
+| `Menu`            | one menu of the bar — the same component as anywhere else       |
+| `MenuItemTrigger` | the command on the bar that opens it                            |
+| `MenuContent`     | the menu's surface                                              |
+
+`MenuItemTrigger` is the same component that opens a **submenu**, with nothing added. A command that belongs to one set of commands and opens another is the same thing in both places, and the design says so: the bar hands its parts the same family interface a menu hands its own, so the trigger cannot tell which it is standing in. The one thing it asks is whether that family is a bar — because that decides which key opens the menu, and nothing else.
+
+## Props
+
+<Controls of={MenubarStories.Default} />
+
+## Usage
+
+<Canvas of={MenubarStories.Default} />
+
+### The keyboard
+
+This is where a menubar differs from everything else on a page, and the contract is the APG's:
+
+| key                      | what it does                                                        |
+| ------------------------ | ------------------------------------------------------------------- |
+| `Tab`                    | enters the bar **once**, and the next `Tab` **leaves** it           |
+| `←` `→`                  | walk the commands on the bar, wrapping at either end                |
+| `Home` `End`             | the first, the last                                                 |
+| `↓` `↑`                  | open the menu at its **first** command, or at its **last**          |
+| `Enter` `Space`          | open it                                                             |
+| typing                   | jump to a command by name, on the bar and inside the menus alike    |
+| `Escape`                 | close the menu and put the focus back on the command that opened it |
+| `←` `→` with a menu open | **carry it along the bar** — close this menu and open the next      |
+
+The last row is the one people do not expect and then rely on: a reader browsing an application menu is looking through several, not opening one at a time.
+
+**One tab stop.** Every command is `tabindex="-1"` except the one last used, so leaving the bar and coming back returns the reader where they were rather than to the beginning. Until any has been used there is nothing for `Tab` to land on, so the bar itself takes that first landing and hands it straight to the first command.
+
+### Standing it on its end
+
+<Canvas of={MenubarStories.Vertical} />
+
+`orientation="vertical"` moves everything by one axis, and the geometry follows: the commands are walked with `↑`/`↓`, and a menu opens **beside** its command on the inline-end side rather than below it — which is the same shape as a submenu, and uses the same key to open.
+
+### Direction
+
+The keys that walk a horizontal bar are the **inline** arrows, so in Arabic or Hebrew the bar runs the other way and `←` is forward. Nothing is configured for this: the direction comes from the locale the design system already requires.
+
+## Accessibility
+
+- **A named bar.** `label` is required: a screen reader announces "menu bar", and two of them on a page would otherwise give the reader two entries by the same name.
+- **`aria-orientation` only when vertical**, because horizontal is what `role="menubar"` already means and saying it again is noise.
+- **Each command says what it opens** — `aria-haspopup="menu"` and `aria-expanded`, kept by the platform and mirrored from it.
+- **The focus comes back.** `Escape` closes the menu and returns the focus to the command on the bar, which the platform does for a top-level popover; a submenu's return is the menu family's own, because the platform declines it for a popover inside a popover.
+- **A disabled command is `aria-disabled` and focusable** — the APG's "focusable but cannot be activated". The arrows walk onto it like any other, because with `role="menu"` a screen reader is in focus mode and a command the arrows skip is one its user is never told about.
