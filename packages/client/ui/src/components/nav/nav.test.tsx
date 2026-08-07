@@ -431,6 +431,80 @@ describe('Nav', () => {
     expect(link('Tea').tagName).toBe('A');
   });
 
+  it('says which group the reader has walked into', async () => {
+    render(example());
+    await browser.click(group('Products'));
+    await opened('Products');
+
+    // `aria-controls` is the relationship the pattern asks for, and nearly
+    // every screen reader ignores it for navigation — so without a name of its
+    // own the panel announced "list, 2 items" and nothing about which group.
+    const list = listOf('Products');
+    expect(list).toHaveAccessibleName('Products');
+    expect(list.getAttribute('aria-labelledby')).toBe(group('Products').id);
+  });
+
+  it('keeps two navigations on a page apart', async () => {
+    render(
+      <>
+        {example('vertical')}
+        <Nav label="In this section" orientation="vertical">
+          <NavGroup label="Products">
+            <NavLink href="#pricing">Pricing</NavLink>
+          </NavGroup>
+        </Nav>
+      </>,
+    );
+    // Which is why `label` is required: two landmarks both called "navigation"
+    // is a list of entries a screen reader user cannot tell apart.
+    expect(
+      screen.getByRole('navigation', { name: 'Main' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('navigation', { name: 'In this section' }),
+    ).toBeInTheDocument();
+
+    // Two groups sharing a LABEL still have their own ids and their own state:
+    // opening one leaves the other closed, and each button controls its own.
+    const [first, second] = screen.getAllByRole('button', { name: 'Products' });
+    expect(first.getAttribute('aria-controls')).not.toBe(
+      second.getAttribute('aria-controls'),
+    );
+    await browser.click(second);
+    await waitFor(() =>
+      expect(second).toHaveAttribute('aria-expanded', 'true'),
+    );
+    expect(first).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('takes the flyout away when its button goes', async () => {
+    // The SAME tree either way, so React keeps the same nodes and only the
+    // style changes: a rerender that alters the shape unmounts the group, and
+    // the popover then goes because its element went — which is how the first
+    // version of this test passed while proving nothing.
+    const collapsing = (hidden?: boolean) => (
+      <Nav label="Main" orientation="horizontal">
+        <NavGroup
+          label="Products"
+          style={hidden ? { display: 'none' } : undefined}
+        >
+          <NavLink href="#tea">Tea</NavLink>
+        </NavGroup>
+      </Nav>
+    );
+    const { rerender } = render(collapsing());
+    await browser.click(group('Products'));
+    await opened('Products');
+    const list = listOf('Products');
+
+    // A surface anchored to nothing: the bar collapsing at a breakpoint, the
+    // group hidden under it. The geometry reports it and the component closes —
+    // nothing else would, because a popover has no opinion about whether its
+    // anchor still exists, and no pointer or key was involved to dismiss it.
+    rerender(collapsing(true));
+    await waitFor(() => expect(list.matches(':popover-open')).toBe(false));
+  });
+
   it('opens toward the reading direction', async () => {
     render(
       <div dir="rtl" style={{ position: 'absolute', insetInlineStart: 0 }}>

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
@@ -7,6 +7,7 @@ import { Menu } from '../menu/menu.component.js';
 import { MenuContent } from '../menu-content/menu-content.component.js';
 import { MenuItem } from '../menu-item/menu-item.component.js';
 import { MenuItemTrigger } from '../menu-item-trigger/menu-item-trigger.component.js';
+import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
 import { renderUi } from '../../test/render.js';
 import { UiProvider } from '../../i18n/provider.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -556,6 +557,36 @@ describe('Menubar', () => {
     await browser.keyboard('{ArrowRight}');
     // The arrows do not walk out of one bar into the other.
     expect(active()).toBe(command('File'));
+  });
+
+  it('says so when the trigger cannot join the bar', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Menubar label="Editor">
+        <Menu>
+          <MenuTrigger>File</MenuTrigger>
+          <MenuContent>
+            <MenuItem>New</MenuItem>
+          </MenuContent>
+        </Menu>
+      </Menubar>,
+    );
+
+    // The wrong trigger WORKS, which is why it needs saying: it opens its menu
+    // perfectly well while never joining the family, so the arrows and typing
+    // cannot reach it and it is a second tab stop in something whose whole
+    // contract is having one. Nothing about it looks broken.
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('must be a `MenuItemTrigger`'),
+    );
+    warn.mockRestore();
+  });
+
+  it('says nothing when the trigger is the right one', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(bar());
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('walks the other way in Arabic', async () => {

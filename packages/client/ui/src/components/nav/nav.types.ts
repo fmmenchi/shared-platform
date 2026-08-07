@@ -8,6 +8,9 @@ export interface NavProps extends ComponentPropsWithRef<'nav'> {
    * Required, and not a nicety: a page with more than one navigation landmark
    * gives a screen reader user a list of them all called "navigation". It is
    * the one thing only you can supply.
+   *
+   * Pass `aria-labelledby` instead — pointing at a heading you already show —
+   * and it wins: it is rendered after this one and outranks it anyway.
    */
   label: string;
   /**

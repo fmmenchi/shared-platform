@@ -41,8 +41,11 @@ function NavGroup(props: NavGroupProps) {
   const nav = useNavPart('NavGroup');
   const flyout = nav?.orientation === 'horizontal';
 
-  const id = useId();
-  const listId = `${id}-list`;
+  const autoId = useId();
+  // The consumer's own if they gave one — this is a name a screen reader reads
+  // out, and an id they chose is one they may be pointing at from elsewhere.
+  const buttonId = props.id ?? autoId;
+  const listId = `${autoId}-list`;
   const list = useRef<HTMLUListElement>(null);
   // STATE and not a ref: the anchor is what the geometry measures against, and
   // a ref would not report a new one.
@@ -111,6 +114,9 @@ function NavGroup(props: NavGroupProps) {
         {...rest}
         ref={mergeRefs(setButton, ref)}
         // AFTER the spread: these are the disclosure contract, not opinions.
+        // `id` is the consumer's own when they gave one, so this repeats their
+        // value rather than replacing it.
+        id={buttonId}
         aria-expanded={open}
         aria-controls={listId}
         popoverTarget={flyout ? listId : undefined}
@@ -128,6 +134,11 @@ function NavGroup(props: NavGroupProps) {
       <ul
         id={listId}
         ref={list}
+        // NAMED BY THE BUTTON. `aria-controls` is the relationship the pattern
+        // asks for, and nearly every screen reader ignores it for navigation —
+        // so tabbing from "Products" into the panel announced "list, 3 items"
+        // and nothing about which group the reader had entered.
+        aria-labelledby={buttonId}
         popover={flyout ? 'auto' : undefined}
         hidden={flyout ? undefined : !open}
         onClick={flyout ? handleListClick : undefined}

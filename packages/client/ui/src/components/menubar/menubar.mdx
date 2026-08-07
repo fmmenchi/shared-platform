@@ -37,6 +37,12 @@ It adds exactly one part. Everything inside it is the `Menu` family, unchanged:
 | `MenuContent`     | the menu's surface                                              |
 | `MenuItem`        | a command on the bar that opens NOTHING — Help, About           |
 
+Use `MenuItemTrigger`, never `MenuTrigger` — the trigger a standalone `Menu`
+uses. The wrong one **works**: it opens its menu perfectly well while never
+joining the bar, so the arrows and typing cannot reach it and it becomes a
+second tab stop in something whose whole contract is having one. It says so in
+development.
+
 Most commands on a bar open a menu, so most are a `Menu`. One that simply acts —
 Help opening a dialog, About — is a `MenuItem` put straight on the bar, which the
 APG provides for and which works here for the same reason the trigger does: a
