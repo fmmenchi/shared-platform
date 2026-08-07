@@ -10,7 +10,7 @@ import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
 /**
- * The NARROW form. This project's viewport is 414px — below the `tablet`
+ * The NARROW form. This project's viewport is 414px — below the `xl` CONTAINER
  * breakpoint — so everything here is the phone: the navigation is a drawer and
  * the column does not exist. The wide form is `app-layout.desktop.test.tsx`,
  * in the project that runs a browser the other media query has something to
@@ -48,15 +48,62 @@ describe('AppLayout', () => {
 
     const main = screen.getByRole('main');
     expect(skip.getAttribute('href')).toBe(`#${main.id}`);
-    // …and VISIBLE once focused: a skip link that stays hidden while it has the
-    // focus helps nobody.
-    expect(skip).toBeVisible();
+    // …and VISIBLE once focused — measured as a BOX, not with `toBeVisible`,
+    // which only consults `display`/`visibility`/`opacity` and is blind to
+    // `sr-only`'s 1×1 clip. Deleting the whole reveal block left that
+    // assertion green while the component shipped the exact WCAG failure its
+    // own comment says it exists to prevent.
+    const shown = skip.getBoundingClientRect();
+    expect(shown.height).toBeGreaterThan(20);
+    expect(shown.width).toBeGreaterThan(60);
+    expect(getComputedStyle(skip).clipPath).toBe('none');
 
     await browser.keyboard('{Enter}');
     // The focus MOVES, which is the half a skip link usually gets wrong: the
     // browser scrolls but leaves the focus behind, so the next Tab returns the
     // reader to the navigation they just skipped.
     await waitFor(() => expect(document.activeElement).toBe(main));
+  });
+
+  it('is out of the way until it is asked for', async () => {
+    render(shell());
+    const skip = screen.getByRole('link', { name: /skip to content/i });
+
+    // The mirror of the assertion above, and the mutant it kills: making
+    // `.skip` merely `position: absolute` puts a permanent "Skip to content"
+    // on every page of every consumer, and nothing noticed.
+    const hidden = skip.getBoundingClientRect();
+    expect(hidden.height).toBeLessThan(4);
+    expect(getComputedStyle(skip).clipPath).not.toBe('none');
+  });
+
+  it('stacks its regions in reading order', () => {
+    render(
+      shell(
+        <aside>
+          <p>Related</p>
+        </aside>,
+      ),
+    );
+    const trigger = screen.getByRole('button', { name: /menu/i });
+    const header = screen.getByRole('banner');
+    const main = screen.getByRole('main');
+    const aside = screen.getByRole('complementary');
+    const footer = screen.getByRole('contentinfo');
+    const box = (el: Element) => el.getBoundingClientRect();
+
+    // The narrow template had NO `aside` area, so a documented region was
+    // auto-placed into an implicit column below the footer and shrank every
+    // other region from 414px to 333. Nothing failed — this file made no
+    // geometric assertion at all.
+    expect(Math.round(box(header).top)).toBe(Math.round(box(trigger).top));
+    expect(box(main).top).toBeGreaterThanOrEqual(box(header).bottom - 1);
+    expect(box(aside).top).toBeGreaterThanOrEqual(box(main).bottom - 1);
+    expect(box(footer).top).toBeGreaterThanOrEqual(box(aside).bottom - 1);
+    for (const region of [header, main, aside, footer]) {
+      expect(box(region).right).toBeLessThanOrEqual(window.innerWidth);
+    }
+    expect(Math.round(box(main).width)).toBe(window.innerWidth);
   });
 
   it('never exposes two navigations, whichever form is showing', async () => {

@@ -24,11 +24,11 @@ The page shell: the regions a product page is made of, and the things every prod
 
 ## Anatomy
 
-| part            | what it is                                                           |
-| --------------- | -------------------------------------------------------------------- |
-| `AppLayout`     | the grid, the skip link, and the id the skip link points at          |
-| `AppLayoutNav`  | the navigation region — a column from `tablet` up, a drawer below it |
-| `AppLayoutMain` | the page's one `<main>`, and the skip link's target                  |
+| part            | what it is                                                      |
+| --------------- | --------------------------------------------------------------- |
+| `AppLayout`     | the grid, the skip link, and the id the skip link points at     |
+| `AppLayoutNav`  | the navigation region — a column above `@xl`, a drawer below it |
+| `AppLayoutMain` | the page's one `<main>`, and the skip link's target             |
 
 `<header>`, `<aside>` and `<footer>` are **your own elements**, not parts. They are landmarks with no behaviour, and a component around one would be an element that had not earned its place.
 
@@ -62,21 +62,24 @@ The swap point is the declared **`xl` container breakpoint** (48rem), reached th
 
 The cost is one element: a container query cannot interrogate the container it is written on, and every rule that decides this layout is a `grid-template-*` on the grid. So the outer element is the container and the inner one is the grid that asks it.
 
-### The column becomes a drawer, and nothing in JavaScript decides it
+### The column becomes a drawer, and CSS still owns the breakpoint
 
-Below `tablet` (48rem) the navigation region is a `Dialog` pinned to the inline-start edge, with its own trigger. Both forms are rendered and the stylesheet shows one — the alternative is a media query in JavaScript, which has to guess on the first render and then correct itself, a hydration mismatch on every page load.
+Below the `xl` container breakpoint the navigation region is a `Dialog` pinned to the inline-start edge, with its own trigger; above it, a sticky column.
 
-The cost is that the navigation is rendered twice; the guard is `display: none`, which takes the hidden copy out of the accessibility tree, so **two navigation landmarks can never be exposed at once**. There is a test for that, because "exactly one" is the kind of claim that quietly becomes two.
+**One copy of the navigation**, moved between the two forms. The first version rendered both and let the stylesheet hide one, to keep the decision out of JavaScript — three reviews measured what that actually cost:
 
-One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button.
+- crossing the breakpoint with the drawer **open** left a modal `<dialog>` with `display: none` on its wrapper: still `:modal`, still holding the scroll lock, still making the page inert, and with no box — so nothing could be clicked, focused or scrolled, and the close button did not exist. A dead page, reachable by rotating a tablet;
+- every effect in the consumer's navigation ran **twice**, for ever;
+- a consumer's own `id` inside it was duplicated, and `getElementById` resolved to the **hidden** copy — clicking a visible `<label>` focused nothing;
+- and state diverged between the copies, so nothing survived the swap.
 
-### The page scrolls; the column sticks
+So JavaScript picks the form, but it is **not told the breakpoint**: the stylesheet sets `--nav-form` inside the same container query that lays the region out, and a `ResizeObserver` reads it back. One source of truth, still in CSS. Closing the drawer on the way to a column then needs no code — the dialog unmounts and `DialogContent` releases the scroll lock in its cleanup.
 
-The document owns the scroll, and the navigation column stays in view by **sticking** rather than by being its own scroll container.
+One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button. Its trigger is also not inside `<header>`, so a reader navigating by landmark will not meet it; if that matters for your product, render your own trigger inside the header and reach the dialog with `commandfor`.
 
-That was measured before it was chosen. Viewport-locked regions — a `100dvh` shell with `overflow` on each region — are the more _specialised_ answer: they suit an operator panel, they are wrong for a page, they take the scroll away from the document so a phone's address bar never retracts, and they put the footer somewhere the reader cannot reach. Sticky serves both shapes with one model.
+### A sticky header is the consumer's, and it covers things
 
-(The first version of this component had `overflow: auto` on the content region and a comment saying the column stayed put. Neither was true: with `min-block-size: 100dvh` and a `1fr` row the grid simply grows, so the declaration never fired and the column scrolled away with everything else. There is a test now.)
+If your `<header>` is sticky, set `--app-layout-header-offset` to its height on the layout. The shell cannot know it, and without it the sticky column's first link — and anything the browser scrolls to — lands underneath the banner, which is WCAG 2.4.11. The skip link needs no such help: it takes the top of the layer stack.
 
 ### Sizes are tokens, not props
 

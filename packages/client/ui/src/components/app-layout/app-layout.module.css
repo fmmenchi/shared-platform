@@ -26,16 +26,25 @@
   }
 
   .layout {
+    /* WHAT A STICKY HEADER TAKES. A consumer's sticky banner covers whatever
+       the browser has just scrolled to — the rail's first link after a
+       Shift+Tab, an anchor jumped to from the content (WCAG 2.4.11). The shell
+       cannot know the banner's height, so it is ONE property a consumer sets
+       and both the scroll and the sticky column respect. */
+    --app-layout-header-offset: 0px;
+
+    scroll-padding-block-start: var(--app-layout-header-offset);
     display: grid;
     min-block-size: 100dvh;
     /* MOBILE FIRST. One column, and the drawer's trigger shares the header's
        row — which is where a phone expects it, and where the header is already
        looking. */
     grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr auto auto;
     grid-template-areas:
       'menu header'
       'main main'
+      'aside aside'
       'footer footer';
   }
 
@@ -70,13 +79,29 @@
      never retracts — and they put the footer somewhere the reader cannot get
      to. Sticky serves both shapes with one model. */
   .layout > [data-region='nav'] {
+    /* Narrow: it is the drawer's trigger, sharing the header's row. Wide: the
+       column. ONE element either way — see `AppLayoutNav` for what two of them
+       cost. */
+    grid-area: menu;
+  }
+
+  .layout > [data-region='nav'][data-form='column'] {
     grid-area: nav;
     position: sticky;
-    inset-block-start: 0;
-    /* Without this the item stretches to the row's full height and there is
-       nothing left for `sticky` to do. */
+    inset-block-start: var(--app-layout-header-offset);
+    /* `align-self` and the cap below are a PAIR, and neither alone does the
+       job — measured: without `align-self` the cap still bounds the stretched
+       item, and without the cap a long navigation grows past the viewport and
+       its end cannot be reached at any scroll position. Only removing both
+       makes the column scroll away, which is what an earlier version did. */
     align-self: start;
     max-block-size: 100dvh;
+    /* BORDER-BOX, because the shipped CSS runs with no Preflight (ADR-0022).
+       With the default `content-box` the cap sized the CONTENT and the region's
+       padding added 48px on top, so the rail's box ended below the fold and its
+       last item could not be reached at ANY scroll position — measured, 848px
+       against an 800px viewport. */
+    box-sizing: border-box;
     overflow: auto;
     overscroll-behavior: contain;
   }
@@ -87,10 +112,6 @@
 
   .layout > footer {
     grid-area: footer;
-  }
-
-  .layout > [data-region='nav-drawer'] {
-    grid-area: menu;
   }
 
   /* WCAG 2.4.1. Out of the way until it has the focus, and then unmistakably
@@ -106,7 +127,13 @@
     position: fixed;
     inset-block-start: 0.5rem;
     inset-inline-start: 0.5rem;
-    z-index: 1;
+    /* ABOVE a consumer's sticky header, which is the one thing that can cover
+       it — measured at `z-index: 1`, a 64px sticky banner painted straight over
+       it and `elementFromPoint` returned the header. A skip link that is
+       invisible while focused is the failure this component exists to prevent
+       (WCAG 2.4.11), so it takes the top of the layer stack rather than a
+       number a page can outbid. */
+    z-index: 2147483647;
     /* Undo `sr-only`'s clip, which would otherwise hide what it just revealed. */
     clip-path: none;
     inline-size: auto;
