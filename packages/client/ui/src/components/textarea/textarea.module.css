@@ -68,6 +68,16 @@
   .lg {
     @apply min-h-11 py-2.5 text-base;
   }
+  /* A FINGER GETS 44px, the height `lg` already is — the same rule `Button`
+     carries, and it has to be the same rule: `InputGroup` centres its children
+     rather than stretching them, so a button that grew alone would sit taller
+     than the field beside it. Measured: 44 against 36. A target-size policy
+     belongs to the control family or to none of it. */
+  @media (pointer: coarse) {
+    .md {
+      @apply min-h-11;
+    }
+  }
 
   /* The browser's default is `both`, which lets a drag make the field wider
      than the form around it — a layout no grid survives, and the one thing a

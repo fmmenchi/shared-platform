@@ -11,7 +11,7 @@ exports[`InputGroup > matches the rendered snapshot 1`] = `
   </span>
   <input
     aria-label="Search"
-    class="_input_1xjgv_4 _md_1xjgv_46"
+    class="_input_1un66_4 _md_1un66_46"
     type="text"
   />
 </div>
