@@ -10,7 +10,10 @@ import {
 } from 'react';
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useTooltipTriggerWarning } from './tooltip.guards.js';
+import {
+  useTooltipTriggerWarning,
+  useTooltipUnfocusableWarning,
+} from './tooltip.guards.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useTooltipDisclosure } from './tooltip.disclosure.js';
@@ -211,6 +214,7 @@ function Tooltip(props: TooltipProps) {
   }, [engaged, open, dismiss]);
 
   useTooltipTriggerWarning(triggerNode);
+  useTooltipUnfocusableWarning(triggerNode);
 
   // `content` that only repeats the name is announced twice, and only
   // `aria-label` can say so exactly — anything else means computing an

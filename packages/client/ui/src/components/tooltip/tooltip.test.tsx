@@ -616,6 +616,80 @@ describe('Tooltip', () => {
       warn.mockRestore();
     });
 
+    it('warns when the trigger cannot take focus', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      // The shape that looks right with a mouse and reaches nobody else.
+      // Measured in the accessibility tree: the description ends up on a node
+      // with role `generic` and an empty name, which is not announced.
+      render(
+        <Tooltip content="VAT not included">
+          <span>i</span>
+        </Tooltip>,
+      );
+      await waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('cannot take focus'),
+        ),
+      );
+      warn.mockRestore();
+    });
+
+    it('warns for the instinctive repair too, because it is worse', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      // `tabindex` makes it reachable and nothing else: a tab stop with no
+      // role and no name. The warning has to survive it, or it teaches the
+      // wrong fix.
+      render(
+        <Tooltip content="VAT not included">
+          <span tabIndex={0}>i</span>
+        </Tooltip>,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('cannot take focus'),
+      );
+      warn.mockRestore();
+    });
+
+    it('warns when the trigger is disabled, which looks focusable', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      // `tabIndex` still reads 0: the attribute takes it out of the tab order
+      // without touching the property, so the obvious check misses it.
+      render(
+        <Tooltip content="Nothing to save yet">
+          <Button disabled aria-label="Save">
+            S
+          </Button>
+        </Tooltip>,
+      );
+      await waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('out of the tab order'),
+        ),
+      );
+      warn.mockRestore();
+    });
+
+    it('stays quiet for a trigger the keyboard can reach', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Tooltip content="Removes it for everyone">
+          <Button aria-label="Delete">D</Button>
+        </Tooltip>,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
     it('stays quiet when the tooltip describes rather than names', async () => {
       const warn = vi
         .spyOn(console, 'warn')
