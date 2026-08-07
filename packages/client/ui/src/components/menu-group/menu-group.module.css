@@ -1,0 +1,17 @@
+/* A named set of commands inside a menu.
+
+   The group itself gets NO rule: it is a wrapper the accessibility tree needs
+   and the layout does not, and `display: contents` — the reflex for exactly
+   that — has a history of dropping the element out of the tree it is here to
+   be in. Only the visible name is styled. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .label {
+    @apply text-muted-foreground px-3 py-1 text-xs font-medium;
+
+    @media (pointer: coarse) {
+      @apply px-4 py-2 text-sm;
+    }
+  }
+}

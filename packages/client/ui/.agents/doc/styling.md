@@ -20,9 +20,16 @@
 - **No utility strings in JSX** — put them in the module (won't survive precompile). Machine-
   enforced: ESLint bans arbitrary Tailwind values in `className`, and the `lint-css` gate bans them
   in `@apply` (`fmmenchi/no-tailwind-arbitrary`) — `bg-[#123]`/`w-[37px]` bypass the token contract.
-- **Every component ships a `@media (forced-colors: active)` block** (Windows High Contrast): token
-  fills are replaced by system colors, so restore boundaries with `ButtonText` borders, map
-  pending/disabled to `GrayText`, focus to `Highlight` (see button.module.css).
+- **Answer for Windows High Contrast** — machine-enforced by `src/test/forced-colors.test.ts`. Not
+  "every component ships a block": most paint no colour, and a text colour loses nothing there (being
+  replaced by the system's is the point). Three things are actually taken away — a `box-shadow`,
+  removed outright, which a floating surface may have been using as its only edge; a focus
+  `outline-color`, forced to the same system colour as everything around it, so a ring reads as no
+  ring; and a background **fill** that carried meaning (an error tint, a selected row), which
+  collapses to `Canvas`. A stylesheet that does any of those must **either ship a block or record why
+  it needs none** — restore boundaries with `ButtonText`/`CanvasText` borders, map pending/disabled to
+  `GrayText`, focus to `Highlight` (see button.module.css; `popover-content.module.css` is the
+  measured "needs none").
 - `cva` → module class names; `cn` composes; polymorphism via the **`as` prop**
   (`primitives/polymorphic.ts`) — no Radix.
 - Build precompiles → `dist/index.css` = `@fmmenchi/ui/style.css`. Consumer imports CSS, no

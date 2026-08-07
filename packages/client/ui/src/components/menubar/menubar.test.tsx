@@ -55,7 +55,7 @@ const box = (name: string) => command(name).getBoundingClientRect();
 const surfaceOf = (name: string) =>
   document.getElementById(
     command(name).getAttribute('popovertarget') as string,
-  )!;
+  ) as HTMLElement;
 
 const openedBy = async (name: string) => {
   await waitFor(() =>

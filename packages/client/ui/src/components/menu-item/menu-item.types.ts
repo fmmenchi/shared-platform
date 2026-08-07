@@ -26,4 +26,10 @@ export type MenuItemProps = ComponentPropsWithRef<'button'> & {
    * sees; it does not invent a keyword nobody can discover.
    */
   textValue?: string;
+  /**
+   * Whether choosing this closes the menu. `true` by default (the APG's rule).
+   * `event.preventDefault()` in your `onClick` does the same thing on a
+   * `<button>` row; this is the switch that also works on a checkable one.
+   */
+  closeOnSelect?: boolean;
 };

@@ -121,7 +121,14 @@ function labelOf({ element, data }: Descendant<MenuItemData>): string {
  */
 export function nameOf(element: Element, textValue?: string): string {
   const declared = textValue ?? element.getAttribute('aria-label');
-  return (declared ?? visibleText(element)).trim();
+  if (declared != null) return declared.trim();
+
+  // A FORM CONTROL HAS NO TEXT OF ITS OWN. A checkable command is a real
+  // `<input>` wrapped in the label that names it — the accessibility tree reads
+  // that label, so typing must read the same one, or the row a screen reader
+  // calls "Show sidebar" answers to no keystroke at all.
+  const labelled = (element as Partial<HTMLInputElement>).labels?.[0];
+  return visibleText(labelled ?? element).trim();
 }
 
 /** The element's text, skipping what is hidden from the accessibility tree. */
