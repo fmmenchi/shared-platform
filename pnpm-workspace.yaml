@@ -3,15 +3,30 @@ packages:
   - 'packages/*/*'
   - 'apps/*'
 # Force fixed versions of transitive deps flagged by the Trivy scan (all HIGH). Prefer this
-# remediation over a .trivyignore.yaml. NB: brace-expansion is scoped to the vulnerable 5.x
-# line — a blanket override drags 1.x/2.x consumers to 5.x, whose ESM export breaks their
-# `require('brace-expansion')()` call (`expand is not a function`).
+# remediation over a .trivyignore.yaml.
+#
+# SCOPED PER MAJOR wherever more than one line is resolved, because an override forces its
+# version on every dependent regardless of the range they declared and pnpm installs without
+# complaining — so a blanket entry is a major bump applied to somebody else's package:
+#   - brace-expansion: a blanket override drags 1.x/2.x consumers to 5.x, whose ESM export
+#     breaks their `require('brace-expansion')()` call (`expand is not a function`) — measured;
+#   - js-yaml: 4.x removed `safeLoad`, so a 3.x consumer forced across would fail at runtime,
+#     which is why the two lines are fixed separately on their own patch releases.
+# Each of these is a PATCH within its own major, so every dependent's range still admits it —
+# and each is BOUNDED ABOVE for the same reason. An open `>=` is not a floor, it is an
+# instruction to take the newest thing that exists: measured here, `js-yaml: '>=4.3.1'`
+# resolved js-yaml **5.2.3**, and the `fast-uri: '>=3.1.4'` that was already in this file had
+# quietly carried a 3.x consumer to 4.1.1 the same way.
 overrides:
   react: 19.2.8
   react-dom: 19.2.8
   axios: '>=1.18.0'
-  'brace-expansion@5': '>=5.0.8'
-  fast-uri: '>=3.1.4'
+  'brace-expansion@1': '>=1.1.18 <2'
+  'brace-expansion@2': '>=2.1.4 <3'
+  'brace-expansion@5': '>=5.0.9 <6'
+  fast-uri: '>=4.1.2 <5'
+  'js-yaml@3': '>=3.15.1 <4'
+  'js-yaml@4': '>=4.3.1 <5'
   serialize-javascript: '>=7.0.3'
 allowBuilds:
   nx: true
