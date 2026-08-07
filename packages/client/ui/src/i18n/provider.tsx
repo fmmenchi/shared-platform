@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Direction, UiAdapters } from './ports.types.js';
 import {
+  interpolate,
   UI_FALLBACK_LOCALE,
   isSupportedLocale,
   type MessageCatalog,
@@ -165,10 +166,26 @@ export function useUi(): UiContextValue {
  */
 export function useMessages<K extends string>(
   catalog: MessageCatalog<K>,
-): (key: K) => string {
+): (key: K, values?: Readonly<Record<string, string | number>>) => string {
   const ctx = useContext(UiContext);
   const locale = resolveLocale(ctx?.adapters.i18n.locale ?? UI_FALLBACK_LOCALE);
   const overrides = ctx?.adapters.i18n.messages;
-  return (key) =>
-    overrides?.[`${catalog.namespace}.${key}`] ?? catalog.entries[locale][key];
+  return (key, values) => {
+    const message =
+      overrides?.[`${catalog.namespace}.${key}`] ??
+      catalog.entries[locale][key];
+    const filled = interpolate(message, values);
+
+    // A hole nobody filled reaches the user as `{name}`, and in an `aria-label`
+    // nobody reads it before a screen reader does. Said out loud in dev — the
+    // condition is about the RESULT, so it catches an app's override that
+    // introduced a placeholder the component knows nothing about.
+    if (process.env.NODE_ENV !== 'production' && /\{\w+\}/.test(filled)) {
+      console.warn(
+        `useMessages (${catalog.namespace}.${key}): "${filled}" still has an ` +
+          'unfilled placeholder. Pass it in the second argument.',
+      );
+    }
+    return filled;
+  };
 }

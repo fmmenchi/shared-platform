@@ -150,4 +150,70 @@ describe('useMessages', () => {
     );
     expect(screen.getByText('Yo')).toBeInTheDocument();
   });
+
+  describe('a message with a moving part', () => {
+    const greetings = defineMessages('probe', {
+      en: { hi: 'Back to {name}' },
+      it: { hi: 'Torna a {name}' },
+      ar: { hi: 'العودة إلى {name}' },
+    });
+
+    function Greet(props: { values?: Record<string, string> }) {
+      const t = useMessages(greetings);
+      return <span data-testid="out">{t('hi', props.values)}</span>;
+    }
+
+    it('fills the hole', () => {
+      renderUi(<Greet values={{ name: 'Share' }} />, { locale: 'en' });
+      expect(screen.getByTestId('out')).toHaveTextContent('Back to Share');
+    });
+
+    it('lets the copy decide the word order, which is the whole point', () => {
+      // THE CASE THE OLD SHAPE COULD NOT REACH. Concatenating a fragment with a
+      // name — `t('back') + ' ' + name` — puts "<something> <name>" in the CODE,
+      // so no translator and no app override could produce Japanese, where the
+      // name comes first and the verb last. With a hole in the string, an
+      // override is all it takes.
+      render(
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en', messages: { 'probe.hi': '{name}に戻る' } },
+          }}
+        >
+          <Greet values={{ name: '共有' }} />
+        </UiProvider>,
+      );
+      expect(screen.getByTestId('out')).toHaveTextContent('共有に戻る');
+    });
+
+    it('leaves an unfilled hole visible, and says so', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      // A value IS passed, and it is the wrong one — which is the case that
+      // actually happens: an app overrides the message with one whose holes the
+      // component knows nothing about. Passing none at all takes an early
+      // return and never reaches the decision this is about.
+      renderUi(<Greet values={{ other: 'x' }} />, { locale: 'en' });
+
+      // NOT blanked: an app may override a message with one whose holes the
+      // component knows nothing about, and a visible `{name}` is a bug somebody
+      // reports — where an empty string is a label that quietly says less than
+      // it should, in an `aria-label` nobody reads before a screen reader does.
+      expect(screen.getByTestId('out')).toHaveTextContent('Back to {name}');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('unfilled placeholder'),
+      );
+      warn.mockRestore();
+    });
+
+    it('says nothing when there is no hole to fill', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      renderUi(<Probe />, { locale: 'en' });
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+  });
 });

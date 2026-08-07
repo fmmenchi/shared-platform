@@ -33,3 +33,29 @@ export function defineMessages<K extends string>(
 ): MessageCatalog<K> {
   return { namespace, entries };
 }
+
+/**
+ * Fill `{name}` placeholders in a resolved message.
+ *
+ * A message with a moving part is ONE string with a hole in it, never a
+ * fragment the component finishes by hand: `t('back') + ' ' + name` reads
+ * "Back to Share" and cannot read anything else, because the word order is in
+ * the code rather than in the copy. Japanese puts the name first and the verb
+ * last, Turkish and Finnish inflect the name — and none of that is reachable by
+ * a translator, nor by an app overriding `menuContent.back`, while the two
+ * halves are glued together outside the catalogue.
+ *
+ * A placeholder with no value is LEFT ALONE rather than blanked: an app may
+ * override a message with one that has different holes, and a visible `{name}`
+ * is a bug that gets reported, where an empty string is a label that quietly
+ * says less than it should.
+ */
+export function interpolate(
+  message: string,
+  values?: Readonly<Record<string, string | number>>,
+): string {
+  if (!values) return message;
+  return message.replace(/\{(\w+)\}/g, (whole, key: string) =>
+    key in values ? String(values[key]) : whole,
+  );
+}
