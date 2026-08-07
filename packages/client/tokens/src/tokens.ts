@@ -183,6 +183,11 @@ export const CONTAINER_BREAKPOINTS = {
   sm: '24rem',
   md: '28rem',
   lg: '32rem',
+  /* The width at which a sidebar and its content both fit — the page shell's
+     swap point. Equal to the `tablet` VIEWPORT breakpoint on purpose and not by
+     coincidence: a layout that is as wide as a tablet can hold two columns
+     whether or not the window is. */
+  xl: '48rem',
 } as const;
 
 /** Presets the platform ships as reference themes. `base` is `:root`. */
