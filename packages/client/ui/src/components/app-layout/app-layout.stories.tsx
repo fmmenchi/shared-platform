@@ -51,7 +51,8 @@ export const Default: Story = {
       <AppLayoutMain>
         <h1>Overview</h1>
         <p>
-          The content region owns its own scroll, and the skip link lands here.
+          The page scrolls; the navigation column sticks. The skip link lands
+          here.
         </p>
       </AppLayoutMain>
       <footer style={{ padding: 'var(--fm-space-inset-m)' }}>© 2026</footer>

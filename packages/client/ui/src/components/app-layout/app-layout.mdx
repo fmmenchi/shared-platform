@@ -60,6 +60,14 @@ The cost is that the navigation is rendered twice; the guard is `display: none`,
 
 One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button.
 
+### The page scrolls; the column sticks
+
+The document owns the scroll, and the navigation column stays in view by **sticking** rather than by being its own scroll container.
+
+That was measured before it was chosen. Viewport-locked regions — a `100dvh` shell with `overflow` on each region — are the more _specialised_ answer: they suit an operator panel, they are wrong for a page, they take the scroll away from the document so a phone's address bar never retracts, and they put the footer somewhere the reader cannot reach. Sticky serves both shapes with one model.
+
+(The first version of this component had `overflow: auto` on the content region and a comment saying the column stayed put. Neither was true: with `min-block-size: 100dvh` and a `1fr` row the grid simply grows, so the declaration never fired and the column scrolled away with everything else. There is a test now.)
+
 ### Sizes are tokens, not props
 
 `--fm-size-nav` and `--fm-size-aside` set the two columns. A sidebar's width is a measurement, so a theme retunes it exactly the way it retunes a colour; an API taking pixels would have to anticipate every product that ever asks.

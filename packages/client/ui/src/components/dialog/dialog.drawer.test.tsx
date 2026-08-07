@@ -27,7 +27,13 @@ type Side = 'inline-start' | 'inline-end' | 'block-start' | 'block-end';
  * and no mutation of one can be hidden by the other.
  */
 const drawer = (side: Side, children?: React.ReactNode) => (
-  <>
+  // The entry transition is measured here, so it is made long enough to BE
+  // measured. At the token's own `xs` the window between "the dialog is open"
+  // and "the slide is over" is a few frames, and under the full gate's load it
+  // closed before the assertion could look — three passes alone, one failure
+  // beside everything else. Slowing it changes nothing about what is asserted;
+  // it only makes the observation reliable.
+  <div style={{ '--fm-duration-xs': '600ms' } as React.CSSProperties}>
     <button type="button">Before</button>
     <Dialog>
       <DialogTrigger>Menu</DialogTrigger>
@@ -44,7 +50,7 @@ const drawer = (side: Side, children?: React.ReactNode) => (
       </DialogContent>
     </Dialog>
     <p data-testid="page">Page behind</p>
-  </>
+  </div>
 );
 
 const surface = () => document.querySelector('dialog') as HTMLDialogElement;
@@ -61,6 +67,14 @@ const comesFrom = () => {
 const open = async () => {
   await browser.click(screen.getByRole('button', { name: 'Menu' }));
   await waitFor(() => expect(surface().open).toBe(true));
+  // WAIT FOR THE TRANSITION TO EXIST, not merely for the dialog to be open.
+  // `getAnimations()` is empty until the browser has created it, and under the
+  // full gate's load that gap is wide enough to read nothing and call it a
+  // failure — measured, this passed three times alone and failed once beside
+  // everything else. A drawer with no side has no slide to wait for.
+  if (surface().dataset.side) {
+    await waitFor(() => expect(comesFrom()).not.toBe(''));
+  }
   const from = comesFrom();
   // ARRIVED, not merely open: it slides, so a rect read on the frame it opens
   // is a rect of a panel still off the edge it came from.

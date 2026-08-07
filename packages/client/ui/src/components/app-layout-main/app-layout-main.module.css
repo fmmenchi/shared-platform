@@ -4,11 +4,10 @@
 @layer fmmenchi {
   .main {
     @apply p-inset-m;
-    /* Its own scroll, so the navigation column stays put while the content
-       moves — and `-1` on the element (set by the component) is what lets the
-       keyboard scroll it after the skip link has landed there. */
-    overflow: auto;
-    overscroll-behavior: contain;
+    /* NO `overflow` here, and that is a correction rather than an omission: the
+       first version had one, and it never fired — the grid grows instead of
+       overflowing, so the declaration was inert while its comment claimed the
+       column stayed put. The page scrolls; the column sticks. */
   }
 
   /* The skip link puts the focus here; the ring would be a box around the whole

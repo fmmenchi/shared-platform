@@ -86,6 +86,50 @@ describe('AppLayout, above the breakpoint', () => {
     expect(Math.round(box(aside).top)).toBe(Math.round(box(main).top));
   });
 
+  it('lets the PAGE scroll, and keeps the column in view while it does', async () => {
+    render(
+      <AppLayout>
+        <header>Panel</header>
+        <AppLayoutNav label="Main">{nav}</AppLayoutNav>
+        <AppLayoutMain>
+          {Array.from({ length: 120 }, (_, index) => (
+            <p key={index}>Paragraph {index}</p>
+          ))}
+        </AppLayoutMain>
+        <footer>© 2026</footer>
+      </AppLayout>,
+    );
+
+    const root = document.documentElement;
+    const main = screen.getByRole('main');
+    const rail = screen
+      .getByRole('navigation')
+      .closest('[data-region="nav"]') as HTMLElement;
+
+    // THE DOCUMENT scrolls, not a region inside it. Measured before choosing:
+    // an `overflow` on the regions never fired, because the grid grows rather
+    // than overflowing — and taking the scroll off the document is what stops a
+    // phone's address bar retracting and puts the footer out of reach.
+    expect(root.scrollHeight).toBeGreaterThan(root.clientHeight);
+    expect(main.scrollHeight).toBe(main.clientHeight);
+
+    window.scrollTo(0, 600);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const stuck = Math.round(rail.getBoundingClientRect().top);
+
+    window.scrollTo(0, 1400);
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+
+    // STUCK, which is not "does not move": it travels up until it meets the
+    // edge and then stops, so the proof is that a SECOND scroll moves it no
+    // further while the content keeps going. An earlier version claimed the
+    // column stayed put and it scrolled away with everything else.
+    expect(stuck).toBe(0);
+    expect(Math.round(rail.getBoundingClientRect().top)).toBe(stuck);
+    expect(main.getBoundingClientRect().top).toBeLessThan(-1300);
+    window.scrollTo(0, 0);
+  });
+
   it('gives the content the whole width when there is no navigation', () => {
     render(shell({ nav: false }));
     const main = screen.getByRole('main');

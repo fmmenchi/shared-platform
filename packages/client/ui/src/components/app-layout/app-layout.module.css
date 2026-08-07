@@ -36,16 +36,38 @@
     min-inline-size: 0;
   }
 
+  /* THE PAGE SCROLLS, and the column stays put by sticking rather than by
+     being its own scroll container.
+
+     Measured before choosing: with `min-block-size: 100dvh` and a `1fr` row the
+     grid simply GROWS, so an `overflow: auto` on the regions never fires — the
+     document scrolled 4180px while `main.scrollHeight === main.clientHeight`.
+     The first version claimed the column "stays put while the content moves"
+     and it did no such thing; it scrolled away with everything else.
+
+     Viewport-locked regions were the other option, and they are the more
+     SPECIALISED one: they suit an operator panel and are wrong for a page,
+     they take the scroll away from the document — so a phone's address bar
+     never retracts — and they put the footer somewhere the reader cannot get
+     to. Sticky serves both shapes with one model. */
+  .layout > [data-region='nav'] {
+    grid-area: nav;
+    position: sticky;
+    inset-block-start: 0;
+    /* Without this the item stretches to the row's full height and there is
+       nothing left for `sticky` to do. */
+    align-self: start;
+    max-block-size: 100dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
   .layout > aside {
     grid-area: aside;
   }
 
   .layout > footer {
     grid-area: footer;
-  }
-
-  .layout > [data-region='nav'] {
-    grid-area: nav;
   }
 
   .layout > [data-region='nav-drawer'] {
