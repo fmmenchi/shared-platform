@@ -10,7 +10,7 @@ A bounded surface holding one thing, and nothing about what that thing is.
 
 ```tsx
 <Card>
-  <CardMedia src="…" alt="" />
+  <CardCover src="…" alt="" />
   <CardTitle level={3} href="/digest">
     Weekly digest
   </CardTitle>
@@ -27,7 +27,7 @@ A bounded surface holding one thing, and nothing about what that thing is.
 | ------------- | ------------------------------------------------------------------- |
 | `Card`        | the surface, its padding, and the box the clickable layer measures  |
 | `CardTitle`   | the name — and, with a destination, what makes the card clickable   |
-| `CardMedia`   | the picture itself, reaching the edges and rounding its own corners |
+| `CardCover`   | the picture itself, reaching the edges and rounding its own corners |
 | `CardActions` | the actions, pinned to the bottom and above the clickable layer     |
 
 There is no `CardHeader`, `CardContent` or `CardFooter`. Each part here earns its place by carrying CSS a consumer gets wrong; three more containers of padding would carry none, and every element is somewhere a defect can live — on `InputGroup`, **11 of 20 review findings existed only because of one element that had not earned its place**. The rhythm between children is a single `gap` on the card, not three components.
@@ -80,7 +80,9 @@ Two costs, and they are not small:
 
 <Canvas of={CardStories.WithMedia} />
 
-**`CardMedia` IS the image**, not a box around one. The first version wrapped the consumer's `<img>` in a `<div>`, and the wrapper turned out to carry nothing: the negative margins, the `aspect-ratio`, the crop and the rounded corners all apply to an `<img>` directly — measured, not assumed. Two elements where one does the work is exactly what this family refuses three components for. `as="picture"` or `as="video"` for the cases that genuinely need a wrapper, and the stylesheet fills the image inside them.
+It is `CardCover` and not `CardMedia` because it is not a container of media — it **is** the picture. The category name read like a wrapper, which is what it used to be; `CardImage` would have been wrong for `as="video"`.
+
+**`CardCover` IS the image**, not a box around one. The first version wrapped the consumer's `<img>` in a `<div>`, and the wrapper turned out to carry nothing: the negative margins, the `aspect-ratio`, the crop and the rounded corners all apply to an `<img>` directly — measured, not assumed. Two elements where one does the work is exactly what this family refuses three components for. `as="picture"` or `as="video"` for the cases that genuinely need a wrapper, and the stylesheet fills the image inside them.
 
 It is **explicit rather than automatic** — the card does not style every `<img>` it happens to contain — because an image in a card is not necessarily its cover. An avatar, a logo or a chart must not bleed to the edges, and a rule that guessed would be wrong for all three.
 
