@@ -83,6 +83,10 @@ export default defineConfig(() => ({
       // (`./button`). New components add an entry here.
       entry: {
         heading: 'src/components/heading/index.ts',
+        'card-actions': 'src/components/card-actions/index.ts',
+        'card-media': 'src/components/card-media/index.ts',
+        'card-title': 'src/components/card-title/index.ts',
+        card: 'src/components/card/index.ts',
         'app-layout-nav-drawer':
           'src/components/app-layout-nav-drawer/index.ts',
         'app-layout-nav-column':

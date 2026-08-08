@@ -1,0 +1,49 @@
+/* The card's name, and its destination. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .title {
+    @apply text-lg leading-tight;
+    font-family: var(--fm-font-heading);
+    font-weight: var(--fm-font-weight-semibold);
+    /* A heading's own margins would fight the card's `gap`, and every UA ships
+       some. The card owns the rhythm between its children. */
+    margin: 0;
+  }
+
+  .link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* THE INVISIBLE LAYER. It measures itself against `Card`, which is the only
+     positioned ancestor — that is what `position: relative` on the card is
+     for. Empty content, no paint: it exists to be clicked. */
+  .link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--fm-radius-lg);
+  }
+
+  /* THE FOCUS RING GOES ON THE LAYER, not on the text. The layer is what the
+     reader is about to activate, so a ring around the title alone would point
+     at the wrong target — and would be the only affordance shared with the
+     mouse, which highlights the whole card. Drawn on `::after` rather than by
+     the card, so it does not depend on a rule in a stylesheet next door. */
+  .link:focus-visible {
+    outline: none;
+  }
+
+  .link:focus-visible::after {
+    outline: 2px solid var(--fm-color-ring);
+    outline-offset: 2px;
+  }
+
+  @media (forced-colors: active) {
+    .link:focus-visible::after {
+      outline-color: Highlight;
+    }
+  }
+}
