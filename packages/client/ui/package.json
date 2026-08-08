@@ -358,6 +358,30 @@
       "types": "./dist/components/card-actions/index.d.ts",
       "import": "./dist/card-actions.js",
       "default": "./dist/card-actions.js"
+    },
+    "./tabs": {
+      "@fmmenchi/source": "./src/components/tabs/index.ts",
+      "types": "./dist/components/tabs/index.d.ts",
+      "import": "./dist/tabs.js",
+      "default": "./dist/tabs.js"
+    },
+    "./tab-list": {
+      "@fmmenchi/source": "./src/components/tab-list/index.ts",
+      "types": "./dist/components/tab-list/index.d.ts",
+      "import": "./dist/tab-list.js",
+      "default": "./dist/tab-list.js"
+    },
+    "./tab": {
+      "@fmmenchi/source": "./src/components/tab/index.ts",
+      "types": "./dist/components/tab/index.d.ts",
+      "import": "./dist/tab.js",
+      "default": "./dist/tab.js"
+    },
+    "./tab-panel": {
+      "@fmmenchi/source": "./src/components/tab-panel/index.ts",
+      "types": "./dist/components/tab-panel/index.d.ts",
+      "import": "./dist/tab-panel.js",
+      "default": "./dist/tab-panel.js"
     }
   },
   "nx": {

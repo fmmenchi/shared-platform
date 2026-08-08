@@ -1,0 +1,44 @@
+/* What a tab shows. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .panel {
+    /* THE `hidden` ATTRIBUTE, DEFENDED — and `!important` is the only thing
+       that actually defends it from inside a cascade layer.
+
+       Its UA rule is `display: none`, which any author declaration beats. This
+       package ships everything inside `@layer fmmenchi` (ADR-0011), and a
+       layered rule loses to EVERY unlayered one regardless of specificity — so
+       the first version of this line, written plainly right under a comment
+       claiming it could not be beaten, was beaten by `.myPanel { display: grid }`
+       in the consumer's own stylesheet. Every panel then shows at once: N
+       tabpanels in the accessibility tree, N extra tab stops, and exactly one
+       tab claiming `aria-selected="true"`.
+
+       For `!important` the layer order is INVERTED and unlayered author
+       `!important` ranks lowest, so this beats both a plain and an `!important`
+       override. It is the one declaration in the package that earns it, because
+       it is not styling: it is the difference between one panel and all of
+       them. */
+    &[hidden] {
+      display: none !important;
+    }
+
+    /* The panel takes the focus (it may hold nothing focusable), so it owes a
+       ring — and an inset one, since the panel is usually the full width and an
+       outset ring would be clipped by whatever scrolls. */
+    &:focus-visible {
+      outline: 2px solid var(--fm-color-ring);
+      outline-offset: -2px;
+    }
+
+    min-inline-size: 0;
+  }
+
+  @media (forced-colors: active) {
+    .panel:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

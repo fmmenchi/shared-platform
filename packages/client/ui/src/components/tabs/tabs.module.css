@@ -1,0 +1,19 @@
+/* One panel at a time, chosen from a list of tabs. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .tabs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fm-space-internal-m);
+  }
+
+  /* A vertical list sits BESIDE its panels, so the family turns into a row —
+     the one layout decision that belongs to the root rather than to either
+     part, because neither of them can see the other. */
+  .tabs[data-orientation='vertical'] {
+    flex-direction: row;
+    align-items: start;
+  }
+}

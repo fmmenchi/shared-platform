@@ -82,6 +82,10 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'tab-panel': 'src/components/tab-panel/index.ts',
+        tab: 'src/components/tab/index.ts',
+        'tab-list': 'src/components/tab-list/index.ts',
+        tabs: 'src/components/tabs/index.ts',
         heading: 'src/components/heading/index.ts',
         'card-actions': 'src/components/card-actions/index.ts',
         'card-media': 'src/components/card-media/index.ts',

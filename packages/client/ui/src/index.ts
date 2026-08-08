@@ -184,3 +184,20 @@ export type {
 } from './components/card-media/card-media.types.js';
 export { CardActions } from './components/card-actions/card-actions.component.js';
 export type { CardActionsProps } from './components/card-actions/card-actions.types.js';
+export { Tabs } from './components/tabs/tabs.component.js';
+export type {
+  TabsProps,
+  TabsOrientation,
+  TabsActivation,
+} from './components/tabs/tabs.types.js';
+export { useTabsContext } from './components/tabs/tabs.context.js';
+export type {
+  TabsContextValue,
+  TabData,
+} from './components/tabs/tabs.context.js';
+export { TabList } from './components/tab-list/tab-list.component.js';
+export type { TabListProps } from './components/tab-list/tab-list.types.js';
+export { Tab } from './components/tab/tab.component.js';
+export type { TabProps } from './components/tab/tab.types.js';
+export { TabPanel } from './components/tab-panel/tab-panel.component.js';
+export type { TabPanelProps } from './components/tab-panel/tab-panel.types.js';
