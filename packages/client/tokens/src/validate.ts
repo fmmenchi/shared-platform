@@ -19,12 +19,12 @@ import {
   parse as parseColor,
   wcagContrast,
 } from 'culori';
-import {
-  ACTION_FAMILIES,
-  COLOR_ROLES,
-  STATUS_FAMILIES,
-  type ColorRole,
-} from './index.js';
+// FROM THE MODULES, not from the barrel. This file is a separate subpath so a
+// browser importing the main entry never pulls the colour maths in; importing
+// `./index.js` ran that coupling backwards, so every addition to the barrel —
+// `tokenVars` was the latest — widened `@fmmenchi/tokens/validate` too.
+import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from './tokens.js';
+import type { ColorRole } from './tokens.types.js';
 
 /**
  * The DECLARED PAIRS — the only role combinations the design system

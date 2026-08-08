@@ -1,15 +1,4 @@
 import { REGISTERED_SECTIONS } from './registry.js';
-import {
-  BORDER_WIDTH_TOKENS,
-  COLOR_ROLES,
-  DURATION_TOKENS,
-  FONT_TOKENS,
-  FONT_WEIGHT_TOKENS,
-  RADIUS_TOKENS,
-  SIZE_TOKENS,
-  SPACE_TOKENS,
-  TEXT_TOKENS,
-} from './tokens.js';
 
 /**
  * THE FILES THAT ONLY RESTATE THE CONTRACT, WRITTEN BY THE CONTRACT.
@@ -31,10 +20,22 @@ import {
  * committed files honest is an ordinary assertion — see `generate.test.ts`.
  */
 
-/** Every `--fm-*: value` in a stylesheet, in source order. */
+/**
+ * Every `--fm-*: value` in a stylesheet, in source order.
+ *
+ * COMMENTS ARE REMOVED FIRST, and that is not tidiness. Anchoring on `^\s*`
+ * only asks for the start of a LINE, so a role commented out during a retune —
+ * the ordinary `/* off for now` around a block — reads as a declaration. Every
+ * gate would then pass on a role the shipped CSS does not define: completeness
+ * sees it, contrast reads its value out of the comment, and `properties.css`
+ * registers it. The `:root` value being absent, it resolves to the `@property`
+ * initial-value, `oklch(0 0 0)` — black, on every consumer, in both themes.
+ */
 export function readVars(css: string): Map<string, string> {
   const values = new Map<string, string>();
-  for (const [, name, value] of css.matchAll(
+  const live = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  for (const [, name, value] of live.matchAll(
     /^\s*(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/gm,
   )) {
     values.set(name as string, (value as string).trim().replace(/\s+/g, ' '));
@@ -48,9 +49,22 @@ export function readVars(css: string): Map<string, string> {
  * value at the 16px root rather than restated, so the two cannot disagree.
  */
 export function toIndependentLength(value: string): string {
-  const rem = /^(-?[\d.]+)rem$/.exec(value.trim());
-  if (!rem) return value.trim();
-  return `${Number(rem[1]) * 16}px`;
+  const trimmed = value.trim();
+  if (/^-?\d+(\.\d+)?px$/.test(trimmed)) return trimmed;
+
+  const rem = /^(-?\d+(?:\.\d+)?)rem$/.exec(trimmed);
+  if (rem) return `${Number(rem[1]) * 16}px`;
+
+  // THROWS RATHER THAN PASSES IT THROUGH. Returning the value unchanged is the
+  // worst of the options: `initial-value: clamp(4px, 1vw, 8px)` is not
+  // computationally independent, so the browser rejects the WHOLE `@property`
+  // rule — and silently. The token then loses both things registration buys it,
+  // the interpolation and the type guard, and an invalid assignment poisons the
+  // cascade instead of falling back. Nothing downstream can see that: Stylelint
+  // has no rule for it and the contract test only greps for `rem`.
+  throw new Error(
+    `Cannot register a length that is not absolute: ${JSON.stringify(value)}. An @property initial-value must be computationally independent, so a registered token has to be px or rem — not em, calc(), clamp() or a var().`,
+  );
 }
 
 /** Soft-wrap a comment body at 80 columns, continuations indented to match. */
@@ -124,48 +138,4 @@ export function renderProperties(values: Map<string, string>): string {
   });
 
   return `${HEADER}\n${sections.join('\n\n')}\n`;
-}
-
-/**
- * `tokens.json` — the contract in the Design Tokens Community Group format.
- *
- * It serves no CSS library: every one of them reads `var(--fm-*)` already. It
- * exists for the DESIGN side — Figma's token tooling reads DTCG — which is the
- * one direction this package has never been able to talk in.
- *
- * Only the groups DTCG can express LOSSLESSLY are emitted. A CSS `transition`
- * shorthand, our shadow strings and the z-index scale have no faithful DTCG
- * type, and emitting them untyped would be a file that looks complete and is
- * not — worse than one that says what it covers.
- */
-const DTCG_GROUPS = [
-  { group: 'color', names: COLOR_ROLES, type: 'color' },
-  { group: 'radius', names: RADIUS_TOKENS, type: 'dimension' },
-  { group: 'space', names: SPACE_TOKENS, type: 'dimension' },
-  { group: 'text', names: TEXT_TOKENS, type: 'dimension' },
-  { group: 'leading', names: TEXT_TOKENS, type: 'number' },
-  { group: 'font', names: FONT_TOKENS, type: 'fontFamily' },
-  { group: 'font-weight', names: FONT_WEIGHT_TOKENS, type: 'fontWeight' },
-  { group: 'border-width', names: BORDER_WIDTH_TOKENS, type: 'dimension' },
-  { group: 'size', names: SIZE_TOKENS, type: 'dimension' },
-  { group: 'duration', names: DURATION_TOKENS, type: 'duration' },
-] as const;
-
-export function renderDtcg(values: Map<string, string>): string {
-  const out: Record<string, unknown> = {
-    $description:
-      'The @fmmenchi semantic token contract, base theme. Generated from styles/vars.css — do not edit. Groups with no lossless DTCG type (transition, shadow, ease, z) are deliberately absent.',
-  };
-
-  for (const { group, names, type } of DTCG_GROUPS) {
-    const entries: Record<string, unknown> = {};
-    for (const name of names) {
-      const value = values.get(`--fm-${group}-${name}`);
-      if (value === undefined) continue;
-      entries[name] = { $type: type, $value: value };
-    }
-    out[group] = entries;
-  }
-
-  return `${JSON.stringify(out, null, 2)}\n`;
 }
