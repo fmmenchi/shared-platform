@@ -5,13 +5,13 @@ exports[`Field > matches the rendered snapshot 1`] = `
   class="_field_l1k5n_3"
 >
   <label
-    class="_label_1pcai_4"
+    class="_label_1ubmc_4"
     for="«react-id»"
   >
     Email
   </label>
   <input
-    class="_input_1un66_4 _md_1un66_46"
+    class="_input_x4x2j_4 _md_x4x2j_46"
     id="«react-id»"
     type="text"
   />

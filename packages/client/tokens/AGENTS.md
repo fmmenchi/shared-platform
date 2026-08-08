@@ -55,10 +55,12 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   consumer those two roles have). It ships inside `@layer fmmenchi.base` so it can never beat the
   components: a layer's own rules win over its sublayers, so
   `fmmenchi.base < fmmenchi < the app's css`, and the consumer orders nothing.
-- **No text/leading scale yet — deliberately.** Utilities use Tailwind's default sizes until a
-  Text/Heading component settles the size+leading pairing; never re-add an unbridged `--fm-text-*`
-  scale (a token nothing consumes silently diverges from the utilities — the phantom-contract trap).
-  Introduce the scale WITH that component, bridged in the same change.
+- **The type scale is a PAIR, and the leading half is a ratio.** `--fm-text-<step>` ships with
+  `--fm-leading-<step>`, and both are bridged (`--text-<step>` + `--text-<step>--line-height`) —
+  the bridge is asserted, because a step whose leading never reaches Tailwind loses it silently.
+  The leading is unitless on purpose: an absolute one is inherited as a frozen number, so a
+  descendant that changes its font-size keeps the ancestor's line box, and a brand overriding a
+  size gets rows that overlap. Never split the pair, and never override one half alone.
 - Weight utilities are `font-regular` (not `font-normal`); breakpoints are build-time literals in
   `tailwind.css`, asserted against `BREAKPOINTS` in TS.
 

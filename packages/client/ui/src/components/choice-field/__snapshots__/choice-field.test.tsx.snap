@@ -10,7 +10,7 @@ exports[`ChoiceField > matches the rendered snapshot 1`] = `
     type="checkbox"
   />
   <label
-    class="_label_1pcai_4"
+    class="_label_1ubmc_4"
     for="«react-id»"
   >
     Accept the terms

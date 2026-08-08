@@ -1,0 +1,61 @@
+/*
+ * Heading styles. The type scale is the token contract's (`--fm-text-*` with its
+ * paired, unitless leading); this file only chooses a step per heading and the
+ * family and weight that make one read as a heading.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  .heading {
+    /* The UA gives a heading a size AND a margin, both of which belong to the
+       page rather than to us: `h1` at 2em with 0.67em above and below would
+       fight the caller's own spacing wherever this lands. The size comes from
+       the steps below; the margin goes, because vertical rhythm is the
+       container's job (the same call `field-description` makes). */
+    margin-block: 0;
+    /* `heading` resolves to the sans stack unless a brand preset overrides it,
+       so this costs nothing today and is the hook when one does. */
+    @apply font-heading text-foreground font-semibold;
+    /* BOTH lines, and the second is the one that works. `break-word` does not
+       contribute its wrap opportunities to min-content sizing, so as a grid or
+       flex item — which is every container this DS ships — a long word still
+       sized the track: measured, one 85-character word rendered an 715px
+       heading inside a 200px box and the page scrolled sideways. `min-inline-
+       size: 0` is what `field-description` and `field-error` already do, and
+       what `app-layout` documents for the same hazard. */
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+
+  /* One step per heading, in order. Every step of the scale from `base` up has
+     a consumer here, which is what stops a token nobody renders from drifting
+     — and `h5` and `h6` differ, where an earlier version rendered them
+     identically while a comment claimed the weight told them apart. Nothing
+     goes below `base`: a heading smaller than the text around it is one a
+     sighted reader cannot find. */
+  .h1 {
+    @apply text-4xl;
+  }
+  .h2 {
+    @apply text-3xl;
+  }
+  .h3 {
+    @apply text-2xl;
+  }
+  .h4 {
+    @apply text-xl;
+  }
+  .h5 {
+    @apply text-lg;
+  }
+  .h6 {
+    @apply text-base;
+  }
+
+  /* No `forced-colors` block, and the exemption is the doctrine's own: this
+     surface carries no fill, no border, no shadow and no focus ring — it is
+     text, which forced colours already paint. `field-description`,
+     `field-label` and `fieldset-legend` ship none either. */
+}

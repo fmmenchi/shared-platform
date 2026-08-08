@@ -6,12 +6,12 @@ exports[`Fieldset > matches the rendered snapshot 1`] = `
   class="_fieldset_1wj81_3"
 >
   <legend
-    class="_legend_vtrxv_4"
+    class="_legend_1c9b5_4"
   >
     Favourite colour
   </legend>
   <p
-    class="_description_g1y21_3"
+    class="_description_11b4a_3"
     id="«react-id»"
   >
     Pick exactly one.

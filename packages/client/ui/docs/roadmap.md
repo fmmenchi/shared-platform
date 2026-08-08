@@ -15,6 +15,7 @@ sibling folder of its family and is documented on the family's page, not its own
 
 | Group             | Components                                                                                                                                                     |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Typography**    | `Heading`                                                                                                                                                      |
 | **Buttons**       | `Button`                                                                                                                                                       |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
@@ -40,18 +41,13 @@ Not by popularity. Three questions, in this order:
 
 ## Next
 
-### 1. `Text` / `Heading` — a contract is already waiting on it
+### 1. `Text` — the other half of the pairing
 
-The only unbuilt component that something in the platform explicitly blocks on.
-`@fmmenchi/tokens` deliberately ships **no text or leading scale**, and says why:
-
-> Utilities use Tailwind's default sizes until a Text/Heading component settles the size+leading
-> pairing; never re-add an unbridged `--fm-text-*` scale (a token nothing consumes silently diverges
-> from the utilities — the phantom-contract trap). Introduce the scale WITH that component, bridged
-> in the same change.
-
-So this is not one component, it is a component **and** the missing half of the token contract, and
-the two have to land together.
+`Heading` shipped and brought the type scale with it: `--fm-text-*` and its
+paired leading now exist, so the contract that was blocked is unblocked. What is
+still missing is body copy — a `Text` for paragraphs and inline spans over the
+same steps, with the tone roles (`muted-foreground`) a caller reaches for by hand
+today.
 
 ### 2. `Switch` — native shell, real affordance gap
 

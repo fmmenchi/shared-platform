@@ -3,6 +3,6 @@
 exports[`Textarea > matches the rendered snapshot 1`] = `
 <textarea
   aria-label="q"
-  class="_textarea_13for_4 _md_13for_47 _resizeVertical_13for_64"
+  class="_textarea_1muqx_4 _md_1muqx_47 _resizeVertical_1muqx_64"
 />
 `;
