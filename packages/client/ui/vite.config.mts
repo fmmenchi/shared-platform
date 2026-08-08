@@ -88,7 +88,7 @@ export default defineConfig(() => ({
         tabs: 'src/components/tabs/index.ts',
         heading: 'src/components/heading/index.ts',
         'card-actions': 'src/components/card-actions/index.ts',
-        'card-media': 'src/components/card-media/index.ts',
+        'card-cover': 'src/components/card-cover/index.ts',
         'card-title': 'src/components/card-title/index.ts',
         card: 'src/components/card/index.ts',
         'app-layout-nav-drawer':

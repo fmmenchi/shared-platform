@@ -3,8 +3,8 @@
 @reference '../../styles/utilities.css';
 
 @layer fmmenchi {
-  .media {
-    --card-media-ratio: 16 / 9;
+  .cover {
+    --card-cover-ratio: 16 / 9;
 
     /* EXACTLY THE CARD'S PADDING, undone. The same TOKEN the card pads with,
        not a number that happens to match it today and not a local alias — an
@@ -13,7 +13,7 @@
        consumer who retunes `--fm-space-inset-m` on one card moves the padding
        and this bleed together. */
     margin-inline: calc(var(--fm-space-inset-m) * -1);
-    aspect-ratio: var(--card-media-ratio);
+    aspect-ratio: var(--card-cover-ratio);
 
     /* CROP, never stretch, and `block` to kill the inline-layout gap under a
        replaced element — which otherwise shows as a hairline of card colour
@@ -29,21 +29,21 @@
   /* First in the card, so it meets the top corners: round them to match. The
      card cannot do this with `overflow: hidden` without also clipping the
      focus ring of everything inside it. */
-  .media:first-child {
+  .cover:first-child {
     margin-block-start: calc(var(--fm-space-inset-m) * -1);
     border-start-start-radius: var(--fm-radius-lg);
     border-start-end-radius: var(--fm-radius-lg);
   }
 
   /* Last, likewise — a card whose picture sits under the text. */
-  .media:last-child {
+  .cover:last-child {
     margin-block-end: calc(var(--fm-space-inset-m) * -1);
     border-end-start-radius: var(--fm-radius-lg);
     border-end-end-radius: var(--fm-radius-lg);
   }
 
   /* `as="picture"`: the wrapper takes the shape, the image inside fills it. */
-  .media > img {
+  .cover > img {
     display: block;
     inline-size: 100%;
     block-size: 100%;

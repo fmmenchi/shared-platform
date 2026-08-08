@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { CardMedia } from './card-media.component.js';
+import { CardCover } from './card-cover.component.js';
 import { Card } from '../card/card.component.js';
 
 const COVER =
   "data:image/svg+xml,%%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%%3E%%3Crect width='16' height='9'/%%3E%%3C/svg%%3E";
 
-describe('CardMedia', () => {
+describe('CardCover', () => {
   it('IS the media element, not a box around one', () => {
-    const { container } = render(<CardMedia src={COVER} alt="" />);
+    const { container } = render(<CardCover src={COVER} alt="" />);
 
     // The first version rendered a wrapper `<div>` holding the consumer's
     // image — two elements where the styling only ever needed one. Every
@@ -20,7 +20,7 @@ describe('CardMedia', () => {
   it('reaches the card\u2019s edges while its siblings stay inset', () => {
     render(
       <Card>
-        <CardMedia src={COVER} alt="" />
+        <CardCover src={COVER} alt="" />
         <p>Inset</p>
       </Card>,
     );
@@ -43,7 +43,7 @@ describe('CardMedia', () => {
 
   it('crops to a shape instead of letting the file set one', () => {
     const { container } = render(
-      <CardMedia src={COVER} alt="" ratio="1 / 1" />,
+      <CardCover src={COVER} alt="" ratio="1 / 1" />,
     );
 
     const box = (
@@ -57,9 +57,9 @@ describe('CardMedia', () => {
 
   it('wraps, when `as` asks for an element that needs to', () => {
     const { container } = render(
-      <CardMedia as="picture">
+      <CardCover as="picture">
         <img src={COVER} alt="" />
-      </CardMedia>,
+      </CardCover>,
     );
 
     // `<picture>` and `<video>` are the cases a wrapper is genuinely for, and

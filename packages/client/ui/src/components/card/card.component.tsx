@@ -25,9 +25,9 @@ const INTERACTIVE = 'a[href], button, input, select, textarea, [tabindex]';
  * the parts are parts.
  *
  * There is deliberately no `overflow: hidden`, though it would be the quick way
- * to clip `CardMedia` to the corners: it also clips the focus ring of anything
+ * to clip `CardCover` to the corners: it also clips the focus ring of anything
  * inside, and a keyboard user losing the ring on the last button in a card is a
- * worse trade than a picture that has to round its own corners. `CardMedia`
+ * worse trade than a picture that has to round its own corners. `CardCover`
  * rounds its own.
  */
 function Card<As extends CardElement = 'div'>(props: CardProps<As>) {

@@ -5,9 +5,9 @@ import type { PolymorphicProps } from '../../primitives/polymorphic.js';
  * package. `img` covers the case; `picture` is for art direction with
  * `<source>`s; `video` for a cover that moves.
  */
-export type CardMediaElement = 'img' | 'picture' | 'video';
+export type CardCoverElement = 'img' | 'picture' | 'video';
 
-export interface CardMediaOwnProps {
+export interface CardCoverOwnProps {
   /**
    * The shape the media is held in, as a CSS `aspect-ratio`. `16 / 9` by
    * default.
@@ -19,6 +19,6 @@ export interface CardMediaOwnProps {
   ratio?: string;
 }
 
-/** Public CardMedia props — polymorphic via `as`, within `CardMediaElement`. */
-export type CardMediaProps<As extends CardMediaElement = 'img'> =
-  PolymorphicProps<As, CardMediaOwnProps> & { as?: As };
+/** Public CardCover props — polymorphic via `as`, within `CardCoverElement`. */
+export type CardCoverProps<As extends CardCoverElement = 'img'> =
+  PolymorphicProps<As, CardCoverOwnProps> & { as?: As };

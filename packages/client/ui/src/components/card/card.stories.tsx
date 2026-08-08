@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Card } from './card.component.js';
 import { CardTitle } from '../card-title/card-title.component.js';
-import { CardMedia } from '../card-media/card-media.component.js';
+import { CardCover } from '../card-cover/card-cover.component.js';
 import { CardActions } from '../card-actions/card-actions.component.js';
 import { Button } from '../button/button.component.js';
 
@@ -12,7 +12,7 @@ const meta: Meta<typeof Card> = {
     children: {
       control: false,
       description:
-        'Whatever the card holds. `CardTitle`, `CardMedia` and `CardActions` are parts because each carries CSS a consumer gets wrong; everything else is your own markup.',
+        'Whatever the card holds. `CardTitle`, `CardCover` and `CardActions` are parts because each carries CSS a consumer gets wrong; everything else is your own markup.',
       table: { type: { summary: 'ReactNode' } },
     },
   },
@@ -48,14 +48,14 @@ export const Linked: Story = {
 };
 
 /**
- * `CardMedia` reaches the edges by cancelling exactly the card's padding, and
+ * `CardCover` reaches the edges by cancelling exactly the card's padding, and
  * rounds its own corners — the card deliberately does not clip its contents,
  * because that would clip the focus ring of everything inside it too.
  */
 export const WithMedia: Story = {
   render: (args) => (
     <Card {...args} style={{ maxWidth: '22rem' }}>
-      <CardMedia
+      <CardCover
         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%23b8c4d9'/%3E%3C/svg%3E"
         alt=""
       />

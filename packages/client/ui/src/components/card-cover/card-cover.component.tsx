@@ -1,10 +1,14 @@
 import type { CSSProperties, ElementType } from 'react';
 import { cn } from '../../util/cn.js';
-import type { CardMediaElement, CardMediaProps } from './card-media.types.js';
-import styles from './card-media.module.css';
+import type { CardCoverElement, CardCoverProps } from './card-cover.types.js';
+import styles from './card-cover.module.css';
 
 /**
  * A picture that reaches the card's edges.
+ *
+ * COVER, NOT MEDIA, because it is not a container of media — it IS the picture.
+ * The first name said the category and read like a wrapper; this one says the
+ * role, and stays true for `as="video"` in a way `CardImage` would not.
  *
  * IT IS THE MEDIA ELEMENT, not a box around one. The first version wrapped the
  * consumer's `<img>` in a `<div>`, and the wrapper turned out to carry nothing:
@@ -28,8 +32,8 @@ import styles from './card-media.module.css';
  * cover. An avatar, a logo or a chart must NOT bleed to the edges, and a rule
  * that guessed would be wrong for all three.
  */
-function CardMedia<As extends CardMediaElement = 'img'>(
-  props: CardMediaProps<As>,
+function CardCover<As extends CardCoverElement = 'img'>(
+  props: CardCoverProps<As>,
 ) {
   const { as, ratio, className, style, ...rest } = props;
   const Component = (as ?? 'img') as ElementType;
@@ -37,14 +41,14 @@ function CardMedia<As extends CardMediaElement = 'img'>(
   return (
     <Component
       {...rest}
-      className={cn(styles.media, className)}
+      className={cn(styles.cover, className)}
       style={
         ratio === undefined
           ? style
-          : ({ ...style, '--card-media-ratio': ratio } as CSSProperties)
+          : ({ ...style, '--card-cover-ratio': ratio } as CSSProperties)
       }
     />
   );
 }
 
-export { CardMedia };
+export { CardCover };

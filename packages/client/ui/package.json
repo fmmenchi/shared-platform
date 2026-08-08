@@ -347,11 +347,11 @@
       "import": "./dist/card-title.js",
       "default": "./dist/card-title.js"
     },
-    "./card-media": {
-      "@fmmenchi/source": "./src/components/card-media/index.ts",
-      "types": "./dist/components/card-media/index.d.ts",
-      "import": "./dist/card-media.js",
-      "default": "./dist/card-media.js"
+    "./card-cover": {
+      "@fmmenchi/source": "./src/components/card-cover/index.ts",
+      "types": "./dist/components/card-cover/index.d.ts",
+      "import": "./dist/card-cover.js",
+      "default": "./dist/card-cover.js"
     },
     "./card-actions": {
       "@fmmenchi/source": "./src/components/card-actions/index.ts",
