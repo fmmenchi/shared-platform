@@ -1,0 +1,53 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Accordion > matches the rendered snapshot 1`] = `
+<div
+  class="_accordion_1nl2k_3"
+>
+  <details
+    class="_item_1sgka_4"
+  >
+    <summary
+      class="_trigger_4c72n_4"
+    >
+      Uno
+    </summary>
+    <div
+      class="_content_ilx1u_3"
+    >
+      Contenuto 
+      Uno
+    </div>
+  </details>
+  <details
+    class="_item_1sgka_4"
+  >
+    <summary
+      class="_trigger_4c72n_4"
+    >
+      Due
+    </summary>
+    <div
+      class="_content_ilx1u_3"
+    >
+      Contenuto 
+      Due
+    </div>
+  </details>
+  <details
+    class="_item_1sgka_4"
+  >
+    <summary
+      class="_trigger_4c72n_4"
+    >
+      Tre
+    </summary>
+    <div
+      class="_content_ilx1u_3"
+    >
+      Contenuto 
+      Tre
+    </div>
+  </details>
+</div>
+`;

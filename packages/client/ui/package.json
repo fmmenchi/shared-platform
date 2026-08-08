@@ -358,6 +358,30 @@
       "types": "./dist/components/card-actions/index.d.ts",
       "import": "./dist/card-actions.js",
       "default": "./dist/card-actions.js"
+    },
+    "./accordion": {
+      "@fmmenchi/source": "./src/components/accordion/index.ts",
+      "types": "./dist/components/accordion/index.d.ts",
+      "import": "./dist/accordion.js",
+      "default": "./dist/accordion.js"
+    },
+    "./accordion-item": {
+      "@fmmenchi/source": "./src/components/accordion-item/index.ts",
+      "types": "./dist/components/accordion-item/index.d.ts",
+      "import": "./dist/accordion-item.js",
+      "default": "./dist/accordion-item.js"
+    },
+    "./accordion-trigger": {
+      "@fmmenchi/source": "./src/components/accordion-trigger/index.ts",
+      "types": "./dist/components/accordion-trigger/index.d.ts",
+      "import": "./dist/accordion-trigger.js",
+      "default": "./dist/accordion-trigger.js"
+    },
+    "./accordion-content": {
+      "@fmmenchi/source": "./src/components/accordion-content/index.ts",
+      "types": "./dist/components/accordion-content/index.d.ts",
+      "import": "./dist/accordion-content.js",
+      "default": "./dist/accordion-content.js"
     }
   },
   "nx": {

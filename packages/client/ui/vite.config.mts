@@ -82,6 +82,10 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        accordion: 'src/components/accordion/index.ts',
+        'accordion-item': 'src/components/accordion-item/index.ts',
+        'accordion-trigger': 'src/components/accordion-trigger/index.ts',
+        'accordion-content': 'src/components/accordion-content/index.ts',
         heading: 'src/components/heading/index.ts',
         'card-actions': 'src/components/card-actions/index.ts',
         'card-media': 'src/components/card-media/index.ts',

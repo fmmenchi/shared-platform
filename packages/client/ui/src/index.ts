@@ -184,3 +184,15 @@ export type {
 } from './components/card-media/card-media.types.js';
 export { CardActions } from './components/card-actions/card-actions.component.js';
 export type { CardActionsProps } from './components/card-actions/card-actions.types.js';
+
+export { Accordion } from './components/accordion/index.js';
+export type {
+  AccordionProps,
+  AccordionContextValue,
+} from './components/accordion/index.js';
+export { AccordionItem } from './components/accordion-item/index.js';
+export type { AccordionItemProps } from './components/accordion-item/index.js';
+export { AccordionTrigger } from './components/accordion-trigger/index.js';
+export type { AccordionTriggerProps } from './components/accordion-trigger/index.js';
+export { AccordionContent } from './components/accordion-content/index.js';
+export type { AccordionContentProps } from './components/accordion-content/index.js';

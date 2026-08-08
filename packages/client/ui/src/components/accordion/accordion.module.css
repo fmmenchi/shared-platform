@@ -1,0 +1,11 @@
+/* The stack. Everything else about an accordion is the item's or the platform's. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .accordion {
+    display: grid;
+    /* The gap is the only spacing decision here: the items own their own
+       padding, and the container owns what is between them. */
+    gap: var(--fm-space-stack-s);
+  }
+}

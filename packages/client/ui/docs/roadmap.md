@@ -16,6 +16,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | Group             | Components                                                                                                                                                     |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Typography**    | `Heading`                                                                                                                                                      |
+| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                         |
 | **Buttons**       | `Button`                                                                                                                                                       |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
@@ -55,27 +56,22 @@ today.
 this on", and today a consumer building settings has to fake one. Native-first, so the state stays
 in the DOM (see [Controlled and uncontrolled](./index.md)).
 
-### 3. `Accordion` / `Disclosure` — native shell
-
-`<details>` / `<summary>` gives open/close, keyboard operation and find-in-page for free. The
-compound doctrine names it explicitly as a native-shell case rather than a hand-rolled one.
-
-### 4. `Progress` — the Feedback group is one wide
+### 3. `Progress` — the Feedback group is one wide
 
 `<progress>`, determinate and indeterminate. Cheap, and it stops Alert from being the whole of
 Feedback.
 
-### 5. `Table` — the Data display group is one wide
+### 4. `Table` — the Data display group is one wide
 
 Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
 the "next" items and the one most often re-implemented per app.
 
-### 6. `Tabs` — hand-rolled, and knowingly so
+### 5. `Tabs` — hand-rolled, and knowingly so
 
 No native shell exists: Context + a descendants registry + roving `tabindex`. It is the first
 component that needs the descendants primitive, so it also settles that primitive's shape.
 
-### 7. `Toast` — needs a queue and a live region
+### 6. `Toast` — needs a queue and a live region
 
 Transient feedback. Distinct from `Alert`, which is inline and permanent. Wants a decision about
 where the queue lives before any code.

@@ -1,0 +1,20 @@
+/* One disclosure. The `<details>` element draws nothing of its own, so this is
+   the whole surface. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .item {
+    @apply rounded-md border;
+    @apply bg-card text-card-foreground border-border;
+    /* No padding here, on purpose: it would band the closed row with space it
+       is not using. The trigger and the panel carry their own. */
+  }
+
+  /* Forced colors: the token fill and border are replaced by system colours, so
+     a border keeps the item bounded and the group readable as a list of them. */
+  @media (forced-colors: active) {
+    .item {
+      border: 1px solid ButtonText;
+    }
+  }
+}

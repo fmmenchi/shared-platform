@@ -1,0 +1,55 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as AccordionStories from './accordion.stories.tsx';
+
+<Meta of={AccordionStories} />
+
+# Accordion
+
+A stack of disclosures, each one a native `<details>` with its `<summary>`. The
+parts are `AccordionItem`, `AccordionTrigger` and `AccordionContent`; they are
+documented here.
+
+## Props
+
+<Controls of={AccordionStories.Default} />
+
+## Usage
+
+Independent by default — a reader can open two panels and compare them.
+
+<Canvas of={AccordionStories.Default} />
+
+### One at a time
+
+`exclusive` is not a state machine we wrote. It gives every item the same
+`name`, and `<details name>` closes the others itself — measured, opening the
+second closed the first with no script running. The name is generated per
+accordion, never taken from the caller, so two accordions on a page cannot close
+each other's panels.
+
+<Canvas of={AccordionStories.Exclusive} />
+
+### Open at mount, and driven from code
+
+`defaultOpen` seeds an item once and then lets go. `open` drives it, and drives
+back: an item the user closed while the prop still says open is reopened, so
+`onOpenChange` is not optional — a dev warning says so.
+
+<Canvas of={AccordionStories.OpenAtMount} />
+
+## Accessibility
+
+- **The element is the semantics.** `<summary>` is the disclosure button: the
+  accessibility tree already exposes it as `DisclosureTriangle` with `expanded`
+  — measured `false` closed and `true` open — so this component writes **no**
+  `aria-expanded`. Adding it would restate what the platform says and give a
+  second thing to keep in step with it.
+- **Keyboard is the platform's too.** `<summary>` is focusable with no
+  `tabindex`, and answers `Enter` and `Space`. Both measured; neither is
+  re-implemented here.
+- **The panel is not a landmark.** No `role="region"`: a page of disclosures
+  would fill the rotor with regions the reader never asked for.
+- **Find-in-page** works into a closed panel in browsers that support it,
+  because the content is real markup rather than unmounted — one of the reasons
+  the panel is not conditionally rendered.
+- **Reduced motion** stops the chevron's rotation and keeps its end state.
