@@ -19,7 +19,7 @@ const meta: Meta<typeof Heading> = {
       description:
         'How big it LOOKS, when that has to differ from what it is. Steps of the shared type scale. Defaults to the size belonging to `level`.',
       table: {
-        type: { summary: "'4xl' | '3xl' | '2xl' | 'xl' | 'lg' | 'base'" },
+        type: { summary: "'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'" },
         defaultValue: { summary: "the level's own size" },
       },
     },

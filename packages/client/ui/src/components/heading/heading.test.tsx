@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Heading } from './heading.component.js';
+import { headingVariants } from './heading.variants.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -13,6 +14,20 @@ describe('Heading', () => {
     render(<Heading level={level}>Section</Heading>);
     const heading = screen.getByRole('heading', { level, name: 'Section' });
     expect(heading.tagName).toBe(`H${level}`);
+    expect(heading).not.toHaveAttribute('role');
+    expect(heading).not.toHaveAttribute('aria-level');
+  });
+
+  it('strips them whatever the casing, because React normalises it', () => {
+    // Measured: a bag carrying `Role`/`ARIA-LEVEL` landed as `role`/`aria-level`
+    // on the element, through a guard that deleted only the lowercase keys.
+    const bag = { Role: 'presentation', 'ARIA-LEVEL': 6 } as object;
+    render(
+      <Heading level={3} {...bag}>
+        Section
+      </Heading>,
+    );
+    const heading = screen.getByRole('heading', { level: 3, name: 'Section' });
     expect(heading).not.toHaveAttribute('role');
     expect(heading).not.toHaveAttribute('aria-level');
   });
@@ -42,18 +57,23 @@ describe('Heading', () => {
     expect(sizes.at(-1)).toBeGreaterThanOrEqual(16);
   });
 
-  // The pair is the token. Collapsing every `--fm-leading-*` to a quarter of a
-  // rem left the entire workspace green before this existed.
-  it.each(LEVELS)('gives h%i a leading proportional to its size', (level) => {
-    render(<Heading level={level}>Section</Heading>);
+  // The pair is the token, BY VALUE. A band was not enough: flattening every
+  // ratio to `1.5` moved every heading's line box by up to 35% and the whole
+  // workspace stayed green, because `size < leading < size × 1.8` is true of
+  // almost anything. These are the pixels the scale resolves to at a 16px root
+  // — a re-tune has to come here and say so.
+  it.each([
+    [1, 36, 40],
+    [2, 30, 36],
+    [3, 24, 32],
+    [4, 20, 28],
+    [5, 18, 28],
+    [6, 16, 24],
+  ])('gives h%i exactly %ipx on %ipx of leading', (level, size, leading) => {
+    render(<Heading level={level as 1}>Section</Heading>);
     const el = screen.getByRole('heading', { level });
-    const size = px(el, 'fontSize');
-    const leading = px(el, 'lineHeight');
-    expect(Number.isNaN(leading), 'line-height resolved to `normal`').toBe(
-      false,
-    );
-    expect(leading).toBeGreaterThan(size);
-    expect(leading).toBeLessThan(size * 1.8);
+    expect(px(el, 'fontSize')).toBeCloseTo(size, 1);
+    expect(px(el, 'lineHeight')).toBeCloseTo(leading, 1);
   });
 
   it('takes the size from `size` while the level stays put', () => {
@@ -79,7 +99,9 @@ describe('Heading', () => {
   it('reads as a heading: its own family and weight', () => {
     render(<Heading level={2}>Section</Heading>);
     const el = screen.getByRole('heading', { level: 2 });
-    expect(px(el, 'fontWeight')).toBeGreaterThanOrEqual(600);
+    // EXACT: the UA already makes a heading 700, so `>= 600` stayed true with
+    // our own weight deleted — the assertion could not see its own subject.
+    expect(px(el, 'fontWeight')).toBe(600);
     expect(getComputedStyle(el).fontFamily).toBe(
       getComputedStyle(document.documentElement).getPropertyValue(
         '--fm-font-heading',
@@ -108,9 +130,13 @@ describe('Heading', () => {
     );
     const box = screen.getByTestId('box');
     const heading = screen.getByRole('heading', { level: 1 });
+    // BOTH. `min-inline-size: 0` alone pins the box to the track, so reading
+    // only the rect saw a heading that fitted while its content overflowed it
+    // by 859px — measured. `scrollWidth` is what `overflow-wrap` answers for.
     expect(heading.getBoundingClientRect().width).toBeLessThanOrEqual(
       box.getBoundingClientRect().width,
     );
+    expect(heading.scrollWidth).toBeLessThanOrEqual(heading.clientWidth);
   });
 
   it('drops the UA margin, so spacing belongs to the container', () => {
@@ -171,6 +197,29 @@ describe('Heading', () => {
     const heading = screen.getByRole('heading', { level: 3, name: 'Section' });
     expect(heading).not.toHaveAttribute('role');
     expect(heading).not.toHaveAttribute('aria-level');
+  });
+
+  it('warns when it drops them, rather than dropping them in silence', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const bag = { role: 'presentation' } as object;
+    render(
+      <Heading level={2} {...bag}>
+        Section
+      </Heading>,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`role` was ignored'),
+    );
+    warn.mockRestore();
+  });
+
+  it('is reproducible from the exported variants', () => {
+    // The cva default is the only line the component never exercises — it always
+    // passes `size ?? Tag` — so nothing else can pin it.
+    render(<Heading level={2}>Section</Heading>);
+    expect(headingVariants()).toBe(
+      screen.getByRole('heading', { level: 2 }).className,
+    );
   });
 
   it('matches the rendered snapshot', () => {

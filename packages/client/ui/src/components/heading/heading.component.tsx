@@ -17,8 +17,9 @@ import type { HeadingProps } from './heading.types.js';
  */
 function Heading(props: HeadingProps) {
   const { className, level, size, children, ...rest } = props;
-  // Refused by the type, and stripped here too: a spread is not
-  // excess-property-checked, and both of these WIN over `level` when they land.
+  // `role` is refused by the type; `aria-level` cannot be (a type cannot see a
+  // JSX attribute name that is not an identifier), so the strip is its only
+  // guarantee — and the strip covers the spread and the casing React normalises.
   useOverrulingWarning(rest);
   const safe = withoutOverruling(rest);
 
