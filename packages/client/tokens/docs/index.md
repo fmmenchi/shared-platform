@@ -89,6 +89,27 @@ Checks: completeness · parsable colors · sRGB gamut · WCAG contrast on every 
 (exact ratios on failure). Prefer scaffolding themes with
 [`@fmmenchi/nx-theme-generator`](../../plugins/nx-theme-generator/index.md).
 
+### Tokens for design tools
+
+The contract is also published in the **Design Tokens Community Group** format, which is what
+Figma's token plugins read:
+
+```ts
+import tokens from '@fmmenchi/tokens/tokens.json' with { type: 'json' };
+```
+
+It carries the base theme's values, and only the groups DTCG can express losslessly — `transition`,
+`shadow`, `ease` and the z scale have no faithful type there, and a file that looked complete while
+quietly guessing would be worse than one that says what it covers.
+
+Two files in this package are **generated** from the contract and must not be edited by hand:
+`styles/properties.css` and `tokens.json`. The test suite regenerates them and compares, so an edit
+fails CI; after changing the contract, run:
+
+```bash
+pnpm nx test @fmmenchi/tokens -- -u
+```
+
 ## Reference
 
 - Deep dive: [Styling the design system](../../styling.md)

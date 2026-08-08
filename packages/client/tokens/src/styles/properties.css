@@ -2,6 +2,11 @@
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
+ * GENERATED from the contract by `src/generate.ts`; `generate.test.ts` fails if
+ * this file and the contract disagree. Do not edit by hand — change the roles in
+ * `src/tokens.ts` or the sections in `src/registry.ts` and re-run the suite
+ * with `-u`.
+ *
  * Registering each `--fm-*` role gives the browser its TYPE, which unlocks two
  * things a plain custom property cannot do:
  *   1. INTERPOLATION — a registered <color>/<length> animates. This is what lets
@@ -10,21 +15,18 @@
  *   2. A runtime type guard — an invalid assignment falls back to initial-value
  *      instead of poisoning the cascade.
  *
- * SINGLE SOURCE IS PRESERVED: initial-value is a THROWAWAY placeholder
+ * SINGLE SOURCE IS PRESERVED: a colour's initial-value is a THROWAWAY placeholder
  * (`oklch(0 0 0)`), never the real token — `vars.css` (:root) + `inherits: true`
- * always cascade the true value over it, so nothing is duplicated. This file is
- * imported at the top of `vars.css`, so the tokens and their types ship together.
+ * always cascade the true value over it. A length's cannot be a placeholder (the
+ * rule would be rejected), so it is COMPUTED from the real value.
  *
- * Coverage is asserted against COLOR_ROLES + RADIUS_TOKENS by `tokens.test.ts`
- * (the registrations cannot drift from the contract). @property is Baseline
- * NEWLY (Widely ~2027-01), so this ships as an ADR-0010 progressive enhancement:
- * without support the roles stay untyped strings — fully functional, only the
- * interpolation is lost (theme flip snaps, as it does today). Registered here
- * behind the file-level use-baseline disable above (justified, dated).
+ * Imported at the top of `vars.css`, so the tokens and their types ship
+ * together.
  *
- * NOTE: only COLOURS and RADIUS are registered — the roles with a real
- * interpolation payoff. Fonts/spacing/duration stay unregistered until a
- * component needs to animate them (no phantom capability).
+ * @property is Baseline NEWLY (Widely ~2027-01), so this ships as an ADR-0010
+ * progressive enhancement: without support the roles stay untyped strings —
+ * fully functional, only the interpolation is lost (theme flip snaps, as it does
+ * today). Registered here behind the file-level use-baseline disable above.
  */
 
 /* --- Action families (primary · secondary · accent · destructive) --- */
@@ -189,7 +191,7 @@
   initial-value: oklch(0 0 0);
 }
 
-/* --- Status roles (success · warning · info) --- */
+/* --- Status roles (success · warning · info · error) --- */
 @property --fm-color-success {
   syntax: '<color>';
   inherits: true;
@@ -458,7 +460,8 @@
 }
 
 /* --- Radius — <length> initial-value must be computationally independent, so
-       NO rem/em (the browser rejects the rule): px equivalents at the 16px root. --- */
+       NO rem/em (the browser rejects the rule): px equivalents at the 16px
+       root, converted from the real value rather than restated beside it. --- */
 @property --fm-radius-sm {
   syntax: '<length>';
   inherits: true;

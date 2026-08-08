@@ -10,7 +10,8 @@ Scope `client`, type `util`.
 pnpm nx typecheck @fmmenchi/tokens
 pnpm nx build @fmmenchi/tokens
 pnpm nx lint @fmmenchi/tokens
-pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCAG contrast)
+pnpm nx test @fmmenchi/tokens      # contract validation (completeness, bridge, WCAG contrast)
+pnpm nx test @fmmenchi/tokens -- -u # regenerate the derived artifacts after changing the contract
 ```
 
 ## Rules
@@ -18,11 +19,31 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
 - **Semantics wins over everything.** Components consume ONLY semantic roles (`--fm-color-primary`,
   `--fm-space-inset-m`, …) — never raw values, never a palette. The Tailwind bridge RESETS the
   default palette, so `bg-red-500` fails the build.
+- **Two files are GENERATED and must never be edited by hand:** `styles/properties.css` (the
+  `@property` registrations) and `tokens.json` (DTCG, for design tooling). They are rendered by
+  `src/generate.ts` from the contract + `vars.css`, and `generate.test.ts` compares them to what is
+  on disk with `toMatchFileSnapshot` — so a hand edit fails the ordinary test run and a legitimate
+  change is `vitest -u`.
+  - **What is generated and what is not, and why.** `vars.css` holds the values and stays
+    hand-written: those numbers are the design work, they already live in exactly one place, and
+    the prose around them is the reasoning for them — generating it would move it without removing
+    any duplication. `properties.css` is the opposite: 481 lines, not one of them a value, every
+    block identical but for a name. **The rule: a file that only RESTATES the contract is
+    generated; a file that DECIDES something is written.**
+  - It caught two live drifts the moment it was turned on: a section heading naming three status
+    families after `error` had become the fourth, and four radius `initial-value`s in px kept by
+    hand beside their rem originals with nothing to fail if they stopped agreeing (a `@property`
+    whose `initial-value` is a `rem` is rejected outright, so those px cannot simply be dropped —
+    they are now computed at the 16px root).
+  - **A new derived artifact is an emitter in `src/generate.ts` plus one `toMatchFileSnapshot`.**
+    It must be an artifact, never a runtime adapter — see the framework-agnostic rule below.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
   no runtime relative-color). `styles/properties.css` (imported at the top of `vars.css`)
   `@property`-registers the color roles + radius so they are TYPED and INTERPOLATABLE (theme
-  crossfade, gradients) — ADR-0012; the `initial-value` is a throwaway placeholder, never the real
-  token, so single-source holds (coverage asserted by `tokens.test.ts`). `styles/tailwind.css` is a
+  crossfade, gradients) — ADR-0012. A COLOUR's `initial-value` is a throwaway placeholder, never the
+  real token, so single-source holds; a LENGTH's cannot be (the browser rejects a `rem` there and
+  drops the whole rule), so it is COMPUTED from the real value at the 16px root. Coverage asserted
+  by `tokens.test.ts`, agreement with the values by `generate.test.ts`. `styles/tailwind.css` is a
   names-only `@theme inline` bridge (no values → no drift). `presets/dark.css` overrides EXACTLY
   every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black
   shadows vanish on a dark background — enforced by `tokens.test.ts`).
@@ -35,7 +56,8 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
   pairing MUST add it there (all themes re-validate automatically).
 - **Changing the contract:** adding a role = update `src/tokens.ts` (the `as const` roles, which
   drive the `src/tokens.types.ts` types) + `vars.css` + `presets/dark.css` + the bridge in
-  `tailwind.css` — `tokens.test.ts` fails until all four agree,
+  `tailwind.css`, then `vitest -u` to re-render `properties.css` and `tokens.json` —
+  `tokens.test.ts` fails until all four agree and `generate.test.ts` until the two derived files do,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
   exempt). New values: derive with the ramp methodology (base ± lightness, scaled chroma), ship the
   resolved literal.
@@ -66,6 +88,10 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
     `getComputedStyle(el).getPropertyValue('--fm-color-primary')`.
   - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `vars`; `refs.test.ts`
     compares the two as sets and fails until they agree.
+  - **`tokens.json` is DTCG and deliberately partial.** Only the groups that format can express
+    losslessly are emitted; a CSS `transition` shorthand, the shadow strings and the z scale have
+    no faithful DTCG type, and emitting them untyped would be a file that looks complete and is
+    not. It exists for the DESIGN side (Figma reads DTCG), not for any CSS library.
 - **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
   system stacks (apps override `--fm-font-*`).
 - **`styles/baseline.css` is the one file here with element rules, and it is OPTIONAL.** No
