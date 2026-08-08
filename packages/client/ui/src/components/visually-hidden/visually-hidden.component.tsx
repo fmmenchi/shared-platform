@@ -4,8 +4,8 @@ import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { deferDevCheck } from '../../primitives/use-dev-warning.js';
 import {
-  focusableWithin,
   hiddenFocusableMessage,
+  tabbableWithin,
 } from './visually-hidden.guards.js';
 import type { VisuallyHiddenProps } from './visually-hidden.types.js';
 import styles from './visually-hidden.module.css';
@@ -15,13 +15,17 @@ import styles from './visually-hidden.module.css';
  * an alert, the "(opens in a new tab)" after a link, the heading a section owes
  * the document outline but the design does not draw.
  *
- * THIS IS THE ELEMENT ADR-0016 ALLOWS, and it is worth saying why, because the
- * rule reads the other way at first: an element whose job is a few CSS
- * declarations does not earn its place. The exception is the one the rule
- * names — those declarations belong on "the element that is already there", and
- * here there frequently is none. The words exist only for a reader, so nothing
- * in the design put a node under them. When there IS an element already, `as`
- * is how you reach it (`as="h2"`) rather than wrapping it.
+ * WHY THIS EARNS ITS PLACE under ADR-0016, which reads the other way at first:
+ * an element whose job is a few CSS declarations does not earn one. It passes
+ * on the ADR's positive test — "an element is justified only by something it
+ * does that the alternative cannot" — and the alternative genuinely cannot. The
+ * content here is a TEXT NODE, which carries no class, while the visible text
+ * beside it must stay visible; no rule on any element already present can hide
+ * one and not the other. That is a capability, not a tidier API, and it is the
+ * distinction the ADR turns on. Note it is NOT an exception for "there was no
+ * element there" — that is the `InputGroupSlot` reasoning the ADR exists to
+ * kill. When an element IS already there, `as` reaches it (`as="h2"`) and no
+ * node is added at all.
  *
  * IT IS NOT `hidden`, AND NOT `aria-hidden`. Both of those remove content from
  * everyone; this removes it from sight ALONE and leaves it in the accessibility
@@ -46,16 +50,18 @@ function VisuallyHidden<As extends ElementType = 'span'>(
   const Comp = (as ?? 'span') as ElementType;
   const own = useRef<HTMLElement | null>(null);
 
-  // `children` is the dependency because it is what changes the subtree the
-  // check walks. Re-running on it is the point: content arriving from a later
-  // fetch is exactly when a focusable element appears without anyone editing
-  // this call site.
+  // BEST EFFORT, and worth stating exactly rather than generously: this
+  // re-runs whenever this component re-renders, because JSX `children` are a
+  // fresh object every time. So it over-runs (a check per render, in dev only)
+  // and it can also MISS — a child that fetches and then renders a control
+  // without the parent re-rendering never re-triggers it, and neither does
+  // anything injected imperatively. It catches the common shape, not all of them.
   useEffect(
     () =>
       deferDevCheck(() => {
         const node = own.current;
         if (!node) return;
-        const found = focusableWithin(node);
+        const found = tabbableWithin(node);
         if (found) console.warn(hiddenFocusableMessage(found));
       }),
     [children],

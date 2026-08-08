@@ -12,7 +12,7 @@ the screen, which is what separates it from `hidden` and `aria-hidden`.
 
 ## Props
 
-<Controls of={VisuallyHiddenStories.Usage} />
+<Controls of={VisuallyHiddenStories.Playground} />
 
 ## Usage
 
@@ -20,8 +20,8 @@ the screen, which is what separates it from `hidden` and `aria-hidden`.
 
 Text inside the control, so it joins the accessible name instead of competing
 with it. Prefer this to `aria-label` when the words belong to the content:
-`aria-label` replaces the name, and a caller who later adds visible text ends up
-with two names disagreeing.
+`aria-label` replaces the name outright, so a caller who later adds visible text
+ends up with two names disagreeing and only one of them announced.
 
 <Canvas of={VisuallyHiddenStories.Usage} />
 
@@ -29,17 +29,18 @@ with two names disagreeing.
 
 `as` puts the hiding on the element that had to exist anyway. Wrapping instead
 (`<h2><VisuallyHidden>…</VisuallyHidden></h2>`) leaves the `<h2>` itself in
-flow — an empty box carrying a heading's margins.
+flow — an empty box carrying a heading's margins, which is the layout bug this
+prop exists to avoid.
 
 <Canvas of={VisuallyHiddenStories.AsAHeading} />
 
 ### A qualifier that would be noise on screen
 
+"Opens in a new tab" earns its place for a reader and clutters the page for
+everyone else. The words go inside the link so they join its accessible name;
+put beside it, they would be a separate, unattached sentence.
+
 <Canvas of={VisuallyHiddenStories.InlineQualifier} />
-
-### Not for anything focusable
-
-<Canvas of={VisuallyHiddenStories.HidingSomethingFocusableWarns} />
 
 ## Accessibility
 
@@ -50,11 +51,19 @@ flow — an empty box carrying a heading's margins.
   nothing to the tree beyond its text; with `as` it contributes whatever that
   element does — `as="h2"` is announced as a level-2 heading, demonstrated
   above.
-- **Nothing focusable inside.** A control hidden this way can still be reached
+- **Nothing tabbable inside.** A control hidden this way can still be reached
   with Tab, and the focus ring lands where nobody can see it (WCAG 2.4.7, and
   2.4.11 for the same reason). The component warns in development, naming the
-  element it found — axe cannot report this, because in the accessibility tree
-  the control is present and correctly named.
+  element it found. axe cannot report this — verified against axe-core 4.12
+  with every tag enabled, including `target-size`, which scores the 1px control
+  a pass — so the guard is the only reader. There is deliberately no story for
+  it: a live demonstration would put an invisible tab stop on this page. The
+  demonstration lives in the component's tests.
+- **Phrasing content only**, unless you pass `as`. A `<span>` cannot legally
+  contain a `<div>` or a `<p>`, and in server-rendered markup the parser
+  reparents such a child _out_ of the span — taking the hiding with it, so the
+  text paints at full width. Client-only rendering hides the mistake, which is
+  what lets it reach production.
 - **A skip link is not this.** It must become visible when focused, which is a
   paint — fill, focus ring, position above a sticky header, and forced-colors
   handling for each. `AppLayout` ships one; this component deliberately carries
@@ -64,5 +73,7 @@ flow — an empty box carrying a heading's margins.
 
 - Put the hidden words **inside** the control they name, not beside it.
 - Reach for `as` before reaching for a wrapper.
+- A component passed to `as` must forward `className`, or the hiding is lost
+  with no warning from anything.
 - If the text should be visible to some users and not others, that is a
   disclosure, not this component.
