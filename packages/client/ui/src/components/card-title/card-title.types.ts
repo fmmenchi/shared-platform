@@ -1,17 +1,7 @@
-import type { ComponentPropsWithRef, ReactNode } from 'react';
-import type { HeadingLevel } from '../../primitives/surface-heading.types.js';
+import type { ReactNode } from 'react';
+import type { HeadingProps } from '../heading/heading.types.js';
 
-export interface CardTitleProps extends Omit<
-  ComponentPropsWithRef<'h3'>,
-  'children'
-> {
-  /**
-   * The heading level. `h3` by default, and there is no clever default to be
-   * had: the right level depends on the page the card sits in, which the
-   * design system cannot see. A grid of cards under an `<h2>` wants `h3`; the
-   * same card as the only thing on a page wants `h1`.
-   */
-  as?: HeadingLevel;
+export interface CardTitleProps extends Omit<HeadingProps, 'children'> {
   /**
    * Where the card goes. Given one, the title becomes a link AND THE WHOLE CARD
    * BECOMES CLICKABLE: the anchor stays here, around this text, while an

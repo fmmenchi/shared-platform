@@ -1,12 +1,21 @@
 import type { ElementType } from 'react';
-import { cn } from '../../util/cn.js';
 import { useUiAdapters } from '../../i18n/provider.js';
+import { Heading } from '../heading/heading.component.js';
 import type { CardTitleProps } from './card-title.types.js';
 import styles from './card-title.module.css';
 
 /**
  * The card's name, and — with a destination — the thing that makes the whole
  * card clickable.
+ *
+ * IT IS A `Heading`, not a heading of its own. The type scale, the zeroed UA
+ * margin, `text-wrap: balance` and the `min-inline-size: 0` that stops one long
+ * word from sizing a grid track all belong to that component; a second copy
+ * here would be the same decisions made twice and drifting from the first
+ * revision. So `level` and `size` are its props, passed straight through —
+ * including `level` being REQUIRED, which is its position and applies here
+ * unchanged: a card cannot see where it sits either, and a default would be a
+ * guess made silently against the page outline.
  *
  * THE LINK IS HERE AND NOT ON THE CARD because the accessible name comes from
  * the link's own text. A card whose surface is one big `<a>` is announced as
@@ -24,13 +33,12 @@ import styles from './card-title.module.css';
  * plain anchor.
  */
 function CardTitle(props: CardTitleProps) {
-  const { as, href, className, children, ...rest } = props;
-  const Heading = (as ?? 'h3') as ElementType;
+  const { href, children, ...heading } = props;
   const injected = useUiAdapters()?.Link;
   const Link = (injected ?? 'a') as ElementType;
 
   return (
-    <Heading {...rest} className={cn(styles.title, className)}>
+    <Heading {...heading}>
       {href === undefined ? (
         children
       ) : (

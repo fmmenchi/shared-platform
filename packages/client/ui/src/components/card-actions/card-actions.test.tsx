@@ -10,13 +10,13 @@ describe('CardActions', () => {
     render(
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
         <Card>
-          <CardTitle>Short</CardTitle>
+          <CardTitle level={3}>Short</CardTitle>
           <CardActions>
             <Button>A</Button>
           </CardActions>
         </Card>
         <Card>
-          <CardTitle>Long</CardTitle>
+          <CardTitle level={3}>Long</CardTitle>
           <p>
             A summary long enough to make this card taller than the one beside
             it, which is the only situation in which the rule matters at all.
