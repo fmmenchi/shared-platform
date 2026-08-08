@@ -82,6 +82,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'visually-hidden': 'src/components/visually-hidden/index.ts',
         'tab-panel': 'src/components/tab-panel/index.ts',
         tab: 'src/components/tab/index.ts',
         'tab-list': 'src/components/tab-list/index.ts',

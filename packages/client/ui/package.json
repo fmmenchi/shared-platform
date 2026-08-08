@@ -406,6 +406,12 @@
       "types": "./dist/components/accordion-content/index.d.ts",
       "import": "./dist/accordion-content.js",
       "default": "./dist/accordion-content.js"
+    },
+    "./visually-hidden": {
+      "@fmmenchi/source": "./src/components/visually-hidden/index.ts",
+      "types": "./dist/components/visually-hidden/index.d.ts",
+      "import": "./dist/visually-hidden.js",
+      "default": "./dist/visually-hidden.js"
     }
   },
   "nx": {
