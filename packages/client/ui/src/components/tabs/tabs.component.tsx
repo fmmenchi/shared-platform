@@ -5,7 +5,7 @@ import { useDescendants } from '../../primitives/use-descendants.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { TabsContext } from './tabs.context.js';
 import type { TabData, TabsContextValue } from './tabs.context.js';
-import { fallbackTab, readTabs } from './tabs.children.js';
+import { fallbackTab, firstTab, readTabs } from './tabs.children.js';
 import type { TabsProps } from './tabs.types.js';
 import styles from './tabs.module.css';
 
@@ -62,6 +62,10 @@ function Tabs(props: TabsProps) {
 
   const known = readTabs(children);
   const matched = known.some((tab) => tab.value === value);
+  // SHOWING and TAB STOP are two questions. With every tab disabled there is
+  // nothing to show — a product that marked them all unavailable should not
+  // find one of those panels open — but something must still hold
+  // `tabindex="0"`, or the list drops out of the page's tab order entirely.
   const showing = matched ? value : fallbackTab(known)?.value;
 
   useDevWarning(
@@ -76,7 +80,7 @@ function Tabs(props: TabsProps) {
   const tabStop =
     focused !== undefined && known.some((tab) => tab.value === focused)
       ? focused
-      : showing;
+      : (showing ?? firstTab(known)?.value);
 
   // NO HAND-MEMOIZATION, which is this package's rule and here also the only
   // workable answer: `known` is a fresh array every render, so a dependency

@@ -61,10 +61,26 @@ export function readTabs(
   return into;
 }
 
-/** The tab a list should fall back to: the first that can actually be used. */
+/**
+ * The tab that should be SHOWING — the first one that can actually be used.
+ *
+ * `undefined` when every tab is disabled, and that is the point: showing the
+ * panel of a tab the product has marked unavailable is the opposite of what it
+ * asked for. The list stays reachable anyway, because the tab STOP is a
+ * separate question — see `firstTab`.
+ */
 export function fallbackTab(known: KnownTab[]): KnownTab | undefined {
-  // `?? known[0]` deliberately, even though it is disabled: SOMETHING has to
-  // carry `tabindex="0"` or the list is unreachable, and being focusable is not
-  // the same as being selected — see `Tabs`, which refuses to select it.
-  return known.find((tab) => !tab.disabled) ?? known[0];
+  return known.find((tab) => !tab.disabled);
+}
+
+/**
+ * The tab that should carry `tabindex="0"` when none is showing.
+ *
+ * Disabled or not: something has to be in the page's tab order or the whole
+ * list is unreachable by Tab, and being focusable has never meant being
+ * selected — this component's whole position on disabled tabs is that they are
+ * reachable precisely so a reader can learn they exist.
+ */
+export function firstTab(known: KnownTab[]): KnownTab | undefined {
+  return known[0];
 }

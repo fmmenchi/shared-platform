@@ -4,6 +4,10 @@ import { Button } from '../components/button/button.component.js';
 import { Input } from '../components/input/input.component.js';
 import { Select } from '../components/select/select.component.js';
 import { Textarea } from '../components/textarea/textarea.component.js';
+import { Tabs } from '../components/tabs/tabs.component.js';
+import { TabList } from '../components/tab-list/tab-list.component.js';
+import { Tab } from '../components/tab/tab.component.js';
+import { TabPanel } from '../components/tab-panel/tab-panel.component.js';
 import { Checkbox } from '../components/checkbox/checkbox.component.js';
 import { Radio } from '../components/radio/radio.component.js';
 
@@ -37,6 +41,12 @@ describe('every control this package draws, under a coarse pointer', () => {
           <option>One</option>
         </Select>
         <Textarea aria-label="Notes" size="md" />
+        <Tabs>
+          <TabList aria-label="Sections">
+            <Tab value="one">One</Tab>
+          </TabList>
+          <TabPanel value="one">First</TabPanel>
+        </Tabs>
       </>,
     );
 
@@ -46,6 +56,7 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('textbox', { name: 'Text' }),
       screen.getByRole('combobox', { name: 'Choice' }),
       screen.getByRole('textbox', { name: 'Notes' }),
+      screen.getByRole('tab', { name: 'One' }),
     ]) {
       expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(
         TAP,

@@ -6,30 +6,49 @@
   .list {
     display: flex;
     gap: var(--fm-space-inline-s);
-    /* The rail the selected tab's marker sits on. Under the tabs when the list
-       runs across, beside them when it runs down. */
-    border-block-end: var(--fm-border-width-default) solid
-      var(--fm-color-border);
   }
 
-  .list[data-orientation='vertical'] {
-    flex-direction: column;
-    border-block-end: none;
-    border-inline-end: var(--fm-border-width-default) solid
-      var(--fm-color-border);
-  }
+  /* THE RAIL IS A SHADOW, NOT A BORDER, and that is a bug fix rather than a
+     preference. A border takes layout, so the marker could only sit ON it with
+     a negative margin on the tab — which pushed the tab's box 1px past the
+     list's content edge. Harmless anywhere else; here the list is
+     `overflow-x: auto`, and CSS says an axis that is not `visible` makes the
+     OTHER axis stop being visible too. So `overflow-y` became `auto` on its
+     own and that 1px produced a vertical scrollbar on a 38px strip: measured,
+     `scrollHeight` 38 against `clientHeight` 37.
 
-  /* MANY TABS, ONE LINE. Wrapping a tab list looks tidy and reads badly: the
-     marker under the selected tab stops lining up with the rail, and the row
-     stops being a row. Scrolling keeps the line, and `thin` keeps the bar from
-     eating the tabs on a narrow screen.
+     An inset shadow paints in the same place and takes no space at all, so the
+     tab needs no negative margin and there is nothing to overflow. */
+  /* MANY TABS, ONE LINE, which is the other half of the same rule. Wrapping a
+     tab list looks tidy and reads badly: the marker under the selected tab
+     stops lining up with the rail, and the row stops being a row. Scrolling
+     keeps the line, and `thin` keeps the bar from eating the tabs on a narrow
+     screen.
 
      It is a trade, not a free win: at 400% zoom a magnification user has to
      scroll sideways to reach the later tabs. WCAG 1.4.10 allows that for
      content requiring two-dimensional layout, and the arrows reach every tab
      without any scrolling at all — `focus()` brings each one into view. */
   .list:not([data-orientation='vertical']) {
+    box-shadow: inset 0 calc(var(--fm-border-width-default) * -1) 0
+      var(--fm-color-border);
     overflow-x: auto;
     scrollbar-width: thin;
+  }
+
+  /* Down the side there is no scrolling and so no forced axis, which is why
+     this one can stay an ordinary border. */
+  .list[data-orientation='vertical'] {
+    flex-direction: column;
+    border-inline-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  @media (forced-colors: active) {
+    /* `box-shadow` is discarded, so the rail needs a real edge. Safe to add
+       here and nowhere else: there is no negative margin left to overflow it. */
+    .list:not([data-orientation='vertical']) {
+      border-block-end: var(--fm-border-width-default) solid CanvasText;
+    }
   }
 }

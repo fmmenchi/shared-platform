@@ -58,18 +58,21 @@ const pascal = (folder: string) =>
  */
 function isPartOfAFamily(
   folder: string,
-  all: readonly string[],
-  docFor: (family: string) => string | undefined,
+  docs: ReadonlyMap<string, string>,
 ): boolean {
-  return all.some((other) => {
-    if (other === folder || !folder.startsWith(`${other}-`)) return false;
-    // The family has to CLAIM it. The prefix alone was a hole, and it failed
-    // OPEN: a real `button-group`, exported and named in the roadmap nowhere,
-    // was classified a part of `button` and silently exempted. A family's own
-    // page names its parts — `accordion.mdx` names `AccordionItem`; a
-    // `button.mdx` would never name `ButtonGroup`.
-    return docFor(other)?.includes(pascal(folder)) === true;
-  });
+  // A FAMILY has its own page; a PART is documented on its family's. That is
+  // the rule this package actually follows, so it is the rule the guard asks.
+  //
+  // The name prefix was the first attempt and it was wrong in both directions.
+  // It failed OPEN — a real `button-group`, exported and named in the roadmap
+  // nowhere, passed as "a part of button" — and it failed CLOSED, because a
+  // family's parts need not carry its name: `tabs` owns `tab-list` and
+  // `tab-panel`, which no prefix of `tabs` matches.
+  if (docs.has(folder)) return false;
+  const name = pascal(folder);
+  return [...docs.entries()].some(
+    ([family, doc]) => family !== folder && doc.includes(name),
+  );
 }
 
 const sectionOf = (heading: string) => {
@@ -81,9 +84,7 @@ const sectionOf = (heading: string) => {
 
 describe('the component roadmap', () => {
   const folders = components.map(folderOf);
-  const families = folders.filter(
-    (f) => !isPartOfAFamily(f, folders, (family) => familyDocs.get(family)),
-  );
+  const families = folders.filter((f) => !isPartOfAFamily(f, familyDocs));
 
   it('finds the page and the components it describes', () => {
     expect(roadmap, 'docs/roadmap.md is missing').toBeTruthy();
