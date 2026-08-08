@@ -1,14 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { UiProvider } from '../../i18n/provider.js';
+import { renderUi } from '../../test/render.js';
+import { expectNoA11yViolations } from '../../test/axe.js';
 import { userEvent as browser } from '@vitest/browser/context';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
+import { useAppLayoutNavForm } from '../app-layout-nav/app-layout-nav.context.js';
 import { AppLayoutMain } from '../app-layout-main/app-layout-main.component.js';
 import { Nav } from '../nav/nav.component.js';
 import { NavLink } from '../nav-link/nav-link.component.js';
 
 /**
- * The WIDE form, in the project that runs a browser above the `tablet`
+ * The WIDE form, in the project that runs a browser above the `xl` CONTAINER
  * breakpoint. Everything here is geometry — which is the half no behavioural
  * test can see, and the half this component is almost entirely made of.
  */
@@ -85,6 +89,123 @@ describe('AppLayout, above the breakpoint', () => {
     expect(box(rail).right).toBeLessThanOrEqual(box(main).left);
     expect(box(main).right).toBeLessThanOrEqual(box(aside).left);
     expect(Math.round(box(aside).top)).toBe(Math.round(box(main).top));
+  });
+
+  it('does not brick the page when the drawer is open as it widens', async () => {
+    // THE WORST DEFECT THIS COMPONENT HAD. Both forms used to be rendered with
+    // one hidden by CSS, so crossing the breakpoint with the drawer open left a
+    // modal `<dialog>` with `display: none` on its wrapper: still `:modal`,
+    // still holding the scroll lock, still making the page inert, and with no
+    // box — so nothing could be clicked, focused or scrolled and the close
+    // button did not exist. Reachable by rotating a tablet.
+    const { rerender } = render(
+      <div style={{ inlineSize: 380 }}>{shell()}</div>,
+    );
+    await browser.click(screen.getByRole('button', { name: /menu/i }));
+    const dialog = document.querySelector('dialog') as HTMLDialogElement;
+    await waitFor(() => expect(dialog.open).toBe(true));
+    expect(document.documentElement.style.overflow).toBe('hidden');
+
+    rerender(<div style={{ inlineSize: 1000 }}>{shell()}</div>);
+
+    await waitFor(() =>
+      expect(screen.getAllByRole('navigation')).toHaveLength(1),
+    );
+    // The page is ALIVE: no modal, no scroll lock, and the content takes focus.
+    // Waited for, because the dialog leaves through its exit animation.
+    await waitFor(() =>
+      expect(document.querySelector('dialog:modal')).toBeNull(),
+    );
+    await waitFor(() =>
+      expect(document.documentElement.style.overflow).toBe(''),
+    );
+    const main = screen.getByRole('main');
+    main.focus();
+    expect(document.activeElement).toBe(main);
+  });
+
+  it('says which form it is in, for the content that differs', () => {
+    function Form() {
+      return <span data-testid="form">{useAppLayoutNavForm() ?? 'none'}</span>;
+    }
+    render(
+      <AppLayout>
+        <AppLayoutNav label="Main">
+          {nav}
+          <Form />
+        </AppLayoutNav>
+        <AppLayoutMain>Body</AppLayoutMain>
+      </AppLayout>,
+    );
+    expect(screen.getByTestId('form')).toHaveTextContent('column');
+    expect(document.querySelector('[data-region="nav"]')).toHaveAttribute(
+      'data-form',
+      'column',
+    );
+  });
+
+  it('swaps at the width the token declares', async () => {
+    // Neither other width is near the boundary, so the breakpoint itself was
+    // unpinned: `@xl` could become `@lg` and every test stayed green while a
+    // 16rem rail landed on a 600px panel.
+    const { rerender } = render(
+      <div style={{ inlineSize: 760 }}>{shell()}</div>,
+    );
+    expect(screen.getByRole('button', { name: /menu/i })).toBeVisible();
+
+    rerender(<div style={{ inlineSize: 780 }}>{shell()}</div>);
+    // The form follows a `ResizeObserver`, so the swap lands after the paint
+    // the rerender caused.
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /menu/i })).toBeNull(),
+    );
+    expect(screen.getAllByRole('navigation')).toHaveLength(1);
+  });
+
+  it('gives the column the width the token says', () => {
+    render(shell());
+    const rail = screen
+      .getByRole('navigation')
+      .closest('[data-region="nav"]') as HTMLElement;
+    const declared = getComputedStyle(document.documentElement)
+      .getPropertyValue('--fm-size-nav')
+      .trim();
+
+    // Asserted against the TOKEN, not a number retyped here: the commit that
+    // introduced these argued a theme can retune them, and nothing checked it.
+    expect(declared).toBe('16rem');
+    expect(Math.round(box(rail).width)).toBe(256);
+  });
+
+  it('mirrors in Arabic', () => {
+    render(
+      <UiProvider adapters={{ i18n: { locale: 'ar' } }}>
+        {shell({ aside: true })}
+      </UiProvider>,
+    );
+    const rail = screen
+      .getAllByRole('navigation')[0]
+      .closest('[data-region="nav"]') as HTMLElement;
+    const main = screen.getByRole('main');
+    const aside = screen.getByRole('complementary');
+
+    // Every other geometry assertion here is physical, so RTL is the one
+    // arrangement they would all get wrong. The areas are logical: the column
+    // sits on the right and the order reverses.
+    expect(box(rail).left).toBeGreaterThan(box(main).right - 1);
+    expect(box(aside).right).toBeLessThanOrEqual(box(main).left);
+  });
+
+  describe('accessibility (axe)', () => {
+    it('has no violations in the wide form, aside and all', async () => {
+      // The only axe run was narrow, drawer shut, no aside — so the
+      // three-column composition had never been checked at all.
+      // NOT wrapped in a `<main>` the way the other suites wrap their
+      // components: this one renders the page's own `<main>`, and nesting them
+      // is itself a violation.
+      const { container } = renderUi(shell({ aside: true }));
+      await expectNoA11yViolations(container);
+    });
   });
 
   it("answers to its own width, not the window's", () => {

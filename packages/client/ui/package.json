@@ -316,6 +316,18 @@
       "types": "./dist/components/app-layout-main/index.d.ts",
       "import": "./dist/app-layout-main.js",
       "default": "./dist/app-layout-main.js"
+    },
+    "./app-layout-nav-column": {
+      "@fmmenchi/source": "./src/components/app-layout-nav-column/index.ts",
+      "types": "./dist/components/app-layout-nav-column/index.d.ts",
+      "import": "./dist/app-layout-nav-column.js",
+      "default": "./dist/app-layout-nav-column.js"
+    },
+    "./app-layout-nav-drawer": {
+      "@fmmenchi/source": "./src/components/app-layout-nav-drawer/index.ts",
+      "types": "./dist/components/app-layout-nav-drawer/index.d.ts",
+      "import": "./dist/app-layout-nav-drawer.js",
+      "default": "./dist/app-layout-nav-drawer.js"
     }
   },
   "nx": {

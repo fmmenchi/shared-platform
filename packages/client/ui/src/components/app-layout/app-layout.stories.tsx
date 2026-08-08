@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
+import { AppLayoutNavColumn } from '../app-layout-nav-column/app-layout-nav-column.component.js';
+import { AppLayoutNavDrawer } from '../app-layout-nav-drawer/app-layout-nav-drawer.component.js';
 import { AppLayoutMain } from '../app-layout-main/app-layout-main.component.js';
 import { Nav } from '../nav/nav.component.js';
 import { NavLink } from '../nav-link/nav-link.component.js';
@@ -101,6 +103,44 @@ export const WithoutNav: Story = {
       </header>
       <AppLayoutMain>
         <h1>Everything you need</h1>
+      </AppLayoutMain>
+      <footer style={{ padding: 'var(--fm-space-inset-m)' }}>© 2026</footer>
+    </AppLayout>
+  ),
+};
+
+/**
+ * The two forms holding DIFFERENT things — the case the slots exist for. Widen
+ * and narrow the preview: the column carries the sections only, while the
+ * drawer also absorbs the account links that a wide screen shows in the header.
+ *
+ * Only the form in play is mounted, so the other slot is not hidden markup.
+ */
+export const DivergentForms: Story = {
+  render: (args) => (
+    <AppLayout {...args}>
+      <header style={{ padding: 'var(--fm-space-inset-m)' }}>
+        <strong>Docs</strong>
+      </header>
+      <AppLayoutNav label="Main">
+        <AppLayoutNavColumn>
+          <Nav label="Main" orientation="vertical">
+            <NavLink href="#install">Install</NavLink>
+            <NavLink href="#usage">Usage</NavLink>
+          </Nav>
+        </AppLayoutNavColumn>
+        <AppLayoutNavDrawer>
+          <Nav label="Main" orientation="vertical">
+            <NavLink href="#install">Install</NavLink>
+            <NavLink href="#usage">Usage</NavLink>
+            {/* On a wide screen these are in the header, so the column omits them. */}
+            <NavLink href="#account">Account</NavLink>
+            <NavLink href="#sign-out">Sign out</NavLink>
+          </Nav>
+        </AppLayoutNavDrawer>
+      </AppLayoutNav>
+      <AppLayoutMain>
+        <h1>Install</h1>
       </AppLayoutMain>
       <footer style={{ padding: 'var(--fm-space-inset-m)' }}>© 2026</footer>
     </AppLayout>
