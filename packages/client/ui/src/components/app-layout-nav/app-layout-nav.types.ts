@@ -5,6 +5,10 @@ export interface AppLayoutNavProps {
    * What the navigation is called — the name of the drawer on a small screen,
    * where the region becomes a `<dialog>` and one with no accessible name is
    * announced as just "dialog".
+   *
+   * Required even though the column form never uses it: a prop that is only
+   * needed below a breakpoint is a prop a product forgets until someone
+   * narrows the window, and the region cannot ask for it later.
    */
   label: string;
   /**

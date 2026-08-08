@@ -114,13 +114,30 @@ export const WithoutNav: Story = {
  * and narrow the preview: the column carries the sections only, while the
  * drawer also absorbs the account links that a wide screen shows in the header.
  *
- * Only the form in play is mounted, so the other slot is not hidden markup.
+ * Note what the `<header>` holds, because it is the whole point: the drawer is
+ * a SUPERSET of the column, and the two links the column leaves out are two
+ * links the header still carries. Divergence that drops a destination instead
+ * of relocating it is functionality lost at 320px — WCAG 1.4.10 — and with two
+ * slots that is a one-line mistake.
+ *
+ * Only the form in play is rendered, so the other slot is not hidden markup.
  */
 export const DivergentForms: Story = {
   render: (args) => (
     <AppLayout {...args}>
-      <header style={{ padding: 'var(--fm-space-inset-m)' }}>
+      <header
+        style={{
+          display: 'flex',
+          gap: 'var(--fm-space-inline-m)',
+          justifyContent: 'space-between',
+          padding: 'var(--fm-space-inset-m)',
+        }}
+      >
         <strong>Docs</strong>
+        <Nav label="Account">
+          <NavLink href="/account">Account</NavLink>
+          <NavLink href="/sign-out">Sign out</NavLink>
+        </Nav>
       </header>
       <AppLayoutNav label="Main">
         <AppLayoutNavColumn>
@@ -133,9 +150,10 @@ export const DivergentForms: Story = {
           <Nav label="Main" orientation="vertical">
             <NavLink href="#install">Install</NavLink>
             <NavLink href="#usage">Usage</NavLink>
-            {/* On a wide screen these are in the header, so the column omits them. */}
-            <NavLink href="#account">Account</NavLink>
-            <NavLink href="#sign-out">Sign out</NavLink>
+            {/* Not extra destinations — the header's, brought down here because
+                on a phone the header has no room for them. */}
+            <NavLink href="/account">Account</NavLink>
+            <NavLink href="/sign-out">Sign out</NavLink>
           </Nav>
         </AppLayoutNavDrawer>
       </AppLayoutNav>

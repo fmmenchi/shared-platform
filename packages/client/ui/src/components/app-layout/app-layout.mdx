@@ -77,7 +77,9 @@ Below the `xl` container breakpoint the navigation region is a `Dialog` pinned t
 
 So JavaScript picks the form, but it is **not told the breakpoint**: the stylesheet sets `--nav-form` inside the same container query that lays the region out, and a `ResizeObserver` reads it back. One source of truth, still in CSS. Closing the drawer on the way to a column then needs no code — the dialog unmounts and `DialogContent` releases the scroll lock in its cleanup.
 
-One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button. Its trigger is also not inside `<header>`, so a reader navigating by landmark will not meet it; if that matters for your product, render your own trigger inside the header and reach the dialog with `commandfor`.
+One consequence worth knowing: on a narrow screen, with the drawer shut, there is **no** navigation landmark on the page. That is the honest answer — the navigation is not on the page, it is behind a button. Its trigger is also not inside `<header>`, so a reader navigating by landmark will not meet it.
+
+There is no workaround to offer yet: the drawer's surface id is internal, so a second trigger of your own cannot reach it with `commandfor`, and building your own `Dialog` beside this one is the duplicate-navigation defect the component exists to prevent. Putting the few links a phone most needs in your `<header>` as well is the only thing that helps today.
 
 ### The two forms are not the same content
 
@@ -96,25 +98,35 @@ So the shell does not decide they are the same thing. It gives each form **its o
     <Nav label="Main" orientation="vertical">
       …
     </Nav>
-    <AccountLinks /> {/* on a wide screen these live in the header */}
+    {/* Not extra destinations: the ones the header carries on a wide
+        screen, brought down here because a phone's header has no room. */}
+    <AccountLinks />
   </AppLayoutNavDrawer>
 </AppLayoutNav>
 ```
 
 <Canvas of={AppLayoutStories.DivergentForms} />
 
-Only the form in play is mounted, so the slot that is not up leaves nothing behind — no hidden element, no duplicated `id`, no state to diverge.
+Only the form in play is rendered, so the slot that is not up leaves nothing behind — no hidden element, no duplicated `id`, no state to diverge.
 
-Two things that does **not** mean, both measured rather than assumed:
+**Nothing at all is rendered until `--nav-form` has been read**, which is the whole of the first render and costs nothing on screen: the ref callback runs during the commit, so its re-render lands before the paint. The version before this guessed `drawer` and corrected itself, and the guess was not free — with a single slot, or with the loose children recommended just below for the simple case, the content that ends up on a wide screen was mounted first inside the dialog and then again in the flow. Two mounts, so two of every fetch in it: a halved copy of the defect above.
 
-- a **closed `<dialog>` still holds its subtree**, so on a narrow screen the drawer's slot is mounted from the first render even if nobody opens it. If what you put in it fetches, it fetches on load;
-- the form starts at `drawer` and is corrected once `--nav-form` has been read, so on a wide screen the drawer's slot lives for exactly **one commit** before the column replaces it.
+What it costs instead, plainly: a server-rendered page ships an **empty region**. Little is actually lost, because the version that guessed shipped a wide page's navigation inside a closed `<dialog>` — `display: none` — which a reader without JavaScript could not see either.
 
-Neither is the old defect — but a slot is not free just because its form is not showing.
+One thing "rendered" still does **not** mean: a **closed `<dialog>` holds its subtree**, so on a narrow screen the drawer's contents are mounted from the first render even if nobody opens it. If what you put in it fetches, it fetches on load.
 
 **Give one slot and it serves both forms**; give none and `children` does, which keeps the simple case one line long. The **container** always follows the form and only the contents fall back — otherwise the shorthand for "my two forms are the same" would put a 16rem rail on a phone. Passing the same element to both slots is your business, and free.
 
-A slot has to be a **direct child**: `AppLayoutNav` finds it by type, so a slot wrapped in a component of your own is a slot it cannot see, and the wrapper is read as loose children. Fragments are the exception and are looked through — `React.Children` does not flatten them, and the first version of this rendered an empty navigation for `<><AppLayoutNavColumn/><AppLayoutNavDrawer/></>` without complaining.
+A slot has to be a **direct child**. `AppLayoutNav` finds it by type, and what is inside a component of your own — or a `<Suspense>`, or a `React.lazy` — does not exist until that component renders, so no amount of walking would reach it. Fragments are the one exception and are looked through: `React.Children` does not flatten them, and the first version of this rendered an empty navigation for `<><AppLayoutNavColumn/><AppLayoutNavDrawer/></>` without complaining.
+
+Every other wrapper still produces an empty navigation — it cannot produce anything else — but no longer a silent one: a slot that is **rendered** knows it was never read, and says so in development. That is the only place the mistake is visible, since the region sees an element of a type it does not recognise and cannot tell a wrapper from any other child.
+
+Two more resolutions, both loud for the same reason:
+
+- **children beside a slot are dropped.** Once either slot is present, everything the navigation renders has to be inside one of them;
+- **a slot given twice keeps the first.**
+
+And every way of spelling _empty_ — `null`, `false`, `[]`, `''` and `undefined` — means **given, and deliberately empty**, not "not given". `undefined` used to be the odd one out, which made `{user ? <Nav/> : undefined}` hand a logged-out phone the desktop rail it had explicitly asked not to have.
 
 When the difference is only styling, no slot is needed at all — the form is on the region as `data-form`, and in JavaScript:
 
@@ -136,3 +148,7 @@ If your `<header>` is sticky, set `--app-layout-header-offset` to its height on 
 - **The id is the shell's**, not yours. A skip link pointing at an id nobody set goes nowhere, and says nothing while doing it.
 - **One `<main>`, one `<header>`, one `<footer>`** — the landmark set is the structure, and the regions are placed by what they are.
 - **The drawer is a modal dialog**, so it brings the focus trap, the inert page and the scroll lock with it; it is named from `label`, because a `<dialog>` with no accessible name is announced as just "dialog".
+- **The drawer must be a superset of the column** for anything not reachable elsewhere on the page (WCAG 1.4.10, Reflow). Two slots make dropping a link at 320px a one-line mistake, and the swap is a _container_ query — so it is not only phones: a desktop reader at 200% zoom, or in a split pane, is on the drawer side of it too. Leaving links out of the **column** is the safe direction, and only when the header carries them.
+- **Divergence has to stay consistent** (WCAG 3.2.3): the same destinations in the same relative order, minus what the other form's header already shows. Curating is fine; re-ordering the same list between forms is what makes a reader relearn the page at every breakpoint.
+- **`aria-current="page"` belongs in both slots.** Set in one only, the current page is unmarked for whoever meets the other form.
+- **Focus survives the swap.** A `<dialog>` removed rather than closed fires no `close` event, so the browser's own restoration never runs and the focus would land on `<body>`: rotate a tablet with the drawer open and the next `Tab` would start again from the skip link. The region catches that and moves the focus to the first thing in the form that replaced it — and only then, never when the focus was somewhere else on the page.
