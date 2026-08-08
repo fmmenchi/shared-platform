@@ -33,6 +33,49 @@ The tokens ship in two shapes of the SAME values:
 Switch theme at runtime with `<html data-theme="dark">` — presets re-point the `--fm-*` variables,
 no rebuild.
 
+### Styles written in TypeScript
+
+If your styles are TypeScript rather than CSS — styled-components, emotion, vanilla-extract, an
+inline `style` — import the same names as strings:
+
+```ts
+import { vars } from '@fmmenchi/tokens';
+
+vars.color.primary; // 'var(--fm-color-primary)'
+vars.space['inset-m']; // 'var(--fm-space-inset-m)'
+```
+
+```ts
+const Panel = styled.section`
+  background: ${vars.color.card};
+  color: ${vars.color['card-foreground']};
+  padding: ${vars.space['inset-m']};
+  border-radius: ${vars.radius.lg};
+`;
+```
+
+The same string works anywhere a CSS value goes:
+
+```ts
+export const panel = style({ background: vars.color.card }); // vanilla-extract
+<div style={{ background: vars.color.card }} />; // React
+```
+
+There is no adapter per library, and deliberately so: a custom property is already the universal
+surface, so `vars` adds no capability — what it adds is that `vars.color.primry` does not compile,
+where the hand-written `var(--fm-color-primry)` renders as nothing and waits to be noticed.
+
+Keys are the **token names**, kebab included, so one search finds the CSS, the contract and your
+call site.
+
+**They are references, not values.** `vars.color.primary` is the string `var(--fm-color-primary)`,
+which re-points when the theme changes — a value copied at build time would not. Where you need the
+resolved value (a canvas, a charting library), read it at the moment you need it:
+
+```ts
+getComputedStyle(element).getPropertyValue('--fm-color-primary');
+```
+
 ### Validating a theme
 
 A theme is a **complete** assignment of every color role. Gate yours in CI:

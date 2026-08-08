@@ -45,6 +45,27 @@ pnpm nx test @fmmenchi/tokens   # contract validation (completeness, bridge, WCA
 - **Contrast policy:** hard gate = WCAG AA + an APCA floor (|Lc| ≥ 45) on text pairs; |Lc| < 60
   (body-text guideline) is logged as advisory, not failed. Dark hover/active are GRADED from the
   fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
+- **The contract ships in TWO shapes of the same names, and neither is a port.** CSS custom
+  properties are the universal surface — every styling library on the web reads `var(--fm-*)`, so
+  there is nothing to adapt and nothing to inject. `vars` (`src/refs.ts`) is the same names as
+  TypeScript strings, for consumers whose styles are written in TS (styled-components, emotion,
+  vanilla-extract, inline `style`): `vars.color.primary === 'var(--fm-color-primary)'`. It adds no
+  capability, only the fact that a typo stops compiling instead of rendering nothing.
+  - **Never add a per-library adapter here.** A styled-components theme object, a Panda preset
+    written by hand — either would make this package import a consumer's styling library, which the
+    workspace's "framework-agnostic" rule forbids outright. A generated ARTIFACT (a `.css`, a
+    `.json`) is a different thing and is allowed; a runtime dependency is not.
+  - **Keys are the token names, kebab and all** — `vars.color['primary-foreground']`,
+    `vars['font-weight'].bold`. camelCase would read better and would be a second vocabulary to
+    keep in step with the first. Searching one string has to find the CSS, the contract and the
+    call site.
+  - **References, never values.** There is no `values.color.primary` and there should not be: a
+    value read at build time is the BASE theme's, and a preset re-points it at runtime, so the
+    export would be right until somebody switched theme. A consumer who genuinely needs the
+    resolved value (canvas, a charting library) reads it from the DOM —
+    `getComputedStyle(el).getPropertyValue('--fm-color-primary')`.
+  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `vars`; `refs.test.ts`
+    compares the two as sets and fails until they agree.
 - **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
   system stacks (apps override `--fm-font-*`).
 - **`styles/baseline.css` is the one file here with element rules, and it is OPTIONAL.** No
