@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
@@ -463,6 +463,29 @@ describe('Menu', () => {
     /** Long enough for the search to be forgotten, and not much longer. */
     const forget = () => new Promise((resolve) => setTimeout(resolve, 1200));
 
+    /**
+     * THE CLOCK, MOVED RATHER THAN WAITED OUT.
+     *
+     * The two tests below have to sit INSIDE the window on each key and OUTSIDE
+     * it in total, which with a 1000ms window and two gaps leaves about 400ms
+     * of slack. A `setTimeout(600)` on a loaded machine does not fire at 600 —
+     * measured, this suite went red in a full run and green on its own, which
+     * is a test reporting the state of the CPU rather than of the component.
+     *
+     * Only `setTimeout`/`clearTimeout` are faked, which is exactly what the
+     * typeahead uses, so the browser's own keyboard dispatch is untouched. The
+     * clock is installed AFTER the menu is open, because opening one is the
+     * part that legitimately waits on the real world.
+     */
+    const useControlledClock = () => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    };
+    const pass = (ms: number) => vi.advanceTimersByTime(ms);
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('goes to the command you type', async () => {
       render(commands());
       await openAtCopy();
@@ -479,8 +502,9 @@ describe('Menu', () => {
       // — measured, 8ms a key — so keys pressed back to back prove only that
       // the buffer accumulates, never that the window is long enough to be of
       // use: a 60ms window passed the first version of this test.
+      useControlledClock();
       await browser.keyboard('c');
-      await new Promise((resolve) => setTimeout(resolve, 700));
+      pass(700);
       await browser.keyboard('u');
       expect(document.activeElement).toBe(item('Curtail'));
     });
@@ -492,10 +516,11 @@ describe('Menu', () => {
       // Three keys 600ms apart: 1200ms from the first, so a window that starts
       // once and is never restarted has already expired by the third — the
       // menu would then hear a bare "r" and go to Rename.
+      useControlledClock();
       await browser.keyboard('c');
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      pass(600);
       await browser.keyboard('u');
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      pass(600);
       await browser.keyboard('r');
       expect(document.activeElement).toBe(item('Curtail'));
     });
