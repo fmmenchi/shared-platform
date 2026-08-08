@@ -117,7 +117,7 @@ describe('tailwind bridge', () => {
   });
 
   // The pair, both halves. Deleting a `--text-<step>--line-height` line left
-  // `Heading size="lg"` and `DialogHeading` on the UA's `normal` leading with
+  // `Heading` and `DialogHeading` on the UA's `normal` leading with
   // every gate green — measured — because `TOKEN_VARS` only proves the `--fm-*`
   // variables are DECLARED, never that they reach the bridge.
   it('bridges the type scale, size AND leading, for every step', () => {

@@ -48,9 +48,11 @@ of the page.
   using `h1`–`h6` at all); `size` is there precisely so you never have to.
 - **The name is its text**, so it needs no `aria-label`; one would replace the
   visible text for screen reader users while sighted users read something else.
-  (Not WCAG 2.5.3 — that one is scoped to interactive components.) `role` and
-  `aria-level` are refused by the type: measured, both reached the DOM and
-  overruled `level` with no warning.
+  (Not WCAG 2.5.3 — that one is scoped to interactive components.) `role` is refused by the
+  type and `aria-level` is stripped at runtime — a type cannot refuse an
+  attribute whose name is not a JS identifier — because both overrule `level`
+  silently: measured, `role="presentation"` removed the heading from every role
+  query and `aria-level={6}` had an `<h3>` announced as level 6.
 - **Two-line headings are balanced**, where the browser supports it: the second
   line no longer carries a single orphan word. It is `text-wrap: balance`,
   applied always rather than offered as a prop — nobody asks for the unbalanced

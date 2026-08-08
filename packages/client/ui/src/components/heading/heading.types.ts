@@ -37,11 +37,15 @@ interface HeadingOwnProps extends HeadingVariants {
  * Public Heading props.
  *
  * No `as`: the element is `level`'s to decide, and a second way to choose the
- * tag could only disagree with it. `role` and `aria-level` are refused for the
- * same reason, and they are the sharper case because they WIN: measured,
- * `role="presentation"` removed the heading from every role query and
- * `aria-level={6}` had an `<h3>` announced as level 6, both with no warning
- * anywhere. `aria-level` is precisely a second way to choose the level.
+ * tag could only disagree with it. `role` is refused here for the same reason.
+ *
+ * `aria-level` is NOT — not because it is allowed, but because a type cannot
+ * refuse it: TypeScript does not excess-property-check a JSX attribute whose
+ * name is not a valid JS identifier, so the `Omit` below is powerless over it
+ * (verified: the `@ts-expect-error` for it is reported unused). It is stripped
+ * at runtime instead, in `heading.guards.ts`, which is the only guarantee there
+ * is — and it needs to be, because it WINS: measured, `aria-level={6}` had an
+ * `<h3>` announced as level 6, silently.
  */
 export type HeadingProps = HeadingOwnProps &
   Omit<
