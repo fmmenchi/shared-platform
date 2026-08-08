@@ -21,7 +21,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                    |
 | **Navigation**    | `Nav` (+ Group, Link)                                                                                                                                          |
-| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer)                                                                                                                |
+| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                             |
 | **Feedback**      | `Alert`                                                                                                                                                        |
 | **Data display**  | `Badge`                                                                                                                                                        |
 
@@ -88,9 +88,12 @@ where the queue lives before any code.
   make part of it unnecessary.
 - **`Slider`.** `<input type="range">` is native but its track and thumb are still barely stylable
   across engines. Revisit when that changes.
-- **`Avatar`, `Card`, `Separator`, `Skeleton`, `Breadcrumb`, `Pagination`.** Each is small and
+- **`Avatar`, `Separator`, `Skeleton`, `Breadcrumb`, `Pagination`.** Each is small and
   none is blocked — they are simply behind the items above, which either unblock a contract or fill
-  an empty group.
+  an empty group. `Card` left this list ahead of its turn: the page shell made a grid of cards the
+  obvious next thing to put in a layout, and the one piece of it that is not trivial — a link that
+  is visually the whole card and semantically only its title — is worth owning once rather than
+  six times.
 - **Date and time pickers.** The native inputs are inconsistent across engines and the hand-rolled
   ones are a calendar widget with a locale problem. Not before there is a real consumer.
 

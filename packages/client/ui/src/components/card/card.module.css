@@ -1,0 +1,61 @@
+/* A bounded surface holding one thing. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--fm-space-internal-m);
+    /* THE TOKEN, named rather than aliased. `CardMedia` has to cancel exactly
+       this much to reach the edges, and it names the same token in its own
+       file — so the value still has one home, and a consumer who retunes
+       `--fm-space-inset-m` on a card moves the padding and the picture's bleed
+       together, because a token inherits and a local alias would not have
+       reached across the two stylesheets at all. */
+    padding: var(--fm-space-inset-m);
+    border-radius: var(--fm-radius-lg);
+    background-color: var(--fm-color-card);
+    color: var(--fm-color-card-foreground);
+  }
+
+  .outlined {
+    border: 1px solid var(--fm-color-border);
+  }
+
+  /* The hairline stays under the shadow: without it the card has no edge at
+     all against a surface of the same lightness, which is most dark themes. */
+  .elevated {
+    border: 1px solid var(--fm-color-border);
+    box-shadow: var(--fm-shadow-md);
+  }
+
+  /* WHEN THE CARD CARRIES A STRETCHED LINK. The attribute is the hook, because
+     a hashed class from `card-title.module.css` cannot be named from this file
+     — the same reason the layout's regions are found by `data-region`.
+
+     Hover paints the whole surface, since the whole surface is what activates.
+     `:has()` asks it in CSS, so no state and no handler are involved. */
+  .card:has([data-card-link]) {
+    cursor: pointer;
+    transition: var(--fm-transition-color);
+  }
+
+  .card:has([data-card-link]:hover) {
+    background-color: var(--fm-color-accent-subtle);
+    color: var(--fm-color-accent-subtle-foreground);
+  }
+
+  @media (forced-colors: active) {
+    /* `background-color` is discarded in forced colours, so hover would say
+       nothing at all. The border is the one thing that can still speak. */
+    .card {
+      border: 1px solid CanvasText;
+    }
+
+    .card:has([data-card-link]:hover) {
+      border-color: Highlight;
+    }
+  }
+}

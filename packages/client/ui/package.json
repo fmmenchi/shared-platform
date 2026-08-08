@@ -334,6 +334,30 @@
       "types": "./dist/components/heading/index.d.ts",
       "import": "./dist/heading.js",
       "default": "./dist/heading.js"
+    },
+    "./card": {
+      "@fmmenchi/source": "./src/components/card/index.ts",
+      "types": "./dist/components/card/index.d.ts",
+      "import": "./dist/card.js",
+      "default": "./dist/card.js"
+    },
+    "./card-title": {
+      "@fmmenchi/source": "./src/components/card-title/index.ts",
+      "types": "./dist/components/card-title/index.d.ts",
+      "import": "./dist/card-title.js",
+      "default": "./dist/card-title.js"
+    },
+    "./card-media": {
+      "@fmmenchi/source": "./src/components/card-media/index.ts",
+      "types": "./dist/components/card-media/index.d.ts",
+      "import": "./dist/card-media.js",
+      "default": "./dist/card-media.js"
+    },
+    "./card-actions": {
+      "@fmmenchi/source": "./src/components/card-actions/index.ts",
+      "types": "./dist/components/card-actions/index.d.ts",
+      "import": "./dist/card-actions.js",
+      "default": "./dist/card-actions.js"
     }
   },
   "nx": {

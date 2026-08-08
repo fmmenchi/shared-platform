@@ -1,0 +1,108 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as CardStories from './card.stories.tsx';
+
+<Meta of={CardStories} />
+
+# Card
+
+A bounded surface holding one thing, and nothing about what that thing is.
+
+```tsx
+<Card>
+  <CardMedia src="…" alt="" />
+  <CardTitle href="/digest">Weekly digest</CardTitle>
+  <p>Four things happened this week.</p>
+  <CardActions>
+    <Button>Save</Button>
+  </CardActions>
+</Card>
+```
+
+## Anatomy
+
+| part          | what it is                                                          |
+| ------------- | ------------------------------------------------------------------- |
+| `Card`        | the surface, its padding, and the box the clickable layer measures  |
+| `CardTitle`   | the name — and, with a destination, what makes the card clickable   |
+| `CardMedia`   | the picture itself, reaching the edges and rounding its own corners |
+| `CardActions` | the actions, pinned to the bottom and above the clickable layer     |
+
+There is no `CardHeader`, `CardContent` or `CardFooter`. Each part here earns its place by carrying CSS a consumer gets wrong; three more containers of padding would carry none, and every element is somewhere a defect can live — on `InputGroup`, **11 of 20 review findings existed only because of one element that had not earned its place**. The rhythm between children is a single `gap` on the card, not three components.
+
+## Props
+
+<Controls of={CardStories.Default} />
+
+## Usage
+
+<Canvas of={CardStories.Default} />
+
+### The card is not interactive; the title is
+
+<Canvas of={CardStories.Linked} />
+
+Give `CardTitle` a destination and the **whole card** becomes clickable. The anchor stays around the title, and grows an invisible layer the size of the card:
+
+```css
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0; /* resolves against Card, which is position: relative */
+}
+```
+
+**Visually large, semantically small.** In the markup there is still one small `<a>` around the heading, which is what decides everything that matters:
+
+- the link's **accessible name** is the title. A card wrapped in an `<a>` takes its name from its contents, so it is announced by reading the entire card — a rotor list of twelve of those is unusable;
+- there is **one tab stop**, not one per element the card contains;
+- it is a real anchor, so middle-click, ctrl-click, right-click and the status-bar URL work from anywhere on the surface. A `onClick` on a box loses all four;
+- and the card can still grow a second action, which a card that _is_ an `<a>` cannot: HTML forbids interactive content inside an anchor.
+
+Two costs, and they are not small:
+
+- **selecting text inside the card is awkward**, because the layer takes the drag. A card holding a price, a code or an ID that people copy should not be linked this way — link the title only, with a plain `<a>` of your own;
+- **anything else clickable has to sit above the layer**. `CardActions` does that for you, which is half of why it exists; anything else you put in a linked card needs `position: relative`.
+
+### `as` is constrained, like the rest of the package
+
+`as` here is not "any element". It is `div | article | section | li | a` — the elements a container may legally be — in the same spirit as `SurfaceHeading`, whose `as` is typed to a heading level, and `NavLink`, whose `as` must end in an anchor.
+
+`a` is included, because a tile with **one** destination and no other action is a real thing. It is also the one shape that cannot hold a button or a second link, and no prop type can see that: it is a question about rendered children. So a card that is an anchor **asks the DOM**, one task after the commit, and warns by name if it finds something interactive inside — pointing at `CardTitle`, which does the same job without swallowing what is in the card.
+
+### The picture reaches the edges, the card does not clip
+
+<Canvas of={CardStories.WithMedia} />
+
+**`CardMedia` IS the image**, not a box around one. The first version wrapped the consumer's `<img>` in a `<div>`, and the wrapper turned out to carry nothing: the negative margins, the `aspect-ratio`, the crop and the rounded corners all apply to an `<img>` directly — measured, not assumed. Two elements where one does the work is exactly what this family refuses three components for. `as="picture"` or `as="video"` for the cases that genuinely need a wrapper, and the stylesheet fills the image inside them.
+
+It is **explicit rather than automatic** — the card does not style every `<img>` it happens to contain — because an image in a card is not necessarily its cover. An avatar, a logo or a chart must not bleed to the edges, and a rule that guessed would be wrong for all three.
+
+It cancels exactly the card's padding by naming **the same token** the card pads with, `--fm-space-inset-m`. So the two cannot drift, and overriding that token on one card moves the padding and the picture's bleed together — a local alias would have done neither, since a custom property declared in `card.module.css` is unreachable from the media's own stylesheet.
+
+It rounds its own corners rather than letting the card clip with `overflow: hidden`, because that would also clip the **focus ring** of every control inside the card. A keyboard user losing the ring on the last button is a worse trade than a picture that has to round its own corners.
+
+The media is **cropped** to a shape (`16 / 9` by default, `ratio` to change it), never stretched: a grid of cards whose pictures each keep their own proportions is a grid that never lines up.
+
+### The actions row only means something in a grid
+
+<Canvas of={CardStories.InAGrid} />
+
+`margin-block-start: auto` pins it to the bottom, so cards with summaries of different lengths still have their buttons on one line. Alone on a page it does nothing, which is the correct amount.
+
+And it is `position: relative`, which is what keeps its buttons clickable on a linked card. No `z-index`: being positioned is enough to paint after an earlier sibling's layer, and a number here would have to out-guess whatever the consuming page stacks around it.
+
+### Paint is a variant, spacing is a token
+
+<Canvas of={CardStories.Elevated} />
+
+`outlined` (a hairline) and `elevated` (a shadow over the hairline — without it a card has no edge at all against a surface of the same lightness, which is most dark themes). There is no padding variant: the inset is `--fm-space-inset-m`, and a product retunes it the way it retunes a colour.
+
+## Accessibility
+
+- **The link's name is the title, not the card.** This is the whole reason the anchor is `CardTitle`'s and not `Card`'s, and it is what makes a grid of cards navigable by rotor.
+- **The heading wraps the link**, never the other way round. A link containing a heading is still findable in a heading list, but the heading's name then belongs to the link and the two stop agreeing about what the card is called.
+- **The heading level is yours.** `h3` by default because a grid of cards usually sits under an `h2`, but the right level depends on the page outline, which the design system cannot see. Set `as`.
+- **The focus ring is drawn on the layer**, so it surrounds the whole card — the thing that will actually be activated — instead of the title text alone. It is drawn by the link's own rule, not by the card's, so it does not depend on a stylesheet next door.
+- **Hover paints the whole surface** via `:has()`, with no state and no handler; in forced colours, where background is discarded, the border carries it instead.
+- **`as="a"` with anything interactive inside is invalid HTML** and warns in development. The keyboard cannot reach the nested control reliably, and activating it also navigates.

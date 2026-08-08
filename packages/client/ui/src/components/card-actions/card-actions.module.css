@@ -1,0 +1,21 @@
+/* The card's actions. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .actions {
+    /* ABOVE THE TITLE'S LAYER. Positioned, so it paints after an earlier
+       sibling's `::after` — no `z-index` needed, and none wanted: a number
+       here would have to out-guess whatever the consuming page stacks around
+       it. Without this the buttons are covered by the link and unclickable. */
+    position: relative;
+
+    /* The bottom of the card, which only means something in a grid: cards with
+       summaries of different lengths still line their buttons up. */
+    margin-block-start: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--fm-space-inline-s);
+    align-items: center;
+  }
+}

@@ -172,3 +172,15 @@ export type {
   HeadingProps,
   HeadingVariants,
 } from './components/heading/heading.types.js';
+export { Card } from './components/card/card.component.js';
+export { cardVariants } from './components/card/card.variants.js';
+export type { CardProps, CardVariants } from './components/card/card.types.js';
+export { CardTitle } from './components/card-title/card-title.component.js';
+export type { CardTitleProps } from './components/card-title/card-title.types.js';
+export { CardMedia } from './components/card-media/card-media.component.js';
+export type {
+  CardMediaProps,
+  CardMediaElement,
+} from './components/card-media/card-media.types.js';
+export { CardActions } from './components/card-actions/card-actions.component.js';
+export type { CardActionsProps } from './components/card-actions/card-actions.types.js';
