@@ -1,0 +1,14 @@
+/* The panel. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .content {
+    /* The padding this element exists to carry — see the component's doc. The
+       block-start is smaller than the trigger's, because the trigger's own
+       bottom padding already separates them. */
+    @apply px-inset-m pb-inset-m pt-inset-s;
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+    @apply text-sm;
+  }
+}

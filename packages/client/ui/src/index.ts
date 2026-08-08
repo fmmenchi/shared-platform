@@ -201,3 +201,12 @@ export { Tab } from './components/tab/tab.component.js';
 export type { TabProps } from './components/tab/tab.types.js';
 export { TabPanel } from './components/tab-panel/tab-panel.component.js';
 export type { TabPanelProps } from './components/tab-panel/tab-panel.types.js';
+
+export { Accordion } from './components/accordion/accordion.component.js';
+export type { AccordionProps } from './components/accordion/accordion.types.js';
+export { AccordionItem } from './components/accordion-item/accordion-item.component.js';
+export type { AccordionItemProps } from './components/accordion-item/accordion-item.types.js';
+export { AccordionTrigger } from './components/accordion-trigger/accordion-trigger.component.js';
+export type { AccordionTriggerProps } from './components/accordion-trigger/accordion-trigger.types.js';
+export { AccordionContent } from './components/accordion-content/accordion-content.component.js';
+export type { AccordionContentProps } from './components/accordion-content/accordion-content.types.js';

@@ -1,0 +1,72 @@
+/* The row you click — a `<summary>`. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .trigger {
+    /* The UA marker goes and ours arrives. `list-style: none` is the modern
+       spelling and `::-webkit-details-marker` is the one WebKit still reads;
+       without the second, Safari drew its triangle beside our chevron. */
+    list-style: none;
+    @apply flex cursor-pointer items-center justify-between gap-internal-m;
+    /* `anywhere`, NOT `break-word`, and the difference is the whole fix: only
+       `anywhere` contributes its wrap opportunities to MIN-CONTENT. The label
+       here is an anonymous flex item, whose `min-width: auto` refuses to shrink
+       below that — so with `break-word` the row still measured 514px inside a
+       320px box. It is the same distinction `heading.module.css` documents,
+       which this file had copied the shape of and not the reason. */
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    @apply px-inset-m py-inset-s;
+    @apply text-base font-medium;
+    @apply rounded-md transition;
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+  .trigger::-webkit-details-marker {
+    display: none;
+  }
+
+  .trigger:hover {
+    @apply bg-muted;
+  }
+
+  /* Our own marker: a chevron built from two borders, so it follows
+     `currentColor` and needs no asset. It points down when closed and turns
+     over when the element opens — `[open]` on the parent is the platform's own
+     state, not a copy of it. */
+  .trigger::after {
+    content: '';
+    inline-size: 0.5rem;
+    block-size: 0.5rem;
+    border: 0 solid currentColor;
+    /* PHYSICAL, not logical, and that is the whole point: a chevron pointing
+       DOWN is not a directional glyph and must not mirror. With
+       `border-inline-end` the borders swapped under `dir="rtl"` while the
+       45deg rotation did not, so it pointed LEFT closed and RIGHT open —
+       measured, and invisible to a test that compares `rotate`, which is
+       identical in both directions. */
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
+    rotate: 45deg;
+    translate: 0 -0.12rem;
+    flex: none;
+    transition: rotate var(--fm-duration-s) var(--fm-ease-standard);
+  }
+  details[open] > .trigger::after {
+    rotate: 225deg;
+    translate: 0 0.1rem;
+  }
+
+  /* Reduced motion: kill the movement, keep the change — the chevron still
+     ends up pointing the other way, it just gets there at once. */
+  @media (prefers-reduced-motion: reduce) {
+    .trigger::after {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .trigger:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

@@ -30,6 +30,17 @@ const components = Object.keys(
   import.meta.glob('../components/**/*.component.tsx'),
 );
 
+/** Every family page by folder — how a family declares which parts are its. */
+const familyDocs = new Map(
+  Object.entries(
+    import.meta.glob('../components/**/*.mdx', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>,
+  ).map(([path, raw]) => [path.split('/').slice(-2)[0] as string, raw]),
+);
+
 /** `../components/input-group/input-group.component.tsx` → `input-group`. */
 const folderOf = (path: string) => path.split('/').slice(-2)[0] as string;
 
@@ -45,10 +56,20 @@ const pascal = (folder: string) =>
  * family is enough. A folder is a part when another component's folder is a
  * prefix of it — which is exactly how the tree encodes the relationship.
  */
-function isPartOfAFamily(folder: string, all: readonly string[]): boolean {
-  return all.some(
-    (other) => other !== folder && folder.startsWith(`${other}-`),
-  );
+function isPartOfAFamily(
+  folder: string,
+  all: readonly string[],
+  docFor: (family: string) => string | undefined,
+): boolean {
+  return all.some((other) => {
+    if (other === folder || !folder.startsWith(`${other}-`)) return false;
+    // The family has to CLAIM it. The prefix alone was a hole, and it failed
+    // OPEN: a real `button-group`, exported and named in the roadmap nowhere,
+    // was classified a part of `button` and silently exempted. A family's own
+    // page names its parts — `accordion.mdx` names `AccordionItem`; a
+    // `button.mdx` would never name `ButtonGroup`.
+    return docFor(other)?.includes(pascal(folder)) === true;
+  });
 }
 
 const sectionOf = (heading: string) => {
@@ -60,7 +81,9 @@ const sectionOf = (heading: string) => {
 
 describe('the component roadmap', () => {
   const folders = components.map(folderOf);
-  const families = folders.filter((f) => !isPartOfAFamily(f, folders));
+  const families = folders.filter(
+    (f) => !isPartOfAFamily(f, folders, (family) => familyDocs.get(family)),
+  );
 
   it('finds the page and the components it describes', () => {
     expect(roadmap, 'docs/roadmap.md is missing').toBeTruthy();
