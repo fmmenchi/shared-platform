@@ -77,6 +77,44 @@ The design system depends on no framework (ADR-0001), so the one thing it will n
 
 After that every `NavLink` uses it, and no call site repeats it. With no provider in scope it is a plain `<a>`.
 
+### Which link the reader is on
+
+The design system never matches a path itself. It **asks**, through the same
+adapter bundle that already carries your `Link` — one seam for routing, not two:
+
+```tsx
+<UiProvider adapters={{ i18n, Link, useIsCurrent }} />
+```
+
+`useIsCurrent` is a **hook**, for the same reason the form binding's members are:
+it is called inside each link, so each one subscribes for itself and re-renders
+when the route changes. Return `'page'` for the page, `'location'` for a section
+that contains it, nothing for elsewhere.
+
+Which shape you need depends on your router, and for two of them the answer is
+"nothing at all":
+
+| Router                          | What to wire                                                                                                                  |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **React Router** — `NavLink`    | Nothing. It sets `aria-current="page"` itself, and it renders the anchor, so its attribute lands last.                        |
+| **TanStack Router**             | Nothing. `Link` resolves activity from typed `to`/`params`/`search` via `activeProps` — things a string match cannot see.     |
+| **React Router** — plain `Link` | `useIsCurrent: (href) => pathIsCurrent(useLocation().pathname, href)`                                                         |
+| **Next**, App Router            | `useIsCurrent: (href) => pathIsCurrent(usePathname(), href)`                                                                  |
+| **Next**, Pages Router          | `useIsCurrent: (href) => pathIsCurrent(useRouter().asPath, href)` — `asPath` carries the query, which `pathIsCurrent` strips. |
+| **Remix**                       | `useIsCurrent: (href) => pathIsCurrent(useLocation().pathname, href)`                                                         |
+
+`pathIsCurrent` is exported for exactly this: it is not the seam, it is what you
+plug into it, so that every app with a plain string path does not write the same
+three edge cases differently — the root being a prefix of everything, a trailing
+slash or query not being a different page, and `/team` not lighting up for
+`/teams`.
+
+What it cannot know is a **basename** or a **locale prefix**: pass a path your
+router has already resolved, and give the links `href`s in that same space.
+
+An explicit `current` on a single link beats all of it — it is the only one that
+can know what matching cannot.
+
 `as` is the exception rather than the seam: a destination that must **not** go through the router — another site, a download, a `mailto:` — takes `as="a"` and gets the anchor back.
 
 A link is also the control the browser already does perfectly — middle-click, open in a new tab, long-press, the status bar showing the destination. `NavLink` adds no handler that would take any of that away.

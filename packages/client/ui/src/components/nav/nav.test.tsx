@@ -8,6 +8,7 @@ import { NavLink } from '../nav-link/nav-link.component.js';
 import { renderUi } from '../../test/render.js';
 import { UiProvider } from '../../i18n/provider.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
+import { pathIsCurrent } from '../../primitives/path-is-current.js';
 
 /**
  * Fragment hrefs throughout: a real path navigates the test iframe away and the
@@ -546,5 +547,65 @@ describe('Nav', () => {
       await opened('Products');
       await expectNoA11yViolations(container);
     });
+  });
+});
+
+// The routing seam. The design system never matches a path itself — it asks the
+// app, through the same adapter bundle that already carries `Link`.
+describe('which link the reader is on', () => {
+  const menu = (
+    <Nav label="Main">
+      <NavLink href="/settings">Settings</NavLink>
+      <NavLink href="/settings/profile">Profile</NavLink>
+      <NavLink href="/pricing">Pricing</NavLink>
+    </Nav>
+  );
+
+  const withPath = (pathname: string, ui = menu) =>
+    render(
+      <UiProvider
+        adapters={{
+          i18n: { locale: 'en' },
+          useIsCurrent: (href) => pathIsCurrent(pathname, href),
+        }}
+      >
+        {ui}
+      </UiProvider>,
+    );
+
+  it('asks the adapter, and marks only where the reader is', () => {
+    withPath('/pricing');
+    expect(screen.getByText('Pricing')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Settings')).not.toHaveAttribute('aria-current');
+  });
+
+  it('distinguishes the page from the section that contains it', () => {
+    withPath('/settings/profile');
+    // Never two "current page" in one menu: the parent is a location.
+    expect(screen.getByText('Profile')).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByText('Settings')).toHaveAttribute(
+      'aria-current',
+      'location',
+    );
+  });
+
+  it('lets an explicit `current` beat the adapter', () => {
+    withPath(
+      '/pricing',
+      <Nav label="Main">
+        <NavLink href="/pricing" current={false}>
+          Pricing
+        </NavLink>
+      </Nav>,
+    );
+    // The call site is the only one that can know what matching cannot.
+    expect(screen.getByText('Pricing')).not.toHaveAttribute('aria-current');
+  });
+
+  it('marks nothing when the app gives no adapter', () => {
+    renderUi(menu);
+    for (const name of ['Settings', 'Profile', 'Pricing']) {
+      expect(screen.getByText(name)).not.toHaveAttribute('aria-current');
+    }
   });
 });

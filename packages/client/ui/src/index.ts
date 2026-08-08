@@ -4,6 +4,7 @@ export type {
   I18n,
   Direction,
   LinkComponent,
+  UseIsCurrent,
   NavigateFn,
   IconRenderer,
 } from './i18n/ports.types.js';
@@ -135,6 +136,7 @@ export { MenuTrigger } from './components/menu-trigger/menu-trigger.component.js
 export { MenuContent } from './components/menu-content/menu-content.component.js';
 export { Nav } from './components/nav/nav.component.js';
 export { NavGroup } from './components/nav-group/nav-group.component.js';
+export { pathIsCurrent } from './primitives/path-is-current.js';
 export { NavLink } from './components/nav-link/nav-link.component.js';
 export { MenuItem } from './components/menu-item/menu-item.component.js';
 export { MenuItemTrigger } from './components/menu-item-trigger/menu-item-trigger.component.js';

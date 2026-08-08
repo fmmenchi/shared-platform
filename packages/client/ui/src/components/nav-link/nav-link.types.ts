@@ -17,6 +17,10 @@ export interface NavLinkProps extends ComponentPropsWithRef<'a'> {
    * what a screen reader announces — a colour alone says it only to those who
    * can see it (WCAG 1.4.1).
    *
+   * Optional now: with a `useIsCurrent` on `UiProvider` the design system asks
+   * the app instead, and this prop becomes the override for what the matching
+   * cannot know. Explicit always wins.
+   *
    * `true` means `'page'`, the common case. The other tokens are there because
    * a navigation asks for them: `'location'` for the SECTION you are inside —
    * the parent entry of a sidebar tree, which is not the page you are on —

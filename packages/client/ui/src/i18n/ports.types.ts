@@ -30,6 +30,28 @@ export type LinkComponent = ComponentType<
   { href: string; children?: ReactNode } & Record<string, unknown>
 >;
 
+/**
+ * App-provided answer to "is this destination where the reader already is?".
+ *
+ * A HOOK, for the same reason the form binding's members are hooks: it is called
+ * inside each link, so each subscribes for itself and re-renders when the route
+ * changes. The design system never learns how the answer is computed — matching
+ * a path is the router's job, and every router does it differently (a basename,
+ * a locale prefix, typed params, search). It only asks.
+ *
+ * Return `'page'` for the page the reader is on and `'location'` for a SECTION
+ * that contains it — the parent entry of a sidebar, which is not the same
+ * claim. `true` means `'page'`. Return nothing for "not here".
+ *
+ * Leave it out when the injected `Link` already marks itself: React Router's
+ * `NavLink` sets `aria-current="page"` on its own, and TanStack's `Link`
+ * resolves activity from typed params the design system cannot see. Whoever
+ * renders the anchor wins, so a second opinion would only be able to disagree.
+ */
+export type UseIsCurrent = (
+  href: string,
+) => boolean | 'page' | 'step' | 'location' | 'date' | 'time' | undefined;
+
 /** App-provided imperative navigation. */
 export type NavigateFn = (href: string) => void;
 
@@ -70,5 +92,6 @@ export interface UiAdapters {
   form?: FormBinding;
   Link?: LinkComponent;
   navigate?: NavigateFn;
+  useIsCurrent?: UseIsCurrent;
   Icon?: IconRenderer;
 }

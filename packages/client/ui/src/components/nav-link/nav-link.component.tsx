@@ -1,6 +1,7 @@
 import type { ElementType } from 'react';
 import { cn } from '../../util/cn.js';
 import { useUiAdapters } from '../../i18n/provider.js';
+import { useInjectedCurrent } from './nav-link.current.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -27,6 +28,13 @@ function NavLink(props: NavLinkProps) {
    * tolerantly, so a `NavLink` outside a provider is still a plain anchor.
    */
   const injected = useUiAdapters()?.Link;
+  // THREE levels, most specific first. An explicit `current` wins, because it
+  // is the only one that can know what matching cannot. Then the adapter, if
+  // the app gave one. Outside the chain entirely: an injected `Link` that marks
+  // ITSELF — React Router's `NavLink`, TanStack's `activeProps` — since it
+  // renders the element and its own attribute lands last.
+  const fromAdapter = useInjectedCurrent(rest.href);
+  const active = current ?? fromAdapter;
   const Component = (as ?? injected ?? 'a') as ElementType;
 
   return (
@@ -36,7 +44,7 @@ function NavLink(props: NavLinkProps) {
         // current DELETED a consumer's own `aria-current` — the attribute has
         // seven legal values and this prop expressed one, so the escape hatch
         // was not merely unused but unreachable.
-        aria-current={current === true ? 'page' : current || undefined}
+        aria-current={active === true ? 'page' : active || undefined}
         {...rest}
         className={cn(styles.link, className)}
       >
