@@ -20,9 +20,14 @@
   }
 
   /* MANY TABS, ONE LINE. Wrapping a tab list looks tidy and reads badly: the
-     marker under the selected tab stops lining up with the rail, and a reader
-     using magnification loses the row they were following. Scrolling keeps the
-     line, and `thin` keeps the bar from eating the tabs on a narrow screen. */
+     marker under the selected tab stops lining up with the rail, and the row
+     stops being a row. Scrolling keeps the line, and `thin` keeps the bar from
+     eating the tabs on a narrow screen.
+
+     It is a trade, not a free win: at 400% zoom a magnification user has to
+     scroll sideways to reach the later tabs. WCAG 1.4.10 allows that for
+     content requiring two-dimensional layout, and the arrows reach every tab
+     without any scrolling at all — `focus()` brings each one into view. */
   .list:not([data-orientation='vertical']) {
     overflow-x: auto;
     scrollbar-width: thin;

@@ -1,10 +1,8 @@
-import { useEffect } from 'react';
 import type { KeyboardEvent } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { first, last, step } from '../../primitives/roving.js';
-import { inlineEnd } from '../menu/menu.keyboard.js';
+import { first, inlineEnd, last, step } from '../../primitives/roving.js';
 import { useTabsPart } from '../tabs/tabs.context.js';
 import type { TabListProps } from './tab-list.types.js';
 import styles from './tab-list.module.css';
@@ -22,19 +20,17 @@ import styles from './tab-list.module.css';
  * right-to-left page the first tab is on the right, so ArrowLeft moves
  * forward. `inlineEnd` already answers that for the menu and answers it here.
  *
- * IT GUARANTEES A SELECTION. A tab list where nothing is selected has no tab
- * with `tabindex="0"`, so the whole list is unreachable by Tab — the roving
- * pattern's own failure mode. If the value matches no tab, the first enabled
- * one is selected: for an uncontrolled list that is just the initial state, and
- * for a controlled one it is an answer rather than a dead list, with a warning
- * saying so.
+ * IT HOLDS NO STATE AND GUARANTEES NOTHING. "There is always a tab showing" —
+ * without which no tab carries `tabindex="0"` and the whole list drops out of
+ * the page's tab order — used to be enforced here, by an effect. It is now
+ * worked out in render by `Tabs`, from the children: see `tabs.children.ts` for
+ * the three ways an effect could not see the thing it was guarding.
  */
 function TabList(props: TabListProps) {
   const { className, children, onKeyDown, ref, ...rest } = props;
   const context = useTabsPart('TabList');
 
   const tabs = context?.tabs;
-  const value = context?.value;
   const select = context?.select;
   const activation = context?.activation;
   const orientation = context?.orientation ?? 'horizontal';
@@ -43,16 +39,6 @@ function TabList(props: TabListProps) {
     context != null && !props['aria-label'] && !props['aria-labelledby'],
     'TabList: give it an `aria-label` (or `aria-labelledby`). A tab list with no accessible name is announced as just "tab list".',
   );
-
-  useEffect(() => {
-    if (!tabs || !select) return;
-    const items = tabs.items();
-    if (items.length === 0) return;
-    if (items.some((item) => item.data.value === value)) return;
-
-    const fallback = items.find((item) => !item.data.disabled) ?? items[0];
-    if (fallback) select(fallback.data.value);
-  }, [tabs, value, select]);
 
   const onKeys = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
@@ -63,6 +49,13 @@ function TabList(props: TabListProps) {
 
     const current = document.activeElement as HTMLElement | null;
     const from = tabs.indexOf(current);
+    // NOT FROM A TAB, so not ours. `step` reads a negative index as "nowhere
+    // yet", which is right for a menu that has just opened and wrong for a
+    // handler that catches everything bubbling out of the list: a filter field
+    // or an "add tab" button inside the tab list is ordinary, and without this
+    // line ArrowLeft in that field moved the focus onto a tab instead of the
+    // caret, and Home jumped out of the text entirely.
+    if (from < 0) return;
 
     // READ AT THE KEYSTROKE, not at render: a page can change direction under
     // a component that is already mounted, and this is the only moment the

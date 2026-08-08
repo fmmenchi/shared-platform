@@ -4,13 +4,25 @@
 
 @layer fmmenchi {
   .panel {
-    /* THE `hidden` ATTRIBUTE, DEFENDED. Its UA rule is `display: none`, and any
-       `display` a consumer sets on this element beats it — so a panel styled
-       `display: flex` would show all of them at once, which is the oldest trap
-       in this pattern. `revert-layer` is not enough either: the rule has to
-       lose to nothing. */
+    /* THE `hidden` ATTRIBUTE, DEFENDED — and `!important` is the only thing
+       that actually defends it from inside a cascade layer.
+
+       Its UA rule is `display: none`, which any author declaration beats. This
+       package ships everything inside `@layer fmmenchi` (ADR-0011), and a
+       layered rule loses to EVERY unlayered one regardless of specificity — so
+       the first version of this line, written plainly right under a comment
+       claiming it could not be beaten, was beaten by `.myPanel { display: grid }`
+       in the consumer's own stylesheet. Every panel then shows at once: N
+       tabpanels in the accessibility tree, N extra tab stops, and exactly one
+       tab claiming `aria-selected="true"`.
+
+       For `!important` the layer order is INVERTED and unlayered author
+       `!important` ranks lowest, so this beats both a plain and an `!important`
+       override. It is the one declaration in the package that earns it, because
+       it is not styling: it is the difference between one panel and all of
+       them. */
     &[hidden] {
-      display: none;
+      display: none !important;
     }
 
     /* The panel takes the focus (it may hold nothing focusable), so it owes a

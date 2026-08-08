@@ -6,9 +6,39 @@ import type { Descendant } from './use-descendants.types.js';
  * Extracted from `menu.keyboard.ts` when Tabs became the second consumer, which
  * is the threshold this package already states for an abstraction earning its
  * place (see `part-context.tsx`). Nothing here ever looked at what a menu
- * command IS: the three functions only ever read `element`, so the family's
- * data type is a parameter and the menu's own file keeps its named exports.
+ * command IS: the walkers only ever read `element`, so the family's data type
+ * is a parameter and the menu's own file keeps its named exports.
+ *
+ * `inlineEnd` came with them on the second pass. Leaving it behind meant the
+ * tab list importing `menu.keyboard.js` for it, and the built output showed
+ * what that cost: a consumer importing only `@fmmenchi/ui/tab-list` shipped the
+ * menu's `Intl.Collator` prefix matcher and its accessible-name walker.
  */
+
+/**
+ * Which side a submenu opens on, and which physical arrow means "into it".
+ *
+ * The submenu sits on the INLINE-END side — the way the reader reads — so both
+ * answers come from the direction and neither is a prop. Pure, and separate
+ * from the component, because the rendered side cannot be asserted: `flip()`
+ * moves the surface when there is no room, so a menu near the edge of a phone
+ * ends up on the other side whatever was asked for, and a test of the rendered
+ * position measures the room rather than the rule.
+ *
+ * The keys deliberately do NOT follow the flip. The APG writes the contract in
+ * physical arrows, and a key that changed meaning between two openings of the
+ * same menu — because the window was narrower the second time — would be worse
+ * than one that occasionally points away from the surface.
+ */
+export function inlineEnd(direction: 'ltr' | 'rtl'): {
+  placement: 'left-start' | 'right-start';
+  forward: 'ArrowLeft' | 'ArrowRight';
+  back: 'ArrowLeft' | 'ArrowRight';
+} {
+  return direction === 'rtl'
+    ? { placement: 'left-start', forward: 'ArrowLeft', back: 'ArrowRight' }
+    : { placement: 'right-start', forward: 'ArrowRight', back: 'ArrowLeft' };
+}
 
 /** The first part, and the last — a family's two ends. */
 export function first<Data>(items: Descendant<Data>[]): HTMLElement | null {

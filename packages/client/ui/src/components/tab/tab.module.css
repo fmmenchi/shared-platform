@@ -39,21 +39,46 @@
      just a hue. After `:hover` so that pointing at the selected tab does not
      undo it. */
   .tab[aria-selected='true'] {
-    color: var(--fm-color-primary);
+    /* THE LABEL TAKES THE PLAIN FOREGROUND and only the MARKER takes `primary`.
+       The token contract declares `['background', 'primary', 3]` — a non-text
+       pair, for a checked control's mark — so painting a label with it would be
+       a pairing `validateTheme()` does not check: a brand preset with `primary`
+       at 3.2:1 would pass the platform's own validator and ship a selected tab
+       label that fails WCAG 1.4.3. The 2px marker is non-text, which is exactly
+       what the declared pair is for. */
+    color: var(--fm-color-foreground);
     border-block-end-color: var(--fm-color-primary);
   }
 
   /* Last of the three, so it wins over both: a disabled tab that lights up
      under the pointer is telling the reader it can be pressed. */
+  /* NO `opacity`. It applies to the element's entire rendering, the OUTLINE
+     included, and this component deliberately keeps disabled tabs focusable and
+     walks the arrows onto them — so half-opacity dropped the focus ring to
+     2.25:1, and WCAG 1.4.11 has no exemption for inactive components. axe could
+     not see it either: it skips contrast checks entirely on anything
+     `aria-disabled`. The package already has the token for this, and
+     `menu-item` already uses it. */
   .tab[aria-disabled='true'] {
-    color: var(--fm-color-muted-foreground);
-    opacity: 0.5;
+    color: var(--fm-color-disabled-foreground);
     cursor: not-allowed;
   }
 
   .tab:focus-visible {
     outline: 2px solid var(--fm-color-ring);
     outline-offset: -2px;
+  }
+
+  /* A finger is not a cursor. `px-3 py-2 text-sm` computes to 38px, which
+     clears WCAG 2.5.8 and not this package's own policy — `button`,
+     `menu-item`, `nav-link` and `nav-group` all raise to 44 under a coarse
+     pointer, and a horizontally scrolling strip of 38px tabs is exactly where a
+     thumb lands on the neighbour. */
+  @media (pointer: coarse) {
+    .tab {
+      min-block-size: 2.75rem;
+      @apply px-4 text-base;
+    }
   }
 
   /* A vertical list puts the marker on the inline edge instead. */
@@ -80,7 +105,6 @@
 
     .tab[aria-disabled='true'] {
       color: GrayText;
-      opacity: 1;
     }
 
     .tab:focus-visible {

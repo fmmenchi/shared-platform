@@ -44,7 +44,9 @@ Which is exactly why none of it is written twice. `useDescendants` gives tree or
 
 ### Paired by value, not by position
 
-A tab points at its panel with `aria-controls`, the panel points back with `aria-labelledby`, and **both ids are derived from `value`**. So the panels can live anywhere in the tree, in any order, and reordering the tabs cannot mispair them.
+A tab points at its panel with `aria-controls`, the panel points back with `aria-labelledby`, and **both ids are derived from `value`**. So the panels can be reordered among themselves, and reordering the tabs cannot mispair them.
+
+They must still **follow the tab list in the DOM**. `aria-controls` moves no focus in any browser — JAWS' "go to controlled element" is a command the reader has to issue — so Tab from the selected tab lands on whatever comes next in the document. Put the panels above the list and Tab leaves the component entirely, while a screen reader in browse mode reads the panel before the tabs that explain it.
 
 The one constraint that follows: a `value` has to be usable inside an `id`, which means no whitespace. `aria-controls` is a space-separated list of ids, so `value="two words"` does not make a broken reference — it makes two, one of them to nothing. It warns in development.
 
@@ -54,9 +56,19 @@ The one constraint that follows: a `value` has to be usable inside an `id`, whic
 
 `automatic` is the default and the APG's recommendation: a reader arrowing along the list hears each panel as they reach it, with no second keystroke. `manual` is for panels that cost something to show — a fetch, a chart — where selecting six on the way to the seventh is the wrong thing to do to someone driving with the keyboard.
 
-### There is always a selected tab
+### There is always a tab showing, and it is worked out in render
 
-A tab list where nothing is selected has no tab at `tabindex="0"`, so the whole list is **unreachable by Tab** — the roving pattern's own failure mode. If the value matches no tab, the first enabled one is selected: for an uncontrolled list that is simply the initial state, and for a controlled one it is an answer rather than a dead list, with a warning saying so.
+A tab list where nothing is selected has no tab at `tabindex="0"`, so the whole list is **unreachable by Tab** — the roving pattern's own failure mode. If the value names no tab, the first usable one shows instead.
+
+The first version enforced that in a `useEffect`, and three reviews measured what an effect could not see. Its dependency list — the registry handle, the value, the setter — is unchanged by the only thing that matters: which tabs exist. So a tab unmounting took the list's one tab stop with it; a `Tabs` nested in a non-selected panel mounted with no _visible_ descendants, bailed, and never ran again, which the panels-stay-mounted decision made reachable in the most ordinary way; and how often it ran at all depended on whether the caller had inlined `onValueChange`, since an inline arrow changes the setter's identity every render. The same code was correct or broken according to a stylistic choice in somebody else's file.
+
+It is now read from the children during render — no effect, no dependency array, right on the first paint and on the server. The fallback is **presentation only**: it is never announced through `onValueChange`, so an uncontrolled list does not report a change nobody made, and a controlled one is never told its own state is something else. A controlled value that names no tab gets a warning and a usable list.
+
+The price is the one this package has paid twice before, in the Card's slots and in `AppLayoutNav`'s: a `Tab` rendered by a component of your own is a `Tab` this cannot see. Fragments and plain elements are walked through.
+
+### The roving index follows the focus, not the selection
+
+Under `manual` activation the two come apart. Arrow from tab 1 to tab 3 without activating, Tab away to the panel, Shift+Tab back: a tab stop that tracked _selection_ would return you to tab 1 and silently discard two keystrokes — in the one mode meant for panels that cost something, where re-arrowing costs the most.
 
 ### The panels stay mounted
 
@@ -66,9 +78,11 @@ It also keeps every `aria-controls` **resolvable**. Unmounting the inactive pane
 
 What it costs, and it is worth knowing: the content of a hidden panel is mounted. If it fetches, it fetches on load, for all of them. Where that matters, render the expensive part only when its panel is selected — `useTabsContext()` is exported for exactly that.
 
-### `hidden` is defended in CSS
+### `hidden` is defended with `!important`, and that is the only thing that works
 
-The `hidden` attribute's UA rule is `display: none`, and **any `display` a consumer sets on the panel beats it** — so a panel styled `display: flex` shows all of them at once. This is the oldest trap in the pattern, and the panel's own stylesheet re-states the rule rather than trusting the UA's.
+The `hidden` attribute's UA rule is `display: none`, and **any author `display` beats it** — so a panel a consumer styles `display: grid` shows every panel at once: N tabpanels in the accessibility tree, N extra tab stops, and exactly one tab claiming `aria-selected="true"`.
+
+Re-stating the rule plainly is not enough, and the first version of this section said it was. Everything here ships inside `@layer fmmenchi` (ADR-0011), and **a layered rule loses to every unlayered one regardless of specificity** — which is the whole point of the layer everywhere else in the package. For `!important` the layer order is inverted and unlayered author `!important` ranks lowest, so a layered `!important` outranks both. It is the one declaration in the package that earns it, because it is not styling: it is the difference between one panel and all of them.
 
 <Canvas of={TabsStories.Vertical} />
 
@@ -79,6 +93,9 @@ The `hidden` attribute's UA rule is `display: none`, and **any `display` a consu
 - **The arrows follow the writing direction**: in a right-to-left page the first tab is on the right, so ArrowLeft moves forward. Read at the keystroke, so a page can change direction under a mounted component.
 - **A disabled tab is `aria-disabled`, never the native attribute** — it stays focusable and refuses to activate. The native one would take it out of the arrows' reach, leaving a reader with no way to learn it is there.
 - **The list needs a name.** `aria-label` (or `aria-labelledby`); a `tablist` without one is announced as just "tab list", which on a page with two of them says nothing. It warns in development.
-- **The panel takes the focus** (`tabindex="0"`), because it may hold nothing focusable — in which case selecting a tab would leave a keyboard reader with nowhere to go.
+- **The panel takes the focus** (`tabindex="0"`), because it may hold nothing focusable — in which case selecting a tab would leave a keyboard reader with nowhere to go. The APG makes this **conditional** on that: a panel whose content is already focusable does not need the stop and reads better without it. There is no render-time answer to "does this subtree contain a tabbable", so the safe default is written _before_ the spread — pass `tabIndex={-1}` and yours wins.
 - **`aria-orientation` only when vertical.** `horizontal` is the default for a `tablist`, and stating a default is a second place for it to be wrong.
+- **Tabs are 44px under a coarse pointer**, like every other control here. `px-3 py-2 text-sm` computes to 38 — enough for WCAG 2.5.8, short of this package's own policy, and a scrolling strip of 38px tabs is exactly where a thumb lands on the neighbour.
+- **The disabled tab uses a token, not `opacity`.** `opacity` applies to the whole rendering including the outline, and this component deliberately walks the arrows onto disabled tabs — at 0.5 the focus ring measured 2.25:1, and WCAG 1.4.11 has no exemption for inactive components. axe cannot see it either: it skips contrast checks on anything `aria-disabled`.
+- **The selected tab's LABEL takes the plain foreground**, and only its 2px marker takes `primary`. The token contract declares `background × primary` as a non-text pair (3:1), so painting a label with it would be a pairing `validateTheme()` does not check — a brand preset could pass the platform's own validator and ship a selected tab below 4.5:1.
 - **The selected tab is not marked by colour alone** (WCAG 1.4.1): `aria-selected` is what a screen reader announces, and the marker is a shape. In forced colours the marker takes the system's `Highlight`, since the colour is discarded.

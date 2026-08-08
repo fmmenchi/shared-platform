@@ -44,6 +44,11 @@ describe('Tabs', () => {
 
     const list = screen.getByRole('tablist', { name: 'Sections' });
     expect(list).toBeInTheDocument();
+    // ABSENT, not `"horizontal"`. That is the default for a tablist, and
+    // stating a default is a second place for it to be wrong — a claim only a
+    // test of the horizontal case can keep.
+    expect(list).not.toHaveAttribute('aria-orientation');
+    expect(list).toHaveAttribute('data-orientation', 'horizontal');
     expect(screen.getAllByRole('tab')).toHaveLength(3);
     // One panel in the a11y tree: the others are `hidden`, which takes them out
     // of it. Three exist in the DOM.
@@ -184,9 +189,24 @@ describe('Tabs', () => {
     // Playwright refuses to click an `aria-disabled` element at all, so a
     // driven click here waits out its timeout. This still goes through React's
     // handler, which is the guard being tested.
+    //
+    // THE WAIT IS THE TEST. A raw `.click()` is not awaited, so an assertion on
+    // the next line runs before React has re-rendered — measured by a reviewer:
+    // clicking an ENABLED tab and asserting `aria-selected="false"` on the
+    // following line also passes. Both assertions here were hollow, and would
+    // have held with the guard deleted, with `select` deleted, with the whole
+    // component inert. Clicking the ENABLED neighbour first proves the wait is
+    // long enough to have seen a change if there had been one.
+    tab('API').click();
+    await waitFor(() =>
+      expect(tab('API')).toHaveAttribute('aria-selected', 'true'),
+    );
+
     tab('Usage').click();
+    await waitFor(() =>
+      expect(tab('API')).toHaveAttribute('aria-selected', 'true'),
+    );
     expect(tab('Usage')).toHaveAttribute('aria-selected', 'false');
-    expect(tab('Overview')).toHaveAttribute('aria-selected', 'true');
   });
 
   it('wires every tab to a panel that exists', async () => {
@@ -318,5 +338,367 @@ describe('Tabs', () => {
 
     rerender(three({ orientation: 'vertical' }));
     await expectNoA11yViolations(container);
+  });
+});
+
+/**
+ * WHAT THREE ADVERSARIAL REVIEWS FOUND, and what the fixes have to keep true.
+ *
+ * Every test here failed — or could not have been written — against the version
+ * that enforced "there is always a selection" in a `useEffect`.
+ */
+describe('Tabs, after the reviews', () => {
+  it('gives a NESTED tab list a selection, though it mounts inside a hidden panel', async () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Outer">
+          <Tab value="first">First</Tab>
+          <Tab value="second">Second</Tab>
+        </TabList>
+        <TabPanel value="first">Plain</TabPanel>
+        <TabPanel value="second">
+          <Tabs>
+            <TabList aria-label="Inner">
+              <Tab value="alpha">Alpha</Tab>
+              <Tab value="beta">Beta</Tab>
+            </TabList>
+            <TabPanel value="alpha">Alpha panel</TabPanel>
+            <TabPanel value="beta">Beta panel</TabPanel>
+          </Tabs>
+        </TabPanel>
+      </Tabs>,
+    );
+
+    // The inner list mounts inside a `display: none` panel, so it has NO
+    // visible descendants — the registry filters on `checkVisibility()`. The
+    // effect that used to guarantee a selection bailed there and never ran
+    // again, so opening the outer tab revealed a list with nothing selected and
+    // no way in from the keyboard. Nested tabs are only possible BECAUSE the
+    // panels stay mounted, so the headline decision produced the worst failure.
+    await browser.click(tab('Second'));
+
+    await waitFor(() =>
+      expect(tab('Alpha')).toHaveAttribute('aria-selected', 'true'),
+    );
+    expect(tab('Alpha')).toHaveAttribute('tabindex', '0');
+    expect(screen.getByText('Alpha panel')).toBeVisible();
+  });
+
+  it('keeps a tab stop when the selected tab is removed', async () => {
+    function Removable() {
+      const [showFirst, setShowFirst] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setShowFirst(false)}>
+            Drop the first
+          </button>
+          <Tabs>
+            <TabList aria-label="Sections">
+              {showFirst && <Tab value="overview">Overview</Tab>}
+              <Tab value="usage">Usage</Tab>
+            </TabList>
+            <TabPanel value="overview">What it is</TabPanel>
+            <TabPanel value="usage">How to use it</TabPanel>
+          </Tabs>
+        </>
+      );
+    }
+    render(<Removable />);
+    await waitFor(() =>
+      expect(tab('Overview')).toHaveAttribute('tabindex', '0'),
+    );
+
+    await browser.click(screen.getByRole('button', { name: 'Drop the first' }));
+
+    // Nothing about a tab leaving changes the registry handle, the value or the
+    // setter — so the effect could not see it, and the list dropped out of the
+    // page's tab order entirely. Read from the children, it cannot.
+    await waitFor(() => expect(tab('Usage')).toHaveAttribute('tabindex', '0'));
+    expect(tab('Usage')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('falls back for a controlled value that names no tab, and says so', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const onValueChange = vi.fn();
+    render(three({ value: 'nothing-here', onValueChange }));
+
+    // The fallback is PRESENTATION ONLY: a controlled consumer is never told
+    // their own state is something else, so this cannot loop with a handler
+    // that re-renders. What they get instead is a warning and a usable list.
+    await waitFor(() =>
+      expect(tab('Overview')).toHaveAttribute('tabindex', '0'),
+    );
+    expect(onValueChange).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('names no tab'),
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('does not report a change nobody made', async () => {
+    const onValueChange = vi.fn();
+    render(three({ onValueChange }));
+    await waitFor(() =>
+      expect(tab('Overview')).toHaveAttribute('aria-selected', 'true'),
+    );
+
+    // The first tab shows because nothing else does; that is not an event. The
+    // version that selected it through the setter fired `onValueChange` on
+    // mount — a phantom tab-change in anybody's analytics — and flipped the
+    // component from uncontrolled to controlled on its own.
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves the tab stop where the focus is, under manual activation', async () => {
+    render(
+      <>
+        {three({ activation: 'manual' })}
+        <button type="button">After</button>
+      </>,
+    );
+    await waitFor(() =>
+      expect(tab('Overview')).toHaveAttribute('tabindex', '0'),
+    );
+    tab('Overview').focus();
+
+    await browser.keyboard('{ArrowRight}');
+    await browser.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(tab('API'));
+    expect(tab('Overview')).toHaveAttribute('aria-selected', 'true');
+
+    // The roving index follows the FOCUS, not the selection. Tracking selection
+    // sends the reader back to tab 1 on the way in, silently discarding two
+    // arrow presses — in the one mode meant for panels that cost something.
+    expect(tab('API')).toHaveAttribute('tabindex', '0');
+    expect(tab('Overview')).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('leaves the arrows alone for something that is not a tab', async () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Files">
+          <Tab value="a">A</Tab>
+          <Tab value="b">B</Tab>
+          <input aria-label="Filter tabs" defaultValue="hello" />
+        </TabList>
+        <TabPanel value="a">First</TabPanel>
+        <TabPanel value="b">Second</TabPanel>
+      </Tabs>,
+    );
+    await waitFor(() => expect(tab('A')).toHaveAttribute('tabindex', '0'));
+
+    const filter = screen.getByLabelText('Filter tabs') as HTMLInputElement;
+    filter.focus();
+    filter.setSelectionRange(5, 5);
+    await browser.keyboard('{ArrowLeft}');
+
+    // The handler is on the list and catches everything that bubbles. Without a
+    // check that the keystroke came FROM a tab, arrowing in this field moved
+    // the focus onto a tab instead of the caret — and Home left the text
+    // altogether.
+    expect(document.activeElement).toBe(filter);
+    expect(filter).toHaveProperty('selectionStart', 4);
+
+    await browser.keyboard('{Home}');
+    expect(document.activeElement).toBe(filter);
+  });
+
+  it('shows a disabled tab when every tab is disabled, without selecting it', async () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Plans">
+          <Tab value="a" disabled>
+            A
+          </Tab>
+          <Tab value="b" disabled>
+            B
+          </Tab>
+        </TabList>
+        <TabPanel value="a">First</TabPanel>
+        <TabPanel value="b">Second</TabPanel>
+      </Tabs>,
+    );
+
+    // SOMETHING has to carry `tabindex="0"` or the list is unreachable, and
+    // being focusable is not the same as being selected.
+    await waitFor(() => expect(tab('A')).toHaveAttribute('tabindex', '0'));
+    tab('A').focus();
+    tab('B').click();
+    // Waited, not read on the next line — see the disabled-click test above for
+    // what an unawaited `.click()` is worth. B stays unselected because it is
+    // disabled, not because nothing has happened yet.
+    await waitFor(() => expect(tab('A')).toHaveAttribute('tabindex', '0'));
+    expect(tab('B')).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('keeps the panels hidden against a consumer’s own display rule', async () => {
+    const sheet = document.createElement('style');
+    // UNLAYERED, like every ordinary consumer stylesheet — which is exactly why
+    // the first version of the defence failed: it was written inside
+    // `@layer fmmenchi`, and a layered rule loses to every unlayered one
+    // whatever its specificity. Only a layered `!important` outranks this.
+    sheet.textContent = '[role="tabpanel"] { display: grid; }';
+    document.head.append(sheet);
+
+    try {
+      render(three());
+      await waitFor(() =>
+        expect(tab('Overview')).toHaveAttribute('tabindex', '0'),
+      );
+
+      expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+      const hidden = panels().filter((panel) => panel.hasAttribute('hidden'));
+      expect(hidden).toHaveLength(2);
+      for (const panel of hidden) {
+        expect(getComputedStyle(panel).display).toBe('none');
+      }
+    } finally {
+      sheet.remove();
+    }
+  });
+
+  it('says when a panel has no tab to belong to', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Tabs>
+        <TabList aria-label="Sections">
+          <Tab value="a">A</Tab>
+        </TabList>
+        <TabPanel value="a">First</TabPanel>
+        <TabPanel value="orphan">Nobody points at me</TabPanel>
+      </Tabs>,
+    );
+
+    // Its `aria-labelledby` points at nothing, so it is announced unnamed. The
+    // tab→panel direction was checked from the start; this is the way back.
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no <Tab value="orphan">'),
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('does not dim the focus ring of a disabled tab', async () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Plans">
+          <Tab value="free">Free</Tab>
+          <Tab value="team" disabled>
+            Team
+          </Tab>
+        </TabList>
+        <TabPanel value="free">First</TabPanel>
+        <TabPanel value="team">Second</TabPanel>
+      </Tabs>,
+    );
+    await waitFor(() => expect(tab('Free')).toHaveAttribute('tabindex', '0'));
+
+    // `opacity` applies to the whole rendering, the OUTLINE included — and this
+    // component deliberately walks the arrows onto disabled tabs. At 0.5 the
+    // focus ring measured 2.25:1, and WCAG 1.4.11 has no exemption for inactive
+    // components. axe cannot see it either: it skips contrast checks entirely
+    // on anything `aria-disabled`, which is why this is asserted by hand.
+    expect(getComputedStyle(tab('Team')).opacity).toBe('1');
+  });
+});
+
+/**
+ * The seams a consumer is allowed to reach into, and the two keys the browser
+ * would otherwise act on itself. All of these survived deletion in a mutation
+ * run — the contract was documented and unguarded.
+ */
+describe('Tabs, the contract with the caller', () => {
+  it('stops the browser acting on the keys it takes', async () => {
+    render(three({ orientation: 'vertical' }));
+    await waitFor(() =>
+      expect(tab('Overview')).toHaveAttribute('tabindex', '0'),
+    );
+    tab('Overview').focus();
+
+    const seen: boolean[] = [];
+    const listen = (event: KeyboardEvent) => seen.push(event.defaultPrevented);
+    document.addEventListener('keydown', listen);
+    try {
+      await browser.keyboard('{ArrowDown}');
+      await browser.keyboard('{End}');
+    } finally {
+      document.removeEventListener('keydown', listen);
+    }
+
+    // Without this the page scrolls under a reader walking a vertical list, and
+    // End jumps the document to the bottom on every tab change.
+    expect(seen).toEqual([true, true]);
+  });
+
+  it('lets the caller pre-empt a click', async () => {
+    const onClick = vi.fn((event: React.MouseEvent) => event.preventDefault());
+    render(
+      <Tabs>
+        <TabList aria-label="Sections">
+          <Tab value="a">A</Tab>
+          <Tab value="b" onClick={onClick}>
+            B
+          </Tab>
+        </TabList>
+        <TabPanel value="a">First</TabPanel>
+        <TabPanel value="b">Second</TabPanel>
+      </Tabs>,
+    );
+    await waitFor(() => expect(tab('A')).toHaveAttribute('tabindex', '0'));
+
+    await browser.click(tab('B'));
+    expect(onClick).toHaveBeenCalledOnce();
+    // The handler runs FIRST and its `preventDefault` is honoured — a tab that
+    // guards an unsaved form can ask a question before the panel changes.
+    expect(tab('B')).toHaveAttribute('aria-selected', 'false');
+    expect(tab('A')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('lets the caller pre-empt a key', async () => {
+    const onKeyDown = vi.fn((event: React.KeyboardEvent) =>
+      event.preventDefault(),
+    );
+    render(
+      <Tabs>
+        <TabList aria-label="Sections" onKeyDown={onKeyDown}>
+          <Tab value="a">A</Tab>
+          <Tab value="b">B</Tab>
+        </TabList>
+        <TabPanel value="a">First</TabPanel>
+        <TabPanel value="b">Second</TabPanel>
+      </Tabs>,
+    );
+    await waitFor(() => expect(tab('A')).toHaveAttribute('tabindex', '0'));
+    tab('A').focus();
+
+    await browser.keyboard('{ArrowRight}');
+    expect(onKeyDown).toHaveBeenCalled();
+    expect(document.activeElement).toBe(tab('A'));
+  });
+
+  it('falls back to the first tab that can be used, not merely the first', async () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Plans">
+          <Tab value="legacy" disabled>
+            Legacy
+          </Tab>
+          <Tab value="current">Current</Tab>
+        </TabList>
+        <TabPanel value="legacy">Gone</TabPanel>
+        <TabPanel value="current">Here</TabPanel>
+      </Tabs>,
+    );
+
+    // A list whose FIRST tab is disabled is the only shape that tells these two
+    // apart, and it is the shape a product reaches after retiring a plan.
+    await waitFor(() =>
+      expect(tab('Current')).toHaveAttribute('aria-selected', 'true'),
+    );
+    expect(tab('Current')).toHaveAttribute('tabindex', '0');
+    expect(screen.getByText('Here')).toBeVisible();
   });
 });
