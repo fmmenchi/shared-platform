@@ -75,6 +75,54 @@ describe('AccordionItem', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false);
   });
 
+  it('refuses `open` inside an exclusive accordion, and says why', async () => {
+    // The combination that cannot be satisfied: `<details name>` closes the
+    // siblings itself. Measured before this refusal existed — a pinned item
+    // left its sibling PERMANENTLY un-openable.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Accordion exclusive>
+        <AccordionItem open onOpenChange={() => undefined}>
+          <AccordionTrigger>Pinnato</AccordionTrigger>
+        </AccordionItem>
+        <AccordionItem>
+          <AccordionTrigger>Fratello</AccordionTrigger>
+        </AccordionItem>
+      </Accordion>,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '`open` was ignored because this accordion is `exclusive`',
+      ),
+    );
+    warn.mockRestore();
+
+    // And the sibling opens, which it could not before.
+    await browser.click(screen.getByText('Fratello'));
+    expect(
+      (screen.getByText('Fratello').closest('details') as HTMLDetailsElement)
+        .open,
+    ).toBe(true);
+  });
+
+  it('does not report an open the user never performed', () => {
+    const onOpenChange = vi.fn();
+    render(<One defaultOpen onOpenChange={onOpenChange} />);
+    // A seed is not an event. Analytics and reducers must not see an open at
+    // mount for a panel that simply started open.
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('reports closed when it is unmounted while open', () => {
+    const onOpenChange = vi.fn();
+    const { unmount } = render(<One defaultOpen onOpenChange={onOpenChange} />);
+    onOpenChange.mockClear();
+    unmount();
+    // Nothing will ever fire `toggle` again, so a consumer left believing it
+    // is open would go on saying so about a panel that is not there.
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it('warns when `open` arrives without `onOpenChange`', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(<One open />);

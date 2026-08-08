@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Accordion } from './accordion.component.js';
 import { AccordionItem } from '../accordion-item/accordion-item.component.js';
@@ -118,6 +119,49 @@ describe('Accordion', () => {
       expect.stringContaining('AccordionItem: used outside a <Accordion>'),
     );
     warn.mockRestore();
+  });
+
+  it('does not let one long word widen the stack', () => {
+    render(
+      <div style={{ width: '320px' }} data-testid="box">
+        <Accordion>
+          <AccordionItem>
+            <AccordionTrigger>
+              Unaparolalunghissimaeinspezzabilechealtrimentiallargherebbelinterapila
+            </AccordionTrigger>
+          </AccordionItem>
+          <AccordionItem>
+            <AccordionTrigger>Corto</AccordionTrigger>
+          </AccordionItem>
+        </Accordion>
+      </div>,
+    );
+    const box = screen.getByTestId('box').getBoundingClientRect().width;
+    // BOTH items: the stack is a grid, so the track sizes from the widest one
+    // and a single long word took every sibling with it — 538px in a 320px box.
+    for (const name of ['Corto']) {
+      const item = screen.getByText(name).closest('details') as HTMLElement;
+      expect(item.getBoundingClientRect().width).toBeLessThanOrEqual(box);
+    }
+    expect(screen.getByTestId('box').scrollWidth).toBeLessThanOrEqual(
+      Math.ceil(box),
+    );
+  });
+
+  it('seeds the OPEN attribute into server markup, not into an effect', () => {
+    // A disclosure whose panel only opens after hydration is content invisible
+    // without JavaScript, and a closed→open flash for everyone else. Measured
+    // before this: the server HTML carried no `open` at all.
+    const html = renderToStaticMarkup(
+      <Accordion>
+        <AccordionItem defaultOpen>
+          <AccordionTrigger>Titolo</AccordionTrigger>
+          <AccordionContent>Contenuto</AccordionContent>
+        </AccordionItem>
+      </Accordion>,
+    );
+    expect(html).toContain('<details');
+    expect(html).toMatch(/<details[^>]*\sopen/);
   });
 
   it('matches the rendered snapshot', () => {

@@ -4,6 +4,12 @@
 @layer fmmenchi {
   .accordion {
     display: grid;
+    /* `minmax(0, 1fr)`, not the implicit `auto`: an auto track sizes from its
+       items' MAX-content, so one unbreakable word made every item 538px wide
+       inside a 320px box — and being a grid, it took the siblings with it.
+       `min-inline-size: 0` on the item is necessary and not sufficient; the
+       track is what has to be told it may be narrower than its contents. */
+    grid-template-columns: minmax(0, 1fr);
     /* The gap is the only spacing decision here: the items own their own
        padding, and the container owns what is between them. */
     gap: var(--fm-space-stack-s);

@@ -5,8 +5,9 @@ import { useEffect, useRef, type RefObject } from 'react';
  * the platform toggles on its own.
  *
  * `popovertarget`, `Esc`, a click outside, another popover taking the top
- * layer: every one of them opens or closes the surface without asking us, and
- * every one arrives as the same `toggle` event. Nothing here commands the
+ * layer, a `<summary>` clicked or answered with Enter: every one of them opens
+ * or closes the surface without asking us, and every one arrives as the same
+ * `toggle` event. Nothing here commands the
  * surface — it only listens, which is why a component using this has no
  * `open()` of its own to call.
  *
@@ -51,7 +52,15 @@ export function useOpenMirror(
       report(open);
     };
 
-    if (node.matches(':popover-open')) mirror(true);
+    // Two ways a surface says it is open, because two kinds use this: a
+    // popover answers `:popover-open`, a `<details>` answers its own property.
+    // The `instanceof` keeps the second from ever firing for the first.
+    if (
+      node.matches(':popover-open') ||
+      (node instanceof HTMLDetailsElement && node.open)
+    ) {
+      mirror(true);
+    }
 
     const onToggle = (event: Event) => {
       mirror((event as Event & { newState?: string }).newState === 'open');

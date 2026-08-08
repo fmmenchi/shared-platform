@@ -8,6 +8,14 @@
        without the second, Safari drew its triangle beside our chevron. */
     list-style: none;
     @apply flex cursor-pointer items-center justify-between gap-internal-m;
+    /* `anywhere`, NOT `break-word`, and the difference is the whole fix: only
+       `anywhere` contributes its wrap opportunities to MIN-CONTENT. The label
+       here is an anonymous flex item, whose `min-width: auto` refuses to shrink
+       below that — so with `break-word` the row still measured 514px inside a
+       320px box. It is the same distinction `heading.module.css` documents,
+       which this file had copied the shape of and not the reason. */
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
     @apply px-inset-m py-inset-s;
     @apply text-base font-medium;
     @apply rounded-md transition;
@@ -30,8 +38,14 @@
     inline-size: 0.5rem;
     block-size: 0.5rem;
     border: 0 solid currentColor;
-    border-inline-end-width: 1.5px;
-    border-block-end-width: 1.5px;
+    /* PHYSICAL, not logical, and that is the whole point: a chevron pointing
+       DOWN is not a directional glyph and must not mirror. With
+       `border-inline-end` the borders swapped under `dir="rtl"` while the
+       45deg rotation did not, so it pointed LEFT closed and RIGHT open —
+       measured, and invisible to a test that compares `rotate`, which is
+       identical in both directions. */
+    border-right-width: 1.5px;
+    border-bottom-width: 1.5px;
     rotate: 45deg;
     translate: 0 -0.12rem;
     flex: none;

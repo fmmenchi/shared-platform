@@ -9,9 +9,35 @@ A stack of disclosures, each one a native `<details>` with its `<summary>`. The
 parts are `AccordionItem`, `AccordionTrigger` and `AccordionContent`; they are
 documented here.
 
+## Anatomy
+
+```tsx
+<Accordion exclusive>
+  <AccordionItem defaultOpen>
+    <AccordionTrigger>Section</AccordionTrigger>
+    <AccordionContent>Body</AccordionContent>
+  </AccordionItem>
+</Accordion>
+```
+
+| Part               | Element     | What it is for                                                 |
+| ------------------ | ----------- | -------------------------------------------------------------- |
+| `Accordion`        | `<div>`     | the stack, and the group name that makes it exclusive          |
+| `AccordionItem`    | `<details>` | one disclosure, and the `open`/`defaultOpen` pair              |
+| `AccordionTrigger` | `<summary>` | the row you click; the platform's disclosure button            |
+| `AccordionContent` | `<div>`     | the panel, carrying the padding the item deliberately does not |
+
 ## Props
 
 <Controls of={AccordionStories.Default} />
+
+### `AccordionItem`
+
+| Prop           | Type                      | Default | Notes                                                                                 |
+| -------------- | ------------------------- | ------- | ------------------------------------------------------------------------------------- |
+| `defaultOpen`  | `boolean`                 | `false` | Seeds it once, into the server markup. Not an event: it does not fire `onOpenChange`. |
+| `open`         | `boolean`                 | —       | Drives it, and drives back. **Ignored inside an `exclusive` accordion** — see below.  |
+| `onOpenChange` | `(open: boolean) => void` | —       | Reports every toggle, whoever caused it, including the close on unmount.              |
 
 ## Usage
 
@@ -37,6 +63,29 @@ back: an item the user closed while the prop still says open is reopened, so
 
 <Canvas of={AccordionStories.OpenAtMount} />
 
+<Canvas of={AccordionStories.Controlled} />
+
+### `open` and `exclusive` cannot both be used
+
+Exclusivity is the platform's: `<details name>` closes the siblings itself. A
+controlled item would be a second owner of one state, and the two do not draw —
+measured, a pinned item left its sibling **permanently un-openable**, and two
+controlled items driven by the usual single-open reducer ended with nothing open
+at all. So inside an `exclusive` accordion `open` is **ignored**, with a dev
+warning. Control each item, or be exclusive; not both.
+
+For the same reason, two items with `defaultOpen` in an exclusive accordion end
+with only the **last** one open — the platform closes the other.
+
+### Where it can silently not happen
+
+`exclusive` is `<details name>`, which is Baseline **newly available**
+(2024-09; widely ~2027-03). On a browser without it the attribute is inert and
+the accordion stays fully usable — it simply stops being exclusive. That is a
+capability quietly lost rather than a visual difference, so it is worth knowing
+before you rely on one-at-a-time for meaning rather than for tidiness. Tracked
+in [known issues](/docs/known-issues).
+
 ## Accessibility
 
 - **The element is the semantics.** `<summary>` is the disclosure button: the
@@ -52,4 +101,17 @@ back: an item the user closed while the prop still says open is reopened, so
 - **Find-in-page** works into a closed panel in browsers that support it,
   because the content is real markup rather than unmounted — one of the reasons
   the panel is not conditionally rendered.
+- **Wrap the trigger in a heading when the sections are page structure.** This
+  is the one thing the APG accordion pattern asks for that `<details>` does not
+  supply, and it is the consumer's to decide because only they know the level:
+  `<AccordionTrigger><h3>Section</h3></AccordionTrigger>` keeps the disclosure
+  semantics AND adds the heading — verified in the accessibility tree, the
+  summary stays `DisclosureTriangle` with `expanded` and the `h3` appears as
+  `heading level=3`. Without it a screen reader user cannot jump between
+  sections by heading.
+- **Focus, when `open` closes an item from code.** The platform leaves focus on
+  `<body>` if it was inside the panel that closed — true of a programmatic
+  close generally, not of this component. Clicking or keying to another trigger
+  is safe: that focuses the trigger first. If you close a panel from code while
+  focus may be inside it, move focus yourself.
 - **Reduced motion** stops the chevron's rotation and keeps its end state.

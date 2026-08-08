@@ -4,6 +4,8 @@ import { AccordionItem } from '../accordion-item/accordion-item.component.js';
 import { AccordionTrigger } from '../accordion-trigger/accordion-trigger.component.js';
 import { AccordionContent } from '../accordion-content/accordion-content.component.js';
 
+import { useState } from 'react';
+
 const meta: Meta<typeof Accordion> = {
   title: 'Components/Disclosure/Accordion',
   component: Accordion,
@@ -75,4 +77,28 @@ export const OpenAtMount: Story = {
       </AccordionItem>
     </Accordion>
   ),
+};
+
+/**
+ * Driven from React state. `open` is the source of truth and wins back a toggle
+ * the user performed, which is why `onOpenChange` is not optional — without it
+ * the panel cannot be opened at all, and a dev warning says so.
+ */
+export const Controlled: Story = {
+  render: () => {
+    const Demo = () => {
+      const [open, setOpen] = useState(false);
+      return (
+        <Accordion>
+          <AccordionItem open={open} onOpenChange={setOpen}>
+            <AccordionTrigger>Controllato da React</AccordionTrigger>
+            <AccordionContent>
+              Lo stato vive nel componente che ti sta intorno: {String(open)}.
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      );
+    };
+    return <Demo />;
+  },
 };

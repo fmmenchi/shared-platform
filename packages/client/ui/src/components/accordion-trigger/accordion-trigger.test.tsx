@@ -57,6 +57,25 @@ describe('AccordionTrigger', () => {
     expect(rotate('Aperto')).toContain('225');
   });
 
+  it('does not mirror the chevron under rtl', () => {
+    // A downward chevron is not directional. Comparing `rotate` cannot see this
+    // — it is identical in both directions — so the BORDERS are what to read:
+    // with logical ones they swapped and the glyph pointed left.
+    render(
+      <div dir="rtl">
+        <Accordion>
+          <AccordionItem>
+            <AccordionTrigger>عنوان</AccordionTrigger>
+          </AccordionItem>
+        </Accordion>
+      </div>,
+    );
+    const after = getComputedStyle(screen.getByText('عنوان'), '::after');
+    expect(Number.parseFloat(after.borderRightWidth)).toBeGreaterThan(0);
+    expect(Number.parseFloat(after.borderBottomWidth)).toBeGreaterThan(0);
+    expect(Number.parseFloat(after.borderLeftWidth)).toBe(0);
+  });
+
   it('forwards ref to the summary', () => {
     const ref = createRef<HTMLElement>();
     render(

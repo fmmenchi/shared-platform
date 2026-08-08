@@ -185,14 +185,11 @@ export type {
 export { CardActions } from './components/card-actions/card-actions.component.js';
 export type { CardActionsProps } from './components/card-actions/card-actions.types.js';
 
-export { Accordion } from './components/accordion/index.js';
-export type {
-  AccordionProps,
-  AccordionContextValue,
-} from './components/accordion/index.js';
-export { AccordionItem } from './components/accordion-item/index.js';
-export type { AccordionItemProps } from './components/accordion-item/index.js';
-export { AccordionTrigger } from './components/accordion-trigger/index.js';
-export type { AccordionTriggerProps } from './components/accordion-trigger/index.js';
-export { AccordionContent } from './components/accordion-content/index.js';
-export type { AccordionContentProps } from './components/accordion-content/index.js';
+export { Accordion } from './components/accordion/accordion.component.js';
+export type { AccordionProps } from './components/accordion/accordion.types.js';
+export { AccordionItem } from './components/accordion-item/accordion-item.component.js';
+export type { AccordionItemProps } from './components/accordion-item/accordion-item.types.js';
+export { AccordionTrigger } from './components/accordion-trigger/accordion-trigger.component.js';
+export type { AccordionTriggerProps } from './components/accordion-trigger/accordion-trigger.types.js';
+export { AccordionContent } from './components/accordion-content/accordion-content.component.js';
+export type { AccordionContentProps } from './components/accordion-content/accordion-content.types.js';

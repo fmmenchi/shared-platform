@@ -4,6 +4,13 @@
 
 @layer fmmenchi {
   .item {
+    /* A grid item's `min-width: auto` lets one unbreakable word size the whole
+       track — and because the stack is a grid, EVERY item then overflows, not
+       just the one holding the word: measured, a 320px box rendered 538px
+       items, 68% over, pushing the consumer's layout with it. The same line
+       `heading`, `field-description`, `field-error`, `fieldset` and
+       `app-layout` all carry, for the same reason. */
+    min-inline-size: 0;
     @apply rounded-md border;
     @apply bg-card text-card-foreground border-border;
     /* No padding here, on purpose: it would band the closed row with space it
