@@ -5,7 +5,7 @@ exports[`Accordion > matches the rendered snapshot 1`] = `
   class="_accordion_1eo2b_3"
 >
   <details
-    class="_item_153t0_4"
+    class="_item_19vuf_4"
   >
     <summary
       class="_trigger_bsy5k_4"
@@ -20,7 +20,7 @@ exports[`Accordion > matches the rendered snapshot 1`] = `
     </div>
   </details>
   <details
-    class="_item_153t0_4"
+    class="_item_19vuf_4"
   >
     <summary
       class="_trigger_bsy5k_4"
@@ -35,7 +35,7 @@ exports[`Accordion > matches the rendered snapshot 1`] = `
     </div>
   </details>
   <details
-    class="_item_153t0_4"
+    class="_item_19vuf_4"
   >
     <summary
       class="_trigger_bsy5k_4"

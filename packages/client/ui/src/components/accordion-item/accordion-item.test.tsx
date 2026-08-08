@@ -142,6 +142,41 @@ describe('AccordionItem', () => {
     warn.mockRestore();
   });
 
+  it('animates the panel, and leaves faster than it arrives', () => {
+    render(
+      <Accordion>
+        <AccordionItem>
+          <AccordionTrigger>Chiuso</AccordionTrigger>
+        </AccordionItem>
+        <AccordionItem defaultOpen>
+          <AccordionTrigger>Aperto</AccordionTrigger>
+        </AccordionItem>
+      </Accordion>,
+    );
+    const panelOf = (name: string) =>
+      getComputedStyle(
+        screen.getByText(name).closest('details') as HTMLElement,
+        '::details-content',
+      );
+    const closing = panelOf('Chiuso');
+    const opening = panelOf('Aperto');
+
+    // Dialog, Popover, Menu, Tooltip and NavGroup all animate their entry and
+    // this one did not.
+    expect(opening.transitionProperty).toContain('block-size');
+    expect(opening.transitionDuration).not.toBe('0s');
+
+    // And the two directions are NOT the same animation: getting rid of
+    // something is a quick action, so it leaves faster than it arrives.
+    const ms = (v: string) => Number.parseFloat(v);
+    expect(ms(closing.transitionDuration)).toBeLessThan(
+      ms(opening.transitionDuration),
+    );
+    expect(closing.transitionTimingFunction).not.toBe(
+      opening.transitionTimingFunction,
+    );
+  });
+
   it('forwards ref to the details element', () => {
     const ref = createRef<HTMLDetailsElement>();
     render(
