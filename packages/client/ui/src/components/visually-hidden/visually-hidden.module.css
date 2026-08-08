@@ -1,0 +1,25 @@
+/*
+ * VisuallyHidden styles — CSS Modules authored with Tailwind. `@reference`
+ * resolves `@apply` at THIS library's build; the output stays themable at
+ * runtime.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /* `sr-only` RATHER THAN A HAND-WRITTEN BLOCK, deliberately. Tailwind's is the
+     same clip-and-shrink every accessible sheet converged on, it is already
+     what `Alert`, `Button` and `AppLayout` apply for their own hidden text, and
+     the details are the kind that are wrong for years without anyone noticing:
+     `white-space: nowrap` (without it the text wraps inside a 1px box and some
+     screen readers read it a word per line), the negative margin, and the
+     legacy `clip` kept beside `clip-path`. Writing a fourth copy here would be
+     a copy to keep in step, not an improvement.
+
+     ONE CONSEQUENCE WORTH NAMING: this rule is layered (ADR-0011), so a
+     consumer's UNLAYERED rule on the same element beats it. That trade is the
+     package's everywhere, but the failure here is louder than a styling
+     regression — text meant only for a reader becomes text on the page. */
+  .visuallyHidden {
+    @apply sr-only;
+  }
+}

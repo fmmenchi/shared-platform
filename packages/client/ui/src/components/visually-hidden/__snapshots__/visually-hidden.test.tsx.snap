@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`VisuallyHidden > matches the rendered snapshot 1`] = `
+<span
+  class="_visuallyHidden_tcu3i_3"
+>
+  Content
+</span>
+`;

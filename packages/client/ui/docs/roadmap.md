@@ -25,6 +25,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                             |
 | **Feedback**      | `Alert`                                                                                                                                                        |
 | **Data display**  | `Badge`                                                                                                                                                        |
+| **Utilities**     | `VisuallyHidden`                                                                                                                                               |
 
 Two groups are one component wide. That is where the gaps are, and the order below follows from it.
 

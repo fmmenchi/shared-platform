@@ -210,3 +210,5 @@ export { AccordionTrigger } from './components/accordion-trigger/accordion-trigg
 export type { AccordionTriggerProps } from './components/accordion-trigger/accordion-trigger.types.js';
 export { AccordionContent } from './components/accordion-content/accordion-content.component.js';
 export type { AccordionContentProps } from './components/accordion-content/accordion-content.types.js';
+export { VisuallyHidden } from './components/visually-hidden/visually-hidden.component.js';
+export type { VisuallyHiddenProps } from './components/visually-hidden/visually-hidden.types.js';

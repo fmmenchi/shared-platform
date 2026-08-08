@@ -1,0 +1,68 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as VisuallyHiddenStories from './visually-hidden.stories.tsx';
+
+<Meta of={VisuallyHiddenStories} />
+
+# VisuallyHidden
+
+Give assistive technology words the design does not draw — the label of an
+icon-only action, a qualifier after a link, a heading a section owes the
+document outline. The content stays in the accessibility tree and only leaves
+the screen, which is what separates it from `hidden` and `aria-hidden`.
+
+## Props
+
+<Controls of={VisuallyHiddenStories.Usage} />
+
+## Usage
+
+### Naming an action its icon cannot name
+
+Text inside the control, so it joins the accessible name instead of competing
+with it. Prefer this to `aria-label` when the words belong to the content:
+`aria-label` replaces the name, and a caller who later adds visible text ends up
+with two names disagreeing.
+
+<Canvas of={VisuallyHiddenStories.Usage} />
+
+### A heading the design does not draw
+
+`as` puts the hiding on the element that had to exist anyway. Wrapping instead
+(`<h2><VisuallyHidden>…</VisuallyHidden></h2>`) leaves the `<h2>` itself in
+flow — an empty box carrying a heading's margins.
+
+<Canvas of={VisuallyHiddenStories.AsAHeading} />
+
+### A qualifier that would be noise on screen
+
+<Canvas of={VisuallyHiddenStories.InlineQualifier} />
+
+### Not for anything focusable
+
+<Canvas of={VisuallyHiddenStories.HidingSomethingFocusableWarns} />
+
+## Accessibility
+
+- **It hides from sight only.** The element keeps its role, its name and its
+  place in the accessibility tree. `hidden` and `aria-hidden` remove content
+  from everyone; reaching for this one to do that is the common confusion.
+- **It renders no role of its own.** A `<span>` by default, so it contributes
+  nothing to the tree beyond its text; with `as` it contributes whatever that
+  element does — `as="h2"` is announced as a level-2 heading, demonstrated
+  above.
+- **Nothing focusable inside.** A control hidden this way can still be reached
+  with Tab, and the focus ring lands where nobody can see it (WCAG 2.4.7, and
+  2.4.11 for the same reason). The component warns in development, naming the
+  element it found — axe cannot report this, because in the accessibility tree
+  the control is present and correctly named.
+- **A skip link is not this.** It must become visible when focused, which is a
+  paint — fill, focus ring, position above a sticky header, and forced-colors
+  handling for each. `AppLayout` ships one; this component deliberately carries
+  no second copy.
+
+## Guidelines
+
+- Put the hidden words **inside** the control they name, not beside it.
+- Reach for `as` before reaching for a wrapper.
+- If the text should be visible to some users and not others, that is a
+  disclosure, not this component.
