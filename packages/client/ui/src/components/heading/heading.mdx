@@ -51,6 +51,10 @@ of the page.
   (Not WCAG 2.5.3 — that one is scoped to interactive components.) `role` and
   `aria-level` are refused by the type: measured, both reached the DOM and
   overruled `level` with no warning.
+- **Two-line headings are balanced**, where the browser supports it: the second
+  line no longer carries a single orphan word. It is `text-wrap: balance`,
+  applied always rather than offered as a prop — nobody asks for the unbalanced
+  version. Where it is missing the heading wraps normally.
 - **The ladder is strictly decreasing and stops at body size.** `h6` renders at
   the body step and no smaller: a heading smaller than the text around it is one
   a sighted reader cannot find. Every step is pinned by a test, because a

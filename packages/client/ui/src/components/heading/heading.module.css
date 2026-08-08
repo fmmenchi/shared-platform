@@ -27,6 +27,18 @@
        what `app-layout` documents for the same hazard. */
     min-inline-size: 0;
     overflow-wrap: break-word;
+    /* PROGRESSIVE ENHANCEMENT, and a judgement rather than a gate's verdict:
+       `css/use-baseline` explicitly ignores `*.module.css` (its parser cannot
+       read `@apply`), so nothing here would have stopped this — it is written
+       down as such, the way `select.module.css` writes down `base-select`
+       (ADR-0010). A heading is the canonical case for `balance`: short enough
+       for the browser to solve, and the defect it removes is the orphan, the
+       two-line title whose second line carries one word. Where it is missing
+       the title wraps normally — less evenly, never broken.
+       No prop for it on purpose. Radix spends one (`wrap`), but nobody asks for
+       the unbalanced version, so this is a choice to make once rather than one
+       to make a caller remember. */
+    text-wrap: balance;
   }
 
   /* One step per heading, in order. Every step of the scale from `base` up has
