@@ -44,41 +44,13 @@ export function inlineEnd(direction: 'ltr' | 'rtl'): {
     : { placement: 'right-start', forward: 'ArrowRight', back: 'ArrowLeft' };
 }
 
-/** The first command, and the last. A menu's two ends. */
-export function first(items: Descendant<MenuItemData>[]): HTMLElement | null {
-  return items[0]?.element ?? null;
-}
-
-export function last(items: Descendant<MenuItemData>[]): HTMLElement | null {
-  return items[items.length - 1]?.element ?? null;
-}
-
-/**
- * The command `direction` away from `from`, wrapping — a menu is a ring, so
- * Down on the last goes to the first and a user holding the arrow never hits a
- * wall.
- *
- * Nothing is stepped OVER. A disabled command is `aria-disabled` and focusable
- * (the APG's "focusable but cannot be activated"), so the arrows walk onto it
- * like any other: with `role="menu"` a screen reader is in focus mode, and a
- * command the arrows skip is one its user is never told about.
+/*
+ * The ring-walking three now live in `primitives/roving.ts`: Tabs became their
+ * second consumer, and nothing in them ever looked at what a menu command IS.
+ * Re-exported here so this file stays the one place a menu's keyboard is
+ * described.
  */
-export function step(
-  items: Descendant<MenuItemData>[],
-  from: number,
-  direction: 1 | -1,
-): HTMLElement | null {
-  const count = items.length;
-  if (count === 0) return null;
-
-  // Nowhere yet — the menu has just opened, or the focus is on the surface
-  // because no command can hold it. Said outright, rather than as arithmetic on
-  // `-1`: treating it as an index is how the first version answered ArrowUp
-  // with the second-to-last command.
-  if (from < 0) return direction === 1 ? first(items) : last(items);
-
-  return items[(from + direction + count) % count]?.element ?? null;
-}
+export { first, last, step } from '../../primitives/roving.js';
 
 /**
  * How long a typed run stays one search.

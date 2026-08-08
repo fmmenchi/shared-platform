@@ -1,0 +1,94 @@
+/* One tab. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+/*
+ * ORDERED BY SPECIFICITY, ascending, and the gate says so out loud
+ * (`no-descending-specificity`): a rule that can beat a later one is a rule
+ * whose effect depends on where it sits in the file rather than on what it
+ * selects. The order here also happens to be the order the states override each
+ * other in — hover loses to selected, selected loses to disabled — so reading
+ * downwards is reading the precedence.
+ */
+@layer fmmenchi {
+  .tab {
+    @apply control-base;
+    @apply rounded-t-md px-3 py-2 text-sm font-medium;
+    color: var(--fm-color-muted-foreground);
+    background: none;
+    border: none;
+    cursor: pointer;
+    /* The marker's track, transparent until this tab is the selected one — so
+       selecting does not change the tab's height and shift the row. */
+    border-block-end: var(--fm-border-width-emphasis) solid transparent;
+    /* Sits ON the list's rail rather than above it. */
+    margin-block-end: calc(var(--fm-border-width-default) * -1);
+    /* A tab list that scrolls must not squeeze its tabs to nothing first. */
+    flex: 0 0 auto;
+    white-space: nowrap;
+    transition: var(--fm-transition-color);
+  }
+
+  .tab:hover {
+    color: var(--fm-color-foreground);
+  }
+
+  /* WHERE YOU ARE, said twice on purpose. `aria-selected` is what a screen
+     reader announces; this paints the same fact, because colour alone says it
+     only to those who can see it (WCAG 1.4.1) — and the marker is a shape, not
+     just a hue. After `:hover` so that pointing at the selected tab does not
+     undo it. */
+  .tab[aria-selected='true'] {
+    color: var(--fm-color-primary);
+    border-block-end-color: var(--fm-color-primary);
+  }
+
+  /* Last of the three, so it wins over both: a disabled tab that lights up
+     under the pointer is telling the reader it can be pressed. */
+  .tab[aria-disabled='true'] {
+    color: var(--fm-color-muted-foreground);
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .tab:focus-visible {
+    outline: 2px solid var(--fm-color-ring);
+    outline-offset: -2px;
+  }
+
+  /* A vertical list puts the marker on the inline edge instead. */
+  [data-orientation='vertical'] > .tab {
+    @apply rounded-t-none rounded-s-md;
+    border-block-end: none;
+    margin-block-end: 0;
+    border-inline-end: var(--fm-border-width-emphasis) solid transparent;
+    margin-inline-end: calc(var(--fm-border-width-default) * -1);
+    text-align: start;
+  }
+
+  [data-orientation='vertical'] > .tab[aria-selected='true'] {
+    border-inline-end-color: var(--fm-color-primary);
+  }
+
+  @media (forced-colors: active) {
+    /* Colour is discarded, so the marker is the only thing left saying which
+       tab is the selected one — and `opacity` is not, which is why disabled
+       says so with the system's own colour instead. */
+    .tab[aria-selected='true'] {
+      border-block-end-color: Highlight;
+    }
+
+    .tab[aria-disabled='true'] {
+      color: GrayText;
+      opacity: 1;
+    }
+
+    .tab:focus-visible {
+      outline-color: Highlight;
+    }
+
+    [data-orientation='vertical'] > .tab[aria-selected='true'] {
+      border-inline-end-color: Highlight;
+    }
+  }
+}

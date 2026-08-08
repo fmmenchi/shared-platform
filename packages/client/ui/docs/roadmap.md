@@ -20,7 +20,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                    |
-| **Navigation**    | `Nav` (+ Group, Link)                                                                                                                                          |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, List, Panel)                                                                                                          |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                             |
 | **Feedback**      | `Alert`                                                                                                                                                        |
 | **Data display**  | `Badge`                                                                                                                                                        |
@@ -70,12 +70,7 @@ Feedback.
 Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
 the "next" items and the one most often re-implemented per app.
 
-### 6. `Tabs` — hand-rolled, and knowingly so
-
-No native shell exists: Context + a descendants registry + roving `tabindex`. It is the first
-component that needs the descendants primitive, so it also settles that primitive's shape.
-
-### 7. `Toast` — needs a queue and a live region
+### 6. `Toast` — needs a queue and a live region
 
 Transient feedback. Distinct from `Alert`, which is inline and permanent. Wants a decision about
 where the queue lives before any code.

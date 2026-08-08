@@ -1,0 +1,32 @@
+/* What a tab shows. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .panel {
+    /* THE `hidden` ATTRIBUTE, DEFENDED. Its UA rule is `display: none`, and any
+       `display` a consumer sets on this element beats it — so a panel styled
+       `display: flex` would show all of them at once, which is the oldest trap
+       in this pattern. `revert-layer` is not enough either: the rule has to
+       lose to nothing. */
+    &[hidden] {
+      display: none;
+    }
+
+    /* The panel takes the focus (it may hold nothing focusable), so it owes a
+       ring — and an inset one, since the panel is usually the full width and an
+       outset ring would be clipped by whatever scrolls. */
+    &:focus-visible {
+      outline: 2px solid var(--fm-color-ring);
+      outline-offset: -2px;
+    }
+
+    min-inline-size: 0;
+  }
+
+  @media (forced-colors: active) {
+    .panel:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

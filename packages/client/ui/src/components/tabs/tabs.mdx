@@ -1,0 +1,84 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as TabsStories from './tabs.stories.tsx';
+
+<Meta of={TabsStories} />
+
+# Tabs
+
+One panel at a time, chosen from a list of tabs.
+
+```tsx
+<Tabs defaultValue="overview">
+  <TabList aria-label="Documentation sections">
+    <Tab value="overview">Overview</Tab>
+    <Tab value="usage">Usage</Tab>
+  </TabList>
+  <TabPanel value="overview">…</TabPanel>
+  <TabPanel value="usage">…</TabPanel>
+</Tabs>
+```
+
+## Anatomy
+
+| part       | what it is                                                         |
+| ---------- | ------------------------------------------------------------------ |
+| `Tabs`     | the value, the orientation, and the family the parts register with |
+| `TabList`  | `role="tablist"`, and the keyboard that walks it                   |
+| `Tab`      | one tab — a real `<button>`, with the roving `tabindex`            |
+| `TabPanel` | what a tab shows                                                   |
+
+## Props
+
+<Controls of={TabsStories.Default} />
+
+## Usage
+
+<Canvas of={TabsStories.Default} />
+
+### The first component here with no native shell
+
+Everything else in this package starts from an element the browser already implements — `<dialog>`, `<details>`, `<select>` — and adds what is missing. HTML has nothing for this, so the roles, the keyboard and the roving `tabindex` are ours.
+
+Which is exactly why none of it is written twice. `useDescendants` gives tree order, `useControlled` the value, and the ring-walking `step`/`first`/`last` moved out of the menu's keyboard file into `primitives/roving.ts` when this became their second consumer — the threshold this package already states for an abstraction earning its place.
+
+### Paired by value, not by position
+
+A tab points at its panel with `aria-controls`, the panel points back with `aria-labelledby`, and **both ids are derived from `value`**. So the panels can live anywhere in the tree, in any order, and reordering the tabs cannot mispair them.
+
+The one constraint that follows: a `value` has to be usable inside an `id`, which means no whitespace. `aria-controls` is a space-separated list of ids, so `value="two words"` does not make a broken reference — it makes two, one of them to nothing. It warns in development.
+
+### Selection follows the focus, unless you say otherwise
+
+<Canvas of={TabsStories.ManualActivation} />
+
+`automatic` is the default and the APG's recommendation: a reader arrowing along the list hears each panel as they reach it, with no second keystroke. `manual` is for panels that cost something to show — a fetch, a chart — where selecting six on the way to the seventh is the wrong thing to do to someone driving with the keyboard.
+
+### There is always a selected tab
+
+A tab list where nothing is selected has no tab at `tabindex="0"`, so the whole list is **unreachable by Tab** — the roving pattern's own failure mode. If the value matches no tab, the first enabled one is selected: for an uncontrolled list that is simply the initial state, and for a controlled one it is an answer rather than a dead list, with a warning saying so.
+
+### The panels stay mounted
+
+They go `hidden`, which is the APG's own example, and it is not the mistake the page shell made. There, two copies of the **same** navigation were rendered and one hidden — duplicate ids, doubled effects, diverging state. Panels are not copies of each other: they are different content, and keeping them means a half-filled form or a scrolled list survives a trip to another tab and back.
+
+It also keeps every `aria-controls` **resolvable**. Unmounting the inactive panels leaves each unselected tab pointing at an element that does not exist — an invalid reference that axe reports and a screen reader drops in silence.
+
+What it costs, and it is worth knowing: the content of a hidden panel is mounted. If it fetches, it fetches on load, for all of them. Where that matters, render the expensive part only when its panel is selected — `useTabsContext()` is exported for exactly that.
+
+### `hidden` is defended in CSS
+
+The `hidden` attribute's UA rule is `display: none`, and **any `display` a consumer sets on the panel beats it** — so a panel styled `display: flex` shows all of them at once. This is the oldest trap in the pattern, and the panel's own stylesheet re-states the rule rather than trusting the UA's.
+
+<Canvas of={TabsStories.Vertical} />
+
+## Accessibility
+
+- **One tab in the tab order** (roving `tabindex`): Tab enters the list, Tab leaves it, the arrows move within it. A list of nine tabs is one stop on the way down a page.
+- **The arrows wrap**, as the APG specifies, so holding one never hits a wall. `Home` and `End` go to the ends.
+- **The arrows follow the writing direction**: in a right-to-left page the first tab is on the right, so ArrowLeft moves forward. Read at the keystroke, so a page can change direction under a mounted component.
+- **A disabled tab is `aria-disabled`, never the native attribute** — it stays focusable and refuses to activate. The native one would take it out of the arrows' reach, leaving a reader with no way to learn it is there.
+- **The list needs a name.** `aria-label` (or `aria-labelledby`); a `tablist` without one is announced as just "tab list", which on a page with two of them says nothing. It warns in development.
+- **The panel takes the focus** (`tabindex="0"`), because it may hold nothing focusable — in which case selecting a tab would leave a keyboard reader with nowhere to go.
+- **`aria-orientation` only when vertical.** `horizontal` is the default for a `tablist`, and stating a default is a second place for it to be wrong.
+- **The selected tab is not marked by colour alone** (WCAG 1.4.1): `aria-selected` is what a screen reader announces, and the marker is a shape. In forced colours the marker takes the system's `Highlight`, since the colour is discarded.

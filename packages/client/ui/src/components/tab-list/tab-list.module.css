@@ -1,0 +1,30 @@
+/* The tabs, in a row or a column. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .list {
+    display: flex;
+    gap: var(--fm-space-inline-s);
+    /* The rail the selected tab's marker sits on. Under the tabs when the list
+       runs across, beside them when it runs down. */
+    border-block-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  .list[data-orientation='vertical'] {
+    flex-direction: column;
+    border-block-end: none;
+    border-inline-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  /* MANY TABS, ONE LINE. Wrapping a tab list looks tidy and reads badly: the
+     marker under the selected tab stops lining up with the rail, and a reader
+     using magnification loses the row they were following. Scrolling keeps the
+     line, and `thin` keeps the bar from eating the tabs on a narrow screen. */
+  .list:not([data-orientation='vertical']) {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
