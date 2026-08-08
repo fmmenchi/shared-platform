@@ -11,7 +11,7 @@ pnpm nx typecheck @fmmenchi/tokens
 pnpm nx build @fmmenchi/tokens
 pnpm nx lint @fmmenchi/tokens
 pnpm nx test @fmmenchi/tokens      # contract validation (completeness, bridge, WCAG contrast)
-pnpm nx test @fmmenchi/tokens -- -u # regenerate the derived artifacts after changing the contract
+pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after changing the contract
 ```
 
 ## Rules
@@ -19,11 +19,11 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate the derived artifacts after cha
 - **Semantics wins over everything.** Components consume ONLY semantic roles (`--fm-color-primary`,
   `--fm-space-inset-m`, …) — never raw values, never a palette. The Tailwind bridge RESETS the
   default palette, so `bg-red-500` fails the build.
-- **Two files are GENERATED and must never be edited by hand:** `styles/properties.css` (the
-  `@property` registrations) and `tokens.json` (DTCG, for design tooling). They are rendered by
-  `src/generate.ts` from the contract + `vars.css`, and `generate.test.ts` compares them to what is
-  on disk with `toMatchFileSnapshot` — so a hand edit fails the ordinary test run and a legitimate
-  change is `vitest -u`.
+- **`styles/properties.css` is GENERATED and must never be edited by hand.** It is rendered by
+  `src/generate.ts` from the contract + `vars.css`, and `generate.test.ts` compares it to what is on
+  disk with `toMatchFileSnapshot` — so a hand edit fails the ordinary test run and a legitimate
+  change is `vitest -u`. The existence of the file is asserted SEPARATELY, because
+  `toMatchFileSnapshot` writes a missing file and reports a pass outside CI.
   - **What is generated and what is not, and why.** `vars.css` holds the values and stays
     hand-written: those numbers are the design work, they already live in exactly one place, and
     the prose around them is the reasoning for them — generating it would move it without removing
@@ -36,7 +36,20 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate the derived artifacts after cha
     whose `initial-value` is a `rem` is rejected outright, so those px cannot simply be dropped —
     they are now computed at the 16px root).
   - **A new derived artifact is an emitter in `src/generate.ts` plus one `toMatchFileSnapshot`.**
-    It must be an artifact, never a runtime adapter — see the framework-agnostic rule below.
+    It must be an artifact, never a runtime adapter — see the framework-agnostic rule below. And it
+    must be added to `files` in `package.json`: only `dist` and `src/styles` are published, so an
+    artifact written anywhere else resolves to nothing in an installed package (`npm pack
+--dry-run` is how to check, and how this was caught).
+  - **`toIndependentLength` THROWS on anything that is not px or rem**, and must keep doing so. An
+    `@property` `initial-value` has to be computationally independent, so `em`, `calc()`, `clamp()`
+    or a `var()` makes the browser reject the WHOLE rule — silently, losing both the interpolation
+    and the type guard. Nothing downstream can see it: Stylelint has no rule and `tokens.test.ts`
+    only greps for `rem`.
+  - **`readVars` strips comments before parsing**, and so must anything else that reads `vars.css`.
+    The declaration regex anchors on the start of a LINE, so a role commented OUT during a retune
+    reads as a live declaration — completeness passes, contrast reads the value out of the comment,
+    the registration is emitted, and the shipped CSS defines nothing, so the role resolves to the
+    registered `initial-value`: black, on every consumer, in both themes.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
   no runtime relative-color). `styles/properties.css` (imported at the top of `vars.css`)
   `@property`-registers the color roles + radius so they are TYPED and INTERPOLATABLE (theme
@@ -56,8 +69,9 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate the derived artifacts after cha
   pairing MUST add it there (all themes re-validate automatically).
 - **Changing the contract:** adding a role = update `src/tokens.ts` (the `as const` roles, which
   drive the `src/tokens.types.ts` types) + `vars.css` + `presets/dark.css` + the bridge in
-  `tailwind.css`, then `vitest -u` to re-render `properties.css` and `tokens.json` —
-  `tokens.test.ts` fails until all four agree and `generate.test.ts` until the two derived files do,
+  `tailwind.css` + the group in `src/refs.ts` if the FAMILY is new, then `vitest -u` to re-render
+  `properties.css` — `tokens.test.ts` fails until the first four agree, `refs.test.ts` until the
+  fifth does, and `generate.test.ts` until the derived file does,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
   exempt). New values: derive with the ramp methodology (base ± lightness, scaled chroma), ship the
   resolved literal.
@@ -69,29 +83,48 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate the derived artifacts after cha
   fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
 - **The contract ships in TWO shapes of the same names, and neither is a port.** CSS custom
   properties are the universal surface — every styling library on the web reads `var(--fm-*)`, so
-  there is nothing to adapt and nothing to inject. `vars` (`src/refs.ts`) is the same names as
+  there is nothing to adapt and nothing to inject. `tokenVars` (`src/refs.ts`) is the same names as
   TypeScript strings, for consumers whose styles are written in TS (styled-components, emotion,
-  vanilla-extract, inline `style`): `vars.color.primary === 'var(--fm-color-primary)'`. It adds no
-  capability, only the fact that a typo stops compiling instead of rendering nothing.
+  vanilla-extract, inline `style`): `tokenVars.color.primary === 'var(--fm-color-primary)'`. It adds
+  no capability, only the fact that a typo stops compiling instead of rendering nothing — which is
+  asserted with `@ts-expect-error`, since every runtime test would still pass if the types were
+  relaxed to `Record<string, string>`.
+  - **Not `vars`, and not `t`.** `t` is every i18n library's translate function; `vars` is
+    vanilla-extract's canonical identifier (`export const vars = createThemeContract(…)`), so it
+    would have collided with the one audience the docs name, on their first line.
+  - **It is not for React Native**, which has no custom properties: the string is not a colour it
+    can use and there is no DOM read to fall back on. And `var()` is invalid in a media or container
+    query's feature value — `@media (min-width: ${tokenVars.size.container})` compiles, is dropped
+    whole, and never matches. Breakpoints are exported as literals for that.
   - **Never add a per-library adapter here.** A styled-components theme object, a Panda preset
     written by hand — either would make this package import a consumer's styling library, which the
     workspace's "framework-agnostic" rule forbids outright. A generated ARTIFACT (a `.css`, a
     `.json`) is a different thing and is allowed; a runtime dependency is not.
-  - **Keys are the token names, kebab and all** — `vars.color['primary-foreground']`,
-    `vars['font-weight'].bold`. camelCase would read better and would be a second vocabulary to
+  - **Keys are the token names, kebab and all** — `tokenVars.color['primary-foreground']`,
+    `tokenVars['font-weight'].bold`. camelCase would read better and would be a second vocabulary to
     keep in step with the first. Searching one string has to find the CSS, the contract and the
     call site.
   - **References, never values.** There is no `values.color.primary` and there should not be: a
     value read at build time is the BASE theme's, and a preset re-points it at runtime, so the
     export would be right until somebody switched theme. A consumer who genuinely needs the
     resolved value (canvas, a charting library) reads it from the DOM —
-    `getComputedStyle(el).getPropertyValue('--fm-color-primary')`.
-  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `vars`; `refs.test.ts`
+    `getComputedStyle(el).getPropertyValue('--fm-color-primary').trim()`. Two traps this package
+    makes worse: a colour role is `@property`-registered, so the read NEVER returns `''` — before
+    the stylesheet applies it returns the registered `initial-value`, opaque black, with nothing
+    falsy to branch on; and a registered role serialises computed while an unregistered token comes
+    back as the raw token stream, which Chrome and Safari prefix with a space.
+  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `tokenVars`; `refs.test.ts`
     compares the two as sets and fails until they agree.
-  - **`tokens.json` is DTCG and deliberately partial.** Only the groups that format can express
-    losslessly are emitted; a CSS `transition` shorthand, the shadow strings and the z scale have
-    no faithful DTCG type, and emitting them untyped would be a file that looks complete and is
-    not. It exists for the DESIGN side (Figma reads DTCG), not for any CSS library.
+  - **A DTCG export is WANTED and is NOT here yet** — it is what Figma's tooling reads, and the one
+    direction this package cannot talk in. A first attempt was written and removed the same day,
+    because emitting the token values as-is is not "partial", it is a file that claims a format it
+    does not satisfy: DTCG `color` is a hex string or a `{ colorSpace, components }` object, never
+    `oklch(41% 0.135 255)`; `number` is a JSON number, and `--fm-leading-*` values are
+    `calc(1.25 / 0.875)`; `fontWeight` is a number or a keyword, not `"300"`; a font STACK must be
+    an array, and `--fm-font-heading` is `var(--fm-font-sans)`, which DTCG expresses as an alias.
+    Doing it properly means converting values, resolving aliases, and validating the output against
+    a schema — without that last part nothing can tell whether the file is right, since a snapshot
+    only compares the file to itself.
 - **No side effects, no fonts**: `vars.css` is variables-only (`:root`); font tokens default to
   system stacks (apps override `--fm-font-*`).
 - **`styles/baseline.css` is the one file here with element rules, and it is OPTIONAL.** No

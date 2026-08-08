@@ -27,7 +27,7 @@ export {
   REFERENCE_PRESETS,
 } from './tokens.js';
 
-export { vars } from './refs.js';
+export { tokenVars } from './refs.js';
 export type { TokenRefGroup } from './refs.types.js';
 
 export type {

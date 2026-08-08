@@ -1,13 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  readVars,
-  renderDtcg,
-  renderProperties,
-  toIndependentLength,
-} from './generate.js';
+import { readVars, renderProperties, toIndependentLength } from './generate.js';
 import { REGISTERED_SECTIONS } from './registry.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -29,13 +24,14 @@ const values = readVars(read('./styles/vars.css'));
  */
 describe('generated artifacts', () => {
   it('writes properties.css from the contract', async () => {
+    // ASKED SEPARATELY, because `toMatchFileSnapshot` WRITES a missing file and
+    // reports a pass — measured, outside CI. So a deleted artifact would leave
+    // the local suite green and the package shipping nothing.
+    expect(existsSync(join(here, './styles/properties.css'))).toBe(true);
+
     await expect(renderProperties(values)).toMatchFileSnapshot(
       './styles/properties.css',
     );
-  });
-
-  it('writes the DTCG file from the values', async () => {
-    await expect(renderDtcg(values)).toMatchFileSnapshot('./tokens.json');
   });
 });
 
@@ -56,6 +52,39 @@ describe('the generator itself', () => {
     // A declaration inside a comment is not a declaration. It only matters
     // because `vars.css` documents roles in prose above them.
     expect(parsed.has('--fm-color-fake')).toBe(false);
+  });
+
+  it('does not read a role that has been commented OUT', () => {
+    // The shape that matters, and the one the single-line case above does not
+    // cover: a block comment around a real declaration, which is what a retune
+    // leaves behind. Anchoring on `^\\s*` asks only for the start of a LINE.
+    const parsed = readVars(`
+      :root {
+        /* off until the ramp is redone
+        --fm-color-primary: oklch(41% 0.135 255);
+        */
+        --fm-color-card: oklch(100% 0 0);
+      }
+    `);
+
+    // Read, it would pass every gate — completeness sees it, contrast reads its
+    // value out of the comment, `properties.css` registers it — while the
+    // shipped CSS defines nothing, so it resolves to the registered
+    // `initial-value`: black, on every consumer, in both themes.
+    expect(parsed.has('--fm-color-primary')).toBe(false);
+    expect(parsed.get('--fm-color-card')).toBe('oklch(100% 0 0)');
+  });
+
+  it('refuses a length the browser would reject', () => {
+    // Passing it through unchanged was the first version, and it is the worst
+    // option: the browser drops the WHOLE `@property` rule, silently, and the
+    // token loses its type. Nothing downstream can see that — Stylelint has no
+    // rule for it and the contract test only greps for `rem`.
+    expect(() => toIndependentLength('0.5em')).toThrow(/not absolute/);
+    expect(() => toIndependentLength('clamp(4px, 1vw, 8px)')).toThrow();
+    expect(() => toIndependentLength('calc(0.5rem + 2px)')).toThrow();
+    expect(() => toIndependentLength('var(--x)')).toThrow();
+    expect(() => toIndependentLength('1.2.3rem')).toThrow();
   });
 
   it('converts a length to one the browser will accept', () => {

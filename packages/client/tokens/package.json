@@ -35,7 +35,6 @@
       "import": "./dist/validate.js",
       "default": "./dist/validate.js"
     },
-    "./tokens.json": "./src/tokens.json",
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
     "./styles/baseline.css": "./src/styles/baseline.css",

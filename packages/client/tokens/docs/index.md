@@ -4,7 +4,7 @@ title: '@fmmenchi/tokens'
 
 # @fmmenchi/tokens
 
-The **semantic token contract** — the single vocabulary every theme must satisfy: 78 color roles
+The **semantic token contract** — the single vocabulary every theme must satisfy: 84 color roles
 (action families, status, surfaces, inputs, focus ring), semantic spacing, type scales, radius,
 borders, shadows, motion-by-intent and z-layers. Components consume **only** these roles;
 "semantics wins over everything".
@@ -39,7 +39,7 @@ If your styles are TypeScript rather than CSS — styled-components, emotion, va
 inline `style` — import the same names as strings:
 
 ```ts
-import { vars } from '@fmmenchi/tokens';
+import { tokenVars } from '@fmmenchi/tokens';
 
 vars.color.primary; // 'var(--fm-color-primary)'
 vars.space['inset-m']; // 'var(--fm-space-inset-m)'
@@ -47,34 +47,46 @@ vars.space['inset-m']; // 'var(--fm-space-inset-m)'
 
 ```ts
 const Panel = styled.section`
-  background: ${vars.color.card};
-  color: ${vars.color['card-foreground']};
-  padding: ${vars.space['inset-m']};
-  border-radius: ${vars.radius.lg};
+  background: ${tokenVars.color.card};
+  color: ${tokenVars.color['card-foreground']};
+  padding: ${tokenVars.space['inset-m']};
+  border-radius: ${tokenVars.radius.lg};
 `;
 ```
 
 The same string works anywhere a CSS value goes:
 
 ```ts
-export const panel = style({ background: vars.color.card }); // vanilla-extract
-<div style={{ background: vars.color.card }} />; // React
+export const panel = style({ background: tokenVars.color.card }); // vanilla-extract
+<div style={{ background: tokenVars.color.card }} />; // React
 ```
 
 There is no adapter per library, and deliberately so: a custom property is already the universal
-surface, so `vars` adds no capability — what it adds is that `vars.color.primry` does not compile,
+surface, so it adds no capability — what it adds is that `tokenVars.color.primry` does not compile,
 where the hand-written `var(--fm-color-primry)` renders as nothing and waits to be noticed.
 
 Keys are the **token names**, kebab included, so one search finds the CSS, the contract and your
 call site.
 
-**They are references, not values.** `vars.color.primary` is the string `var(--fm-color-primary)`,
-which re-points when the theme changes — a value copied at build time would not. Where you need the
-resolved value (a canvas, a charting library), read it at the moment you need it:
+Three things it does **not** do, worth knowing before you meet them:
+
+- **Not React Native.** It has no custom properties, so the string is not a colour it can use.
+- **Not inside a query condition.** `var()` is invalid in a media or container feature value, so
+  `@media (min-width: ${tokenVars.size.container})` compiles, is dropped whole by the browser, and
+  never matches at any width. Use the exported `BREAKPOINTS` / `CONTAINER_BREAKPOINTS` literals.
+- **Not a value.** `tokenVars.color.primary` is the string `var(--fm-color-primary)`, which
+  re-points when the theme changes — a value copied at build time would not.
+
+Where you need the resolved value (a canvas, a charting library), read it at the moment you need it:
 
 ```ts
-getComputedStyle(element).getPropertyValue('--fm-color-primary');
+getComputedStyle(element).getPropertyValue('--fm-color-primary').trim();
 ```
+
+Two traps there. Colour roles are `@property`-registered, so this **never returns an empty
+string**: before the token stylesheet applies, it returns the registered placeholder — opaque
+black — with nothing falsy to test. And registered roles come back normalised while unregistered
+tokens come back as the raw text, which Chrome and Safari prefix with a space; hence the `.trim()`.
 
 ### Validating a theme
 
@@ -88,27 +100,6 @@ expect(validateTheme(brandColors)).toEqual([]);
 Checks: completeness · parsable colors · sRGB gamut · WCAG contrast on every declared pair
 (exact ratios on failure). Prefer scaffolding themes with
 [`@fmmenchi/nx-theme-generator`](../../plugins/nx-theme-generator/index.md).
-
-### Tokens for design tools
-
-The contract is also published in the **Design Tokens Community Group** format, which is what
-Figma's token plugins read:
-
-```ts
-import tokens from '@fmmenchi/tokens/tokens.json' with { type: 'json' };
-```
-
-It carries the base theme's values, and only the groups DTCG can express losslessly — `transition`,
-`shadow`, `ease` and the z scale have no faithful type there, and a file that looked complete while
-quietly guessing would be worse than one that says what it covers.
-
-Two files in this package are **generated** from the contract and must not be edited by hand:
-`styles/properties.css` and `tokens.json`. The test suite regenerates them and compares, so an edit
-fails CI; after changing the contract, run:
-
-```bash
-pnpm nx test @fmmenchi/tokens -- -u
-```
 
 ## Reference
 
