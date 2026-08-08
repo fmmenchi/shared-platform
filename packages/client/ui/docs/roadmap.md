@@ -53,7 +53,7 @@ in the DOM (see [Controlled and uncontrolled](./index.md)).
 
 **Its contract is already written.** The boundary between the three controls people confuse — the
 button that stays pressed, the setting that applies immediately, the box that submits with the form
-— was decided in [ADR-0024](../../../../apps/docusaurus/docs/adr/0024-toggle-switch-checkbox-boundary.md)
+— was decided in ADR-0024
 rather than left for whoever builds this, and the button half of it shipped first on purpose: a
 switch arriving into a package with nothing else that holds a pressed state is an invitation to use
 it for a toolbar. What is left here is the control itself, against a contract that already says the
