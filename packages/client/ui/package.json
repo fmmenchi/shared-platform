@@ -412,6 +412,18 @@
       "types": "./dist/components/visually-hidden/index.d.ts",
       "import": "./dist/visually-hidden.js",
       "default": "./dist/visually-hidden.js"
+    },
+    "./toolbar": {
+      "@fmmenchi/source": "./src/components/toolbar/index.ts",
+      "types": "./dist/components/toolbar/index.d.ts",
+      "import": "./dist/toolbar.js",
+      "default": "./dist/toolbar.js"
+    },
+    "./toolbar-item": {
+      "@fmmenchi/source": "./src/components/toolbar-item/index.ts",
+      "types": "./dist/components/toolbar-item/index.d.ts",
+      "import": "./dist/toolbar-item.js",
+      "default": "./dist/toolbar-item.js"
     }
   },
   "nx": {

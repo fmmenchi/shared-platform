@@ -17,11 +17,11 @@ sibling folder of its family and is documented on the family's page, not its own
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Typography**    | `Heading`                                                                                                                                                      |
 | **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                         |
-| **Buttons**       | `Button`                                                                                                                                                       |
+| **Buttons**       | `Button` · `Toolbar` (+ Item)                                                                                                                                  |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                    |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, List, Panel)                                                                                                          |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                             |
 | **Feedback**      | `Alert`                                                                                                                                                        |
 | **Data display**  | `Badge`                                                                                                                                                        |

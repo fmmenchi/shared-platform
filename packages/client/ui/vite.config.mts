@@ -83,6 +83,8 @@ export default defineConfig(() => ({
       // (`./button`). New components add an entry here.
       entry: {
         'visually-hidden': 'src/components/visually-hidden/index.ts',
+        'toolbar-item': 'src/components/toolbar-item/index.ts',
+        toolbar: 'src/components/toolbar/index.ts',
         'tab-panel': 'src/components/tab-panel/index.ts',
         tab: 'src/components/tab/index.ts',
         'tab-list': 'src/components/tab-list/index.ts',

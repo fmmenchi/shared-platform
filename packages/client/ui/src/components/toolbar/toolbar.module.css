@@ -1,0 +1,46 @@
+/* The controls, in a row or a column. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--fm-space-inline-s);
+  }
+
+  .toolbar[data-orientation='vertical'] {
+    flex-direction: column;
+    /* The controls stretch to the widest rather than centring on it: a column
+       of buttons of different widths reads as a ragged edge otherwise. */
+    align-items: stretch;
+  }
+
+  /* MANY CONTROLS, AND THEY WRAP. A tab list refuses to (its selected marker
+     has to stay on the rail, so it scrolls instead); a toolbar has no rail and
+     nothing to line up, so wrapping is the honest answer on a narrow screen —
+     and it is the one that keeps every control reachable at 400% zoom without
+     sideways scrolling, which WCAG 1.4.10 asks for. */
+  .toolbar:not([data-orientation='vertical']) {
+    flex-wrap: wrap;
+    row-gap: var(--fm-space-stack-s);
+  }
+
+  /* The bar is focusable only while no control carries the tab stop, and it
+     hands the focus straight on when there IS one — so this ring is seen only
+     in the case where there is not, which is exactly the case where a tab stop
+     with no indicator would be a trap.
+
+     Written because the component and its page both PROMISE a ring, and the
+     first version drew none: `NavGroup`'s defect exactly, and invisible to
+     every test here, because the test page has no Preflight (ADR-0022). */
+  .toolbar:focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+
+  @media (forced-colors: active) {
+    .toolbar:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}
