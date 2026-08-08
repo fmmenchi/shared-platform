@@ -41,42 +41,45 @@ Not by popularity. Three questions, in this order:
 
 ## Next
 
-### 1. `Text` — the other half of the pairing
-
-`Heading` shipped and brought the type scale with it: `--fm-text-*` and its
-paired leading now exist, so the contract that was blocked is unblocked. What is
-still missing is body copy — a `Text` for paragraphs and inline spans over the
-same steps, with the tone roles (`muted-foreground`) a caller reaches for by hand
-today.
-
-### 2. `Switch` — native shell, real affordance gap
+### 1. `Switch` — native shell, real affordance gap
 
 `<input type="checkbox" role="switch">`. Checkbox answers "is this included"; a switch answers "is
 this on", and today a consumer building settings has to fake one. Native-first, so the state stays
 in the DOM (see [Controlled and uncontrolled](./index.md)).
 
-### 3. `Accordion` / `Disclosure` — native shell
+### 2. `Accordion` / `Disclosure` — native shell
 
 `<details>` / `<summary>` gives open/close, keyboard operation and find-in-page for free. The
 compound doctrine names it explicitly as a native-shell case rather than a hand-rolled one.
 
-### 4. `Progress` — the Feedback group is one wide
+### 3. `Progress` — the Feedback group is one wide
 
 `<progress>`, determinate and indeterminate. Cheap, and it stops Alert from being the whole of
 Feedback.
 
-### 5. `Table` — the Data display group is one wide
+### 4. `Table` — the Data display group is one wide
 
 Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
 the "next" items and the one most often re-implemented per app.
 
-### 6. `Toast` — needs a queue and a live region
+### 5. `Toast` — needs a queue and a live region
 
 Transient feedback. Distinct from `Alert`, which is inline and permanent. Wants a decision about
 where the queue lives before any code.
 
 ## Deferred, with the reason
 
+- **`Text`.** Rejected rather than postponed. `Heading` states the admission test in its own source
+  — _"splitting them is the only reason to wrap an element the platform already has"_ — and it earns
+  its wrapper because `level` (the outline assistive tech navigates) and `size` (the visual step) are
+  two decisions raw markup fuses into one, with the visual one winning. Body copy has no such
+  fusion: a `<p>` carries no level and anchors no navigation, so making it larger or quieter
+  corrupts nothing. "The other half of the pairing" is an argument from symmetry with other design
+  systems, which ADR-0016 does not accept as a reason for an element. The two gaps it claimed are
+  already closed — `baseline.css` gives the page `--fm-font-sans` and the foreground role, and
+  `muted-foreground` is a contract role whose Tailwind bridge coverage `tokens.test.ts` enforces, so
+  `text-muted-foreground` compiles. A `Text` would also reintroduce polymorphic `as`, which
+  `Heading` refuses on purpose.
 - **`Combobox`.** Not an oversight — the trade is written into `Select`: the box is ours and the
   list is the browser's, because _"a themed list is what a combobox costs weeks for"_. Building one
   reverses that trade, so it needs an ADR before it needs code, and `appearance: base-select` may
