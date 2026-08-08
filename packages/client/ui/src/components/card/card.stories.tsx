@@ -25,7 +25,7 @@ type Story = StoryObj<typeof Card>;
 export const Default: Story = {
   render: (args) => (
     <Card {...args} style={{ maxWidth: '22rem' }}>
-      <CardTitle>Weekly digest</CardTitle>
+      <CardTitle level={3}>Weekly digest</CardTitle>
       <p>Four things happened this week that are worth ninety seconds.</p>
     </Card>
   ),
@@ -39,7 +39,9 @@ export const Default: Story = {
 export const Linked: Story = {
   render: (args) => (
     <Card {...args} style={{ maxWidth: '22rem' }}>
-      <CardTitle href="/digest">Weekly digest</CardTitle>
+      <CardTitle level={3} href="/digest">
+        Weekly digest
+      </CardTitle>
       <p>Four things happened this week that are worth ninety seconds.</p>
     </Card>
   ),
@@ -57,7 +59,9 @@ export const WithMedia: Story = {
         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9' fill='%23b8c4d9'/%3E%3C/svg%3E"
         alt=""
       />
-      <CardTitle href="/digest">Weekly digest</CardTitle>
+      <CardTitle level={3} href="/digest">
+        Weekly digest
+      </CardTitle>
       <p>Four things happened this week.</p>
     </Card>
   ),
@@ -79,14 +83,18 @@ export const InAGrid: Story = {
       }}
     >
       <Card {...args}>
-        <CardTitle href="/digest">Weekly digest</CardTitle>
+        <CardTitle level={3} href="/digest">
+          Weekly digest
+        </CardTitle>
         <p>Short.</p>
         <CardActions>
           <Button variant="secondary">Save</Button>
         </CardActions>
       </Card>
       <Card {...args}>
-        <CardTitle href="/report">Quarterly report</CardTitle>
+        <CardTitle level={3} href="/report">
+          Quarterly report
+        </CardTitle>
         <p>
           A longer summary, which is the only situation in which pinning the
           actions to the bottom does anything at all.
@@ -105,7 +113,7 @@ export const Elevated: Story = {
   args: { variant: 'elevated' },
   render: (args) => (
     <Card {...args} style={{ maxWidth: '22rem' }}>
-      <CardTitle>Weekly digest</CardTitle>
+      <CardTitle level={3}>Weekly digest</CardTitle>
       <p>Four things happened this week.</p>
     </Card>
   ),

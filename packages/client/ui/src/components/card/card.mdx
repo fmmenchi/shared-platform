@@ -11,7 +11,9 @@ A bounded surface holding one thing, and nothing about what that thing is.
 ```tsx
 <Card>
   <CardMedia src="…" alt="" />
-  <CardTitle href="/digest">Weekly digest</CardTitle>
+  <CardTitle level={3} href="/digest">
+    Weekly digest
+  </CardTitle>
   <p>Four things happened this week.</p>
   <CardActions>
     <Button>Save</Button>
@@ -37,6 +39,10 @@ There is no `CardHeader`, `CardContent` or `CardFooter`. Each part here earns it
 ## Usage
 
 <Canvas of={CardStories.Default} />
+
+### The title is a `Heading`, not a heading
+
+`CardTitle` renders `Heading`. The type scale, the zeroed UA margin, `text-wrap: balance` and the `min-inline-size: 0` that stops one long word from sizing a grid track are all its decisions, and a second copy of them here would be the same choices made twice — drifting apart from the first revision onwards. `level` and `size` are its props, passed through unchanged.
 
 ### The card is not interactive; the title is
 
@@ -102,7 +108,7 @@ And it is `position: relative`, which is what keeps its buttons clickable on a l
 
 - **The link's name is the title, not the card.** This is the whole reason the anchor is `CardTitle`'s and not `Card`'s, and it is what makes a grid of cards navigable by rotor.
 - **The heading wraps the link**, never the other way round. A link containing a heading is still findable in a heading list, but the heading's name then belongs to the link and the two stop agreeing about what the card is called.
-- **The heading level is yours.** `h3` by default because a grid of cards usually sits under an `h2`, but the right level depends on the page outline, which the design system cannot see. Set `as`.
+- **The heading level is yours, and required.** `CardTitle` is a `Heading`, so `level` is passed straight through — including the fact that it has no default. A card cannot see where it sits any more than a heading can, and a guessed level is wrong silently, against the one structure a screen reader user navigates by. `size` is there for when the look has to differ from the level: `level={2} size="h4"` is "an h2 that looks like an h4".
 - **The focus ring is drawn on the layer**, so it surrounds the whole card — the thing that will actually be activated — instead of the title text alone. It is drawn by the link's own rule, not by the card's, so it does not depend on a stylesheet next door.
 - **Hover paints the whole surface** via `:has()`, with no state and no handler; in forced colours, where background is discarded, the border carries it instead.
 - **`as="a"` with anything interactive inside is invalid HTML** and warns in development. The keyboard cannot reach the nested control reliably, and activating it also navigates.

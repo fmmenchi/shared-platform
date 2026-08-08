@@ -104,7 +104,9 @@ describe('Card', () => {
   it('makes the WHOLE card activate the title link', async () => {
     render(
       <Card>
-        <CardTitle href="/dns">How DNS works</CardTitle>
+        <CardTitle level={3} href="/dns">
+          How DNS works
+        </CardTitle>
         <p>
           An explanation in ten minutes, with a long enough summary to fill the
           card and give the layer something to cover.
@@ -137,7 +139,9 @@ describe('Card', () => {
       <>
         <button type="button">Before</button>
         <Card>
-          <CardTitle href="/dns">How DNS works</CardTitle>
+          <CardTitle level={3} href="/dns">
+            How DNS works
+          </CardTitle>
           <p>An explanation in ten minutes.</p>
         </Card>
         <button type="button">After</button>
@@ -170,7 +174,9 @@ describe('Card', () => {
     const onClick = vi.fn();
     render(
       <Card>
-        <CardTitle href="/dns">How DNS works</CardTitle>
+        <CardTitle level={3} href="/dns">
+          How DNS works
+        </CardTitle>
         <p>An explanation in ten minutes.</p>
         <CardActions>
           <Button onClick={onClick}>Save</Button>
@@ -192,7 +198,9 @@ describe('Card', () => {
   it('has no a11y violations', async () => {
     const { container } = render(
       <Card as="article">
-        <CardTitle href="/dns">How DNS works</CardTitle>
+        <CardTitle level={3} href="/dns">
+          How DNS works
+        </CardTitle>
         <p>An explanation in ten minutes.</p>
         <CardActions>
           <Button>Save</Button>
