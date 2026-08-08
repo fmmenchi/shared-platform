@@ -168,8 +168,7 @@
   --spacing-inset-m: var(--fm-space-inset-m);
   --spacing-inset-l: var(--fm-space-inset-l);
 
-  /* ---- TYPOGRAPHY: families + weights (text sizes stay Tailwind default
-          until a Text/Heading component settles the pairing) ---- */
+  /* ---- TYPOGRAPHY: the type scale, families and weights ---- */
   /* Semantic-only, like the palette: Tailwind's own steps are reset so
      `text-9xl` cannot compile, and each step carries its paired leading — the
      `--text-<step>--line-height` name is Tailwind's own convention for it. */

@@ -13,6 +13,7 @@ import {
   SPACE_TOKENS,
   TOKEN_VARS,
   colorVar,
+  TEXT_TOKENS,
 } from './index.js';
 import { CONTRAST_PAIRS, validateTheme } from './validate.js';
 
@@ -113,6 +114,40 @@ describe('tailwind bridge', () => {
         `bridge is missing --spacing-${t}`,
       ).toBe(true);
     }
+  });
+
+  // The pair, both halves. Deleting a `--text-<step>--line-height` line left
+  // `Heading size="lg"` and `DialogHeading` on the UA's `normal` leading with
+  // every gate green — measured — because `TOKEN_VARS` only proves the `--fm-*`
+  // variables are DECLARED, never that they reach the bridge.
+  it('bridges the type scale, size AND leading, for every step', () => {
+    for (const step of TEXT_TOKENS) {
+      expect(bridge, `--text-${step} is not bridged`).toContain(
+        `--text-${step}:var(--fm-text-${step});`,
+      );
+      expect(bridge, `--text-${step}--line-height is not bridged`).toContain(
+        `--text-${step}--line-height:var(--fm-leading-${step});`,
+      );
+    }
+  });
+
+  // The leading is unitless on purpose: an absolute one is inherited as a
+  // frozen number, so a descendant that changes its font-size keeps the
+  // ancestor's line box. Measured before this assertion existed: `<small>`
+  // inside a `text-sm` block went from 16.67px to 20px.
+  it('keeps every leading a RATIO, never a length', () => {
+    for (const step of TEXT_TOKENS) {
+      const value = light.get(`--fm-leading-${step}`);
+      expect(value, `--fm-leading-${step} is missing`).toBeTruthy();
+      expect(
+        value,
+        `--fm-leading-${step} is "${value}" — a length freezes on inheritance`,
+      ).not.toMatch(/\d\s*(rem|em|px|pt|%)/);
+    }
+  });
+
+  it("resets Tailwind's own text steps (semantic-only enforcement)", () => {
+    expect(bridge).toContain('--text-*:initial;');
   });
 
   it('declares exactly the TS breakpoints (no drift, no Tailwind defaults)', () => {

@@ -168,6 +168,7 @@ export type { AppLayoutNavDrawerProps } from './components/app-layout-nav-drawer
 export { Heading } from './components/heading/heading.component.js';
 export { headingVariants } from './components/heading/heading.variants.js';
 export type {
+  HeadingLevel,
   HeadingProps,
   HeadingVariants,
 } from './components/heading/heading.types.js';

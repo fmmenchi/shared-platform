@@ -15,7 +15,7 @@ const meta: Meta<typeof Heading> = {
     },
     size: {
       control: 'inline-radio',
-      options: ['4xl', '3xl', '2xl', 'xl', 'lg', 'base'],
+      options: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'],
       description:
         'How big it LOOKS, when that has to differ from what it is. Steps of the shared type scale. Defaults to the size belonging to `level`.',
       table: {
@@ -52,13 +52,13 @@ export const Levels: Story = {
 export const SizeIsNotLevel: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: '1rem' }}>
-      <Heading level={2} size="2xl">
+      <Heading level={2} size="h2">
         A section
       </Heading>
-      <Heading level={2} size="lg">
+      <Heading level={2} size="h5">
         A quieter section, still an h2
       </Heading>
-      <Heading level={2} size="base">
+      <Heading level={2} size="h6">
         A very quiet one, still an h2
       </Heading>
     </div>
@@ -69,7 +69,7 @@ export const SizeIsNotLevel: Story = {
 export const Sizes: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: '1rem' }}>
-      {(['4xl', '3xl', '2xl', 'xl', 'lg', 'base'] as const).map((size) => (
+      {(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const).map((size) => (
         <Heading key={size} level={2} size={size}>
           {size}
         </Heading>

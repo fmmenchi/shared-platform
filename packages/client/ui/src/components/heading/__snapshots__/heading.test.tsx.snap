@@ -2,7 +2,7 @@
 
 exports[`Heading > matches the rendered snapshot 1`] = `
 <h2
-  class="_heading_1gffw_4 _sizeLg_1gffw_28"
+  class="_heading_191g8_4 _h4_191g8_25"
 >
   Section
 </h2>

@@ -26,15 +26,25 @@ interface HeadingOwnProps extends HeadingVariants {
    * This is the whole reason the component exists: in raw markup the two were
    * one decision, so an `<h2>` that had to look small became an `<h4>` and the
    * outline was bent to serve the visual. Here the outline stays honest and the
-   * type scale absorbs the request.
+   * look absorbs the request — `level={2} size="h4"` is "an h2 that looks like
+   * an h4", which is the sentence, not a translation of it.
    */
   size?: HeadingVariants['size'];
   children?: ReactNode;
 }
 
 /**
- * Public Heading props. No `as`: the element is `level`'s to decide, and a
- * second way to choose the tag could only disagree with it.
+ * Public Heading props.
+ *
+ * No `as`: the element is `level`'s to decide, and a second way to choose the
+ * tag could only disagree with it. `role` and `aria-level` are refused for the
+ * same reason, and they are the sharper case because they WIN: measured,
+ * `role="presentation"` removed the heading from every role query and
+ * `aria-level={6}` had an `<h3>` announced as level 6, both with no warning
+ * anywhere. `aria-level` is precisely a second way to choose the level.
  */
 export type HeadingProps = HeadingOwnProps &
-  Omit<ComponentPropsWithRef<'h1'>, keyof HeadingOwnProps>;
+  Omit<
+    ComponentPropsWithRef<'h1'>,
+    keyof HeadingOwnProps | 'role' | 'aria-level'
+  >;
