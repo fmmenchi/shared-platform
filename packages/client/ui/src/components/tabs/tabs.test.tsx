@@ -679,6 +679,55 @@ describe('Tabs, the contract with the caller', () => {
     expect(document.activeElement).toBe(tab('A'));
   });
 
+  it('does not put a scrollbar on the strip', async () => {
+    render(three());
+    await waitFor(() =>
+      expect(tab('Overview')).toHaveAttribute('tabindex', '0'),
+    );
+    const list = screen.getByRole('tablist');
+
+    // GEOMETRY, and it needs measuring because nothing else can see it. The
+    // rail used to be a border, so the selected tab's marker could only sit on
+    // it with a negative margin — which pushed the tab 1px past the list's
+    // content edge. CSS then made `overflow-y` follow `overflow-x: auto` (an
+    // axis that is not `visible` takes the other with it), and a 38px strip
+    // grew a VERTICAL scrollbar: `scrollHeight` 38 against `clientHeight` 37.
+    expect(list.scrollHeight).toBe(list.clientHeight);
+    expect(list.scrollWidth).toBe(list.clientWidth);
+
+    // And the marker's track still holds its space, so selecting does not
+    // change a tab's height and shift the row.
+    expect(tab('Usage').getBoundingClientRect().height).toBe(
+      tab('Overview').getBoundingClientRect().height,
+    );
+  });
+
+  it('shows no panel at all when every tab is disabled', async () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Plans">
+          <Tab value="a" disabled>
+            A
+          </Tab>
+          <Tab value="b" disabled>
+            B
+          </Tab>
+        </TabList>
+        <TabPanel value="a">First</TabPanel>
+        <TabPanel value="b">Second</TabPanel>
+      </Tabs>,
+    );
+
+    // Showing and being tabbable are two questions. A product that marked every
+    // option unavailable should not find one of those panels open — but the
+    // list must still be reachable, or a reader cannot even learn the options
+    // are there.
+    await waitFor(() => expect(tab('A')).toHaveAttribute('tabindex', '0'));
+    expect(screen.queryAllByRole('tabpanel')).toHaveLength(0);
+    expect(tab('A')).toHaveAttribute('aria-selected', 'false');
+    expect(tab('B')).toHaveAttribute('aria-selected', 'false');
+  });
+
   it('falls back to the first tab that can be used, not merely the first', async () => {
     render(
       <Tabs>

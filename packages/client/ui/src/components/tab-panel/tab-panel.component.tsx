@@ -36,6 +36,10 @@ function TabPanel(props: TabPanelProps) {
   const selected = context?.value === value;
 
   useDevWarning(
+    'id' in rest,
+    'TabPanel: `id` is derived from `value` and cannot be set — its tab points at it with `aria-controls`. Anything of yours wired to a hand-written id here would break silently.',
+  );
+  useDevWarning(
     context != null && !context.hasTab(value),
     `TabPanel: no <Tab value=${JSON.stringify(value)}> to belong to, so its \`aria-labelledby\` points at nothing and it is announced unnamed.`,
   );

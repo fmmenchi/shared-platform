@@ -19,10 +19,12 @@
     border: none;
     cursor: pointer;
     /* The marker's track, transparent until this tab is the selected one — so
-       selecting does not change the tab's height and shift the row. */
+       selecting does not change the tab's height and shift the row. It sits ON
+       the list's rail because that rail is an inset shadow and takes no layout:
+       the negative margin this used to need overflowed the list by 1px and,
+       through `overflow-x: auto` forcing the other axis, put a vertical
+       scrollbar on the strip. */
     border-block-end: var(--fm-border-width-emphasis) solid transparent;
-    /* Sits ON the list's rail rather than above it. */
-    margin-block-end: calc(var(--fm-border-width-default) * -1);
     /* A tab list that scrolls must not squeeze its tabs to nothing first. */
     flex: 0 0 auto;
     white-space: nowrap;
@@ -85,7 +87,6 @@
   [data-orientation='vertical'] > .tab {
     @apply rounded-t-none rounded-s-md;
     border-block-end: none;
-    margin-block-end: 0;
     border-inline-end: var(--fm-border-width-emphasis) solid transparent;
     margin-inline-end: calc(var(--fm-border-width-default) * -1);
     text-align: start;
