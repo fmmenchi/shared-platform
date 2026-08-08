@@ -13,6 +13,8 @@ export type {
   ButtonProps,
   ButtonVariants,
 } from './components/button/button.types.js';
+export { Toggle } from './components/toggle/toggle.component.js';
+export type { ToggleProps } from './components/toggle/toggle.types.js';
 export {
   UI_SUPPORTED_LOCALES,
   UI_FALLBACK_LOCALE,

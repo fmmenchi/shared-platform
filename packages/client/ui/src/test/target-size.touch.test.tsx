@@ -10,6 +10,7 @@ import { Tab } from '../components/tab/tab.component.js';
 import { TabPanel } from '../components/tab-panel/tab-panel.component.js';
 import { Checkbox } from '../components/checkbox/checkbox.component.js';
 import { Radio } from '../components/radio/radio.component.js';
+import { Toggle } from '../components/toggle/toggle.component.js';
 
 /**
  * THE TARGET-SIZE POLICY, in one place because it belongs to the family rather
@@ -47,12 +48,17 @@ describe('every control this package draws, under a coarse pointer', () => {
           </TabList>
           <TabPanel value="one">First</TabPanel>
         </Tabs>
+        {/* Composes Button, so it inherits the rule rather than restating it —
+            which is exactly why it is asserted here: the day someone gives
+            Toggle its own box, this is what notices. */}
+        <Toggle size="sm">Toggle</Toggle>
       </>,
     );
 
     for (const control of [
       screen.getByRole('button', { name: 'Small' }),
       screen.getByRole('button', { name: 'Medium' }),
+      screen.getByRole('button', { name: 'Toggle' }),
       screen.getByRole('textbox', { name: 'Text' }),
       screen.getByRole('combobox', { name: 'Choice' }),
       screen.getByRole('textbox', { name: 'Notes' }),
