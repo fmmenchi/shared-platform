@@ -188,6 +188,27 @@
   /* ==========================================================
      TYPOGRAPHY — scales (no shipped fonts: system stacks; apps override)
      ========================================================== */
+  /* TYPE SCALE — size and its paired leading. The pair is the token: a caller
+     picking a size never has to guess a line-height, which is the divergence
+     this scale was held back to avoid. Values are the ones the components were
+     already rendering, so adopting the scale moved nothing (see TEXT_TOKENS). */
+  --fm-text-xs: 0.75rem;
+  --fm-leading-xs: 1rem;
+  --fm-text-sm: 0.875rem;
+  --fm-leading-sm: 1.25rem;
+  --fm-text-base: 1rem;
+  --fm-leading-base: 1.5rem;
+  --fm-text-lg: 1.125rem;
+  --fm-leading-lg: 1.75rem;
+  --fm-text-xl: 1.25rem;
+  --fm-leading-xl: 1.75rem;
+  --fm-text-2xl: 1.5rem;
+  --fm-leading-2xl: 2rem;
+  --fm-text-3xl: 1.875rem;
+  --fm-leading-3xl: 2.25rem;
+  --fm-text-4xl: 2.25rem;
+  --fm-leading-4xl: 2.5rem;
+
   --fm-font-sans: ui-sans-serif, system-ui, sans-serif;
   --fm-font-heading: var(--fm-font-sans);
   --fm-font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;

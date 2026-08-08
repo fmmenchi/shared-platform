@@ -82,6 +82,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        heading: 'src/components/heading/index.ts',
         'app-layout-nav-drawer':
           'src/components/app-layout-nav-drawer/index.ts',
         'app-layout-nav-column':

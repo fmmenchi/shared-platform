@@ -114,6 +114,28 @@ export const SPACE_TOKENS = [
   'inset-m',
   'inset-l',
 ] as const;
+/**
+ * The type scale, and the LEADING that goes with each step — one pairing, not
+ * two scales a caller has to match by hand. Deferred until now on purpose: a
+ * scale nothing consumes diverges from the utilities in silence, so it lands
+ * with `Heading`, the component that settles it.
+ *
+ * The values are deliberately the ones the components ALREADY render (Tailwind's
+ * own defaults, which they were using): adopting the shipped values makes the
+ * scale ours without moving a pixel, where inventing one in the same change
+ * would have re-typeset every component at once with no way to tell which
+ * change caused what. Re-tuning is a separate decision, and now a possible one.
+ */
+export const TEXT_TOKENS = [
+  'xs',
+  'sm',
+  'base',
+  'lg',
+  'xl',
+  '2xl',
+  '3xl',
+  '4xl',
+] as const;
 export const FONT_TOKENS = ['sans', 'heading', 'mono'] as const;
 export const FONT_WEIGHT_TOKENS = [
   'light',
@@ -162,6 +184,8 @@ export const TOKEN_VARS: readonly string[] = [
   ...COLOR_ROLES.map(colorVar),
   ...RADIUS_TOKENS.map((t) => `--fm-radius-${t}`),
   ...SPACE_TOKENS.map((t) => `--fm-space-${t}`),
+  ...TEXT_TOKENS.map((t) => `--fm-text-${t}`),
+  ...TEXT_TOKENS.map((t) => `--fm-leading-${t}`),
   ...FONT_TOKENS.map((t) => `--fm-font-${t}`),
   ...FONT_WEIGHT_TOKENS.map((t) => `--fm-font-weight-${t}`),
   ...BORDER_WIDTH_TOKENS.map((t) => `--fm-border-width-${t}`),

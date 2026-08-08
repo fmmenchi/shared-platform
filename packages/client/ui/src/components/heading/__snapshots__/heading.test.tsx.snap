@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Heading > matches the rendered snapshot 1`] = `
+<h2
+  class="_heading_1gffw_4 _sizeLg_1gffw_28"
+>
+  Section
+</h2>
+`;

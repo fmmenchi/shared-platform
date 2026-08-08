@@ -170,6 +170,27 @@
 
   /* ---- TYPOGRAPHY: families + weights (text sizes stay Tailwind default
           until a Text/Heading component settles the pairing) ---- */
+  /* Semantic-only, like the palette: Tailwind's own steps are reset so
+     `text-9xl` cannot compile, and each step carries its paired leading — the
+     `--text-<step>--line-height` name is Tailwind's own convention for it. */
+  --text-*: initial;
+  --text-xs: var(--fm-text-xs);
+  --text-xs--line-height: var(--fm-leading-xs);
+  --text-sm: var(--fm-text-sm);
+  --text-sm--line-height: var(--fm-leading-sm);
+  --text-base: var(--fm-text-base);
+  --text-base--line-height: var(--fm-leading-base);
+  --text-lg: var(--fm-text-lg);
+  --text-lg--line-height: var(--fm-leading-lg);
+  --text-xl: var(--fm-text-xl);
+  --text-xl--line-height: var(--fm-leading-xl);
+  --text-2xl: var(--fm-text-2xl);
+  --text-2xl--line-height: var(--fm-leading-2xl);
+  --text-3xl: var(--fm-text-3xl);
+  --text-3xl--line-height: var(--fm-leading-3xl);
+  --text-4xl: var(--fm-text-4xl);
+  --text-4xl--line-height: var(--fm-leading-4xl);
+
   --font-*: initial;
   --font-sans: var(--fm-font-sans);
   --font-heading: var(--fm-font-heading);

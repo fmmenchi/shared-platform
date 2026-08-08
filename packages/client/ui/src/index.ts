@@ -165,3 +165,9 @@ export { AppLayoutNavColumn } from './components/app-layout-nav-column/app-layou
 export type { AppLayoutNavColumnProps } from './components/app-layout-nav-column/app-layout-nav-column.types.js';
 export { AppLayoutNavDrawer } from './components/app-layout-nav-drawer/app-layout-nav-drawer.component.js';
 export type { AppLayoutNavDrawerProps } from './components/app-layout-nav-drawer/app-layout-nav-drawer.types.js';
+export { Heading } from './components/heading/heading.component.js';
+export { headingVariants } from './components/heading/heading.variants.js';
+export type {
+  HeadingProps,
+  HeadingVariants,
+} from './components/heading/heading.types.js';

@@ -1,0 +1,49 @@
+/*
+ * Heading styles. The type scale is the token contract's (`--fm-text-*` with
+ * its paired leading); this file only chooses steps and the family/weight that
+ * make a heading read as one.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  .heading {
+    /* The UA gives a heading a size AND a margin, both of which belong to the
+       page rather than to us: `h1` at 2em with 0.67em above and below would
+       fight the caller's own spacing wherever this lands. The size comes from
+       the scale below; the margin goes, because vertical rhythm is the
+       container's job (the same call `field-description` makes about its
+       paragraph). */
+    margin-block: 0;
+    /* `heading` resolves to the sans stack unless a brand preset overrides it,
+       so this line costs nothing today and is the hook when one does. */
+    @apply font-heading text-foreground font-semibold;
+    /* A long heading breaks rather than pushing the layout wider. */
+    overflow-wrap: break-word;
+  }
+
+  /* Steps of the shared scale, each carrying its paired leading — the pairing
+     is what the token contract held this component back to settle. */
+  .size4xl {
+    @apply text-4xl;
+  }
+  .size3xl {
+    @apply text-3xl;
+  }
+  .size2xl {
+    @apply text-2xl;
+  }
+  .sizeXl {
+    @apply text-xl;
+  }
+  .sizeLg {
+    @apply text-lg;
+  }
+  .sizeBase {
+    @apply text-base;
+  }
+
+  /* No `forced-colors` block: a heading carries no fill, no border and no
+     focus ring — it is text, and forced colours already paint text. */
+}

@@ -328,6 +328,12 @@
       "types": "./dist/components/app-layout-nav-drawer/index.d.ts",
       "import": "./dist/app-layout-nav-drawer.js",
       "default": "./dist/app-layout-nav-drawer.js"
+    },
+    "./heading": {
+      "@fmmenchi/source": "./src/components/heading/index.ts",
+      "types": "./dist/components/heading/index.d.ts",
+      "import": "./dist/heading.js",
+      "default": "./dist/heading.js"
     }
   },
   "nx": {
