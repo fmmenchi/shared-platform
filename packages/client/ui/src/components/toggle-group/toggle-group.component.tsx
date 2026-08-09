@@ -42,9 +42,12 @@ function ToggleGroup(props: ToggleGroupProps) {
     ...rest
   } = props;
 
+  // An EMPTY label only. Absent is legitimate — the set is named by whatever
+  // wraps it, and a group cannot see its own `<fieldset>`, so warning on
+  // `undefined` would cry wolf at the one anatomy that is correct.
   useDevWarning(
-    label.trim() === '',
-    'ToggleGroup: `label` is empty, so the set is announced as just "group". On a page with two of them that names neither.',
+    label !== undefined && label.trim() === '',
+    'ToggleGroup: `label` is an empty string, so the set is announced as just "group". Leave it out to be named by a surrounding <Fieldset>, or give it a name.',
   );
   useDevWarning(
     name.trim() === '',
@@ -55,9 +58,15 @@ function ToggleGroup(props: ToggleGroupProps) {
   // own "controlled without onChange" warning never fires — the exact silence
   // `Checkbox` records as the reason it refuses to wrap a handler. Controlled
   // with nothing listening is a set that cannot move and says nothing about it.
+  // A native `onChange` on the group counts as listening, and that is not a
+  // loophole: `change` bubbles from the option the user picked, so a caller
+  // driving the set from `event.target.value` hears every pick. It is how the
+  // bound component listens, since a form adapter's bag is native props.
   useDevWarning(
-    value !== undefined && onValueChange === undefined,
-    'ToggleGroup: `value` is set but `onValueChange` is not, so the set is frozen — every click is reported to nobody and the selection never changes. Pass `onValueChange`, or use `defaultValue` and let the DOM keep it.',
+    value !== undefined &&
+      onValueChange === undefined &&
+      rest.onChange === undefined,
+    'ToggleGroup: `value` is set but nothing is listening, so the set is frozen — every pick is reported to nobody and the selection never changes. Pass `onValueChange` (or a native `onChange`), or use `defaultValue` and let the DOM keep it.',
   );
 
   // No hand-memoization: the React Compiler keys this on the values it is built
@@ -74,9 +83,11 @@ function ToggleGroup(props: ToggleGroupProps) {
     <div
       className={cn(styles.group, className)}
       {...rest}
-      // After the spread: the role is what this component IS, and the label is
-      // what makes the role usable.
-      role="radiogroup"
+      // After the spread, and TOGETHER: the role goes with the name. Named from
+      // outside — by a `Fieldset`'s legend — this wrapper is not a group of its
+      // own: the radios are already grouped by the fieldset and paired by
+      // `name`, so a second, nameless `radiogroup` would only be announced.
+      role={label === undefined ? undefined : 'radiogroup'}
       aria-label={label}
     >
       <ToggleGroupContext.Provider value={context}>

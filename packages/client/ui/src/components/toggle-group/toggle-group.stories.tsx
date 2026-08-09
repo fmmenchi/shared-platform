@@ -11,7 +11,7 @@ const meta: Meta<typeof ToggleGroup> = {
     label: {
       control: 'text',
       description:
-        'What the set is asking. Becomes the group’s accessible name — a `radiogroup` without one is announced as just "group".',
+        'What the set is asking, and the group’s accessible name. Leave it out when something that already names the set wraps it — a `Fieldset` with a legend — since `role="radiogroup"` goes with the name and two names are announced twice.',
       table: { type: { summary: 'string' } },
     },
     name: {

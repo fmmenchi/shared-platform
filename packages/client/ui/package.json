@@ -472,6 +472,12 @@
       "types": "./dist/components/toggle-group-item/index.d.ts",
       "import": "./dist/toggle-group-item.js",
       "default": "./dist/toggle-group-item.js"
+    },
+    "./form-toggle-group": {
+      "@fmmenchi/source": "./src/components/form-toggle-group/index.ts",
+      "types": "./dist/components/form-toggle-group/index.d.ts",
+      "import": "./dist/form-toggle-group.js",
+      "default": "./dist/form-toggle-group.js"
     }
   },
   "nx": {

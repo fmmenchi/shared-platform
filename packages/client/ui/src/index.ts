@@ -91,6 +91,8 @@ export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
 export { FormSwitch } from './components/form-switch/form-switch.component.js';
 export type { FormSwitchProps } from './components/form-switch/form-switch.types.js';
+export { FormToggleGroup } from './components/form-toggle-group/form-toggle-group.component.js';
+export type { FormToggleGroupProps } from './components/form-toggle-group/form-toggle-group.types.js';
 export type {
   UseFormField,
   UseFormErrors,

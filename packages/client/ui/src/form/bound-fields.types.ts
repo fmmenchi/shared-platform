@@ -4,6 +4,7 @@ import type { FormChoiceProps } from '../components/form-choice/form-choice.type
 import type { FormTextareaProps } from '../components/form-textarea/form-textarea.types.js';
 import type { FormSelectProps } from '../components/form-select/form-select.types.js';
 import type { FormSwitchProps } from '../components/form-switch/form-switch.types.js';
+import type { FormToggleGroupProps } from '../components/form-toggle-group/form-toggle-group.types.js';
 
 /** The same props, with `name` narrowed from `string` to what the form has. */
 export type WithFieldName<Props, Name extends string> = Omit<Props, 'name'> & {
@@ -30,4 +31,7 @@ export interface BoundFields<Name extends string> {
   FormTextarea: (props: WithFieldName<FormTextareaProps, Name>) => ReactNode;
   FormSelect: (props: WithFieldName<FormSelectProps, Name>) => ReactNode;
   FormSwitch: (props: WithFieldName<FormSwitchProps, Name>) => ReactNode;
+  FormToggleGroup: (
+    props: WithFieldName<FormToggleGroupProps, Name>,
+  ) => ReactNode;
 }
