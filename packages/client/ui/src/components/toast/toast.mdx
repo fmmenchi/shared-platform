@@ -103,7 +103,11 @@ A toast that **stays** has no bar, for the same reason it has a ✕ and a timed 
 
 ### It arrives and it leaves
 
-Both movements come from the shared keyframes in `@fmmenchi/tokens/styles/motion.css` — `fm-slide-up-in` is documented there as the toast shape, and this component had redeclared it locally, which is the drift the doctrine exists to prevent. Duration by **surface size** (`s`), ease by **direction**.
+Both movements come from the shared keyframes in `@fmmenchi/tokens/styles/motion.css` — `fm-slide-up-in` is documented there as the toast shape, and this component had redeclared it locally, which is the drift the doctrine exists to prevent.
+
+The entrance is on the **banner** tier (`m`), which is what the duration token's own annotation calls a toast; the `s` it shipped with first is annotated "switch, colour, icons", and half a rem of travel in 200ms is a panel that is simply **there** on the next frame. The ease is the **spring** rather than plain `enter`: over so short a distance a decelerating curve is a drift, and the small overshoot is what makes it read as arriving. `bounce` is the one reserved for success moments, and a toast carries errors too.
+
+Nothing in the suite measured the entrance, which is how it could become imperceptible without a single test turning red — so the name and the duration are asserted now.
 
 The exit goes through `animateExit`, the package's one piece of animation JavaScript, and is **awaited before the state changes** — without that React unmounts the node out from under the animation and the message blinks out. The doctrine's caveat that "only the Dialog can have an exit" is about intercepting a platform close event that is not cancelable elsewhere; nothing is intercepted here, because the removal is this component's own state and the delay is ours to take.
 

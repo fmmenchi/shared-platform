@@ -22,13 +22,28 @@
        ragged column whose right edge moved with every message. */
     inline-size: 100%;
 
-    /* THE SHARED KEYFRAME, not a local one. `fm-slide-up-in` in
-       `@fmmenchi/tokens/styles/motion.css` is documented as the toast/banner
-       shape, and this file had redeclared it — which the doctrine forbids for
-       exactly the reason it is a doctrine: two definitions of one movement
-       drift. Duration by SURFACE SIZE (`s` — a small panel), ease by
-       DIRECTION. */
-    animation: fm-slide-up-in var(--fm-duration-s) var(--fm-ease-enter);
+    /*
+     * THE SHARED KEYFRAME, not a local one. `fm-slide-up-in` in
+     * `@fmmenchi/tokens/styles/motion.css` is documented as the toast/banner
+     * shape, and this file had redeclared it — which the doctrine forbids for
+     * exactly the reason it is a doctrine: two definitions of one movement
+     * drift.
+     *
+     * `m`, NOT `s`, and the earlier `s` was a defect against the workspace's own
+     * scale rather than a taste call: the token is annotated "switch, colour,
+     * icons" and `m` is annotated "dropdown, tooltip, BANNER" — which is what a
+     * toast is. 8px of travel in 200ms is a panel that is simply there on the
+     * next frame, and nothing in the suite measured the entrance, so it could
+     * become imperceptible without anything turning red.
+     *
+     * The ease is the SPRING rather than plain `enter`: the shared shape travels
+     * half a rem, and over so short a distance a decelerating curve is a drift.
+     * The spring's overshoot is what makes it read as arriving. The doctrine
+     * calls it the workhorse and pairs it with `m`/`l`, which is this line;
+     * `bounce` is the one reserved for success moments, and a toast carries
+     * errors too.
+     */
+    animation: fm-slide-up-in var(--fm-duration-m) var(--fm-ease-spring);
   }
 
   /* KILL THE MOVEMENT, KEEP THE CHANGE — and as a `reduce` OVERRIDE, which is

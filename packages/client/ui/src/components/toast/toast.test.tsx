@@ -639,6 +639,35 @@ describe('Toast', () => {
     ).not.toBeNull();
   });
 
+  it('arrives with a movement long enough to be seen', async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{ title: 'Saved', children: 'Your changes are live.' }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+
+    const panel = document.querySelector('[data-toast]') as HTMLElement;
+    const entrance = panel.getAnimations();
+
+    // THE ENTRANCE WAS NEVER MEASURED, which is how it became imperceptible
+    // without anything turning red: it ran, at the bottom of the scale — half a
+    // rem of travel in 200ms — and a panel that is simply there on the next
+    // frame reads as no animation at all.
+    expect(entrance).toHaveLength(1);
+    expect((entrance[0] as CSSAnimation).animationName).toMatch(
+      /fm-slide-up-in/,
+    );
+
+    // The BANNER tier, which is what the token's own annotation calls a toast —
+    // `s` is "switch, colour, icons". This is the assertion that would have
+    // caught the original pick.
+    expect(getComputedStyle(panel).animationDuration).toBe('0.35s');
+  });
+
   it('is dense, and the way out sits on the title', async () => {
     render(
       <ToastRegion>
