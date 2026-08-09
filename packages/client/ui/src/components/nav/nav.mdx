@@ -148,6 +148,45 @@ router has already resolved, and give the links `href`s in that same space.
 An explicit `current` on a single link beats all of it — it is the only one that
 can know what matching cannot.
 
+### Keeping your router's own props, and its own typing
+
+`NavLink` spreads everything it does not consume onto the injected link, so a
+router's extra props have always ARRIVED. What was missing was permission from
+the type — and the design system cannot grant it by naming a library, because
+then it would depend on one.
+
+So it leaves a hole, and your app fills it once:
+
+```ts
+// app/ui.d.ts
+import type { LinkProps } from '@tanstack/react-router';
+
+declare module '@fmmenchi/ui' {
+  interface NavLinkExtraProps extends Pick<
+    LinkProps,
+    'to' | 'params' | 'search' | 'hash'
+  > {}
+}
+```
+
+After that `<NavLink to="/orders/$id" params={{ id }} />` is checked by
+TanStack's own types, in TanStack's own vocabulary. `NavLinkExtraProps` is empty
+here and imports nothing; declaration merging is the same mechanism TanStack
+uses to register your route tree, so its users already have it.
+
+Two things it cannot do. TypeScript will not check that what you declare matches
+the `Link` you injected — declare one router's props, inject another's, and it
+compiles. And the design system reads `href`, not `to`: a link given only a
+route descriptor is invisible to the external-destination test and to
+`useIsCurrent`, so marking it falls to the router's own link (TanStack's does;
+React Router's plain `Link` does not — use its `NavLink`).
+
+`as` is not a smaller alternative to this, though it looks like one. It is typed
+`ElementType` — "something renderable" — and carries none of the props of what
+you pass it, so `<NavLink as={Link} to="/x" />` needs the same augmentation.
+Making it infer would mean making `NavLink` polymorphic, which is a separate
+decision this package has declined elsewhere.
+
 ### Links that leave the app
 
 You do not mark these. An `href` that already says it goes elsewhere — a scheme

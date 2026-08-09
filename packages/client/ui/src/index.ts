@@ -146,7 +146,10 @@ export type { MenuContentProps } from './components/menu-content/menu-content.ty
 export type { NavProps } from './components/nav/nav.types.js';
 export type { NavOrientation } from './components/nav/nav.context.js';
 export type { NavGroupProps } from './components/nav-group/nav-group.types.js';
-export type { NavLinkProps } from './components/nav-link/nav-link.types.js';
+export type {
+  NavLinkExtraProps,
+  NavLinkProps,
+} from './components/nav-link/nav-link.types.js';
 export type { MenuItemProps } from './components/menu-item/menu-item.types.js';
 export type { MenuItemTriggerProps } from './components/menu-item-trigger/menu-item-trigger.types.js';
 export { Menubar } from './components/menubar/menubar.component.js';
