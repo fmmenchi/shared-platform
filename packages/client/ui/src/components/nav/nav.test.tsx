@@ -682,6 +682,55 @@ describe('links that leave the app', () => {
     expect(asked).not.toContain('https://example.com');
   });
 
+  it('paints the page, the section and a hover as three different things', async () => {
+    // Three states, and each pair had a way of collapsing into the other.
+    //
+    // `page` and `location` shared one rule and were identical, so the only
+    // channel that told them apart was the screen reader's. Giving `location`
+    // the subtle pair then collided with `:hover`, which already owns it —
+    // every hovered link would have looked like the section you are in, which
+    // is the defect the CSS comment records being fixed once before.
+    render(
+      <Nav label="Main">
+        <NavLink href="/a" current>
+          Page
+        </NavLink>
+        <NavLink href="/b" current="location">
+          Section
+        </NavLink>
+        <NavLink href="/c">Plain</NavLink>
+      </Nav>,
+    );
+    const seen = (name: string) => {
+      const s = getComputedStyle(link(name));
+      return `${s.backgroundColor}|${s.color}|${s.fontWeight}|${s.boxShadow}`;
+    };
+    const page = seen('Page');
+    const section = seen('Section');
+    const plain = seen('Plain');
+    expect(new Set([page, section, plain]).size, 'three distinct states').toBe(
+      3,
+    );
+
+    // The FILL, deliberately not the whole tuple: the section and a hover
+    // share the subtle pair, so they differ in font-weight whatever else is
+    // true, and an assertion that included weight passed with the bar deleted.
+    // What the earlier review complained about was the fill reading as "you
+    // are here" from across the list, and weight is not that channel.
+    const fill = (name: string) => {
+      const s = getComputedStyle(link(name));
+      return `${s.backgroundColor}|${s.color}|${s.boxShadow}`;
+    };
+    const sectionFill = fill('Section');
+    await browser.hover(link('Plain'));
+    expect(fill('Plain'), 'a hover must not look like the section').not.toBe(
+      sectionFill,
+    );
+    // …and hovering the section must not turn it into anything else either.
+    await browser.hover(link('Section'));
+    expect(seen('Section')).not.toBe(page);
+  });
+
   it('paints whoever set aria-current, including the router itself', () => {
     // The plug-and-play half. React Router's own `NavLink` marks itself and
     // TanStack has `activeProps`, so with those the attribute arrives from the

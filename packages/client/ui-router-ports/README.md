@@ -21,8 +21,29 @@ name no router invented, and both routers here navigate on `to`. Handed the
 port's props unchanged, each renders an anchor with **no destination** — a link
 that is announced as a link and goes nowhere.
 
-The second is that every router has its own idea of what "active" means, and
-they do not agree:
+Calling that a rename is convenient and not quite true: `href` and `to` are
+different kinds of thing. `href` is the HTML attribute — a URL string the
+browser resolves on its own, which is why `NavLink` without a provider is still
+a working link. `to` is a route DESCRIPTOR: React Router also accepts an object
+(`{ pathname, search, hash }`), TanStack types it against your route tree and
+pairs it with `params`/`search`, and neither is a URL until the router resolves
+it.
+
+What the binding does is hand the router the one form they all accept — a path
+string — and let it compute the real thing:
+
+    href="/settings"   →   to="/settings"   →   <a href="/settings">
+
+The anchor always ends up with a genuine `href`, which is what keeps
+middle-click, "open in a new tab" and the status bar working.
+
+What that costs, precisely: the richer forms of `to` do not pass through
+`NavLink`. No object form, no typed `params`/`search`, and under TanStack the
+compile-time route check is spent. For the one item that needs them, use the
+router's own `Link` directly and keep `NavLink` for the menu.
+
+The second thing is that every router has its own idea of what "active" means,
+and they do not agree:
 
 | Router          | What its link does on its own                                                            |
 | --------------- | ---------------------------------------------------------------------------------------- |
