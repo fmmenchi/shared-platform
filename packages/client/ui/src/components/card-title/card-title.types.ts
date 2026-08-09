@@ -19,6 +19,18 @@ export interface CardTitleProps extends Omit<HeadingProps, 'children'> {
    *
    * Without it, this is a heading and nothing more.
    */
+  /**
+   * An `href`, and only an `href`.
+   *
+   * It reaches your router through the same `Link` adapter `NavLink` uses, so
+   * navigation is client-side — but unlike `NavLink` this component forwards no
+   * other prop to the link. Everything besides `href` and `children` goes to
+   * `Heading`, which is what a card title's props are for.
+   *
+   * So a route descriptor does not fit here: `to`, `params` and `search`
+   * neither typecheck nor arrive, and the `NavLinkExtraProps` augmentation does
+   * not apply. Resolve it to a path and pass that; both routers can build one.
+   */
   href?: string;
   children: ReactNode;
 }

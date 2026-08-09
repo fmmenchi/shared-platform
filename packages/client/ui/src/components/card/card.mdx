@@ -70,6 +70,36 @@ Two costs, and they are not small:
 - **selecting text inside the card is awkward**, because the layer takes the drag. A card holding a price, a code or an ID that people copy should not be linked this way — link the title only, with a plain `<a>` of your own;
 - **anything else clickable has to sit above the layer**. `CardActions` does that for you, which is half of why it exists; anything else you put in a linked card needs `position: relative`.
 
+### The destination is an `href`, and only an `href`
+
+`CardTitle` takes a URL string. It reaches your router through the same `Link`
+adapter `NavLink` uses — injected once on `UiProvider` — so the anchor is your
+router's and navigation is client-side.
+
+What it does **not** do is forward a router's other props. Everything besides
+`href` and `children` goes to `Heading`, which is what a card title's props are
+for:
+
+```tsx
+const { href, children, ...heading } = props; // …heading, not …link
+```
+
+So the `NavLinkExtraProps` augmentation does not apply here: `to`, `params` and
+`search` neither typecheck on `CardTitle` nor arrive at the link. That is the
+decision, not an oversight — a card title is a heading first, and forwarding to
+both would need a second prop namespace (`linkProps`) that costs more clarity
+than the case is worth.
+
+If you need a route descriptor, resolve it to a path and pass that as `href`;
+both routers can build one. If you genuinely cannot, render the router's own
+link inside the card and leave `CardTitle`'s `href` off.
+
+**Do not reach for `data-card-link` to make your own link behave like this
+one.** That attribute drives the card's hover paint and its `cursor: pointer`,
+but the invisible clickable layer is a hashed class belonging to `CardTitle` and
+cannot be named from outside. Half of it arrives: a card that looks clickable
+across its whole surface and is not.
+
 ### `as` is constrained, like the rest of the package
 
 `as` here is not "any element". It is `div | article | section | li | a` — the elements a container may legally be — in the same spirit as `SurfaceHeading`, whose `as` is typed to a heading level, and `NavLink`, whose `as` must end in an anchor.
