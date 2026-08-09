@@ -436,6 +436,18 @@
       "types": "./dist/components/toggle/index.d.ts",
       "import": "./dist/toggle.js",
       "default": "./dist/toggle.js"
+    },
+    "./toast": {
+      "@fmmenchi/source": "./src/components/toast/index.ts",
+      "types": "./dist/components/toast/index.d.ts",
+      "import": "./dist/toast.js",
+      "default": "./dist/toast.js"
+    },
+    "./toast-region": {
+      "@fmmenchi/source": "./src/components/toast-region/index.ts",
+      "types": "./dist/components/toast-region/index.d.ts",
+      "import": "./dist/toast-region.js",
+      "default": "./dist/toast-region.js"
     }
   },
   "nx": {

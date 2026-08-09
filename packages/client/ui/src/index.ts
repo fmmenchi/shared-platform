@@ -228,3 +228,14 @@ export { ToolbarItem } from './components/toolbar-item/toolbar-item.component.js
 export type { ToolbarItemProps } from './components/toolbar-item/toolbar-item.types.js';
 export { ToolbarSeparator } from './components/toolbar-separator/toolbar-separator.component.js';
 export type { ToolbarSeparatorProps } from './components/toolbar-separator/toolbar-separator.types.js';
+export type {
+  ToastOptions,
+  ToastEntry,
+} from './components/toast/toast.types.js';
+export { ToastRegion } from './components/toast-region/toast-region.component.js';
+export { useToast } from './components/toast-region/toast-region.context.js';
+export type {
+  ToastRegionProps,
+  ToastPlacement,
+  ToastContextValue,
+} from './components/toast-region/toast-region.types.js';

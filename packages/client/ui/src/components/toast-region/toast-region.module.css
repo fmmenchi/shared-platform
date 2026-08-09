@@ -1,0 +1,59 @@
+/* The stack of transient messages, and the region they are announced through. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .region {
+    /* A POPOVER, so it reaches the top layer and is painted over one of this
+       package's own modal dialogs — `z-index` cannot. It therefore needs the
+       popover defaults undone: a popover is `position: fixed` with a UA margin,
+       border, padding and background, and `inset: 0` centring it. */
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    border: none;
+    background: none;
+    z-index: var(--fm-z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--fm-space-internal-s);
+    /* The region is ALWAYS in the DOM, empty or not, so it must not sit over
+       the page and swallow clicks while it holds nothing. The stack takes the
+       pointer back on each toast. */
+    pointer-events: none;
+    /* A phone's notch and a desktop's edge, in one line. */
+    padding: var(--fm-space-inset-s);
+    max-inline-size: min(100%, 28rem);
+  }
+
+  .region > * {
+    pointer-events: auto;
+  }
+
+  /* PLACEMENT IS LOGICAL, so a right-to-left page stacks on the other side
+     without a second rule. `block-end` is the default because it is the corner
+     a thumb does not cover on a phone and the one the eye is not reading. */
+  /* NO `column-reverse` anywhere. The queue is newest-first, so the array order
+     IS the visual order and Tab follows the eye — reversing the column made the
+     focus ring enter at the bottom and travel upwards against the reading
+     direction. */
+  .region[data-placement='block-end'] {
+    inset-block-end: env(safe-area-inset-bottom, 0px);
+    inset-inline-end: 0;
+  }
+
+  .region[data-placement='block-start'] {
+    inset-block-start: env(safe-area-inset-top, 0px);
+    inset-inline-end: 0;
+  }
+
+  .region[data-placement='inline-start'] {
+    inset-block-end: env(safe-area-inset-bottom, 0px);
+    inset-inline-start: 0;
+  }
+
+  .region[data-placement='inline-end'] {
+    inset-block-end: env(safe-area-inset-bottom, 0px);
+    inset-inline-end: 0;
+  }
+}
