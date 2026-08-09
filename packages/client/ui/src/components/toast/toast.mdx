@@ -1,0 +1,77 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ToastStories from './toast.stories.tsx';
+
+<Meta of={ToastStories} />
+
+# Toast
+
+A message that arrives on its own and leaves on its own.
+
+```tsx
+<ToastRegion>
+  <App />
+</ToastRegion>;
+
+// anywhere inside it
+const { toast } = useToast() ?? {};
+toast?.({
+  variant: 'success',
+  title: 'Saved',
+  children: 'Your changes are live.',
+});
+```
+
+## Anatomy
+
+| part          | what it is                                                   |
+| ------------- | ------------------------------------------------------------ |
+| `ToastRegion` | the queue, and the live region the messages are announced in |
+| `useToast`    | `toast()` to raise one, `dismiss()` to take it back          |
+| `Toast`       | one message — an `Alert` that leaves on its own              |
+
+## Props
+
+<Controls of={ToastStories.Default} />
+
+## Usage
+
+<Canvas of={ToastStories.Default} />
+
+### The queue lives in a provider, not in a module
+
+The shorter API — an imported `toast()` backed by a module-level store — reads better at the call site and is **one object per process**. On a server that process serves every request, so two people would share a queue: one user's "Saved" appearing over another's page. Libraries that ship the imported form are client-only by construction; this package cannot assume that about its consumer, so the state goes where React already scopes state.
+
+### The region is rendered empty, and stays
+
+A live region and its first message appearing together is the classic way to announce nothing: assistive technology has to be watching a region that **already exists** to notice an insertion into it. So `ToastRegion` renders whether or not anything is up, and the toasts are inserted into it.
+
+For the same reason each `Toast` passes `live="off"` to the `Alert` it is made of. An Alert announces itself by carrying its own live region — right when it is on the page from the start, wrong here, where it would be a second region around one message.
+
+It is `role="status"`, not `alert`: a toast is not an interruption. An error still gets there, and `Alert`'s visually-hidden severity word says which it is, but it says so at the next pause — which is what a message the reader did not ask for deserves.
+
+### It carries no actions, and that is the design
+
+A message that removes itself on a timer and contains a button is a button a keyboard user may never reach: they would have to arrive before it goes. Something that needs doing belongs in an `Alert`, which stays, or a `Dialog`, which asks.
+
+The only control is the way out, and the clock stops the moment the pointer or the focus is inside the region — so reaching for it never races it.
+
+### The clock is a time limit, so it can be stopped
+
+Auto-dismissal is a WCAG 2.2.1 time limit. The pause is on the **region**, not on each toast: a pointer resting on one message must not let the one beneath it vanish from under the cursor.
+
+An error defaults to `duration: 0` — it stays until dismissed. Everything else defaults to six seconds, and any caller can say otherwise.
+
+<Canvas of={ToastStories.TopEdge} />
+
+<Canvas of={ToastStories.OneMessage} />
+
+## Accessibility
+
+- **The region exists before the message does**, which is the precondition for any of it being announced.
+- **One live region per message.** The `Alert` inside is `live="off"`; nesting a second one announces it twice or with the wrong politeness.
+- **`role="status"`, polite** — an error is conveyed by the severity word, not by interrupting.
+- **The name is the region's.** A page may have other live content, so it takes an `aria-label` (default: "Notifications", localized).
+- **No actions**, so nothing in it can be unreachable by keyboard. The dismiss control stays reachable because the clock stops on focus.
+- **The stack never blocks the page**: the region is always mounted, so it takes `pointer-events: none` and gives it back only on the toasts themselves.
+- **Reduced motion is honoured** — the entry keeps its fade and drops the travel, which is the vestibular trigger.

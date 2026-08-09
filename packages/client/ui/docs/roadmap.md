@@ -23,7 +23,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                    |
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                             |
-| **Feedback**      | `Alert`                                                                                                                                                        |
+| **Feedback**      | `Alert` · `Toast` (+ Region)                                                                                                                                   |
 | **Data display**  | `Badge`                                                                                                                                                        |
 | **Utilities**     | `VisuallyHidden`                                                                                                                                               |
 
@@ -69,11 +69,6 @@ Feedback.
 
 Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
 the "next" items and the one most often re-implemented per app.
-
-### 4. `Toast` — needs a queue and a live region
-
-Transient feedback. Distinct from `Alert`, which is inline and permanent. Wants a decision about
-where the queue lives before any code.
 
 ## Deferred, with the reason
 

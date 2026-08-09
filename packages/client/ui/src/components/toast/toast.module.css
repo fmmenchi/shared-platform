@@ -1,0 +1,50 @@
+/* One transient message: an Alert that leaves on its own. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .toast {
+    position: relative;
+    /* The Alert paints itself; what this adds is the lift that says the message
+       is over the page rather than in it. */
+    border-radius: var(--fm-radius-lg);
+    box-shadow: var(--fm-shadow-lg);
+  }
+
+  /* ENTERS, and only with opacity when movement is unwelcome — the vestibular
+     trigger is the travel, not the change (the package's motion doctrine). */
+  @media (prefers-reduced-motion: no-preference) {
+    .toast {
+      animation: toast-in var(--fm-duration-s) var(--fm-ease-enter);
+    }
+  }
+
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--fm-space-internal-m);
+    }
+  }
+
+  .dismiss {
+    position: absolute;
+    inset-block-start: var(--fm-space-internal-xs);
+    inset-inline-end: var(--fm-space-internal-xs);
+    /* The alert's own foreground, inherited because this sits inside it — the
+       pairing the token contract declares for that background. */
+    color: inherit;
+  }
+
+  .dismiss button {
+    color: inherit;
+  }
+
+  @media (forced-colors: active) {
+    /* The shadow is DISCARDED, and the shadow was the only thing saying this
+       message sits over the page rather than in it. Without an edge a toast
+       lands on top of the content it covers with nothing between them. */
+    .toast {
+      border: 1px solid CanvasText;
+    }
+  }
+}
