@@ -6,10 +6,13 @@ export interface NavLinkProps extends ComponentPropsWithRef<'a'> {
    *
    * The router normally arrives once, through the `Link` adapter on
    * `UiProvider`, and every `NavLink` uses it without being told. This is the
-   * exception: a destination that must not go through the router — another
-   * site, a download, a `mailto:` — where `as="a"` gives back the plain
-   * anchor. What it renders must end in an anchor, or the browser has nothing
-   * to navigate.
+   * exception, and a NARROW one now: an href that already says it leaves the
+   * app — a scheme like `https:` or `mailto:`, or a protocol-relative `//` —
+   * renders a plain anchor on its own, without being told. What is left for
+   * this prop is the case the href cannot express: forcing the ROUTER back on
+   * for an absolute URL to your own origin, or rendering something else
+   * entirely. What it renders must end in an anchor, or the browser has
+   * nothing to navigate.
    */
   as?: ElementType;
   /**

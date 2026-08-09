@@ -91,17 +91,44 @@ it is called inside each link, so each one subscribes for itself and re-renders
 when the route changes. Return `'page'` for the page, `'location'` for a section
 that contains it, nothing for elsewhere.
 
-Which shape you need depends on your router, and for two of them the answer is
-"nothing at all":
+### Wiring a real router
 
-| Router                          | What to wire                                                                                                                  |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **React Router** — `NavLink`    | Nothing. It sets `aria-current="page"` itself, and it renders the anchor, so its attribute lands last.                        |
-| **TanStack Router**             | Nothing. `Link` resolves activity from typed `to`/`params`/`search` via `activeProps` — things a string match cannot see.     |
-| **React Router** — plain `Link` | `useIsCurrent: (href) => pathIsCurrent(useLocation().pathname, href)`                                                         |
-| **Next**, App Router            | `useIsCurrent: (href) => pathIsCurrent(usePathname(), href)`                                                                  |
-| **Next**, Pages Router          | `useIsCurrent: (href) => pathIsCurrent(useRouter().asPath, href)` — `asPath` carries the query, which `pathIsCurrent` strips. |
-| **Remix**                       | `useIsCurrent: (href) => pathIsCurrent(useLocation().pathname, href)`                                                         |
+The port is `{ href }`, because that is the HTML attribute — the one name no
+router invented. Most routers navigate on **`to`** instead, so the adapter is a
+prop rename, and it is the whole of the integration:
+
+```tsx
+import { Link as RouterLink, NavLink } from 'react-router';
+
+const Link = ({ href, ...rest }) => <RouterLink to={href} {...rest} />;
+```
+
+That one line is also where you choose. React Router ships **two** components,
+and the design system does not need a port for each:
+
+| You inject     | What you get                                                | `useIsCurrent`      |
+| -------------- | ----------------------------------------------------------- | ------------------- |
+| `Link` (plain) | navigation only                                             | wire it — see below |
+| `NavLink`      | navigation **and** `aria-current="page"`, set by the router | leave it out        |
+
+Both work, because the highlight keys on the **attribute** and not on who set
+it: whoever renders the anchor writes `aria-current` last and wins. Injecting
+`NavLink` also appends React Router's own `active` class to ours, which is
+harmless — nothing here styles it.
+
+One consequence worth knowing: `Link` is **one** port, shared with `CardTitle`.
+Point it at `NavLink` and a card whose title links to the page you are on gets
+marked current too. Correct, if unexpected — and if you want it only in the
+navigation, inject the plain `Link` and wire `useIsCurrent`.
+
+By router:
+
+| Router                       | The adapter                                         | `useIsCurrent`                                                                                                 |
+| ---------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **React Router** / **Remix** | `({href, ...r}) => <RouterLink to={href} {...r} />` | `(href) => pathIsCurrent(useLocation().pathname, href)`                                                        |
+| **TanStack Router**          | `({href, ...r}) => <Link to={href} {...r} />`       | nothing — `activeProps` resolves from typed `to`/`params`/`search`                                             |
+| **Next**, App Router         | `Link` directly — it already takes `href`           | `(href) => pathIsCurrent(usePathname(), href)`                                                                 |
+| **Next**, Pages Router       | `Link` directly                                     | `(href) => pathIsCurrent(useRouter().asPath, href)` — `asPath` carries the query, which `pathIsCurrent` strips |
 
 `pathIsCurrent` is exported for exactly this: it is not the seam, it is what you
 plug into it, so that every app with a plain string path does not write the same
@@ -115,7 +142,34 @@ router has already resolved, and give the links `href`s in that same space.
 An explicit `current` on a single link beats all of it — it is the only one that
 can know what matching cannot.
 
-`as` is the exception rather than the seam: a destination that must **not** go through the router — another site, a download, a `mailto:` — takes `as="a"` and gets the anchor back.
+### Links that leave the app
+
+You do not mark these. An `href` that already says it goes elsewhere — a scheme
+(`https:`, `mailto:`, `tel:`, `blob:`) or a protocol-relative `//host/path` —
+renders a plain `<a>`, skips the router, and is never offered to `useIsCurrent`.
+
+```tsx
+<NavLink href="/docs">Docs</NavLink>                 {/* your router */}
+<NavLink href="https://example.com">Site</NavLink>   {/* plain anchor */}
+<NavLink href="mailto:hi@example.com">Write</NavLink> {/* plain anchor */}
+```
+
+The test is what the URL **says**, never where it lands: nothing here reads
+`window.location.origin`, because this module renders on the server too and a
+link that resolved one way in the server HTML and another after hydration is the
+worst kind of difference — it looks right until the first click.
+
+Which means an absolute URL to your **own** site reads as external. That is the
+safe default rather than an oversight, and `as` is how you say otherwise:
+
+```tsx
+<NavLink href="https://my.app/docs" as={Link}>
+  Mine
+</NavLink>
+```
+
+So `as` is no longer the defence — it is the override, in both directions: force
+the router back on, or render something else entirely.
 
 A link is also the control the browser already does perfectly — middle-click, open in a new tab, long-press, the status bar showing the destination. `NavLink` adds no handler that would take any of that away.
 

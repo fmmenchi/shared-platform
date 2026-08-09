@@ -9,6 +9,7 @@ import { renderUi } from '../../test/render.js';
 import { UiProvider } from '../../i18n/provider.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 import { pathIsCurrent } from '../../primitives/path-is-current.js';
+import type { UseIsCurrent } from '../../i18n/ports.types.js';
 
 /**
  * Fragment hrefs throughout: a real path navigates the test iframe away and the
@@ -405,7 +406,7 @@ describe('Nav', () => {
       <UiProvider adapters={{ i18n: { locale: 'en' }, Link: RouterLink }}>
         <Nav label="Main">
           <NavLink href="#tea">Tea</NavLink>
-          <NavLink href="https://example.com" as="a">
+          <NavLink href="/pricing" as="a">
             Elsewhere
           </NavLink>
         </Nav>
@@ -415,8 +416,10 @@ describe('Nav', () => {
     // The adapter the design system already declared, put to work: injected
     // once, and no call site repeats it.
     expect(link('Tea')).toHaveAttribute('data-router');
-    // …and `as` is the exception, for a destination that must not go through
-    // the router at all.
+    // …and `as` is the exception, for the one link that must not go through
+    // the router. An INTERNAL href on purpose: an external one now opts itself
+    // out, so writing the assertion with `https://` would have passed with
+    // `as` deleted.
     expect(link('Elsewhere')).not.toHaveAttribute('data-router');
   });
 
@@ -607,5 +610,110 @@ describe('which link the reader is on', () => {
     for (const name of ['Settings', 'Profile', 'Pricing']) {
       expect(screen.getByText(name)).not.toHaveAttribute('aria-current');
     }
+  });
+});
+
+// The other half of "which element renders": not which router, but whether a
+// router at all.
+describe('links that leave the app', () => {
+  const RouterLink = (p: {
+    href: string;
+    className?: string;
+    children?: React.ReactNode;
+  }) => (
+    <a href={p.href} className={p.className} data-router="">
+      {p.children}
+    </a>
+  );
+
+  const withRouter = (ui: React.ReactNode, useIsCurrent?: UseIsCurrent) =>
+    render(
+      <UiProvider
+        adapters={{ i18n: { locale: 'en' }, Link: RouterLink, useIsCurrent }}
+      >
+        <Nav label="Main">{ui}</Nav>
+      </UiProvider>,
+    );
+
+  it('renders a plain anchor for an href that says it leaves, unasked', () => {
+    withRouter(
+      <>
+        <NavLink href="/docs">Docs</NavLink>
+        <NavLink href="https://example.com">Site</NavLink>
+        <NavLink href="mailto:hi@example.com">Write</NavLink>
+        <NavLink href="//cdn.example.com/x.pdf">Asset</NavLink>
+      </>,
+    );
+    // `as="a"` was the only defence before this, which means forgetting it
+    // handed another site's URL to a client-side router — a link that looks
+    // right, and does nothing, or worse routes to a 404 of your own.
+    expect(link('Docs')).toHaveAttribute('data-router');
+    for (const name of ['Site', 'Write', 'Asset']) {
+      expect(link(name), name).not.toHaveAttribute('data-router');
+      expect(link(name), name).toHaveAttribute('href');
+    }
+  });
+
+  it('still lets `as` force the router back on', () => {
+    // The case the href cannot express: an absolute URL to your OWN origin.
+    // Writing the origin out reads as external and that is the safe default,
+    // so the override has to work in this direction too.
+    withRouter(
+      <NavLink href="https://my.app/docs" as={RouterLink}>
+        Mine
+      </NavLink>,
+    );
+    expect(link('Mine')).toHaveAttribute('data-router');
+  });
+
+  it('does not ask the app whether another site is the current page', () => {
+    const useIsCurrent = vi.fn(() => undefined);
+    withRouter(
+      <>
+        <NavLink href="/docs">Docs</NavLink>
+        <NavLink href="https://example.com">Site</NavLink>
+      </>,
+      useIsCurrent,
+    );
+    const asked = useIsCurrent.mock.calls.flat();
+    expect(asked).toContain('/docs');
+    // An external URL can never be where the reader is, and asking sends it
+    // into a matcher written for this app's own paths.
+    expect(asked).not.toContain('https://example.com');
+  });
+
+  it('paints whoever set aria-current, including the router itself', () => {
+    // The plug-and-play half. React Router's own `NavLink` marks itself and
+    // TanStack has `activeProps`, so with those the attribute arrives from the
+    // injected element, not from us — the highlight keys on the ATTRIBUTE for
+    // exactly that reason. Written with a self-marking link, so a rule keyed
+    // on our own class instead would fail here.
+    const SelfMarking = (p: {
+      href: string;
+      className?: string;
+      children?: React.ReactNode;
+    }) => (
+      <a href={p.href} className={p.className} aria-current="page">
+        {p.children}
+      </a>
+    );
+    render(
+      <UiProvider adapters={{ i18n: { locale: 'en' }, Link: SelfMarking }}>
+        <Nav label="Main">
+          <NavLink href="/here">Here</NavLink>
+        </Nav>
+      </UiProvider>,
+    );
+    const plain = render(
+      <Nav label="Main">
+        <NavLink href="/there">There</NavLink>
+      </Nav>,
+    );
+    void plain;
+    const here = getComputedStyle(link('Here'));
+    const there = getComputedStyle(link('There'));
+    expect(link('Here')).toHaveAttribute('aria-current', 'page');
+    expect(here.backgroundColor).not.toBe(there.backgroundColor);
+    expect(here.fontWeight).not.toBe(there.fontWeight);
   });
 });

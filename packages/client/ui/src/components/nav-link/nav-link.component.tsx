@@ -2,6 +2,7 @@ import type { ElementType } from 'react';
 import { cn } from '../../util/cn.js';
 import { useUiAdapters } from '../../i18n/provider.js';
 import { useInjectedCurrent } from './nav-link.current.js';
+import { isExternalHref } from '../../primitives/is-external-href.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -28,14 +29,23 @@ function NavLink(props: NavLinkProps) {
    * tolerantly, so a `NavLink` outside a provider is still a plain anchor.
    */
   const injected = useUiAdapters()?.Link;
+  // A destination that LEAVES the app never goes through the router, and the
+  // component decides that rather than asking the caller to remember: `as="a"`
+  // was the only defence, so forgetting it handed `https://…` or a `mailto:` to
+  // a client-side router. It is the same call this component already makes —
+  // which element renders — applied to the one case where the answer is in the
+  // href itself.
+  const external = isExternalHref(rest.href);
   // THREE levels, most specific first. An explicit `current` wins, because it
   // is the only one that can know what matching cannot. Then the adapter, if
   // the app gave one. Outside the chain entirely: an injected `Link` that marks
   // ITSELF — React Router's `NavLink`, TanStack's `activeProps` — since it
   // renders the element and its own attribute lands last.
-  const fromAdapter = useInjectedCurrent(rest.href);
+  // Not asked for an external href: it can never be where the reader is, and
+  // asking sends another site's URL into the app's own matcher.
+  const fromAdapter = useInjectedCurrent(external ? undefined : rest.href);
   const active = current ?? fromAdapter;
-  const Component = (as ?? injected ?? 'a') as ElementType;
+  const Component = (as ?? (external ? 'a' : injected) ?? 'a') as ElementType;
 
   return (
     <li className={styles.item}>
