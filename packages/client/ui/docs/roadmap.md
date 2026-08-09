@@ -19,7 +19,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                    |
 | **Buttons**       | `Button` · `Toggle` · `Toolbar` (+ Item, Separator)                                                                                                                       |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
-| **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                           |
+| **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormErrorSummary`                                                                            |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                               |
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                           |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                                        |

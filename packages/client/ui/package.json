@@ -454,6 +454,12 @@
       "types": "./dist/components/switch/index.d.ts",
       "import": "./dist/switch.js",
       "default": "./dist/switch.js"
+    },
+    "./form-switch": {
+      "@fmmenchi/source": "./src/components/form-switch/index.ts",
+      "types": "./dist/components/form-switch/index.d.ts",
+      "import": "./dist/form-switch.js",
+      "default": "./dist/form-switch.js"
     }
   },
   "nx": {

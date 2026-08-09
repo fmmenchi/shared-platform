@@ -85,6 +85,8 @@ export { FormSelect } from './components/form-select/form-select.component.js';
 export type { FormSelectProps } from './components/form-select/form-select.types.js';
 export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
+export { FormSwitch } from './components/form-switch/form-switch.component.js';
+export type { FormSwitchProps } from './components/form-switch/form-switch.types.js';
 export type {
   UseFormField,
   UseFormErrors,

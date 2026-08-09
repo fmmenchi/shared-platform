@@ -2,6 +2,7 @@ import { FormInput } from '../components/form-input/form-input.component.js';
 import { FormChoice } from '../components/form-choice/form-choice.component.js';
 import { FormTextarea } from '../components/form-textarea/form-textarea.component.js';
 import { FormSelect } from '../components/form-select/form-select.component.js';
+import { FormSwitch } from '../components/form-switch/form-switch.component.js';
 import type { BoundFields } from './bound-fields.types.js';
 
 /**
@@ -35,5 +36,5 @@ import type { BoundFields } from './bound-fields.types.js';
 export function createBoundFields<
   Name extends string = string,
 >(): BoundFields<Name> {
-  return { FormInput, FormChoice, FormTextarea, FormSelect };
+  return { FormInput, FormChoice, FormTextarea, FormSelect, FormSwitch };
 }
