@@ -13,14 +13,31 @@
 #          statement: "Vulnerable code path not reached in our usage."
 #          expired_at: 2026-12-31
 #
-# The 5.x line is fixed via the pnpm-workspace.yaml override (>=5.0.8); the entry below covers
-# only the 1.x/2.x instances, which have no upstream patch.
 vulnerabilities:
   - id: CVE-2026-14257
     # brace-expansion DoS (unbounded expansion). Fixed only in 5.0.8 — no patch exists for the
     # 1.x/2.x lines, and forcing them to 5.x breaks the CJS `require('brace-expansion')()` call
     # (5.x is ESM-only). The 1.1.16 instances are transitive, reached only by build-time tooling
     # (minimatch/glob) on our own trusted patterns — never runtime input. The fixable 5.x line is
-    # bumped to >=5.0.8 in pnpm-workspace.yaml; this suppresses only the unfixable older lines.
+    # bumped to >=5.0.9 in pnpm-workspace.yaml; this suppresses only the unfixable older lines.
     statement: 'No patch for brace-expansion 1.x/2.x; build-time-only, trusted input; 5.x is fixed via override.'
+    expired_at: 2026-12-31
+
+  # image-size 2.0.2 — DoS via a crafted image (71329) and a crafted ICNS (71330). Trivy
+  # reports both as `affected`: there is no fixed version upstream at any version, so an
+  # override has nothing to point at.
+  #
+  # WHAT REACHES IT. One resolved line, pulled only by `@docusaurus/mdx-loader`, which reads
+  # image dimensions while BUILDING the internal docs site. The images it measures are the ones
+  # committed to this repository; nothing user-supplied, nothing at runtime, and `@fmmenchi/docs`
+  # is `scope:app` and never published. A denial of service against a build that only ever reads
+  # our own files is a build we broke ourselves.
+  #
+  # WHAT RETIRES THIS: an upstream image-size release that fixes either CVE, or Docusaurus
+  # moving off it. Re-checked when the date below expires, whichever comes first.
+  - id: CVE-2025-71329
+    statement: 'No upstream fix for image-size at any version; build-time only, and the only images it reads are this repository’s own.'
+    expired_at: 2026-12-31
+  - id: CVE-2025-71330
+    statement: 'No upstream fix for image-size at any version; build-time only, and the only images it reads are this repository’s own.'
     expired_at: 2026-12-31
