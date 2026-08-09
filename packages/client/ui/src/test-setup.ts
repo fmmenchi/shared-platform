@@ -1,5 +1,7 @@
 import { expect } from 'vitest';
+import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
+
 // Load the token values so components render with real ones (contrast, radius…),
 // plus the dark preset so `[data-theme='dark']` resolves in a11y/contrast tests.
 //
@@ -13,6 +15,21 @@ import '@testing-library/jest-dom/vitest';
 // are all `vars.css` ever provided; the reset was the accident. (ADR-0022.)
 import '@fmmenchi/tokens/styles/vars.css';
 import '@fmmenchi/tokens/styles/presets/dark.css';
+
+/*
+ * `waitFor` AND `findBy*` GET A REAL BUDGET.
+ *
+ * Testing Library's default is 1s, which is generous in jsdom and thin in a
+ * browser: every query here crosses into a real Chromium, four instances run in
+ * parallel, and under the full gate they share the machine with a Storybook
+ * build. A `waitFor` that gives up at 1s there is not reporting a broken
+ * component, it is reporting a busy CPU.
+ *
+ * It costs nothing when things are working — `waitFor` returns on the first
+ * poll that succeeds, so a longer ceiling only changes how long a genuine
+ * failure takes to be reported.
+ */
+configure({ asyncUtilTimeout: 5_000 });
 
 /**
  * Mask React's generated ids in snapshots.

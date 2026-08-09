@@ -161,6 +161,25 @@ export default defineConfig(() => ({
     },
   },
   test: {
+    /*
+     * A BROWSER ASSERTION IS NOT A jsdom ASSERTION, and the defaults are sized
+     * for the second. Vitest allows a test 5s and Testing Library allows a
+     * `waitFor` 1s; here every interaction is a round trip to a real Chromium
+     * over CDP, four of them run at once, and the full gate has fifteen other
+     * Nx targets on the machine — a Storybook build among them.
+     *
+     * Measured rather than assumed: with the defaults, three consecutive full
+     * gates failed on five different files, none of them twice, and Playwright
+     * reported `locator.click: Timeout -24ms exceeded` — a NEGATIVE budget,
+     * which is what a test being starved rather than wrong looks like.
+     *
+     * This is sizing the budget, not hiding a race. The tests that were racy BY
+     * CONSTRUCTION — sleeping a real interval to sit inside a timing window —
+     * are fixed where they are, because no timeout can rescue those.
+     */
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
+
     // TWO projects, not one. The first is the suite as it was — the hand-written
     // component and logic tests. The second runs every STORY as a test, which is
     // what `@storybook/addon-vitest` adds: one run backs both the test widget

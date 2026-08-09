@@ -27,13 +27,14 @@ type Side = 'inline-start' | 'inline-end' | 'block-start' | 'block-end';
  * and no mutation of one can be hidden by the other.
  */
 const drawer = (side: Side, children?: React.ReactNode) => (
-  // The entry transition is measured here, so it is made long enough to BE
-  // measured. At the token's own `xs` the window between "the dialog is open"
-  // and "the slide is over" is a few frames, and under the full gate's load it
-  // closed before the assertion could look — three passes alone, one failure
-  // beside everything else. Slowing it changes nothing about what is asserted;
-  // it only makes the observation reliable.
-  <div style={{ '--fm-duration-xs': '600ms' } as React.CSSProperties}>
+  // The entry transition is measured here, so it is made long enough that it
+  // CANNOT end before the measurement, and then ended on purpose — see
+  // `settle`. Slowing it alone was the previous attempt and it only moved the
+  // odds: at 600ms the suite still failed under the full gate, because the gap
+  // between the click resolving and the first poll is not bounded by anything.
+  // Nothing here ever waits 5s; the transition is finished by hand the moment
+  // it has been read.
+  <div style={{ '--fm-duration-xs': '5s' } as React.CSSProperties}>
     <button type="button">Before</button>
     <Dialog>
       <DialogTrigger>Menu</DialogTrigger>
@@ -64,30 +65,56 @@ const comesFrom = () => {
   return String(effect?.getKeyframes()[0].translate ?? '').replace(/\s+/g, ' ');
 };
 
+/**
+ * END the transitions rather than wait them out.
+ *
+ * This is the whole fix for a test that was flaky under the full gate and never
+ * alone. Waiting for an animation to finish is waiting on the wall clock, and
+ * the gap between a driven click resolving and the next poll is bounded by
+ * nothing when fifteen other Nx targets are on the machine. `finish()` jumps
+ * every running transition to its end state synchronously, so "arrived" becomes
+ * a fact instead of a race — the same move as the menu's typeahead tests, which
+ * moved the clock instead of sleeping through it.
+ */
+const settle = async () => {
+  const running = surface().getAnimations();
+  for (const animation of running) animation.finish();
+  await Promise.all(running.map((animation) => animation.finished));
+};
+
 const open = async () => {
   await browser.click(screen.getByRole('button', { name: 'Menu' }));
   await waitFor(() => expect(surface().open).toBe(true));
-  // WAIT FOR THE TRANSITION TO EXIST, not merely for the dialog to be open.
-  // `getAnimations()` is empty until the browser has created it, and under the
-  // full gate's load that gap is wide enough to read nothing and call it a
-  // failure — measured, this passed three times alone and failed once beside
-  // everything else. A drawer with no side has no slide to wait for.
-  if (surface().dataset.side) {
-    await waitFor(() => expect(comesFrom()).not.toBe(''));
-  }
-  const from = comesFrom();
-  // ARRIVED, not merely open: it slides, so a rect read on the frame it opens
-  // is a rect of a panel still off the edge it came from.
-  await Promise.all(
-    surface()
-      .getAnimations()
-      .map((a) => a.finished),
-  );
+
+  // ARRIVED, not merely open: it slides, so a rect read while it is still
+  // moving is the rect of a panel off the edge it came from. Nothing here waits
+  // for the slide to EXIST — most of these tests only want the resting box, and
+  // making them wait for a transient was what made the file flaky: one of them
+  // renders its own `Dialog` without the slowed fixture, so it waited on a
+  // transition that had already ended and failed on a machine under load.
+  await settle();
+
   return {
-    from,
     box: surface().getBoundingClientRect(),
     css: getComputedStyle(surface()),
   };
+};
+
+/**
+ * Open, and read where the panel STARTED from.
+ *
+ * Separate from `open` because it is the one thing that needs the transition to
+ * still be running, so it also needs the caller to have slowed it — which only
+ * the `drawer()` fixture does. Asking for the direction is asking for that
+ * contract; asking for the resting box is not.
+ */
+const openFrom = async () => {
+  await browser.click(screen.getByRole('button', { name: 'Menu' }));
+  await waitFor(() => expect(surface().open).toBe(true));
+  await waitFor(() => expect(comesFrom()).not.toBe(''));
+  const from = comesFrom();
+  await settle();
+  return { from, box: surface().getBoundingClientRect() };
 };
 
 const SIDES: Record<Side, { meets: string[]; borders: string; from: string }> =
@@ -155,7 +182,7 @@ describe('a dialog pinned to an edge', () => {
 
       it('comes in from that same edge', async () => {
         render(drawer(side));
-        const { from } = await open();
+        const { from } = await openFrom();
         // The AXIS as well as the direction: reading a custom property proved
         // neither, and a drawer entering from the top passed.
         expect(from).toBe(SIDES[side].from);
@@ -234,7 +261,7 @@ describe('a dialog pinned to an edge', () => {
           {drawer('inline-start')}
         </UiProvider>,
       );
-      const { box, from } = await open();
+      const { box, from } = await openFrom();
       expect(Math.round(box.right)).toBe(window.innerWidth);
       expect(from).toBe('100%');
     });
@@ -249,7 +276,7 @@ describe('a dialog pinned to an edge', () => {
           {drawer('inline-start')}
         </div>,
       );
-      const { box, from } = await open();
+      const { box, from } = await openFrom();
       expect(Math.round(box.right)).toBe(window.innerWidth);
       expect(from).toBe('100%');
     });
@@ -260,7 +287,7 @@ describe('a dialog pinned to an edge', () => {
           <div dir="ltr">{drawer('inline-start')}</div>
         </div>,
       );
-      const { box, from } = await open();
+      const { box, from } = await openFrom();
       expect(Math.round(box.left)).toBe(0);
       expect(from).toBe('-100%');
     });
@@ -324,6 +351,7 @@ describe('a dialog pinned to an edge', () => {
     }
 
     await browser.keyboard('{Escape}');
+    await settle();
     await waitFor(() => expect(surface().open).toBe(false));
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'Menu' }),
@@ -350,6 +378,7 @@ describe('a dialog pinned to an edge', () => {
     // only one of the three exits that exists: there is no `Escape` key, and
     // the backdrop depends on `closedby`, which a consumer may switch off.
     await browser.click(screen.getByRole('button', { name: 'Close' }));
+    await settle();
     await waitFor(() => expect(surface().open).toBe(false));
   });
 
