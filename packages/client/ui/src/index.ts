@@ -16,6 +16,10 @@ export type {
 } from './components/button/button.types.js';
 export { Toggle } from './components/toggle/toggle.component.js';
 export type { ToggleProps } from './components/toggle/toggle.types.js';
+export { ToggleGroup } from './components/toggle-group/toggle-group.component.js';
+export type { ToggleGroupProps } from './components/toggle-group/toggle-group.types.js';
+export { ToggleGroupItem } from './components/toggle-group-item/toggle-group-item.component.js';
+export type { ToggleGroupItemProps } from './components/toggle-group-item/toggle-group-item.types.js';
 export {
   UI_SUPPORTED_LOCALES,
   UI_FALLBACK_LOCALE,
@@ -87,6 +91,8 @@ export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
 export { FormSwitch } from './components/form-switch/form-switch.component.js';
 export type { FormSwitchProps } from './components/form-switch/form-switch.types.js';
+export { FormToggleGroup } from './components/form-toggle-group/form-toggle-group.component.js';
+export type { FormToggleGroupProps } from './components/form-toggle-group/form-toggle-group.types.js';
 export type {
   UseFormField,
   UseFormErrors,

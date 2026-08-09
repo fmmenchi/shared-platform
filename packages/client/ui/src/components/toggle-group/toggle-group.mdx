@@ -1,0 +1,85 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ToggleGroupStories from './toggle-group.stories.tsx';
+
+<Meta of={ToggleGroupStories} />
+
+# ToggleGroup
+
+**One** of a small set of options, drawn as a row of buttons — text alignment, a date range, a view switcher. It is a **radio group** in the accessibility tree and in the form, so the arrow keys, the single tab stop, the submitted value and `form.reset()` are the platform's rather than ours.
+
+**Not a row of `Toggle`s.** For "several of these, independently", that is a `Toolbar` of `Toggle`s and it already works — see [Which one?](#which-one) below.
+
+## Anatomy
+
+```tsx
+<ToggleGroup label="Text alignment" name="align" defaultValue="left">
+  <ToggleGroupItem value="left">Left</ToggleGroupItem>
+  <ToggleGroupItem value="center">Center</ToggleGroupItem>
+  <ToggleGroupItem value="right">Right</ToggleGroupItem>
+</ToggleGroup>
+```
+
+`ToggleGroupItem` is a native `<input type="radio">` with the button drawn on its own `<label>`. It takes `value` and every other native input attribute — `disabled`, `data-*`, `ref` — except the five the group owns: `type`, `role`, `name`, `checked` and `defaultChecked`. An item able to set its own `checked` could disagree with its siblings, which is the state a radio group exists to make unspeakable.
+
+## Props
+
+<Controls of={ToggleGroupStories.Default} />
+
+## Usage
+
+### One of a set
+
+The arrows move **and** select, and the set holds one tab stop.
+
+<Canvas of={ToggleGroupStories.Default} />
+
+### Controlled
+
+Pass `value` and the prop is the truth; `onValueChange` reports what the user picked.
+
+<Canvas of={ToggleGroupStories.Controlled} />
+
+### In a form
+
+It is a field: the choice submits under `name`, and **Reset** puts the set back.
+
+<Canvas of={ToggleGroupStories.InAForm} />
+
+### An unavailable option
+
+<Canvas of={ToggleGroupStories.WithADisabledOption} />
+
+### Right to left
+
+<Canvas of={ToggleGroupStories.RightToLeft} />
+
+### `name` must be unique on the page
+
+The options pair by their shared `name`, and that is the platform's rule rather than this component's: two `ToggleGroup`s given the same `name` become **one** radio group, with a single selection between them and arrows that walk from one set into the other. Nothing can warn about it from inside a group, because a group cannot see its neighbours.
+
+## Accessibility
+
+- **It is announced as a radio group** — "Text alignment, radio group, Center, 2 of 3" — when it names itself with `label`. Wrapped in something that already names it (a `Fieldset` with a legend, which is what `FormToggleGroup` does), leave `label` out: the `role` goes with the name, so the set is announced once instead of twice.
+- **The keyboard is the platform's.** `Tab` reaches the set once and lands on the selected option; the arrows walk it, wrap at the ends, and selecting is what walking does. Nothing here implements a key.
+- **The focus ring is on the segment**, not on the hidden input: the label is what the eye follows, so `:has(:focus-visible)` draws the ring there. The input is hidden from sight and from nothing else — it keeps its place in the tab order, the accessibility tree and the form.
+- **Windows High Contrast is handled.** The token fill on the chosen segment collapses there, so it is restated with the system's own `Highlight`/`HighlightText`.
+- **44px under a coarse pointer**, like every other control this package draws.
+
+## Guidelines
+
+### Which one?
+
+| You are asking                                              | Reach for            |
+| ----------------------------------------------------------- | -------------------- |
+| "**exactly one** of these" — alignment, a range, a view     | `ToggleGroup`        |
+| "**any of** these, independently" — bold, italic, underline | `Toolbar` + `Toggle` |
+| "one of these" as a **list**, not a row of buttons          | `Fieldset` + `Radio` |
+
+The first two differ in the accessibility tree and not in the CSS: a `Toggle` says a button is on, and nothing about it says its neighbours are therefore off. That is why "one of many drawn as buttons" is a radio group here and not a group of toggles — the decision is recorded in [ADR-0025](../../../../../apps/docusaurus/docs/adr/0025-one-of-many-is-a-radio-group.md), which closes the question [ADR-0024](../../../../../apps/docusaurus/docs/adr/0024-toggle-switch-checkbox-boundary.md) deliberately left open.
+
+The third is the same semantics with a different shape. Use `ToggleGroup` when the options are few, short and mutually comparable — three alignments, four ranges. Once they need a sentence each, or there are more than about five, a list of radios reads better and wraps properly.
+
+### It is not a tab list
+
+A set of segments that swaps the panel below it is `Tabs`. The difference is what the choice does: a tab list navigates the page, a radio group answers a question — and the two are announced, and keyboarded, differently.

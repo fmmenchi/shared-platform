@@ -460,6 +460,24 @@
       "types": "./dist/components/form-switch/index.d.ts",
       "import": "./dist/form-switch.js",
       "default": "./dist/form-switch.js"
+    },
+    "./toggle-group": {
+      "@fmmenchi/source": "./src/components/toggle-group/index.ts",
+      "types": "./dist/components/toggle-group/index.d.ts",
+      "import": "./dist/toggle-group.js",
+      "default": "./dist/toggle-group.js"
+    },
+    "./toggle-group-item": {
+      "@fmmenchi/source": "./src/components/toggle-group-item/index.ts",
+      "types": "./dist/components/toggle-group-item/index.d.ts",
+      "import": "./dist/toggle-group-item.js",
+      "default": "./dist/toggle-group-item.js"
+    },
+    "./form-toggle-group": {
+      "@fmmenchi/source": "./src/components/form-toggle-group/index.ts",
+      "types": "./dist/components/form-toggle-group/index.d.ts",
+      "import": "./dist/form-toggle-group.js",
+      "default": "./dist/form-toggle-group.js"
     }
   },
   "nx": {

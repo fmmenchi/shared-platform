@@ -82,6 +82,9 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'form-toggle-group': 'src/components/form-toggle-group/index.ts',
+        'toggle-group-item': 'src/components/toggle-group-item/index.ts',
+        'toggle-group': 'src/components/toggle-group/index.ts',
         'toast-region': 'src/components/toast-region/index.ts',
         toast: 'src/components/toast/index.ts',
         'form-switch': 'src/components/form-switch/index.ts',
