@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { useMessages } from '../../i18n/provider.js';
 import { Toast } from '../toast/toast.component.js';
@@ -34,19 +34,36 @@ import styles from './toast-region.module.css';
  * politely, at the next pause, which is what a message the reader did not ask
  * for deserves.
  *
- * IT HOLDS NO ACTIONS, by design rather than by omission. A message that
- * removes itself on a timer and contains a button is a button a keyboard user
- * may never reach: they would have to arrive before it goes. Something that
- * needs doing belongs in an `Alert`, which stays, or a `Dialog`, which asks.
- * The only control here is the way out, and the timer stops the moment the
- * focus or the pointer is inside — so reaching for it never races it.
+ * AND `aria-atomic="false"`, which is not a detail. `role="status"` carries an
+ * implicit `aria-atomic="true"`, so with the whole queue living in the region
+ * the atomic unit was the whole queue: every new message re-read every message
+ * already up, severity words and button names included. Three errors stacked
+ * meant a fourth message announced four. The one attribute makes an insertion
+ * announce the insertion.
+ *
+ * NOTHING RACES THE READER TO A CONTROL. A timed toast carries no dismiss
+ * button and a persistent one is under no clock — see `Toast` for why the
+ * first version's reasoning here was circular.
+ *
+ * IN THE TOP LAYER, via `popover="manual"`, so a message raised while one of
+ * this package's own modal dialogs is open is at least SEEN: `z-index` cannot
+ * reach above a `showModal()` dialog, and the toast painted behind its
+ * backdrop. Measured, and worth stating exactly: this fixes the painting and
+ * NOT the interaction. Everything outside a modal dialog is inert, top layer or
+ * not, so the toast cannot be focused or announced until the dialog closes. A
+ * message that matters during a dialog belongs in the dialog.
  */
 function ToastRegion(props: ToastRegionProps) {
   const {
     placement = 'block-end',
+    max = 5,
     className,
     children,
     'aria-label': label,
+    onPointerEnter,
+    onPointerLeave,
+    onFocusCapture,
+    onBlurCapture,
     ...rest
   } = props;
   const t = useMessages(toastMessages);
@@ -55,6 +72,7 @@ function ToastRegion(props: ToastRegionProps) {
   const [paused, setPaused] = useState(false);
   const seq = useRef(0);
   const base = useId();
+  const region = useRef<HTMLDivElement | null>(null);
 
   const dismiss = useCallback((id?: string) => {
     setToasts((current) =>
@@ -70,11 +88,43 @@ function ToastRegion(props: ToastRegionProps) {
       // between the server's render and the client's.
       seq.current += 1;
       const id = `${base}-${seq.current}`;
-      setToasts((current) => [...current, { ...options, id }]);
+      // NEWEST FIRST, in the DOM as well as on screen. The first version
+      // appended and reversed the column in CSS, so the visual order ran
+      // newest-to-oldest while Tab ran oldest-to-newest — the focus ring
+      // entering at the bottom and travelling against the reading direction
+      // (WCAG 1.3.2, 2.4.3). One array order, one visual order, no `reverse`.
+      setToasts((current) => [{ ...options, id }, ...current].slice(0, max));
       return id;
     },
-    [base],
+    [base, max],
   );
+
+  /*
+   * THE PAUSE IS RE-DERIVED after every change to the queue, and that is a
+   * repair rather than a nicety. It used to be latched by events alone — and
+   * when the element holding the focus is REMOVED, the browser dispatches no
+   * `focusout`: it moves focus to `<body>` in silence. Which is exactly what
+   * the dismiss button does to itself. So pressing Enter on it left `paused`
+   * true for ever, and no toast auto-dismissed again for the rest of the
+   * session. A keyboard user never recovers; a mouse user is healed by the
+   * next hover, which is why this was invisible.
+   */
+  useEffect(() => {
+    const element = region.current;
+    if (!element || toasts.length === 0) {
+      setPaused(false);
+      return;
+    }
+    setPaused(
+      element.contains(document.activeElement) || element.matches(':hover'),
+    );
+  }, [toasts]);
+
+  // THE TOP LAYER, once. `popover="manual"` never light-dismisses, so this is
+  // the only call it needs.
+  useEffect(() => {
+    region.current?.showPopover();
+  }, []);
 
   const value: ToastContextValue = { toast, dismiss, toasts };
 
@@ -83,16 +133,31 @@ function ToastRegion(props: ToastRegionProps) {
       {children}
       <div
         {...rest}
+        ref={region}
         // ALWAYS RENDERED, empty or not — see above.
         role="status"
+        aria-atomic="false"
         aria-label={label ?? t('region')}
+        popover="manual"
         data-placement={placement}
         // The pause is the region's, not each toast's: a pointer resting on one
         // toast should not let the one under it vanish from beneath the cursor.
-        onPointerEnter={() => setPaused(true)}
-        onPointerLeave={() => setPaused(false)}
-        onFocusCapture={() => setPaused(true)}
+        // A caller's own handler runs too, rather than being silently dropped
+        // by the spread above.
+        onPointerEnter={(event) => {
+          onPointerEnter?.(event);
+          setPaused(true);
+        }}
+        onPointerLeave={(event) => {
+          onPointerLeave?.(event);
+          setPaused(false);
+        }}
+        onFocusCapture={(event) => {
+          onFocusCapture?.(event);
+          setPaused(true);
+        }}
         onBlurCapture={(event) => {
+          onBlurCapture?.(event);
           if (!event.currentTarget.contains(event.relatedTarget)) {
             setPaused(false);
           }

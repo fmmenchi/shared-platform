@@ -39,6 +39,23 @@
     color: inherit;
   }
 
+  /* NO FILL ON HOVER. `ghost` paints `bg-muted`, which is a page-neutral laid
+     on a status tint: a pairing `CONTRAST_PAIRS` does not declare, so nothing
+     would validate it in a brand theme — and it looks wrong on a coloured
+     alert besides. The focus ring and the cursor carry the affordance; the ring
+     against each tint IS declared, in `validate.ts`. */
+  .dismiss button:hover,
+  .dismiss button:active {
+    background: none;
+  }
+
+  /* ROOM FOR IT. The button is absolutely positioned and the alert's own
+     padding does not know that, so a title reaching the inline end rendered
+     UNDER the ✕ — at 320px, at 200% zoom, or with 1.4.12 text spacing. */
+  .body {
+    padding-inline-end: var(--fm-space-inset-l);
+  }
+
   @media (forced-colors: active) {
     /* The shadow is DISCARDED, and the shadow was the only thing saying this
        message sits over the page rather than in it. Without an edge a toast

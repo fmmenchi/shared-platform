@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ToastRegion } from '../toast-region/toast-region.component.js';
 import { useToast } from '../toast-region/toast-region.context.js';
 import { Button } from '../button/button.component.js';
-import { Toast } from './toast.component.js';
 
 const meta: Meta<typeof ToastRegion> = {
   title: 'Components/Feedback/Toast',
@@ -23,10 +22,12 @@ const Raise = () => {
             variant: 'success',
             title: 'Saved',
             children: 'Your changes are live.',
+            // TIMED, so it carries no way out — there is nothing to reach.
+            duration: 6000,
           })
         }
       >
-        Save
+        Save (timed)
       </Button>
       <Button
         variant="secondary"
@@ -38,7 +39,7 @@ const Raise = () => {
           })
         }
       >
-        Export
+        Export (stays)
       </Button>
       <Button
         variant="destructive"
@@ -57,11 +58,15 @@ const Raise = () => {
 };
 
 /**
- * Raise a few. They stack, the newest nearest the edge, and each takes itself
- * away — except the error, which stays: something went wrong is not a thing to
- * skim.
+ * Raise a few. They stack **newest first**, and a message stays until it is
+ * dismissed unless it was given a `duration`.
  *
- * Put the pointer over the stack, or tab into it, and the clock stops.
+ * Note which ones have a ✕: only the ones that stay. A message that leaves on
+ * its own offers no control, because six seconds is not enough to reach one —
+ * the region renders after the whole app, so its controls are last in the tab
+ * order.
+ *
+ * Put the pointer over a timed one and its clock stops while you read it.
  */
 export const Default: Story = {
   render: (args) => (
@@ -78,26 +83,5 @@ export const TopEdge: Story = {
     <ToastRegion {...args}>
       <Raise />
     </ToastRegion>
-  ),
-};
-
-/**
- * The message itself, out of the queue — for reading the anatomy. In a product
- * this is never rendered by hand: `useToast().toast()` puts it in the region.
- */
-export const OneMessage: StoryObj<typeof Toast> = {
-  render: () => (
-    <div style={{ padding: '2rem', maxInlineSize: '24rem' }}>
-      <Toast
-        id="example"
-        variant="success"
-        title="Saved"
-        duration={0}
-        paused
-        onDismiss={() => undefined}
-      >
-        Your changes are live.
-      </Toast>
-    </div>
   ),
 };

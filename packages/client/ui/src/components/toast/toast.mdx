@@ -24,11 +24,11 @@ toast?.({
 
 ## Anatomy
 
-| part          | what it is                                                   |
-| ------------- | ------------------------------------------------------------ |
-| `ToastRegion` | the queue, and the live region the messages are announced in |
-| `useToast`    | `toast()` to raise one, `dismiss()` to take it back          |
-| `Toast`       | one message — an `Alert` that leaves on its own              |
+| part          | what it is                                                     |
+| ------------- | -------------------------------------------------------------- |
+| `ToastRegion` | the queue, and the live region the messages are announced in   |
+| `useToast`    | `toast()` to raise one, `dismiss()` to take it back            |
+| `Toast`       | one message — an `Alert`. A part: not exported, not used alone |
 
 ## Props
 
@@ -50,17 +50,34 @@ For the same reason each `Toast` passes `live="off"` to the `Alert` it is made o
 
 It is `role="status"`, not `alert`: a toast is not an interruption. An error still gets there, and `Alert`'s visually-hidden severity word says which it is, but it says so at the next pause — which is what a message the reader did not ask for deserves.
 
-### It carries no actions, and that is the design
+### Nothing races you to a control
 
-A message that removes itself on a timer and contains a button is a button a keyboard user may never reach: they would have to arrive before it goes. Something that needs doing belongs in an `Alert`, which stays, or a `Dialog`, which asks.
+The first version of this component gave every toast a ✕ and argued that nothing in it could be unreachable by keyboard, because it held no actions. That was circular, and a review said so: **the ✕ is the action**. The region renders after the whole app, so its controls are the last focusable things in the document — six seconds is not enough to Tab past thirty fields, and a screen reader in browse mode never gets there at all.
 
-The only control is the way out, and the clock stops the moment the pointer or the focus is inside the region — so reaching for it never races it.
+So the two cases are split, and the rule is one line:
 
-### The clock is a time limit, so it can be stopped
+- **a toast that stays has a ✕** — nothing is racing you to it;
+- **a toast with a `duration` has none** — there is no control to reach.
 
-Auto-dismissal is a WCAG 2.2.1 time limit. The pause is on the **region**, not on each toast: a pointer resting on one message must not let the one beneath it vanish from under the cursor.
+### Staying is the default, and a `duration` is a promise
 
-An error defaults to `duration: 0` — it stays until dismissed. Everything else defaults to six seconds, and any caller can say otherwise.
+Auto-dismissal is a **WCAG 2.2.1 time limit**, and pausing on hover does not satisfy that criterion: it asks for the limit to be turned off, adjusted to ten times, or extended after a warning. A toast can offer none of those, and on a touch screen there is no hover to rest in at all.
+
+What makes a timed message acceptable is that its content is **redundant** — available somewhere the reader can go back to. So the default imposes no limit, and passing a `duration` is a caller saying the message is not the only copy of itself.
+
+The pause on hover remains, because reading is not the same as dismissing, and it is on the **region**: a pointer resting on one message must not let the one beneath it vanish from under the cursor. It **restarts** the clock rather than resuming it — a reader who arrives with 200ms left should not be handed 200ms.
+
+### It stacks newest first, and keeps five
+
+DOM order is the visual order, so Tab follows the eye. The first version appended and reversed the column in CSS, which put the focus ring at the bottom travelling upwards against the reading direction (WCAG 1.3.2).
+
+`max` (default 5) drops the oldest. Nothing auto-dismisses by default, so an unbounded queue was a failing poll building a column that ran off the top of the viewport.
+
+### Over a modal dialog it is seen and not heard
+
+The region is a `popover="manual"`, so it reaches the **top layer** and is painted above one of this package's own `Dialog`s — `z-index` cannot do that, and the toast used to paint behind the backdrop.
+
+That fixes the painting and **not** the interaction, which is worth stating rather than glossing: `showModal()` makes everything outside the dialog inert, top layer or not, so the toast cannot be focused and is not announced until the dialog closes. Measured, not assumed. A message that matters while a dialog is open belongs inside the dialog.
 
 <Canvas of={ToastStories.TopEdge} />
 
@@ -69,9 +86,11 @@ An error defaults to `duration: 0` — it stays until dismissed. Everything else
 ## Accessibility
 
 - **The region exists before the message does**, which is the precondition for any of it being announced.
-- **One live region per message.** The `Alert` inside is `live="off"`; nesting a second one announces it twice or with the wrong politeness.
+- **One live region owns the message.** The `Alert` inside is `live="off"`; a second one around it announces it twice or with the wrong politeness. (Every `Button` renders a persistent empty `role="status"` of its own, for the same reason this region exists — inert here, since it only ever changes when a button starts loading.)
 - **`role="status"`, polite** — an error is conveyed by the severity word, not by interrupting.
 - **The name is the region's.** A page may have other live content, so it takes an `aria-label` (default: "Notifications", localized).
-- **No actions**, so nothing in it can be unreachable by keyboard. The dismiss control stays reachable because the clock stops on focus.
+- **Nothing races you to a control**: a timed toast has no ✕, and one that stays is under no clock.
+- **`aria-atomic="false"`.** `role="status"` implies atomic, and the queue lives in the region — so without it every arrival re-read every message already up, severity words and button names included.
 - **The stack never blocks the page**: the region is always mounted, so it takes `pointer-events: none` and gives it back only on the toasts themselves.
-- **Reduced motion is honoured** — the entry keeps its fade and drops the travel, which is the vestibular trigger.
+- **Reduced motion**: the entry animation is not run at all, so the toast simply appears. (An earlier version of this line claimed it kept the fade and dropped the travel. It does not — the whole animation is behind a `no-preference` gate. The behaviour is the safest of the three; only the sentence was wrong.)
+- **The ✕ is icon-only**, so `Button`'s coarse-pointer rule makes it 44×44 rather than 44 tall and 32 wide.

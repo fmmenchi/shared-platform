@@ -12,6 +12,15 @@ export interface ToastRegionProps extends Omit<
   /** Default `block-end` — the corner a phone's thumb does not cover. */
   placement?: ToastPlacement;
   /**
+   * How many are kept. The oldest goes when the next one arrives.
+   *
+   * Default 5. Unbounded was the first version, and errors default to staying:
+   * a five-second poll failing over a dead network built a column that ran off
+   * the top of the viewport, where the older messages could be neither read,
+   * reached nor dismissed.
+   */
+  max?: number;
+  /**
    * What the region is called. A live region with no name is announced as
    * nothing in particular, and a page may have other live content.
    */

@@ -223,9 +223,7 @@ export { ToolbarItem } from './components/toolbar-item/toolbar-item.component.js
 export type { ToolbarItemProps } from './components/toolbar-item/toolbar-item.types.js';
 export { ToolbarSeparator } from './components/toolbar-separator/toolbar-separator.component.js';
 export type { ToolbarSeparatorProps } from './components/toolbar-separator/toolbar-separator.types.js';
-export { Toast } from './components/toast/toast.component.js';
 export type {
-  ToastProps,
   ToastOptions,
   ToastEntry,
 } from './components/toast/toast.types.js';
