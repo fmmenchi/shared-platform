@@ -766,3 +766,69 @@ describe('links that leave the app', () => {
     expect(here.fontWeight).not.toBe(there.fontWeight);
   });
 });
+
+// The checked alternative to the app-wide augmentation: per call, and verified,
+// because the element is right there.
+describe('a link the app wrote itself', () => {
+  const RouterLink = ({
+    to,
+    params,
+    children,
+    ...rest
+  }: {
+    to: string;
+    params?: Record<string, string>;
+    children?: React.ReactNode;
+  } & Record<string, unknown>) => (
+    // `...rest` is not incidental to the fixture. A slotted child has to
+    // forward what it does not consume, or everything the design system put on
+    // it — the class, `aria-current` — reaches the component and stops there.
+    // Written without it the first time, and `aria-current` vanished silently:
+    // the limitation is `asChild`'s, not this test's.
+    <a
+      href={`${to}${params ? `/${Object.values(params).join('/')}` : ''}`}
+      data-router=""
+      {...rest}
+    >
+      {children}
+    </a>
+  );
+
+  it('wears the design system’s class and marking, keeping its own props', () => {
+    render(
+      <Nav label="Main">
+        <NavLink asChild current="page">
+          <RouterLink to="/orders" params={{ id: '7' }}>
+            Order
+          </RouterLink>
+        </NavLink>
+      </Nav>,
+    );
+    const el = screen.getByRole('link', { name: 'Order' });
+    // Theirs: a route descriptor with params, which no `href` could carry.
+    expect(el).toHaveAttribute('data-router');
+    expect(el).toHaveAttribute('href', '/orders/7');
+    // Ours: the marking a screen reader announces…
+    expect(el).toHaveAttribute('aria-current', 'page');
+    // …and the class, without which the link is unstyled and the highlight
+    // never paints. `cloneElement` alone would have replaced one with the
+    // other rather than keeping both.
+    expect(el.className.split(' ').length).toBeGreaterThan(0);
+    expect(getComputedStyle(el).display).not.toBe('inline');
+    // Still inside the list a screen reader counts.
+    expect(el.closest('li')).toBeTruthy();
+  });
+
+  it('warns rather than crashing when there is no single element to slot', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Nav label="Main">
+        <NavLink asChild>just text</NavLink>
+      </Nav>,
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('Slot:'));
+    // Degraded, not gone: a broken slot must not take the page with it.
+    expect(screen.getByText('just text')).toBeInTheDocument();
+    warn.mockRestore();
+  });
+});

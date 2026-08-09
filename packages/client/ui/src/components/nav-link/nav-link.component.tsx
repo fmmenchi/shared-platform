@@ -3,6 +3,7 @@ import { cn } from '../../util/cn.js';
 import { useUiAdapters } from '../../i18n/provider.js';
 import { useInjectedCurrent } from './nav-link.current.js';
 import { isExternalHref } from '../../primitives/is-external-href.js';
+import { Slot } from '../../primitives/slot.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -16,7 +17,7 @@ import styles from './nav-link.module.css';
  * of that away.
  */
 function NavLink(props: NavLinkProps) {
-  const { as, current, className, children, ...rest } = props;
+  const { as, asChild, current, className, children, ...rest } = props;
 
   /*
    * THE ROUTER COMES FROM THE PROVIDER, not from every call site. `Link` is an
@@ -45,7 +46,13 @@ function NavLink(props: NavLinkProps) {
   // asking sends another site's URL into the app's own matcher.
   const fromAdapter = useInjectedCurrent(external ? undefined : rest.href);
   const active = current ?? fromAdapter;
-  const Component = (as ?? (external ? 'a' : injected) ?? 'a') as ElementType;
+  // `asChild` slots into the SAME position every other choice does, and that
+  // is why it costs one line: whatever renders here is handed `aria-current`,
+  // the class and the rest, and `Slot` differs only in putting them on an
+  // element the app already wrote instead of one of its own.
+  const Component = (
+    asChild ? Slot : (as ?? (external ? 'a' : injected) ?? 'a')
+  ) as ElementType;
 
   return (
     <li className={styles.item}>

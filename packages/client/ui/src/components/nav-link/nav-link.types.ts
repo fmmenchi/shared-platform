@@ -73,6 +73,35 @@ export interface NavLinkProps
    */
   as?: ElementType;
   /**
+   * Render the child you pass as the link, instead of an element of ours.
+   *
+   * ```tsx
+   * <NavLink asChild current="page">
+   *   <RouterLink to="/orders/$id" params={{ id }}>Order</RouterLink>
+   * </NavLink>
+   * ```
+   *
+   * The CHECKED alternative to `NavLinkExtraProps`. The augmentation is
+   * app-wide and convenient and TypeScript cannot verify it against the link
+   * you actually injected; this is per call and verified, because the element
+   * is right there. Use the augmentation for a menu of ordinary destinations
+   * and this for the one entry the adapter cannot express.
+   *
+   * YOUR component must forward what it does not consume. Everything this one
+   * contributes — the class, `aria-current` — arrives as props on the element
+   * you wrote, so a component that destructures the props it knows and drops
+   * the rest silently discards all of it.
+   *
+   * `children` stops being the label and becomes the element containing it.
+   * Exactly one element: anything else renders untouched, with a warning, and
+   * the class and `aria-current` are lost with it.
+   *
+   * The design system reads `href`, so a link described only by a route
+   * descriptor is invisible to `useIsCurrent` and to the external-destination
+   * test. Pass `current` yourself, or let the router's own link mark it.
+   */
+  asChild?: boolean;
+  /**
    * Marks where the reader already is. Rendered as `aria-current`, which is
    * what a screen reader announces — a colour alone says it only to those who
    * can see it (WCAG 1.4.1).

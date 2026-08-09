@@ -70,35 +70,44 @@ Two costs, and they are not small:
 - **selecting text inside the card is awkward**, because the layer takes the drag. A card holding a price, a code or an ID that people copy should not be linked this way — link the title only, with a plain `<a>` of your own;
 - **anything else clickable has to sit above the layer**. `CardActions` does that for you, which is half of why it exists; anything else you put in a linked card needs `position: relative`.
 
-### The destination is an `href`, and only an `href`
+### The destination: an `href`, or the link you wrote yourself
 
-`CardTitle` takes a URL string. It reaches your router through the same `Link`
-adapter `NavLink` uses — injected once on `UiProvider` — so the anchor is your
-router's and navigation is client-side.
+`href` is a URL string, and it reaches your router through the same `Link`
+adapter `NavLink` uses — injected once on `UiProvider`. That covers most cards.
 
-What it does **not** do is forward a router's other props. Everything besides
-`href` and `children` goes to `Heading`, which is what a card title's props are
-for:
+It cannot cover a destination that is not a URL: a typed route with params, a
+link with a handler of its own. For those, hand over the whole element with
+`asChild`:
 
 ```tsx
-const { href, children, ...heading } = props; // …heading, not …link
+<CardTitle level={3} asChild>
+  <RouterLink to="/orders/$id" params={{ id }}>
+    Order #{id}
+  </RouterLink>
+</CardTitle>
 ```
 
-So the `NavLinkExtraProps` augmentation does not apply here: `to`, `params` and
-`search` neither typecheck on `CardTitle` nor arrive at the link. That is the
-decision, not an oversight — a card title is a heading first, and forwarding to
-both would need a second prop namespace (`linkProps`) that costs more clarity
-than the case is worth.
+You write your router's link, with its real props checked by its own types —
+no augmentation, no cast, no generic — and this component puts its class and
+its `data-card-link` hook onto it. **The invisible whole-card layer works
+exactly as it does with `href`**, which is the part you could not reproduce by
+hand: that layer is `.link::after`, a hashed class this component owns and
+nothing outside can name.
 
-If you need a route descriptor, resolve it to a path and pass that as `href`;
-both routers can build one. If you genuinely cannot, render the router's own
-link inside the card and leave `CardTitle`'s `href` off.
+Three things to know:
 
-**Do not reach for `data-card-link` to make your own link behave like this
-one.** That attribute drives the card's hover paint and its `cursor: pointer`,
-but the invisible clickable layer is a hashed class belonging to `CardTitle` and
-cannot be named from outside. Half of it arrives: a card that looks clickable
-across its whole surface and is not.
+- **your component must forward what it does not consume.** The class and the
+  hook arrive as props on the element you wrote; a component that destructures
+  the props it knows and drops the rest discards them, and the card silently
+  stops being clickable;
+- **`children` stops being the title text** and becomes the element containing
+  it — exactly one element, or it renders untouched with a warning;
+- **`asChild` and `href` together is two destinations**, not one described
+  twice. The child wins and it warns.
+
+Outside `asChild`, the design system's other props still belong to `Heading`:
+everything besides `href`, `asChild` and `children` is passed there, which is
+what a card title's props are for.
 
 ### `as` is constrained, like the rest of the package
 

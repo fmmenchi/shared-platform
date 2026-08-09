@@ -1,5 +1,7 @@
 // Internal component-building primitives (not exported from the package).
 export { mergeRefs } from './merge-refs.js';
+export { Slot } from './slot.js';
+export type { SlotProps } from './slot.types.js';
 export { useAnchored } from './use-anchored.js';
 export type { AnchoredOptions } from './use-anchored.types.js';
 export { useDescendants, useDescendant } from './use-descendants.js';

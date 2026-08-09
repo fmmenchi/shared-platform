@@ -197,6 +197,34 @@ you pass it, so `<NavLink as={Link} to="/x" />` needs the same augmentation.
 Making it infer would mean making `NavLink` polymorphic, which is a separate
 decision this package has declined elsewhere.
 
+### One link the adapter cannot express
+
+The augmentation above is app-wide, convenient, and unverifiable: TypeScript
+cannot check what you declared against the `Link` you injected. For the one
+entry that needs more, `asChild` is the checked alternative — the element is
+right there, so its types are its own:
+
+```tsx
+<NavLink asChild current="page">
+  <RouterLink to="/orders/$id" params={{ id }}>
+    Order
+  </RouterLink>
+</NavLink>
+```
+
+Your element renders, wearing this component's class and `aria-current`, still
+inside the `<li>` a screen reader counts.
+
+Your component must forward what it does not consume — the class and the
+marking arrive as props on it, and a component that keeps only the props it
+knows drops them. And since the design system reads `href`, a link described
+only by a route descriptor is invisible to `useIsCurrent` and to the
+external-destination test: pass `current` yourself, or let the router's own
+link mark it.
+
+Use the augmentation for a menu of ordinary destinations, and this for the
+exception. Both, in the same menu, is fine.
+
 ### Links that leave the app
 
 You do not mark these. An `href` that already says it goes elsewhere — a scheme
