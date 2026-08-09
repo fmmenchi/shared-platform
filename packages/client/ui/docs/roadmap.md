@@ -17,19 +17,19 @@ sibling folder of its family and is documented on the family's page, not its own
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Typography**    | `Heading`                                                                                                                                                      |
 | **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                         |
-| **Buttons**       | `Button`                                                                                                                                                       |
+| **Buttons**       | `Button` · `Toolbar` (+ Item, Separator)                                                                                                                       |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                    |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, List, Panel)                                                                                                          |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Media, Actions)                                                                             |
 | **Feedback**      | `Alert`                                                                                                                                                        |
 | **Data display**  | `Badge`                                                                                                                                                        |
 | **Utilities**     | `VisuallyHidden`                                                                                                                                               |
 
-Several groups are one component wide, and thinness alone is not the signal — `Utilities` and
-`Buttons` are complete at one. **Feedback** and **Data display** are the two where a consumer
-predictably has to write their own, and the order below follows from that.
+Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
+complete at one. **Feedback** and **Data display** are the two where a consumer predictably has to
+write their own, and the order below follows from that.
 
 ## How the order is decided
 

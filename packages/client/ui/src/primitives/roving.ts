@@ -75,3 +75,55 @@ export function step<Data>(
 
   return items[(from + direction + count) % count]?.element ?? null;
 }
+
+/**
+ * Which part a key means, given which way the family runs and which way the
+ * page reads. `null` for a key that is none of ours — the caller must then
+ * leave the event completely alone.
+ *
+ * THE LAYER ABOVE THE THREE WALKERS, and it moved here for the same reason they
+ * did. `TabList` and `Toolbar` had it verbatim — the same `{forward, back}`
+ * ternary, the same five-case `switch`, down to the same comments — and this
+ * package's rule is that two consumers is when a policy moves, because a policy
+ * copied N times needs N places to change. The menu's own version is NOT folded
+ * in: `Menubar` carries an open surface along the bar as it walks, which is a
+ * different thing to do with the same answer, and pulling it in here would have
+ * bought one call site at the cost of a parameter nobody else passes.
+ *
+ * The DIRECTION is a parameter rather than a hook call because it must be read
+ * at the keystroke: a page can change direction under a component that is
+ * already mounted, and the answer is only needed at the moment a key arrives.
+ */
+export function arrowTarget<Data>(
+  items: Descendant<Data>[],
+  from: number,
+  key: string,
+  options: { orientation: 'horizontal' | 'vertical'; direction: 'ltr' | 'rtl' },
+): HTMLElement | null {
+  const { forward, back } =
+    options.orientation === 'vertical'
+      ? { forward: 'ArrowDown', back: 'ArrowUp' }
+      : inlineEnd(options.direction);
+
+  // The cases are expressions on purpose: `forward` and `back` are computed
+  // from the orientation and the writing direction, and a `case` compares with
+  // `===` like any other value. The nested ternary this replaced said the same
+  // thing in a shape nobody reads twice.
+  switch (key) {
+    case forward:
+      return step(items, from, 1);
+    case back:
+      return step(items, from, -1);
+    case 'Home':
+      return first(items);
+    case 'End':
+      return last(items);
+    default:
+      return null;
+  }
+}
+
+/** The writing direction in force on an element, at the moment you ask. */
+export function directionOf(element: Element): 'ltr' | 'rtl' {
+  return getComputedStyle(element).direction === 'rtl' ? 'rtl' : 'ltr';
+}

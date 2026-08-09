@@ -1,0 +1,48 @@
+/* The line between two groups of controls, drawn across the bar. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .separator {
+    border: 0;
+    /* The UA gives `<hr>` an inline margin and a `block-size`; both show as a
+       gap at the ends of the line. Reset here rather than relying on a page
+       reset: this CSS ships to apps that run no Preflight (ADR-0002). */
+    margin: 0;
+    block-size: 0;
+    inline-size: 0;
+    /* It is not a control, so the flex line must not stretch it to the height
+       of one and it must not shrink when the bar wraps. */
+    flex: none;
+    align-self: stretch;
+  }
+
+  /* ACROSS a bar that runs across the page: a line running down it. Inset a
+     little at both ends so it reads as a divider between groups rather than a
+     border on the bar itself. */
+  .separator[data-orientation='vertical'] {
+    border-inline-start: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+    margin-inline: var(--fm-space-inline-s);
+    margin-block: var(--fm-space-internal-xs);
+  }
+
+  .separator[data-orientation='horizontal'] {
+    border-block-start: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+    margin-block: var(--fm-space-inline-s);
+    margin-inline: var(--fm-space-internal-xs);
+    align-self: stretch;
+  }
+
+  /* The colour is discarded in forced colours, and a divider that disappears
+     takes the grouping with it. */
+  @media (forced-colors: active) {
+    .separator[data-orientation='vertical'] {
+      border-inline-start-color: CanvasText;
+    }
+
+    .separator[data-orientation='horizontal'] {
+      border-block-start-color: CanvasText;
+    }
+  }
+}

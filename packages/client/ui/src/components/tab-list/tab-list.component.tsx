@@ -2,7 +2,7 @@ import type { KeyboardEvent } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { first, inlineEnd, last, step } from '../../primitives/roving.js';
+import { arrowTarget, directionOf } from '../../primitives/roving.js';
 import { useTabsPart } from '../tabs/tabs.context.js';
 import type { TabListProps } from './tab-list.types.js';
 import styles from './tab-list.module.css';
@@ -57,37 +57,16 @@ function TabList(props: TabListProps) {
     // caret, and Home jumped out of the text entirely.
     if (from < 0) return;
 
-    // READ AT THE KEYSTROKE, not at render: a page can change direction under
-    // a component that is already mounted, and this is the only moment the
-    // answer is needed.
-    const direction =
-      getComputedStyle(event.currentTarget).direction === 'rtl' ? 'rtl' : 'ltr';
-    const { forward, back } =
-      orientation === 'vertical'
-        ? { forward: 'ArrowDown', back: 'ArrowUp' }
-        : inlineEnd(direction);
-
-    // A SWITCH, and the cases are expressions on purpose: `forward` and `back`
-    // are computed from the orientation and the writing direction, and JS
-    // compares case labels with `===` like any other value. The nested ternary
-    // this replaced said the same thing in a shape nobody reads twice.
-    let target: HTMLElement | null = null;
-    switch (event.key) {
-      case forward:
-        target = step(items, from, 1);
-        break;
-      case back:
-        target = step(items, from, -1);
-        break;
-      case 'Home':
-        target = first(items);
-        break;
-      case 'End':
-        target = last(items);
-        break;
-      default:
-        return;
-    }
+    // WHICH PART THE KEY MEANS, given which way the list runs and which way the
+    // page reads. Both questions and the `switch` that answered them now live
+    // in `primitives/roving.ts` — `Toolbar` had this block verbatim, and two
+    // consumers is when a policy moves. The direction is READ AT THE KEYSTROKE,
+    // not at render: a page can change direction under a component that is
+    // already mounted, and this is the only moment the answer is needed.
+    const target = arrowTarget(items, from, event.key, {
+      orientation,
+      direction: directionOf(event.currentTarget),
+    });
 
     if (!target) return;
     // Ours now: the arrows would otherwise also scroll the page, and Home/End

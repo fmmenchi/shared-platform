@@ -1,0 +1,190 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ToolbarStories from './toolbar.stories.tsx';
+
+<Meta of={ToolbarStories} />
+
+# Toolbar
+
+A set of controls that belong together, and one tab stop for all of them.
+
+```tsx
+<Toolbar label="Text formatting">
+  <ToolbarItem>
+    <Button aria-pressed={bold} onClick={toggleBold}>
+      Bold
+    </Button>
+  </ToolbarItem>
+  <ToolbarItem>
+    <Button aria-pressed={italic} onClick={toggleItalic}>
+      Italic
+    </Button>
+  </ToolbarItem>
+</Toolbar>
+```
+
+## Anatomy
+
+| part               | what it is                                                            |
+| ------------------ | --------------------------------------------------------------------- |
+| `Toolbar`          | `role="toolbar"`, the family the controls register with, the keyboard |
+| `ToolbarItem`      | one control joining the ring — it renders no element of its own       |
+| `ToolbarSeparator` | a line between groups, drawn across the bar                           |
+
+## Props
+
+<Controls of={ToolbarStories.Default} />
+
+## Usage
+
+<Canvas of={ToolbarStories.Default} />
+
+### Why it exists, since nine buttons in a `<div>` already work
+
+They cost nine stops on the way down the page. A toolbar is **one**, and the arrows move inside it. That is the entire pattern — and a bar that does not take the tab stops over is a `<div>` with a role on it, which is worse than nothing: it tells a screen reader to expect a keyboard it does not implement.
+
+### The third family walked by the arrows, and the first that does not own what it walks
+
+A menu has `MenuItem`s and a tab list has `Tab`s, ours down to the element. A toolbar's controls are **yours** — a `Button`, a `Checkbox`, something from your own codebase. Walking the ring was already in `primitives/roving.ts`; building this moved one more layer down there — orientation + writing direction + key → target — because `TabList` had that block verbatim and two consumers is when a policy moves. What is new here is only what follows from not owning the parts.
+
+There is no `ToolbarButton`, and that is the same rule seen from the other side: it would be a half-copy of `Button`, and this package has already shipped one of those — `NavGroup` hand-rolled a button with the first two lines of `button.module.css` and no focus ring at all.
+
+### `ToolbarItem` renders nothing
+
+It rebuilds the control it is given with one extra ref, passes on anything handed to it, and gets out of the way. A `<div>` around every button would be three mistakes at once: an element that has not earned its place, a second box between the bar's `gap` and the controls it spaces, and a layer for a `role="toolbar"`'s children to hide behind.
+
+So the control stays whatever it was — variants, `aria-pressed`, pending state, all of it. It adds **no `tabindex`**: the bar writes that onto the elements itself (see below). And **no `onFocus`** — cloning a handler onto a control that came with one of its own would silently drop theirs, the defect the Tooltip's trigger documents at length. The bar listens for `focusin` once, on itself.
+
+**`children` must be a single element that forwards its `ref` to a real control.** The type says `ReactElement`, which stops bare text and arrays at compile time. The two failures a type cannot see are caught after mount and named:
+
+- a **fragment**, which `isValidElement` calls valid and which cannot take a ref;
+- a **component that drops the `ref`** — in React 19 that is an ordinary ignored prop, so nothing else complains. Your own `function ToolButton(props) { return <Button {...props} /> }` is fine; one that forgets to spread is not.
+
+Both end the same way: the control keeps its natural tab stop, the arrows walk past it, and the bar quietly has two stops instead of one.
+
+**The ref must land on the control, not on a wrapper around it.** `ChoiceField`, `InputGroup` and a plain `<label>` all forward their ref to a `<div>`, so wrapping one puts the tab stop on an element with no role and no name while the real control keeps a stop of its own. That is also warned about by name. Wrap the control:
+
+```tsx
+{
+  /* no */
+}
+<ToolbarItem>
+  <label>
+    <Checkbox /> Snap to grid
+  </label>
+</ToolbarItem>;
+{
+  /* yes */
+}
+<label>
+  <ToolbarItem>
+    <Checkbox />
+  </ToolbarItem>{' '}
+  Snap to grid
+</label>;
+```
+
+### Composing with the other components here
+
+`Tooltip` and `Menu` render no element of their own, so a control wrapped in either **inside** a `ToolbarItem` never arrives. Put the `ToolbarItem` on the thing that is actually the control — it passes on what it is given, so the outer component's wiring reaches through it:
+
+```tsx
+{
+  /* an icon button with a tooltip — the archetypal toolbar */
+}
+<Tooltip content="Bold (⌘B)">
+  <ToolbarItem>
+    <Button icon={<BoldIcon />} aria-label="Bold" />
+  </ToolbarItem>
+</Tooltip>;
+
+{
+  /* a menu button on the bar */
+}
+<Menu>
+  <ToolbarItem>
+    <MenuTrigger icon={<MoreIcon />} aria-label="More" />
+  </ToolbarItem>
+  <MenuContent>…</MenuContent>
+</Menu>;
+```
+
+Two things that need no ceremony: **grouping** works — wrap items in a `<div role="group">` and the ring still reads them in tree order, because the registry walks the whole subtree; and **moving focus yourself** works — `ref.current.focus()` on any control moves the tab stop with it, because the bar listens for `focusin`.
+
+One caveat with a real cost: on a **vertical** bar, a `MenuTrigger` answers Up and Down itself (that is how a menu opens), so those keys stop walking the bar at that control. A bar of menus is a `Menubar`, which is built for exactly that; keep menu buttons on a horizontal toolbar.
+
+### Native `disabled` is not `aria-disabled`, and here the difference bites
+
+`roving.ts` says nothing is stepped over, and for the menu and the tab list that is right: their disabled parts are `aria-disabled` — focusable, walked onto, refusing to activate — so a reader is always told they exist.
+
+A toolbar's controls are yours, and our own `Button` takes the **native** attribute (deliberately: it is what keeps a disabled submit out of implicit form submission). A natively disabled control cannot be focused at all, and two things follow:
+
+- the arrows would land on it and nothing would happen, because `focus()` on a disabled element is a no-op — the ring looks stuck;
+- and if it is the **first** control it would be seeded the tab stop, render `tabindex="0"` on an element that cannot take focus, and drop the **entire bar** out of the page's tab order. A toolbar no keyboard can reach, with nothing on screen to say so.
+
+So the bar walks only controls that can hold the focus. Use `aria-disabled` for a control you want a reader to find and be told is unavailable; use `disabled` for one that should not be there for the keyboard at all.
+
+### The tab stop lives on the elements, not in React state
+
+This is the one decision here that differs from every other roving family in the package, and it is worth a paragraph.
+
+`Tabs` keeps a `tabStop` value in state and each `Tab` renders `tabindex` from it. It can, because it owns its parts and names them by `value`. This bar owns none of its controls, and the two facts that decide the tab stop are both facts about the **DOM**: whether the control holding it is still mounted, and whether it can still take the focus — a product that disables "Undo" makes an element that cannot.
+
+Neither is visible to a render. A `useState` mirroring them would be the second copy this package spends its doctrine warning about, kept honest only by an effect setting state after every commit — a cascading render by construction, and one this workspace's lint rejects outright. So the fact goes where the doctrine says to put a fact that must travel between parts before React can re-render: **on the element**. `ToolbarItem` then renders nothing conditional, so it needs no identity, no `useId`, and no re-render when the focus moves.
+
+**And a fact kept on the DOM has to be invalidated by the DOM.** That second half is the part the first version of this component got wrong, and it is worth writing down because the mistake is a comfortable one. It recomputed from an unkeyed `useEffect`, and its own comment claimed that ran "after every commit". A passive effect with no dependency list runs after every commit _that re-renders this component_ — not the same sentence. So the most ordinary way anyone writes a toolbar broke it:
+
+```tsx
+function UndoButton() {
+  const canUndo = useEditorStore((s) => s.canUndo); // subscription lives HERE
+  return (
+    <ToolbarItem>
+      <Button disabled={!canUndo}>Undo</Button>
+    </ToolbarItem>
+  );
+}
+```
+
+When `canUndo` flips only `UndoButton` re-renders. The bar does not, the effect does not run, and the only `tabindex="0"` is left on a `:disabled` element: Tab skips the whole toolbar, and nothing on screen says so. A control that unmounts itself ends the same way, and a media query hiding the control that holds the stop moves no React tree at all.
+
+The recompute is therefore driven by a `MutationObserver` on the bar's subtree and a `ResizeObserver` on the bar, not by React's render schedule. It writes only where the attribute differs — which is not tidiness but the thing that stops the observer from feeding on its own output. (It did, once. The test run never finished.)
+
+What it costs, said plainly: **before hydration nothing has written a `tabindex`**, so every control is its own tab stop — the bar degrades to what it would have been without JavaScript, a row of ordinary working buttons. The state version would instead have rendered the roving `tabindex` on the server with no way to correct it afterwards. Given a first frame that is merely uncompressed and one that can be wrong, this takes the first.
+
+### The bar always has a way in
+
+The tab stop goes on the first usable control — the APG's own rule, and it is why a screen reader hears "Bold, button" on the first Tab rather than "toolbar" and then "Bold, button". When the control holding it is removed, disabled or hidden, the next usable one takes over, and **the focus goes with it** if it was there: dropping to `<body>` would restart the next Tab at the top of the document and lose a screen reader's place entirely.
+
+The bar stays focusable all the same, for the one case that leaves: **no usable control at all** — every control gated by a permission, still loading, or hidden at a breakpoint. Then it keeps the focus and shows a ring, because a tab stop nobody can see is worse than one nobody wanted, and hands the focus on as soon as there is a control to hand it to.
+
+### A field on the bar keeps its arrows, and gets a tab stop of its own
+
+<Canvas of={ToolbarStories.WithAField} />
+
+The APG says a control that uses the arrow keys — a text field, a spin button, a slider — must keep them. So such a control is taken **off the ring** and given its own `tabindex="0"`: the arrows step over it, and it is reached and left with `Tab`. That is the APG's second sanctioned answer, and it costs one extra tab stop per field. A bar with a field is two stops, not one; that is the honest price of putting a field on a toolbar.
+
+The first version did the other half of this — it left the field on the ring and merely declined to act on its keys — and that was a keyboard trap of the worst kind. The arrows moved onto the field; every arrow, `Home` and `End` then did nothing; and because the tab stop follows the focus, Shift+Tab came back to the field. **Every other control on the bar became permanently unreachable without a mouse**, a WCAG 2.1.1 failure four keystrokes from the story above. The docs at the time called it "the end of the line in that direction". It was the end of the line in both, for the rest of the session.
+
+This is the one question neither the menu nor the tab list had to ask, because both own every part they walk. `TabList` guards the neighbouring case — a key from something that is not a tab at all — and that guard is all a toolbar needs too, once the field is off the ring.
+
+### Layout
+
+<Canvas of={ToolbarStories.Vertical} />
+
+A horizontal bar **wraps** rather than scrolling. A tab list refuses to, because its selected marker has to stay on a rail; a toolbar has no rail and nothing to line up, so wrapping is the honest answer on a narrow screen — and it keeps every control reachable at 400% zoom without sideways scrolling, which WCAG 1.4.10 asks for. A vertical bar stretches its controls to the widest, so the column has one edge rather than a ragged one.
+
+**`ToolbarSeparator`** draws the line between groups. It is an `<hr>` — whose implicit role is already `separator`, the same element `MenuSeparator` uses — and it joins no family, so the arrows and the tab stop pass straight over it.
+
+It takes no `orientation` prop, and that is the point of it existing rather than being an `<hr>` you write: a separator lies **across** the bar, so its orientation is the opposite of the toolbar's. `role="separator"` defaults to `horizontal`, so a bar running across the page needs a line that declares `aria-orientation="vertical"` or it is announced as the thing it is not. Getting that backwards is easy and invisible, and turning a toolbar vertical should not mean remembering to turn every separator in it too.
+
+## Accessibility
+
+- **One control in the tab order** (roving `tabindex`): Tab enters the bar, Tab leaves it, the arrows move within it. A bar of nine controls is one stop on the way down a page — plus one for each field, which keeps its own arrows and so its own stop.
+- **Everything focusable on the bar belongs in a `ToolbarItem`.** An unwrapped control is not on the ring and keeps its natural tab stop, which is the invariant broken quietly. The two ways that happens by accident — a dropped `ref`, a wrapper element — are warned about by name in development.
+- **The arrows wrap**, as the APG allows, so holding one never hits a wall. `Home` and `End` go to the ends.
+- **The arrows follow the writing direction**: in a right-to-left page the first control is on the right, so ArrowLeft moves forward. Read at the keystroke, so a page can change direction under a mounted component.
+- **The bar needs a name.** `label` is required: a screen reader announces "toolbar", and a page with two of them would otherwise offer two entries by the same name.
+- **`aria-orientation` only when vertical.** `horizontal` is what `role="toolbar"` already means, and stating a default is a second place for it to be wrong.
+- **The focus returns where the user left it.** The tab stop follows the focus, so arrowing to the fifth control and tabbing away and back returns to the fifth — not to the first, which would silently discard every keystroke they made.
+- **A key something inside has already answered is left alone.** An open menu's arrows, its `Escape`, a handler of yours that called `preventDefault` — the bar checks before acting.
+- **`role="toolbar"` is for controls that act on the page.** Links go in a `Nav`, where the browser's own tab order is the right one; a bar of menus is a `Menubar`.

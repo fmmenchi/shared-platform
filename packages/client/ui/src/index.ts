@@ -212,3 +212,12 @@ export { AccordionContent } from './components/accordion-content/accordion-conte
 export type { AccordionContentProps } from './components/accordion-content/accordion-content.types.js';
 export { VisuallyHidden } from './components/visually-hidden/visually-hidden.component.js';
 export type { VisuallyHiddenProps } from './components/visually-hidden/visually-hidden.types.js';
+export { Toolbar } from './components/toolbar/toolbar.component.js';
+export type {
+  ToolbarProps,
+  ToolbarOrientation,
+} from './components/toolbar/toolbar.types.js';
+export { ToolbarItem } from './components/toolbar-item/toolbar-item.component.js';
+export type { ToolbarItemProps } from './components/toolbar-item/toolbar-item.types.js';
+export { ToolbarSeparator } from './components/toolbar-separator/toolbar-separator.component.js';
+export type { ToolbarSeparatorProps } from './components/toolbar-separator/toolbar-separator.types.js';
