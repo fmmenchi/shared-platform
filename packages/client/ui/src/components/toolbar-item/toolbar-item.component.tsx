@@ -1,6 +1,7 @@
 import { isValidElement, useState } from 'react';
-import type { ElementType, ReactElement, Ref } from 'react';
+import type { ReactElement, Ref } from 'react';
 import { mergeRefs } from '../../primitives/merge-refs.js';
+import { Slot } from '../../primitives/slot.js';
 import {
   emptyDescendants,
   useDescendant,
@@ -59,10 +60,13 @@ type Cloneable = ReactElement<{
  * package's rule puts a fact that has to travel between parts before React can
  * re-render, and all of that went away.
  *
- * Not an `onFocus` either: `cloneElement` props REPLACE the child's, so cloning
- * a handler onto a control that came with one of its own would silently drop
- * theirs — the defect the Tooltip's trigger documents. The bar listens for
- * `focusin` once, on itself.
+ * Not an `onFocus` either, and the original reason for that has since gone:
+ * `Slot` composes handlers rather than replacing them, so cloning one onto a
+ * control that came with its own no longer loses theirs. The decision stands on
+ * what it always also had — the bar listens for `focusin` ONCE, on itself.
+ * `focus` does not bubble and `focusin` does, so one listener answers for every
+ * control including ones added later, where a handler per item is N
+ * subscriptions to keep in step with a list that changes.
  */
 function ToolbarItem(props: ToolbarItemProps) {
   const { children, ref, ...rest } = props;
@@ -97,42 +101,19 @@ function ToolbarItem(props: ToolbarItemProps) {
   // Nothing to wrap, quietly: `{canDelete && <Button/>}` is the ordinary way to
   // leave a control out, and warning about it would train people to ignore the
   // warnings that matter.
-  if (!valid) return children;
-
-  const element = children as Cloneable;
-  const Control = element.type as ElementType;
-
-  // NOT `Slot`, and this is the one place in the package that says no to it.
+  // Through `Slot`, which holds the rules that are facts about an element: a
+  // class is a list, an id list is a list, refs compose, handlers compose. What
+  // is left here is what is genuinely this component's — the descendant
+  // registration, the node it needs as state, and the warnings.
   //
-  // `Slot` gives the CHILD the last word on an ordinary prop, which is right:
-  // the child is what the app wrote. Here the toolbar must have it. A toolbar
-  // is ONE tab stop and it decides which control holds it, so the `tabIndex`
-  // below is not a suggestion the control may override — the warning above says
-  // exactly that, and a control that won would take the bar's keyboard model
-  // with it, silently and completely.
-  //
-  // That precedence is not a truth about slotting; it is this component's
-  // authority over one attribute. Expressing it in `Slot` would mean giving the
-  // primitive a switch, and a primitive with a switch has stopped knowing the
-  // answer — it would hold two conventions instead of one fact. So the rules
-  // `Slot` states as truths (a class is a list, an id list is a list, refs
-  // compose) are used from there, and the one thing that is ours stays here.
-  //
-  // REBUILT IN JSX RATHER THAN CLONED, and the reason is narrow and absolute: a
-  // `ref` may be read during render ONLY in a JSX attribute. `cloneElement`
-  // takes its props as a function argument, so merging our own `ref` prop there
-  // is "accessing a ref during render" and the React Compiler refuses to build
-  // the file at all. Every other component here forwards a ref the same way,
-  // inline in JSX — this one just has to name the type first.
-  //
-  // The child's `key` is not carried across, and does not need to be: it would
-  // have addressed this element among ITS siblings, and it has none.
+  // It slots the child's props rather than overriding them. Measured before
+  // assuming: the toolbar writes the roving `tabindex` onto the DOM NODE
+  // (`toolbar.component.tsx`, `item.element.setAttribute`), never through
+  // props, so prop precedence here was never what protected the keyboard model.
   return (
-    <Control
-      {...element.props}
-      {...rest}
-      ref={mergeRefs<HTMLElement>(element.props.ref, register, setNode, ref)}
-    />
+    <Slot ref={mergeRefs<HTMLElement>(register, setNode, ref)} {...rest}>
+      {children}
+    </Slot>
   );
 }
 
