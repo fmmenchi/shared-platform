@@ -38,6 +38,11 @@ export function readVars(css: string): Map<string, string> {
   for (const [, name, value] of live.matchAll(
     /^\s*(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/gm,
   )) {
+    if (values.has(name as string)) {
+      throw new Error(
+        `Duplicate declaration of ${name}. Two values for one token in one file means the later one silently wins, and which is later is not something anybody reads a stylesheet to find out.`,
+      );
+    }
     values.set(name as string, (value as string).trim().replace(/\s+/g, ' '));
   }
   return values;
