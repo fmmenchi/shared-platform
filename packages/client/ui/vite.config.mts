@@ -84,6 +84,7 @@ export default defineConfig(() => ({
       entry: {
         'toast-region': 'src/components/toast-region/index.ts',
         toast: 'src/components/toast/index.ts',
+        switch: 'src/components/switch/index.ts',
         'toolbar-separator': 'src/components/toolbar-separator/index.ts',
         'visually-hidden': 'src/components/visually-hidden/index.ts',
         'toolbar-item': 'src/components/toolbar-item/index.ts',
