@@ -12,6 +12,38 @@ export default meta;
 
 type Story = StoryObj<typeof ToastRegion>;
 
+const TwoShapes = () => {
+  const api = useToast();
+  return (
+    <div style={{ display: 'flex', gap: '0.5rem', padding: '2rem' }}>
+      <Button
+        onClick={() =>
+          api?.toast({
+            variant: 'info',
+            title: 'Stays',
+            children: 'Until you dismiss it. Note the ✕.',
+          })
+        }
+      >
+        Raise one that stays
+      </Button>
+      <Button
+        variant="secondary"
+        onClick={() =>
+          api?.toast({
+            variant: 'success',
+            title: 'Goes',
+            children: 'In six seconds, and offers no control.',
+            duration: 6000,
+          })
+        }
+      >
+        Raise a timed one
+      </Button>
+    </div>
+  );
+};
+
 const Raise = () => {
   const api = useToast();
   return (
@@ -82,6 +114,21 @@ export const TopEdge: Story = {
   render: (args) => (
     <ToastRegion {...args}>
       <Raise />
+    </ToastRegion>
+  ),
+};
+
+/**
+ * The two shapes side by side, which is the whole design in one screen.
+ *
+ * The one that **stays** carries a ✕ — nothing is racing you to it. The one
+ * with a `duration` carries none, because six seconds is not enough to reach a
+ * control that sits after the entire page in the tab order.
+ */
+export const StayingAndTimed: Story = {
+  render: (args) => (
+    <ToastRegion {...args}>
+      <TwoShapes />
     </ToastRegion>
   ),
 };

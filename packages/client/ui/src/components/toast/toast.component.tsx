@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import type { CSSProperties } from 'react';
 import { cn } from '../../util/cn.js';
 import { Alert } from '../alert/alert.component.js';
 import { Button } from '../button/button.component.js';
@@ -34,7 +35,7 @@ import styles from './toast.module.css';
  * a control nothing is racing.
  */
 function Toast(props: ToastProps) {
-  const { id, variant, title, children, onDismiss, paused } = props;
+  const { id, variant, title, icon, children, onDismiss, paused } = props;
   const t = useMessages(toastMessages);
   // Computed rather than a destructuring default: one default reading another
   // binding from the same pattern is order-dependent, and the React Compiler
@@ -49,13 +50,29 @@ function Toast(props: ToastProps) {
   }, [id, duration, timed, paused, onDismiss]);
 
   return (
-    <div className={cn(styles.toast)} data-toast={id}>
+    <div
+      className={cn(styles.toast)}
+      data-toast={id}
+      // The status, as a hook this file's own stylesheet can read. It cannot
+      // read `--alert-border`: a custom property declared in another CSS module
+      // is unreachable from here, which the package's lint rule says out loud —
+      // the same wall `CardCover` met over the card's padding.
+      data-variant={variant ?? 'info'}
+      // The bar below runs on the SAME number the timer does, so the thing on
+      // screen and the thing counting cannot disagree.
+      style={
+        timed
+          ? ({ '--toast-duration': `${duration}ms` } as CSSProperties)
+          : undefined
+      }
+    >
       <Alert
         variant={variant}
         title={title}
+        icon={icon}
         // OFF. The region announces; see above.
         live="off"
-        className={timed ? undefined : styles.body}
+        className={cn(styles.body, timed ? undefined : styles.hasDismiss)}
       >
         {children}
         {timed ? null : (
@@ -82,6 +99,26 @@ function Toast(props: ToastProps) {
           </span>
         )}
       </Alert>
+      {timed ? (
+        /*
+         * HOW LONG IS LEFT, shown rather than guessed at.
+         *
+         * `aria-hidden`, and not because it does not matter: it is a duplicate
+         * of a fact the reader already has by other means, and a bar that
+         * announced itself would be a live region inside a live region. What a
+         * screen-reader user gets instead is the thing that actually helps —
+         * the clock stopping when they arrive.
+         *
+         * Pure CSS, driven by the same custom property as the timer, and
+         * PAUSED by the same state: an indicator that kept running while the
+         * clock was stopped would be a lie told once a second.
+         */
+        <span
+          aria-hidden="true"
+          data-paused={paused || undefined}
+          className={styles.remaining}
+        />
+      ) : null}
     </div>
   );
 }

@@ -5,11 +5,22 @@
 
 @layer fmmenchi {
   .toast {
+    /*
+     * THE STATUS ACCENT, mapped here from the same tokens `Alert`'s variants
+     * use. Reading `--alert-border` would have been one source instead of two,
+     * and it is not available: a custom property declared in `alert.module.css`
+     * does not resolve from this file, and the lint rule refuses it rather than
+     * letting it ship unresolved. Four lines naming four tokens is the price.
+     */
+    --toast-accent: var(--fm-color-info-border);
+    /* A default so the property always resolves; the timed ones set a real one
+       inline, from the same number the timer runs on. */
+    --toast-duration: 0ms;
+
     position: relative;
-    /* The Alert paints itself; what this adds is the lift that says the message
-       is over the page rather than in it. */
-    border-radius: var(--fm-radius-lg);
-    box-shadow: var(--fm-shadow-lg);
+    /* ONE WIDTH for the stack. Sizing each toast to its own content gave a
+       ragged column whose right edge moved with every message. */
+    inline-size: 100%;
 
     /* THE SHARED KEYFRAME, not a local one. `fm-slide-up-in` in
        `@fmmenchi/tokens/styles/motion.css` is documented as the toast/banner
@@ -31,9 +42,103 @@
     }
   }
 
+  /*
+   * ONE BORDER, ONE RADIUS, ONE SHADOW — on the Alert itself.
+   *
+   * The wrapper used to carry its own `rounded-lg` and shadow while the Alert
+   * inside carried `rounded-md` and a border: a smaller radius sitting inside a
+   * larger one, so every corner showed the gap between the two and the shadow
+   * traced a shape the border did not. Decorating the element that is already
+   * decorated is the fix.
+   */
+  /*
+   * A NEUTRAL PANEL WITH A STATUS EDGE, not a panel flooded with the status.
+   *
+   * `Alert`'s tinted-surface treatment — a `*-subtle` fill across the whole box
+   * — is right for a message that is PART of the page: it is one block among
+   * others and the tint says which kind. A toast is not part of the page. It
+   * arrives over whatever the reader was looking at, unasked, and a panel of
+   * solid red or green there is a shout where a word would do. Every toast
+   * worth copying — Radix's among them — puts the surface at the page's own
+   * card colour and lets a small accent carry the status.
+   *
+   * So the FILL is neutral and `--alert-border`, which the variant already set,
+   * becomes an edge. Nothing new is mapped: the status still comes from the
+   * variant's own token, and `card × card-foreground` is a pairing the contract
+   * already declares.
+   *
+   * `.toast .body` rather than `.body`: both this and `.alert` are single
+   * classes in the same cascade layer, so which one wins would otherwise depend
+   * on the order two CSS modules happen to be imported in. The extra class is
+   * deliberate, and it is the whole reason this rule is reliable.
+   */
+  .toast .body {
+    /*
+     * TOAST SCALE, not page scale. `Alert` pads itself with `inset-m` (24px)
+     * and inherits body type, which is right for a block sitting IN the page
+     * and heavy for a small panel that floats over it — measured, the padding
+     * was most of the box and the message came out 102px tall for two short
+     * lines. One step down on the type and half the padding brings it to the
+     * density a transient message wants.
+     *
+     * The type PAIR moves together, as the contract requires: an absolute
+     * leading here would be inherited as a frozen number and the message would
+     * keep the title's line box.
+     */
+    padding: var(--fm-space-internal-m);
+    gap: var(--fm-space-inline-s);
+    font-size: var(--fm-text-sm);
+    line-height: var(--fm-leading-sm);
+    background-color: var(--fm-color-card);
+    color: var(--fm-color-card-foreground);
+    border-color: var(--fm-color-border);
+    border-inline-start: 0.1875rem solid var(--toast-accent);
+    border-radius: var(--fm-radius-lg);
+    box-shadow: var(--fm-shadow-lg);
+  }
+
+  /* Room for the ✕, which is absolutely positioned and therefore invisible to
+     the Alert's own padding — a title reaching the inline end rendered UNDER
+     it at 320px, at 200% zoom, or with 1.4.12 text spacing. */
+  /*
+   * ROOM FOR THE ✕ — exactly its width, and ONLY when it is there.
+   *
+   * The button is 2rem square at `sm` and sits `internal-xs` from the edge, so
+   * it covers 2.25rem: reserving `inset-l` (2rem) left it overlapping the text
+   * by the difference, which is the defect this rule was added to fix in the
+   * first place. A timed toast has no ✕ and reserves nothing — space held for a
+   * control that is not there is the emptiness that reads as sloppiness.
+   *
+   * `.toast .hasDismiss`, matching the specificity of the rule above: written
+   * as a single class it lost to `.toast .body`'s `padding` shorthand and
+   * reserved nothing at all — measured, the ✕ still sat on the text.
+   */
+  .toast .hasDismiss {
+    padding-inline-end: calc(var(--fm-space-internal-m) + 2.25rem);
+  }
+
+  .toast[data-variant='success'] {
+    --toast-accent: var(--fm-color-success-border);
+  }
+
+  .toast[data-variant='warning'] {
+    --toast-accent: var(--fm-color-warning-border);
+  }
+
+  .toast[data-variant='error'] {
+    --toast-accent: var(--fm-color-error-border);
+  }
+
   .dismiss {
     position: absolute;
-    inset-block-start: var(--fm-space-internal-xs);
+    /*
+     * CENTRED ON THE TITLE'S FIRST LINE, not on the box's corner. The button is
+     * 2rem tall and that line box is 1.25rem (`text-sm` × its paired leading),
+     * so it starts half the difference above the content — 0.375rem — and the
+     * two centres meet. Pinned to the corner instead, it left a band of air
+     * above the title that read as the panel being loosely assembled.
+     */
+    inset-block-start: calc(var(--fm-space-internal-m) - 0.375rem);
     inset-inline-end: var(--fm-space-internal-xs);
     /* The alert's own foreground, inherited because this sits inside it — the
        pairing the token contract declares for that background. */
@@ -54,11 +159,64 @@
     background: none;
   }
 
-  /* ROOM FOR IT. The button is absolutely positioned and the alert's own
-     padding does not know that, so a title reaching the inline end rendered
-     UNDER the ✕ — at 320px, at 200% zoom, or with 1.4.12 text spacing. */
-  .body {
-    padding-inline-end: var(--fm-space-inset-l);
+  /* A finger gets 44px, so the button grows and the same centring arithmetic
+     puts it above the panel. Flush with the top edge is the honest compromise:
+     the target keeps its size and the overhang lands in the padding. */
+  @media (pointer: coarse) {
+    .dismiss {
+      inset-block-start: 0;
+    }
+  }
+
+  /*
+   * HOW LONG IS LEFT. It runs on `--toast-duration`, the same number the timer
+   * uses, so the bar cannot promise a different moment from the one the message
+   * actually leaves at.
+   *
+   * INSET BY THE RADIUS rather than clipped by the container: `overflow:
+   * hidden` on the wrapper would have cut the dismiss button's focus ring, and
+   * a ring a keyboard user cannot see is a worse trade than a bar that stops
+   * short of the corners.
+   */
+  .remaining {
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: var(--fm-radius-lg);
+    block-size: 0.1875rem;
+    border-radius: var(--fm-radius-sm);
+    /* The status again, so the thing counting down says which kind of message
+       it is counting down — the same token the edge uses. */
+    background-color: var(--toast-accent);
+    transform-origin: 0 50%;
+    animation: fm-toast-remaining var(--toast-duration) var(--fm-ease-linear)
+      forwards;
+  }
+
+  /* From the end the reader reads FROM, so it drains towards the end they read
+     towards — `transform-origin` has no logical form. */
+  .remaining:dir(rtl) {
+    transform-origin: 100% 50%;
+  }
+
+  /* PAUSED WITH THE CLOCK. An indicator that kept draining while the timer was
+     stopped would be a lie told sixty times a second. */
+  .remaining[data-paused] {
+    animation-play-state: paused;
+  }
+
+  @keyframes fm-toast-remaining {
+    to {
+      transform: scaleX(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* A bar draining continuously is exactly the movement the preference asks
+       to be spared. The information it carries is a duplicate — the message
+       leaves either way, and the pause is what makes that safe. */
+    .remaining {
+      display: none;
+    }
   }
 
   @media (forced-colors: active) {
@@ -67,6 +225,12 @@
        lands on top of the content it covers with nothing between them. */
     .toast {
       border: 1px solid CanvasText;
+      border-radius: var(--fm-radius-lg);
+    }
+
+    .remaining {
+      background-color: Highlight;
+      opacity: 1;
     }
   }
 }

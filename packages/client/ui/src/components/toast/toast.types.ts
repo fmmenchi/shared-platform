@@ -7,6 +7,20 @@ export interface ToastOptions {
   variant?: AlertVariants['variant'];
   /** A short heading. */
   title?: ReactNode;
+  /**
+   * A status glyph, `aria-hidden`, beside the text.
+   *
+   * PASSED THROUGH because the toast is the one `Alert` a consumer cannot reach
+   * into. They hand over an options object and the region does the rendering,
+   * so without this the colour of one edge is the ONLY status signal a sighted
+   * reader gets — four panels that differ by hue alone (WCAG 1.4.1). The slot
+   * exists on `Alert` for exactly this reason; the toast was just not offering
+   * it.
+   *
+   * Still optional, and still the consumer's glyph: this package ships no icon
+   * set on purpose.
+   */
+  icon?: ReactNode;
   /** The message. */
   children?: ReactNode;
   /**

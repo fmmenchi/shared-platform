@@ -492,6 +492,211 @@ describe('Toast', () => {
     await waitFor(() => expect(screen.queryByText('Saved')).toBeNull());
   });
 
+  it('shows how long is left, only when there is a clock', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Stays' }} label="Persistent" />
+        <Raise options={{ title: 'Goes', duration: 4000 }} label="Timed" />
+      </ToastRegion>,
+    );
+
+    await raise('Persistent');
+    await waitFor(() => expect(screen.getByText('Stays')).toBeVisible());
+    const persistent = region().querySelector('[data-toast]') as HTMLElement;
+    // Nothing is counting down, so there is nothing to draw.
+    expect(persistent.querySelector('[aria-hidden="true"]')).toBeNull();
+
+    await raise('Timed');
+    await waitFor(() => expect(screen.getByText('Goes')).toBeVisible());
+    const bar = region().querySelector('[data-toast] [aria-hidden="true"]');
+    expect(bar).not.toBeNull();
+
+    // THE SAME NUMBER THE TIMER USES. A bar with a duration of its own would
+    // promise a moment the message does not leave at, and nothing on screen
+    // would say which of the two was lying.
+    expect(getComputedStyle(bar as Element).animationDuration).toBe('4s');
+  });
+
+  it('stops the bar with the clock', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Goes', duration: 4000 }} />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Goes')).toBeVisible());
+    const bar = region().querySelector(
+      '[data-toast] [aria-hidden="true"]',
+    ) as HTMLElement;
+    expect(getComputedStyle(bar).animationPlayState).toBe('running');
+
+    fireEvent.pointerEnter(region());
+    // An indicator that kept draining while the timer was stopped would be a
+    // lie told sixty times a second.
+    await waitFor(() =>
+      expect(getComputedStyle(bar).animationPlayState).toBe('paused'),
+    );
+  });
+
+  it('paints the status as an edge, not as a flood', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ variant: 'error', title: 'Failed' }} />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Failed')).toBeVisible());
+    const alert = screen
+      .getByText('Failed')
+      .closest('[class*="alert"]') as HTMLElement;
+    const painted = getComputedStyle(alert);
+
+    // A toast arrives over whatever the reader was looking at. `Alert`'s tinted
+    // surface is right for a message that is PART of the page and a shout when
+    // it is not — so the fill is the page's own card colour and the status is
+    // an edge. Read from the theme rather than hard-coded, so retuning a brand
+    // cannot make this pass by accident.
+    const card = getComputedStyle(document.documentElement)
+      .getPropertyValue('--fm-color-card')
+      .trim();
+    expect(card).not.toBe('');
+    const probe = document.createElement('div');
+    probe.style.backgroundColor = card;
+    document.body.append(probe);
+    const expected = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+
+    expect(painted.backgroundColor).toBe(expected);
+    // And the edge IS the status: the inline-start border differs from the
+    // neutral one on the other three sides.
+    expect(painted.borderInlineStartColor).not.toBe(painted.borderTopColor);
+  });
+
+  it('reserves room for the way out only when there is one', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Stays' }} label="Persistent" />
+        <Raise options={{ title: 'Goes', duration: 5000 }} label="Timed" />
+      </ToastRegion>,
+    );
+
+    await raise('Persistent');
+    await waitFor(() => expect(screen.getByText('Stays')).toBeVisible());
+    await raise('Timed');
+    await waitFor(() => expect(screen.getByText('Goes')).toBeVisible());
+
+    const panels = Array.from(region().querySelectorAll('[data-toast]'));
+    const measure = (panel: Element) => {
+      const alert = panel.querySelector('[class*="alert"]') as HTMLElement;
+      const out = panel.querySelector('button');
+      const box = alert.getBoundingClientRect();
+      return {
+        padEnd: parseFloat(getComputedStyle(alert).paddingInlineEnd),
+        needs: out ? box.right - out.getBoundingClientRect().left : 0,
+      };
+    };
+    const timed = measure(panels[0] as Element);
+    const stays = measure(panels[1] as Element);
+
+    // GEOMETRY, both ways round. The ✕ is absolutely positioned, so the Alert's
+    // own padding knows nothing about it: reserve too little and it sits on the
+    // text, reserve it always and a timed toast carries a gap for a control it
+    // does not have. Written once as a single class, this rule lost to
+    // `.toast .body`'s `padding` shorthand and reserved nothing at all.
+    expect(stays.padEnd).toBeGreaterThan(stays.needs);
+    expect(timed.padEnd).toBeLessThan(stays.padEnd);
+    expect(timed.padEnd).toBeLessThanOrEqual(20);
+  });
+
+  it("carries the caller's status glyph", async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{
+            variant: 'error',
+            title: 'Deleted',
+            icon: <span data-testid="glyph">!</span>,
+            children: 'The project could not be deleted.',
+          }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+
+    // THE ONE `Alert` A CONSUMER CANNOT REACH INTO: they hand over an options
+    // object and the region renders. Without the pass-through, the colour of
+    // one edge is the only status signal a sighted reader gets — four panels
+    // differing by hue alone (WCAG 1.4.1) — and `Alert` grew the slot for
+    // exactly that reason.
+    await waitFor(() => expect(screen.getByTestId('glyph')).toBeVisible());
+    // Decoration, not content: the severity is already said, once, by the
+    // hidden word `Alert` puts before the title.
+    expect(
+      screen.getByTestId('glyph').closest('[aria-hidden="true"]'),
+    ).not.toBeNull();
+  });
+
+  it('is dense, and the way out sits on the title', async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{ title: 'Saved', children: 'Your changes are live.' }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Saved')).toBeVisible());
+
+    const alert = screen
+      .getByText('Saved')
+      .closest('[class*="alert"]') as HTMLElement;
+    const title = screen.getByText('Saved');
+    const out = screen.getByRole('button', { name: /dismiss/i });
+
+    // A TRANSIENT PANEL, not a page block. It inherited `Alert`'s page-scale
+    // padding and body type and came out 102px tall for two short lines; a step
+    // down on the type and half the padding is what a toast wants. The
+    // paragraph margin that was most of the remainder was `Alert`'s own bug,
+    // fixed there.
+    expect(getComputedStyle(title).fontSize).toBe('14px');
+    expect(alert.getBoundingClientRect().height).toBeLessThan(80);
+
+    // And the ✕ is centred on the title's first line rather than pinned to the
+    // corner, which left a band of air above the title.
+    const t = title.getBoundingClientRect();
+    const b = out.getBoundingClientRect();
+    expect(
+      Math.abs(t.top + t.height / 2 - (b.top + b.height / 2)),
+    ).toBeLessThan(3);
+  });
+
+  it('is a strip, not a block', async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{ title: 'Saved', children: 'Your changes are live.' }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Saved')).toBeVisible());
+
+    // The region is `position: fixed`, so with only a MAXIMUM width it
+    // shrink-wrapped its contents — measured, this message came out 96px wide
+    // and 100 tall, a squat block rather than the strip a toast is. Every toast
+    // shares the region's width, so the stack reads as one column.
+    const box = (
+      region().firstElementChild as HTMLElement
+    ).getBoundingClientRect();
+    expect(box.width).toBeGreaterThan(300);
+    expect(box.width).toBeGreaterThan(box.height * 2);
+  });
+
   it('says so when the provider is the wrong way round', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(
