@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
+import { animateExit } from '../../primitives/animate-exit.js';
 import { useMessages } from '../../i18n/provider.js';
 import { Toast } from '../toast/toast.component.js';
 import { toastMessages } from '../toast/toast.messages.js';
@@ -74,7 +75,35 @@ function ToastRegion(props: ToastRegionProps) {
   const base = useId();
   const region = useRef<HTMLDivElement | null>(null);
 
-  const dismiss = useCallback((id?: string) => {
+  /**
+   * Take one back — and let it LEAVE, rather than blinking out.
+   *
+   * The exit is the package's one JS animation and this is a legitimate use of
+   * it: `animateExit` exists because a closing `<dialog>` or popover hits
+   * `display: none` before a CSS transition can run, and the doctrine's caveat
+   * — that only the Dialog can have an exit — is about intercepting a
+   * PLATFORM close event that is not cancelable elsewhere. Nothing is
+   * intercepted here: the removal is this component's own state, so the delay
+   * is ours to take.
+   *
+   * `fade`, not `scale`: a message that shrinks reads as being undone, and the
+   * preset is opacity-only, so the primitive's reduced-motion handling has
+   * nothing to strip.
+   */
+  const dismiss = useCallback(async (id?: string) => {
+    const leaving = Array.from(
+      region.current?.querySelectorAll<HTMLElement>('[data-toast]') ?? [],
+    ).filter((node) => id === undefined || node.dataset.toast === id);
+
+    // Awaited before the state changes, or React unmounts the node out from
+    // under the animation. `animateExit` resolves on cancel too, so a toast
+    // dismissed twice cannot leave this hanging.
+    await Promise.all(
+      leaving.map((node) =>
+        animateExit(node, { preset: 'fade', duration: 's', ease: 'exit' }),
+      ),
+    );
+
     setToasts((current) =>
       id === undefined ? [] : current.filter((entry) => entry.id !== id),
     );

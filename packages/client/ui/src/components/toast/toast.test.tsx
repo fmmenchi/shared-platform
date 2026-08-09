@@ -54,6 +54,24 @@ const passTime = async (ms: number) => {
   });
 };
 
+/**
+ * END the exit rather than wait it out.
+ *
+ * A dismissed toast fades before it goes, and that fade is WAAPI — a real
+ * clock, untouched by `vi.useFakeTimers`. So a test that moves the fake clock
+ * past a duration and then reads the DOM sees a toast that is leaving but has
+ * not left. `finish()` jumps it to the end, which is the same move the drawer
+ * tests make and keeps every one of these assertions off the wall clock.
+ */
+const finishExits = async () => {
+  await act(async () => {
+    for (const node of document.querySelectorAll('[data-toast]')) {
+      for (const animation of node.getAnimations()) animation.finish();
+    }
+    await Promise.resolve();
+  });
+};
+
 const withFakeClock = () =>
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
@@ -165,6 +183,7 @@ describe('Toast', () => {
     expect(screen.getByText('Saved')).toBeInTheDocument();
 
     await passTime(2);
+    await finishExits();
     expect(screen.queryByText('Saved')).toBeNull();
   });
 
@@ -207,6 +226,7 @@ describe('Toast', () => {
     // page.
     fireEvent.pointerLeave(region());
     await passTime(3001);
+    await finishExits();
     expect(screen.queryByText('Saved')).toBeNull();
   });
 
@@ -235,6 +255,7 @@ describe('Toast', () => {
       screen.getByRole('button', { name: 'Persistent' }).focus();
     });
     await passTime(3001);
+    await finishExits();
     expect(screen.queryByText('Goes')).toBeNull();
   });
 
@@ -257,6 +278,7 @@ describe('Toast', () => {
     await passTime(2999);
     expect(screen.getByText('Saved')).toBeInTheDocument();
     await passTime(2);
+    await finishExits();
     expect(screen.queryByText('Saved')).toBeNull();
   });
 
@@ -440,6 +462,33 @@ describe('Toast', () => {
       .closest('[class*="alert"]') as HTMLElement;
     const out = screen.getByRole('button', { name: /dismiss/i });
     expect(getComputedStyle(out).color).toBe(getComputedStyle(alert).color);
+  });
+
+  it('leaves the way a toast leaves, rather than blinking out', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Saved' }} />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Saved')).toBeVisible());
+
+    const panel = region().firstElementChild as HTMLElement;
+    await browser.click(screen.getByRole('button', { name: /dismiss/i }));
+
+    // THE EXIT IS OBSERVED BEFORE IT COMPLETES, which is the only moment it
+    // exists: `animateExit` is awaited before the state changes, so the node is
+    // still there and running. Without the await React unmounts it out from
+    // under the animation and the message blinks out — which is what the whole
+    // family did until this commit, in a package that exports the primitive and
+    // whose Dialog and Popover both use it.
+    await waitFor(() =>
+      expect(panel.getAnimations().length).toBeGreaterThan(0),
+    );
+    for (const animation of panel.getAnimations()) animation.finish();
+
+    await waitFor(() => expect(screen.queryByText('Saved')).toBeNull());
   });
 
   it('says so when it is used without a region', async () => {

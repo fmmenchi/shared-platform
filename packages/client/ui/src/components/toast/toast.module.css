@@ -1,4 +1,5 @@
-/* One transient message: an Alert that leaves on its own. */
+/* One transient message: an Alert with an entrance and an exit. */
+@import '@fmmenchi/tokens/styles/motion.css';
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 @reference '../../styles/utilities.css';
 
@@ -9,20 +10,24 @@
        is over the page rather than in it. */
     border-radius: var(--fm-radius-lg);
     box-shadow: var(--fm-shadow-lg);
+
+    /* THE SHARED KEYFRAME, not a local one. `fm-slide-up-in` in
+       `@fmmenchi/tokens/styles/motion.css` is documented as the toast/banner
+       shape, and this file had redeclared it — which the doctrine forbids for
+       exactly the reason it is a doctrine: two definitions of one movement
+       drift. Duration by SURFACE SIZE (`s` — a small panel), ease by
+       DIRECTION. */
+    animation: fm-slide-up-in var(--fm-duration-s) var(--fm-ease-enter);
   }
 
-  /* ENTERS, and only with opacity when movement is unwelcome — the vestibular
-     trigger is the travel, not the change (the package's motion doctrine). */
-  @media (prefers-reduced-motion: no-preference) {
+  /* KILL THE MOVEMENT, KEEP THE CHANGE — and as a `reduce` OVERRIDE, which is
+     what the doctrine asks for. Gating the whole thing on `no-preference` was
+     the first version: it removed the fade along with the travel, so a reader
+     who asked for less motion got no entrance at all rather than a calmer one.
+     The vestibular trigger is the travel; the appearing is information. */
+  @media (prefers-reduced-motion: reduce) {
     .toast {
-      animation: toast-in var(--fm-duration-s) var(--fm-ease-enter);
-    }
-  }
-
-  @keyframes toast-in {
-    from {
-      opacity: 0;
-      translate: 0 var(--fm-space-internal-m);
+      animation-name: fm-fade-in;
     }
   }
 
