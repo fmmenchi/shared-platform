@@ -1,5 +1,7 @@
 import type { ElementType } from 'react';
 import { useUiAdapters } from '../../i18n/provider.js';
+import { Slot } from '../../primitives/slot.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { Heading } from '../heading/heading.component.js';
 import type { CardTitleProps } from './card-title.types.js';
 import styles from './card-title.module.css';
@@ -31,24 +33,42 @@ import styles from './card-title.module.css';
  * The router comes from the provider, like `NavLink`'s — the `Link` adapter,
  * injected once. Read tolerantly, so a card outside a provider is still a
  * plain anchor.
+ *
+ * `href` is what that adapter can be given, and it is a URL string. When the
+ * destination is not expressible as one — a typed route with params, a link
+ * that needs its own handler — `asChild` hands the whole element over instead:
+ * the app writes its router's link itself, with its own types checked by its
+ * own library, and this component puts the layer and the hook on it. That is
+ * the case that used to have no answer here at all.
  */
 function CardTitle(props: CardTitleProps) {
-  const { href, children, ...heading } = props;
+  const { href, asChild, children, ...heading } = props;
   const injected = useUiAdapters()?.Link;
   const Link = (injected ?? 'a') as ElementType;
 
+  // Both is not a half-working combination, it is two destinations: the `href`
+  // would be dropped on the floor while the child navigates somewhere else.
+  useDevWarning(
+    Boolean(asChild && href !== undefined),
+    'CardTitle: given both `asChild` and `href`. The child carries the destination, so the `href` is ignored — remove it.',
+  );
+
+  const link = {
+    // The hook `card.module.css` paints the surface from. A hashed class from
+    // this file could not be named from that one — which is also why a
+    // hand-rolled link cannot reproduce this, and why `asChild` exists.
+    'data-card-link': '',
+    className: styles.link,
+  };
+
   return (
     <Heading {...heading}>
-      {href === undefined ? (
+      {asChild ? (
+        <Slot {...link}>{children}</Slot>
+      ) : href === undefined ? (
         children
       ) : (
-        <Link
-          href={href}
-          // The hook `card.module.css` paints the surface from. A hashed class
-          // from this file could not be named from that one.
-          data-card-link=""
-          className={styles.link}
-        >
+        <Link href={href} {...link}>
           {children}
         </Link>
       )}

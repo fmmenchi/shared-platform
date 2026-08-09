@@ -77,7 +77,182 @@ The design system depends on no framework (ADR-0001), so the one thing it will n
 
 After that every `NavLink` uses it, and no call site repeats it. With no provider in scope it is a plain `<a>`.
 
-`as` is the exception rather than the seam: a destination that must **not** go through the router — another site, a download, a `mailto:` — takes `as="a"` and gets the anchor back.
+### Which link the reader is on
+
+The design system never matches a path itself. It **asks**, through the same
+adapter bundle that already carries your `Link` — one seam for routing, not two:
+
+```tsx
+<UiProvider adapters={{ i18n, Link, useIsCurrent }} />
+```
+
+`useIsCurrent` is a **hook**, for the same reason the form binding's members are:
+it is called inside each link, so each one subscribes for itself and re-renders
+when the route changes. Return `'page'` for the page, `'location'` for a section
+that contains it, nothing for elsewhere.
+
+### Wiring a real router
+
+One import and one spread, from
+[`@fmmenchi/ui-router-ports`](https://github.com/fmmenchi/shared-platform/tree/main/packages/client/ui-router-ports)
+— a sibling package, so the design system itself stays free of every router:
+
+```tsx
+import { reactRouterAdapters } from '@fmmenchi/ui-router-ports/react-router';
+// or: import { tanstackAdapters } from '@fmmenchi/ui-router-ports/tanstack';
+
+<UiProvider adapters={{ i18n, ...reactRouterAdapters }}>
+```
+
+That is the whole integration. What the binding absorbs is not boilerplate but
+the router's own character, and the two here do not agree with each other:
+
+| Router          | What its link does on its own                                                           |
+| --------------- | --------------------------------------------------------------------------------------- |
+| React Router    | `Link` marks nothing at all                                                             |
+| TanStack Router | `Link` marks `aria-current="page"` itself, and its `activeOptions` default is non-exact |
+
+TanStack's default gave `aria-current="page"` to both `Settings` and `Profile`
+at `/settings/profile` — "current page" announced twice in one menu. Its binding
+narrows what "active" means so the port can say `location` for the section. That
+is the kind of thing a per-router binding exists to hold, and the kind of thing
+a recipe pasted into a README gets wrong.
+
+**Next is not in that package**, because `next/link` and `usePathname` cannot be
+exercised outside a Next runtime, and a binding no test can reach is a claim
+rather than an integration. It also needs the least: `next/link` already takes
+`href`.
+
+```tsx
+<UiProvider
+  adapters={{
+    i18n,
+    Link, // next/link, as-is
+    useIsCurrent: (href) => pathIsCurrent(usePathname(), href), // App Router
+  }}
+/>
+```
+
+For the Pages Router use `useRouter().asPath`, which carries the query —
+`pathIsCurrent` strips it.
+
+`pathIsCurrent` is exported for exactly this: it is not the seam, it is what you
+plug into it, so that every app with a plain string path does not write the same
+three edge cases differently — the root being a prefix of everything, a trailing
+slash or query not being a different page, and `/team` not lighting up for
+`/teams`.
+
+What it cannot know is a **basename** or a **locale prefix**: pass a path your
+router has already resolved, and give the links `href`s in that same space.
+
+An explicit `current` on a single link beats all of it — it is the only one that
+can know what matching cannot.
+
+### Keeping your router's own props, and its own typing
+
+`NavLink` spreads everything it does not consume onto the injected link, so a
+router's extra props have always ARRIVED. What was missing was permission from
+the type — and the design system cannot grant it by naming a library, because
+then it would depend on one.
+
+So it leaves a hole, and your app fills it once:
+
+```ts
+// app/ui.d.ts
+import type { LinkProps } from '@tanstack/react-router';
+
+declare module '@fmmenchi/ui' {
+  interface NavLinkExtraProps extends Pick<
+    LinkProps,
+    'to' | 'params' | 'search' | 'hash'
+  > {}
+}
+```
+
+After that `<NavLink to="/orders/$id" params={{ id }} />` is checked by
+TanStack's own types, in TanStack's own vocabulary. `NavLinkExtraProps` is empty
+here and imports nothing; declaration merging is the same mechanism TanStack
+uses to register your route tree, so its users already have it.
+
+**Do not put `className` in that `Pick`.** React Router's `NavLink` types it as
+`string | ((state) => string)`, and this component merges class names with
+`clsx`, which ignores a function — silently. The link keeps the design system's
+class, yours never appears, and nothing reports it. The same goes for `style`,
+which React Router types the same way.
+
+Four names are the design system's own and never reach your link: `as`,
+`current`, `className` and `children`. Neither React Router nor TanStack has a
+prop called `as` or `current`, so there is nothing to collide with today.
+
+Two things it cannot do. TypeScript will not check that what you declare matches
+the `Link` you injected — declare one router's props, inject another's, and it
+compiles. And the design system reads `href`, not `to`: a link given only a
+route descriptor is invisible to the external-destination test and to
+`useIsCurrent`, so marking it falls to the router's own link (TanStack's does;
+React Router's plain `Link` does not — use its `NavLink`).
+
+`as` is not a smaller alternative to this, though it looks like one. It is typed
+`ElementType` — "something renderable" — and carries none of the props of what
+you pass it, so `<NavLink as={Link} to="/x" />` needs the same augmentation.
+Making it infer would mean making `NavLink` polymorphic, which is a separate
+decision this package has declined elsewhere.
+
+### One link the adapter cannot express
+
+The augmentation above is app-wide, convenient, and unverifiable: TypeScript
+cannot check what you declared against the `Link` you injected. For the one
+entry that needs more, `asChild` is the checked alternative — the element is
+right there, so its types are its own:
+
+```tsx
+<NavLink asChild current="page">
+  <RouterLink to="/orders/$id" params={{ id }}>
+    Order
+  </RouterLink>
+</NavLink>
+```
+
+Your element renders, wearing this component's class and `aria-current`, still
+inside the `<li>` a screen reader counts.
+
+Your component must forward what it does not consume — the class and the
+marking arrive as props on it, and a component that keeps only the props it
+knows drops them. And since the design system reads `href`, a link described
+only by a route descriptor is invisible to `useIsCurrent` and to the
+external-destination test: pass `current` yourself, or let the router's own
+link mark it.
+
+Use the augmentation for a menu of ordinary destinations, and this for the
+exception. Both, in the same menu, is fine.
+
+### Links that leave the app
+
+You do not mark these. An `href` that already says it goes elsewhere — a scheme
+(`https:`, `mailto:`, `tel:`, `blob:`) or a protocol-relative `//host/path` —
+renders a plain `<a>`, skips the router, and is never offered to `useIsCurrent`.
+
+```tsx
+<NavLink href="/docs">Docs</NavLink>                 {/* your router */}
+<NavLink href="https://example.com">Site</NavLink>   {/* plain anchor */}
+<NavLink href="mailto:hi@example.com">Write</NavLink> {/* plain anchor */}
+```
+
+The test is what the URL **says**, never where it lands: nothing here reads
+`window.location.origin`, because this module renders on the server too and a
+link that resolved one way in the server HTML and another after hydration is the
+worst kind of difference — it looks right until the first click.
+
+Which means an absolute URL to your **own** site reads as external. That is the
+safe default rather than an oversight, and `as` is how you say otherwise:
+
+```tsx
+<NavLink href="https://my.app/docs" as={Link}>
+  Mine
+</NavLink>
+```
+
+So `as` is no longer the defence — it is the override, in both directions: force
+the router back on, or render something else entirely.
 
 A link is also the control the browser already does perfectly — middle-click, open in a new tab, long-press, the status bar showing the destination. `NavLink` adds no handler that would take any of that away.
 
@@ -87,5 +262,6 @@ A link is also the control the browser already does perfectly — middle-click, 
 - **A list, kept as a list.** The bullets are gone and the semantics are not, so it is still announced as "list, 5 items". (Removing the markers normally costs the list role in Safari — inside a `<nav>` it does not, which is where these lists are.)
 - **The group is a disclosure**, announced as "button, collapsed" — which is what it is. `aria-controls` points at a list that is always rendered and hidden when closed, because a reference to an element that does not exist yet is a relationship the button claims and does not have. The list is also **named by its button**, because `aria-controls` is ignored by nearly every screen reader for navigation: without it, tabbing into the panel announces "list, 3 items" and nothing about which group you have entered.
 - **`Escape` closes and hands the focus back** to the button that opened the group. By then the focus is usually on a link inside, so nothing else would bring it back.
-- **Where you are is not said with colour alone** (WCAG 1.4.1): `current` renders `aria-current`, which a screen reader announces, and the highlight paints the same fact. In forced colours it becomes the system's own pair. `current` also takes the other tokens — `"location"` for the **section** you are inside, which is what a sidebar's parent entry usually is, and `"step"` in a flow.
+- **Where you are is not said with colour alone** (WCAG 1.4.1): `current` renders `aria-current`, which a screen reader announces, and the highlight paints the same fact. `current` also takes the other tokens — `"location"` for the **section** you are inside, which is what a sidebar's parent entry usually is, and `"step"` in a flow.
+- **The page and the section that contains it look different**, because they are different claims and a screen reader already tells them apart — painted the same, they were distinguishable for everyone except the people who can see. The page takes the solid pair; the section takes the subtle one **and a bar on its leading edge**, which is not ornament: `:hover` owns that same subtle pair, so without the bar every hovered link read as the section you are in. In forced colours, where `box-shadow` is dropped, the page is filled with `Highlight` and the section carries it as a border instead.
 - **A finger gets 44px** on links and on group buttons alike, where the **primary** pointer is coarse (`pointer: coarse`). A laptop with a touchscreen attached keeps the cursor-sized rows it is mostly driven with.

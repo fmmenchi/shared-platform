@@ -1137,4 +1137,39 @@ describe('Toolbar', () => {
     await waitFor(() => expect(stops()).toContain('Bold'));
     await expectNoA11yViolations(container);
   });
+
+  describe('what the item does to the control it wraps', () => {
+    // `ToolbarItemProps` is two props wide — `children` and `ref` — so there is
+    // nothing of the wrapper's to contend with the control's, and the prop
+    // precedence that kept this component out of `Slot` had no object at all.
+    // A first version of this block asserted that a wrapper `className` merged;
+    // the type does not allow one, and only `tsc` could say so — the test run
+    // was green.
+    it('still writes the roving tabindex onto the node', async () => {
+      // The reason the item could go through `Slot` at all. The bar writes this
+      // attribute on the DOM node, never through props, so prop precedence was
+      // never what protected the keyboard model — a claim made here first and
+      // then measured, which is the only reason this migration was possible.
+      render(
+        <Toolbar label="Format">
+          <ToolbarItem>
+            <button type="button">Bold</button>
+          </ToolbarItem>
+          <ToolbarItem>
+            <button type="button">Italic</button>
+          </ToolbarItem>
+        </Toolbar>,
+      );
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Bold' })).toHaveAttribute(
+          'tabindex',
+          '0',
+        ),
+      );
+      expect(screen.getByRole('button', { name: 'Italic' })).toHaveAttribute(
+        'tabindex',
+        '-1',
+      );
+    });
+  });
 });

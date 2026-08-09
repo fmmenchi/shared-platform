@@ -41,16 +41,41 @@
      a review pointed out what that looks like: with the pointer resting
      anywhere in the list, two items claim to be where you are.
 
-     Any value, not `page` alone: `location` is the token for the SECTION you
-     are inside, which is what a sidebar's parent entry usually is. */
+     TWO claims, painted differently, because they ARE different: `page` is the
+     page you are on and `location` is the SECTION that contains it — a
+     sidebar's parent entry. A screen reader announces them apart ("current
+     page" / "current location"); painted the same they were apart for everyone
+     except the people who can see, which is the inverse of the usual failure.
+
+     The section takes the SUBTLE pair — and then a bar, which is not ornament:
+     `:hover` above already owns that same pair, so subtle-alone made every
+     hovered link look like the section you are in, the defect the note above
+     records being fixed once already. The bar is what hover does not have. */
   .link[aria-current] {
-    @apply bg-accent text-accent-foreground font-medium;
+    @apply bg-accent-subtle text-accent-subtle-foreground font-medium;
+    box-shadow: inset 0.125rem 0 0 var(--fm-color-accent);
+  }
+
+  /* THE PAGE — the solid pair, and last, so it wins on equal specificity. */
+  .link[aria-current='page'] {
+    @apply bg-accent text-accent-foreground;
+    box-shadow: none;
   }
 
   @media (forced-colors: active) {
+    /* Forced colours drop `box-shadow` entirely, so the bar cannot carry the
+       distinction here — a border can, and `Highlight` is still allowed as a
+       border colour when it is not allowed as a background. */
     .link[aria-current] {
+      background-color: Canvas;
+      color: CanvasText;
+      outline: 1px solid Highlight;
+      outline-offset: -1px;
+    }
+    .link[aria-current='page'] {
       background-color: Highlight;
       color: HighlightText;
+      outline: none;
     }
     .link:focus-visible {
       outline-color: Highlight;

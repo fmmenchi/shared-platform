@@ -4,6 +4,7 @@ export type {
   I18n,
   Direction,
   LinkComponent,
+  UseIsCurrent,
   NavigateFn,
   IconRenderer,
 } from './i18n/ports.types.js';
@@ -135,6 +136,7 @@ export { MenuTrigger } from './components/menu-trigger/menu-trigger.component.js
 export { MenuContent } from './components/menu-content/menu-content.component.js';
 export { Nav } from './components/nav/nav.component.js';
 export { NavGroup } from './components/nav-group/nav-group.component.js';
+export { pathIsCurrent } from './primitives/path-is-current.js';
 export { NavLink } from './components/nav-link/nav-link.component.js';
 export { MenuItem } from './components/menu-item/menu-item.component.js';
 export { MenuItemTrigger } from './components/menu-item-trigger/menu-item-trigger.component.js';
@@ -144,7 +146,10 @@ export type { MenuContentProps } from './components/menu-content/menu-content.ty
 export type { NavProps } from './components/nav/nav.types.js';
 export type { NavOrientation } from './components/nav/nav.context.js';
 export type { NavGroupProps } from './components/nav-group/nav-group.types.js';
-export type { NavLinkProps } from './components/nav-link/nav-link.types.js';
+export type {
+  NavLinkExtraProps,
+  NavLinkProps,
+} from './components/nav-link/nav-link.types.js';
 export type { MenuItemProps } from './components/menu-item/menu-item.types.js';
 export type { MenuItemTriggerProps } from './components/menu-item-trigger/menu-item-trigger.types.js';
 export { Menubar } from './components/menubar/menubar.component.js';

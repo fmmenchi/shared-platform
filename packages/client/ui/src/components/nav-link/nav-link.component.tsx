@@ -1,6 +1,9 @@
 import type { ElementType } from 'react';
 import { cn } from '../../util/cn.js';
 import { useUiAdapters } from '../../i18n/provider.js';
+import { useInjectedCurrent } from './nav-link.current.js';
+import { isExternalHref } from '../../primitives/is-external-href.js';
+import { Slot } from '../../primitives/slot.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -14,7 +17,7 @@ import styles from './nav-link.module.css';
  * of that away.
  */
 function NavLink(props: NavLinkProps) {
-  const { as, current, className, children, ...rest } = props;
+  const { as, asChild, current, className, children, ...rest } = props;
 
   /*
    * THE ROUTER COMES FROM THE PROVIDER, not from every call site. `Link` is an
@@ -27,7 +30,29 @@ function NavLink(props: NavLinkProps) {
    * tolerantly, so a `NavLink` outside a provider is still a plain anchor.
    */
   const injected = useUiAdapters()?.Link;
-  const Component = (as ?? injected ?? 'a') as ElementType;
+  // A destination that LEAVES the app never goes through the router, and the
+  // component decides that rather than asking the caller to remember: `as="a"`
+  // was the only defence, so forgetting it handed `https://…` or a `mailto:` to
+  // a client-side router. It is the same call this component already makes —
+  // which element renders — applied to the one case where the answer is in the
+  // href itself.
+  const external = isExternalHref(rest.href);
+  // THREE levels, most specific first. An explicit `current` wins, because it
+  // is the only one that can know what matching cannot. Then the adapter, if
+  // the app gave one. Outside the chain entirely: an injected `Link` that marks
+  // ITSELF — React Router's `NavLink`, TanStack's `activeProps` — since it
+  // renders the element and its own attribute lands last.
+  // Not asked for an external href: it can never be where the reader is, and
+  // asking sends another site's URL into the app's own matcher.
+  const fromAdapter = useInjectedCurrent(external ? undefined : rest.href);
+  const active = current ?? fromAdapter;
+  // `asChild` slots into the SAME position every other choice does, and that
+  // is why it costs one line: whatever renders here is handed `aria-current`,
+  // the class and the rest, and `Slot` differs only in putting them on an
+  // element the app already wrote instead of one of its own.
+  const Component = (
+    asChild ? Slot : (as ?? (external ? 'a' : injected) ?? 'a')
+  ) as ElementType;
 
   return (
     <li className={styles.item}>
@@ -36,7 +61,7 @@ function NavLink(props: NavLinkProps) {
         // current DELETED a consumer's own `aria-current` — the attribute has
         // seven legal values and this prop expressed one, so the escape hatch
         // was not merely unused but unreachable.
-        aria-current={current === true ? 'page' : current || undefined}
+        aria-current={active === true ? 'page' : active || undefined}
         {...rest}
         className={cn(styles.link, className)}
       >

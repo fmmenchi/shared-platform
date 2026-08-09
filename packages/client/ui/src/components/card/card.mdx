@@ -70,6 +70,45 @@ Two costs, and they are not small:
 - **selecting text inside the card is awkward**, because the layer takes the drag. A card holding a price, a code or an ID that people copy should not be linked this way — link the title only, with a plain `<a>` of your own;
 - **anything else clickable has to sit above the layer**. `CardActions` does that for you, which is half of why it exists; anything else you put in a linked card needs `position: relative`.
 
+### The destination: an `href`, or the link you wrote yourself
+
+`href` is a URL string, and it reaches your router through the same `Link`
+adapter `NavLink` uses — injected once on `UiProvider`. That covers most cards.
+
+It cannot cover a destination that is not a URL: a typed route with params, a
+link with a handler of its own. For those, hand over the whole element with
+`asChild`:
+
+```tsx
+<CardTitle level={3} asChild>
+  <RouterLink to="/orders/$id" params={{ id }}>
+    Order #{id}
+  </RouterLink>
+</CardTitle>
+```
+
+You write your router's link, with its real props checked by its own types —
+no augmentation, no cast, no generic — and this component puts its class and
+its `data-card-link` hook onto it. **The invisible whole-card layer works
+exactly as it does with `href`**, which is the part you could not reproduce by
+hand: that layer is `.link::after`, a hashed class this component owns and
+nothing outside can name.
+
+Three things to know:
+
+- **your component must forward what it does not consume.** The class and the
+  hook arrive as props on the element you wrote; a component that destructures
+  the props it knows and drops the rest discards them, and the card silently
+  stops being clickable;
+- **`children` stops being the title text** and becomes the element containing
+  it — exactly one element, or it renders untouched with a warning;
+- **`asChild` and `href` together is two destinations**, not one described
+  twice. The child wins and it warns.
+
+Outside `asChild`, the design system's other props still belong to `Heading`:
+everything besides `href`, `asChild` and `children` is passed there, which is
+what a card title's props are for.
+
 ### `as` is constrained, like the rest of the package
 
 `as` here is not "any element". It is `div | article | section | li | a` — the elements a container may legally be — in the same spirit as `SurfaceHeading`, whose `as` is typed to a heading level, and `NavLink`, whose `as` must end in an anchor.

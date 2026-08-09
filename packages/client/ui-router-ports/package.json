@@ -1,0 +1,58 @@
+{
+  "name": "@fmmenchi/ui-router-ports",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./react-router": {
+      "@fmmenchi/source": "./src/react-router/index.ts",
+      "types": "./dist/react-router/index.d.ts",
+      "import": "./dist/react-router.js",
+      "default": "./dist/react-router.js"
+    },
+    "./tanstack": {
+      "@fmmenchi/source": "./src/tanstack/index.ts",
+      "types": "./dist/tanstack/index.d.ts",
+      "import": "./dist/tanstack.js",
+      "default": "./dist/tanstack.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:client",
+      "type:ui"
+    ]
+  },
+  "peerDependencies": {
+    "@fmmenchi/ui": ">=0.0.0",
+    "@tanstack/react-router": ">=1.0.0 <2",
+    "react": "^19.0.0",
+    "react-router": "^7.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react-router": {
+      "optional": true
+    },
+    "@tanstack/react-router": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@fmmenchi/ui": "workspace:*",
+    "@tanstack/react-router": "^1.170.23",
+    "react-router": "^7.18.2"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/client/ui-router-ports"
+  },
+  "sideEffects": false
+}

@@ -14,16 +14,19 @@
     "@fmmenchi/tokens": "workspace:*",
     "@fmmenchi/ui": "workspace:*",
     "@fmmenchi/ui-form-ports": "workspace:*",
+    "@fmmenchi/ui-router-ports": "workspace:*",
     "@hookform/resolvers": "^5.5.7",
     "react-hook-form": "^7.83.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tanstack/react-form": "^1.33.2",
+    "@tanstack/react-router": "^1.170.23",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@vitest/browser-playwright": "^4.1.10",
-    "formik": "^2.4.9"
+    "formik": "^2.4.9",
+    "react-router": "^7.18.2"
   }
 }
