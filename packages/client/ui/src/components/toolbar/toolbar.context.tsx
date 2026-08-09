@@ -1,5 +1,6 @@
 import { createPartContext } from '../../primitives/part-context.js';
 import type { Descendants } from '../../primitives/use-descendants.types.js';
+import type { ToolbarOrientation } from './toolbar.types.js';
 
 export interface ToolbarContextValue {
   /**
@@ -16,6 +17,12 @@ export interface ToolbarContextValue {
    * so it needs no identity, no `useId`, and no re-render when the focus moves.
    */
   items: Descendants<undefined>;
+  /**
+   * Which way the bar runs — read by `ToolbarSeparator`, which draws itself
+   * ACROSS it and so needs the opposite answer. Nothing else here needs it: the
+   * keyboard gets it from the prop directly.
+   */
+  orientation: ToolbarOrientation;
 }
 
 const { Context, useFamilyContext, usePart } =

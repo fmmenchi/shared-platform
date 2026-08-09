@@ -25,10 +25,11 @@ A set of controls that belong together, and one tab stop for all of them.
 
 ## Anatomy
 
-| part          | what it is                                                            |
-| ------------- | --------------------------------------------------------------------- |
-| `Toolbar`     | `role="toolbar"`, the family the controls register with, the keyboard |
-| `ToolbarItem` | one control joining the ring — it renders no element of its own       |
+| part               | what it is                                                            |
+| ------------------ | --------------------------------------------------------------------- |
+| `Toolbar`          | `role="toolbar"`, the family the controls register with, the keyboard |
+| `ToolbarItem`      | one control joining the ring — it renders no element of its own       |
+| `ToolbarSeparator` | a line between groups, drawn across the bar                           |
 
 ## Props
 
@@ -172,7 +173,9 @@ This is the one question neither the menu nor the tab list had to ask, because b
 
 A horizontal bar **wraps** rather than scrolling. A tab list refuses to, because its selected marker has to stay on a rail; a toolbar has no rail and nothing to line up, so wrapping is the honest answer on a narrow screen — and it keeps every control reachable at 400% zoom without sideways scrolling, which WCAG 1.4.10 asks for. A vertical bar stretches its controls to the widest, so the column has one edge rather than a ragged one.
 
-There is no `ToolbarSeparator` yet. `role="separator"` between groups is part of the APG pattern and worth having; an unwrapped child is legal (it simply is not on the ring), so a `<div role="separator" aria-orientation="vertical" />` works today without token-correct styling.
+**`ToolbarSeparator`** draws the line between groups. It is an `<hr>` — whose implicit role is already `separator`, the same element `MenuSeparator` uses — and it joins no family, so the arrows and the tab stop pass straight over it.
+
+It takes no `orientation` prop, and that is the point of it existing rather than being an `<hr>` you write: a separator lies **across** the bar, so its orientation is the opposite of the toolbar's. `role="separator"` defaults to `horizontal`, so a bar running across the page needs a line that declares `aria-orientation="vertical"` or it is announced as the thing it is not. Getting that backwards is easy and invisible, and turning a toolbar vertical should not mean remembering to turn every separator in it too.
 
 ## Accessibility
 

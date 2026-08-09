@@ -119,7 +119,10 @@ function Toolbar(props: ToolbarProps) {
   /** Whether the focus is somewhere inside this bar — for re-homing it. */
   const inside = useRef(false);
 
-  const context = useMemo<ToolbarContextValue>(() => ({ items }), [items]);
+  const context = useMemo<ToolbarContextValue>(
+    () => ({ items, orientation }),
+    [items, orientation],
+  );
 
   useDevWarning(
     label.trim() === '',

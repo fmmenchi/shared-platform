@@ -5,6 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Toolbar } from './toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
+import { ToolbarSeparator } from '../toolbar-separator/toolbar-separator.component.js';
 import { Button } from '../button/button.component.js';
 import { Tooltip } from '../tooltip/tooltip.component.js';
 import { renderUi } from '../../test/render.js';
@@ -1056,6 +1057,71 @@ describe('Toolbar', () => {
     expect(document.activeElement).toBe(control('Italic'));
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  describe('ToolbarSeparator lies ACROSS the bar', () => {
+    const grouped = (
+      props: Partial<React.ComponentProps<typeof Toolbar>> = {},
+    ) => (
+      <Toolbar label="Text formatting" {...props}>
+        <ToolbarItem>
+          <button type="button">Bold</button>
+        </ToolbarItem>
+        <ToolbarSeparator />
+        <ToolbarItem>
+          <button type="button">Left</button>
+        </ToolbarItem>
+      </Toolbar>
+    );
+
+    it('runs vertically inside a bar that runs across', async () => {
+      render(grouped());
+
+      // `role="separator"` defaults to horizontal, so a line drawn DOWN a bar
+      // that runs ACROSS has to say so or be announced as the thing it is not.
+      // Getting this backwards is invisible, which is why it is not a prop.
+      const rule = screen.getByRole('separator');
+      expect(rule).toHaveAttribute('aria-orientation', 'vertical');
+      expect(rule).toHaveAttribute('data-orientation', 'vertical');
+    });
+
+    it('runs horizontally inside a bar that runs down', async () => {
+      render(grouped({ orientation: 'vertical' }));
+
+      // And says nothing, because horizontal is what the role already means.
+      const rule = screen.getByRole('separator');
+      expect(rule).not.toHaveAttribute('aria-orientation');
+      expect(rule).toHaveAttribute('data-orientation', 'horizontal');
+    });
+
+    it('is a thing to see, not a thing to reach', async () => {
+      render(grouped());
+      await waitFor(() => expect(stops()).toEqual(['Bold']));
+
+      // It joins no family and takes no focus, so the ring walks straight over
+      // it and it is never a tab stop of its own.
+      control('Bold').focus();
+      await browser.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(control('Left'));
+      expect(stops()).toEqual(['Left']);
+    });
+
+    it('is a plain rule with no bar around it', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<ToolbarSeparator />);
+
+      // Nothing to be across, and a horizontal rule is what an `<hr>` already
+      // is — but the misplaced part still says so by name.
+      expect(screen.getByRole('separator')).not.toHaveAttribute(
+        'aria-orientation',
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('used outside a <Toolbar>'),
+      );
+      warn.mockRestore();
+    });
   });
 
   it('has no axe violations', async () => {

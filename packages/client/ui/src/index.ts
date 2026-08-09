@@ -219,3 +219,5 @@ export type {
 } from './components/toolbar/toolbar.types.js';
 export { ToolbarItem } from './components/toolbar-item/toolbar-item.component.js';
 export type { ToolbarItemProps } from './components/toolbar-item/toolbar-item.types.js';
+export { ToolbarSeparator } from './components/toolbar-separator/toolbar-separator.component.js';
+export type { ToolbarSeparatorProps } from './components/toolbar-separator/toolbar-separator.types.js';

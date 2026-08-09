@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Toolbar } from './toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
+import { ToolbarSeparator } from '../toolbar-separator/toolbar-separator.component.js';
 import { Button } from '../button/button.component.js';
 import { Input } from '../input/input.component.js';
 
@@ -56,6 +57,17 @@ const formatting = (
     <ToolbarItem>
       <Button variant="secondary" size="sm" disabled>
         Strikethrough
+      </Button>
+    </ToolbarItem>
+    <ToolbarSeparator />
+    <ToolbarItem>
+      <Button variant="secondary" size="sm">
+        Left
+      </Button>
+    </ToolbarItem>
+    <ToolbarItem>
+      <Button variant="secondary" size="sm">
+        Centre
       </Button>
     </ToolbarItem>
   </>
