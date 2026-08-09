@@ -73,6 +73,8 @@ export { Radio } from './components/radio/radio.component.js';
 export type { RadioProps } from './components/radio/radio.types.js';
 export { Checkbox } from './components/checkbox/checkbox.component.js';
 export type { CheckboxProps } from './components/checkbox/checkbox.types.js';
+export { Switch } from './components/switch/switch.component.js';
+export type { SwitchProps } from './components/switch/switch.types.js';
 export { ChoiceField } from './components/choice-field/index.js';
 export type { ChoiceFieldProps } from './components/choice-field/choice-field.types.js';
 export { FormInput } from './components/form-input/form-input.component.js';
@@ -83,6 +85,8 @@ export { FormSelect } from './components/form-select/form-select.component.js';
 export type { FormSelectProps } from './components/form-select/form-select.types.js';
 export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
+export { FormSwitch } from './components/form-switch/form-switch.component.js';
+export type { FormSwitchProps } from './components/form-switch/form-switch.types.js';
 export type {
   UseFormField,
   UseFormErrors,

@@ -1,0 +1,49 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormSwitchStories from './form-switch.stories.tsx';
+
+<Meta of={FormSwitchStories} />
+
+# FormSwitch
+
+FormSwitch is a bound setting — notifications on, a weekly digest on — already bound to the **form adapter in scope**. It renders the same anatomy as `ChoiceField` + `Switch`, and takes its control props and its error messages from the adapter, so the call site names no form library.
+
+```tsx
+<FormAdapterProvider adapter={useMyFormField}>
+  <FormSwitch name="…" label="…" />
+</FormAdapterProvider>
+```
+
+## Props
+
+There is no `error` prop: the messages come from the adapter as a **list**, so they cannot be forgotten or set out of step with the library's own state. Every other native prop passes through, and an explicit one at the call site beats the binding.
+
+**What the binding owns is not a prop here at all** — `checked`, `defaultChecked`, `onChange`, `onBlur` and the value props are the library's, and passing one is a compile error rather than a field that silently stops reporting. A `ref` is the exception, and is merged with the binding's. See [FormInput](?path=/docs/components-inputs-forminput--docs) for the reasoning and for the levers to use instead.
+
+<Controls of={FormSwitchStories.Default} />
+
+## Usage
+
+<Canvas of={FormSwitchStories.Default} />
+
+### The form is the state, not the submit
+
+This is the one thing to get right, and it is the boundary rather than a detail. A switch **applies the moment it is flipped** ([ADR-0024](../../../../../apps/docusaurus/docs/adr/0024-toggle-switch-checkbox-boundary.md)). Binding one to a form library does not suspend that: use this where the library is holding the state of a settings surface that persists on change — for validation, dirty tracking, one source of truth — not to park a switch in a form that submits later.
+
+If there is a Save button, the honest control is a checkbox, so the honest component is `FormChoice`. The shape is not the decision; the question the user is answering is.
+
+<Canvas of={FormSwitchStories.Settings} />
+
+### The adapter is a HOOK, not a function
+
+Same as every other bound component here, and measured: with a plain closure in context the React Compiler caches the provider, so an error object mutated in place never reaches the field. As a hook it is called inside each bound component, so every field subscribes for itself.
+
+### What it cannot do
+
+Binding is by **name alone**, so a per-field validation rule has nowhere to live at the call site. If you want the rule next to the field, use `ChoiceField` + `Switch` and bind them yourself — the bound components add no markup, so nothing else changes.
+
+## Accessibility
+
+Identical to the unbound anatomy: the label is associated by id, the messages are announced through `aria-describedby`, and `aria-invalid` follows them. The control keeps everything `Switch` guarantees — announced as a switch, `Space` toggles it, the state is not carried by colour alone, and Windows High Contrast is handled.
+
+A control with **no adapter in scope throws** rather than rendering: an unbound field flips perfectly well and saves nothing, which is a failure you would meet in production data rather than in development.
