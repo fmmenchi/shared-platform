@@ -45,18 +45,27 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
     or a `var()` makes the browser reject the WHOLE rule — silently, losing both the interpolation
     and the type guard. Nothing downstream can see it: Stylelint has no rule and `tokens.test.ts`
     only greps for `rem`.
-  - **`readVars` strips comments before parsing**, and so must anything else that reads `vars.css`.
+  - **`readVars` is THE parser for `--fm-*` declarations** — the contract suite shares it rather
+    than keeping a second one, which it did, anchored on nothing. It strips comments before parsing,
+    and everything reading `vars.css` must go through it.
     The declaration regex anchors on the start of a LINE, so a role commented OUT during a retune
     reads as a live declaration — completeness passes, contrast reads the value out of the comment,
     the registration is emitted, and the shipped CSS defines nothing, so the role resolves to the
-    registered `initial-value`: black, on every consumer, in both themes.
+    registered `initial-value`: black, on every consumer, in both themes. It also throws on a
+    duplicate declaration, which is the check the second parser used to make.
+  - **`src/generate.ts` and `src/registry.ts` are build-time only** and excluded from
+    `tsconfig.lib.json`: nothing exports them, so shipping them to consumers is weight with no
+    surface.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
   no runtime relative-color). `styles/properties.css` (imported at the top of `vars.css`)
   `@property`-registers the color roles + radius so they are TYPED and INTERPOLATABLE (theme
   crossfade, gradients) — ADR-0012. A COLOUR's `initial-value` is a throwaway placeholder, never the
   real token, so single-source holds; a LENGTH's cannot be (the browser rejects a `rem` there and
-  drops the whole rule), so it is COMPUTED from the real value at the 16px root. Coverage asserted
-  by `tokens.test.ts`, agreement with the values by `generate.test.ts`. `styles/tailwind.css` is a
+  drops the whole rule), so it is COMPUTED from the real value **assuming a 16px root** — which is a
+  user preference, not a guarantee. It costs nothing in practice: `:root` plus `inherits: true`
+  always cascades the real rem over the initial-value, which is only ever reached when the
+  stylesheet is not in effect. Coverage asserted by `tokens.test.ts`, agreement with the values by
+  `generate.test.ts`. `styles/tailwind.css` is a
   names-only `@theme inline` bridge (no values → no drift). `presets/dark.css` overrides EXACTLY
   every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black
   shadows vanish on a dark background — enforced by `tokens.test.ts`).

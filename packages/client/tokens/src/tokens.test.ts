@@ -16,6 +16,7 @@ import {
   TEXT_TOKENS,
 } from './index.js';
 import { CONTRAST_PAIRS, validateTheme } from './validate.js';
+import { readVars } from './generate.js';
 
 /**
  * Validation of the token contract — this is what makes a theme "allowed":
@@ -32,15 +33,20 @@ import { CONTRAST_PAIRS, validateTheme } from './validate.js';
 const styles = dirname(fileURLToPath(import.meta.url)) + '/styles';
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
-/** Parse `--fm-*: value;` declarations (multi-line values supported). */
-function parseVars(css: string): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const m of css.matchAll(/(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/g)) {
-    expect(map.has(m[1]), `duplicate declaration of ${m[1]}`).toBe(false);
-    map.set(m[1], m[2].replace(/\s+/g, ' ').trim());
-  }
-  return map;
-}
+/**
+ * ONE PARSER, shared with the generator.
+ *
+ * This file had its own, and it was anchored on nothing — so it read a
+ * declaration anywhere in the text, including one commented OUT during a retune.
+ * Everything here then passed on a role the shipped CSS does not define:
+ * completeness saw it, the contrast maths read its value out of the comment, and
+ * the role resolved at runtime to the `@property` initial-value. Black, on every
+ * consumer, in both themes, with the suite green.
+ *
+ * `readVars` strips comments and throws on a duplicate, which is what the local
+ * one asserted.
+ */
+const parseVars = readVars;
 
 /** Resolve one-or-more levels of `var(--fm-x)` references. */
 function resolve(map: Map<string, string>, value: string, depth = 0): string {
@@ -162,6 +168,16 @@ describe('tailwind bridge', () => {
   });
 });
 
+/*
+ * An INDEPENDENT read of the file on disk, and that is all it is now.
+ *
+ * It used to be the thing that stopped the registrations drifting from the
+ * contract. They cannot: `properties.css` is generated FROM the contract, and
+ * `generate.test.ts` compares it byte for byte. What is left here is worth
+ * keeping for one reason only — it parses the shipped file with different code
+ * and different assumptions, so a generator that renders something plausible and
+ * wrong still has to get past a reader that never saw it.
+ */
 describe('@property registrations (typed tokens — ADR-0012)', () => {
   const properties = read('properties.css').replace(/\s+/g, '');
   const registered = (name: string, syntax: string) =>
