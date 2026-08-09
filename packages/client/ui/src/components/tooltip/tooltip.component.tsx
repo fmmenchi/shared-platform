@@ -1,20 +1,11 @@
-import {
-  cloneElement,
-  isValidElement,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type Ref,
-} from 'react';
+import { isValidElement, useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import {
   useTooltipTriggerWarning,
   useTooltipUnfocusableWarning,
 } from './tooltip.guards.js';
-import { mergeRefs } from '../../primitives/merge-refs.js';
+import { Slot } from '../../primitives/slot.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useTooltipDisclosure } from './tooltip.disclosure.js';
 import { tooltipVariants } from './tooltip.variants.js';
@@ -57,8 +48,12 @@ function Tooltip(props: TooltipProps) {
     closeDelay = 120,
   } = props;
 
-  // Without this the failure is a TypeError from inside `cloneElement`, which
-  // names neither the component nor the mistake.
+  // STRICTER than the slot it renders through, on purpose. `Slot` warns and
+  // renders the children untouched, which is right for a class name or a
+  // marking — losing those degrades the look. Losing the TRIGGER leaves a
+  // tooltip that can never be opened by anything, and a surface sitting in the
+  // DOM waiting for an anchor that will not come: the component has no job
+  // left, so it says so instead of pretending.
   if (!isValidElement(children)) {
     throw new Error(
       'Tooltip: `children` must be a single element that accepts a ref and spreads its props.',
@@ -107,12 +102,14 @@ function Tooltip(props: TooltipProps) {
     onAnchorLost: dismiss,
   });
 
-  // The trigger's listeners are NATIVE, added to the node itself, and that is
-  // the whole composition story: `cloneElement` props REPLACE the child's, so a
-  // trigger with its own `onFocus` would have silently lost it — the same defect
-  // the form ports had with a plain spread, in different clothes. Composing by
-  // hand is possible but easy to forget one; `addEventListener` is additive by
-  // construction, so the trigger's handlers were never in our way to begin with.
+  // The trigger's listeners are NATIVE, added to the node itself. `Slot` now
+  // composes handlers rather than replacing them, so the original reason for
+  // this — a hand-written `cloneElement` that would have silently dropped a
+  // trigger's own `onFocus` — is gone. It stays for the stronger one it always
+  // also had: a handler passed as a PROP depends on the child forwarding props
+  // it does not recognise, and a component that keeps only the ones it knows
+  // loses it with nothing to report. A listener on the node cannot be dropped
+  // by anybody, and `addEventListener` is additive by construction.
   useEffect(() => {
     if (!triggerNode) return;
 
@@ -227,13 +224,9 @@ function Tooltip(props: TooltipProps) {
       'say, or drop the tooltip.',
   );
 
-  // `children.props.ref`, not `children.ref`: in React 19 the ref IS a regular
-  // prop, and reading the old field warns on every render.
-  const childProps = children.props as Record<string, unknown> & {
-    'aria-describedby'?: string;
-    ref?: Ref<HTMLElement>;
-  };
-  const childRef = childProps.ref;
+  // Read for the effect below, and for nothing else now: the merging itself is
+  // `Slot`'s, which knows `aria-describedby` is a LIST of ids rather than one.
+  const childProps = children.props as { 'aria-describedby'?: string };
   const theirDescribedBy = childProps['aria-describedby'];
 
   // …and the description must not depend on it either. The prop above is what
@@ -261,19 +254,19 @@ function Tooltip(props: TooltipProps) {
     };
   }, [triggerNode, id, theirDescribedBy]);
 
-  // The state setter IS a callback ref, so the trigger node needs no ref of our
-  // own — which is also what keeps this out of the React Compiler's way: a ref
-  // handed to a plain function during render counts as a ref read, and it is
-  // right to say so.
-  const triggerRef = useMemo(
-    () => mergeRefs<HTMLElement>(setTriggerNode, childRef),
-    [childRef],
+  // The state setter IS a callback ref, so the trigger needs no ref of our own.
+  // `Slot` merges it with whatever ref the child already had, keeps both ids on
+  // `aria-describedby` because that attribute is a list, and renders the
+  // child's own element — nothing of the tooltip's appears in the DOM here.
+  //
+  // This used to be a hand-written `cloneElement` beside a `useMemo`, and the
+  // two rules it encoded — merge the ref, concatenate the description — are the
+  // two `Slot` states as truths about a ref and about an id list.
+  const trigger = (
+    <Slot ref={setTriggerNode} aria-describedby={id}>
+      {children}
+    </Slot>
   );
-
-  const trigger = cloneElement(children, {
-    ref: triggerRef,
-    'aria-describedby': cn(theirDescribedBy, id),
-  } as Record<string, unknown>);
 
   return (
     <>

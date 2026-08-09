@@ -110,4 +110,61 @@ describe('Slot', () => {
     expect(screen.getByText('plain text')).toBeInTheDocument();
     warn.mockRestore();
   });
+
+  it('adds no element of its own — the DOM has exactly the child', () => {
+    const { container } = render(
+      <Slot className="ours">
+        <a href="/x">Go</a>
+      </Slot>,
+    );
+    // The whole point, and the reason `CardTitle`'s invisible layer works: the
+    // `::after` belongs to the app's own anchor, with nothing between it and
+    // the card. A wrapper would put a box in the middle and change what
+    // `position: absolute` resolves against.
+    expect(container.childNodes).toHaveLength(1);
+    expect(container.firstElementChild?.tagName).toBe('A');
+    expect(container.querySelector('span, div')).toBeNull();
+  });
+
+  it('keeps BOTH ids on an aria list, the child’s first', () => {
+    render(
+      <Slot aria-describedby="ours" aria-labelledby="ours-label">
+        <a href="/x" aria-describedby="theirs" aria-labelledby="theirs-label">
+          Go
+        </a>
+      </Slot>,
+    );
+    const el = screen.getByRole('link');
+    // `aria-describedby` is a LIST of ids, the same kind of thing `class` is,
+    // so keeping one side throws the other away — a tooltip that replaced the
+    // element's own description would silence it.
+    expect(el).toHaveAttribute('aria-describedby', 'theirs ours');
+    // Read in order: what the element already said comes first.
+    expect(el).toHaveAttribute('aria-labelledby', 'theirs-label ours-label');
+  });
+
+  it('does not treat a single-id attribute as a list', () => {
+    render(
+      <Slot aria-activedescendant="ours">
+        <div role="listbox" aria-activedescendant="theirs" />
+      </Slot>,
+    );
+    // Two tokens here are not "more", they are INVALID: this attribute names
+    // one element. The list above has to stay exactly as long as ARIA says.
+    expect(screen.getByRole('listbox')).toHaveAttribute(
+      'aria-activedescendant',
+      'theirs',
+    );
+  });
+
+  it('says nothing when there is nothing to slot onto', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    for (const nothing of [null, undefined, false, true] as const) {
+      render(<Slot className="ours">{nothing}</Slot>);
+    }
+    // `{canDelete && <Button/>}` is how a control is left out, not a mistake.
+    // A warning that is false teaches people to ignore the ones that are not.
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
 });

@@ -102,6 +102,22 @@ function ToolbarItem(props: ToolbarItemProps) {
   const element = children as Cloneable;
   const Control = element.type as ElementType;
 
+  // NOT `Slot`, and this is the one place in the package that says no to it.
+  //
+  // `Slot` gives the CHILD the last word on an ordinary prop, which is right:
+  // the child is what the app wrote. Here the toolbar must have it. A toolbar
+  // is ONE tab stop and it decides which control holds it, so the `tabIndex`
+  // below is not a suggestion the control may override — the warning above says
+  // exactly that, and a control that won would take the bar's keyboard model
+  // with it, silently and completely.
+  //
+  // That precedence is not a truth about slotting; it is this component's
+  // authority over one attribute. Expressing it in `Slot` would mean giving the
+  // primitive a switch, and a primitive with a switch has stopped knowing the
+  // answer — it would hold two conventions instead of one fact. So the rules
+  // `Slot` states as truths (a class is a list, an id list is a list, refs
+  // compose) are used from there, and the one thing that is ours stays here.
+  //
   // REBUILT IN JSX RATHER THAN CLONED, and the reason is narrow and absolute: a
   // `ref` may be read during render ONLY in a JSX attribute. `cloneElement`
   // takes its props as a function argument, so merging our own `ref` prop there

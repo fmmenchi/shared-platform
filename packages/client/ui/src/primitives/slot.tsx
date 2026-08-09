@@ -5,6 +5,22 @@ import { mergeRefs } from './merge-refs.js';
 import { useDevWarning } from './use-dev-warning.js';
 import type { SlotProps } from './slot.types.js';
 
+/**
+ * ARIA attributes whose value is a LIST of ids, not an id.
+ *
+ * The same kind of thing `class` is, so the same answer: keeping one side
+ * throws the other away. ARIA 1.2 has exactly these five — `aria-details` and
+ * `aria-errormessage` take a single id and must NOT be here, and neither must
+ * `aria-activedescendant`, where a second token is invalid rather than extra.
+ */
+const ID_LISTS = new Set([
+  'aria-describedby',
+  'aria-labelledby',
+  'aria-controls',
+  'aria-owns',
+  'aria-flowto',
+]);
+
 /** `onClick`, `onKeyDown`, … — anything React treats as an event handler. */
 const isHandlerName = (name: string) =>
   name.startsWith('on') && name.charCodeAt(2) >= 65 && name.charCodeAt(2) <= 90;
@@ -45,6 +61,16 @@ function mergeProps(ours: Props, theirs: Props): Props {
       // Ours FIRST, so a consumer's rule of equal specificity wins the cascade
       // — the same order every component in this package uses for `className`.
       merged[name] = cn(our as string, value as string);
+      continue;
+    }
+
+    if (ID_LISTS.has(name)) {
+      // THEIRS first, ours after: these are read in order, so a description the
+      // element already had is the one it leads with, and what this component
+      // adds is an addition rather than a replacement. The opposite order to
+      // `className` above, and for the opposite reason — that one is about
+      // which rule wins, this one is about what is said first.
+      merged[name] = cn(value as string, our as string);
       continue;
     }
 
@@ -90,8 +116,15 @@ function Slot(props: SlotProps): ReactNode {
   const { children, ref: ourRef, ...ours } = props;
 
   const valid = isValidElement(children);
+  // NOTHING is not a mistake. `{canDelete && <Button/>}` is the ordinary way to
+  // leave a control out, and `null`, `undefined`, `false` and `true` all render
+  // nothing — there is no element to slot onto and nothing went wrong. Warning
+  // there would be false, and a warning that is false teaches people to ignore
+  // the ones that are not. A string or a list of elements is different: there
+  // IS something, and it cannot carry what this was given.
+  const nothing = children == null || children === false || children === true;
   useDevWarning(
-    !valid,
+    !valid && !nothing,
     'Slot: expected a single React element as its child, so there is something to put these props on. Rendered the children untouched — the class names, handlers and ref meant for them were dropped.',
   );
 
