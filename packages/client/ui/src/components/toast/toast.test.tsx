@@ -10,6 +10,7 @@ import { userEvent as browser } from '@vitest/browser/context';
 import { ToastRegion } from '../toast-region/toast-region.component.js';
 import { useToast } from '../toast-region/toast-region.context.js';
 import { Button } from '../button/button.component.js';
+import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 import type { ToastOptions } from './toast.types.js';
 
@@ -489,6 +490,46 @@ describe('Toast', () => {
     for (const animation of panel.getAnimations()) animation.finish();
 
     await waitFor(() => expect(screen.queryByText('Saved')).toBeNull());
+  });
+
+  it('says so when the provider is the wrong way round', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <ToastRegion>
+        <p>App</p>
+      </ToastRegion>,
+    );
+
+    // Silent degradation is the failure mode worth catching: outside the
+    // provider the region still works, still announces, and simply calls itself
+    // "Notifications" in an app that is not in English.
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no <UiProvider> above it'),
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('is quiet when the two are nested the right way', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    renderUi(
+      <ToastRegion>
+        <p>App</p>
+      </ToastRegion>,
+      { locale: 'it' },
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('no <UiProvider>'),
+    );
+    // And the name really is the localised one, which is the thing the warning
+    // is about — not merely that a provider was present.
+    expect(
+      screen.getByRole('status', { name: 'Notifiche' }),
+    ).toBeInTheDocument();
+    warn.mockRestore();
   });
 
   it('says so when it is used without a region', async () => {

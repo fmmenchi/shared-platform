@@ -38,6 +38,24 @@ toast?.({
 
 <Canvas of={ToastStories.Default} />
 
+### It goes inside the design system's provider, not around it
+
+`ToastRegion` names itself and its dismiss control from the message catalogue, so it has to sit **inside** `UiProvider`:
+
+```tsx
+<UiProvider adapters={{ i18n }}>
+  <ToastRegion>
+    <App />
+  </ToastRegion>
+</UiProvider>
+```
+
+The other order breaks nothing loudly — the region still works, still announces, and simply calls itself "Notifications" in an app that is not in English. That is the worst way to find a bug, so it warns in development instead.
+
+They are two providers on purpose. `UiProvider` renders an element only when it has something to carry, and folding a fixed, top-layer region into it would put one on every page of every consumer, including the ones that never raise a message. It would also turn a provider of _contracts_ into a provider that paints.
+
+Mounting it once at the root is the intended shape, and costs what you would hope: only components that call `useToast()` re-render when the queue changes — measured — because `children` is the same element across renders and React bails out of the subtree. The pause on hover does not re-render anything outside the region.
+
 ### The queue lives in a provider, not in a module
 
 The shorter API — an imported `toast()` backed by a module-level store — reads better at the call site and is **one object per process**. On a server that process serves every request, so two people would share a queue: one user's "Saved" appearing over another's page. Libraries that ship the imported form are client-only by construction; this package cannot assume that about its consumer, so the state goes where React already scopes state.

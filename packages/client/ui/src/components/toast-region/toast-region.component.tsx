@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { animateExit } from '../../primitives/animate-exit.js';
-import { useMessages } from '../../i18n/provider.js';
+import { useMessages, useUiAdapters } from '../../i18n/provider.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { Toast } from '../toast/toast.component.js';
 import { toastMessages } from '../toast/toast.messages.js';
 import { ToastContext } from './toast-region.context.js';
@@ -68,6 +69,24 @@ function ToastRegion(props: ToastRegionProps) {
     ...rest
   } = props;
   const t = useMessages(toastMessages);
+
+  /*
+   * ORDER, SAID OUT LOUD. This region names itself and its dismiss control from
+   * the message catalogue, so it has to sit INSIDE `UiProvider` — and nesting
+   * them the other way round breaks nothing loudly: `useMessages` falls back to
+   * English and the page looks fine to whoever wired it. The bug surfaces as an
+   * Arabic reader meeting "Notifications", which is the worst way to find out.
+   *
+   * The two are deliberately not one provider: `UiProvider` renders an element
+   * only when it has something to carry, and folding a fixed, top-layer region
+   * into it would put one on every page of every consumer, including the ones
+   * that never raise a message.
+   */
+  const outsideTheProvider = useUiAdapters() === undefined;
+  useDevWarning(
+    outsideTheProvider,
+    'ToastRegion: no <UiProvider> above it, so its region name and dismiss label fall back to English however the app is localised. Wrap the region in the provider, not the other way round.',
+  );
 
   const [toasts, setToasts] = useState<readonly ToastEntry[]>([]);
   const [paused, setPaused] = useState(false);
