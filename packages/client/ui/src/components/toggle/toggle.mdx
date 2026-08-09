@@ -1,0 +1,85 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ToggleStories from './toggle.stories.tsx';
+
+<Meta of={ToggleStories} />
+
+# Toggle
+
+A button that **stays pressed** — bold, italic, "show the grid" — applying to whatever is selected right now. It carries `aria-pressed`, so the state is announced as part of the button instead of as a second control beside it.
+
+**Not a switch and not a checkbox.** It acts on the current context, immediately, and submits nothing — see [Toggle, Switch or Checkbox?](#toggle-switch-or-checkbox) before reaching for it.
+
+## Props
+
+Every `Button` prop except four, each a compile error rather than a silent override: `as` (a toggle is a `<button>`), `variant` (the treatment _is_ the component — quiet off, filled on), `type` (it never submits) and `aria-pressed` (written from `pressed`).
+
+<Controls of={ToggleStories.Default} />
+
+## Usage
+
+### Uncontrolled
+
+It holds its own state and reports every press. `defaultPressed` seeds it.
+
+<Canvas of={ToggleStories.Default} />
+
+### A toolbar
+
+The case the component exists for: a row of independent toggles acting on the selection. Independent is the operative word — for "exactly one of these" you want a radio group, not three toggles.
+
+<Canvas of={ToggleStories.Toolbar} />
+
+### Icon-only
+
+The icon is decorative, so an icon-only toggle needs `aria-label`. Without one a screen reader announces "button, pressed" with no subject.
+
+<Canvas of={ToggleStories.IconOnly} />
+
+### Controlled
+
+Pass `pressed` and the prop is the truth: the press is _asked for_ through `onPressedChange` and the button does not move until your state comes back round. `event.preventDefault()` inside `onClick` calls a press off without making the state controlled just to refuse one.
+
+<Canvas of={ToggleStories.Controlled} />
+
+### States
+
+<Canvas of={ToggleStories.States} />
+
+### Sizes
+
+Button's scale, unchanged — and, like every control this package draws, 44px tall under a coarse pointer whatever size was asked for.
+
+<Canvas of={ToggleStories.Sizes} />
+
+## Accessibility
+
+- **The state is `aria-pressed` on a `<button>`.** Assistive tech announces "Bold, toggle button, pressed"; nothing needs a live region, because the state belongs to the control the user just operated.
+- **Both keys work**, because it is a real button: `Space` and `Enter` both toggle it. This is the guarantee a `<div role="button">` quietly loses.
+- **It never submits.** `type="button"`, so a toggle in a toolbar inside a form cannot submit the page.
+- **Windows High Contrast is handled.** Forced colors flattens every token fill, which would make pressed and unpressed identical — the one distinction this component exists to draw. The pressed state repaints with the system's own `Highlight`/`HighlightText` pair.
+- **Icon-only needs `aria-label`**; there is no fallback that could be right.
+- **Do not add `role="switch"`** to get a switch. That changes the state property the browser exposes (`aria-checked`, not `aria-pressed`) and the two do not mix — reach for the right component instead.
+
+## Guidelines
+
+### Toggle, Switch or Checkbox?
+
+These three are the most confused trio in any design system, and the mistake is invisible until someone uses a screen reader. The decision is recorded in [ADR-0024](../../../../../apps/docusaurus/docs/adr/0024-toggle-switch-checkbox-boundary.md); this is the short form.
+
+| You are asking                                  | Component  | Announced as      | Has a form value |
+| ----------------------------------------------- | ---------- | ----------------- | ---------------- |
+| "apply this to **what is selected right now**"  | `Toggle`   | button, pressed   | no               |
+| "**this setting** is on, from now on"           | `Switch`   | switch, on        | yes              |
+| "include this in **what I am about to submit**" | `Checkbox` | checkbox, checked | yes              |
+
+The field test that survives an argument:
+
+1. **Does it act on _this thing here_** — the selection, this view, this panel — and stop mattering when you navigate away? **Toggle.**
+2. **Is it a preference that outlives the page** and takes effect the moment you flip it, with no Save? **Switch.**
+3. **Is it one of several things you are including** in what you send, with the effect waiting for the submit? **Checkbox.**
+
+Two consequences worth stating, because they are where the confusion actually costs something:
+
+- **A toggle in a form is not a field.** It has no `name` and no value, and it does not submit. If you find yourself wanting one to post, you wanted a checkbox or a switch.
+- **A switch that needs a Save button is the wrong component.** "Applies immediately" is the whole of what a switch means to the person using it; a switch that waits for a submit has told them something untrue, and a checkbox is the honest control.

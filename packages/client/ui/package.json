@@ -430,6 +430,12 @@
       "types": "./dist/components/toolbar-separator/index.d.ts",
       "import": "./dist/toolbar-separator.js",
       "default": "./dist/toolbar-separator.js"
+    },
+    "./toggle": {
+      "@fmmenchi/source": "./src/components/toggle/index.ts",
+      "types": "./dist/components/toggle/index.d.ts",
+      "import": "./dist/toggle.js",
+      "default": "./dist/toggle.js"
     }
   },
   "nx": {

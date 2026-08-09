@@ -1,0 +1,41 @@
+/*
+ * Toggle styles — the PRESSED state and nothing else.
+ *
+ * The off state is `Button`'s ghost treatment, which this component composes:
+ * the sizes, the 44px coarse-pointer target, the focus ring and the press
+ * scale are all authored once in `button.module.css` and are not repeated here.
+ *
+ * Every rule hangs off `[aria-pressed='true']` rather than a second class, and
+ * that is load-bearing rather than tidy. A plain `.toggle` fill would tie with
+ * `.ghost` at (0,1,0) and be settled by which stylesheet the bundler emitted
+ * last — a coin toss that changes with an unrelated import. The attribute takes
+ * it to (0,2,0), so ON beats the ghost fill by the cascade's own rules, and it
+ * reads from the same attribute assistive tech does.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  /* ON is a filled chip: `secondary` is the action family whose foreground,
+     hover, active and disabled roles are all contracted, so the state survives
+     re-theming instead of being a tint that happens to work in one preset. */
+  .toggle[aria-pressed='true'] {
+    @apply bg-secondary text-secondary-foreground;
+    @apply hover:bg-secondary-hover active:bg-secondary-active;
+    @apply disabled:bg-secondary-disabled disabled:text-secondary-disabled-foreground;
+  }
+
+  /* Windows High Contrast replaces every token fill with a system colour, so
+     the chip and the ghost collapse into the same flat surface and PRESSED
+     becomes unreadable — the one state this component exists to show. The
+     `Highlight`/`HighlightText` pair is the platform's own "this one is
+     chosen", which is why it is a system colour and not a token. Button's
+     `ButtonText` border stays: it keeps the boundary the fill no longer draws. */
+  @media (forced-colors: active) {
+    .toggle[aria-pressed='true'] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+  }
+}

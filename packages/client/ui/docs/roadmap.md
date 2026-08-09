@@ -17,7 +17,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Typography**    | `Heading`                                                                                                                                                      |
 | **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                         |
-| **Buttons**       | `Button` · `Toolbar` (+ Item, Separator)                                                                                                                       |
+| **Buttons**       | `Button` · `Toggle` · `Toolbar` (+ Item, Separator)                                                                                                            |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormErrorSummary`                                                                                |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                    |
@@ -50,6 +50,15 @@ Not by popularity. Three questions, in this order:
 `<input type="checkbox" role="switch">`. Checkbox answers "is this included"; a switch answers "is
 this on", and today a consumer building settings has to fake one. Native-first, so the state stays
 in the DOM (see [Controlled and uncontrolled](./index.md)).
+
+**Its contract is already written.** The boundary between the three controls people confuse — the
+button that stays pressed, the setting that applies immediately, the box that submits with the form
+— was decided in ADR-0024
+rather than left for whoever builds this, and the button half of it shipped first on purpose: a
+switch arriving into a package with nothing else that holds a pressed state is an invitation to use
+it for a toolbar. What is left here is the control itself, against a contract that already says the
+input stays native, the state stays in the DOM, and a switch that needs a Save button is the wrong
+component.
 
 ### 2. `Progress` — the Feedback group is one wide
 

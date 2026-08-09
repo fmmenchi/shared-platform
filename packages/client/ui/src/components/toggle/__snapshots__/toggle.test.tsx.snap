@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Toggle > matches the rendered snapshot 1`] = `
+<button
+  aria-pressed="true"
+  class="_button_m60i6_37 _ghost_m60i6_139 _md_m60i6_183 _toggle_i57fb_3"
+  type="button"
+>
+  Bold
+</button>
+`;
