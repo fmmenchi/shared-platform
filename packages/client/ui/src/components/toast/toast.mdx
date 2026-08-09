@@ -91,6 +91,10 @@ The pause on hover remains, because reading is not the same as dismissing, and i
 
 So the fill is the page's own `card` colour and the status becomes an **edge**, using the same `--alert-border` the variant already set. Nothing new is mapped, and `card × card-foreground` is a pairing the token contract already declares.
 
+That edge is a hue, though, and a hue on its own is not a signal (WCAG 1.4.1) — which is what `Alert`'s `icon` slot is for. A toast is the **one `Alert` a consumer cannot reach into**: they hand `toast()` an options object and the region does the rendering. So `icon` is passed through, and a caller who wants the status legible without colour supplies the glyph. It stays optional, and it stays theirs — this package ships no icon set.
+
+The severity is spoken either way: `Alert` puts the word before the title for a screen reader, whether or not there is a glyph.
+
 ### A timed toast shows how long is left
 
 The bar runs on the **same custom property the timer uses**, so the thing on screen and the thing counting cannot promise different moments. It pauses with the clock — an indicator still draining while the timer is stopped would be a lie told sixty times a second — and it is `aria-hidden`, because it duplicates a fact a screen-reader user has by other means and a live region inside a live region announces nothing well. Under reduced motion it is not drawn at all: a continuously draining bar is exactly the movement the preference asks to be spared, and the message leaves either way.
@@ -131,4 +135,5 @@ That fixes the painting and **not** the interaction, which is worth stating rath
 - **`aria-atomic="false"`.** `role="status"` implies atomic, and the queue lives in the region — so without it every arrival re-read every message already up, severity words and button names included.
 - **The stack never blocks the page**: the region is always mounted, so it takes `pointer-events: none` and gives it back only on the toasts themselves.
 - **Reduced motion kills the movement and keeps the change**, which is the package's doctrine and now also what the code does: the entry drops to `fm-fade-in` under `reduce` rather than disappearing entirely, and the exit is opacity-only, so the primitive has no transform to strip. (An earlier version gated the whole animation on `no-preference`, which took the fade away with the travel — a reader who asked for less motion got none rather than a calmer one.)
+- **Colour is never the only signal.** The severity word is there for a screen reader; for a sighted reader the status edge is a hue, so `icon` is passed through to `Alert` for the glyph that makes it legible without colour.
 - **The ✕ is icon-only**, so `Button`'s coarse-pointer rule makes it 44×44 rather than 44 tall and 32 wide.

@@ -610,6 +610,35 @@ describe('Toast', () => {
     expect(timed.padEnd).toBeLessThanOrEqual(20);
   });
 
+  it("carries the caller's status glyph", async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{
+            variant: 'error',
+            title: 'Deleted',
+            icon: <span data-testid="glyph">!</span>,
+            children: 'The project could not be deleted.',
+          }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+
+    // THE ONE `Alert` A CONSUMER CANNOT REACH INTO: they hand over an options
+    // object and the region renders. Without the pass-through, the colour of
+    // one edge is the only status signal a sighted reader gets — four panels
+    // differing by hue alone (WCAG 1.4.1) — and `Alert` grew the slot for
+    // exactly that reason.
+    await waitFor(() => expect(screen.getByTestId('glyph')).toBeVisible());
+    // Decoration, not content: the severity is already said, once, by the
+    // hidden word `Alert` puts before the title.
+    expect(
+      screen.getByTestId('glyph').closest('[aria-hidden="true"]'),
+    ).not.toBeNull();
+  });
+
   it('is dense, and the way out sits on the title', async () => {
     render(
       <ToastRegion>

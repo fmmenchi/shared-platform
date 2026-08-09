@@ -35,7 +35,7 @@ import styles from './toast.module.css';
  * a control nothing is racing.
  */
 function Toast(props: ToastProps) {
-  const { id, variant, title, children, onDismiss, paused } = props;
+  const { id, variant, title, icon, children, onDismiss, paused } = props;
   const t = useMessages(toastMessages);
   // Computed rather than a destructuring default: one default reading another
   // binding from the same pattern is order-dependent, and the React Compiler
@@ -69,6 +69,7 @@ function Toast(props: ToastProps) {
       <Alert
         variant={variant}
         title={title}
+        icon={icon}
         // OFF. The region announces; see above.
         live="off"
         className={cn(styles.body, timed ? undefined : styles.hasDismiss)}
