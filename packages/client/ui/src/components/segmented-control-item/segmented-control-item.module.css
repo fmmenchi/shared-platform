@@ -1,5 +1,5 @@
 /*
- * ToggleGroupItem styles — the SEGMENT: a button drawn on a `<label>`, with the
+ * SegmentedControlItem styles — the SEGMENT: a button drawn on a `<label>`, with the
  * radio that carries the state hidden from sight inside it.
  *
  * Every state is read from the input through `:has()`, which is what lets the

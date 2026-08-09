@@ -1,0 +1,53 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormSegmentedControlStories from './form-segmented-control.stories.tsx';
+
+<Meta of={FormSegmentedControlStories} />
+
+# FormSegmentedControl
+
+FormSegmentedControl is a bound set of one-of-many options, drawn as buttons — an alignment, a date range — already bound to the **form adapter in scope**. It renders `Fieldset` + `SegmentedControl`, and takes its control props and its error messages from the adapter, so the call site names no form library.
+
+```tsx
+<FormAdapterProvider adapter={useMyFormField}>
+  <FormSegmentedControl name="align" label="Text alignment">
+    <SegmentedControlItem value="left">Left</SegmentedControlItem>
+    <SegmentedControlItem value="center">Center</SegmentedControlItem>
+  </FormSegmentedControl>
+</FormAdapterProvider>
+```
+
+## Props
+
+`label` is the **legend** — the visible name of the set, and the only one it has. `SegmentedControl`'s own `label` is deliberately not passed through: two names are announced twice ("Text alignment, group … Text alignment, radio group"), and the visible legend is the one worth keeping ([ADR-0025](../../../../../apps/docusaurus/docs/adr/0025-one-of-many-is-a-radio-group.md)).
+
+There is no `error` prop: the messages come from the adapter as a **list**, and register into the group's `aria-describedby` alongside the hint — announced once for the set rather than repeated on every option.
+
+**What the binding owns is not a prop here at all** — `checked`, `onChange` and the value props are the library's, and passing one is a compile error rather than a field that silently stops reporting.
+
+<Controls of={FormSegmentedControlStories.Default} />
+
+## Usage
+
+<Canvas of={FormSegmentedControlStories.Default} />
+
+### The hint and the error belong to the group
+
+<Canvas of={FormSegmentedControlStories.FromTheAdapter} />
+
+## Accessibility
+
+Everything `SegmentedControl` guarantees — arrow keys that move and select, one tab stop, `form.reset()`, 44px under a coarse pointer — plus the wiring a bare group cannot do: the legend names the set, and the hint and messages reach it through `aria-describedby`.
+
+A control with **no adapter in scope throws** rather than rendering: an unbound field picks perfectly well and submits nothing.
+
+## Guidelines
+
+### The port assumes one control per field, and a group is where that shows
+
+`control` is a bag of native props for **one** element. A radio group is several, so two of its three keys behave differently here, and both are worth knowing:
+
+- **`onChange` works by delegation.** It goes on the group rather than on an input, because there is no single input to put it on. `change` bubbles from whichever option the user picked and `event.target.value` is the answer — a real event from a real radio, so an adapter reads it the way it already does.
+- **`ref` is not forwarded.** There is no "the input" of a radio group, so there is no right target. A library that uses the ref to move focus to a field from an error summary **will not reach this one**. It was left out rather than pointed at whichever option happens to render first, which would be arbitrary and would move when the options are reordered.
+
+If you need the ref — or a per-field validation rule, which binding by name alone cannot carry — compose `Fieldset` + `SegmentedControl` and bind them yourself. The bound component adds no markup, so nothing else changes.

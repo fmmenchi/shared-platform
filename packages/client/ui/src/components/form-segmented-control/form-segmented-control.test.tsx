@@ -2,8 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { FormToggleGroup } from './form-toggle-group.component.js';
-import { ToggleGroupItem } from '../toggle-group-item/toggle-group-item.component.js';
+import { FormSegmentedControl } from './form-segmented-control.component.js';
+import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { UiProvider } from '../../i18n/provider.js';
 import { createBoundFields } from '../../form/bound-fields.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
@@ -38,19 +38,19 @@ function Bound({
 
 const options = (
   <>
-    <ToggleGroupItem value="left">Left</ToggleGroupItem>
-    <ToggleGroupItem value="center">Center</ToggleGroupItem>
-    <ToggleGroupItem value="right">Right</ToggleGroupItem>
+    <SegmentedControlItem value="left">Left</SegmentedControlItem>
+    <SegmentedControlItem value="center">Center</SegmentedControlItem>
+    <SegmentedControlItem value="right">Right</SegmentedControlItem>
   </>
 );
 
-describe('FormToggleGroup', () => {
+describe('FormSegmentedControl', () => {
   it('names the set ONCE, with the legend', () => {
     render(
       <Bound>
-        <FormToggleGroup name="align" label="Text alignment">
+        <FormSegmentedControl name="align" label="Text alignment">
           {options}
-        </FormToggleGroup>
+        </FormSegmentedControl>
       </Bound>,
     );
 
@@ -65,9 +65,9 @@ describe('FormToggleGroup', () => {
   it('pairs the options under the bound name', () => {
     render(
       <Bound>
-        <FormToggleGroup name="align" label="Text alignment">
+        <FormSegmentedControl name="align" label="Text alignment">
           {options}
-        </FormToggleGroup>
+        </FormSegmentedControl>
       </Bound>,
     );
 
@@ -81,9 +81,9 @@ describe('FormToggleGroup', () => {
     const onPick = vi.fn();
     render(
       <Bound onPick={onPick}>
-        <FormToggleGroup name="align" label="Text alignment">
+        <FormSegmentedControl name="align" label="Text alignment">
           {options}
-        </FormToggleGroup>
+        </FormSegmentedControl>
       </Bound>,
     );
 
@@ -100,9 +100,9 @@ describe('FormToggleGroup', () => {
     const onPick = vi.fn();
     render(
       <Bound onPick={onPick}>
-        <FormToggleGroup name="align" label="Text alignment">
+        <FormSegmentedControl name="align" label="Text alignment">
           {options}
-        </FormToggleGroup>
+        </FormSegmentedControl>
       </Bound>,
     );
 
@@ -133,9 +133,9 @@ describe('FormToggleGroup', () => {
         <UiProvider
           adapters={{ i18n: { locale: 'en' }, form: { field: useDemoField } }}
         >
-          <FormToggleGroup name="align" label="Text alignment">
+          <FormSegmentedControl name="align" label="Text alignment">
             {options}
-          </FormToggleGroup>
+          </FormSegmentedControl>
           <output>{value}</output>
         </UiProvider>
       );
@@ -151,13 +151,13 @@ describe('FormToggleGroup', () => {
   it('describes the group with the adapter’s messages, and marks it invalid', () => {
     render(
       <Bound errors={['Pick a range.']}>
-        <FormToggleGroup
+        <FormSegmentedControl
           name="align"
           label="Text alignment"
           hint="Applies to the selection."
         >
           {options}
-        </FormToggleGroup>
+        </FormSegmentedControl>
       </Bound>,
     );
 
@@ -171,19 +171,19 @@ describe('FormToggleGroup', () => {
 
   it('is in the typed kit, so every form shape gets it', () => {
     expect(createBoundFields()).toHaveProperty(
-      'FormToggleGroup',
-      FormToggleGroup,
+      'FormSegmentedControl',
+      FormSegmentedControl,
     );
   });
 
   it('throws without an adapter in scope, rather than rendering unbound', () => {
     expect(() =>
       render(
-        <FormToggleGroup name="align" label="Text alignment">
+        <FormSegmentedControl name="align" label="Text alignment">
           {options}
-        </FormToggleGroup>,
+        </FormSegmentedControl>,
       ),
-    ).toThrow(/FormToggleGroup/);
+    ).toThrow(/FormSegmentedControl/);
   });
 
   describe('accessibility (axe)', () => {
@@ -203,13 +203,13 @@ describe('FormToggleGroup', () => {
             }}
           >
             <Bound errors={['Pick a range.']}>
-              <FormToggleGroup
+              <FormSegmentedControl
                 name="align"
                 label="Text alignment"
                 hint="Applies to the selection."
               >
                 {options}
-              </FormToggleGroup>
+              </FormSegmentedControl>
             </Bound>
           </div>,
           { theme },

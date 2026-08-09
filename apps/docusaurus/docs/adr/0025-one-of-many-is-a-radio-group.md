@@ -4,6 +4,15 @@
 - **Date:** 2026-08-09
 - **Deciders:** Fabio Menchicchi
 
+> **Naming note (2026-08-09).** Everywhere this document — and ADR-0024's forward reference — says
+> `ToggleGroup`, the component ships as **`SegmentedControl`** (with `SegmentedControlItem` and
+> `FormSegmentedControl`). The body is left as written, because an accepted ADR is not rewritten.
+> The DECISION is unchanged and is the reason for the rename: this thing contains no `Toggle` at
+> all, so a name built on one promised the very composition the decision rejects. `SegmentedControl`
+> is also what Mantine, Primer, Radix Themes and Chakra call it; `ToggleGroup` is Radix Primitives'
+> name for a component that puts `role="radio"` inside a `role="group"` and does not participate in
+> forms — the two defects this decision avoids.
+
 > Closes the question [ADR-0024](./0024-toggle-switch-checkbox-boundary.md) left open in its own
 > consequences: _"a future `ToggleGroup` is not this component and does not change this boundary:
 > 'exactly one of these' is a radio group's question, and a group of toggles that enforces it needs

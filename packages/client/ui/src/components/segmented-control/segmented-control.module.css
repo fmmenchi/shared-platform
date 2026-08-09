@@ -1,6 +1,6 @@
 /*
- * ToggleGroup styles — the TRACK the segments sit in. What a segment looks like
- * belongs to `toggle-group-item.module.css`: each component owns its own
+ * SegmentedControl styles — the TRACK the segments sit in. What a segment looks like
+ * belongs to `segmented-control-item.module.css`: each component owns its own
  * stylesheet (ADR-0019), and the two are used apart often enough that sharing
  * one would ship the item's rules to anyone importing only the group.
  *

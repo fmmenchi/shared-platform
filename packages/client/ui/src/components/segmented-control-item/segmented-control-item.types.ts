@@ -1,13 +1,13 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 
-interface ToggleGroupItemOwnProps {
+interface SegmentedControlItemOwnProps {
   /** What this segment stands for — submitted, and matched against the group's value. */
   value: string;
   children?: ReactNode;
 }
 
 /**
- * Public ToggleGroupItem props — every native `<input type="radio">` attribute
+ * Public SegmentedControlItem props — every native `<input type="radio">` attribute
  * except the five the group owns.
  *
  * `type` and `role` are the segment's identity. `name` pairs the set and comes
@@ -19,7 +19,7 @@ interface ToggleGroupItemOwnProps {
  * `ref` and every other attribute — `disabled`, `onFocus`, `data-*` — pass
  * through to the input untouched.
  */
-export type ToggleGroupItemProps = ToggleGroupItemOwnProps &
+export type SegmentedControlItemProps = SegmentedControlItemOwnProps &
   Omit<
     ComponentPropsWithRef<'input'>,
     | 'type'

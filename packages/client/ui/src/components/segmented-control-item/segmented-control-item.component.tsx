@@ -1,11 +1,11 @@
 import type { ChangeEvent } from 'react';
 import { cn } from '../../util/cn.js';
-import { useToggleGroupPart } from '../toggle-group/toggle-group.context.js';
-import type { ToggleGroupItemProps } from './toggle-group-item.types.js';
-import styles from './toggle-group-item.module.css';
+import { useSegmentedControlPart } from '../segmented-control/segmented-control.context.js';
+import type { SegmentedControlItemProps } from './segmented-control-item.types.js';
+import styles from './segmented-control-item.module.css';
 
 /**
- * One segment of a `ToggleGroup`: a native radio with the button drawn on its
+ * One segment of a `SegmentedControl`: a native radio with the button drawn on its
  * own `<label>`.
  *
  * THE INPUT IS HIDDEN FROM SIGHT AND NOTHING ELSE — it keeps its place in the
@@ -17,9 +17,9 @@ import styles from './toggle-group-item.module.css';
  * (`:has(:focus-visible)` in the stylesheet), so the focus is never invisible —
  * it has simply moved to the thing that was drawn for it.
  */
-function ToggleGroupItem(props: ToggleGroupItemProps) {
+function SegmentedControlItem(props: SegmentedControlItemProps) {
   const { value, className, children, onChange, ...rest } = props;
-  const group = useToggleGroupPart('ToggleGroupItem');
+  const group = useSegmentedControlPart('SegmentedControlItem');
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange?.(event);
@@ -53,4 +53,4 @@ function ToggleGroupItem(props: ToggleGroupItemProps) {
   );
 }
 
-export { ToggleGroupItem };
+export { SegmentedControlItem };

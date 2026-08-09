@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 
 /**
- * What a `ToggleGroup` provides to its items.
+ * What a `SegmentedControl` provides to its items.
  *
  * IT CARRIES THE VALUE, which the archetype tells a family not to do — and the
  * exception is the whole point of this component. The rule protects a part that
@@ -13,7 +13,7 @@ import { useDevWarning } from '../../primitives/use-dev-warning.js';
  * be able to disagree with its siblings — which is the state a radio group
  * exists to make unspeakable.
  */
-export interface ToggleGroupContextValue {
+export interface SegmentedControlContextValue {
   /** The shared `name`: what pairs the radios, and what a form submits under. */
   name: string;
   /** The selected value while the group is CONTROLLED. */
@@ -30,25 +30,25 @@ export interface ToggleGroupContextValue {
   select: (value: string) => void;
 }
 
-export const ToggleGroupContext = createContext<ToggleGroupContextValue | null>(
-  null,
-);
+export const SegmentedControlContext =
+  createContext<SegmentedControlContextValue | null>(null);
 
-export const useToggleGroupContext = (): ToggleGroupContextValue | null =>
-  useContext(ToggleGroupContext);
+export const useSegmentedControlContext =
+  (): SegmentedControlContextValue | null =>
+    useContext(SegmentedControlContext);
 
 /**
- * Context for a `ToggleGroup` PART, warning (with the part's own name) when it
+ * Context for a `SegmentedControl` PART, warning (with the part's own name) when it
  * is used outside one. It returns `null` rather than throwing: a misplaced part
  * is worth a loud warning, not a crashed page.
  */
-export function useToggleGroupPart(
+export function useSegmentedControlPart(
   part: string,
-): ToggleGroupContextValue | null {
-  const context = useToggleGroupContext();
+): SegmentedControlContextValue | null {
+  const context = useSegmentedControlContext();
   useDevWarning(
     context == null,
-    `${part}: used outside a <ToggleGroup>, so it is not wired to anything — it has no name to pair by and submits nothing.`,
+    `${part}: used outside a <SegmentedControl>, so it is not wired to anything — it has no name to pair by and submits nothing.`,
   );
   return context;
 }

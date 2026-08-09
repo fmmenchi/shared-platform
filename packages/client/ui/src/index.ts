@@ -16,10 +16,10 @@ export type {
 } from './components/button/button.types.js';
 export { Toggle } from './components/toggle/toggle.component.js';
 export type { ToggleProps } from './components/toggle/toggle.types.js';
-export { ToggleGroup } from './components/toggle-group/toggle-group.component.js';
-export type { ToggleGroupProps } from './components/toggle-group/toggle-group.types.js';
-export { ToggleGroupItem } from './components/toggle-group-item/toggle-group-item.component.js';
-export type { ToggleGroupItemProps } from './components/toggle-group-item/toggle-group-item.types.js';
+export { SegmentedControl } from './components/segmented-control/segmented-control.component.js';
+export type { SegmentedControlProps } from './components/segmented-control/segmented-control.types.js';
+export { SegmentedControlItem } from './components/segmented-control-item/segmented-control-item.component.js';
+export type { SegmentedControlItemProps } from './components/segmented-control-item/segmented-control-item.types.js';
 export {
   UI_SUPPORTED_LOCALES,
   UI_FALLBACK_LOCALE,
@@ -91,8 +91,8 @@ export { FormChoice } from './components/form-choice/form-choice.component.js';
 export type { FormChoiceProps } from './components/form-choice/form-choice.types.js';
 export { FormSwitch } from './components/form-switch/form-switch.component.js';
 export type { FormSwitchProps } from './components/form-switch/form-switch.types.js';
-export { FormToggleGroup } from './components/form-toggle-group/form-toggle-group.component.js';
-export type { FormToggleGroupProps } from './components/form-toggle-group/form-toggle-group.types.js';
+export { FormSegmentedControl } from './components/form-segmented-control/form-segmented-control.component.js';
+export type { FormSegmentedControlProps } from './components/form-segmented-control/form-segmented-control.types.js';
 export type {
   UseFormField,
   UseFormErrors,

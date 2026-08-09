@@ -461,23 +461,23 @@
       "import": "./dist/form-switch.js",
       "default": "./dist/form-switch.js"
     },
-    "./toggle-group": {
-      "@fmmenchi/source": "./src/components/toggle-group/index.ts",
-      "types": "./dist/components/toggle-group/index.d.ts",
-      "import": "./dist/toggle-group.js",
-      "default": "./dist/toggle-group.js"
+    "./segmented-control": {
+      "@fmmenchi/source": "./src/components/segmented-control/index.ts",
+      "types": "./dist/components/segmented-control/index.d.ts",
+      "import": "./dist/segmented-control.js",
+      "default": "./dist/segmented-control.js"
     },
-    "./toggle-group-item": {
-      "@fmmenchi/source": "./src/components/toggle-group-item/index.ts",
-      "types": "./dist/components/toggle-group-item/index.d.ts",
-      "import": "./dist/toggle-group-item.js",
-      "default": "./dist/toggle-group-item.js"
+    "./segmented-control-item": {
+      "@fmmenchi/source": "./src/components/segmented-control-item/index.ts",
+      "types": "./dist/components/segmented-control-item/index.d.ts",
+      "import": "./dist/segmented-control-item.js",
+      "default": "./dist/segmented-control-item.js"
     },
-    "./form-toggle-group": {
-      "@fmmenchi/source": "./src/components/form-toggle-group/index.ts",
-      "types": "./dist/components/form-toggle-group/index.d.ts",
-      "import": "./dist/form-toggle-group.js",
-      "default": "./dist/form-toggle-group.js"
+    "./form-segmented-control": {
+      "@fmmenchi/source": "./src/components/form-segmented-control/index.ts",
+      "types": "./dist/components/form-segmented-control/index.d.ts",
+      "import": "./dist/form-segmented-control.js",
+      "default": "./dist/form-segmented-control.js"
     }
   },
   "nx": {

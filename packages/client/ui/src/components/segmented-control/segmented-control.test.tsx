@@ -3,23 +3,23 @@ import type { ComponentProps } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ToggleGroup } from './toggle-group.component.js';
-import { ToggleGroupItem } from '../toggle-group-item/toggle-group-item.component.js';
+import { SegmentedControl } from './segmented-control.component.js';
+import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
 /** The set every test below picks from. */
-function Alignment(props: Partial<ComponentProps<typeof ToggleGroup>>) {
+function Alignment(props: Partial<ComponentProps<typeof SegmentedControl>>) {
   return (
-    <ToggleGroup label="Text alignment" name="align" {...props}>
-      <ToggleGroupItem value="left">Left</ToggleGroupItem>
-      <ToggleGroupItem value="center">Center</ToggleGroupItem>
-      <ToggleGroupItem value="right">Right</ToggleGroupItem>
-    </ToggleGroup>
+    <SegmentedControl label="Text alignment" name="align" {...props}>
+      <SegmentedControlItem value="left">Left</SegmentedControlItem>
+      <SegmentedControlItem value="center">Center</SegmentedControlItem>
+      <SegmentedControlItem value="right">Right</SegmentedControlItem>
+    </SegmentedControl>
   );
 }
 
-describe('ToggleGroup', () => {
+describe('SegmentedControl', () => {
   it('is a radio group, not a row of pressed buttons', () => {
     render(<Alignment defaultValue="left" />);
 
@@ -135,12 +135,12 @@ describe('ToggleGroup', () => {
   it('keeps an unavailable option in the set without selecting it', async () => {
     const user = userEvent.setup();
     render(
-      <ToggleGroup label="Export format" name="format" defaultValue="csv">
-        <ToggleGroupItem value="csv">CSV</ToggleGroupItem>
-        <ToggleGroupItem value="pdf" disabled>
+      <SegmentedControl label="Export format" name="format" defaultValue="csv">
+        <SegmentedControlItem value="csv">CSV</SegmentedControlItem>
+        <SegmentedControlItem value="pdf" disabled>
           PDF
-        </ToggleGroupItem>
-      </ToggleGroup>,
+        </SegmentedControlItem>
+      </SegmentedControl>,
     );
 
     const pdf = screen.getByRole('radio', { name: 'PDF' });

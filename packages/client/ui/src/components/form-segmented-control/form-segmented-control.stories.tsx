@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { FormToggleGroup } from './form-toggle-group.component.js';
-import { ToggleGroupItem } from '../toggle-group-item/toggle-group-item.component.js';
+import { FormSegmentedControl } from './form-segmented-control.component.js';
+import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { UiProvider } from '../../i18n/provider.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
 
@@ -48,9 +48,9 @@ function DemoForm({ children }: { children: ReactNode }) {
   );
 }
 
-const meta: Meta<typeof FormToggleGroup> = {
-  title: 'Components/Inputs/FormToggleGroup',
-  component: FormToggleGroup,
+const meta: Meta<typeof FormSegmentedControl> = {
+  title: 'Components/Inputs/FormSegmentedControl',
+  component: FormSegmentedControl,
   argTypes: {
     name: {
       control: 'text',
@@ -68,18 +68,18 @@ const meta: Meta<typeof FormToggleGroup> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof FormToggleGroup>;
+type Story = StoryObj<typeof FormSegmentedControl>;
 
 /** A bound set — the legend names it, the options submit under `name`. */
 export const Default: Story = {
   args: { name: 'align', label: 'Text alignment' },
   render: (args) => (
     <DemoForm>
-      <FormToggleGroup {...args}>
-        <ToggleGroupItem value="left">Left</ToggleGroupItem>
-        <ToggleGroupItem value="center">Center</ToggleGroupItem>
-        <ToggleGroupItem value="right">Right</ToggleGroupItem>
-      </FormToggleGroup>
+      <FormSegmentedControl {...args}>
+        <SegmentedControlItem value="left">Left</SegmentedControlItem>
+        <SegmentedControlItem value="center">Center</SegmentedControlItem>
+        <SegmentedControlItem value="right">Right</SegmentedControlItem>
+      </FormSegmentedControl>
     </DemoForm>
   ),
 };
@@ -88,15 +88,15 @@ export const Default: Story = {
 export const FromTheAdapter: Story = {
   render: () => (
     <DemoForm>
-      <FormToggleGroup
+      <FormSegmentedControl
         name="range"
         label="Date range"
         hint="How far back the report goes."
       >
-        <ToggleGroupItem value="24h">24 hours</ToggleGroupItem>
-        <ToggleGroupItem value="7d">7 days</ToggleGroupItem>
-        <ToggleGroupItem value="30d">30 days</ToggleGroupItem>
-      </FormToggleGroup>
+        <SegmentedControlItem value="24h">24 hours</SegmentedControlItem>
+        <SegmentedControlItem value="7d">7 days</SegmentedControlItem>
+        <SegmentedControlItem value="30d">30 days</SegmentedControlItem>
+      </FormSegmentedControl>
     </DemoForm>
   ),
 };

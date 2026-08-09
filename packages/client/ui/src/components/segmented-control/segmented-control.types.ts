@@ -1,6 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 
-interface ToggleGroupOwnProps {
+interface SegmentedControlOwnProps {
   /**
    * What the set is asking, and the group's accessible name.
    *
@@ -28,12 +28,12 @@ interface ToggleGroupOwnProps {
 }
 
 /**
- * Public ToggleGroup props.
+ * Public SegmentedControl props.
  *
  * `role` is omitted: this is a radio group in the accessibility tree and in the
  * form, drawn as buttons (ADR-0025). Changing the role would leave the
  * platform's own arrow-key behaviour describing a widget that no longer claims
  * it.
  */
-export type ToggleGroupProps = ToggleGroupOwnProps &
-  Omit<ComponentPropsWithRef<'div'>, 'role' | keyof ToggleGroupOwnProps>;
+export type SegmentedControlProps = SegmentedControlOwnProps &
+  Omit<ComponentPropsWithRef<'div'>, 'role' | keyof SegmentedControlOwnProps>;

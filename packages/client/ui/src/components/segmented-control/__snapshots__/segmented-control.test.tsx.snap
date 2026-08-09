@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ToggleGroup > matches the rendered snapshot 1`] = `
+exports[`SegmentedControl > matches the rendered snapshot 1`] = `
 <div
   aria-label="Text alignment"
   class="_group_j6y4x_4"

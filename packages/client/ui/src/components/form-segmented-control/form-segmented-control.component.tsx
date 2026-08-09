@@ -1,7 +1,7 @@
 import { Fieldset } from '../fieldset/fieldset.component.js';
 import { FieldsetLegend } from '../fieldset-legend/fieldset-legend.component.js';
 import { FieldsetContent } from '../fieldset-content/fieldset-content.component.js';
-import { ToggleGroup } from '../toggle-group/toggle-group.component.js';
+import { SegmentedControl } from '../segmented-control/segmented-control.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
 import { useBoundField } from '../../form/form-adapter.context.js';
@@ -10,17 +10,17 @@ import {
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
 import { toMessages } from '../../form/messages.js';
-import type { FormToggleGroupProps } from './form-toggle-group.types.js';
+import type { FormSegmentedControlProps } from './form-segmented-control.types.js';
 
 /**
  * A bound set of one-of-many options, drawn as buttons:
  *
- *     <FormToggleGroup name="align" label="Text alignment">
- *       <ToggleGroupItem value="left">Left</ToggleGroupItem>
- *       <ToggleGroupItem value="center">Center</ToggleGroupItem>
- *     </FormToggleGroup>
+ *     <FormSegmentedControl name="align" label="Text alignment">
+ *       <SegmentedControlItem value="left">Left</SegmentedControlItem>
+ *       <SegmentedControlItem value="center">Center</SegmentedControlItem>
+ *     </FormSegmentedControl>
  *
- * THE GROUP IS NAMED ONCE, by the legend. `ToggleGroup` is handed no `label`
+ * THE GROUP IS NAMED ONCE, by the legend. `SegmentedControl` is handed no `label`
  * here on purpose: two names are announced twice ("Text alignment, group …
  * Text alignment, radio group"), and of the two the visible legend is the one
  * worth keeping — a segmented control in a form with no title is a defect no
@@ -41,17 +41,17 @@ import type { FormToggleGroupProps } from './form-toggle-group.types.js';
  *   than papered over by pointing it at whichever option happens to be first,
  *   which would be arbitrary and would move when the options are reordered.
  */
-function FormToggleGroup(props: FormToggleGroupProps) {
+function FormSegmentedControl(props: FormSegmentedControlProps) {
   const { name, label, hint, children, ...rest } = props;
-  const { control, errors } = useBoundField(name, 'FormToggleGroup');
-  useBindingOwnedWarning(rest, 'FormToggleGroup');
+  const { control, errors } = useBoundField(name, 'FormSegmentedControl');
+  useBindingOwnedWarning(rest, 'FormSegmentedControl');
   const messages = toMessages(errors);
 
   return (
     <Fieldset invalid={messages.length > 0}>
       <FieldsetLegend>{label}</FieldsetLegend>
       <FieldsetContent>
-        <ToggleGroup
+        <SegmentedControl
           name={control.name ?? name}
           // The adapter's value, when it has one — Conform's `getInputProps`
           // does, react-hook-form's `register` does not and leaves the DOM to
@@ -63,7 +63,7 @@ function FormToggleGroup(props: FormToggleGroupProps) {
           {...withoutBindingOwned(rest)}
         >
           {children}
-        </ToggleGroup>
+        </SegmentedControl>
       </FieldsetContent>
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}
       {messages.map((message) => (
@@ -73,4 +73,4 @@ function FormToggleGroup(props: FormToggleGroupProps) {
   );
 }
 
-export { FormToggleGroup };
+export { FormSegmentedControl };

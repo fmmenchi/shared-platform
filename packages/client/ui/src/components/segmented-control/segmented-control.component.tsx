@@ -1,9 +1,9 @@
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { ToggleGroupContext } from './toggle-group.context.js';
-import type { ToggleGroupContextValue } from './toggle-group.context.js';
-import type { ToggleGroupProps } from './toggle-group.types.js';
-import styles from './toggle-group.module.css';
+import { SegmentedControlContext } from './segmented-control.context.js';
+import type { SegmentedControlContextValue } from './segmented-control.context.js';
+import type { SegmentedControlProps } from './segmented-control.types.js';
+import styles from './segmented-control.module.css';
 
 /**
  * ONE of a small set of options, drawn as a row of buttons — text alignment,
@@ -30,7 +30,7 @@ import styles from './toggle-group.module.css';
  * cost the text inputs: `form.reset()` becomes a no-op, because React
  * re-renders its stale value straight back.
  */
-function ToggleGroup(props: ToggleGroupProps) {
+function SegmentedControl(props: SegmentedControlProps) {
   const {
     label,
     name,
@@ -47,11 +47,11 @@ function ToggleGroup(props: ToggleGroupProps) {
   // `undefined` would cry wolf at the one anatomy that is correct.
   useDevWarning(
     label !== undefined && label.trim() === '',
-    'ToggleGroup: `label` is an empty string, so the set is announced as just "group". Leave it out to be named by a surrounding <Fieldset>, or give it a name.',
+    'SegmentedControl: `label` is an empty string, so the set is announced as just "group". Leave it out to be named by a surrounding <Fieldset>, or give it a name.',
   );
   useDevWarning(
     name.trim() === '',
-    'ToggleGroup: `name` is empty, so the options do not pair — the platform will treat each as its own group and the arrows will not move between them.',
+    'SegmentedControl: `name` is empty, so the options do not pair — the platform will treat each as its own group and the arrows will not move between them.',
   );
   // THE WARNING WE TOOK AWAY, put back. Every item carries an `onChange` of
   // ours, so React can no longer see that the consumer forgot theirs and its
@@ -66,12 +66,12 @@ function ToggleGroup(props: ToggleGroupProps) {
     value !== undefined &&
       onValueChange === undefined &&
       rest.onChange === undefined,
-    'ToggleGroup: `value` is set but nothing is listening, so the set is frozen — every pick is reported to nobody and the selection never changes. Pass `onValueChange` (or a native `onChange`), or use `defaultValue` and let the DOM keep it.',
+    'SegmentedControl: `value` is set but nothing is listening, so the set is frozen — every pick is reported to nobody and the selection never changes. Pass `onValueChange` (or a native `onChange`), or use `defaultValue` and let the DOM keep it.',
   );
 
   // No hand-memoization: the React Compiler keys this on the values it is built
   // from, which is the honest dependency and the package's rule.
-  const context: ToggleGroupContextValue = {
+  const context: SegmentedControlContextValue = {
     name,
     value,
     defaultValue,
@@ -90,11 +90,11 @@ function ToggleGroup(props: ToggleGroupProps) {
       role={label === undefined ? undefined : 'radiogroup'}
       aria-label={label}
     >
-      <ToggleGroupContext.Provider value={context}>
+      <SegmentedControlContext.Provider value={context}>
         {children}
-      </ToggleGroupContext.Provider>
+      </SegmentedControlContext.Provider>
     </div>
   );
 }
 
-export { ToggleGroup };
+export { SegmentedControl };

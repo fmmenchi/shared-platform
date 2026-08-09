@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ToggleGroup } from './toggle-group.component.js';
-import { ToggleGroupItem } from '../toggle-group-item/toggle-group-item.component.js';
+import { SegmentedControl } from './segmented-control.component.js';
+import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { Button } from '../button/button.component.js';
 
-const meta: Meta<typeof ToggleGroup> = {
-  title: 'Components/Buttons/ToggleGroup',
-  component: ToggleGroup,
+const meta: Meta<typeof SegmentedControl> = {
+  title: 'Components/Buttons/SegmentedControl',
+  component: SegmentedControl,
   argTypes: {
     label: {
       control: 'text',
@@ -39,17 +39,17 @@ const meta: Meta<typeof ToggleGroup> = {
 };
 export default meta;
 
-type Story = StoryObj<typeof ToggleGroup>;
+type Story = StoryObj<typeof SegmentedControl>;
 
 /** One of a small set, drawn as a row of buttons. The arrows move and select. */
 export const Default: Story = {
   args: { label: 'Text alignment', name: 'align', defaultValue: 'left' },
   render: (args) => (
-    <ToggleGroup {...args}>
-      <ToggleGroupItem value="left">Left</ToggleGroupItem>
-      <ToggleGroupItem value="center">Center</ToggleGroupItem>
-      <ToggleGroupItem value="right">Right</ToggleGroupItem>
-    </ToggleGroup>
+    <SegmentedControl {...args}>
+      <SegmentedControlItem value="left">Left</SegmentedControlItem>
+      <SegmentedControlItem value="center">Center</SegmentedControlItem>
+      <SegmentedControlItem value="right">Right</SegmentedControlItem>
+    </SegmentedControl>
   ),
 };
 
@@ -59,16 +59,16 @@ export const Controlled: Story = {
     const [range, setRange] = useState('7d');
     return (
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
-        <ToggleGroup
+        <SegmentedControl
           label="Date range"
           name="range"
           value={range}
           onValueChange={setRange}
         >
-          <ToggleGroupItem value="24h">24 hours</ToggleGroupItem>
-          <ToggleGroupItem value="7d">7 days</ToggleGroupItem>
-          <ToggleGroupItem value="30d">30 days</ToggleGroupItem>
-        </ToggleGroup>
+          <SegmentedControlItem value="24h">24 hours</SegmentedControlItem>
+          <SegmentedControlItem value="7d">7 days</SegmentedControlItem>
+          <SegmentedControlItem value="30d">30 days</SegmentedControlItem>
+        </SegmentedControl>
         <span>Showing the last {range}.</span>
       </div>
     );
@@ -89,11 +89,15 @@ export const InAForm: Story = {
         width: 'fit-content',
       }}
     >
-      <ToggleGroup label="Text alignment" name="align" defaultValue="center">
-        <ToggleGroupItem value="left">Left</ToggleGroupItem>
-        <ToggleGroupItem value="center">Center</ToggleGroupItem>
-        <ToggleGroupItem value="right">Right</ToggleGroupItem>
-      </ToggleGroup>
+      <SegmentedControl
+        label="Text alignment"
+        name="align"
+        defaultValue="center"
+      >
+        <SegmentedControlItem value="left">Left</SegmentedControlItem>
+        <SegmentedControlItem value="center">Center</SegmentedControlItem>
+        <SegmentedControlItem value="right">Right</SegmentedControlItem>
+      </SegmentedControl>
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
         <Button type="reset" variant="secondary" size="sm">
           Reset
@@ -106,13 +110,13 @@ export const InAForm: Story = {
 /** An option can be unavailable without leaving the set. */
 export const WithADisabledOption: Story = {
   render: () => (
-    <ToggleGroup label="Export format" name="format" defaultValue="csv">
-      <ToggleGroupItem value="csv">CSV</ToggleGroupItem>
-      <ToggleGroupItem value="json">JSON</ToggleGroupItem>
-      <ToggleGroupItem value="pdf" disabled>
+    <SegmentedControl label="Export format" name="format" defaultValue="csv">
+      <SegmentedControlItem value="csv">CSV</SegmentedControlItem>
+      <SegmentedControlItem value="json">JSON</SegmentedControlItem>
+      <SegmentedControlItem value="pdf" disabled>
         PDF
-      </ToggleGroupItem>
-    </ToggleGroup>
+      </SegmentedControlItem>
+    </SegmentedControl>
   ),
 };
 
@@ -120,11 +124,15 @@ export const WithADisabledOption: Story = {
 export const RightToLeft: Story = {
   render: () => (
     <div dir="rtl">
-      <ToggleGroup label="محاذاة النص" name="align-rtl" defaultValue="right">
-        <ToggleGroupItem value="right">يمين</ToggleGroupItem>
-        <ToggleGroupItem value="center">وسط</ToggleGroupItem>
-        <ToggleGroupItem value="left">يسار</ToggleGroupItem>
-      </ToggleGroup>
+      <SegmentedControl
+        label="محاذاة النص"
+        name="align-rtl"
+        defaultValue="right"
+      >
+        <SegmentedControlItem value="right">يمين</SegmentedControlItem>
+        <SegmentedControlItem value="center">وسط</SegmentedControlItem>
+        <SegmentedControlItem value="left">يسار</SegmentedControlItem>
+      </SegmentedControl>
     </div>
   ),
 };
