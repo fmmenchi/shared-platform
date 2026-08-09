@@ -205,8 +205,7 @@ describe('Dialog', () => {
     rerender(controlled(false));
     rerender(controlled(true));
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    expect(surface.open).toBe(true);
+    await waitFor(() => expect(surface.open).toBe(true));
   });
 
   it('reports what the platform did, and never commands it', async () => {

@@ -259,7 +259,26 @@ describe('Popover', () => {
         );
 
         await browser.click(screen.getByRole('button', { name: 'Share' }));
-        await new Promise((resolve) => setTimeout(resolve, 400));
+
+        // NOT "is it open" — "has it ARRIVED". The sleep this replaced was
+        // waiting out the entry transition, not the opening, and swapping in a
+        // wait for `:popover-open` made the suite worse: axe ran while the
+        // surface was still fading in and reported a contrast violation against
+        // a half-transparent panel. So the condition is the transition being
+        // over, and it is ENDED rather than waited out — no duration appears
+        // here, which is the point.
+        const surface = await waitFor(() => {
+          const element = document.querySelector<HTMLElement>(
+            '[popover]:popover-open',
+          );
+          expect(element).not.toBeNull();
+          return element as HTMLElement;
+        });
+        for (const animation of surface.getAnimations()) animation.finish();
+        await Promise.all(
+          surface.getAnimations().map((animation) => animation.finished),
+        );
+
         await expectNoA11yViolations(container);
       });
     }

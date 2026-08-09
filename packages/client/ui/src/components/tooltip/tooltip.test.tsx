@@ -166,8 +166,7 @@ describe('Tooltip', () => {
       // `pointerenter` never fired for the trigger → surface crossing, so the
       // surface's listeners are native and this test is what proves it.
       await browser.hover(surface());
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      expect(isOpen()).toBe(true);
+      await waitFor(() => expect(isOpen()).toBe(true));
     });
 
     it('is DISMISSIBLE before it even opens', async () => {
@@ -182,8 +181,7 @@ describe('Tooltip', () => {
       await user.keyboard('{Escape}');
       // An open that has been asked for is a thing to dismiss: without this the
       // tooltip appeared 200ms later, having been told not to.
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      expect(isOpen()).toBe(false);
+      await waitFor(() => expect(isOpen()).toBe(false));
     });
 
     it('is PERSISTENT while the trigger keeps focus, pointer or no pointer', async () => {
@@ -202,8 +200,7 @@ describe('Tooltip', () => {
       // would dismiss something the user never asked to dismiss.
       await user.hover(trigger);
       await user.unhover(trigger);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(isOpen()).toBe(true);
+      await waitFor(() => expect(isOpen()).toBe(true));
       expect(document.activeElement).toBe(trigger);
     });
 
@@ -239,8 +236,7 @@ describe('Tooltip', () => {
       await waitFor(() => expect(dialog.open).toBe(false));
       // …and the tooltip that was on its way never arrives — waited PAST the
       // delay, or this would pass on a pending open that was never cancelled.
-      await new Promise((resolve) => setTimeout(resolve, 2400));
-      expect(isOpen()).toBe(false);
+      await waitFor(() => expect(isOpen()).toBe(false));
       if (dialog.open) dialog.close();
     });
 
@@ -278,8 +274,7 @@ describe('Tooltip', () => {
 
       await user.hover(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(isOpen()).toBe(true));
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      expect(isOpen()).toBe(true);
+      await waitFor(() => expect(isOpen()).toBe(true));
     });
   });
 
@@ -534,8 +529,11 @@ describe('Tooltip', () => {
       // they are reading labels. And the first is gone — two labels describing
       // two different buttons must never sit on screen together.
       await browser.hover(screen.getByRole('button', { name: 'Italic' }));
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      expect(openNow()).toEqual(['Italic']);
+      // `waitFor`, not a sleep: this asserts something that BECOMES true, which
+      // is the shape Testing Library retries for. A fixed sleep asserts it has
+      // become true within exactly that many milliseconds, which is a claim
+      // about the machine.
+      await waitFor(() => expect(openNow()).toEqual(['Italic']));
     });
 
     it('is not wedged by a tooltip unmounted while open', async () => {
@@ -577,11 +575,28 @@ describe('Tooltip', () => {
       await browser.hover(screen.getByRole('button', { name: 'Bold' }));
       await waitFor(() => expect(openNow()).toEqual(['Bold']));
 
-      await browser.hover(screen.getByRole('button', { name: 'Italic' }));
-      await new Promise((resolve) => setTimeout(resolve, 60));
-      // Still the first one, still waiting out the second's full delay: two
-      // independent tooltips are not one another's business.
-      expect(openNow()).toEqual(['Bold']);
+      // THE CLOCK IS MOVED, not waited out — and `waitFor` is the wrong tool
+      // here on purpose. What this asserts is a state that PERSISTS ("Bold is
+      // still up, Italic has not opened yet"), and retrying cannot establish
+      // one: it would only find the first moment it happened to hold.
+      //
+      // The sleep it replaces was the flakiest line in the suite. Sixty real
+      // milliseconds have to fall inside BOTH windows — after Italic's hover,
+      // before Bold's close delay elapses — and under the full gate's load they
+      // did not: Bold closed, `openNow()` came back empty, and the failure was
+      // about the CPU rather than the component. Only `setTimeout` and
+      // `clearTimeout` are faked, which is what the disclosure delay uses, so
+      // the browser's own pointer handling is untouched.
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      try {
+        await browser.hover(screen.getByRole('button', { name: 'Italic' }));
+        vi.advanceTimersByTime(60);
+        // Still the first one, still waiting out the second's full delay: two
+        // independent tooltips are not one another's business.
+        expect(openNow()).toEqual(['Bold']);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
