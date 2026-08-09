@@ -27,5 +27,17 @@ export function useInjectedCurrent(
   'use no memo';
 
   const useIsCurrent = useUiAdapters()?.useIsCurrent ?? NONE;
-  return useIsCurrent(href ?? '');
+  // ASKED unconditionally, ANSWERED only for a destination we would route. The
+  // hook has to run either way — that is the rule of hooks — so the empty
+  // string goes in and the answer comes back out and is dropped here.
+  //
+  // Dropping it here, and not leaving it to the adapter, because the empty
+  // string is a trap this port sets rather than a question any router can
+  // answer: React Router resolves `''` to the CURRENT path and TanStack matches
+  // it against the root, so a menu with one `mailto:` in it would report that
+  // link, or the home entry, as the page the reader is on. `pathIsCurrent`
+  // refuses it in its own body and every other binding would have had to
+  // remember to.
+  const answer = useIsCurrent(href ?? '');
+  return href ? answer : undefined;
 }

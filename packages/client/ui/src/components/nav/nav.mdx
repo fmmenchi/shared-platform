@@ -93,42 +93,48 @@ that contains it, nothing for elsewhere.
 
 ### Wiring a real router
 
-The port is `{ href }`, because that is the HTML attribute — the one name no
-router invented. Most routers navigate on **`to`** instead, so the adapter is a
-prop rename, and it is the whole of the integration:
+One import and one spread, from
+[`@fmmenchi/ui-router-ports`](https://github.com/fmmenchi/shared-platform/tree/main/packages/client/ui-router-ports)
+— a sibling package, so the design system itself stays free of every router:
 
 ```tsx
-import { Link as RouterLink, NavLink } from 'react-router';
+import { reactRouterAdapters } from '@fmmenchi/ui-router-ports/react-router';
+// or: import { tanstackAdapters } from '@fmmenchi/ui-router-ports/tanstack';
 
-const Link = ({ href, ...rest }) => <RouterLink to={href} {...rest} />;
+<UiProvider adapters={{ i18n, ...reactRouterAdapters }}>
 ```
 
-That one line is also where you choose. React Router ships **two** components,
-and the design system does not need a port for each:
+That is the whole integration. What the binding absorbs is not boilerplate but
+the router's own character, and the two here do not agree with each other:
 
-| You inject     | What you get                                                | `useIsCurrent`      |
-| -------------- | ----------------------------------------------------------- | ------------------- |
-| `Link` (plain) | navigation only                                             | wire it — see below |
-| `NavLink`      | navigation **and** `aria-current="page"`, set by the router | leave it out        |
+| Router          | What its link does on its own                                                           |
+| --------------- | --------------------------------------------------------------------------------------- |
+| React Router    | `Link` marks nothing at all                                                             |
+| TanStack Router | `Link` marks `aria-current="page"` itself, and its `activeOptions` default is non-exact |
 
-Both work, because the highlight keys on the **attribute** and not on who set
-it: whoever renders the anchor writes `aria-current` last and wins. Injecting
-`NavLink` also appends React Router's own `active` class to ours, which is
-harmless — nothing here styles it.
+TanStack's default gave `aria-current="page"` to both `Settings` and `Profile`
+at `/settings/profile` — "current page" announced twice in one menu. Its binding
+narrows what "active" means so the port can say `location` for the section. That
+is the kind of thing a per-router binding exists to hold, and the kind of thing
+a recipe pasted into a README gets wrong.
 
-One consequence worth knowing: `Link` is **one** port, shared with `CardTitle`.
-Point it at `NavLink` and a card whose title links to the page you are on gets
-marked current too. Correct, if unexpected — and if you want it only in the
-navigation, inject the plain `Link` and wire `useIsCurrent`.
+**Next is not in that package**, because `next/link` and `usePathname` cannot be
+exercised outside a Next runtime, and a binding no test can reach is a claim
+rather than an integration. It also needs the least: `next/link` already takes
+`href`.
 
-By router:
+```tsx
+<UiProvider
+  adapters={{
+    i18n,
+    Link, // next/link, as-is
+    useIsCurrent: (href) => pathIsCurrent(usePathname(), href), // App Router
+  }}
+/>
+```
 
-| Router                       | The adapter                                         | `useIsCurrent`                                                                                                 |
-| ---------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| **React Router** / **Remix** | `({href, ...r}) => <RouterLink to={href} {...r} />` | `(href) => pathIsCurrent(useLocation().pathname, href)`                                                        |
-| **TanStack Router**          | `({href, ...r}) => <Link to={href} {...r} />`       | nothing — `activeProps` resolves from typed `to`/`params`/`search`                                             |
-| **Next**, App Router         | `Link` directly — it already takes `href`           | `(href) => pathIsCurrent(usePathname(), href)`                                                                 |
-| **Next**, Pages Router       | `Link` directly                                     | `(href) => pathIsCurrent(useRouter().asPath, href)` — `asPath` carries the query, which `pathIsCurrent` strips |
+For the Pages Router use `useRouter().asPath`, which carries the query —
+`pathIsCurrent` strips it.
 
 `pathIsCurrent` is exported for exactly this: it is not the seam, it is what you
 plug into it, so that every app with a plain string path does not write the same
