@@ -1,0 +1,31 @@
+/*
+ * ToggleGroup styles — the TRACK the segments sit in. What a segment looks like
+ * belongs to `toggle-group-item.module.css`: each component owns its own
+ * stylesheet (ADR-0019), and the two are used apart often enough that sharing
+ * one would ship the item's rules to anyone importing only the group.
+ *
+ * Colours ONLY through semantic role utilities, motion ONLY through
+ * var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate enforces both.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  .group {
+    @apply border-border inline-flex items-stretch rounded-md border;
+    /* The segments have square corners and the track has round ones, so the
+       track clips them. It also hides the last divider without a rule that has
+       to know which segment is last. */
+    overflow: hidden;
+  }
+
+  /* Forced colors: the token border is replaced by a system colour, which is
+     what the track needs anyway — it exists to bound the set. Nothing else here
+     paints, so nothing else is taken away. */
+  @media (forced-colors: active) {
+    .group {
+      border-color: ButtonText;
+    }
+  }
+}

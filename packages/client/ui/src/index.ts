@@ -16,6 +16,10 @@ export type {
 } from './components/button/button.types.js';
 export { Toggle } from './components/toggle/toggle.component.js';
 export type { ToggleProps } from './components/toggle/toggle.types.js';
+export { ToggleGroup } from './components/toggle-group/toggle-group.component.js';
+export type { ToggleGroupProps } from './components/toggle-group/toggle-group.types.js';
+export { ToggleGroupItem } from './components/toggle-group-item/toggle-group-item.component.js';
+export type { ToggleGroupItemProps } from './components/toggle-group-item/toggle-group-item.types.js';
 export {
   UI_SUPPORTED_LOCALES,
   UI_FALLBACK_LOCALE,

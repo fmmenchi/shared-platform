@@ -1,0 +1,44 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ToggleGroup > matches the rendered snapshot 1`] = `
+<div
+  aria-label="Text alignment"
+  class="_group_j6y4x_4"
+  role="radiogroup"
+>
+  <label
+    class="_item_1mzk5_4"
+  >
+    <input
+      checked=""
+      class="_input_1mzk5_30"
+      name="align"
+      type="radio"
+      value="left"
+    />
+    Left
+  </label>
+  <label
+    class="_item_1mzk5_4"
+  >
+    <input
+      class="_input_1mzk5_30"
+      name="align"
+      type="radio"
+      value="center"
+    />
+    Center
+  </label>
+  <label
+    class="_item_1mzk5_4"
+  >
+    <input
+      class="_input_1mzk5_30"
+      name="align"
+      type="radio"
+      value="right"
+    />
+    Right
+  </label>
+</div>
+`;

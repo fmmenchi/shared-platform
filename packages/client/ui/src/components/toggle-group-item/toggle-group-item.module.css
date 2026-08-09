@@ -1,0 +1,107 @@
+/*
+ * ToggleGroupItem styles — the SEGMENT: a button drawn on a `<label>`, with the
+ * radio that carries the state hidden from sight inside it.
+ *
+ * Every state is read from the input through `:has()`, which is what lets the
+ * label look like a control it is not: `:checked`, `:focus-visible` and
+ * `:disabled` all live on the element the platform owns, and none of them can
+ * drift from what is submitted. Colours ONLY through semantic role utilities,
+ * motion ONLY through var(--fm-duration-*)/var(--fm-ease-*).
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  .item {
+    /* The UA baseline every control we draw needs — `box-sizing` and the font
+       family, with the measurements — lives once in `styles/utilities.css`. A
+       `<label>` inherits neither for free. */
+    @apply control-base;
+    @apply inline-flex cursor-pointer items-center justify-center;
+    @apply px-4 text-sm font-medium;
+    @apply text-foreground bg-transparent;
+    @apply transition;
+    /* The heights Button and Input already use, so a segmented control lines up
+       in a row with them. */
+    height: 2.25rem;
+    /* A control, not prose: a double click on a segment should pick it, not
+       select the word inside it. */
+    user-select: none;
+    /* THE ANCHOR FOR THE HIDDEN INPUT, and not decoration. `sr-only` positions
+       it absolutely; with no positioned ancestor it would resolve against the
+       page, so focusing a segment could scroll the window to the document
+       origin instead of to the control the user just tabbed to. */
+    position: relative;
+  }
+
+  /* The divider between segments. On the item rather than the track, because
+     only the item knows it has a neighbour — and `border-inline-start` rather
+     than `left`, so the set reads the same way the page does. */
+  .item + .item {
+    @apply border-border;
+    border-inline-start-width: 1px;
+    border-inline-start-style: solid;
+  }
+
+  /* THE RADIO, hidden from sight and from nothing else: it keeps its place in
+     the tab order, in the accessibility tree and in the form. The focus it
+     takes is shown on this label, below. */
+  .input {
+    @apply sr-only;
+  }
+
+  .item:hover:not(:has(:checked, :disabled)) {
+    @apply bg-muted;
+  }
+
+  /* THE SELECTED SEGMENT. Read from `:checked`, so it cannot disagree with the
+     value the form submits — which a class written from React state could. */
+  .item:has(:checked) {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* The ring goes on the label because the input is not where the eye is. The
+     offset is NEGATIVE: the track clips its children, so a ring drawn outside
+     the segment would be cut in half at both ends of the set. */
+  .item:has(:focus-visible) {
+    @apply outline-ring outline-2;
+    outline-offset: -2px;
+  }
+
+  .item:has(:disabled) {
+    @apply text-disabled-foreground cursor-not-allowed;
+  }
+
+  /* A FINGER GETS 44px, the number the rest of this package already uses —
+     `Button`, `Input` and `Select` all grow to it under a coarse pointer, and a
+     segmented control that stayed at 36 would be the one row on the page a
+     thumb misses. */
+  @media (pointer: coarse) {
+    .item {
+      height: 2.75rem;
+    }
+  }
+
+  /* Forced colors: the token fill goes, so the selected segment would become
+     indistinguishable from its siblings — the one distinction the set exists to
+     draw. `Highlight`/`HighlightText` is the platform's own word for "this one
+     is chosen", and the divider and the ring follow the same convention as
+     every other control here. */
+  @media (forced-colors: active) {
+    .item + .item {
+      border-inline-start-color: ButtonText;
+    }
+    .item:has(:checked) {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+    .item:has(:disabled) {
+      color: GrayText;
+    }
+    .item:has(:focus-visible) {
+      outline-color: Highlight;
+    }
+  }
+}

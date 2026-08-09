@@ -17,7 +17,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Typography**    | `Heading`                                                                                                                                                                 |
 | **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                    |
-| **Buttons**       | `Button` · `Toggle` · `Toolbar` (+ Item, Separator)                                                                                                                       |
+| **Buttons**       | `Button` · `Toggle` · `ToggleGroup` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                              |
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormErrorSummary`                                                                            |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                               |

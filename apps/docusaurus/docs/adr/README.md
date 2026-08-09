@@ -16,7 +16,7 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## In force
 
-Read these. Fourteen decisions, grouped as they are actually made.
+Read these. Fifteen decisions, grouped as they are actually made.
 
 | ADR                                                   | Title                                                                 |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
@@ -34,6 +34,7 @@ Read these. Fourteen decisions, grouped as they are actually made.
 | [0022](./0022-browser-defaults-no-reset.md)           | Browser defaults: components normalise themselves, baseline optional  |
 | [0023](./0023-one-stylesheet.md)                      | The design system ships one stylesheet; JS subpaths stay              |
 | [0024](./0024-toggle-switch-checkbox-boundary.md)     | Toggle, Switch and Checkbox: where the boundary between them runs     |
+| [0025](./0025-one-of-many-is-a-radio-group.md)        | One of many, drawn as buttons, is a radio group                       |
 
 ## Superseded
 
