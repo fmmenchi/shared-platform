@@ -27,6 +27,24 @@ describe('Alert', () => {
     expect(el).toBeInstanceOf(HTMLElement);
   });
 
+  it('does not carry the UA paragraph margin', () => {
+    render(
+      <Alert variant="info" title="Heads up">
+        Something happened.
+      </Alert>,
+    );
+
+    // This package ships no Preflight (ADR-0022), so `<p>`'s `margin-block: 1em`
+    // is LIVE in every consumer — and the title is a `<p>`. Measured from the
+    // toast, it added 28px to a 44px message and was most of the difference
+    // between a message and a block. Vertical rhythm belongs to the container,
+    // which is the call `field-description` and `Heading` both already make.
+    const title = screen.getByText('Heads up');
+    const style = getComputedStyle(title);
+    expect(style.marginBlockStart).toBe('0px');
+    expect(style.marginBlockEnd).toBe('0px');
+  });
+
   it('matches the rendered snapshot', () => {
     const { container } = render(<Alert variant="error">Failed</Alert>);
     expect(container.firstChild).toMatchSnapshot();

@@ -610,6 +610,41 @@ describe('Toast', () => {
     expect(timed.padEnd).toBeLessThanOrEqual(20);
   });
 
+  it('is dense, and the way out sits on the title', async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{ title: 'Saved', children: 'Your changes are live.' }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Saved')).toBeVisible());
+
+    const alert = screen
+      .getByText('Saved')
+      .closest('[class*="alert"]') as HTMLElement;
+    const title = screen.getByText('Saved');
+    const out = screen.getByRole('button', { name: /dismiss/i });
+
+    // A TRANSIENT PANEL, not a page block. It inherited `Alert`'s page-scale
+    // padding and body type and came out 102px tall for two short lines; a step
+    // down on the type and half the padding is what a toast wants. The
+    // paragraph margin that was most of the remainder was `Alert`'s own bug,
+    // fixed there.
+    expect(getComputedStyle(title).fontSize).toBe('14px');
+    expect(alert.getBoundingClientRect().height).toBeLessThan(80);
+
+    // And the ✕ is centred on the title's first line rather than pinned to the
+    // corner, which left a band of air above the title.
+    const t = title.getBoundingClientRect();
+    const b = out.getBoundingClientRect();
+    expect(
+      Math.abs(t.top + t.height / 2 - (b.top + b.height / 2)),
+    ).toBeLessThan(3);
+  });
+
   it('is a strip, not a block', async () => {
     render(
       <ToastRegion>

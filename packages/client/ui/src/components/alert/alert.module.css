@@ -35,6 +35,13 @@
   }
   .title {
     @apply font-semibold;
+    /* THE UA'S PARAGRAPH MARGIN, removed. This package ships no Preflight
+       (ADR-0022), so `<p>`'s `margin-block: 1em` is live in every consumer —
+       measured from the toast, it added 28px to a 44px message and was most of
+       the difference between a message and a block. Vertical rhythm belongs to
+       the container, which is the call `field-description` and `Heading` both
+       already make. */
+    margin-block: 0;
   }
   /* Space the body under the title only when a title is present. */
   .title + .message {
