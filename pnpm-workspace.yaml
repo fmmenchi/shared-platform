@@ -27,6 +27,11 @@ overrides:
   fast-uri: '>=4.1.2 <5'
   'js-yaml@3': '>=3.15.1 <4'
   'js-yaml@4': '>=4.3.1 <5'
+  # nanoid 3.3.16 → CVE-2026-67213 (infinite loop). Only the 3.x line is resolved here, pulled
+  # by postcss for the docs site's build, and 3.3.17 is a PATCH inside postcss's own `^3.3.x`
+  # range — an ordinary bump. Scoped and bounded all the same: upstream's other fix is 5.1.6,
+  # so an unscoped entry would one day force a 5.x consumer back down to 3.x.
+  'nanoid@3': '>=3.3.17 <4'
   serialize-javascript: '>=7.0.3'
 allowBuilds:
   nx: true
