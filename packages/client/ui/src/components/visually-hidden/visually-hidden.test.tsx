@@ -148,6 +148,17 @@ describe('VisuallyHidden', () => {
       );
     });
 
+    it('answers the same for a root and for a descendant', async () => {
+      const warn = spyWarn();
+      // An `<a>` with no `href` reports `tabIndex === 0` and is never in the
+      // tab order. Checking the root without the candidate filter made the
+      // identical element warn as a root and stay silent as a descendant.
+      render(<VisuallyHidden as="a">Not a link</VisuallyHidden>);
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(warn).not.toHaveBeenCalled();
+    });
+
     it('stays quiet for everything Tab cannot actually reach', async () => {
       const warn = spyWarn();
       render(
@@ -167,6 +178,9 @@ describe('VisuallyHidden', () => {
             <button type="button">Behind a modal</button>
           </div>
           <summary>Not inside a details</summary>
+          <fieldset disabled>
+            <button type="button">Disabled by its fieldset</button>
+          </fieldset>
         </VisuallyHidden>,
       );
 
@@ -204,9 +218,10 @@ describe('VisuallyHidden', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(warn).not.toHaveBeenCalled();
 
-      // The `[children]` dependency, which is a decision and not an accident:
-      // content arriving from a later fetch is exactly when a focusable element
-      // appears without anyone editing the call site.
+      // The shape the `[children]` dependency actually covers — the parent
+      // re-renders with new children. Stated narrowly on purpose: the guard
+      // does NOT catch a child that fetches and renders a control on its own,
+      // and the component's comment says so rather than claiming otherwise.
       rerender(
         <VisuallyHidden>
           <a href="/retry">Retry</a>

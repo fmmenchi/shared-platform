@@ -51,9 +51,11 @@ function isTabbable(el: HTMLElement): boolean {
   if (el.hasAttribute('hidden')) return false;
   if (el instanceof HTMLInputElement && el.type === 'hidden') return false;
 
-  // A disabled control is not focusable. Asked of the element, so it covers
-  // every control that has the property rather than a list of tag names.
-  if ('disabled' in el && el.disabled === true) return false;
+  // A disabled control is not focusable. `:disabled` rather than the `disabled`
+  // PROPERTY, which is the narrower test: inside a `<fieldset disabled>` a
+  // button reports `disabled === false` while matching `:disabled`, and a real
+  // Tab sweep never reaches it. Measured — the property version warned there.
+  if (el.matches(':disabled')) return false;
 
   // `inert` takes a whole subtree out of the focus order — which is what a
   // modal does to the page behind it.
@@ -67,16 +69,13 @@ function isTabbable(el: HTMLElement): boolean {
     if (parent.querySelector('summary') !== el) return false;
   }
 
-  // TWO KINDS THE `tabIndex` PROPERTY DOES NOT REFLECT. A `contenteditable`
-  // region and a media element with `controls` are both reachable with Tab,
-  // and both report `tabIndex === -1` — measured in Chromium, which is why
-  // they are asked separately rather than folded into the return below. An
-  // explicit `tabindex` on either still wins, so it is checked first.
-  if (!el.hasAttribute('tabindex')) {
-    if (el.isContentEditable) return true;
-    const media = el.localName === 'audio' || el.localName === 'video';
-    if (media && el.hasAttribute('controls')) return true;
-  }
+  // THE ONE KIND THE `tabIndex` PROPERTY DOES NOT REFLECT. A `contenteditable`
+  // region is reachable with Tab and reports `tabIndex === -1`, so it is asked
+  // separately; an explicit `tabindex` still wins, hence the attribute check.
+  // Media with `controls` was here too, on a claim that did not survive
+  // measurement: `<video controls>` reports 0, so the return below already
+  // answers it and the branch was dead.
+  if (el.isContentEditable && !el.hasAttribute('tabindex')) return true;
 
   // THE PROPERTY, NOT THE ATTRIBUTE, for everything else. `el.tabIndex`
   // reflects the PARSED value, which collapses four separate bugs into one
@@ -90,7 +89,11 @@ function isTabbable(el: HTMLElement): boolean {
 
 /** The node itself, or anything under it, that Tab can reach. */
 export function tabbableWithin(node: HTMLElement): HTMLElement | null {
-  if (isTabbable(node)) return node;
+  // THE ROOT GOES THROUGH THE CANDIDATE FILTER TOO. Skipping it made identical
+  // markup answer differently depending on its position: `<VisuallyHidden
+  // as="a">` with no `href` reports `tabIndex === 0` and is never in the tab
+  // order, so as a root it warned and as a descendant it did not.
+  if (node.matches(FOCUSABLE_CANDIDATES) && isTabbable(node)) return node;
   const candidates = node.querySelectorAll<HTMLElement>(FOCUSABLE_CANDIDATES);
   for (const candidate of candidates) {
     if (isTabbable(candidate)) return candidate;
