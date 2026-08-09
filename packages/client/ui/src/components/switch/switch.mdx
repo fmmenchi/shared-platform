@@ -1,0 +1,81 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as SwitchStories from './switch.stories.tsx';
+
+<Meta of={SwitchStories} />
+
+# Switch
+
+A **setting that applies the moment you flip it** — notifications on, dark theme on — and is still true tomorrow. Built on `<input type="checkbox">` with `role="switch"`, so it is announced as a switch and still carries a value, a `name` and a place in `form.reset()`.
+
+**Not a toggle and not a checkbox.** If it needs a Save button beside it, you wanted a checkbox — see [Switch, Toggle or Checkbox?](#switch-toggle-or-checkbox).
+
+## Props
+
+Every native `<input>` attribute is accepted except `type` and `role`, which are the component's identity. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref, spreads every native prop and never touches `checked`/`onChange` — your handler is attached to the element unchanged. There is no `size`, no `variant` and no third state.
+
+<Controls of={SwitchStories.Default} />
+
+## Usage
+
+### A single setting
+
+Label it by **nesting** it in a `<label>`, which associates the two with no `id` and makes the text part of the target.
+
+<Canvas of={SwitchStories.Default} />
+
+### States
+
+<Canvas of={SwitchStories.States} />
+
+### A settings list
+
+What a switch is actually for: each row takes effect when it is flipped, with nothing to submit.
+
+<Canvas of={SwitchStories.Settings} />
+
+### In a form
+
+It is a field like any other — it has a `name`, it submits `on` (or its `value`), and **Reset puts it back**. None of that is true of a `Toggle`, which has no value at all.
+
+<Canvas of={SwitchStories.InAForm} />
+
+### With a hint or an error
+
+A bare `<label>` cannot wire `aria-describedby`. `ChoiceField` can.
+
+<Canvas of={SwitchStories.WithAChoiceField} />
+
+### Right to left
+
+<Canvas of={SwitchStories.RightToLeft} />
+
+## Accessibility
+
+- **Announced as a switch.** `role="switch"` replaces the implicit checkbox role, so assistive tech says "Notifications, switch, on" rather than "checked".
+- **`Space` toggles it**, the key a checkbox answers to. `Enter` submits the form — correct, because this _is_ a form control.
+- **The label is part of the target.** Nested in a `<label>`, the text toggles it too; that is also why the control itself is 44×24 rather than 44×44 — it clears WCAG 2.5.8's 24px minimum on its own and the label supplies the rest.
+- **The state is not carried by colour alone** (WCAG 1.4.1). The fill changes _and_ the knob moves, and position is the cue that survives when colour does not.
+- **Windows High Contrast is handled.** This is the one control in the family we draw, so the whole of it — track, knob, border — is restated in system colours. Even if every fill collapsed, the knob would still be at the other end.
+- **Reduced motion** kills the movement, not the change: the knob arrives instantly.
+
+## Guidelines
+
+### Switch, Toggle or Checkbox?
+
+The decision is recorded in [ADR-0024](../../../../../apps/docusaurus/docs/adr/0024-toggle-switch-checkbox-boundary.md); this is the short form.
+
+| You are asking                                  | Component  | Announced as      | Has a form value |
+| ----------------------------------------------- | ---------- | ----------------- | ---------------- |
+| "**this setting** is on, from now on"           | `Switch`   | switch, on        | yes              |
+| "apply this to **what is selected right now**"  | `Toggle`   | button, pressed   | no               |
+| "include this in **what I am about to submit**" | `Checkbox` | checkbox, checked | yes              |
+
+Two rules that settle most arguments:
+
+- **A switch that needs a Save button is the wrong component.** "Applies immediately" is the whole of what a switch means to the person using it; one that waits for a submit has told them something untrue, and a checkbox is the honest control.
+- **A switch is not a prettier checkbox.** The shape is not the decision — the question the user is answering is. A pill that submits with the form alongside nine other options is a checkbox wearing a costume.
+
+### Do not reach for `aria-checked`
+
+The browser derives it from `checked`. Writing it yourself can only make the two disagree.

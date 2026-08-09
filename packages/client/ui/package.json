@@ -436,6 +436,12 @@
       "types": "./dist/components/toggle/index.d.ts",
       "import": "./dist/toggle.js",
       "default": "./dist/toggle.js"
+    },
+    "./switch": {
+      "@fmmenchi/source": "./src/components/switch/index.ts",
+      "types": "./dist/components/switch/index.d.ts",
+      "import": "./dist/switch.js",
+      "default": "./dist/switch.js"
     }
   },
   "nx": {

@@ -82,6 +82,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        switch: 'src/components/switch/index.ts',
         'toolbar-separator': 'src/components/toolbar-separator/index.ts',
         'visually-hidden': 'src/components/visually-hidden/index.ts',
         'toolbar-item': 'src/components/toolbar-item/index.ts',

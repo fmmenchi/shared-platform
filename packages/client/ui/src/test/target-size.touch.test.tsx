@@ -10,6 +10,7 @@ import { Tab } from '../components/tab/tab.component.js';
 import { TabPanel } from '../components/tab-panel/tab-panel.component.js';
 import { Checkbox } from '../components/checkbox/checkbox.component.js';
 import { Radio } from '../components/radio/radio.component.js';
+import { Switch } from '../components/switch/switch.component.js';
 import { Toggle } from '../components/toggle/toggle.component.js';
 
 /**
@@ -86,5 +87,28 @@ describe('every control this package draws, under a coarse pointer', () => {
     ]) {
       expect(control.getBoundingClientRect().height).toBeLessThan(TAP);
     }
+  });
+
+  it('sizes the switch by the row it sits in, not by the 44px rule', () => {
+    render(
+      <label>
+        <Switch /> Notifications
+      </label>,
+    );
+
+    // THE THIRD CASE, and it belongs to neither of the two above. We DO draw
+    // this one, so the "leave it to the OS" reason does not apply — but it is
+    // labelled the way a checkbox is, nested in a `<label>`, and the finger
+    // hits the row. Stretched to 44px tall it would stop reading as a switch
+    // and start reading as a pill, which is the shape this package gives to a
+    // control that submits nothing.
+    //
+    // So the number it must clear on its own is WCAG 2.5.8's 24px minimum, not
+    // AAA's 44 — and it does, where `Checkbox` at 18px does not and relies on
+    // its label entirely.
+    const box = screen.getByRole('switch').getBoundingClientRect();
+    expect(box.height).toBeGreaterThanOrEqual(24);
+    expect(box.height).toBeLessThan(TAP);
+    expect(box.width).toBeGreaterThanOrEqual(TAP);
   });
 });
