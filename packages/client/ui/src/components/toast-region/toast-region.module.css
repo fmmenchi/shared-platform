@@ -23,7 +23,13 @@
     pointer-events: none;
     /* A phone's notch and a desktop's edge, in one line. */
     padding: var(--fm-space-inset-s);
-    max-inline-size: min(100%, 28rem);
+
+    /* A REAL WIDTH, not a maximum. The region is `position: fixed`, so with
+       only a maximum it shrink-wrapped its contents — measured, a message with
+       a two-word title came out 96px wide and 100 tall, a squat block rather
+       than the strip a toast is. Every toast is now the same width and reads as
+       one column. */
+    inline-size: min(calc(100vw - 2 * var(--fm-space-inset-s)), 26rem);
   }
 
   .region > * {

@@ -73,6 +73,13 @@
    * deliberate, and it is the whole reason this rule is reliable.
    */
   .toast .body {
+    /*
+     * TOAST SCALE, not page scale. `Alert` pads itself with `inset-m` (24px),
+     * which is right for a block sitting in the page and heavy for a small
+     * panel that floats over it — measured, it was most of the box.
+     */
+    padding: var(--fm-space-inset-s);
+    gap: var(--fm-space-inline-s);
     background-color: var(--fm-color-card);
     color: var(--fm-color-card-foreground);
     border-color: var(--fm-color-border);
@@ -84,8 +91,21 @@
   /* Room for the ✕, which is absolutely positioned and therefore invisible to
      the Alert's own padding — a title reaching the inline end rendered UNDER
      it at 320px, at 200% zoom, or with 1.4.12 text spacing. */
-  .hasDismiss {
-    padding-inline-end: var(--fm-space-inset-l);
+  /*
+   * ROOM FOR THE ✕ — exactly its width, and ONLY when it is there.
+   *
+   * The button is 2rem square at `sm` and sits `internal-xs` from the edge, so
+   * it covers 2.25rem: reserving `inset-l` (2rem) left it overlapping the text
+   * by the difference, which is the defect this rule was added to fix in the
+   * first place. A timed toast has no ✕ and reserves nothing — space held for a
+   * control that is not there is the emptiness that reads as sloppiness.
+   *
+   * `.toast .hasDismiss`, matching the specificity of the rule above: written
+   * as a single class it lost to `.toast .body`'s `padding` shorthand and
+   * reserved nothing at all — measured, the ✕ still sat on the text.
+   */
+  .toast .hasDismiss {
+    padding-inline-end: calc(var(--fm-space-inset-s) + 2.25rem);
   }
 
   .toast[data-variant='success'] {

@@ -574,6 +574,65 @@ describe('Toast', () => {
     expect(painted.borderInlineStartColor).not.toBe(painted.borderTopColor);
   });
 
+  it('reserves room for the way out only when there is one', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Stays' }} label="Persistent" />
+        <Raise options={{ title: 'Goes', duration: 5000 }} label="Timed" />
+      </ToastRegion>,
+    );
+
+    await raise('Persistent');
+    await waitFor(() => expect(screen.getByText('Stays')).toBeVisible());
+    await raise('Timed');
+    await waitFor(() => expect(screen.getByText('Goes')).toBeVisible());
+
+    const panels = Array.from(region().querySelectorAll('[data-toast]'));
+    const measure = (panel: Element) => {
+      const alert = panel.querySelector('[class*="alert"]') as HTMLElement;
+      const out = panel.querySelector('button');
+      const box = alert.getBoundingClientRect();
+      return {
+        padEnd: parseFloat(getComputedStyle(alert).paddingInlineEnd),
+        needs: out ? box.right - out.getBoundingClientRect().left : 0,
+      };
+    };
+    const timed = measure(panels[0] as Element);
+    const stays = measure(panels[1] as Element);
+
+    // GEOMETRY, both ways round. The ✕ is absolutely positioned, so the Alert's
+    // own padding knows nothing about it: reserve too little and it sits on the
+    // text, reserve it always and a timed toast carries a gap for a control it
+    // does not have. Written once as a single class, this rule lost to
+    // `.toast .body`'s `padding` shorthand and reserved nothing at all.
+    expect(stays.padEnd).toBeGreaterThan(stays.needs);
+    expect(timed.padEnd).toBeLessThan(stays.padEnd);
+    expect(timed.padEnd).toBeLessThanOrEqual(20);
+  });
+
+  it('is a strip, not a block', async () => {
+    render(
+      <ToastRegion>
+        <Raise
+          options={{ title: 'Saved', children: 'Your changes are live.' }}
+        />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Saved')).toBeVisible());
+
+    // The region is `position: fixed`, so with only a MAXIMUM width it
+    // shrink-wrapped its contents — measured, this message came out 96px wide
+    // and 100 tall, a squat block rather than the strip a toast is. Every toast
+    // shares the region's width, so the stack reads as one column.
+    const box = (
+      region().firstElementChild as HTMLElement
+    ).getBoundingClientRect();
+    expect(box.width).toBeGreaterThan(300);
+    expect(box.width).toBeGreaterThan(box.height * 2);
+  });
+
   it('says so when the provider is the wrong way round', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(
