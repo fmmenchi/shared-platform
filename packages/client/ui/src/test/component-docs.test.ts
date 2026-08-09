@@ -106,3 +106,66 @@ describe('component docs follow the standard format', () => {
     });
   }
 });
+
+/**
+ * EVERY `<Canvas of={X.Story} />` NAMES A STORY THAT EXISTS.
+ *
+ * A dangling reference is invisible to everything else here: MDX is not in the
+ * TypeScript project, `build-storybook` compiles it happily, and the
+ * stories-as-tests run the stories that DO exist. The page simply throws when
+ * somebody opens it — which is how a component whose docs had been broken for
+ * a day was found by a person rather than by CI.
+ */
+const storySources = import.meta.glob('../components/**/*.stories.tsx', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+/**
+ * `./toast.stories.tsx` seen from `../components/toast/toast.mdx`.
+ *
+ * The extension is optional in the source and both spellings are in the tree —
+ * `button.mdx` omits it, `toast.mdx` writes it — so it is normalised here
+ * rather than asked of the authors.
+ */
+const resolveFrom = (mdxPath: string, relative: string): string => {
+  const path = `${folderOf(mdxPath)}/${relative.replace(/^\.\//, '')}`;
+  return path.endsWith('.tsx') ? path : `${path}.tsx`;
+};
+
+describe('documentation story references', () => {
+  const references = Object.entries(docs).flatMap(([mdxPath, raw]) => {
+    const aliases = new Map<string, string>();
+    for (const [, alias, from] of raw.matchAll(
+      /import \* as (\w+) from '([^']+)'/g,
+    )) {
+      aliases.set(alias as string, resolveFrom(mdxPath, from as string));
+    }
+
+    return [...raw.matchAll(/of=\{(\w+)\.(\w+)\}/g)].map(
+      ([, alias, story]) => ({
+        mdxPath,
+        alias: alias as string,
+        story: story as string,
+        source: aliases.get(alias as string),
+      }),
+    );
+  });
+
+  it('finds references to check', () => {
+    expect(references.length).toBeGreaterThan(50);
+  });
+
+  it.each(references.map((r) => [`${r.mdxPath} → ${r.alias}.${r.story}`, r]))(
+    '%s resolves',
+    (_label, reference) => {
+      const source = storySources[reference.source as string];
+      expect(source, `${reference.source} is not a stories file`).toBeDefined();
+      expect(
+        new RegExp(`export const ${reference.story}\\b`).test(source as string),
+        `${reference.mdxPath} renders ${reference.alias}.${reference.story}, which that stories file does not export — the docs page throws when it is opened.`,
+      ).toBe(true);
+    },
+  );
+});

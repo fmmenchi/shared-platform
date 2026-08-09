@@ -492,6 +492,88 @@ describe('Toast', () => {
     await waitFor(() => expect(screen.queryByText('Saved')).toBeNull());
   });
 
+  it('shows how long is left, only when there is a clock', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Stays' }} label="Persistent" />
+        <Raise options={{ title: 'Goes', duration: 4000 }} label="Timed" />
+      </ToastRegion>,
+    );
+
+    await raise('Persistent');
+    await waitFor(() => expect(screen.getByText('Stays')).toBeVisible());
+    const persistent = region().querySelector('[data-toast]') as HTMLElement;
+    // Nothing is counting down, so there is nothing to draw.
+    expect(persistent.querySelector('[aria-hidden="true"]')).toBeNull();
+
+    await raise('Timed');
+    await waitFor(() => expect(screen.getByText('Goes')).toBeVisible());
+    const bar = region().querySelector('[data-toast] [aria-hidden="true"]');
+    expect(bar).not.toBeNull();
+
+    // THE SAME NUMBER THE TIMER USES. A bar with a duration of its own would
+    // promise a moment the message does not leave at, and nothing on screen
+    // would say which of the two was lying.
+    expect(getComputedStyle(bar as Element).animationDuration).toBe('4s');
+  });
+
+  it('stops the bar with the clock', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ title: 'Goes', duration: 4000 }} />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Goes')).toBeVisible());
+    const bar = region().querySelector(
+      '[data-toast] [aria-hidden="true"]',
+    ) as HTMLElement;
+    expect(getComputedStyle(bar).animationPlayState).toBe('running');
+
+    fireEvent.pointerEnter(region());
+    // An indicator that kept draining while the timer was stopped would be a
+    // lie told sixty times a second.
+    await waitFor(() =>
+      expect(getComputedStyle(bar).animationPlayState).toBe('paused'),
+    );
+  });
+
+  it('paints the status as an edge, not as a flood', async () => {
+    render(
+      <ToastRegion>
+        <Raise options={{ variant: 'error', title: 'Failed' }} />
+      </ToastRegion>,
+    );
+
+    await raise();
+    await waitFor(() => expect(screen.getByText('Failed')).toBeVisible());
+    const alert = screen
+      .getByText('Failed')
+      .closest('[class*="alert"]') as HTMLElement;
+    const painted = getComputedStyle(alert);
+
+    // A toast arrives over whatever the reader was looking at. `Alert`'s tinted
+    // surface is right for a message that is PART of the page and a shout when
+    // it is not — so the fill is the page's own card colour and the status is
+    // an edge. Read from the theme rather than hard-coded, so retuning a brand
+    // cannot make this pass by accident.
+    const card = getComputedStyle(document.documentElement)
+      .getPropertyValue('--fm-color-card')
+      .trim();
+    expect(card).not.toBe('');
+    const probe = document.createElement('div');
+    probe.style.backgroundColor = card;
+    document.body.append(probe);
+    const expected = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+
+    expect(painted.backgroundColor).toBe(expected);
+    // And the edge IS the status: the inline-start border differs from the
+    // neutral one on the other three sides.
+    expect(painted.borderInlineStartColor).not.toBe(painted.borderTopColor);
+  });
+
   it('says so when the provider is the wrong way round', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(

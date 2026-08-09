@@ -85,6 +85,18 @@ What makes a timed message acceptable is that its content is **redundant** — a
 
 The pause on hover remains, because reading is not the same as dismissing, and it is on the **region**: a pointer resting on one message must not let the one beneath it vanish from under the cursor. It **restarts** the clock rather than resuming it — a reader who arrives with 200ms left should not be handed 200ms.
 
+### A neutral panel with a status edge
+
+`Alert`'s tinted-surface treatment — a `*-subtle` fill across the whole box — is right for a message that is **part of** the page: one block among others, and the tint says which kind. A toast is not part of the page. It arrives over whatever the reader was looking at, unasked, and a panel of solid red or green there is a shout where a word would do.
+
+So the fill is the page's own `card` colour and the status becomes an **edge**, using the same `--alert-border` the variant already set. Nothing new is mapped, and `card × card-foreground` is a pairing the token contract already declares.
+
+### A timed toast shows how long is left
+
+The bar runs on the **same custom property the timer uses**, so the thing on screen and the thing counting cannot promise different moments. It pauses with the clock — an indicator still draining while the timer is stopped would be a lie told sixty times a second — and it is `aria-hidden`, because it duplicates a fact a screen-reader user has by other means and a live region inside a live region announces nothing well. Under reduced motion it is not drawn at all: a continuously draining bar is exactly the movement the preference asks to be spared, and the message leaves either way.
+
+A toast that **stays** has no bar, for the same reason it has a ✕ and a timed one does not: there is nothing to count.
+
 ### It arrives and it leaves
 
 Both movements come from the shared keyframes in `@fmmenchi/tokens/styles/motion.css` — `fm-slide-up-in` is documented there as the toast shape, and this component had redeclared it locally, which is the drift the doctrine exists to prevent. Duration by **surface size** (`s`), ease by **direction**.
@@ -107,7 +119,7 @@ That fixes the painting and **not** the interaction, which is worth stating rath
 
 <Canvas of={ToastStories.TopEdge} />
 
-<Canvas of={ToastStories.OneMessage} />
+<Canvas of={ToastStories.StayingAndTimed} />
 
 ## Accessibility
 

@@ -61,15 +61,7 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ['muted', 'muted-foreground', 4.5],
   ['background', 'muted-foreground', 4.5],
   ['input', 'input-foreground', 4.5],
-  ['background', 'ring', 3],
-  // THE FOCUS RING ON A STATUS TINT — the toast's dismiss button sits inside a
-  // coloured `Alert`, so its ring is drawn on `<status>-subtle` rather than on
-  // a surface. WCAG 1.4.11, and the rule this package states: a component
-  // introducing a pairing adds it here, or no theme is ever checked for it.
-  ['success-subtle', 'ring', 3],
-  ['warning-subtle', 'ring', 3],
-  ['info-subtle', 'ring', 3],
-  ['error-subtle', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
+  ['background', 'ring', 3], // non-text focus indicator (WCAG 1.4.11)
   // Focus lands inside raised surfaces too (an input in a Dialog, a menu item
   // in a Popover) — the ring must clear 3:1 on every surface it can appear on.
   ['card', 'ring', 3],
