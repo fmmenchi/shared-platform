@@ -25,6 +25,11 @@ import type { ComponentPropsWithRef, ElementType } from 'react';
  * still has never heard of it. Declaration merging is how TanStack registers
  * its own route tree, so this is the mechanism its users already have.
  *
+ * NOT `className`, and not `style`. React Router's `NavLink` types both as
+ * `string | ((state) => string)`, and this component merges class names with
+ * `clsx`, which ignores a function without saying so: the link keeps the design
+ * system's class, the app's never appears, and nothing reports it.
+ *
  * TWO things it cannot do, and both are worth knowing before reaching for it.
  * TypeScript cannot check that what you declare here matches the `Link` you
  * actually injected — augment with one router's props and inject another's and
