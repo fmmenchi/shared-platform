@@ -42,7 +42,22 @@ jobs:
 
       - run: pnpm nx format:check --all
 
-      - run: pnpm nx run-many -t typecheck build lint lint-css test build-storybook
+      # SPLIT FROM THE SUITE BELOW, and not for tidiness. Run in one `run-many`
+      # with `test`, the browser suite died twice on the same commit without
+      # producing a vitest summary at all — no failing test named, no assertion
+      # reported, because nx interleaves sixteen projects' output and the
+      # `Failed tasks` line landed in the middle of another project's stderr.
+      # Measured locally with the same shape: green every time when the two are
+      # run separately, red at random when together, with a DIFFERENT test
+      # falling each run and never one that the commit had touched.
+      #
+      # So this buys two things — the contention goes, and a failure that does
+      # happen is legible instead of anonymous.
+      - run: pnpm nx run-many -t typecheck build lint lint-css build-storybook
+
+      # The browser-mode suite, alone. Second because a type error makes every
+      # test below it meaningless, and this is the slower half.
+      - run: pnpm nx run-many -t test
 
   # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
   # only the projects with releasing conventional commits, so a plain dry-run is already

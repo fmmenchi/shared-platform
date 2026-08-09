@@ -45,11 +45,18 @@ if Nx reports the workspace is out of sync).
 
 ```bash
 pnpm nx format:check --all                                          # Prettier — CI runs this too
-pnpm nx run-many -t typecheck build lint lint-css test build-storybook
+pnpm nx run-many -t typecheck build lint lint-css build-storybook
+pnpm nx run-many -t test                                            # SEPARATELY — see below
 ```
 
-Both lines, not just the second: CI gates on `format:check` as well, so a run that is green here and
-unformatted still fails the PR. `pnpm nx format:write` fixes it.
+All three lines: CI gates on `format:check` too, so a run that is green here and unformatted still
+fails the PR. `pnpm nx format:write` fixes it.
+
+**Keep `test` in its own command.** The browser-mode suite and `build-storybook` in one `run-many`
+contend for the machine, and the failure is not a clean red: measured locally, a different test falls
+each run — never one the commit touched — and in CI the suite died twice on the same commit without
+printing a vitest summary at all, because nx interleaves every project's output. Separated, both are
+green every time. The CI workflow runs them as two steps for the same reason.
 
 Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`. `lint-css`
 (Stylelint) enforces design-token values in the UI's CSS Modules — see [ui](./.agents/doc/ui.md).
