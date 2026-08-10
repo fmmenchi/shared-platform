@@ -3,6 +3,11 @@
 Release helper scripts for the CI job of an Nx release monorepo. Small, tested, importable — the
 CI-only shell wiring stays in `.github/workflows/ci.yml`.
 
+- **Scope / type:** `ops` / `util`
+- **Workspace:** part of [shared-platform](../../../README.md).
+- **Agent entrypoint:** [AGENTS.md](./AGENTS.md).
+- **Documentation:** [docs/](./docs/index.md) — guides, the script and API reference, the concepts.
+
 ## What it does
 
 `nx release` already versions only the projects with releasing conventional commits — a docs- or
