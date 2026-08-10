@@ -51,13 +51,68 @@ jobs:
       # run separately, red at random when together, with a DIFFERENT test
       # falling each run and never one that the commit had touched.
       #
-      # So this buys two things — the contention goes, and a failure that does
-      # happen is legible instead of anonymous.
+      # The contention half of that held. The LEGIBILITY half did not, and this
+      # comment claimed it did: four failures later the suite still names no
+      # test. Keeping the split anyway — it is the right shape and it removed a
+      # real source of flakiness — but the instrument for the second half is on
+      # the step below, where it should have been.
       - run: pnpm nx run-many -t typecheck build lint lint-css build-storybook
 
       # The browser-mode suite, alone. Second because a type error makes every
       # test below it meaningless, and this is the slower half.
-      - run: pnpm nx run-many -t test
+      #
+      # INSTRUMENTED, and the instrument is the point rather than a decoration.
+      # Splitting the step (above) was supposed to make a failure legible and it
+      # did not: this step has now failed four times on `main` without ever
+      # naming a test. Every result it prints is green, vitest never reaches its
+      # summary, and the output stops MID-LINE. That is the signature of a
+      # process that was KILLED, not one that failed an assertion — and the two
+      # need opposite fixes, so guessing between them is how a day gets spent.
+      #
+      # `time -v` is what tells them apart: it reports the exit status and, when
+      # there is one, the SIGNAL, plus the peak resident set of the whole tree.
+      # Signal 9 with a peak near the runner's memory is the OOM killer; a plain
+      # exit 1 is a red test we simply cannot see yet.
+      #
+      # Guarded because a missing `/usr/bin/time` would turn a diagnostic into an
+      # outage. `tee` keeps the whole output for the step below — GitHub's own
+      # step log is the thing being truncated, so the evidence has to leave it.
+      # The default shell here is `bash -e -o pipefail`, so the pipe does not
+      # swallow the failure.
+      - name: Browser-mode suite (instrumented — see the comment)
+        id: suite
+        run: |
+          if [ -x /usr/bin/time ]; then
+            /usr/bin/time -v pnpm nx run-many -t test 2>&1 | tee /tmp/test.log
+          else
+            pnpm nx run-many -t test 2>&1 | tee /tmp/test.log
+          fi
+
+      # A SMALL step, so the truncation that ate the evidence cannot eat this
+      # too: the tail of the run, the lines that look like failures, and the
+      # kernel ring buffer — the OOM killer names its victim, and nothing else
+      # in this job can. Runs only when something above went red.
+      - name: What killed it
+        # SCOPED TO THE SUITE, not to the job: `failure()` alone would fire for a
+        # lint failure too, and then read a `/tmp/test.log` that was never
+        # written.
+        if: failure() && steps.suite.conclusion == 'failure'
+        run: |
+          echo '::group::exit status and peak memory (from `time -v`)'
+          grep -aE 'Command terminated|Exit status|Maximum resident|Elapsed' /tmp/test.log || echo 'no time -v output'
+          echo '::endgroup::'
+          echo '::group::anything that looks like a failure'
+          grep -anE 'FAIL|AssertionError|Unhandled|✗|×|Error:|Failed tasks' /tmp/test.log | tail -60 || echo 'nothing matched'
+          echo '::endgroup::'
+          echo '::group::last 120 lines of the run'
+          tail -120 /tmp/test.log
+          echo '::endgroup::'
+          echo '::group::machine'
+          free -m; df -h /
+          echo '::endgroup::'
+          echo '::group::kernel ring buffer'
+          sudo dmesg | tail -60 || echo 'dmesg unavailable'
+          echo '::endgroup::'
 
   # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
   # only the projects with releasing conventional commits, so a plain dry-run is already
