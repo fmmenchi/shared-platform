@@ -62,6 +62,7 @@ function Table<T>(props: TableProps<T>) {
     caption,
     density,
     busy,
+    stickyHeader,
     className,
     columns,
     rows,
@@ -261,256 +262,282 @@ function Table<T>(props: TableProps<T>) {
           // the other says "1500" is a drift a reader hears.
           t('selectionCount', { count: numbers.format(visibleIds.length) });
 
-  return (
-    <>
-      <table
-        {...rest}
-        aria-busy={busy || undefined}
-        data-density={density}
-        className={cn(styles.table, className)}
-      >
-        {/* First child, as the parser requires — and a real `<caption>` rather
+  const table = (
+    <table
+      {...rest}
+      aria-busy={busy || undefined}
+      data-density={density}
+      data-sticky-header={stickyHeader ? '' : undefined}
+      className={cn(styles.table, className)}
+    >
+      {/* First child, as the parser requires — and a real `<caption>` rather
           than an `aria-label`, so it is announced AND readable. */}
-        <caption className={styles.caption}>{caption}</caption>
+      <caption id={`${baseId}-caption`} className={styles.caption}>
+        {caption}
+      </caption>
 
-        {columns && rows && getRowId ? (
-          <>
-            <TableHead>
-              <TableRow>
-                {picks && (
-                  <TableHeaderCell className={styles.selectCell}>
-                    {/* NOTHING HIDDEN IN HERE. The verb the row labels borrow
+      {columns && rows && getRowId ? (
+        <>
+          <TableHead>
+            <TableRow>
+              {picks && (
+                <TableHeaderCell className={styles.selectCell}>
+                  {/* NOTHING HIDDEN IN HERE. The verb the row labels borrow
                       used to live in this cell, and a `columnheader` takes its
                       name from its content — so the column announced itself as
                       "Select Select all rows", and a reader arrowing across a
                       row heard the verb three times. It sits outside the table
                       now; `aria-labelledby` reaches across the document. */}
-                    {onSelectAllToggle && (
-                      <Checkbox
-                        checked={
-                          coverage === 'all'
-                            ? true
-                            : coverage === 'some'
-                              ? 'indeterminate'
-                              : false
-                        }
-                        // The MIXED state is what a partial page means, and our
-                        // `Checkbox` carries it as a value of `checked` — the
-                        // DOM has no attribute for it, so nothing else would.
-                        aria-label={t('selectAllRows')}
-                        // Nothing to take: it offered a live control over an
-                        // empty table, and clicking it announced that a
-                        // selection had been cleared.
-                        disabled={visibleIds.length === 0}
-                        onChange={() => {
-                          setActed({ kind: 'said', text: selectAllSaid() });
-                          onSelectAllToggle(visibleIds);
+                  {onSelectAllToggle && (
+                    <Checkbox
+                      checked={
+                        coverage === 'all'
+                          ? true
+                          : coverage === 'some'
+                            ? 'indeterminate'
+                            : false
+                      }
+                      // The MIXED state is what a partial page means, and our
+                      // `Checkbox` carries it as a value of `checked` — the
+                      // DOM has no attribute for it, so nothing else would.
+                      aria-label={t('selectAllRows')}
+                      // Nothing to take: it offered a live control over an
+                      // empty table, and clicking it announced that a
+                      // selection had been cleared.
+                      disabled={visibleIds.length === 0}
+                      onChange={() => {
+                        setActed({ kind: 'said', text: selectAllSaid() });
+                        onSelectAllToggle(visibleIds);
+                      }}
+                    />
+                  )}
+                </TableHeaderCell>
+              )}
+              {columns.map((column) => {
+                const active = sort?.key === column.key;
+                const canSort = column.sortable === true && onSortToggle;
+
+                return (
+                  <TableHeaderCell
+                    key={column.key}
+                    align={column.align}
+                    // THE STATE OF THE DATA, and separately the invitation.
+                    // `ascending`/`descending` is not gated on `sortable`:
+                    // rows that arrive ordered ARE ordered, and a read-only
+                    // server-sorted column should say so. `none` is the other
+                    // half, and the first version was wrong to leave it out —
+                    // the argument was "the button already tells them", and
+                    // it does not: the button's accessible name is the column
+                    // heading, and the only thing marking the column as
+                    // orderable was a glyph carrying `aria-hidden`. `none` is
+                    // what the attribute has that value for.
+                    aria-sort={
+                      active
+                        ? sort.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : canSort
+                          ? 'none'
+                          : undefined
+                    }
+                  >
+                    {canSort ? (
+                      // OUR Button, not a hand-rolled `<button>`. `NavGroup`
+                      // wrote its own once — `border: 0; background: none`, the
+                      // first two lines of what `button.module.css` does — and
+                      // shipped with no focus ring at all, invisible to every
+                      // test because the test page has no Preflight.
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={styles.sortTrigger}
+                        onClick={() => {
+                          // The KEY, not the next state. The transition is
+                          // computed by whoever owns the state and can read
+                          // its latest value; computed here it came from the
+                          // `sort` prop of the render that drew this arrow,
+                          // which a consumer committing in a transition has
+                          // not refreshed — two clicks then landed on
+                          // ascending twice.
+                          setActed({ kind: 'sort' });
+                          onSortToggle(column.key);
                         }}
-                      />
+                      >
+                        {column.header}
+                        <SortArrow
+                          direction={active ? sort.direction : undefined}
+                        />
+                      </Button>
+                    ) : (
+                      column.header
                     )}
                   </TableHeaderCell>
-                )}
-                {columns.map((column) => {
-                  const active = sort?.key === column.key;
-                  const canSort = column.sortable === true && onSortToggle;
+                );
+              })}
+            </TableRow>
+          </TableHead>
 
-                  return (
-                    <TableHeaderCell
-                      key={column.key}
-                      align={column.align}
-                      // THE STATE OF THE DATA, and separately the invitation.
-                      // `ascending`/`descending` is not gated on `sortable`:
-                      // rows that arrive ordered ARE ordered, and a read-only
-                      // server-sorted column should say so. `none` is the other
-                      // half, and the first version was wrong to leave it out —
-                      // the argument was "the button already tells them", and
-                      // it does not: the button's accessible name is the column
-                      // heading, and the only thing marking the column as
-                      // orderable was a glyph carrying `aria-hidden`. `none` is
-                      // what the attribute has that value for.
-                      aria-sort={
-                        active
-                          ? sort.direction === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : canSort
-                            ? 'none'
-                            : undefined
-                      }
-                    >
-                      {canSort ? (
-                        // OUR Button, not a hand-rolled `<button>`. `NavGroup`
-                        // wrote its own once — `border: 0; background: none`, the
-                        // first two lines of what `button.module.css` does — and
-                        // shipped with no focus ring at all, invisible to every
-                        // test because the test page has no Preflight.
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={styles.sortTrigger}
-                          onClick={() => {
-                            // The KEY, not the next state. The transition is
-                            // computed by whoever owns the state and can read
-                            // its latest value; computed here it came from the
-                            // `sort` prop of the render that drew this arrow,
-                            // which a consumer committing in a transition has
-                            // not refreshed — two clicks then landed on
-                            // ascending twice.
-                            setActed({ kind: 'sort' });
-                            onSortToggle(column.key);
-                          }}
-                        >
-                          {column.header}
-                          <SortArrow
-                            direction={active ? sort.direction : undefined}
-                          />
-                        </Button>
-                      ) : (
-                        column.header
-                      )}
-                    </TableHeaderCell>
-                  );
-                })}
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {rows.length === 0 ? (
-                <TableRow>
-                  {/* COUNTED, not typed. A hand-written number is wrong the day a
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow>
+                {/* COUNTED, not typed. A hand-written number is wrong the day a
                     column is added, and a short `colSpan` leaves the message
                     sitting under one column instead of across the table. */}
-                  <TableCell
-                    colSpan={Math.max(columns.length + (picks ? 1 : 0), 1)}
-                    className={styles.empty}
+                <TableCell
+                  colSpan={Math.max(columns.length + (picks ? 1 : 0), 1)}
+                  className={styles.empty}
+                >
+                  {hasRenderableChildren(empty) ? empty : t('empty')}
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((row, index) => {
+                const rowId = getRowId(row);
+                const rowHeaderId = `${baseId}-r${index}`;
+                // GATED ON `picks`, not on `selection` alone. Tinted without a
+                // checkbox, the row conveyed its state by colour and nothing
+                // else — and the whole argument for the box being mandatory is
+                // that `aria-selected` cannot carry it.
+                const picked =
+                  picks &&
+                  selection !== undefined &&
+                  isRowSelected(selection, rowId);
+
+                // Computed ONCE, here, and handed to the column below rather
+                // than derived twice — a consumer's `cell` is a function and
+                // calling it again to ask what it said is a cost they did not
+                // agree to.
+                const rowName = rowHeaderColumn
+                  ? rowHeaderColumn.cell
+                    ? rowHeaderColumn.cell(row)
+                    : ((row as Record<string, unknown>)[
+                        rowHeaderColumn.key
+                      ] as ReactNode)
+                  : undefined;
+                const namedInWords =
+                  typeof rowName === 'string' || typeof rowName === 'number'
+                    ? String(rowName).trim()
+                    : '';
+
+                return (
+                  <TableRow
+                    key={rowId}
+                    // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
+                    // belongs to `grid` and `treegrid`; on a row inside a
+                    // `table` it is ignored, and writing it would be a
+                    // component claiming to say something it does not. The
+                    // checkbox carries the state for everybody — which is
+                    // also why the box is not optional.
+                    data-selected={picked ? '' : undefined}
                   >
-                    {hasRenderableChildren(empty) ? empty : t('empty')}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row, index) => {
-                  const rowId = getRowId(row);
-                  const rowHeaderId = `${baseId}-r${index}`;
-                  // GATED ON `picks`, not on `selection` alone. Tinted without a
-                  // checkbox, the row conveyed its state by colour and nothing
-                  // else — and the whole argument for the box being mandatory is
-                  // that `aria-selected` cannot carry it.
-                  const picked =
-                    picks &&
-                    selection !== undefined &&
-                    isRowSelected(selection, rowId);
-
-                  // Computed ONCE, here, and handed to the column below rather
-                  // than derived twice — a consumer's `cell` is a function and
-                  // calling it again to ask what it said is a cost they did not
-                  // agree to.
-                  const rowName = rowHeaderColumn
-                    ? rowHeaderColumn.cell
-                      ? rowHeaderColumn.cell(row)
-                      : ((row as Record<string, unknown>)[
-                          rowHeaderColumn.key
-                        ] as ReactNode)
-                    : undefined;
-                  const namedInWords =
-                    typeof rowName === 'string' || typeof rowName === 'number'
-                      ? String(rowName).trim()
-                      : '';
-
-                  return (
-                    <TableRow
-                      key={rowId}
-                      // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
-                      // belongs to `grid` and `treegrid`; on a row inside a
-                      // `table` it is ignored, and writing it would be a
-                      // component claiming to say something it does not. The
-                      // checkbox carries the state for everybody — which is
-                      // also why the box is not optional.
-                      data-selected={picked ? '' : undefined}
-                    >
-                      {picks && (
-                        <TableCell className={styles.selectCell}>
-                          <Checkbox
-                            checked={picked}
-                            // A WHOLE SENTENCE WHEN THE NAME IS WORDS, and a
-                            // reference only when it is not. Two fragments
-                            // joined by `aria-labelledby` put the WORD ORDER in
-                            // the code — "«verb» «name»", which Japanese and
-                            // Turkish are not — and i18n.md forbids exactly
-                            // that, for exactly that reason. A string row name
-                            // is the overwhelmingly common case and it fills a
-                            // one-hole message the catalog can reorder. A node
-                            // (an icon, an `<abbr>`, a link) has no string to
-                            // put in a hole, so it is pointed at instead: worse
-                            // for word order, better than losing the name.
-                            aria-label={
-                              namedInWords !== ''
-                                ? t('selectRowNamed', { name: namedInWords })
-                                : rowName === undefined ||
-                                    !hasRenderableChildren(rowName)
-                                  ? t('selectRow')
-                                  : undefined
-                            }
-                            aria-labelledby={
-                              namedInWords === '' &&
-                              rowName !== undefined &&
-                              hasRenderableChildren(rowName)
-                                ? `${baseId}-select ${rowHeaderId}`
+                    {picks && (
+                      <TableCell className={styles.selectCell}>
+                        <Checkbox
+                          checked={picked}
+                          // A WHOLE SENTENCE WHEN THE NAME IS WORDS, and a
+                          // reference only when it is not. Two fragments
+                          // joined by `aria-labelledby` put the WORD ORDER in
+                          // the code — "«verb» «name»", which Japanese and
+                          // Turkish are not — and i18n.md forbids exactly
+                          // that, for exactly that reason. A string row name
+                          // is the overwhelmingly common case and it fills a
+                          // one-hole message the catalog can reorder. A node
+                          // (an icon, an `<abbr>`, a link) has no string to
+                          // put in a hole, so it is pointed at instead: worse
+                          // for word order, better than losing the name.
+                          aria-label={
+                            namedInWords !== ''
+                              ? t('selectRowNamed', { name: namedInWords })
+                              : rowName === undefined ||
+                                  !hasRenderableChildren(rowName)
+                                ? t('selectRow')
                                 : undefined
-                            }
-                            onChange={() => {
-                              // The region falls silent: a single box announces
-                              // its own state, and a count read over it doubles
-                              // what the reader was just told.
-                              setActed(null);
-                              onRowSelectToggle?.(rowId);
-                            }}
-                          />
+                          }
+                          aria-labelledby={
+                            namedInWords === '' &&
+                            rowName !== undefined &&
+                            hasRenderableChildren(rowName)
+                              ? `${baseId}-select ${rowHeaderId}`
+                              : undefined
+                          }
+                          onChange={() => {
+                            // The region falls silent: a single box announces
+                            // its own state, and a count read over it doubles
+                            // what the reader was just told.
+                            setActed(null);
+                            onRowSelectToggle?.(rowId);
+                          }}
+                        />
+                      </TableCell>
+                    )}
+                    {columns.map((column) => {
+                      const content =
+                        column.key === rowHeaderKey
+                          ? rowName
+                          : column.cell
+                            ? column.cell(row)
+                            : ((row as Record<string, unknown>)[
+                                column.key
+                              ] as ReactNode);
+
+                      return column.rowHeader ? (
+                        <TableHeaderCell
+                          key={column.key}
+                          align={column.align}
+                          // ONLY WHEN SOMETHING POINTS AT IT. A row named in
+                          // words fills the message instead, so an id here
+                          // would be an attribute referenced by nothing on
+                          // every row of every selectable table.
+                          id={
+                            picks &&
+                            column.key === rowHeaderKey &&
+                            namedInWords === ''
+                              ? rowHeaderId
+                              : undefined
+                          }
+                        >
+                          {content}
+                        </TableHeaderCell>
+                      ) : (
+                        <TableCell key={column.key} align={column.align}>
+                          {content}
                         </TableCell>
-                      )}
-                      {columns.map((column) => {
-                        const content =
-                          column.key === rowHeaderKey
-                            ? rowName
-                            : column.cell
-                              ? column.cell(row)
-                              : ((row as Record<string, unknown>)[
-                                  column.key
-                                ] as ReactNode);
+                      );
+                    })}
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </>
+      ) : (
+        children
+      )}
+    </table>
+  );
 
-                        return column.rowHeader ? (
-                          <TableHeaderCell
-                            key={column.key}
-                            align={column.align}
-                            // ONLY WHEN SOMETHING POINTS AT IT. A row named in
-                            // words fills the message instead, so an id here
-                            // would be an attribute referenced by nothing on
-                            // every row of every selectable table.
-                            id={
-                              picks &&
-                              column.key === rowHeaderKey &&
-                              namedInWords === ''
-                                ? rowHeaderId
-                                : undefined
-                            }
-                          >
-                            {content}
-                          </TableHeaderCell>
-                        ) : (
-                          <TableCell key={column.key} align={column.align}>
-                            {content}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </>
-        ) : (
-          children
-        )}
-      </table>
+  return (
+    <>
+      {/* THE SCROLLER, and a tab stop, and a name — three things that are one
+        decision. `position: sticky` needs something to scroll inside or it
+        pins to the viewport; a region that scrolls has to be reachable by
+        keyboard, because somebody who cannot use a pointer has no other way
+        to reach the columns off to the right; and a tab stop with no name is
+        an entry a screen reader announces as nothing. The `<caption>` is
+        already the table's name, so it is the region's too — one string, and
+        it cannot drift from the table it belongs to. */}
+      {stickyHeader === true ? (
+        <div
+          className={styles.scroll}
+          tabIndex={0}
+          role="region"
+          aria-labelledby={`${baseId}-caption`}
+        >
+          {table}
+        </div>
+      ) : (
+        table
+      )}
 
       {/* ONLY WHERE IT CAN SPEAK. Rendered unconditionally it shipped a
         permanently-empty live region on every composed table and every table

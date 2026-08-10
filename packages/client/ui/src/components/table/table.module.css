@@ -11,11 +11,14 @@
 @layer fmmenchi {
   .table {
     inline-size: 100%;
-    /* `collapse` for now. The day the header goes sticky this has to become
-       `separate` — `position: sticky` does not hold on a collapsed border
-       model — which is why sticky and resize are planned as one piece of work
-       rather than two. */
-    border-collapse: collapse;
+    /* SEPARATE, with no spacing — which renders identically to `collapse` for
+       the borders this table draws, and is the one the sticky header needs. In
+       the collapsed model a cell's borders belong to the TABLE rather than to
+       the cell, so a `position: sticky` header scrolls away from its own rule
+       and arrives at the top with no line under it. That is why this and the
+       header were always going to be one change. */
+    border-collapse: separate;
+    border-spacing: 0;
     /* Digits line up in a column, which is most of what makes a numeric column
        readable at all. */
     font-variant-numeric: tabular-nums;
@@ -47,7 +50,12 @@
     font-weight: var(--fm-font-weight-semibold);
   }
 
-  .table tbody tr {
+  /* ON THE CELLS, not on the row. The separated model IGNORES a border set on
+     a `<tr>` — it is one of the few places CSS silently drops a declaration
+     rather than cascading it — so the row separator has to be drawn by the
+     cells that make up the row. Only `block-end`, so no two adjacent cells
+     ever draw the same line twice. */
+  .table tbody :is(th, td) {
     border-block-end: var(--fm-border-width-default) solid
       var(--fm-color-border);
   }
@@ -69,6 +77,32 @@
   .empty {
     text-align: center;
     padding-block: var(--fm-space-stack-l);
+  }
+
+  /* THE THING A STICKY HEADER STICKS INSIDE OF, and the reason the header is
+     not a standalone prop: `position: sticky` with nothing scrolling around it
+     pins to the VIEWPORT, so the header of a table halfway down a page rides
+     over the content above it. Ours or nobody's.
+
+     `max-block-size: 100%` and nothing else: how tall the scroller is belongs
+     to the box the consumer puts it in, which is where layout belongs. Given
+     no constraint it simply does not scroll vertically, and the header is then
+     a no-op rather than a bug. */
+  .scroll {
+    overflow: auto;
+    max-block-size: 100%;
+  }
+
+  /* AN OPAQUE BACKGROUND IS NOT DECORATION HERE. A sticky header with a
+     transparent one has the rows scroll THROUGH it — the single most reported
+     bug of this pattern — so the surface is painted, and both halves of a
+     declared pairing are painted, which this file has now learned twice. */
+  .table[data-sticky-header] thead th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--fm-z-sticky);
+    background: var(--fm-color-background);
+    color: var(--fm-color-foreground);
   }
 
   /* The checkbox column takes the width of a checkbox and no more: a column of

@@ -207,6 +207,45 @@ export const BulkActions: Story = {
   },
 };
 
+/**
+ * The header stays while the rows go past — and it brings its scroller with it,
+ * because `position: sticky` with nothing scrolling around it pins to the
+ * VIEWPORT: the header of a table halfway down a page would ride over
+ * everything above it.
+ *
+ * That scroller is why this is more than a CSS line. A region that scrolls has
+ * to be reachable by keyboard — somebody who cannot use a pointer has no other
+ * way to reach the rows below the fold — so it takes a tab stop, and a tab stop
+ * with no name is an entry a screen reader announces as nothing. It borrows the
+ * `<caption>`, which is already the table's name.
+ *
+ * How tall it is belongs to the box you put it in, which is where layout
+ * belongs. Given no constraint it does not scroll and the header is a no-op
+ * rather than a bug.
+ */
+export const StickyHeader: Story = {
+  render: function Render() {
+    const many = Array.from({ length: 24 }, (_, index) => ({
+      id: String(index),
+      name: `Persona ${index + 1}`,
+      city: ['Aosta', 'Milano', 'Zurigo'][index % 3] as string,
+      age: 20 + index,
+    }));
+
+    return (
+      <div style={{ blockSize: '16rem' }}>
+        <Table
+          caption="Persone"
+          rows={many}
+          getRowId={(p) => p.id}
+          columns={columns}
+          stickyHeader
+        />
+      </div>
+    );
+  },
+};
+
 /** Same table, tighter rows. */
 export const Compact: Story = {
   args: {

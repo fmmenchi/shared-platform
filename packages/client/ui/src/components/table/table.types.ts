@@ -125,6 +125,24 @@ interface TableShared extends Omit<
   caption: ReactNode;
   density?: TableDensity;
   /**
+   * Keep the column headers in view while the rows scroll under them.
+   *
+   * It also puts the table in a SCROLL CONTAINER, and that is not a bonus: a
+   * sticky header with nothing scrolling around it pins to the viewport, so
+   * the header of a table halfway down a page rides over everything above it.
+   * The two are one feature.
+   *
+   * The container is where the rest of the obligation lives. A region that
+   * scrolls must be reachable by keyboard — somebody who cannot use a pointer
+   * has no other way to see the columns off to the right — so it takes a tab
+   * stop, and a tab stop with no name is an entry a screen reader reads as
+   * nothing. It is named by the table's own `<caption>`.
+   *
+   * How TALL it is belongs to the box you put it in. Given no constraint it
+   * does not scroll vertically and the header is a no-op rather than a bug.
+   */
+  stickyHeader?: boolean;
+  /**
    * Something is arriving. Describes the ELEMENT's state, not where the data
    * comes from — which is why this exists and a `loading` prop does not: a
    * background refetch is busy while the old rows are still on screen, and a

@@ -211,6 +211,30 @@ Three things it does that a hand-rolled bar does not:
 
 **It is not a projection parameter.** Sorting and filtering derive the rows; selection is downstream of them and derives nothing, so it belongs in a request body rather than in a query key — which is also why it is a `Set` and not an array. Putting it in a query key is how ticking a box refetches the page.
 
+### A header that stays
+
+<Canvas of={TableStories.StickyHeader} />
+
+```tsx
+<div style={{ blockSize: '16rem' }}>
+  <Table
+    caption="Persone"
+    rows={rows}
+    getRowId={(p) => p.id}
+    columns={columns}
+    stickyHeader
+  />
+</div>
+```
+
+**It brings its own scroller**, and that is the feature rather than a side effect. `position: sticky` with nothing scrolling around it pins to the **viewport** — so the header of a table halfway down a page rides over everything above it. The two are one thing, which is why one prop turns on both.
+
+**The scroller is where the obligation lives.** A region that scrolls has to be reachable by keyboard: somebody who cannot use a pointer has no other way to reach the rows below the fold, or the columns off to the right. So it takes a tab stop — and a tab stop with no name is an entry a screen reader announces as nothing, so it borrows the `<caption>`, which is already the table's name and cannot drift from it.
+
+**How tall it is belongs to you.** Constrain the box you put it in; given no constraint it does not scroll vertically and the header is a no-op rather than a bug.
+
+One thing this changed underneath every table: the border model is now `separate` with no spacing. In the collapsed model a cell's borders belong to the **table**, not to the cell, so a sticky header scrolls away from its own rule and arrives at the top with no line under it. The separated model also **ignores** a border set on a `<tr>` — silently — so the row separators moved onto the cells. Nothing renders differently; it is the same lines drawn by different boxes.
+
 ### It never sees where the rows came from
 
 They arrive as an array, and an array does not say whether a `.sort()` or an `ORDER BY` produced it. The agnosticism is not discipline, it is an absence of information — which is what lets the same markup serve an in-memory list and a paginated server query.
@@ -257,6 +281,7 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 - **The selection bar is a named region**, whose accessible name is its own count — "Selection: 2, region". It is not announced when it appears, because the table's live region already carries the count and two of them over one fact say it twice; being a landmark is what makes it findable to a reader who never saw it arrive. Its toolbar is `aria-describedby` the count, so tabbing into the actions states the number rather than only "Selection actions, toolbar".
 - **Render the bar AFTER the table.** Before it, forward Tab never reaches the actions the reader just summoned — they would walk backwards past every row checkbox. Put it visually above with CSS if the design wants it there; the package's rule is that visual position is CSS's business.
 - **Focus comes back when the bar goes**, by whatever route: our Clear button, or a bulk action of yours that empties the selection. The element focused when the bar appeared is restored, which scrolls the page back to it — a focus you cannot see is not a focus. A bar that mounts already visible has no origin to return to, and says so by doing nothing.
+- **A sticky header takes a tab stop with it.** Its scroll container is focusable and named by the `<caption>`, because a region that scrolls and cannot be focused is unreachable to anyone without a pointer — and the header itself is painted opaque, or the rows scroll straight through it.
 - **The arrow is drawn inline**, not taken from the icon port. A table that could not show its sort direction until the app injected an icon set would be a table that breaks on somebody else's configuration. Its resting state is set by measurement rather than by eye: at the opacity first chosen it read 1.89:1 against the page, where WCAG 1.4.11 asks 3:1 of anything identifying a state.
 - **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
 - **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.
