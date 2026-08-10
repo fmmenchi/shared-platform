@@ -45,6 +45,18 @@ export interface UseRowSelectionResult {
    * the intents are meant to be one per interaction.
    */
   setSelection: (next: ControlledUpdater<Selection>) => void;
+  /**
+   * Spread onto `TableSelectionBar` — the persistent statement of the count,
+   * and the only place `exclude` is reachable through our own code.
+   */
+  barProps: {
+    selection: Selection;
+    count: number | undefined;
+    total: number | undefined;
+    /** Take the whole result set, including rows this client never received. */
+    onSelectEverything: () => void;
+    onClear: () => void;
+  };
   /** Spread onto `Table`. */
   props: {
     selection: Selection;

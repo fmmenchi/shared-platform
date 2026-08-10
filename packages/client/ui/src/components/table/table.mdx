@@ -27,6 +27,7 @@ Rows and columns, announced correctly.
 | `Table`                                      | the `<table>`, the caption, and the column model        |
 | `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable         |
 | `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express |
+| `TableSelectionBar`                          | what is selected, on screen — and the bulk actions      |
 
 ## Props
 
@@ -172,6 +173,30 @@ Three consequences worth knowing before you build on it:
 - **The header box speaks only for the rows on screen.** It receives their ids, and nothing else. "Select all 10,000 matching" is a second affordance — the banner that appears after the header box is ticked — and only you know whether there are more rows. Build it with the exported `EVERYTHING_SELECTED`.
 - **Unticking the header under an `exclude` rule clears the selection whole**, rather than narrowing it to "everything except the twenty you can see". Nobody means the second thing, and the first version did it: the box, the rows and the count all read zero while the rule still selected every row on the other 499 pages — a delete confirmed as "0 rows" that removes 9,997.
 - **`count` is `undefined` under an `exclude` rule** unless you pass `total`, and that is an answer rather than a gap. `total` is the **result set's** size, never the page's: handing over `rows.length` turns "everything except three of ten thousand" into "seventeen", which is how a confirmation dialog says "delete 3 records" and deletes ten thousand.
+
+#### The bar that says so, and reaches past the page
+
+<Canvas of={TableStories.BulkActions} />
+
+```tsx
+const selection = useRowSelection({ total: data.total });
+
+<TableSelectionBar {...selection.barProps}>
+  <ToolbarItem>
+    <Button onClick={remove}>Elimina</Button>
+  </ToolbarItem>
+</TableSelectionBar>;
+```
+
+`Table`'s live region announces a change **once** and falls silent, which is right for an announcement and useless as a state: nothing answers "how many are selected?" a minute later, or after tabbing back. `TableSelectionBar` is that answer, on screen, for everybody — and deliberately **not** a live region itself, since two of them over one fact say it twice. Both read the same catalog, so the screen and the announcement cannot drift apart.
+
+It is also where `exclude` becomes reachable. Give the hook a `total` and, once more rows match than are on screen, the bar offers **"Select all 2,450"** — the escalation that produces "everything except these". Before it existed, a consumer had to assemble that from an exported constant, which is exactly the shape every review of this model called a trap.
+
+Three things it does that a hand-rolled bar does not:
+
+- **The actions are a `Toolbar`**, so six bulk actions cost one tab stop rather than six — in a bar that appears and disappears, which would otherwise grow and shrink the reader's keyboard under them.
+- **Clearing gives focus back** to the checkbox it came from. A conditional bar unmounts the button that was just activated, and focus falls to `<body>`: the classic way a keyboard user loses their place.
+- **The count goes through `Intl`.** English groups four digits and Italian does not — `Select all 2,450` and `Seleziona tutte le 2450` — which is not something a template gets right.
 
 **Wiring it yourself?** `Table` reports intents here exactly as it does for sorting, so the transitions are exported too — `toggleRow`, `toggleRows`, `coverageOf`, `isRowSelected`. Use them rather than reading `mode` in your own code: the two readings of `ids` are the one place this model bites, and `useRowSelection` also gives you `setSelection` for the changes that are not a single toggle, like a shift-click range.
 

@@ -8,6 +8,9 @@ import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
 import { useTableSort } from './use-table-sort.js';
 import { useRowSelection } from './use-row-selection.js';
+import { TableSelectionBar } from '../table-selection-bar/table-selection-bar.component.js';
+import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
+import { Button } from '../button/button.component.js';
 import type { Column } from './table.types.js';
 
 interface Person {
@@ -149,6 +152,53 @@ export const Selectable: Story = {
         columns={columns}
         {...selection.props}
       />
+    );
+  },
+};
+
+/**
+ * The bar that says what is picked — and offers the one thing the table cannot.
+ *
+ * `Table` announces a change once and falls silent, which is right for an
+ * announcement and useless as a state: nothing on screen answers "how many?" a
+ * minute later. This does, for everybody, and it is deliberately NOT a live
+ * region — two of them over one fact would say it twice.
+ *
+ * Tick the header box with `total` set and the escalation appears: three rows
+ * are on screen, two thousand matched the query, and only the consumer knows
+ * that. Taking it produces the `exclude` rule — "everything except these" —
+ * which until this bar existed nothing in the package could reach.
+ *
+ * The actions are a `Toolbar`, so six bulk actions cost ONE tab stop rather
+ * than six, and clearing gives focus back to the checkbox it came from instead
+ * of dropping it on `<body>`.
+ */
+export const BulkActions: Story = {
+  render: function Render() {
+    const selection = useRowSelection({ total: 2450 });
+
+    return (
+      <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <TableSelectionBar {...selection.barProps}>
+          <ToolbarItem>
+            <Button variant="ghost" size="sm">
+              Esporta
+            </Button>
+          </ToolbarItem>
+          <ToolbarItem>
+            <Button variant="ghost" size="sm">
+              Elimina
+            </Button>
+          </ToolbarItem>
+        </TableSelectionBar>
+        <Table
+          caption="Persone"
+          rows={people}
+          getRowId={(p) => p.id}
+          columns={columns}
+          {...selection.props}
+        />
+      </div>
     );
   },
 };

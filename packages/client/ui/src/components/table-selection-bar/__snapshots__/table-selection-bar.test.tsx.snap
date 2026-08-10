@@ -1,0 +1,57 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`the selection bar > matches its markup 1`] = `
+<div
+  class="_bar_1llej_3"
+>
+  <span
+    class="_count_1llej_15"
+  >
+    Selection: 2
+  </span>
+  <div
+    aria-label="Selection actions"
+    class="_toolbar_tdrgw_4 _actions_1llej_18"
+    data-orientation="horizontal"
+    role="toolbar"
+    tabindex="-1"
+  >
+    <button
+      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177"
+      data-fm-descendant=""
+      tabindex="0"
+      type="button"
+    >
+      Select all 2,450
+    </button>
+    <span
+      class="_srOnly_m60i6_229"
+      role="status"
+    />
+    <button
+      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177"
+      data-fm-descendant=""
+      tabindex="-1"
+      type="button"
+    >
+      Clear selection
+    </button>
+    <span
+      class="_srOnly_m60i6_229"
+      role="status"
+    />
+    <button
+      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177"
+      data-fm-descendant=""
+      tabindex="-1"
+      type="button"
+    >
+      Elimina
+    </button>
+    <span
+      class="_srOnly_m60i6_229"
+      role="status"
+    />
+  </div>
+</div>
+`;

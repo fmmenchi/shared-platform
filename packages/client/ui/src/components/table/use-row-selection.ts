@@ -1,6 +1,7 @@
 import { useControlled } from '../../primitives/use-controlled.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import {
+  EVERYTHING_SELECTED,
   NOTHING_SELECTED,
   countSelected,
   toggleRow,
@@ -72,6 +73,17 @@ export function useRowSelection(
     // the honest answer when only the server knows.
     count: countSelected(state, total),
     setSelection: (next) => setState(next),
+    // The bar's half of the pairing, spread the way `props` is spread onto
+    // `Table`. The two escalations are named rather than left to the consumer
+    // to assemble from the exported constants: reaching for
+    // `EVERYTHING_SELECTED` by hand was the trap, not the concept.
+    barProps: {
+      selection: state,
+      count: countSelected(state, total),
+      total,
+      onSelectEverything: () => setState(EVERYTHING_SELECTED),
+      onClear: () => setState(NOTHING_SELECTED),
+    },
     props: {
       selection: state,
       onRowSelectToggle: (id) => setState((prev) => toggleRow(prev, id)),

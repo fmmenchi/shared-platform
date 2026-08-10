@@ -309,6 +309,11 @@ export { TableBody } from './components/table-body/table-body.component.js';
 export type { TableBodyProps } from './components/table-body/table-body.types.js';
 export { TableFoot } from './components/table-foot/table-foot.component.js';
 export type { TableFootProps } from './components/table-foot/table-foot.types.js';
+// What is selected, said on the screen and not only announced — and the one
+// affordance the table itself cannot offer, since only the bar knows there is
+// anything beyond the page.
+export { TableSelectionBar } from './components/table-selection-bar/table-selection-bar.component.js';
+export type { TableSelectionBarProps } from './components/table-selection-bar/table-selection-bar.types.js';
 export { TableRow } from './components/table-row/table-row.component.js';
 export type { TableRowProps } from './components/table-row/table-row.types.js';
 export { TableCell } from './components/table-cell/table-cell.component.js';

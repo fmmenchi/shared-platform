@@ -1,0 +1,40 @@
+/* The selection bar: what is picked, and what can be done with it. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--fm-space-inline-m);
+    padding-block: var(--fm-space-internal-s);
+    padding-inline: var(--fm-space-inline-s);
+    /* BOTH HALVES, and axe caught the half that was missing. `muted` ×
+       `foreground` is a pairing the token package declares and validates — but
+       only if the foreground is actually SET. Painting the surface and letting
+       the text inherit works in light, where the inherited colour happens to be
+       dark, and fails outright in dark, where a `data-theme` wrapper redefines
+       the tokens without repainting anything: dark surface, inherited dark
+       text. `Card` and `Toast` set both for this reason; a selected table row
+       had to learn it a milestone ago. */
+    background: var(--fm-color-muted);
+    color: var(--fm-color-foreground);
+    border: var(--fm-border-width-default) solid var(--fm-color-border);
+    border-radius: var(--fm-radius-md);
+  }
+
+  /* No `forced-colors` block, and that is a decision rather than an omission.
+     The fill here is a SURFACE, not a meaning — it says "these controls belong
+     together", which the border says too, and a border is the one thing that
+     mode keeps. Compare the selected ROW, whose fill had to be restated in
+     `Highlight` because there the fill WAS the state. */
+  .count {
+    font-weight: var(--fm-font-weight-medium);
+  }
+
+  /* The actions sit at the far end, and wrap under the count on a narrow
+     screen rather than squeezing it. */
+  .actions {
+    margin-inline-start: auto;
+  }
+}
