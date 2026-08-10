@@ -8,6 +8,7 @@ import { playwright } from '@vitest/browser-playwright';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import * as path from 'path';
 import * as fs from 'fs';
+import { useClientPlugin } from '../../../tools/rsc/use-client.mjs';
 
 // Emit a combined `style.css` (all component CSS concatenated) next to the
 // per-component files, so a consumer can import everything with one stylesheet
@@ -64,6 +65,7 @@ export default defineConfig(() => ({
     }),
     tailwindcss(),
     combinedCssPlugin(),
+    useClientPlugin(),
     dts({
       entryRoot: 'src',
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
