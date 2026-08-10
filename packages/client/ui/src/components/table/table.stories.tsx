@@ -6,6 +6,7 @@ import { TableHead } from '../table-head/table-head.component.js';
 import { TableHeaderCell } from '../table-header-cell/table-header-cell.component.js';
 import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
+import { useTableSort } from './use-table-sort.js';
 import type { Column } from './table.types.js';
 
 interface Person {
@@ -85,6 +86,37 @@ export const Default: Story = {
     rows: people,
     columns,
     getRowId: (p: Person) => p.id,
+  },
+};
+
+/**
+ * Sorting, and the four lines that buy it. Click a header: ascending,
+ * descending, then back to the order the data arrived in — the third stop
+ * matters, because a two-state toggle leaves no way back.
+ *
+ * What arrives without a comparator being written: "Àosta" before "Zurigo"
+ * (`<` would put every accented word after `z`), 9 before 10 rather than "10"
+ * before "9", `aria-sort` on exactly the column in force, a real `Button` in
+ * the header with the focus ring that comes with it, and the change announced
+ * in the reader's language.
+ */
+export const Sortable: Story = {
+  render: function Render() {
+    const sort = useTableSort(people, { defaultSortKey: 'name' });
+
+    return (
+      <Table
+        caption="Persone"
+        rows={sort.rows}
+        getRowId={(p) => p.id}
+        columns={[
+          { key: 'name', header: 'Nome', rowHeader: true, sortable: true },
+          { key: 'city', header: 'Città', sortable: true },
+          { key: 'age', header: 'Età', align: 'end', sortable: true },
+        ]}
+        {...sort.props}
+      />
+    );
   },
 };
 

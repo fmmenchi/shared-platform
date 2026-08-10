@@ -3,6 +3,9 @@ import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useMessages } from '../../i18n/provider.js';
+import { Button } from '../button/button.component.js';
+import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
+import { nextSort } from './use-sort-state.js';
 import { TableBody } from '../table-body/table-body.component.js';
 import { TableCell } from '../table-cell/table-cell.component.js';
 import { TableHead } from '../table-head/table-head.component.js';
@@ -54,6 +57,8 @@ function Table<T>(props: TableProps<T>) {
     getRowId,
     empty,
     children,
+    sort,
+    onSortChange,
     ...rest
   } = props;
 
@@ -75,71 +80,175 @@ function Table<T>(props: TableProps<T>) {
     'Table: two columns share a `key`. It is the React key for the header and every body cell, so the rows reconcile unpredictably on the next sort — and nothing on screen says so.',
   );
 
+  useDevWarning(
+    columns?.some((column) => column.sortable) === true && !onSortChange,
+    'Table: a column is marked `sortable` but nothing is wired to `onSortChange`, so the header announces itself as sortable and reorders nothing. Pass the props from `useTableSort` (or `useSortState`, if something else does the ordering).',
+  );
+
+  // Announced by RENDERING, not by an effect. The region is always in the tree
+  // and only its text changes, which is the reliable path — a live region
+  // mounted already-populated is routinely missed, which here is exactly what
+  // is wanted: the initial sort is not news, a click on a header is.
+  const sortedColumn = columns?.find((column) => column.key === sort?.key);
+  const announcement =
+    sort && sortedColumn
+      ? t(sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending', {
+          column:
+            typeof sortedColumn.header === 'string'
+              ? sortedColumn.header
+              : sortedColumn.key,
+        })
+      : '';
+
   return (
-    <table
-      {...rest}
-      aria-busy={busy || undefined}
-      data-density={density}
-      className={cn(styles.table, className)}
-    >
-      {/* First child, as the parser requires — and a real `<caption>` rather
+    <>
+      <table
+        {...rest}
+        aria-busy={busy || undefined}
+        data-density={density}
+        className={cn(styles.table, className)}
+      >
+        {/* First child, as the parser requires — and a real `<caption>` rather
           than an `aria-label`, so it is announced AND readable. */}
-      <caption className={styles.caption}>{caption}</caption>
+        <caption className={styles.caption}>{caption}</caption>
 
-      {columns && rows && getRowId ? (
-        <>
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHeaderCell key={column.key} align={column.align}>
-                  {column.header}
-                </TableHeaderCell>
-              ))}
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {rows.length === 0 ? (
+        {columns && rows && getRowId ? (
+          <>
+            <TableHead>
               <TableRow>
-                {/* COUNTED, not typed. A hand-written number is wrong the day a
+                {columns.map((column) => {
+                  const active = sort?.key === column.key;
+
+                  return (
+                    <TableHeaderCell
+                      key={column.key}
+                      align={column.align}
+                      // On the ACTIVE column only. `aria-sort="none"` on every
+                      // sortable header is legal and says nothing a reader needs:
+                      // the button already tells them the column can be ordered.
+                      aria-sort={
+                        active
+                          ? sort.direction === 'asc'
+                            ? 'ascending'
+                            : 'descending'
+                          : undefined
+                      }
+                    >
+                      {column.sortable && onSortChange ? (
+                        // OUR Button, not a hand-rolled `<button>`. `NavGroup`
+                        // wrote its own once — `border: 0; background: none`, the
+                        // first two lines of what `button.module.css` does — and
+                        // shipped with no focus ring at all, invisible to every
+                        // test because the test page has no Preflight.
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={styles.sortTrigger}
+                          onClick={() =>
+                            onSortChange(nextSort(sort ?? null, column.key))
+                          }
+                        >
+                          {column.header}
+                          <SortArrow
+                            direction={active ? sort.direction : undefined}
+                          />
+                        </Button>
+                      ) : (
+                        column.header
+                      )}
+                    </TableHeaderCell>
+                  );
+                })}
+              </TableRow>
+            </TableHead>
+
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  {/* COUNTED, not typed. A hand-written number is wrong the day a
                     column is added, and a short `colSpan` leaves the message
                     sitting under one column instead of across the table. */}
-                <TableCell
-                  colSpan={Math.max(columns.length, 1)}
-                  className={styles.empty}
-                >
-                  {hasRenderableChildren(empty) ? empty : t('empty')}
-                </TableCell>
-              </TableRow>
-            ) : (
-              rows.map((row) => (
-                <TableRow key={getRowId(row)}>
-                  {columns.map((column) => {
-                    const content = column.cell
-                      ? column.cell(row)
-                      : ((row as Record<string, unknown>)[
-                          column.key
-                        ] as ReactNode);
-
-                    return column.rowHeader ? (
-                      <TableHeaderCell key={column.key} align={column.align}>
-                        {content}
-                      </TableHeaderCell>
-                    ) : (
-                      <TableCell key={column.key} align={column.align}>
-                        {content}
-                      </TableCell>
-                    );
-                  })}
+                  <TableCell
+                    colSpan={Math.max(columns.length, 1)}
+                    className={styles.empty}
+                  >
+                    {hasRenderableChildren(empty) ? empty : t('empty')}
+                  </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </>
-      ) : (
-        children
-      )}
-    </table>
+              ) : (
+                rows.map((row) => (
+                  <TableRow key={getRowId(row)}>
+                    {columns.map((column) => {
+                      const content = column.cell
+                        ? column.cell(row)
+                        : ((row as Record<string, unknown>)[
+                            column.key
+                          ] as ReactNode);
+
+                      return column.rowHeader ? (
+                        <TableHeaderCell key={column.key} align={column.align}>
+                          {content}
+                        </TableHeaderCell>
+                      ) : (
+                        <TableCell key={column.key} align={column.align}>
+                          {content}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </>
+        ) : (
+          children
+        )}
+      </table>
+
+      {/* OUTSIDE the table, because a `<span>` inside one is not legal markup and
+        the parser would reparent it — and outside the `<caption>` especially,
+        since the caption IS the accessible name and this text would join it.
+        A fragment rather than a wrapper element: `Button` reached the same
+        shape for the same reason.
+
+        The data attribute is an ADDRESS, not a hook for styling: `Button`
+        already carries a `role="status"` region of its own for its pending
+        state, so a table with sortable headers has one per header plus this.
+        They are all empty at rest and harmless, but "the status region" stops
+        being a thing you can point at, and a test — or a consumer — needs to
+        name which one it means. */}
+      <VisuallyHidden role="status" data-table-status="">
+        {announcement}
+      </VisuallyHidden>
+    </>
+  );
+}
+
+/**
+ * The direction, drawn rather than borrowed.
+ *
+ * A functional glyph a component needs to work is drawn inline — an icon set is
+ * brand identity and lives app-side, and a table that could not show its sort
+ * direction without one would be a table that stops working when the app
+ * forgets to inject icons. `aria-hidden` because `aria-sort` already says this
+ * to anyone who is not looking.
+ */
+function SortArrow(props: { direction?: 'asc' | 'desc' }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 12 12"
+      className={styles.sortArrow}
+      data-direction={props.direction ?? 'none'}
+    >
+      {/* Both are always drawn, and only their weight changes: the pair IS the
+          "this column can be ordered" affordance, and a glyph that appeared on
+          sort would leave an unsorted column looking inert. Which one is in
+          force is opacity — so the state is a value CSS can transition rather
+          than an attribute React swaps. */}
+      <path data-arrow="asc" d="M6 1.5 L9.5 5.5 H2.5 Z" fill="currentColor" />
+      <path data-arrow="desc" d="M6 10.5 L2.5 6.5 H9.5 Z" fill="currentColor" />
+    </svg>
   );
 }
 

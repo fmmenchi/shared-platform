@@ -1,4 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { SortState } from '../../sorting/compare.types.js';
 
 /** Which edge a column's content sits against. Numbers want `end`. */
 export type TableAlign = 'start' | 'end';
@@ -22,6 +23,17 @@ interface ColumnShape {
    * declaring it on the column gives it to every row at once.
    */
   rowHeader?: boolean;
+  /**
+   * Puts a real `<button>` in the header and lets `aria-sort` land on this
+   * column when it is the one in force.
+   *
+   * It declares the AFFORDANCE, not the ordering: what "sorted by priority"
+   * means is the consumer's, and it reaches the table through `useTableSort`.
+   * A column marked sortable with nothing wired to it warns in development —
+   * an arrow that announces itself as sortable and reorders nothing is the
+   * table's version of a field that accepts typing and submits nothing.
+   */
+  sortable?: boolean;
 }
 
 /**
@@ -101,6 +113,17 @@ interface TableShared extends Omit<
    */
   caption: ReactNode;
   density?: TableDensity;
+  /**
+   * Which column is ordered and which way — DISPLAYED, never acted on.
+   *
+   * `Table` does not sort. The rows arrive in the order somebody else chose —
+   * `useTableSort` in memory, or the server — and this only decides which
+   * header carries `aria-sort` and which way its arrow points. That is what
+   * makes one component serve both cases with the same markup.
+   */
+  sort?: SortState | null;
+  /** Called with the state a header click leads to: asc → desc → none. */
+  onSortChange?: (sort: SortState | null) => void;
   /**
    * Something is arriving. Describes the ELEMENT's state, not where the data
    * comes from — which is why this exists and a `loading` prop does not: a

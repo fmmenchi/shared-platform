@@ -68,6 +68,50 @@ They are not formatted for you because there is no canonical rendering of `false
 
 **Two ergonomics notes the type does not tell you.** Annotate a hoisted column list — `const columns: Column<Person>[] = […]` — or TypeScript widens `key` to `string` and the error blames `cell`. And with a literal empty `rows={[]}` there is nothing to infer `T` from, so name it: `<Table<Person> rows={[]} …>`.
 
+### Sorting, in three rungs
+
+<Canvas of={TableStories.Sortable} />
+
+**It works out of the box.** The hook takes the rows and gives them back ordered; the table shows which column and which way.
+
+```tsx
+const sort = useTableSort(people, { defaultSortKey: 'name' });
+
+<Table
+  rows={sort.rows}
+  {...sort.props}
+  columns={[{ key: 'name', header: 'Nome', sortable: true }]}
+/>;
+```
+
+Free from that: "Àosta" before "Zurigo" — `<` puts every accented word after `z` — 9 before 10 rather than `"10"` before `"9"`, dates as dates, empty values at the bottom **in both directions**, `aria-sort` on exactly the column in force, a real `Button` in the header, and the change announced in the reader's language.
+
+**Override the column the default cannot know.** `priority` is not alphabetical, and no design system can guess that it runs low → medium → high. Write the ascending order only; the direction is applied for you.
+
+```tsx
+useTableSort(tickets, {
+  compare: { priority: (a, b) => RANK[a.priority] - RANK[b.priority] },
+});
+```
+
+**Or take it over entirely.** When the server orders, use `useSortState` — the same hook without the engine, which then never enters your bundle — and put its state straight into the query key:
+
+```tsx
+const sort = useSortState({ defaultSortKey: 'name' });
+const q = useQuery({ queryKey: ['people', sort.state], queryFn: fetchPeople });
+
+<Table
+  rows={q.data ?? []}
+  busy={q.isFetching}
+  {...sort.props}
+  columns={columns}
+/>;
+```
+
+The markup is identical in all three, and that is not a coincidence: **`Table` never sorts anything.** Reordering belongs to the hook or to the server; the component only ever displays the state. There is no "sorts twice" case because it does not sort once — which is also what dissolves the usual controlled/uncontrolled knot, since no prop here changes behaviour.
+
+The cycle is **three stops, not two**: ascending, descending, and back to the order the data arrived in. A two-state toggle is more common and worse — once a reader has sorted a table there is no way back to the order the server chose, which in a ranking or a feed of events is the one that carries meaning.
+
 ### It never sees where the rows came from
 
 They arrive as an array, and an array does not say whether a `.sort()` or an `ORDER BY` produced it. The agnosticism is not discipline, it is an absence of information — which is what lets the same markup serve an in-memory list and a paginated server query.
@@ -101,6 +145,10 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 - **The caption is the accessible name**, and the warning fires whenever it renders no text — including `caption={cond && t('…')}` resolving to `false`, which is the shape a real call site writes. Wrap it in `VisuallyHidden` when the design has no room for it.
 - **The empty row spans the table** so the message is laid out across it rather than under the first column. Note what that does _not_ do: a cell spanning every column is associated with **every** column header, so a reader hears them all before the message. It is a layout fix, not an association one.
 - **The empty state has a default.** An empty `<tbody>` reads as "still loading" on screen and tells a screen reader nothing at all, so leaving `empty` out gives the design system's wording rather than silence.
+- **`aria-sort` goes on the sorted column only.** `none` on every sortable header is legal and says nothing a reader needs — the button already tells them the column can be ordered.
+- **The sort trigger is a real `Button`**, so the focus ring, the touch target and the forced-colors handling arrive with it rather than being re-derived. `NavGroup` hand-rolled one once and shipped with no focus ring at all.
+- **The change is announced.** Reordering rows is invisible to anyone not looking at the screen, so a persistent live region says "Sorted by Nome, ascending" when it changes. It is rendered rather than pushed from an effect, and it starts empty: a region mounted already-populated is routinely missed, which is exactly right here, because the initial order is not news.
+- **The arrow is drawn inline**, not taken from the icon port. A table that could not show its sort direction until the app injected an icon set would be a table that breaks on somebody else's configuration.
 - **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
 - **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.
 - **The "one card per row" recipe on mobile is forbidden.** Changing `display` on table elements removes the role, and with it the reading mode. The role and that prohibition are one decision, not two.

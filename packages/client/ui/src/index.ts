@@ -256,6 +256,20 @@ export type {
   TableAlign,
   TableDensity,
 } from './components/table/table.types.js';
+// The view state and the engine, as two hooks rather than one: a consumer whose
+// server does the ordering takes `useSortState` and never pulls the collation
+// engine into their bundle.
+export { useSortState, nextSort } from './components/table/use-sort-state.js';
+export type {
+  UseSortStateOptions,
+  UseSortStateResult,
+} from './components/table/use-sort-state.types.js';
+export { useTableSort } from './components/table/use-table-sort.js';
+export type {
+  UseTableSortOptions,
+  UseTableSortResult,
+} from './components/table/use-table-sort.types.js';
+export type { SortState, SortDirection } from './sorting/compare.types.js';
 // The parts are the substrate `Table` is built on, exported for the layouts a
 // flat column list cannot express. Dropping to them is decomposition, not a
 // second product — the relationship `Field` has to `FormInput`.

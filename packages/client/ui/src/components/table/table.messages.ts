@@ -16,11 +16,17 @@ import { defineMessages } from '../../i18n/messages.js';
 export const tableMessages = defineMessages('table', {
   en: {
     empty: 'No results.',
+    sortedAscending: 'Sorted by {column}, ascending.',
+    sortedDescending: 'Sorted by {column}, descending.',
   },
   it: {
     empty: 'Nessun risultato.',
+    sortedAscending: 'Ordinato per {column}, crescente.',
+    sortedDescending: 'Ordinato per {column}, decrescente.',
   },
   ar: {
     empty: 'لا توجد نتائج.',
+    sortedAscending: 'مُرتَّب حسب {column}، تصاعديًا.',
+    sortedDescending: 'مُرتَّب حسب {column}، تنازليًا.',
   },
 });

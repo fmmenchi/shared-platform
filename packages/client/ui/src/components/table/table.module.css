@@ -70,4 +70,71 @@
     text-align: center;
     padding-block: var(--fm-space-stack-l);
   }
+
+  /* The trigger is our `Button`, so the focus ring, the target size and the
+     forced-colors handling all arrive with it. What is left here is only what
+     makes it read as a HEADER rather than as a control sitting in one: the
+     header's own weight, no padding of its own, and the cell's alignment. */
+  .sortTrigger {
+    inline-size: 100%;
+    justify-content: inherit;
+    gap: var(--fm-space-internal-xs);
+    padding: 0;
+    font: inherit;
+    font-weight: var(--fm-font-weight-semibold);
+    color: inherit;
+  }
+
+  [data-align='end'] .sortTrigger {
+    justify-content: flex-end;
+  }
+
+  .sortArrow {
+    inline-size: 0.75em;
+    block-size: 0.75em;
+    flex: none;
+  }
+
+  /* MICRO-FEEDBACK, so `xs`; between two visible points, so `standard`. Both
+     from the tokens — raw durations and easings are lint-banned here. */
+  .sortArrow path {
+    /* Unsorted, the pair is a hint rather than a statement: visible enough to
+       say "this column can be ordered", quiet enough not to read as a state. */
+    opacity: 0.3;
+    transform-origin: center;
+    transition:
+      opacity var(--fm-duration-xs) var(--fm-ease-standard),
+      transform var(--fm-duration-xs) var(--fm-ease-standard);
+  }
+
+  .sortArrow[data-direction='asc'] [data-arrow='asc'],
+  .sortArrow[data-direction='desc'] [data-arrow='desc'] {
+    opacity: 1;
+    /* A small lean in the direction being applied: the movement is what makes
+       the change legible without reading, and it is small because a header is
+       a micro-interaction, not a surface. */
+    transform: translateY(var(--fm-arrow-lean));
+  }
+
+  .sortArrow[data-direction='asc'] [data-arrow='asc'] {
+    --fm-arrow-lean: -8%;
+  }
+
+  .sortArrow[data-direction='desc'] [data-arrow='desc'] {
+    --fm-arrow-lean: 8%;
+  }
+
+  /* KILL THE MOVEMENT, KEEP THE CHANGE. The transform is the vestibular
+     trigger; the opacity carries the meaning and stays, so a reader who has
+     asked for less motion still sees which column is in force. */
+  @media (prefers-reduced-motion: reduce) {
+    .sortArrow path {
+      transition: opacity var(--fm-duration-xs) var(--fm-ease-standard);
+    }
+
+    .sortArrow[data-direction='asc'] [data-arrow='asc'],
+    .sortArrow[data-direction='desc'] [data-arrow='desc'] {
+      transform: none;
+    }
+  }
 }
