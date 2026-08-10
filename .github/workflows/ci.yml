@@ -76,8 +76,19 @@ jobs:
       # `time -v` stays, because that number is the one that tells a kill from a
       # failure and it costs nothing to keep asking. Guarded, because a missing
       # `/usr/bin/time` would turn a diagnostic into an outage. `tee` keeps the
-      # whole output for the step below — the step log is the thing being
-      # truncated, so the evidence has to leave it.
+      # whole output for the step below.
+      #
+      # AND IT IS NOT GITHUB DOING THE TRUNCATING EITHER. With the whole run
+      # captured to a file, that file STILL names no failing test: it ends
+      # mid-stream, and Nx's own `Failed tasks:` line appears ~hundreds of lines
+      # BEFORE the end. Nx buffers each task's output internally and flushes it
+      # after its own summary — and the tail of the failing task's buffer never
+      # arrives. `--outputStyle=stream` takes that buffer out of the path
+      # entirely ("nx by default logs output to an internal output stream,
+      # enable this option to stream logs to stdout / stderr"). Lines come back
+      # interleaved, which is what the split above was meant to avoid, but
+      # `stream` prefixes every line with its project — attributable, and a
+      # prefix is a cheaper price than a verdict with no evidence.
       - name: Browser-mode suite (instrumented — see the comment)
         id: suite
         run: |
@@ -90,9 +101,9 @@ jobs:
           # release. A CI that lies green is worse than the failure it hides.
           set -o pipefail
           if [ -x /usr/bin/time ]; then
-            /usr/bin/time -v pnpm nx run-many -t test 2>&1 | tee /tmp/test.log
+            /usr/bin/time -v pnpm nx run-many -t test --outputStyle=stream 2>&1 | tee /tmp/test.log
           else
-            pnpm nx run-many -t test 2>&1 | tee /tmp/test.log
+            pnpm nx run-many -t test --outputStyle=stream 2>&1 | tee /tmp/test.log
           fi
 
       # A SMALL step, so the truncation that ate the evidence cannot eat this
