@@ -73,6 +73,15 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   // non-text state indicator and owes 3:1 against the page (WCAG 1.4.11) — the
   // fill/foreground pair above says nothing about how the control reads on it.
   ['background', 'primary', 3],
+  // And a SELECTED TABLE ROW repaints the surface under that mark. `Table`
+  // tints the row `primary-subtle`, so the checked box — which the component
+  // insists is the only thing carrying the selected state, since `aria-selected`
+  // says nothing inside a `table` — now reads against the tint rather than the
+  // page, and so does the focus ring that lands on it. Both cleared 3:1 in the
+  // reference theme when the row shipped; neither was declared, so no theme was
+  // held to it and the check that would have caught a drift did not exist.
+  ['primary-subtle', 'primary', 3],
+  ['primary-subtle', 'ring', 3],
   ['background', 'link', 4.5],
   ['background', 'link-hover', 4.5],
   // Links render inside cards/alerts/popovers, not only on the page.
