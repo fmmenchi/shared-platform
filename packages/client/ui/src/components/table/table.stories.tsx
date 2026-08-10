@@ -7,6 +7,7 @@ import { TableHeaderCell } from '../table-header-cell/table-header-cell.componen
 import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
 import { useTableSort } from './use-table-sort.js';
+import { useRowSelection } from './use-row-selection.js';
 import type { Column } from './table.types.js';
 
 interface Person {
@@ -115,6 +116,38 @@ export const Sortable: Story = {
           { key: 'age', header: 'Età', align: 'end', sortable: true },
         ]}
         {...sort.props}
+      />
+    );
+  },
+};
+
+/**
+ * Selectable rows. The checkbox column is drawn by the table rather than
+ * written as a `cell`, because the part that goes wrong is not the box — it is
+ * what the box is CALLED: each one is labelled by its own row's header, so a
+ * screen reader hears "Select Zurigo" instead of the fifth of five identical
+ * "Select row".
+ *
+ * The header box carries three states, and the mixed one is the interesting
+ * one: the DOM has no attribute for it, only a property, which is why it is our
+ * `Checkbox` and not a bare `<input>`.
+ *
+ * Note what is deliberately absent: `aria-selected`. It belongs to `grid` and
+ * `treegrid`, so a row in a `table` cannot announce that it is selected — the
+ * checkbox carries the state for everybody, which is also why it is not
+ * optional.
+ */
+export const Selectable: Story = {
+  render: function Render() {
+    const selection = useRowSelection(people, { getRowId: (p) => p.id });
+
+    return (
+      <Table
+        caption="Persone"
+        rows={people}
+        getRowId={(p) => p.id}
+        columns={columns}
+        {...selection.props}
       />
     );
   },

@@ -11,3 +11,11 @@
 # (where a build has produced it) but not in CI, where the check runs first — an
 # ordering-dependent red main waiting to happen.
 /packages/client/ui/.storybook/manager-theme.generated.ts
+
+# The same class, found the hard way: after `build-storybook` and `typecheck`
+# have run, these hold thousands of emitted files, and prettier does not merely
+# flag them — it EXITS 2 on the ones it cannot parse, so `nx format:write`, the
+# command the definition of done tells you to run, fails outright and writes
+# nothing. Gitignored is not enough; prettier walks them anyway.
+storybook-static
+out-tsc

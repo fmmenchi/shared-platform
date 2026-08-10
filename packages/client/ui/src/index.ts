@@ -276,6 +276,24 @@ export type {
   SortDirection,
   Comparator,
 } from './sorting/compare.types.js';
+// Selection is not a projection parameter: it derives no rows, it ends in an
+// action. Which is why it is its own hook, and why the rule it produces —
+// "these" or "everything except these" — is what a bulk request body wants.
+export { useRowSelection } from './components/table/use-row-selection.js';
+export type {
+  UseRowSelectionOptions,
+  UseRowSelectionResult,
+} from './components/table/use-row-selection.types.js';
+export {
+  NOTHING_SELECTED,
+  EVERYTHING_SELECTED,
+  isRowSelected,
+  countSelected,
+} from './selection/selection.js';
+export type {
+  Selection,
+  SelectionCoverage,
+} from './selection/selection.types.js';
 // The parts are the substrate `Table` is built on, exported for the layouts a
 // flat column list cannot express. Dropping to them is decomposition, not a
 // second product — the relationship `Field` has to `FormInput`.

@@ -71,6 +71,41 @@
     padding-block: var(--fm-space-stack-l);
   }
 
+  /* The checkbox column takes the width of a checkbox and no more: a column of
+     boxes given an equal share of the table pushes the data around for nothing.
+     `1%` rather than a length — a table's layout algorithm reads a small
+     percentage as "as narrow as the content allows", and the content is one
+     control whose size the platform owns. */
+  .selectCell {
+    inline-size: 1%;
+    white-space: nowrap;
+  }
+
+  /* BOTH HALVES OF THE PAIR, and that is the point rather than thoroughness.
+     `primary-subtle` × `primary-subtle-foreground` is a contrast pairing the
+     token package DECLARES and validates at 4.5; `primary-subtle` under the
+     page's ordinary `foreground` is not, so tinting the row and leaving the
+     text alone would be a combination nothing checks. `Toast` reached the same
+     conclusion re-skinning `ghost`. */
+  .table tbody tr[data-selected] {
+    background: var(--fm-color-primary-subtle);
+    color: var(--fm-color-primary-subtle-foreground);
+  }
+
+  /* A MEANINGFUL FILL, so it is answered for. Forced colors flattens every
+     authored background to `Canvas`, and a selected row is the example the
+     package's own doctrine names. The state would survive — the checkbox is the
+     browser's own and keeps its mark — but a whole row's worth of meaning
+     hanging on one 16px control is not a design, so it is restated in the two
+     system colours that MEAN selected, which is also the only way to paint a
+     background in this mode without `forced-color-adjust: none`. */
+  @media (forced-colors: active) {
+    .table tbody tr[data-selected] {
+      background: Highlight;
+      color: HighlightText;
+    }
+  }
+
   /* The trigger is our `Button`, so the focus ring, the target size and the
      forced-colors handling all arrive with it. What is left here is only what
      makes it read as a HEADER rather than as a control sitting in one: the

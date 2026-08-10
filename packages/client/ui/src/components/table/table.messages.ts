@@ -18,6 +18,15 @@ import { defineMessages } from '../../i18n/messages.js';
  * still loading, and a screen reader entering it hears "table, 3 columns, 1
  * row" — the header — with no indication that the result set came back empty.
  *
+ * `selectionCount` IS A LABEL, not a sentence, and that is a constraint being
+ * respected rather than a style choice. The i18n port interpolates and does not
+ * pluralize — there is no `Intl.PluralRules` in it and no message anywhere else
+ * in the package needs one — so "{count} rows selected" would ship "1 righe
+ * selezionate" in Italian and would be wrong in four of Arabic's six plural
+ * forms. "Selected: 3" is grammatical at every count in all three, the way a
+ * counter beside a filter is. Plurals are a gap in the port, and inventing them
+ * inside one component's catalog would hide it.
+ *
  * Apps override the catalog when their wording differs, and a call site passes
  * `empty` when a particular table needs to say something specific.
  */
@@ -27,17 +36,32 @@ export const tableMessages = defineMessages('table', {
     sortedAscending: 'Sorted by {column}, ascending.',
     sortedDescending: 'Sorted by {column}, descending.',
     sortCleared: 'Sorting removed, original order.',
+    select: 'Select',
+    selectRow: 'Select row',
+    selectAllRows: 'Select all rows',
+    selectionCount: 'Selected: {count}',
+    selectionCleared: 'Selection cleared.',
   },
   it: {
     empty: 'Nessun risultato.',
     sortedAscending: 'Ordinato per {column}, crescente.',
     sortedDescending: 'Ordinato per {column}, decrescente.',
     sortCleared: 'Ordinamento rimosso, ordine originale.',
+    select: 'Seleziona',
+    selectRow: 'Seleziona riga',
+    selectAllRows: 'Seleziona tutte le righe',
+    selectionCount: 'Selezionati: {count}',
+    selectionCleared: 'Selezione annullata.',
   },
   ar: {
     empty: 'لا توجد نتائج.',
     sortedAscending: 'مُرتَّب حسب {column}، تصاعديًا.',
     sortedDescending: 'مُرتَّب حسب {column}، تنازليًا.',
     sortCleared: 'تمت إزالة الترتيب، الترتيب الأصلي.',
+    select: 'تحديد',
+    selectRow: 'تحديد الصف',
+    selectAllRows: 'تحديد كل الصفوف',
+    selectionCount: 'المحدَّد: {count}',
+    selectionCleared: 'تم إلغاء التحديد.',
   },
 });

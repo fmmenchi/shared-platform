@@ -133,6 +133,45 @@ The cycle we ship is **three stops, not two**: ascending, descending, and back t
 
 **One state, one column.** `SortState` holds a single key; ordering by city and then by name is a `SortState[]`, and widening the type after consumers have put it in a query key is a breaking change — so it is deferred deliberately rather than half-available. Stability in `sortRows` does not give it to you: the hook always sorts the rows you hand it, not the ones it produced last time.
 
+### Selecting rows
+
+<Canvas of={TableStories.Selectable} />
+
+```tsx
+const selection = useRowSelection(people, { getRowId: (p) => p.id });
+
+<Table
+  rows={people}
+  getRowId={(p) => p.id}
+  columns={columns}
+  {...selection.props}
+/>;
+```
+
+**The checkbox column is ours to draw**, and that is not a convenience. The part that goes wrong is never the box, it is what the box is _called_: five controls all named "Select row" are five controls a screen reader cannot tell apart. Each one is labelled by its own row's header cell, so it reads **"Select Zurigo"** — which is why a `rowHeader` column is required here, and why leaving it out warns instead of quietly numbering the rows.
+
+**`aria-selected` is not used, because a `<table>` cannot say it.** The attribute belongs to `grid` and `treegrid`; on a row inside a table it is ignored. So the checkbox _is_ the state for everyone, the row tint is decoration, and the box is not optional. In forced colors the tint is restated with the system's own selection colours — the state would survive on the checkbox alone, but a whole row's meaning hanging on one 16px control is not a design.
+
+**The header box has three states**, and the mixed one is the reason it is our `Checkbox`: the DOM has no attribute for `indeterminate`, only a property, so a bare `<input>` with `checked={false}` says "none selected" when half of them are. Clicking a half-filled box **completes** it rather than emptying it, which is the convention everywhere and matches what mixed means.
+
+#### Selection is a rule, not a list
+
+This is the one place the model is not the obvious one, and paginated tables are why:
+
+```tsx
+{ mode: 'include', ids: new Set(['a', 'b']) }   // these two
+{ mode: 'exclude', ids: new Set(['c']) }        // everything except this one
+```
+
+A reader who ticks "select all" on ten thousand rows has selected rows the browser has never received. There is no honest list to write — inventing one means fetching every page — but there is an honest **rule**, and it is one object with an empty set. It survives page changes, and the bulk action you send is "everything matching the filter except these three", which is what they actually asked for.
+
+Two consequences worth knowing before you build on it:
+
+- **The header box speaks only for the rows you handed over.** `onSelectAllToggle` takes no argument for exactly that reason. "Select all 10,000 matching" is a second affordance — the banner that appears after the header box is ticked — and only you know whether there are more rows. Build it with the exported `EVERYTHING_SELECTED`.
+- **`count` is `undefined` under an `exclude` rule** with no total to subtract from, and that is an answer rather than a gap. Rendering `0` there is how a confirmation dialog says "delete 3 records" and deletes ten thousand.
+
+**It is not a projection parameter.** Sorting and filtering derive the rows; selection is downstream of them and derives nothing, so it belongs in a request body rather than in a query key — which is also why it is a `Set` and not an array. Putting it in a query key is how ticking a box refetches the page.
+
 ### It never sees where the rows came from
 
 They arrive as an array, and an array does not say whether a `.sort()` or an `ORDER BY` produced it. The agnosticism is not discipline, it is an absence of information — which is what lets the same markup serve an in-memory list and a paginated server query.
@@ -157,7 +196,7 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 
 **What you give up, said plainly**, because it is the trade nobody documents: composing means the header/body agreement, the counted `colSpan` and the default empty state are yours to maintain. A header row composed outside a section also loses derived `scope` — it warns, and you pass `scope` yourself.
 
-**Sorting does not come with you.** `sort` and `onSortToggle` are refused here rather than ignored: `aria-sort` needs a column list to land on, and accepting props that decide nothing is how a consumer spends an afternoon. Put the attribute on your own `TableHeaderCell` — it takes `aria-sort` like any `<th>` — and drive it with `useSortState`.
+**Neither sorting nor selection comes with you.** `sort`, `onSortToggle`, `selection` and the selection toggles are refused here rather than ignored: `aria-sort` needs a column list to land on, and accepting props that decide nothing is how a consumer spends an afternoon. Put the attribute on your own `TableHeaderCell` — it takes `aria-sort` like any `<th>` — and drive it with `useSortState`. Selection is the same trade with a sharper edge: both hooks still work here, and `useRowSelection` hands you `coverage` for the header box's three states — but the per-row labelling, which is the part that actually goes wrong, becomes yours.
 
 **What the column model cannot express yet**, so you know before you start: per-row attributes (a `className` or `data-*` on a `<tr>`) and column widths, which arrive with resizing. The first is the one most likely to push a consumer into composed mode, and it is worth telling us if it does.
 
@@ -173,6 +212,8 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 - **All three stops are announced.** Reordering rows is invisible to anyone not looking, so a live region reports each change — including the **clear**, which used to render an empty string. Emptying a live region announces nothing: `role="status"` implies `aria-relevant="additions text"`, so a removal is not in the relevant set, and the stop this component argues hardest for was the one nobody was told about.
 - **It is silent on arrival.** The region is rendered rather than pushed from an effect, and stays empty until the reader activates a header — so a table that mounts already sorted does not announce a sentence from nowhere.
 - **A header that is not words needs `sortLabel`.** `header` is a `ReactNode`, so it may be an icon or an `<abbr>`; without a label the announcement falls back to the column's `key` and reads a developer identifier aloud, untranslated, inside localized copy. It warns.
+- **Every selection checkbox says which row it selects**, by pointing `aria-labelledby` at the row's own header cell rather than stringifying it — so an icon or an `<abbr>` in that cell still reads correctly. Without a `rowHeader` column there is no noun to point at, and the honest fallback ("Select row", identical on every row) warns rather than pretending a row number means something after a re-sort.
+- **A selected row is announced by its checkbox and nothing else**, because `aria-selected` is a `grid` and `treegrid` attribute that a row inside a `table` ignores. Only the header box announces a count, and only because it changes many rows at once — repeating one over every individual tick doubles what the checkbox already says.
 - **The arrow is drawn inline**, not taken from the icon port. A table that could not show its sort direction until the app injected an icon set would be a table that breaks on somebody else's configuration. Its resting state is set by measurement rather than by eye: at the opacity first chosen it read 1.89:1 against the page, where WCAG 1.4.11 asks 3:1 of anything identifying a state.
 - **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
 - **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.

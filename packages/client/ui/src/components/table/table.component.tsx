@@ -1,10 +1,16 @@
-import { useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
+import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
+import {
+  countIn,
+  coverageOf,
+  isRowSelected,
+} from '../../selection/selection.js';
 import { SortArrow } from './sort-arrow.component.js';
 import { TableBody } from '../table-body/table-body.component.js';
 import { TableCell } from '../table-cell/table-cell.component.js';
@@ -41,6 +47,15 @@ import styles from './table.module.css';
  * and an array does not say whether a `.sort()` or an `ORDER BY` produced it.
  * The agnosticism is not discipline, it is an absence of information.
  *
+ * SELECTION IS A RULE, NOT A LIST, and the checkbox column is drawn here
+ * rather than written as a `cell` for the same reason `scope` is not a prop:
+ * the part that goes wrong is not the box, it is what the box is CALLED. Five
+ * controls named "Select row" are five controls a reader cannot tell apart, so
+ * each is labelled by its own row's header cell. Note what is deliberately
+ * absent — `aria-selected` belongs to `grid` and `treegrid`, and a row inside a
+ * `table` ignores it. The checkbox IS the state, which is why it is not
+ * optional.
+ *
  * NOT A GRID. Cells here are content: they may CONTAIN controls, but nothing
  * moves focus between them. `role="grid"` takes the arrow keys away from the
  * assistive technology and promises a full two-dimensional keyboard in return;
@@ -59,18 +74,29 @@ function Table<T>(props: TableProps<T>) {
     children,
     sort,
     onSortToggle,
+    selection,
+    onRowSelectToggle,
+    onSelectAllToggle,
     ...rest
   } = props;
 
   const t = useMessages(tableMessages);
 
-  // WHETHER THE READER HAS ASKED FOR ANYTHING YET, and the only reason `Table`
-  // holds any state at all. The live region must be silent on mount — a table
-  // rendered with `defaultSortKey` is already sorted, and announcing that on
-  // arrival is a sentence from nowhere — and must speak on every change after.
-  // A ref cannot answer it: the Rules of React forbid reading one during
-  // render, which is exactly when the announcement is built.
-  const [activated, setActivated] = useState(false);
+  // WHAT THE READER LAST ASKED FOR, and the only reason `Table` holds any state
+  // at all. The live region must be silent on mount — a table rendered with
+  // `defaultSortKey` is already sorted, and announcing that on arrival is a
+  // sentence from nowhere — and must speak on every change after. A ref cannot
+  // answer it: the Rules of React forbid reading one during render, which is
+  // exactly when the announcement is built.
+  //
+  // It names the ACTION rather than being a boolean, because two mechanisms now
+  // write to one region and the last one to be used is the one with something
+  // to say.
+  const [acted, setActed] = useState<'sort' | 'selectAll' | null>(null);
+
+  // Ours to generate: the checkbox in each row is labelled by the row's own
+  // header cell, which needs an id to be pointed at.
+  const baseId = useId();
 
   // `hasRenderableChildren` rather than a null check, and the difference is the
   // shape a real call site writes: `caption={showIt && t('orders')}` passes
@@ -117,6 +143,31 @@ function Table<T>(props: TableProps<T>) {
     'Table: the sorted column has a `header` that is not a string, so the announcement falls back to its `key` — a developer identifier, untranslated, read out inside localized copy. Give the column a `sortLabel`.',
   );
 
+  // THE CHECKBOX COLUMN EXISTS ONLY WHEN SOMETHING LISTENS, the same rule the
+  // sort trigger follows. A box that reports an intent nobody handles is worse
+  // than no box: it looks like state and holds none.
+  const picks = selection !== undefined && Boolean(onRowSelectToggle);
+
+  useDevWarning(
+    selection !== undefined && !onRowSelectToggle,
+    'Table: `selection` is passed but nothing is wired to `onRowSelectToggle`, so no checkbox column is drawn. Pass the props from `useRowSelection`.',
+  );
+
+  // The column that NAMES the row, and the reason selection needs one. A
+  // checkbox labelled "Select row" five times over is a control a screen reader
+  // cannot tell apart from the other four; pointed at the row's own header it
+  // says "Select Zurigo".
+  const rowHeaderKey = columns?.find((column) => column.rowHeader)?.key;
+
+  useDevWarning(
+    picks && columns !== undefined && rowHeaderKey === undefined,
+    'Table: the rows are selectable but no column is marked `rowHeader`, so every checkbox is called "Select row" and a screen reader cannot tell them apart. Mark the column that identifies a row.',
+  );
+
+  const visibleIds = rows && getRowId ? rows.map(getRowId) : [];
+  const coverage = selection ? coverageOf(selection, visibleIds) : 'none';
+  const selectedHere = selection ? countIn(selection, visibleIds) : 0;
+
   // ANNOUNCED BY RENDERING, not by an effect. The region is always in the tree
   // and only its text changes, which is the reliable path.
   //
@@ -125,17 +176,30 @@ function Table<T>(props: TableProps<T>) {
   // `aria-relevant="additions text"`, so a removal is not in the relevant set.
   // The one stop the design argues hardest for — back to the order the data
   // arrived in — was the one nobody was told about.
-  const announcement = !activated
-    ? ''
-    : sort && sortedColumn
-      ? t(sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending', {
-          column:
-            sortedColumn.sortLabel ??
-            (typeof sortedColumn.header === 'string'
-              ? sortedColumn.header
-              : sortedColumn.key),
-        })
-      : t('sortCleared');
+  //
+  // ONLY THE HEADER BOX SPEAKS HERE, not a row's. A single checkbox announces
+  // its own checked state natively, and repeating "Selected: 4" over it doubles
+  // every tick; the header box changes many rows at once, and the count IS the
+  // news — "checked" does not say that two hundred rows just came with it.
+  const announcement =
+    acted === null
+      ? ''
+      : acted === 'selectAll'
+        ? coverage === 'none'
+          ? t('selectionCleared')
+          : t('selectionCount', { count: selectedHere })
+        : sort && sortedColumn
+          ? t(
+              sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending',
+              {
+                column:
+                  sortedColumn.sortLabel ??
+                  (typeof sortedColumn.header === 'string'
+                    ? sortedColumn.header
+                    : sortedColumn.key),
+              },
+            )
+          : t('sortCleared');
 
   return (
     <>
@@ -153,6 +217,34 @@ function Table<T>(props: TableProps<T>) {
           <>
             <TableHead>
               <TableRow>
+                {picks && (
+                  <TableHeaderCell className={styles.selectCell}>
+                    {/* THE VERB, once for the whole column. Each row's box is
+                      labelled by this plus its own row header, so it reads
+                      "Select Zurigo" — a name that stands on its own in browse
+                      mode, where column headers are not necessarily spoken. */}
+                    <VisuallyHidden id={`${baseId}-select`}>
+                      {t('select')}
+                    </VisuallyHidden>
+                    <Checkbox
+                      checked={
+                        coverage === 'all'
+                          ? true
+                          : coverage === 'some'
+                            ? 'indeterminate'
+                            : false
+                      }
+                      // The MIXED state is what a partial page means, and our
+                      // `Checkbox` carries it as a value of `checked` — the DOM
+                      // has no attribute for it, so nothing else would.
+                      aria-label={t('selectAllRows')}
+                      onChange={() => {
+                        setActed('selectAll');
+                        onSelectAllToggle?.();
+                      }}
+                    />
+                  </TableHeaderCell>
+                )}
                 {columns.map((column) => {
                   const active = sort?.key === column.key;
                   const canSort = column.sortable === true && onSortToggle;
@@ -199,7 +291,7 @@ function Table<T>(props: TableProps<T>) {
                             // which a consumer committing in a transition has
                             // not refreshed — two clicks then landed on
                             // ascending twice.
-                            setActivated(true);
+                            setActed('sort');
                             onSortToggle(column.key);
                           }}
                         >
@@ -224,34 +316,80 @@ function Table<T>(props: TableProps<T>) {
                     column is added, and a short `colSpan` leaves the message
                     sitting under one column instead of across the table. */}
                   <TableCell
-                    colSpan={Math.max(columns.length, 1)}
+                    colSpan={Math.max(columns.length + (picks ? 1 : 0), 1)}
                     className={styles.empty}
                   >
                     {hasRenderableChildren(empty) ? empty : t('empty')}
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row) => (
-                  <TableRow key={getRowId(row)}>
-                    {columns.map((column) => {
-                      const content = column.cell
-                        ? column.cell(row)
-                        : ((row as Record<string, unknown>)[
-                            column.key
-                          ] as ReactNode);
+                rows.map((row, index) => {
+                  const rowId = getRowId(row);
+                  const rowHeaderId = `${baseId}-r${index}`;
+                  const picked =
+                    selection !== undefined && isRowSelected(selection, rowId);
 
-                      return column.rowHeader ? (
-                        <TableHeaderCell key={column.key} align={column.align}>
-                          {content}
-                        </TableHeaderCell>
-                      ) : (
-                        <TableCell key={column.key} align={column.align}>
-                          {content}
+                  return (
+                    <TableRow
+                      key={rowId}
+                      // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
+                      // belongs to `grid` and `treegrid`; on a row inside a
+                      // `table` it is ignored, and writing it would be a
+                      // component claiming to say something it does not. The
+                      // checkbox carries the state for everybody — which is
+                      // also why the box is not optional.
+                      data-selected={picked ? '' : undefined}
+                    >
+                      {picks && (
+                        <TableCell className={styles.selectCell}>
+                          <Checkbox
+                            checked={picked}
+                            // The row's own header supplies the noun. Without a
+                            // `rowHeader` column there is no noun to point at,
+                            // and the generic label is the honest fallback —
+                            // announced by the warning above, not hidden.
+                            aria-labelledby={
+                              rowHeaderKey === undefined
+                                ? undefined
+                                : `${baseId}-select ${rowHeaderId}`
+                            }
+                            aria-label={
+                              rowHeaderKey === undefined
+                                ? t('selectRow')
+                                : undefined
+                            }
+                            onChange={() => onRowSelectToggle?.(rowId)}
+                          />
                         </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))
+                      )}
+                      {columns.map((column) => {
+                        const content = column.cell
+                          ? column.cell(row)
+                          : ((row as Record<string, unknown>)[
+                              column.key
+                            ] as ReactNode);
+
+                        return column.rowHeader ? (
+                          <TableHeaderCell
+                            key={column.key}
+                            align={column.align}
+                            id={
+                              picks && column.key === rowHeaderKey
+                                ? rowHeaderId
+                                : undefined
+                            }
+                          >
+                            {content}
+                          </TableHeaderCell>
+                        ) : (
+                          <TableCell key={column.key} align={column.align}>
+                            {content}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </>
@@ -279,7 +417,7 @@ function Table<T>(props: TableProps<T>) {
         They are all empty at rest and harmless, but "the status region" stops
         being a thing you can point at, and a test — or a consumer — needs to
         name which one it means. */}
-      {wired && (
+      {(wired || picks) && (
         <VisuallyHidden role="status" data-table-status="">
           {announcement}
         </VisuallyHidden>

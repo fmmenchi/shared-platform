@@ -27,8 +27,18 @@ const stylesheets = import.meta.glob('../components/**/*.module.css', {
   eager: true,
 }) as Record<string, string>;
 
-/** What forced colors removes, and therefore what has to be answered for. */
-const LOSES = /shadow-(?!none)|outline-ring|outline-color|\bbg-(?!none)[a-z]/;
+/**
+ * What forced colors removes, and therefore what has to be answered for.
+ *
+ * The `background: var(--fm-color-…)` arm was added after the check MISSED its
+ * own example. The comment above names "a selected row" as the meaningful fill
+ * to answer for, and the row that arrived paints it as a plain declaration
+ * rather than a Tailwind class — so the one case the doctrine spells out was
+ * the one the pattern could not see. Adding it failed nothing that already
+ * shipped: all four stylesheets it newly matches were answering already.
+ */
+const LOSES =
+  /shadow-(?!none)|outline-ring|outline-color|\bbg-(?!none)[a-z]|background(-color)?:\s*var\(--fm-color-/;
 
 describe('forced colors', () => {
   it('has stylesheets to check at all', () => {

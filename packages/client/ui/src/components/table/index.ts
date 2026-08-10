@@ -11,6 +11,24 @@ export type {
   UseSortStateResult,
 } from './use-sort-state.types.js';
 export { useTableSort } from './use-table-sort.js';
+export { useRowSelection } from './use-row-selection.js';
+export type {
+  UseRowSelectionOptions,
+  UseRowSelectionResult,
+} from './use-row-selection.types.js';
+// The rule itself, and the two constants a consumer needs to build the
+// affordance we cannot: `EVERYTHING_SELECTED` is "all 10,000 matching", which
+// only the side that knows the result set's size can offer.
+export {
+  NOTHING_SELECTED,
+  EVERYTHING_SELECTED,
+  isRowSelected,
+  countSelected,
+} from '../../selection/selection.js';
+export type {
+  Selection,
+  SelectionCoverage,
+} from '../../selection/selection.types.js';
 export type {
   UseTableSortOptions,
   UseTableSortResult,

@@ -1,5 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import type { SortState } from '../../sorting/compare.types.js';
+import type { Selection } from '../../selection/selection.types.js';
 
 /** Which edge a column's content sits against. Numbers want `end`. */
 export type TableAlign = 'start' | 'end';
@@ -172,6 +173,27 @@ interface TableFromData<T> extends TableShared {
    * keeps a second click correct when the update is deferred.
    */
   onSortToggle?: (key: string) => void;
+  /**
+   * Which rows are picked. Its presence is what adds the checkbox column — the
+   * column is OURS to draw rather than yours to write as a `cell`, because the
+   * part nobody gets right is not the box, it is what the box is called: a
+   * screen reader landing on the fifth one has to hear which row it selects.
+   *
+   * Note what a `<table>` cannot do here: `aria-selected` belongs to `grid` and
+   * `treegrid`, so a row in a table has no way to announce that it is selected.
+   * The checkbox IS the state, for everyone. That is a reason to keep it and
+   * not a limitation to route around.
+   */
+  selection?: Selection;
+  /** A row's checkbox was activated. Receives the id `getRowId` produced. */
+  onRowSelectToggle?: (id: string) => void;
+  /**
+   * The header's checkbox was activated. It carries no argument because it
+   * speaks for the rows this table RENDERS and nothing else — "select all
+   * 10,000 matching" is a different affordance, and only you know whether there
+   * are more rows than the ones you handed over.
+   */
+  onSelectAllToggle?: () => void;
   children?: never;
 }
 
@@ -189,6 +211,15 @@ interface TableComposed extends TableShared {
    */
   sort?: never;
   onSortToggle?: never;
+  /**
+   * Refused for the same reason as `sort`: the checkbox column is generated
+   * from the column list, and there is none here. Write the cells yourself and
+   * drive them with `useRowSelection` — but read what `Table` does with the
+   * labelling first, because that is the part that goes wrong.
+   */
+  selection?: never;
+  onRowSelectToggle?: never;
+  onSelectAllToggle?: never;
   /**
    * Listed with the others, and its absence was a real bug rather than an
    * omission: without it the union had no member declaring `empty`, so the
