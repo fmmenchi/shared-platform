@@ -1,6 +1,13 @@
-# Add files here to ignore them from prettier formatting
-/dist
-/coverage
+# Add files here to ignore them from prettier formatting.
+#
+# UNANCHORED, and that is the whole point. `nx format` runs prettier once per
+# PROJECT, with the project as the working directory — so a leading slash pins
+# a pattern to `packages/<scope>/<name>/`, not to the workspace root, and
+# `/dist` matched nothing while every package's own `dist/` was walked. The
+# symptom is the same one recorded below: green until a build has run, then
+# `nx format:write` exits non-zero on emitted files and writes nothing.
+dist
+coverage
 /.nx/cache
 /.nx/workspace-data
 .nx/self-healing
