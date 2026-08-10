@@ -82,6 +82,12 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'table-header-cell': 'src/components/table-header-cell/index.ts',
+        'table-cell': 'src/components/table-cell/index.ts',
+        'table-row': 'src/components/table-row/index.ts',
+        'table-body': 'src/components/table-body/index.ts',
+        'table-head': 'src/components/table-head/index.ts',
+        table: 'src/components/table/index.ts',
         'form-segmented-control':
           'src/components/form-segmented-control/index.ts',
         'segmented-control-item':

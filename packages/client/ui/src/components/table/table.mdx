@@ -1,0 +1,95 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as TableStories from './table.stories.tsx';
+
+<Meta of={TableStories} />
+
+# Table
+
+Rows and columns, announced correctly.
+
+```tsx
+<Table
+  caption="Persone"
+  rows={people}
+  getRowId={(p) => p.id}
+  columns={[
+    { key: 'name', header: 'Nome', rowHeader: true },
+    { key: 'age', header: 'Età', align: 'end' },
+  ]}
+/>
+```
+
+## Anatomy
+
+| part                                         | what it is                                              |
+| -------------------------------------------- | ------------------------------------------------------- |
+| `Table`                                      | the `<table>`, the caption, and the column model        |
+| `TableHead` · `TableBody`                    | the sections — and what makes `scope` derivable         |
+| `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express |
+
+## Props
+
+<Controls of={TableStories.Default} />
+
+## Usage
+
+<Canvas of={TableStories.Default} />
+
+### We are not adding accessibility to a table. We are preventing its removal.
+
+A `<table>` is already among the best-supported things in HTML: a screen reader announces its size on entry and, as the reader moves, the column header across and the row header down. All of that is free — and all of it depends on markup the average table gets wrong.
+
+So `scope`, the accessible name and the empty row's `colSpan` are **not opt-in**. Behind a prop they would be missing from most tables, and the component would be delivering less than raw HTML already offered.
+
+### The columns are data, and that is the whole design
+
+It is not a style preference: it is the only way to **guarantee** the invariants that run across a row rather than watch for them.
+
+- **Header and body cannot disagree.** Given markup, a caller can write four header cells and five body cells; every value is then attributed to the wrong column, and nothing on screen looks wrong.
+- **`colSpan` is counted, not typed.** A hand-written number is wrong the day a column is added, and a short one leaves the empty message under one column instead of across the table.
+- **A per-column decision is declared once.** In markup `align="end"` goes on the header _and_ on every row's cell — the same decision copied N times, which this package already forbids.
+
+`rowHeader` deserves its own line: it renders `<th scope="row">` so a reader hears **which** row a cell belongs to. It is the thing nobody writes by hand, and declaring it on the column gives it to every row at once.
+
+### The key is checked, or the cell is required
+
+```tsx
+{ key: 'name' }                              // ✓ a property of the row
+{ key: 'nmae' }                              // ✗ compile error
+{ key: 'full', cell: (p) => `${p.a} ${p.b}` } // ✓ computed, so the key is free
+```
+
+The only way to introduce a key the row does not have is to say how it is produced. `T` is inferred from `rows` — no explicit generics, no factory.
+
+### It never sees where the rows came from
+
+They arrive as an array, and an array does not say whether a `.sort()` or an `ORDER BY` produced it. The agnosticism is not discipline, it is an absence of information — which is what lets the same markup serve an in-memory list and a paginated server query.
+
+`busy` follows from the same rule: it describes the **element's** state, not the data's provenance. A background refetch is busy while the old rows are still on screen, and so is a client-side re-sort. A `loading` prop would invite a spinner _instead_ of the data; this says "there is more coming" and keeps what is there.
+
+<Canvas of={TableStories.Empty} />
+
+### Not a grid
+
+Cells here are content: they may **contain** controls, but nothing moves focus between them. `role="grid"` takes the arrow keys away from the assistive technology — which already has its own commands for moving through a table — and promises a full two-dimensional keyboard in return.
+
+The practical test is **a matrix of inputs**: one column of inputs is still a table, because Tab's order (row by row) is the order you fill them in. A grid of them is not, and that is a different component with the whole APG keyboard or nothing.
+
+Declaring the role and implementing half the keyboard is worse than not declaring it: it removes a mechanism that worked and substitutes one that does not.
+
+### Composing instead
+
+<Canvas of={TableStories.Composed} />
+
+For a header group, a spanning row or a totals footer, drop to the parts. They are the substrate `Table` is built on, so this is decomposition rather than a second component — the relationship `Field` has to `FormInput`. The compiler keeps the two apart: `columns` and `children` cannot both be passed.
+
+## Accessibility
+
+- **`scope` is derived from position**, not configured: a `<th>` in the head heads a column, the same element in the body heads a row. Without it a reader landing on a cell hears "Rossi" instead of "Nome: Rossi".
+- **The caption is the accessible name**, and it is required — assistive technology lists the tables on a page, and unnamed ones are identical entries. Wrap it in `VisuallyHidden` when the design has no room for it.
+- **The empty row spans the table**, so the message is not read as belonging to the first column.
+- **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
+- **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.
+- **The "one card per row" recipe on mobile is forbidden.** Changing `display` on table elements removes the role, and with it the reading mode. The role and that prohibition are one decision, not two.
+- A very wide table stays hard even with perfect markup. The remedy there is content — fewer columns, a detail view, aggregates — not more attributes.

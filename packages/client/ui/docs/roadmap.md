@@ -24,12 +24,12 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                           |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                        |
 | **Feedback**      | `Alert` · `Toast` (+ Region)                                                                                                                                              |
-| **Data display**  | `Badge`                                                                                                                                                                   |
+| **Data display**  | `Badge` · `Table` (+ Head, Body, Row, Cell, HeaderCell)                                                                                                                   |
 | **Utilities**     | `VisuallyHidden`                                                                                                                                                          |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
-complete at one. **Feedback** and **Data display** are the two where a consumer predictably has to
-write their own, and the order below follows from that.
+complete at one. **Feedback** is now the one where a consumer predictably has to write their own,
+and the order below follows from that.
 
 ## How the order is decided
 
@@ -49,11 +49,6 @@ Not by popularity. Three questions, in this order:
 
 `<progress>`, determinate and indeterminate. Cheap, and it stops Alert from being the whole of
 Feedback.
-
-### 2. `Table` — the Data display group is one wide
-
-Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
-the "next" items and the one most often re-implemented per app.
 
 ## Deferred, with the reason
 

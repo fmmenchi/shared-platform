@@ -1,0 +1,68 @@
+/* Rows and columns. One stylesheet for the whole family: the parts import it
+   rather than each restating a cell, the way `MenuItemTrigger` reads
+   `menu-item.module.css`. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .table {
+    inline-size: 100%;
+    /* `collapse` for now. The day the header goes sticky this has to become
+       `separate` — `position: sticky` does not hold on a collapsed border
+       model — which is why sticky and resize are planned as one piece of work
+       rather than two. */
+    border-collapse: collapse;
+    /* Digits line up in a column, which is most of what makes a numeric column
+       readable at all. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .caption {
+    /* Above the table and left-aligned: a caption centred over the data reads
+       as a title of the page rather than a name for the table. */
+    text-align: start;
+    padding-block-end: var(--fm-space-stack-s);
+    color: var(--fm-color-muted-foreground);
+  }
+
+  .row {
+    border-block-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  /* HORIZONTAL RULES ONLY. Vertical lines between every column are what makes a
+     table look like a spreadsheet and read like a cage; the eye already groups
+     a column by alignment. */
+  .cell,
+  .headerCell {
+    padding-block: var(--fm-space-internal-s);
+    padding-inline: var(--fm-space-inline-s);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .headerCell {
+    font-weight: var(--fm-font-weight-semibold);
+  }
+
+  .head .headerCell {
+    /* The header sits on the rule that separates it from the data. */
+    border-block-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  .cell[data-align='end'],
+  .headerCell[data-align='end'] {
+    text-align: end;
+  }
+
+  .table[data-density='compact'] .cell,
+  .table[data-density='compact'] .headerCell {
+    padding-block: var(--fm-space-internal-xs);
+  }
+
+  .empty {
+    text-align: center;
+    padding-block: var(--fm-space-stack-l);
+    color: var(--fm-color-muted-foreground);
+  }
+}

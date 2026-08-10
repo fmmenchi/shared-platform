@@ -249,3 +249,23 @@ export type {
   ToastPlacement,
   ToastContextValue,
 } from './components/toast-region/toast-region.types.js';
+export { Table } from './components/table/table.component.js';
+export type {
+  TableProps,
+  Column,
+  TableAlign,
+  TableDensity,
+} from './components/table/table.types.js';
+// The parts are the substrate `Table` is built on, exported for the layouts a
+// flat column list cannot express. Dropping to them is decomposition, not a
+// second product — the relationship `Field` has to `FormInput`.
+export { TableHead } from './components/table-head/table-head.component.js';
+export type { TableHeadProps } from './components/table-head/table-head.types.js';
+export { TableBody } from './components/table-body/table-body.component.js';
+export type { TableBodyProps } from './components/table-body/table-body.types.js';
+export { TableRow } from './components/table-row/table-row.component.js';
+export type { TableRowProps } from './components/table-row/table-row.types.js';
+export { TableCell } from './components/table-cell/table-cell.component.js';
+export type { TableCellProps } from './components/table-cell/table-cell.types.js';
+export { TableHeaderCell } from './components/table-header-cell/table-header-cell.component.js';
+export type { TableHeaderCellProps } from './components/table-header-cell/table-header-cell.types.js';

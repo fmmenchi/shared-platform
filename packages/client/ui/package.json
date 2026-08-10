@@ -478,6 +478,42 @@
       "types": "./dist/components/form-segmented-control/index.d.ts",
       "import": "./dist/form-segmented-control.js",
       "default": "./dist/form-segmented-control.js"
+    },
+    "./table": {
+      "@fmmenchi/source": "./src/components/table/index.ts",
+      "types": "./dist/components/table/index.d.ts",
+      "import": "./dist/table.js",
+      "default": "./dist/table.js"
+    },
+    "./table-head": {
+      "@fmmenchi/source": "./src/components/table-head/index.ts",
+      "types": "./dist/components/table-head/index.d.ts",
+      "import": "./dist/table-head.js",
+      "default": "./dist/table-head.js"
+    },
+    "./table-body": {
+      "@fmmenchi/source": "./src/components/table-body/index.ts",
+      "types": "./dist/components/table-body/index.d.ts",
+      "import": "./dist/table-body.js",
+      "default": "./dist/table-body.js"
+    },
+    "./table-row": {
+      "@fmmenchi/source": "./src/components/table-row/index.ts",
+      "types": "./dist/components/table-row/index.d.ts",
+      "import": "./dist/table-row.js",
+      "default": "./dist/table-row.js"
+    },
+    "./table-cell": {
+      "@fmmenchi/source": "./src/components/table-cell/index.ts",
+      "types": "./dist/components/table-cell/index.d.ts",
+      "import": "./dist/table-cell.js",
+      "default": "./dist/table-cell.js"
+    },
+    "./table-header-cell": {
+      "@fmmenchi/source": "./src/components/table-header-cell/index.ts",
+      "types": "./dist/components/table-header-cell/index.d.ts",
+      "import": "./dist/table-header-cell.js",
+      "default": "./dist/table-header-cell.js"
     }
   },
   "nx": {
