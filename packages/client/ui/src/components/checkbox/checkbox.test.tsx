@@ -34,6 +34,26 @@ describe('Checkbox', () => {
     );
   });
 
+  it('keeps its type against something that passes one anyway', () => {
+    // NOT hypothetical, and not reachable through the types: `type` is omitted
+    // from the props, so this can only arrive from code TypeScript never saw —
+    // which is exactly what a form adapter's bag is. `form/control-props.ts`
+    // records that Conform's `getInputProps` emits `type` unconditionally from
+    // the schema's constraints, and `forTag` returns an `<input>`'s bag
+    // untouched. Measured before the fix: the attribute read `text`, the role
+    // was gone, and the field submitted a string.
+    render(
+      <Checkbox
+        aria-label="accept"
+        {...({ type: 'text' } as Record<string, string>)}
+      />,
+    );
+    expect(screen.getByRole('checkbox', { name: 'accept' })).toHaveAttribute(
+      'type',
+      'checkbox',
+    );
+  });
+
   it('forwards ref to the input element, alongside our own', () => {
     // The component keeps an internal ref for `indeterminate`, so the consumer's
     // ref must survive being merged with it.
