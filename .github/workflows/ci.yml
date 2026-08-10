@@ -61,27 +61,34 @@ jobs:
       # The browser-mode suite, alone. Second because a type error makes every
       # test below it meaningless, and this is the slower half.
       #
-      # INSTRUMENTED, and the instrument is the point rather than a decoration.
-      # Splitting the step (above) was supposed to make a failure legible and it
-      # did not: this step has now failed four times on `main` without ever
-      # naming a test. Every result it prints is green, vitest never reaches its
-      # summary, and the output stops MID-LINE. That is the signature of a
-      # process that was KILLED, not one that failed an assertion — and the two
-      # need opposite fixes, so guessing between them is how a day gets spent.
+      # INSTRUMENTED, and the instrument has already earned its place. This step
+      # failed four times on `main` without ever naming a test: everything it
+      # printed was green, vitest never reached its summary, and the output
+      # stopped MID-LINE — which reads exactly like a process being killed.
       #
-      # `time -v` is what tells them apart: it reports the exit status and, when
-      # there is one, the SIGNAL, plus the peak resident set of the whole tree.
-      # Signal 9 with a peak near the runner's memory is the OOM killer; a plain
-      # exit 1 is a red test we simply cannot see yet.
+      # IT IS NOT BEING KILLED. `time -v` settled it on the first run: `Exit
+      # status: 1`, no signal, and a peak resident set of 1.9 GB against a runner
+      # with several times that. So the OOM theory is dead and so is the
+      # concurrency theory that followed from it — this is an ordinary failing
+      # test whose report is lost to GitHub's step-log TRUNCATION. One number
+      # closed two hypotheses that would each have taken a day.
       #
-      # Guarded because a missing `/usr/bin/time` would turn a diagnostic into an
-      # outage. `tee` keeps the whole output for the step below — GitHub's own
-      # step log is the thing being truncated, so the evidence has to leave it.
-      # The default shell here is `bash -e -o pipefail`, so the pipe does not
-      # swallow the failure.
+      # `time -v` stays, because that number is the one that tells a kill from a
+      # failure and it costs nothing to keep asking. Guarded, because a missing
+      # `/usr/bin/time` would turn a diagnostic into an outage. `tee` keeps the
+      # whole output for the step below — the step log is the thing being
+      # truncated, so the evidence has to leave it.
       - name: Browser-mode suite (instrumented — see the comment)
         id: suite
         run: |
+          # PIPEFAIL, EXPLICITLY, and this line is the whole difference between a
+          # gate and a decoration. The default shell for `run:` on Linux is
+          # `bash -e` WITHOUT pipefail — only an explicit `shell: bash` adds it —
+          # so `suite | tee` reports TEE's status and a failing suite comes out
+          # green. Measured on the first run of this very step: the suite exited
+          # 1, the job passed, and a red gate would have been converted into a
+          # release. A CI that lies green is worse than the failure it hides.
+          set -o pipefail
           if [ -x /usr/bin/time ]; then
             /usr/bin/time -v pnpm nx run-many -t test 2>&1 | tee /tmp/test.log
           else
@@ -89,10 +96,12 @@ jobs:
           fi
 
       # A SMALL step, so the truncation that ate the evidence cannot eat this
-      # too: the tail of the run, the lines that look like failures, and the
-      # kernel ring buffer — the OOM killer names its victim, and nothing else
-      # in this job can. Runs only when something above went red.
-      - name: What killed it
+      # too: the exit status, the lines that look like failures, and the tail of
+      # the run — which is where the failing test's name has been all along. The
+      # machine's memory and the kernel ring buffer are kept as the CONTROL: if a
+      # future failure really is a kill, they say so at once instead of sending
+      # somebody down the road this one did.
+      - name: Why the suite failed
         # SCOPED TO THE SUITE, not to the job: `failure()` alone would fire for a
         # lint failure too, and then read a `/tmp/test.log` that was never
         # written.
