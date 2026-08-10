@@ -56,7 +56,21 @@ jobs:
       # test. Keeping the split anyway — it is the right shape and it removed a
       # real source of flakiness — but the instrument for the second half is on
       # the step below, where it should have been.
+      #
+      # `--outputStyle=stream` for the same reason as the suite below, and this
+      # step is the one that had never been asked the question: it is the OTHER
+      # `run-many` over sixteen projects, so a lint or type error here would
+      # have been swallowed exactly the way the test failures were. Nothing has
+      # gone wrong here yet — this is the shape being fixed, not an incident.
+      #
+      # Deliberately NOT applied to the single-task `nx run` calls in the
+      # reusable workflows and the composite actions. Measured: a single task
+      # reports its failure in full — the FAIL line, the test name and the
+      # summary all arrive. The loss needs many tasks and a large output, which
+      # is a shape those bricks do not have, and a flag added on suspicion is a
+      # claim nobody can check later.
       - run: pnpm nx run-many -t typecheck build lint lint-css build-storybook
+          --outputStyle=stream
 
       # The browser-mode suite, alone. Second because a type error makes every
       # test below it meaningless, and this is the slower half.
@@ -118,6 +132,11 @@ jobs:
         # written.
         if: failure() && steps.suite.conclusion == 'failure'
         run: |
+          # NO `set -o pipefail` HERE, and that is deliberate — the opposite call
+          # from the step above. A `grep | tail` that matches nothing exits 1,
+          # and under pipefail this step would fail for having found no problem,
+          # taking the diagnostic down at the exact moment it is needed. Nothing
+          # here gates anything; it only prints.
           echo '::group::exit status and peak memory (from `time -v`)'
           grep -aE 'Command terminated|Exit status|Maximum resident|Elapsed' /tmp/test.log || echo 'no time -v output'
           echo '::endgroup::'
