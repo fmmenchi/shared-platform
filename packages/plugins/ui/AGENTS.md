@@ -5,6 +5,9 @@ of `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS
 `plugins`, type `plugin`, `private` (versioned + tagged, not published: the templates hardcode
 ui-internal relative imports, so the generator is meaningless outside this repo).
 
+Human documentation lives in [docs/](./docs/index.md) — keep it current with these rules, never
+duplicate them into it.
+
 ## Commands
 
 ```bash

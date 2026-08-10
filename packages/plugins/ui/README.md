@@ -3,6 +3,9 @@
 Nx generators for developing the `@fmmenchi/ui` design system. Internal tooling (`private` —
 versioned + tagged, not published).
 
+- **Agent entrypoint:** [AGENTS.md](./AGENTS.md).
+- **Documentation:** [docs/](./docs/index.md) — the guide, the generator reference, the concepts.
+
 ## `component` — scaffold the archetype
 
 ```bash
