@@ -3,25 +3,19 @@
 exports[`a selectable table > matches its markup 1`] = `
 <div>
   <table
-    class="_table_15zaa_3"
+    class="_table_1gncw_3"
   >
     <caption
-      class="_caption_15zaa_8"
+      class="_caption_1gncw_8"
     >
       Persone
     </caption>
     <thead>
       <tr>
         <th
-          class="_selectCell_15zaa_37"
+          class="_selectCell_1gncw_37"
           scope="col"
         >
-          <span
-            class="_visuallyHidden_tcu3i_3"
-            id="_r_8_-select"
-          >
-            Select
-          </span>
           <input
             aria-label="Select all rows"
             class="_checkbox_kjpik_4"
@@ -44,16 +38,15 @@ exports[`a selectable table > matches its markup 1`] = `
     <tbody>
       <tr>
         <td
-          class="_selectCell_15zaa_37"
+          class="_selectCell_1gncw_37"
         >
           <input
-            aria-labelledby="_r_8_-select _r_8_-r0"
+            aria-label="Select Zurigo"
             class="_checkbox_kjpik_4"
             type="checkbox"
           />
         </td>
         <th
-          id="_r_8_-r0"
           scope="row"
         >
           Zurigo
@@ -66,16 +59,15 @@ exports[`a selectable table > matches its markup 1`] = `
       </tr>
       <tr>
         <td
-          class="_selectCell_15zaa_37"
+          class="_selectCell_1gncw_37"
         >
           <input
-            aria-labelledby="_r_8_-select _r_8_-r1"
+            aria-label="Select Àosta"
             class="_checkbox_kjpik_4"
             type="checkbox"
           />
         </td>
         <th
-          id="_r_8_-r1"
           scope="row"
         >
           Àosta
@@ -88,16 +80,15 @@ exports[`a selectable table > matches its markup 1`] = `
       </tr>
       <tr>
         <td
-          class="_selectCell_15zaa_37"
+          class="_selectCell_1gncw_37"
         >
           <input
-            aria-labelledby="_r_8_-select _r_8_-r2"
+            aria-label="Select Milano"
             class="_checkbox_kjpik_4"
             type="checkbox"
           />
         </td>
         <th
-          id="_r_8_-r2"
           scope="row"
         >
           Milano

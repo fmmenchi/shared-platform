@@ -284,11 +284,17 @@ export type {
   UseRowSelectionOptions,
   UseRowSelectionResult,
 } from './components/table/use-row-selection.types.js';
+// The algebra is public for the reason `nextSort` is: `Table` reports selection
+// intents, so a consumer holding the state writes the transition — and the
+// two-mode reading is the one thing the engine says nobody should redo by hand.
 export {
   NOTHING_SELECTED,
   EVERYTHING_SELECTED,
   isRowSelected,
   countSelected,
+  coverageOf,
+  toggleRow,
+  toggleRows,
 } from './selection/selection.js';
 export type {
   Selection,

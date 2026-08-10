@@ -30,6 +30,15 @@ import { Table } from '../components/table/table.component.js';
  * `appearance` off them (see `checkbox.module.css`) — so their target is the
  * platform's business, and their LABEL, which is what a finger actually hits,
  * is the consumer's box rather than ours.
+ *
+ * THAT SECOND HALF STOPPED BEING TRUE when `Table` grew a selection column: we
+ * draw that checkbox and the cell around it, and there is no consumer label to
+ * enlarge the target. It is still conformant — WCAG 2.5.8 is met through the
+ * 24px-circle SPACING exception, since a row is 36px tall and the neighbouring
+ * control is far enough away — but it is met by geometry rather than by size,
+ * so a denser theme or a control dropped into the next cell can take it away.
+ * Recorded here rather than in a component, because the exemption's stated
+ * reason is what changed.
  */
 const TAP = 44;
 

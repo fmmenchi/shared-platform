@@ -6,11 +6,7 @@ import { useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
-import {
-  countIn,
-  coverageOf,
-  isRowSelected,
-} from '../../selection/selection.js';
+import { coverageOf, isRowSelected } from '../../selection/selection.js';
 import { SortArrow } from './sort-arrow.component.js';
 import { TableBody } from '../table-body/table-body.component.js';
 import { TableCell } from '../table-cell/table-cell.component.js';
@@ -91,8 +87,11 @@ function Table<T>(props: TableProps<T>) {
   //
   // It names the ACTION rather than being a boolean, because two mechanisms now
   // write to one region and the last one to be used is the one with something
-  // to say.
-  const [acted, setActed] = useState<'sort' | 'selectAll' | null>(null);
+  // to say — and the selection carries its SENTENCE rather than a tag, so no
+  // later change to the data can rewrite it into a fresh announcement.
+  const [acted, setActed] = useState<
+    { kind: 'sort' } | { kind: 'said'; text: string } | null
+  >(null);
 
   // Ours to generate: the checkbox in each row is labelled by the row's own
   // header cell, which needs an id to be pointed at.
@@ -153,20 +152,55 @@ function Table<T>(props: TableProps<T>) {
     'Table: `selection` is passed but nothing is wired to `onRowSelectToggle`, so no checkbox column is drawn. Pass the props from `useRowSelection`.',
   );
 
+  // The header box is a SEPARATE intent, and drawing it without a handler was
+  // the same dead control the file refuses twice above: it clicked, changed
+  // nothing, and announced that the selection had been cleared.
+  useDevWarning(
+    picks && !onSelectAllToggle,
+    'Table: the rows are selectable but nothing is wired to `onSelectAllToggle`, so the header cell carries no box and there is no way to take a whole page. Pass the props from `useRowSelection`.',
+  );
+
   // The column that NAMES the row, and the reason selection needs one. A
   // checkbox labelled "Select row" five times over is a control a screen reader
-  // cannot tell apart from the other four; pointed at the row's own header it
-  // says "Select Zurigo".
-  const rowHeaderKey = columns?.find((column) => column.rowHeader)?.key;
+  // cannot tell apart from the other four; named after its row it says "Select
+  // Zurigo".
+  const rowHeaderColumn = columns?.find((column) => column.rowHeader);
+  const rowHeaderKey = rowHeaderColumn?.key;
 
   useDevWarning(
     picks && columns !== undefined && rowHeaderKey === undefined,
     'Table: the rows are selectable but no column is marked `rowHeader`, so every checkbox is called "Select row" and a screen reader cannot tell them apart. Mark the column that identifies a row.',
   );
 
+  // A row whose name renders as nothing ships the very failure the label
+  // exists to prevent, minus the warning — an optional field, a `null` from the
+  // API, a placeholder while loading. Checked only for a plain keyed column, so
+  // a consumer's `cell` is never invoked twice to ask.
+  useDevWarning(
+    picks &&
+      rowHeaderColumn !== undefined &&
+      rowHeaderColumn.cell === undefined &&
+      rows?.some(
+        (row) =>
+          String(
+            (row as Record<string, unknown>)[rowHeaderColumn.key] ?? '',
+          ).trim() === '',
+      ) === true,
+    'Table: a row renders nothing in its `rowHeader` column, so its checkbox is called just "Select" and is indistinguishable from the others. Give every row a name, or supply one with `cell`.',
+  );
+
   const visibleIds = rows && getRowId ? rows.map(getRowId) : [];
+
+  // The id is the whole basis of selection: two rows answering the same one are
+  // one row as far as the rule is concerned, so ticking either ticks both — and
+  // the request that follows names a record the reader never chose. `Table`
+  // already warns for duplicate COLUMN keys; this is the one that corrupts data.
+  useDevWarning(
+    picks && new Set(visibleIds).size !== visibleIds.length,
+    'Table: two rows share a `getRowId`, so selecting one selects the other and the rule cannot tell them apart. It must be the same value you would use as a React key.',
+  );
+
   const coverage = selection ? coverageOf(selection, visibleIds) : 'none';
-  const selectedHere = selection ? countIn(selection, visibleIds) : 0;
 
   // ANNOUNCED BY RENDERING, not by an effect. The region is always in the tree
   // and only its text changes, which is the reliable path.
@@ -181,13 +215,18 @@ function Table<T>(props: TableProps<T>) {
   // its own checked state natively, and repeating "Selected: 4" over it doubles
   // every tick; the header box changes many rows at once, and the count IS the
   // news — "checked" does not say that two hundred rows just came with it.
+  //
+  // WHICH IS WHY THE SELECTION'S SENTENCE IS CAPTURED AT CLICK TIME rather than
+  // derived. Derived from the current coverage it re-announced on anything that
+  // changed the count: a row tick after a select-all, and — with no interaction
+  // at all — a refetch that returned one row fewer. A region whose text is a
+  // function of the data speaks when the DATA moves, and only an interaction is
+  // news. The sort half stays derived because `sort` cannot change without one.
   const announcement =
     acted === null
       ? ''
-      : acted === 'selectAll'
-        ? coverage === 'none'
-          ? t('selectionCleared')
-          : t('selectionCount', { count: selectedHere })
+      : acted.kind === 'said'
+        ? acted.text
         : sort && sortedColumn
           ? t(
               sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending',
@@ -200,6 +239,17 @@ function Table<T>(props: TableProps<T>) {
               },
             )
           : t('sortCleared');
+
+  // What the header box is ABOUT to do, which is knowable: `toggleRows` clears
+  // when the page is already covered and selects otherwise. Under an `exclude`
+  // rule "Selected: 3" would understate a selection that reaches rows nobody
+  // here has seen, so it says so instead of counting.
+  const selectAllSaid = () =>
+    coverage === 'all'
+      ? t('selectionCleared')
+      : selection?.mode === 'exclude'
+        ? t('selectionAll')
+        : t('selectionCount', { count: visibleIds.length });
 
   return (
     <>
@@ -219,30 +269,35 @@ function Table<T>(props: TableProps<T>) {
               <TableRow>
                 {picks && (
                   <TableHeaderCell className={styles.selectCell}>
-                    {/* THE VERB, once for the whole column. Each row's box is
-                      labelled by this plus its own row header, so it reads
-                      "Select Zurigo" — a name that stands on its own in browse
-                      mode, where column headers are not necessarily spoken. */}
-                    <VisuallyHidden id={`${baseId}-select`}>
-                      {t('select')}
-                    </VisuallyHidden>
-                    <Checkbox
-                      checked={
-                        coverage === 'all'
-                          ? true
-                          : coverage === 'some'
-                            ? 'indeterminate'
-                            : false
-                      }
-                      // The MIXED state is what a partial page means, and our
-                      // `Checkbox` carries it as a value of `checked` — the DOM
-                      // has no attribute for it, so nothing else would.
-                      aria-label={t('selectAllRows')}
-                      onChange={() => {
-                        setActed('selectAll');
-                        onSelectAllToggle?.();
-                      }}
-                    />
+                    {/* NOTHING HIDDEN IN HERE. The verb the row labels borrow
+                      used to live in this cell, and a `columnheader` takes its
+                      name from its content — so the column announced itself as
+                      "Select Select all rows", and a reader arrowing across a
+                      row heard the verb three times. It sits outside the table
+                      now; `aria-labelledby` reaches across the document. */}
+                    {onSelectAllToggle && (
+                      <Checkbox
+                        checked={
+                          coverage === 'all'
+                            ? true
+                            : coverage === 'some'
+                              ? 'indeterminate'
+                              : false
+                        }
+                        // The MIXED state is what a partial page means, and our
+                        // `Checkbox` carries it as a value of `checked` — the
+                        // DOM has no attribute for it, so nothing else would.
+                        aria-label={t('selectAllRows')}
+                        // Nothing to take: it offered a live control over an
+                        // empty table, and clicking it announced that a
+                        // selection had been cleared.
+                        disabled={visibleIds.length === 0}
+                        onChange={() => {
+                          setActed({ kind: 'said', text: selectAllSaid() });
+                          onSelectAllToggle(visibleIds);
+                        }}
+                      />
+                    )}
                   </TableHeaderCell>
                 )}
                 {columns.map((column) => {
@@ -291,7 +346,7 @@ function Table<T>(props: TableProps<T>) {
                             // which a consumer committing in a transition has
                             // not refreshed — two clicks then landed on
                             // ascending twice.
-                            setActed('sort');
+                            setActed({ kind: 'sort' });
                             onSortToggle(column.key);
                           }}
                         >
@@ -326,8 +381,30 @@ function Table<T>(props: TableProps<T>) {
                 rows.map((row, index) => {
                   const rowId = getRowId(row);
                   const rowHeaderId = `${baseId}-r${index}`;
+                  // GATED ON `picks`, not on `selection` alone. Tinted without a
+                  // checkbox, the row conveyed its state by colour and nothing
+                  // else — and the whole argument for the box being mandatory is
+                  // that `aria-selected` cannot carry it.
                   const picked =
-                    selection !== undefined && isRowSelected(selection, rowId);
+                    picks &&
+                    selection !== undefined &&
+                    isRowSelected(selection, rowId);
+
+                  // Computed ONCE, here, and handed to the column below rather
+                  // than derived twice — a consumer's `cell` is a function and
+                  // calling it again to ask what it said is a cost they did not
+                  // agree to.
+                  const rowName = rowHeaderColumn
+                    ? rowHeaderColumn.cell
+                      ? rowHeaderColumn.cell(row)
+                      : ((row as Record<string, unknown>)[
+                          rowHeaderColumn.key
+                        ] as ReactNode)
+                    : undefined;
+                  const namedInWords =
+                    typeof rowName === 'string' || typeof rowName === 'number'
+                      ? String(rowName).trim()
+                      : '';
 
                   return (
                     <TableRow
@@ -344,37 +421,64 @@ function Table<T>(props: TableProps<T>) {
                         <TableCell className={styles.selectCell}>
                           <Checkbox
                             checked={picked}
-                            // The row's own header supplies the noun. Without a
-                            // `rowHeader` column there is no noun to point at,
-                            // and the generic label is the honest fallback —
-                            // announced by the warning above, not hidden.
-                            aria-labelledby={
-                              rowHeaderKey === undefined
-                                ? undefined
-                                : `${baseId}-select ${rowHeaderId}`
-                            }
+                            // A WHOLE SENTENCE WHEN THE NAME IS WORDS, and a
+                            // reference only when it is not. Two fragments
+                            // joined by `aria-labelledby` put the WORD ORDER in
+                            // the code — "«verb» «name»", which Japanese and
+                            // Turkish are not — and i18n.md forbids exactly
+                            // that, for exactly that reason. A string row name
+                            // is the overwhelmingly common case and it fills a
+                            // one-hole message the catalog can reorder. A node
+                            // (an icon, an `<abbr>`, a link) has no string to
+                            // put in a hole, so it is pointed at instead: worse
+                            // for word order, better than losing the name.
                             aria-label={
-                              rowHeaderKey === undefined
-                                ? t('selectRow')
+                              namedInWords !== ''
+                                ? t('selectRowNamed', { name: namedInWords })
+                                : rowName === undefined ||
+                                    !hasRenderableChildren(rowName)
+                                  ? t('selectRow')
+                                  : undefined
+                            }
+                            aria-labelledby={
+                              namedInWords === '' &&
+                              rowName !== undefined &&
+                              hasRenderableChildren(rowName)
+                                ? `${baseId}-select ${rowHeaderId}`
                                 : undefined
                             }
-                            onChange={() => onRowSelectToggle?.(rowId)}
+                            onChange={() => {
+                              // The region falls silent: a single box announces
+                              // its own state, and a count read over it doubles
+                              // what the reader was just told.
+                              setActed(null);
+                              onRowSelectToggle?.(rowId);
+                            }}
                           />
                         </TableCell>
                       )}
                       {columns.map((column) => {
-                        const content = column.cell
-                          ? column.cell(row)
-                          : ((row as Record<string, unknown>)[
-                              column.key
-                            ] as ReactNode);
+                        const content =
+                          column.key === rowHeaderKey
+                            ? rowName
+                            : column.cell
+                              ? column.cell(row)
+                              : ((row as Record<string, unknown>)[
+                                  column.key
+                                ] as ReactNode);
 
                         return column.rowHeader ? (
                           <TableHeaderCell
                             key={column.key}
                             align={column.align}
+                            // ONLY WHEN SOMETHING POINTS AT IT. A row named in
+                            // words fills the message instead, so an id here
+                            // would be an attribute referenced by nothing on
+                            // every row of every selectable table.
                             id={
-                              picks && column.key === rowHeaderKey
+                              picks &&
+                              column.key === rowHeaderKey &&
+                              namedInWords === ''
                                 ? rowHeaderId
                                 : undefined
                             }
@@ -417,6 +521,21 @@ function Table<T>(props: TableProps<T>) {
         They are all empty at rest and harmless, but "the status region" stops
         being a thing you can point at, and a test — or a consumer — needs to
         name which one it means. */}
+      {/* THE VERB, once for the whole table, OUTSIDE it, and only where it can
+        be needed. A row whose name is an ELEMENT has no string to fill
+        `selectRowNamed` with, so it is labelled by this plus its own header
+        cell instead — worse for word order, better than losing the name. Only
+        a COMPUTED row-header column can produce one, since a keyed one is
+        typed to text or numbers, so a plain table renders no span at all.
+
+        It used to live in the header cell, which is where a `columnheader`
+        takes its name from — so the column called itself "Select Select all
+        rows" and a reader arrowing across a row heard the word three times.
+        `aria-labelledby` is document-wide, so moving it here costs nothing. */}
+      {picks && rowHeaderColumn?.cell !== undefined && (
+        <VisuallyHidden id={`${baseId}-select`}>{t('select')}</VisuallyHidden>
+      )}
+
       {(wired || picks) && (
         <VisuallyHidden role="status" data-table-status="">
           {announcement}

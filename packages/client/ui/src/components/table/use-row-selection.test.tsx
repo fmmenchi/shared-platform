@@ -10,17 +10,13 @@ import type { UseRowSelectionOptions } from './use-row-selection.types.js';
 /**
  * The pair and the two intents, tested WITHOUT a table. The algebra itself is
  * proved in `selection/selection.test.ts`; what is proved here is the wiring —
- * which intent produces which edit, and what the hook reports about rows it
- * cannot see.
+ * which intent produces which edit, what the hook reports about rows it cannot
+ * see, and that two edits in one tick both land.
  */
-interface Row {
-  id: string;
-}
+const page = ['a', 'b', 'c'];
 
-const rows: Row[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
-
-function Harness(props: Omit<UseRowSelectionOptions<Row>, 'getRowId'>) {
-  const selection = useRowSelection(rows, { getRowId: (r) => r.id, ...props });
+function Harness(props: UseRowSelectionOptions) {
+  const selection = useRowSelection(props);
   return (
     <>
       <button
@@ -29,13 +25,30 @@ function Harness(props: Omit<UseRowSelectionOptions<Row>, 'getRowId'>) {
       >
         row a
       </button>
-      <button type="button" onClick={() => selection.props.onSelectAllToggle()}>
+      <button
+        type="button"
+        onClick={() => {
+          selection.props.onRowSelectToggle('a');
+          selection.props.onRowSelectToggle('b');
+        }}
+      >
+        rows a and b
+      </button>
+      <button
+        type="button"
+        onClick={() => selection.props.onSelectAllToggle(page)}
+      >
         all
+      </button>
+      <button
+        type="button"
+        onClick={() => selection.setSelection(EVERYTHING_SELECTED)}
+      >
+        everything
       </button>
       <output data-mode="">{selection.state.mode}</output>
       <output data-ids="">{[...selection.state.ids].sort().join(',')}</output>
       <output data-count="">{String(selection.count)}</output>
-      <output data-coverage="">{selection.coverage}</output>
     </>
   );
 }
@@ -44,52 +57,75 @@ const read = (what: string) =>
   document.querySelector(`[data-${what}]`)?.textContent ?? '';
 
 describe('useRowSelection, holding the selection itself', () => {
-  it('starts empty, picks one row, and reports what it knows', async () => {
+  it('starts empty and picks one row', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
     expect(read('count')).toBe('0');
-    expect(read('coverage')).toBe('none');
-
     await user.click(screen.getByRole('button', { name: 'row a' }));
     expect(read('ids')).toBe('a');
     expect(read('count')).toBe('1');
-    expect(read('coverage')).toBe('some');
   });
 
-  it('takes the whole page, then gives it back', async () => {
+  it('lands BOTH edits when two rows are toggled in one tick', async () => {
+    // Written as `setState(toggleRow(state, id))`, both calls computed from the
+    // same render value and the first one vanished — measured, one row selected
+    // out of two. The updater form is what makes a range selection, or any
+    // consumer loop, possible at all.
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.click(screen.getByRole('button', { name: 'rows a and b' }));
+    expect(read('ids')).toBe('a,b');
+  });
+
+  it('takes the page, then gives it back', async () => {
     const user = userEvent.setup();
     render(<Harness />);
     const all = screen.getByRole('button', { name: 'all' });
 
     await user.click(all);
-    expect(read('coverage')).toBe('all');
-    expect(read('count')).toBe('3');
-
+    expect(read('ids')).toBe('a,b,c');
     await user.click(all);
-    expect(read('coverage')).toBe('none');
-    expect(read('count')).toBe('0');
+    expect(read('ids')).toBe('');
   });
 
-  it('completes a partial page rather than emptying it', async () => {
+  it('clears an everything-rule whole instead of narrowing it', async () => {
+    // The data-loss path: narrowing left the UI showing nothing selected while
+    // the rule still covered every row the client had never received.
+    const user = userEvent.setup();
+    render(<Harness defaultSelection={EVERYTHING_SELECTED} />);
+
+    await user.click(screen.getByRole('button', { name: 'all' }));
+    expect(read('mode')).toBe('include');
+    expect(read('ids')).toBe('');
+    expect(read('count')).toBe('0');
+  });
+});
+
+describe('useRowSelection and the count', () => {
+  it('refuses to answer for rows it has never seen', async () => {
+    // THE TEST THAT WAS MISSING. Its predecessor asserted `mode` and coverage
+    // and never touched `count` — so it passed against an implementation that
+    // handed the page size to `countSelected` and reported "3" for a rule
+    // covering ten thousand rows.
+    render(<Harness defaultSelection={EVERYTHING_SELECTED} />);
+    expect(read('count')).toBe('undefined');
+  });
+
+  it('answers when the consumer supplies the result set’s size', async () => {
+    render(<Harness defaultSelection={EVERYTHING_SELECTED} total={10_000} />);
+    expect(read('count')).toBe('10000');
+  });
+
+  it('sets the whole rule at once', async () => {
     const user = userEvent.setup();
     render(<Harness />);
 
-    await user.click(screen.getByRole('button', { name: 'row a' }));
-    await user.click(screen.getByRole('button', { name: 'all' }));
-    // A reader clicking a half-filled box is finishing it.
-    expect(read('coverage')).toBe('all');
-  });
-
-  it('refuses to count rows it has never seen', async () => {
-    // `EVERYTHING_SELECTED` covers a result set this client holds three rows
-    // of. `count` is `rows.length` minus the exceptions here, because that is
-    // all this side can honestly subtract from — the total belongs to whoever
-    // ran the query, and a wrong number is what turns "delete 3" into ten
-    // thousand deletions.
-    render(<Harness defaultSelection={EVERYTHING_SELECTED} />);
+    await user.click(screen.getByRole('button', { name: 'everything' }));
     expect(read('mode')).toBe('exclude');
-    expect(read('coverage')).toBe('all');
+    // A range selection or a restore is ONE edit, not a loop of intents.
+    expect(read('count')).toBe('undefined');
   });
 });
 

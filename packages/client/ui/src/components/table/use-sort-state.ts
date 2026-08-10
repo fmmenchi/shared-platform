@@ -25,11 +25,18 @@ import type {
  *
  * THE CYCLE LIVES HERE TOO, and that was a correction. `Table` used to compute
  * the next stop from the `sort` prop it had been rendered with, which is state
- * logic in the one place that claims to hold none — and it read a value that
- * can be stale: a consumer committing in `startTransition` gets a deferred
- * prop, so a second click recomputed from the first click's input and landed on
- * ascending twice. The component now reports the KEY the reader activated and
- * the transition is computed here, against the state this hook owns.
+ * logic in the one place that claims to hold none. The component now reports
+ * the KEY the reader activated and the transition is computed here.
+ *
+ * Moving it was NOT by itself the fix for the stale read, and the first version
+ * of this comment claimed it was. `setState(nextSort(state, key))` reads a
+ * render value wherever it is written; what fixes it is the UPDATER, which lets
+ * `useControlled` resolve against the last value it produced rather than the
+ * last one it rendered. Uncontrolled that is now correct outright. Controlled,
+ * the base can only be what the consumer last handed over — if they defer their
+ * update they hold the stale value, not us — and reporting the key rather than
+ * the next state is what leaves them somewhere to write `setSort((prev) =>
+ * nextSort(prev, key))`.
  *
  * So a consumer whose server does the ordering takes this hook, puts
  * `state` straight into their query key, and never pulls the collation engine
@@ -75,7 +82,8 @@ export function useSortState(
     state: state ?? null,
     props: {
       sort: state ?? null,
-      onSortToggle: (key: string) => setState(nextSort(state ?? null, key)),
+      onSortToggle: (key: string) =>
+        setState((previous) => nextSort(previous ?? null, key)),
     },
   };
 }

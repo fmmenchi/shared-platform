@@ -174,26 +174,32 @@ interface TableFromData<T> extends TableShared {
    */
   onSortToggle?: (key: string) => void;
   /**
-   * Which rows are picked. Its presence is what adds the checkbox column — the
-   * column is OURS to draw rather than yours to write as a `cell`, because the
-   * part nobody gets right is not the box, it is what the box is called: a
-   * screen reader landing on the fifth one has to hear which row it selects.
+   * Which rows are picked. With `onRowSelectToggle` it adds the checkbox
+   * column — the column is OURS to draw rather than yours to write as a `cell`,
+   * because the part nobody gets right is not the box, it is what the box is
+   * called: a screen reader landing on the fifth one has to hear which row it
+   * selects.
    *
-   * Note what a `<table>` cannot do here: `aria-selected` belongs to `grid` and
-   * `treegrid`, so a row in a table has no way to announce that it is selected.
-   * The checkbox IS the state, for everyone. That is a reason to keep it and
-   * not a limitation to route around.
+   * Note what a row in a `<table>` does not do here. `aria-selected` is listed
+   * as a supported property of the `row` role, but it is only MEANINGFUL inside
+   * a `grid` or `treegrid`; in a table it is not announced, so writing it would
+   * be an attribute that reads as a promise and delivers nothing. The checkbox
+   * IS the state, for everyone — a reason to keep it rather than a limitation
+   * to route around.
    */
   selection?: Selection;
   /** A row's checkbox was activated. Receives the id `getRowId` produced. */
   onRowSelectToggle?: (id: string) => void;
   /**
-   * The header's checkbox was activated. It carries no argument because it
-   * speaks for the rows this table RENDERS and nothing else — "select all
-   * 10,000 matching" is a different affordance, and only you know whether there
-   * are more rows than the ones you handed over.
+   * The header's checkbox was activated, and it receives THE IDS THIS TABLE
+   * RENDERED — the rows on screen are its fact, and a second copy of them kept
+   * elsewhere is what let a header box speak for rows the reader could not see.
+   *
+   * It speaks for those and nothing else: "select all 10,000 matching" is a
+   * different affordance, and only you know whether there are more rows than
+   * the ones you handed over.
    */
-  onSelectAllToggle?: () => void;
+  onSelectAllToggle?: (ids: readonly string[]) => void;
   children?: never;
 }
 

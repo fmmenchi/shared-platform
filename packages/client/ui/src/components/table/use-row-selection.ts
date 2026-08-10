@@ -1,10 +1,8 @@
-import { useMemo } from 'react';
 import { useControlled } from '../../primitives/use-controlled.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import {
   NOTHING_SELECTED,
   countSelected,
-  coverageOf,
   toggleRow,
   toggleRows,
 } from '../../selection/selection.js';
@@ -24,28 +22,33 @@ import type {
  * request body, not in a query key. Modelling the two the same way is how a
  * table ends up refetching because somebody ticked a box.
  *
- * WHAT IT OWES THE ROWS is exactly one thing: identity. Selection has to
- * survive a re-sort, a refetch and a page change, and an index cannot do that —
- * which is why `getRowId` was already required by `Table` before this existed.
- * Nothing else about the rows matters here, so nothing else is read.
+ * IT IS NOT GIVEN THE ROWS, and that was a correction. It used to take them, to
+ * work out what "select all" meant — which put the rendered rows in two places,
+ * the hook's copy and the table's, with nothing tying them together. The
+ * paginated consumer is the one who gets hurt: hook over the whole result set
+ * (because selection outlives a page), `Table` over a slice, and one click on a
+ * header box that showed three rows selected six. `getRowId` was asked for
+ * twice for the same reason, and two answers that disagree produced a rule full
+ * of ids nothing matched, silently. So `Table` now reports WHICH ids its header
+ * box spoke for, and there is one source of that fact: the rows on screen.
  *
  * IT REPORTS INTENTS, NOT STATES, for the reason `useSortState` does: `Table`
- * says "this row's box was activated" or "the header's was", and the transition
- * is computed here against the state this hook owns. A component computing the
- * next selection from the prop it was rendered with reads a value that a
- * deferred update has not refreshed — with a set, that is a lost tick rather
- * than a wrong arrow.
+ * says "this row's box was activated" or "the header's was, for these ids", and
+ * the transition is computed here. The updater form is load-bearing rather than
+ * stylistic — two toggles fired in one tick used to compute from the same
+ * render value, and the first one silently vanished.
  */
-export function useRowSelection<T>(
-  rows: readonly T[],
-  options: UseRowSelectionOptions<T>,
+export function useRowSelection(
+  options: UseRowSelectionOptions = {},
 ): UseRowSelectionResult {
-  const { getRowId, selection, defaultSelection, onSelectionChange } = options;
+  const { total, selection, defaultSelection, onSelectionChange } = options;
 
   // Key presence, not value — the same correction `useSortState` needed. There
   // is no `null` state here, but "controlled and empty" and "uncontrolled" are
   // still two different things, and a consumer clearing a selection naturally
-  // hands back whatever their store considers empty.
+  // hands back whatever their store considers empty. Present or absent for the
+  // component's lifetime: a conditionally-spread `selection` flips the mode and
+  // drops the state, which `useControlled` warns about after the fact.
   const controlled = 'selection' in options;
 
   const [state, setState] = useControlled<Selection>({
@@ -60,20 +63,19 @@ export function useRowSelection<T>(
     'useRowSelection: `selection` is passed but `onSelectionChange` is not, so nothing can ever be selected and every checkbox is inert. Pass both, or pass `defaultSelection` and let the hook hold it.',
   );
 
-  // The ids of the rows IN HAND. The header checkbox can only ever speak for
-  // these: on a paginated table "select all" over rows the client never
-  // received is a different affordance, and one only the consumer can offer,
-  // because only they know whether there are more.
-  const ids = useMemo(() => rows.map(getRowId), [rows, getRowId]);
-
   return {
     state,
-    count: countSelected(state, rows.length),
-    coverage: coverageOf(state, ids),
+    // `total` IS THE RESULT SET'S, not the page's, and passing the page was the
+    // defect: under an `exclude` rule it made `count` the number of rows that
+    // happen to be loaded — the exact value the engine documents as the one
+    // that must never be returned. Omitted, `count` is `undefined`, which is
+    // the honest answer when only the server knows.
+    count: countSelected(state, total),
+    setSelection: (next) => setState(next),
     props: {
       selection: state,
-      onRowSelectToggle: (id: string) => setState(toggleRow(state, id)),
-      onSelectAllToggle: () => setState(toggleRows(state, ids)),
+      onRowSelectToggle: (id) => setState((prev) => toggleRow(prev, id)),
+      onSelectAllToggle: (ids) => setState((prev) => toggleRows(prev, ids)),
     },
   };
 }

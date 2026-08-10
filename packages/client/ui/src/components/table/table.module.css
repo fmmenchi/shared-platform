@@ -104,6 +104,16 @@
       background: Highlight;
       color: HighlightText;
     }
+
+    /* AND THE RING HAS TO SURVIVE IT. `Checkbox` paints its focus outline
+       `Highlight` in this mode — correct on the page, invisible on a row that
+       is now `Highlight` itself, with `outline-offset` putting it squarely on
+       the fill. Neither stylesheet is wrong alone; the composition is, and no
+       gate can see it because each file answers for forced colors on its own.
+       The selected row owns the surface, so it owns the correction. */
+    .table tbody tr[data-selected] :focus-visible {
+      outline-color: HighlightText;
+    }
   }
 
   /* The trigger is our `Button`, so the focus ring, the target size and the

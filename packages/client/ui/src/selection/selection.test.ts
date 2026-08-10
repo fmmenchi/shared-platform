@@ -100,11 +100,23 @@ describe('toggling a whole page', () => {
     expect(coverageOf(cleared, page)).toBe('none');
   });
 
-  it('narrows an everything-rule to the rows it can see, and keeps the rest', () => {
+  it('clears an everything-rule WHOLE, rather than narrowing it', () => {
+    // This case was decided the other way first, and it was a data-loss path.
+    // Narrowing left the box unticked, every visible row unticked and the count
+    // at zero, while the rule still selected every row on the other 499 pages —
+    // a delete confirmed as "0 rows" that removes 9,997. Nobody means "all of
+    // them except the ones I am looking at".
     const cleared = toggleRows(EVERYTHING_SELECTED, page);
     expect(coverageOf(cleared, page)).toBe('none');
-    // Still selected: the rule said everything, and the page never spoke for it.
-    expect(isRowSelected(cleared, 'zzz-never-loaded')).toBe(true);
+    expect(isRowSelected(cleared, 'zzz-never-loaded')).toBe(false);
+    expect(countSelected(cleared)).toBe(0);
+  });
+
+  it('keeps its identity when there is nothing to toggle', () => {
+    // An empty table still draws a header box. A fresh equal object from it
+    // pushes a spurious change into a consumer's store.
+    const before = include('a');
+    expect(toggleRows(before, [])).toBe(before);
   });
 });
 
@@ -117,7 +129,10 @@ describe('counting', () => {
     expect(countSelected(exclude('a'), 10_000)).toBe(9_999);
   });
 
-  it('never reports a negative count when the total is stale', () => {
-    expect(countSelected(exclude('a', 'b', 'c'), 2)).toBe(0);
+  it('refuses to answer when the total no longer matches the rule', () => {
+    // Clamping to `0` was the first answer, and it is the same mistake in
+    // miniature: a confident wrong number where "ask again" is the truth. A
+    // total below the exception list means a filter moved underneath it.
+    expect(countSelected(exclude('a', 'b', 'c'), 2)).toBeUndefined();
   });
 });

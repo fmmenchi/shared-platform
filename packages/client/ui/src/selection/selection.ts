@@ -17,10 +17,18 @@ import type { Selection, SelectionCoverage } from './selection.types.js';
  * mode nobody tested inverts.
  */
 
-/** Nothing selected. Shared, because an empty rule has no identity worth having. */
+/**
+ * Nothing selected. Shared, because an empty rule has no identity worth having.
+ *
+ * The object is frozen; THE SET IS NOT, AND CANNOT BE. `Object.freeze` works on
+ * own properties and a `Set`'s contents live in internal slots — measured,
+ * `Object.freeze(new Set()).add('x')` succeeds and `Object.isFrozen` still
+ * reports `true`. So the guarantee here is `ReadonlySet`, which is a compile-time
+ * one, and freezing the set as well would only have looked like more.
+ */
 export const NOTHING_SELECTED: Selection = Object.freeze({
   mode: 'include' as const,
-  ids: Object.freeze(new Set<string>()),
+  ids: new Set<string>(),
 });
 
 /**
@@ -34,7 +42,7 @@ export const NOTHING_SELECTED: Selection = Object.freeze({
  */
 export const EVERYTHING_SELECTED: Selection = Object.freeze({
   mode: 'exclude' as const,
-  ids: Object.freeze(new Set<string>()),
+  ids: new Set<string>(),
 });
 
 /** Is this row in? */
@@ -88,12 +96,28 @@ export function coverageOf(
  * partially-selected case resolves to SELECT rather than to clear, which is the
  * convention every table follows and the one that matches the mixed box's
  * meaning: a reader clicking a half-filled box is completing it.
+ *
+ * CLEARING AN `exclude` RULE CLEARS IT WHOLE, and getting this wrong was a
+ * data-loss path rather than an inelegance. Narrowing instead — turning
+ * "everything" into "everything except the twenty you can see" — leaves the box
+ * unticked, every visible row unticked and the count at zero, while the rule
+ * still selects every row on the other 499 pages. The measured version of that
+ * is a delete confirmed as "0 rows" removing 9,997. Nobody ever means "all of
+ * them except the ones I am looking at": under `exclude`, unticking the header
+ * is the reader saying no to the whole thing.
  */
 export function toggleRows(
   selection: Selection,
   ids: readonly string[],
 ): Selection {
+  // A no-op keeps its identity. An empty page still has a header box, and
+  // returning a fresh equal object from it pushes a spurious change into a
+  // consumer's store and re-fires anything watching the selection.
+  if (ids.length === 0) return selection;
+
   const wanted = coverageOf(selection, ids) !== 'all';
+  if (!wanted && selection.mode === 'exclude') return NOTHING_SELECTED;
+
   const next = new Set(selection.ids);
 
   for (const id of ids) {
@@ -120,5 +144,10 @@ export function countSelected(
 ): number | undefined {
   if (selection.mode === 'include') return selection.ids.size;
   if (total === undefined) return undefined;
-  return Math.max(0, total - selection.ids.size);
+  // A total smaller than the exception list is a total that no longer matches
+  // the rule — a filter changed underneath it. Clamping to `0` was the first
+  // answer and it is the same mistake in miniature: a confident wrong number
+  // where the honest one is "ask again".
+  if (total < selection.ids.size) return undefined;
+  return total - selection.ids.size;
 }

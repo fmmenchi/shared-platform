@@ -139,7 +139,7 @@ export const Sortable: Story = {
  */
 export const Selectable: Story = {
   render: function Render() {
-    const selection = useRowSelection(people, { getRowId: (p) => p.id });
+    const selection = useRowSelection();
 
     return (
       <Table

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Table } from './table.component.js';
@@ -41,9 +42,7 @@ const sortableColumns: Column<Person>[] = [
 ];
 
 function Selectable(props: { rows?: Person[]; columns?: Column<Person>[] }) {
-  const selection = useRowSelection(props.rows ?? people, {
-    getRowId: (p) => p.id,
-  });
+  const selection = useRowSelection();
   return (
     <Table
       caption="Persone"
@@ -117,7 +116,7 @@ describe('a selectable table', () => {
     await waitFor(() => expect(selectedRows()).toHaveLength(0));
   });
 
-  it('announces the header box, and only the header box', async () => {
+  it('announces the header box, and only the header box — in either order', async () => {
     render(<Selectable />);
 
     expect(status()).toHaveTextContent('');
@@ -135,12 +134,104 @@ describe('a selectable table', () => {
     await browser.click(
       screen.getByRole('checkbox', { name: 'Select all rows' }),
     );
-    await waitFor(() => expect(status()).toHaveTextContent('Selected: 3'));
+    await waitFor(() => expect(status()).toHaveTextContent('Selection: 3'));
+
+    // AND THE OTHER ORDER, which is where the first version failed. The
+    // announcement was derived from the current coverage, so once the header
+    // had spoken every row tick rewrote the region — the exact doubling this
+    // component argues against. The old test only ever tried row-then-header,
+    // the one order in which the flag was still unset.
+    await browser.click(screen.getByRole('checkbox', { name: 'Select Àosta' }));
+    await waitFor(() => expect(selectedRows()).toHaveLength(2));
+    expect(status()).toHaveTextContent('');
 
     await browser.click(
       screen.getByRole('checkbox', { name: 'Select all rows' }),
     );
+    await waitFor(() => expect(status()).toHaveTextContent('Selection: 3'));
+    await browser.click(
+      screen.getByRole('checkbox', { name: 'Select all rows' }),
+    );
     await waitFor(() => expect(status()).toHaveTextContent(/cleared/i));
+  });
+
+  it('does not speak because the DATA moved', async () => {
+    // No interaction at all: a refetch returning one row fewer used to move the
+    // region from "Selection: 3" to "Selection: 2" and announce it. A region
+    // whose text is a function of the rows speaks whenever the rows do.
+    function Refetching() {
+      const [rows, setRows] = useState(people);
+      const selection = useRowSelection();
+      return (
+        <>
+          <button type="button" onClick={() => setRows(people.slice(0, 2))}>
+            refetch
+          </button>
+          <Table
+            caption="Persone"
+            rows={rows}
+            columns={columns}
+            getRowId={(p) => p.id}
+            {...selection.props}
+          />
+        </>
+      );
+    }
+
+    render(<Refetching />);
+    await browser.click(
+      screen.getByRole('checkbox', { name: 'Select all rows' }),
+    );
+    await waitFor(() => expect(status()).toHaveTextContent('Selection: 3'));
+
+    await browser.click(screen.getByRole('button', { name: 'refetch' }));
+    await waitFor(() => expect(selectedRows()).toHaveLength(2));
+    // The sentence was captured when the reader clicked, so nothing rewrote it.
+    expect(status()).toHaveTextContent('Selection: 3');
+  });
+
+  it('still names a row whose name is not words', async () => {
+    // A one-hole message needs a string, and a row header may be a link, an
+    // icon or an `<abbr>`. That case keeps the two-node reference — worse for
+    // word order, which is why it is the fallback and not the rule, and far
+    // better than a checkbox called only "Select".
+    render(
+      <Selectable
+        columns={[
+          {
+            key: 'name',
+            header: 'Nome',
+            rowHeader: true,
+            cell: (p) => <a href={`/p/${p.id}`}>{p.name}</a>,
+          },
+          { key: 'age', header: 'Età', align: 'end' },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole('checkbox', { name: 'Select Zurigo' }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the verb out of the column header', async () => {
+    render(<Selectable />);
+
+    // A `columnheader` takes its name from its content, so parking the hidden
+    // verb in that cell made the column announce itself as "Select Select all
+    // rows" — and a reader arrowing across a row heard the word three times.
+    const [selectColumn] = screen.getAllByRole('columnheader');
+    expect(selectColumn).toHaveAccessibleName('Select all rows');
+  });
+
+  it('offers nothing to take on an empty table', async () => {
+    render(<Selectable rows={[]} />);
+
+    // It was live, changed nothing, and announced that a selection had been
+    // cleared.
+    expect(
+      screen.getByRole('checkbox', { name: 'Select all rows' }),
+    ).toBeDisabled();
   });
 
   it('keeps the selection when the rows are reordered underneath it', async () => {
@@ -149,7 +240,7 @@ describe('a selectable table', () => {
     // those slots — and it looks exactly like our bug.
     function SortedAndSelectable() {
       const sort = useTableSort(people, {});
-      const selection = useRowSelection(sort.rows, { getRowId: (p) => p.id });
+      const selection = useRowSelection();
       return (
         <Table
           caption="Persone"
@@ -228,8 +319,79 @@ describe('what it refuses to do quietly', () => {
     );
 
     expect(screen.queryByRole('checkbox')).toBeNull();
+    // AND NO TINT EITHER. Painted from `selection` alone, the row conveyed its
+    // state by colour and nothing else — with no checkbox to carry it and
+    // `aria-selected` saying nothing in a table, that state was invisible to
+    // every non-sighted reader. WCAG 1.4.1.
+    expect(document.querySelectorAll('tbody tr[data-selected]')).toHaveLength(
+      0,
+    );
     expect(warn).toHaveBeenCalledWith(
       expect.stringContaining('nothing is wired to `onRowSelectToggle`'),
+    );
+    warn.mockRestore();
+  });
+
+  it('draws no header box, and says so, when only the rows are wired', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Table
+        caption="Persone"
+        rows={people}
+        columns={columns}
+        getRowId={(p) => p.id}
+        selection={{ mode: 'include', ids: new Set() }}
+        onRowSelectToggle={() => undefined}
+      />,
+    );
+
+    // It used to render, click, change nothing — and announce that a selection
+    // had been cleared. The same dead control this file refuses twice over.
+    expect(
+      screen.queryByRole('checkbox', { name: 'Select all rows' }),
+    ).toBeNull();
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('nothing is wired to `onSelectAllToggle`'),
+    );
+    warn.mockRestore();
+  });
+
+  it('says so when a row renders no name for its checkbox to borrow', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Selectable
+        rows={[
+          { id: '1', name: '', age: 30 },
+          { id: '2', name: 'Milano', age: 41 },
+        ]}
+      />,
+    );
+
+    // The failure the label exists to prevent, arriving through an optional
+    // field rather than a missing column — and previously silent, because the
+    // guard only asked whether a `rowHeader` column existed.
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('renders nothing in its `rowHeader` column'),
+    );
+    warn.mockRestore();
+  });
+
+  it('says so when two rows answer the same id', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Selectable
+        rows={[
+          { id: 'same', name: 'Zurigo', age: 30 },
+          { id: 'same', name: 'Milano', age: 41 },
+        ]}
+      />,
+    );
+
+    // Two rows that are one row to the rule: ticking either ticks both, and the
+    // request that follows names a record the reader never chose.
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('two rows share a `getRowId`'),
     );
     warn.mockRestore();
   });
