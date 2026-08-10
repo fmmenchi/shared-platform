@@ -1,7 +1,5 @@
-import { cn } from '../../util/cn.js';
 import { TableSectionContext } from '../table/table.context.js';
 import type { TableHeadProps } from './table-head.types.js';
-import styles from '../table/table.module.css';
 
 /**
  * The header section — a `<thead>`, and the reason a `TableHeaderCell` inside
@@ -13,13 +11,11 @@ import styles from '../table/table.module.css';
  * and forgetting it is what turns a table into a list of loose words.
  */
 function TableHead(props: TableHeadProps) {
-  const { className, children, ...rest } = props;
+  const { children, ...rest } = props;
 
   return (
     <TableSectionContext.Provider value="head">
-      <thead {...rest} className={cn(styles.head, className)}>
-        {children}
-      </thead>
+      <thead {...rest}>{children}</thead>
     </TableSectionContext.Provider>
   );
 }

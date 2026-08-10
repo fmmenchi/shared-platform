@@ -1,6 +1,4 @@
-import { cn } from '../../util/cn.js';
 import type { TableCellProps } from './table-cell.types.js';
-import styles from '../table/table.module.css';
 
 /**
  * One cell. A `<td>`.
@@ -11,10 +9,10 @@ import styles from '../table/table.module.css';
  * not nameable from theirs.
  */
 function TableCell(props: TableCellProps) {
-  const { align, className, children, ...rest } = props;
+  const { align, children, ...rest } = props;
 
   return (
-    <td {...rest} data-align={align} className={cn(styles.cell, className)}>
+    <td {...rest} data-align={align}>
       {children}
     </td>
   );

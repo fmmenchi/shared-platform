@@ -1,6 +1,11 @@
-/* Rows and columns. One stylesheet for the whole family: the parts import it
-   rather than each restating a cell, the way `MenuItemTrigger` reads
-   `menu-item.module.css`. */
+/* Rows and columns.
+
+   EVERY RULE LIVES HERE, addressed by ELEMENT rather than by class, and the
+   parts import nothing. The alternative — a class per part, in the part's own
+   module — either duplicates the cell padding in two sheets or makes one part
+   reach into another's, which ADR-0019 forbids. A table styling its own `th`
+   and `td` is not reaching anywhere: they are its descendants by definition,
+   and only a `<table>` can have them. */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 @layer fmmenchi {
@@ -18,51 +23,51 @@
 
   .caption {
     /* Above the table and left-aligned: a caption centred over the data reads
-       as a title of the page rather than a name for the table. */
+       as a title of the page rather than a name for the table.
+
+       FULL FOREGROUND, not muted. Muted was the first choice and axe caught it
+       in the dark theme: `background × muted-foreground` is a known-borderline
+       pair in this token set, and both of these are text somebody has to read —
+       the table's name, and the only words on screen when there are no rows. */
     text-align: start;
     padding-block-end: var(--fm-space-stack-s);
-    color: var(--fm-color-muted-foreground);
-  }
-
-  .row {
-    border-block-end: var(--fm-border-width-default) solid
-      var(--fm-color-border);
   }
 
   /* HORIZONTAL RULES ONLY. Vertical lines between every column are what makes a
      table look like a spreadsheet and read like a cage; the eye already groups
      a column by alignment. */
-  .cell,
-  .headerCell {
+  .table :is(th, td) {
     padding-block: var(--fm-space-internal-s);
     padding-inline: var(--fm-space-inline-s);
     text-align: start;
     vertical-align: baseline;
   }
 
-  .headerCell {
+  .table th {
     font-weight: var(--fm-font-weight-semibold);
   }
 
-  .head .headerCell {
+  .table tbody tr {
+    border-block-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  .table :is(thead, tfoot) th {
     /* The header sits on the rule that separates it from the data. */
     border-block-end: var(--fm-border-width-default) solid
       var(--fm-color-border);
   }
 
-  .cell[data-align='end'],
-  .headerCell[data-align='end'] {
+  .table :is(th, td)[data-align='end'] {
     text-align: end;
   }
 
-  .table[data-density='compact'] .cell,
-  .table[data-density='compact'] .headerCell {
+  .table[data-density='compact'] :is(th, td) {
     padding-block: var(--fm-space-internal-xs);
   }
 
   .empty {
     text-align: center;
     padding-block: var(--fm-space-stack-l);
-    color: var(--fm-color-muted-foreground);
   }
 }

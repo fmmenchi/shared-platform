@@ -497,6 +497,12 @@
       "import": "./dist/table-body.js",
       "default": "./dist/table-body.js"
     },
+    "./table-foot": {
+      "@fmmenchi/source": "./src/components/table-foot/index.ts",
+      "types": "./dist/components/table-foot/index.d.ts",
+      "import": "./dist/table-foot.js",
+      "default": "./dist/table-foot.js"
+    },
     "./table-row": {
       "@fmmenchi/source": "./src/components/table-row/index.ts",
       "types": "./dist/components/table-row/index.d.ts",

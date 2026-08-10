@@ -6,7 +6,9 @@ import { TableCell } from '../table-cell/table-cell.component.js';
 import { TableHead } from '../table-head/table-head.component.js';
 import { TableHeaderCell } from '../table-header-cell/table-header-cell.component.js';
 import { TableRow } from '../table-row/table-row.component.js';
-import type { Column, TableAnyProps, TableProps } from './table.types.js';
+import { TableFoot } from '../table-foot/table-foot.component.js';
+import type { Column, TableProps } from './table.types.js';
+import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
 /**
@@ -30,21 +32,16 @@ const columns: Column<Person>[] = [
   { key: 'age', header: 'Età', align: 'end' },
 ];
 
-/**
- * The cast is the union's price, paid here rather than at the call site: a rest
- * spread of a PARTIAL union has no single object type, which is exactly the
- * friction that makes the union worth having in the public API — a caller
- * writing real JSX cannot pass `columns` and `children` together.
- */
-const basic = (props: Partial<TableAnyProps<Person>> = {}) => (
+/** The data branch of the union, for a fixture that varies one prop at a time. */
+type DataProps = Extract<TableProps<Person>, { rows: readonly Person[] }>;
+
+const basic = (props: Partial<DataProps> = {}) => (
   <Table
-    {...({
-      caption: 'Persone',
-      rows: people,
-      columns,
-      getRowId: (p: Person) => p.id,
-      ...props,
-    } as TableProps<Person>)}
+    caption="Persone"
+    rows={people}
+    columns={columns}
+    getRowId={(p) => p.id}
+    {...props}
   />
 );
 
@@ -62,7 +59,7 @@ describe('Table', () => {
     render(basic({ caption: '' }));
 
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('`caption` is empty'),
+      expect.stringContaining('renders no text'),
     );
     warn.mockRestore();
   });
@@ -153,10 +150,14 @@ describe('Table', () => {
     ).toBeInTheDocument();
   });
 
-  it('emits one col per column, for the widths to hang off later', async () => {
+  it('emits no colgroup, because nothing hangs off one yet', async () => {
     const { container } = render(basic());
 
-    expect(container.querySelectorAll('col')).toHaveLength(columns.length);
+    // The first version shipped `<colgroup><col/><col/></colgroup>` justified as
+    // "keeps a later resize from being a retrofit" — future-proofing, which
+    // ADR-0016 rejects by name: an element is justified by something it does,
+    // never by making a later API tidier. It comes back with `width`.
+    expect(container.querySelectorAll('col')).toHaveLength(0);
   });
 
   it('renders the parts when it is composed instead', async () => {
@@ -183,15 +184,197 @@ describe('Table', () => {
     expect(screen.getByRole('cell', { name: 'Àlice' })).toBeInTheDocument();
   });
 
+  describe('what the review found, and what now cannot happen', () => {
+    it('says nothing about scope where it cannot know', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Table caption="Persone">
+          <tfoot>
+            <tr>
+              <TableHeaderCell>Totale</TableHeaderCell>
+            </tr>
+          </tfoot>
+        </Table>,
+      );
+
+      // The first version asserted `scope="row"` here. That is worse than
+      // silence: with the attribute absent the browser's own algorithm gets it
+      // right, so the assertion overwrote a correct answer with a wrong one and
+      // left the table with no column headers at all.
+      //
+      // Queried by element rather than by role, deliberately: with no `scope`
+      // the browser has not committed to a header role either, which is the
+      // whole point — it decides, not us.
+      expect(document.querySelector('tfoot th')).not.toHaveAttribute('scope');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('no way to tell whether this heads a column'),
+      );
+      warn.mockRestore();
+    });
+
+    it('scopes a spanning header to its group', async () => {
+      render(
+        <Table caption="Persone">
+          <TableHead>
+            <TableRow>
+              <TableHeaderCell colSpan={2}>Anagrafica</TableHeaderCell>
+            </TableRow>
+          </TableHead>
+        </Table>,
+      );
+
+      // Plain `col` would attach the group's label to its first column only,
+      // and every column under it would lose it — in the very layout the docs
+      // send people to the composed parts for.
+      expect(
+        screen.getByRole('columnheader', { name: 'Anagrafica' }),
+      ).toHaveAttribute('scope', 'colgroup');
+    });
+
+    it('gives a footer its own section, so its cells head columns', async () => {
+      render(
+        <Table caption="Persone">
+          <TableFoot>
+            <TableRow>
+              <TableHeaderCell>Totale</TableHeaderCell>
+            </TableRow>
+          </TableFoot>
+        </Table>,
+      );
+
+      expect(
+        screen.getByRole('columnheader', { name: 'Totale' }),
+      ).toHaveAttribute('scope', 'col');
+    });
+
+    it('names the table even when the caption arrives as `false`', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      // `caption={showIt && t('…')}` is the shape a real call site writes, and
+      // `false` renders nothing while passing a null check.
+      render(basic({ caption: false }));
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('renders no text'),
+      );
+      warn.mockRestore();
+    });
+
+    it('says so when two columns share a key', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        basic({
+          columns: [
+            { key: 'name', header: 'Nome' },
+            { key: 'name', header: 'Ancora' },
+          ],
+        }),
+      );
+
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('share a `key`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('shows an empty state even when the caller gave none', async () => {
+      render(basic({ rows: [] }));
+
+      // Not opt-in: an empty `<tbody>` reads as "still loading" on screen, and
+      // a screen reader hears "table, 2 columns, 1 row" with no hint that the
+      // result set came back empty.
+      expect(screen.getByRole('cell')).toHaveTextContent(/no results/i);
+    });
+  });
+
+  describe('every part forwards its ref and its rest props', () => {
+    // `accordion.test.tsx` records why: "Dropping `{...rest}` wholesale from a
+    // part left the suite fully green: the ref rides inside it in React 19."
+    const cases = [
+      ['thead', TableHead],
+      ['tbody', TableBody],
+      ['tfoot', TableFoot],
+    ] as const;
+
+    it.each(cases)('%s', async (tag, Part) => {
+      const ref = vi.fn();
+      render(
+        <Table caption="Persone">
+          <Part ref={ref} data-probe="yes" />
+        </Table>,
+      );
+
+      const node = document.querySelector(`${tag}[data-probe="yes"]`);
+      expect(node).not.toBeNull();
+      expect(ref).toHaveBeenCalledWith(node);
+    });
+
+    it('tr, td and th', async () => {
+      const rowRef = vi.fn();
+      const cellRef = vi.fn();
+      const headRef = vi.fn();
+
+      render(
+        <Table caption="Persone">
+          <TableBody>
+            <TableRow ref={rowRef} data-probe="row">
+              <TableHeaderCell ref={headRef} data-probe="th">
+                Nome
+              </TableHeaderCell>
+              <TableCell ref={cellRef} data-probe="td">
+                Àlice
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>,
+      );
+
+      expect(rowRef).toHaveBeenCalledWith(
+        document.querySelector('tr[data-probe="row"]'),
+      );
+      expect(headRef).toHaveBeenCalledWith(
+        document.querySelector('th[data-probe="th"]'),
+      );
+      expect(cellRef).toHaveBeenCalledWith(
+        document.querySelector('td[data-probe="td"]'),
+      );
+    });
+
+    it('the table itself', async () => {
+      const ref = vi.fn();
+      render(basic({ ref, 'data-probe': 'table' } as Partial<DataProps>));
+
+      expect(ref).toHaveBeenCalledWith(
+        document.querySelector('table[data-probe="table"]'),
+      );
+    });
+  });
+
   it('has no axe violations', async () => {
     const { container } = render(basic());
     await expectNoA11yViolations(container);
   });
 
   it('has no axe violations when empty', async () => {
-    const { container } = render(
-      basic({ rows: [], empty: 'Nessun risultato' }),
-    );
+    const { container } = render(basic({ rows: [] }));
     await expectNoA11yViolations(container);
+  });
+
+  it('has no axe violations when compact, in dark', async () => {
+    // The matrix `testing.md` asks for: variants × themes, not one sample.
+    const { container } = renderUi(basic({ density: 'compact' }), {
+      theme: 'dark',
+    });
+    await expectNoA11yViolations(container);
+  });
+
+  it('matches its markup', async () => {
+    const { container } = render(basic());
+    expect(container.firstChild).toMatchSnapshot();
   });
 });

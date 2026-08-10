@@ -85,6 +85,7 @@ export default defineConfig(() => ({
         'table-header-cell': 'src/components/table-header-cell/index.ts',
         'table-cell': 'src/components/table-cell/index.ts',
         'table-row': 'src/components/table-row/index.ts',
+        'table-foot': 'src/components/table-foot/index.ts',
         'table-body': 'src/components/table-body/index.ts',
         'table-head': 'src/components/table-head/index.ts',
         table: 'src/components/table/index.ts',

@@ -263,6 +263,8 @@ export { TableHead } from './components/table-head/table-head.component.js';
 export type { TableHeadProps } from './components/table-head/table-head.types.js';
 export { TableBody } from './components/table-body/table-body.component.js';
 export type { TableBodyProps } from './components/table-body/table-body.types.js';
+export { TableFoot } from './components/table-foot/table-foot.component.js';
+export type { TableFootProps } from './components/table-foot/table-foot.types.js';
 export { TableRow } from './components/table-row/table-row.component.js';
 export type { TableRowProps } from './components/table-row/table-row.types.js';
 export { TableCell } from './components/table-cell/table-cell.component.js';

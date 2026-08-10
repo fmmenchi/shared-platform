@@ -25,11 +25,39 @@ interface ColumnShape {
 }
 
 /**
- * A column whose key names a property of the row: `cell` is optional, and the
- * value is read straight off the row.
+ * The keys React can render on its own: text and numbers, nullable or not.
+ *
+ * EVERYTHING ELSE MUST SAY HOW, and this is the constraint the first version
+ * was missing — it took any `keyof T` and cast the value to `ReactNode`, which
+ * is a promise TypeScript never checked. Measured consequences of that cast:
+ *
+ *   - a `Date` column threw "Objects are not valid as a React child" and took
+ *     the page down. A date column is the most common column there is;
+ *   - an object column did the same;
+ *   - a BOOLEAN column rendered a BLANK cell on every `false` row — React
+ *     renders nothing for a boolean — which is indistinguishable from missing
+ *     data and sends the reader looking in their fetch layer;
+ *   - an array rendered `['a','b']` as `ab`, which is worse than blank because
+ *     it looks deliberate.
+ *
+ * Booleans and dates are excluded on purpose rather than formatted for you:
+ * there is no canonical rendering of `false` (a dash? "No"? an icon?) and none
+ * of a date (which format, whose timezone?). Guessing would be a design system
+ * making a product decision. Saying `cell` is one line.
+ */
+type RenderableKey<T> = Extract<
+  {
+    [K in keyof T]: NonNullable<T[K]> extends string | number ? K : never;
+  }[keyof T],
+  string
+>;
+
+/**
+ * A column whose key names a property of the row that React can render: `cell`
+ * is optional, and the value is read straight off the row.
  */
 interface KeyedColumn<T> extends ColumnShape {
-  key: Extract<keyof T, string>;
+  key: RenderableKey<T>;
   cell?: (row: T) => ReactNode;
 }
 
@@ -106,6 +134,15 @@ interface TableComposed extends TableShared {
   rows?: never;
   columns?: never;
   getRowId?: never;
+  /**
+   * Listed with the others, and its absence was a real bug rather than an
+   * omission: without it the union had no member declaring `empty`, so the
+   * implementation could not destructure a rest element out of it — which is
+   * what a whole flattened type and a cast existed to work around. It also
+   * meant `empty` on a composed table was refused only by excess-property
+   * checking, so a spread slipped it through and it was silently ignored.
+   */
+  empty?: never;
 }
 
 /**
@@ -117,19 +154,3 @@ interface TableComposed extends TableShared {
  * relationship `Field` has to `FormInput`.
  */
 export type TableProps<T> = TableFromData<T> | TableComposed;
-
-/**
- * The union flattened, for the implementation alone.
- *
- * A rest element cannot be spread out of a union — TypeScript has no single
- * object type to take it from — so the component widens once, here, instead of
- * casting at every use. The PUBLIC type stays the union, which is what keeps
- * the two modes mutually exclusive at the call site.
- */
-export type TableAnyProps<T> = TableShared & {
-  columns?: readonly Column<T>[];
-  rows?: readonly T[];
-  getRowId?: (row: T) => string;
-  empty?: ReactNode;
-  children?: ReactNode;
-};

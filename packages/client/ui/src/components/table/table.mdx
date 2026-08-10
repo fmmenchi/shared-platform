@@ -25,7 +25,7 @@ Rows and columns, announced correctly.
 | part                                         | what it is                                              |
 | -------------------------------------------- | ------------------------------------------------------- |
 | `Table`                                      | the `<table>`, the caption, and the column model        |
-| `TableHead` · `TableBody`                    | the sections — and what makes `scope` derivable         |
+| `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable         |
 | `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express |
 
 ## Props
@@ -52,15 +52,21 @@ It is not a style preference: it is the only way to **guarantee** the invariants
 
 `rowHeader` deserves its own line: it renders `<th scope="row">` so a reader hears **which** row a cell belongs to. It is the thing nobody writes by hand, and declaring it on the column gives it to every row at once.
 
-### The key is checked, or the cell is required
+### The key is checked, and so is the value behind it
 
 ```tsx
-{ key: 'name' }                              // ✓ a property of the row
-{ key: 'nmae' }                              // ✗ compile error
-{ key: 'full', cell: (p) => `${p.a} ${p.b}` } // ✓ computed, so the key is free
+{ key: 'name' }                               // ✓ a string property
+{ key: 'nmae' }                               // ✗ compile error
+{ key: 'placedAt' }                           // ✗ compile error — it is a Date
+{ key: 'placedAt', cell: (o) => fmt(o.date) } // ✓ you said how
+{ key: 'full', cell: (o) => `${o.a} ${o.b}` } // ✓ computed, so the key is free
 ```
 
-The only way to introduce a key the row does not have is to say how it is produced. `T` is inferred from `rows` — no explicit generics, no factory.
+Only **text and numbers** render on their own, nullable or not. A `Date`, an object, an array or a **boolean** must say how, and each for a measured reason: a `Date` or an object throws _"Objects are not valid as a React child"_ and takes the page down; an array renders `['a','b']` as `ab`, which looks deliberate; and a boolean renders **nothing at all**, so every `false` row shows a blank cell indistinguishable from missing data.
+
+They are not formatted for you because there is no canonical rendering of `false` (a dash? "No"? an icon?) or of a date (which format, whose timezone?). Guessing would be a design system making a product decision.
+
+**Two ergonomics notes the type does not tell you.** Annotate a hoisted column list — `const columns: Column<Person>[] = […]` — or TypeScript widens `key` to `string` and the error blames `cell`. And with a literal empty `rows={[]}` there is nothing to infer `T` from, so name it: `<Table<Person> rows={[]} …>`.
 
 ### It never sees where the rows came from
 
@@ -84,11 +90,17 @@ Declaring the role and implementing half the keyboard is worse than not declarin
 
 For a header group, a spanning row or a totals footer, drop to the parts. They are the substrate `Table` is built on, so this is decomposition rather than a second component — the relationship `Field` has to `FormInput`. The compiler keeps the two apart: `columns` and `children` cannot both be passed.
 
+**What you give up, said plainly**, because it is the trade nobody documents: composing means the header/body agreement, the counted `colSpan` and the default empty state are yours to maintain. A header row composed outside a section also loses derived `scope` — it warns, and you pass `scope` yourself.
+
+**What the column model cannot express yet**, so you know before you start: per-row attributes (a `className` or `data-*` on a `<tr>`), column widths, and `aria-sort`. The last two arrive with sorting and resizing; the first is the one most likely to push a consumer into composed mode, and it is worth telling us if it does.
+
 ## Accessibility
 
-- **`scope` is derived from position**, not configured: a `<th>` in the head heads a column, the same element in the body heads a row. Without it a reader landing on a cell hears "Rossi" instead of "Nome: Rossi".
-- **The caption is the accessible name**, and it is required — assistive technology lists the tables on a page, and unnamed ones are identical entries. Wrap it in `VisuallyHidden` when the design has no room for it.
-- **The empty row spans the table**, so the message is not read as belonging to the first column.
+- **`scope` is derived from position**, not configured — and there are **three** positions, not two: a `<th>` in a header or footer section heads a column, one in the body heads a row, and one with no section around it gets **no `scope` at all**. That last case matters: with the attribute absent the browser's own header-assignment algorithm works it out correctly, so guessing there would overwrite a right answer with a wrong one. It warns in development instead.
+- **A spanning header is a group**: `colSpan` on a header cell produces `scope="colgroup"`, so a two-level header's label reaches every column under it rather than only the first.
+- **The caption is the accessible name**, and the warning fires whenever it renders no text — including `caption={cond && t('…')}` resolving to `false`, which is the shape a real call site writes. Wrap it in `VisuallyHidden` when the design has no room for it.
+- **The empty row spans the table** so the message is laid out across it rather than under the first column. Note what that does _not_ do: a cell spanning every column is associated with **every** column header, so a reader hears them all before the message. It is a layout fix, not an association one.
+- **The empty state has a default.** An empty `<tbody>` reads as "still loading" on screen and tells a screen reader nothing at all, so leaving `empty` out gives the design system's wording rather than silence.
 - **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
 - **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.
 - **The "one card per row" recipe on mobile is forbidden.** Changing `display` on table elements removes the role, and with it the reading mode. The role and that prohibition are one decision, not two.

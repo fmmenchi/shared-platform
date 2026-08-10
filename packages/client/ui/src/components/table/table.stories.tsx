@@ -5,6 +5,7 @@ import { TableCell } from '../table-cell/table-cell.component.js';
 import { TableHead } from '../table-head/table-head.component.js';
 import { TableHeaderCell } from '../table-header-cell/table-header-cell.component.js';
 import { TableRow } from '../table-row/table-row.component.js';
+import { TableFoot } from '../table-foot/table-foot.component.js';
 import type { Column } from './table.types.js';
 
 interface Person {
@@ -51,6 +52,18 @@ const meta: Meta<typeof Table<Person>> = {
     },
     columns: { control: false, table: { type: { summary: 'Column<T>[]' } } },
     rows: { control: false, table: { type: { summary: 'readonly T[]' } } },
+    getRowId: {
+      control: false,
+      description:
+        "The row's identity — and the same value you would use as a React `key`. An array index makes React reuse the wrong nodes after a sort, and the focus and selection that follow them look like the table's bug.",
+      table: { type: { summary: '(row: T) => string' } },
+    },
+    empty: {
+      control: 'text',
+      description:
+        'Shown in place of the body when there are no rows. Defaults to the design system’s own wording rather than being absent, because an empty `<tbody>` reads as "still loading" on screen and says nothing at all to a screen reader.',
+      table: { type: { summary: 'ReactNode' } },
+    },
   },
 };
 export default meta;
@@ -116,13 +129,25 @@ export const Busy: Story = {
 };
 
 /**
- * The parts, for a layout the column model cannot express — here a footer with
- * a total. Dropping to them is decomposition, not a second component: the same
- * relationship `Field` has to `FormInput`.
+ * The parts, for a layout the column model cannot express. Dropping to them is
+ * decomposition, not a second component: the same relationship `Field` has to
+ * `FormInput`.
+ *
+ * Note what the parts give up: inside a section, `scope` is still derived — but
+ * a header cell composed OUTSIDE `TableHead` or `TableBody` cannot be worked
+ * out, so none is written and a development warning says so.
  */
 export const Composed: Story = {
   render: () => (
     <Table caption="Persone">
+      <TableFoot>
+        <TableRow>
+          <TableHeaderCell>Totale</TableHeaderCell>
+          <TableCell align="end">
+            {people.reduce((sum, p) => sum + p.age, 0)}
+          </TableCell>
+        </TableRow>
+      </TableFoot>
       <TableHead>
         <TableRow>
           <TableHeaderCell>Nome</TableHeaderCell>

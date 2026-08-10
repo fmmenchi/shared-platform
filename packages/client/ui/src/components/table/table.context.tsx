@@ -14,9 +14,17 @@ import { createPartContext } from '../../primitives/part-context.js';
  */
 export type TableSection = 'head' | 'body' | 'foot';
 
-const { Context, useFamilyContext, usePart } =
-  createPartContext<TableSection>('Table');
+/**
+ * The SILENT reader is the one exported, and deliberately so.
+ *
+ * The archetype has every part read through the warn-by-name hook, so an orphan
+ * says so. Here the honest answer is different: "no section around me" is a
+ * legitimate position — a header row a consumer composed directly — and the
+ * cell handles it by writing no `scope` at all. Blaming the caller for standing
+ * somewhere legal would be noise, so `TableHeaderCell` warns about the thing
+ * they can act on instead, in its own words.
+ */
+const { Context, useFamilyContext } = createPartContext<TableSection>('Table');
 
 export const TableSectionContext = Context;
 export const useTableSection = useFamilyContext;
-export const useTableSectionPart = usePart;

@@ -167,4 +167,209 @@ describe('createCollator', () => {
     expect(createCollator('it')).toBe(createCollator('it'));
     expect(createCollator('de')).not.toBe(createCollator('it'));
   });
+
+  it('canonicalises the tag, so one locale is not three cache entries', () => {
+    expect(createCollator('de-DE')).toBe(createCollator('DE-de'));
+  });
+
+  it('survives the tag shape a Java or POSIX backend sends', () => {
+    // `new Intl.Collator('en_US')` throws RangeError. Uncaught inside a
+    // comparator that is an exception mid-render.
+    expect(() => createCollator('en_US')).not.toThrow();
+  });
+
+  it('keeps the numeric option out of the shared instance', () => {
+    expect(createCollator('it', { numeric: false })).not.toBe(
+      createCollator('it', { numeric: true }),
+    );
+    expect(
+      createCollator('it', { numeric: false }).compare('Item 10', 'Item 9'),
+    ).toBeLessThan(0);
+  });
+});
+
+/**
+ * THE PROPERTY THE WHOLE FILE RESTS ON, and the one the first version failed.
+ *
+ * `Array.prototype.sort` given an inconsistent comparator may produce anything,
+ * so "mostly right" is not a weaker kind of right — it is output that depends
+ * on the order the rows arrived in. The first version was intransitive, and no
+ * example-based test could see it: the one guard was `order(mixed)` against
+ * `order(mixed.reverse())`, which samples two of the 24 permutations of one
+ * array. A triple loop over a corpus finds it in a second, which is what this
+ * is.
+ */
+describe('the comparator is a total order', () => {
+  const corpus: unknown[] = [
+    -10,
+    -5,
+    -1,
+    0,
+    -0,
+    1,
+    9,
+    10,
+    1e21,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    Number.NaN,
+    '-10',
+    '-7',
+    '-3',
+    '007',
+    '7',
+    'Item 2',
+    'Item 10',
+    'Àosta',
+    'Zurigo',
+    '',
+    5n,
+    9007199254740993n,
+    true,
+    false,
+    new Date('2026-01-02'),
+    new Date('2026-03-01'),
+    new Date('nope'),
+    null,
+    undefined,
+  ];
+
+  const cmp = (a: unknown, b: unknown) =>
+    Math.sign(compareValues(a, b, collator));
+
+  it('is antisymmetric: cmp(a,b) is always -cmp(b,a)', () => {
+    const broken: string[] = [];
+    for (const a of corpus) {
+      for (const b of corpus) {
+        if (cmp(a, b) !== -cmp(b, a))
+          broken.push(`${String(a)} / ${String(b)}`);
+      }
+    }
+    expect(broken).toEqual([]);
+  });
+
+  it('is transitive: a<=b and b<=c implies a<=c', () => {
+    const broken: string[] = [];
+    for (const a of corpus) {
+      for (const b of corpus) {
+        for (const c of corpus) {
+          if (cmp(a, b) <= 0 && cmp(b, c) <= 0 && cmp(a, c) > 0) {
+            broken.push(`${String(a)} <= ${String(b)} <= ${String(c)}`);
+          }
+        }
+      }
+    }
+    // The measured failure of the first version: `-10 > '-7' > -5` while
+    // `-10 < -5`, because `String(-10)` collated by magnitude and ignored the
+    // sign while same-type numbers subtracted. 33 violations, and a column of
+    // five values with 13 different orderings across its 120 permutations.
+    expect(broken).toEqual([]);
+  });
+
+  it('gives the same answer whatever order the rows arrived in', () => {
+    const rows = [-10, -5, '-7', -1, '-3'].map((v) => ({ v }));
+    const sorted = (list: { v: unknown }[]) =>
+      sortRows(list, byKey<{ v: unknown }>('v', 'asc', collator)).map((r) =>
+        String(r.v),
+      );
+
+    const expected = sorted(rows);
+    for (const permutation of permutations(rows)) {
+      expect(sorted(permutation)).toEqual(expected);
+    }
+  });
+
+  function permutations<X>(list: X[]): X[][] {
+    if (list.length <= 1) return [list];
+    return list.flatMap((item, i) =>
+      permutations([...list.slice(0, i), ...list.slice(i + 1)]).map((rest) => [
+        item,
+        ...rest,
+      ]),
+    );
+  }
+});
+
+describe('the shapes that used to escape the empty rule', () => {
+  interface Row {
+    v: unknown;
+  }
+
+  const order2 = (values: unknown[], direction: 'asc' | 'desc') =>
+    sortRows(
+      values.map((v) => ({ v })),
+      byKey<Row>('v', direction, collator),
+    ).map((r) => r.v);
+
+  it('keeps NaN and an invalid Date at the bottom in BOTH directions', () => {
+    // The first version checked emptiness twice with two different answers —
+    // `compareValues` counted NaN, `byKey` did not — so NaN escaped the rule,
+    // met the descending flip, and arrived at the TOP. One predicate now.
+    const values = [30, Number.NaN, 9, new Date('nope')];
+
+    expect(order2(values, 'asc').slice(0, 2)).toEqual([9, 30]);
+    expect(order2(values, 'desc').slice(0, 2)).toEqual([30, 9]);
+  });
+
+  it('orders valid dates correctly with an invalid one among them', () => {
+    // `NaN` from the subtraction was coerced to `+0` by the sort spec, making
+    // the invalid date compare EQUAL to every date — and equality that is not
+    // transitive corrupts the valid ones around it. Measured then: an ascending
+    // sort that returned Jan 10 before Jan 2.
+    const jan2 = new Date('2026-01-02');
+    const jan10 = new Date('2026-01-10');
+
+    expect(order2([jan10, new Date('nope'), jan2], 'asc').slice(0, 2)).toEqual([
+      jan2,
+      jan10,
+    ]);
+  });
+
+  it('never returns NaN, so the declared return type is honest', () => {
+    // `sort` masks a NaN result by reading it as 0, which is why this hid. Any
+    // other caller — grouping, dedupe, "is this already sorted" — does not.
+    expect(compareValues(Infinity, Infinity, collator)).toBe(0);
+    expect(compareValues(-Infinity, -Infinity, collator)).toBe(0);
+    expect(
+      Number.isNaN(
+        compareValues(new Date('2026-01-02'), new Date('nope'), collator),
+      ),
+    ).toBe(false);
+  });
+
+  it('compares a bigint against a number exactly', () => {
+    // A bigint column is a bigint column because the values exceed
+    // MAX_SAFE_INTEGER; a `Number()` coercion would lose the comparison.
+    expect(
+      compareValues(9007199254740993n, 9007199254740992, collator),
+    ).toBeGreaterThan(0);
+    expect(compareValues(5n, 1e21, collator)).toBeLessThan(0);
+  });
+
+  it('never calls two distinct strings equal', () => {
+    // With `numeric` on, "007" and "7" collate identically — and a comparator
+    // that reports unequal values equal is not a total order.
+    expect(compareValues('007', '7', collator)).not.toBe(0);
+    expect(compareValues('A-1', 'A-01', collator)).not.toBe(0);
+  });
+
+  it('never collates a Date against text', () => {
+    // `String(date)` is "Thu Jan 01 2026 … (Peru Standard Time)" — ordered by
+    // the weekday name and different on a server in UTC than in a browser in
+    // Lima, which is the client/server divergence this file exists to prevent.
+    const date = new Date('2026-03-01');
+    const text = '2026-01-05';
+    expect(Math.sign(compareValues(date, text, collator))).toBe(
+      -Math.sign(compareValues(text, date, collator)),
+    );
+  });
+
+  it('does not fall over on a null row', () => {
+    expect(() =>
+      sortRows(
+        [null, { v: 1 }] as unknown as Row[],
+        byKey<Row>('v', 'asc', collator),
+      ),
+    ).not.toThrow();
+  });
 });
