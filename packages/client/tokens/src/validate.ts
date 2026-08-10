@@ -73,6 +73,11 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   // non-text state indicator and owes 3:1 against the page (WCAG 1.4.11) — the
   // fill/foreground pair above says nothing about how the control reads on it.
   ['background', 'primary', 3],
+  // A progress bar's fill against its groove. The fill is the ONLY thing
+  // telling how far along from how far to go, so it is a non-text indicator and
+  // owes 3:1 (WCAG 1.4.11) — and it is a pairing no other component makes, since
+  // `muted` is elsewhere a surface for text rather than a track under a fill.
+  ['muted', 'primary', 3],
   ['background', 'link', 4.5],
   ['background', 'link-hover', 4.5],
   // Links render inside cards/alerts/popovers, not only on the page.

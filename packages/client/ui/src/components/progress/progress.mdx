@@ -1,0 +1,69 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ProgressStories from './progress.stories.tsx';
+
+<Meta of={ProgressStories} />
+
+# Progress
+
+How far along something is. Built on the native `<progress>` element, so the role, the value, the
+maximum and the percentage a screen reader announces all come from the platform — and so does
+"indeterminate", which is simply what a `<progress>` with no `value` means.
+
+## Props
+
+`label` is required. `max` defaults to the platform's `1`, so `value={0.4}` is 40% with nothing else
+said.
+
+<Controls of={ProgressStories.Default} />
+
+## Usage
+
+### Determinate, and the two kinds of nothing
+
+`value={0}` and no `value` at all are different statements, and the component keeps them apart:
+zero says the work has not started, an absent value says nobody knows how long it will take.
+
+<Canvas of={ProgressStories.Gallery} />
+
+### Indeterminate
+
+Omit `value`. The band sweeps the groove because there is no position to show.
+
+<Canvas of={ProgressStories.Indeterminate} />
+
+Under `prefers-reduced-motion` it stops travelling and breathes instead. That is a deliberate
+exception to the package's usual "kill the movement": here the movement is not decoration, it is the
+whole of what the bar says to a sighted reader, and a still stripe would read as _finished_. A pure
+opacity change carries no vestibular trigger, which is what makes the substitution honest.
+
+### Working in percent
+
+The platform's scale is 0–1. Pass `max={100}` to work in whole percent, or the total bytes to work
+in bytes — the announcement follows either way.
+
+<Canvas of={ProgressStories.OutOfOneHundred} />
+
+### There are no variants
+
+A bar that turns red is saying something the surrounding message has to say anyway — colour alone
+cannot carry it (WCAG 1.4.1) — and status belongs to `Alert`, which is built to hold a sentence. If
+a second treatment is ever earned it can be added without breaking this one.
+
+## Accessibility
+
+- **The element is the semantics.** `<progress>` carries `role="progressbar"` and its value
+  natively; nothing here maintains a second copy of either.
+- **`label` is required** and becomes `aria-label`. A progress bar with no name is announced as
+  "progress bar, 40%" — a percentage of something the reader cannot identify.
+- **`aria-labelledby` outranks it.** Point it at text you already show and the visible words become
+  the name; ARIA ranks it above `aria-label` wherever both are present.
+- **Indeterminate is announced as such**, because the platform derives it from the absent `value`
+  rather than from a prop.
+- **The fill clears 3:1 against the groove** (WCAG 1.4.11): it is the only thing distinguishing done
+  from remaining, so the pairing is declared in the token contract's `CONTRAST_PAIRS` and validated
+  in both themes.
+- **Forced colours** discard the fill's background, so the groove takes a border to exist at all and
+  the fill takes a system colour guaranteed to contrast with it.
+- **It is not a live region.** A bar that announced every value would talk over everything else;
+  where the progress itself is the news, put it beside a `role="status"` that says so in words.

@@ -1,0 +1,9 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Progress > matches the rendered snapshot 1`] = `
+<progress
+  aria-label="Upload"
+  class="_progress_1klob_3"
+  value="0.4"
+/>
+`;

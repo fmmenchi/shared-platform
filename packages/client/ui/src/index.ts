@@ -249,3 +249,5 @@ export type {
   ToastPlacement,
   ToastContextValue,
 } from './components/toast-region/toast-region.types.js';
+export { Progress } from './components/progress/progress.component.js';
+export type { ProgressProps } from './components/progress/progress.types.js';

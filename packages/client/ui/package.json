@@ -478,6 +478,12 @@
       "types": "./dist/components/form-segmented-control/index.d.ts",
       "import": "./dist/form-segmented-control.js",
       "default": "./dist/form-segmented-control.js"
+    },
+    "./progress": {
+      "@fmmenchi/source": "./src/components/progress/index.ts",
+      "types": "./dist/components/progress/index.d.ts",
+      "import": "./dist/progress.js",
+      "default": "./dist/progress.js"
     }
   },
   "nx": {
