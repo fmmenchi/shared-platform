@@ -1,4 +1,11 @@
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
@@ -63,6 +70,7 @@ function Table<T>(props: TableProps<T>) {
     density,
     busy,
     stickyHeader,
+    scrollProps,
     className,
     columns,
     rows,
@@ -105,6 +113,56 @@ function Table<T>(props: TableProps<T>) {
   // header cell, which needs an id to be pointed at.
   const baseId = useId();
 
+  // ONE EXPRESSION, READ TWICE. The sticky attribute and the scroll wrapper
+  // were written `stickyHeader ? …` and `stickyHeader === true ? …`, which
+  // agree for a boolean and part company for anything else a JS consumer
+  // spreads in — leaving the header sticky with nothing to stick inside, which
+  // is the exact combination this feature exists to make unreachable.
+  const sticky = stickyHeader === true;
+
+  const scroller = useRef<HTMLDivElement>(null);
+  // WHETHER IT ACTUALLY SCROLLS, and it decides the tab stop. A region that
+  // scrolls nothing is a dead stop and a landmark over no content — the same
+  // rule this file applies to a sort trigger with no handler and a checkbox
+  // column with nobody listening. It cannot be known from a render, so it is
+  // measured and invalidated by the DOM, the way `Toolbar` does its ring.
+  const [scrolls, setScrolls] = useState(false);
+
+  useEffect(() => {
+    const node = scroller.current;
+    if (node == null) return;
+
+    const sync = () => {
+      const head = node.querySelector('thead');
+      if (head != null) {
+        // Read by `scroll-padding-block-start`, so sequential focus navigation
+        // stops putting a focused control under the header. Unprefixed: a
+        // `--fm-` name is the token package's, and one invented here shows up
+        // in a consumer's devtools as a theme value no theme can set.
+        // CEIL OF THE FRACTIONAL HEIGHT. `offsetHeight` is an integer, and a
+        // header measuring 36.31 rounds to 36 — which left 0.69px of the
+        // focused control under it, measured. A rounding error is still an
+        // obscured focus indicator.
+        node.style.setProperty(
+          '--table-head-block-size',
+          `${Math.ceil(head.getBoundingClientRect().height)}px`,
+        );
+      }
+      setScrolls(
+        node.scrollHeight > node.clientHeight ||
+          node.scrollWidth > node.clientWidth,
+      );
+    };
+
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(node);
+    for (const part of node.querySelectorAll('thead, tbody')) {
+      observer.observe(part);
+    }
+    return () => observer.disconnect();
+  }, [sticky]);
+
   // `hasRenderableChildren` rather than a null check, and the difference is the
   // shape a real call site writes: `caption={showIt && t('orders')}` passes
   // `false`, which is a legal ReactNode that renders NOTHING — the unnamed
@@ -114,6 +172,21 @@ function Table<T>(props: TableProps<T>) {
     !hasRenderableChildren(caption),
     'Table: `caption` renders no text, so the table has no accessible name. Assistive technology lists the tables on a page, and unnamed ones are identical entries. Use `VisuallyHidden` if the design has no room for it.',
   );
+
+  // ELEMENTS ARE NOT WORDS. `hasRenderableChildren` is true for any element,
+  // so `caption={<Icon/>}` passes the check above and the table is unnamed
+  // anyway — and now the scroll region borrows that name, so one mistake buys
+  // an unnamed table AND a focusable landmark announced as nothing. Only the
+  // DOM can answer this, so it is asked after the commit.
+  const captionRef = useRef<HTMLTableCaptionElement>(null);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    if (captionRef.current?.textContent?.trim() === '') {
+      console.warn(
+        'Table: `caption` renders elements but no TEXT, so the table has no accessible name — and neither does the scroll region that borrows it. Put words in it, or wrap the words in `VisuallyHidden`.',
+      );
+    }
+  }, [caption]);
 
   const keys = columns?.map((column) => column.key) ?? [];
   useDevWarning(
@@ -267,12 +340,18 @@ function Table<T>(props: TableProps<T>) {
       {...rest}
       aria-busy={busy || undefined}
       data-density={density}
-      data-sticky-header={stickyHeader ? '' : undefined}
+      data-sticky-header={sticky ? '' : undefined}
       className={cn(styles.table, className)}
     >
       {/* First child, as the parser requires — and a real `<caption>` rather
           than an `aria-label`, so it is announced AND readable. */}
-      <caption id={`${baseId}-caption`} className={styles.caption}>
+      <caption
+        ref={captionRef}
+        // ONLY WHEN SOMETHING POINTS AT IT — the rule this file already applies
+        // to the row-header ids forty lines down.
+        id={sticky ? `${baseId}-caption` : undefined}
+        className={styles.caption}
+      >
         {caption}
       </caption>
 
@@ -526,12 +605,20 @@ function Table<T>(props: TableProps<T>) {
         an entry a screen reader announces as nothing. The `<caption>` is
         already the table's name, so it is the region's too — one string, and
         it cannot drift from the table it belongs to. */}
-      {stickyHeader === true ? (
+      {sticky ? (
         <div
-          className={styles.scroll}
-          tabIndex={0}
-          role="region"
-          aria-labelledby={`${baseId}-caption`}
+          {...scrollProps}
+          ref={scroller}
+          data-table-scroll=""
+          className={cn(styles.scroll, scrollProps?.className)}
+          // ONLY WHEN THERE IS SOMETHING TO SCROLL. Unconstrained — or given a
+          // `max-block-size` on the parent, which resolves to `none` against an
+          // indefinite containing block — nothing scrolls in either axis, and
+          // the wrapper was still shipping a tab stop and a landmark over
+          // content that does not move.
+          tabIndex={scrolls ? 0 : undefined}
+          role={scrolls ? 'region' : undefined}
+          aria-labelledby={scrolls ? `${baseId}-caption` : undefined}
         >
           {table}
         </div>

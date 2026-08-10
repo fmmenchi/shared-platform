@@ -2,11 +2,10 @@
 
 exports[`Table > matches its markup 1`] = `
 <table
-  class="_table_1wiuv_3"
+  class="_table_1yu1t_4"
 >
   <caption
-    class="_caption_1wiuv_9"
-    id="_r_p_-caption"
+    class="_caption_1yu1t_12"
   >
     Persone
   </caption>

@@ -138,10 +138,25 @@ interface TableShared extends Omit<
    * stop, and a tab stop with no name is an entry a screen reader reads as
    * nothing. It is named by the table's own `<caption>`.
    *
-   * How TALL it is belongs to the box you put it in. Given no constraint it
-   * does not scroll vertically and the header is a no-op rather than a bug.
+   * How TALL it is belongs to the box you put it in, and it has to be a
+   * DEFINITE height — `block-size: 20rem`, or a flex/grid track. A
+   * `max-block-size` on the parent does not work: the container's own
+   * percentage resolves to `none` against an indefinite box, so nothing
+   * scrolls, the header never sticks, and the table overflows the box you just
+   * constrained. Given no constraint at all the container is inert — no tab
+   * stop, no landmark — rather than a dead one.
    */
   stickyHeader?: boolean;
+  /**
+   * Props for the scroll container `stickyHeader` renders — its height, a
+   * `ref`, a class of your own.
+   *
+   * It exists because `className`, `style` and `ref` go to the `<table>`, and
+   * with a wrapper around it that silently stops being the outermost node:
+   * a margin or a grid placement written on `Table` applies one level in. This
+   * is the way to reach the box that is actually laid out.
+   */
+  scrollProps?: ComponentPropsWithRef<'div'>;
   /**
    * Something is arriving. Describes the ELEMENT's state, not where the data
    * comes from — which is why this exists and a `loading` prop does not: a

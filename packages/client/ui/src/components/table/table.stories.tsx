@@ -233,15 +233,18 @@ export const StickyHeader: Story = {
     }));
 
     return (
-      <div style={{ blockSize: '16rem' }}>
-        <Table
-          caption="Persone"
-          rows={many}
-          getRowId={(p) => p.id}
-          columns={columns}
-          stickyHeader
-        />
-      </div>
+      <Table
+        caption="Persone"
+        rows={many}
+        getRowId={(p) => p.id}
+        columns={columns}
+        stickyHeader
+        // The box that is actually laid out, so this is where its height goes.
+        // A DEFINITE one: `max-block-size` on an ancestor resolves the
+        // container's own percentage to `none`, and then nothing scrolls, the
+        // header never sticks, and the table overflows the box you constrained.
+        scrollProps={{ style: { blockSize: '16rem' } }}
+      />
     );
   },
 };

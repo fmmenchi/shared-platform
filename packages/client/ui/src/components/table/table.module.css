@@ -10,6 +10,14 @@
 
 @layer fmmenchi {
   .table {
+    /* THE SURFACE THE STICKY HEADER PAINTS, declared here so it is a seam this
+       package can verify rather than a name that resolves to nothing. The
+       page's background is only right when the table is on the page; a
+       bounded-height table mostly lives inside a `Card`, a `Dialog` or a
+       `Popover`, and measured, the header arrived as a visibly darker band
+       across the top of a card. An inline `style` on `Table` overrides both. */
+    --table-surface: var(--fm-color-background);
+    --table-surface-foreground: var(--fm-color-foreground);
     inline-size: 100%;
     /* SEPARATE, with no spacing — which renders identically to `collapse` for
        the borders this table draws, and is the one the sticky header needs. In
@@ -54,8 +62,15 @@
      a `<tr>` — it is one of the few places CSS silently drops a declaration
      rather than cascading it — so the row separator has to be drawn by the
      cells that make up the row. Only `block-end`, so no two adjacent cells
-     ever draw the same line twice. */
-  .table tbody :is(th, td) {
+     ever draw the same line twice.
+
+     AND ON ITS OWN CELLS, by the child chain. As a descendant selector this
+     reached into a table nested inside a cell, which composed mode allows —
+     harmlessly while the rule sat on a `<tr>`, because an inner table defaults
+     to `separate` and ignores it there, and not harmlessly at all once it
+     moved to the cells: measured, an inner `<td>` drew a separator it never
+     had. The leak was free until the day it was not. */
+  .table > tbody > tr > :is(th, td) {
     border-block-end: var(--fm-border-width-default) solid
       var(--fm-color-border);
   }
@@ -85,24 +100,59 @@
      over the content above it. Ours or nobody's.
 
      `max-block-size: 100%` and nothing else: how tall the scroller is belongs
-     to the box the consumer puts it in, which is where layout belongs. Given
-     no constraint it simply does not scroll vertically, and the header is then
-     a no-op rather than a bug. */
+     to the box the consumer puts it in — a DEFINITE height, since a percentage
+     against an indefinite box resolves to `none` — or to `scrollProps`. Given
+     no constraint the whole thing is inert: nothing scrolls, and the component
+     withholds the tab stop and the landmark rather than shipping dead ones. */
   .scroll {
+    /* Written from the element by `Table` — declared here so the `var()` below
+       resolves in a consumer's page whether or not the script has run yet. */
+    --table-head-block-size: 0px;
     overflow: auto;
     max-block-size: 100%;
+    /* THE HEADER'S STACKING ORDER IS A LOCAL PROBLEM, so it is solved locally.
+       Without this the `th`'s `z-index` joins the nearest ancestor stacking
+       context — normally the page root — where a table header competes with,
+       and can tie, a consumer's own app-level sticky banner. It only ever
+       needs to beat the cells of its own table. */
+    isolation: isolate;
+    /* WHAT KEEPS A FOCUSED CONTROL OUT FROM UNDER THE HEADER (WCAG 2.4.11).
+       Chromium's scroll-into-view already dodges a sticky element for a
+       PROGRAMMATIC `.focus()` — measured, 14px of clearance — and does not for
+       SEQUENTIAL focus navigation: Shift+Tab back up through the rows buried
+       the focused checkbox by 36px. The height is written from the element by
+       `Table`, because unlike `AppLayout` — which records this same hazard and
+       cannot know a consumer's banner — this component draws the header and
+       can measure it. */
+    scroll-padding-block-start: var(--table-head-block-size);
+  }
+
+  /* THE ONLY FOCUSABLE THING IN THIS PACKAGE WITHOUT A RING OF ITS OWN, until
+     now. Chromium paints its UA outline and the tests are Chromium-only, so
+     the two engines nobody measures were the ones relying on it — which is the
+     shape of the `NavGroup` defect this file already records. */
+  .scroll:focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
   }
 
   /* AN OPAQUE BACKGROUND IS NOT DECORATION HERE. A sticky header with a
      transparent one has the rows scroll THROUGH it — the single most reported
      bug of this pattern — so the surface is painted, and both halves of a
-     declared pairing are painted, which this file has now learned twice. */
+     declared pairing are painted, which this file has now learned twice.
+
+     `--table-surface` is declared on `.table` above, and an inline `style` on
+     the component overrides it — which is the seam for a table sitting on a
+     surface that is not the page's.
+
+     `forced-colors` needs no block: the fill is substituted with `Canvas`,
+     which is opaque, so the rows still cannot scroll through — verified with a
+     hit test rather than assumed. */
   .table[data-sticky-header] thead th {
     position: sticky;
     inset-block-start: 0;
     z-index: var(--fm-z-sticky);
-    background: var(--fm-color-background);
-    color: var(--fm-color-foreground);
+    background: var(--table-surface);
+    color: var(--table-surface-foreground);
   }
 
   /* The checkbox column takes the width of a checkbox and no more: a column of
