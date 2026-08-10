@@ -1,8 +1,8 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useMemo, useState, type ReactNode } from 'react';
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useMessages } from '../../i18n/provider.js';
+import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
@@ -77,6 +77,13 @@ function Table<T>(props: TableProps<T>) {
   } = props;
 
   const t = useMessages(tableMessages);
+  // The COPY's locale, not the reader's: a number inside a sentence has to be
+  // written in the language of that sentence.
+  const copyLocale = useCopyLocale();
+  const numbers = useMemo(
+    () => new Intl.NumberFormat(copyLocale),
+    [copyLocale],
+  );
 
   // WHAT THE READER LAST ASKED FOR, and the only reason `Table` holds any state
   // at all. The live region must be silent on mount — a table rendered with
@@ -249,7 +256,10 @@ function Table<T>(props: TableProps<T>) {
       ? t('selectionCleared')
       : selection?.mode === 'exclude'
         ? t('selectionAll')
-        : t('selectionCount', { count: visibleIds.length });
+        : // THROUGH `Intl`, like the bar's. The two say the same-looking
+          // sentence about the same click, and rendering one as "1,500" while
+          // the other says "1500" is a drift a reader hears.
+          t('selectionCount', { count: numbers.format(visibleIds.length) });
 
   return (
     <>

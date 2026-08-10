@@ -1,6 +1,7 @@
-import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
 
 import * as TableStories from './table.stories.tsx';
+import { TableSelectionBar } from '../table-selection-bar/table-selection-bar.component.js';
 
 <Meta of={TableStories} />
 
@@ -31,7 +32,13 @@ Rows and columns, announced correctly.
 
 ## Props
 
+### Table
+
 <Controls of={TableStories.Default} />
+
+### TableSelectionBar
+
+<ArgTypes of={TableSelectionBar} />
 
 ## Usage
 
@@ -190,12 +197,14 @@ const selection = useRowSelection({ total: data.total });
 
 `Table`'s live region announces a change **once** and falls silent, which is right for an announcement and useless as a state: nothing answers "how many are selected?" a minute later, or after tabbing back. `TableSelectionBar` is that answer, on screen, for everybody — and deliberately **not** a live region itself, since two of them over one fact say it twice. Both read the same catalog, so the screen and the announcement cannot drift apart.
 
-It is also where `exclude` becomes reachable. Give the hook a `total` and, once more rows match than are on screen, the bar offers **"Select all 2,450"** — the escalation that produces "everything except these". Before it existed, a consumer had to assemble that from an exported constant, which is exactly the shape every review of this model called a trap.
+It is also where `exclude` becomes reachable. Give the hook a `total` and, whenever fewer rows are selected than the query matched, the bar offers **"Select all 2,450"** — the escalation that produces "everything except these". Before it existed, a consumer had to assemble that from an exported constant, which is exactly the shape every review of this model called a trap.
+
+The offer is keyed on `count < total`, not on the page being covered, and that is a deliberate narrowing of what the bar can know: it never learns how many rows the table rendered, and asking for that number a second time is precisely the duplication the hook was corrected to remove. It reads as a labelled button rather than as a leading question, so it is legible at any count.
 
 Three things it does that a hand-rolled bar does not:
 
 - **The actions are a `Toolbar`**, so six bulk actions cost one tab stop rather than six — in a bar that appears and disappears, which would otherwise grow and shrink the reader's keyboard under them.
-- **Clearing gives focus back** to the checkbox it came from. A conditional bar unmounts the button that was just activated, and focus falls to `<body>`: the classic way a keyboard user loses their place.
+- **Focus comes back when the bar goes** — from our Clear button or from a bulk action of yours. A conditional bar unmounts the control that was just used, and focus falls to `<body>`: the classic way a keyboard user loses their place.
 - **The count goes through `Intl`.** English groups four digits and Italian does not — `Select all 2,450` and `Seleziona tutte le 2450` — which is not something a template gets right.
 
 **Wiring it yourself?** `Table` reports intents here exactly as it does for sorting, so the transitions are exported too — `toggleRow`, `toggleRows`, `coverageOf`, `isRowSelected`. Use them rather than reading `mode` in your own code: the two readings of `ids` are the one place this model bites, and `useRowSelection` also gives you `setSelection` for the changes that are not a single toggle, like a shift-click range.
@@ -245,6 +254,9 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 - **Every selection checkbox says which row it selects**, by pointing `aria-labelledby` at the row's own header cell rather than stringifying it — so an icon or an `<abbr>` in that cell still reads correctly. Without a `rowHeader` column there is no noun to point at, and the honest fallback ("Select row", identical on every row) warns rather than pretending a row number means something after a re-sort.
 - **A selected row is announced by its checkbox and nothing else**, because `aria-selected` is only meaningful inside a `grid` or `treegrid` and is not announced on a row in a table. Only the header box announces a count, and only because it changes many rows at once — repeating one over every individual tick doubles what the checkbox already says. Its sentence is captured when you click it, not derived from the current rows: derived, it re-announced on the next row tick and on a refetch that returned one row fewer, with nobody having touched anything.
 - **The verb lives outside the table.** A row whose name is an element rather than a string — a link, an icon, an `<abbr>` — has no string to put in a message, so its checkbox is labelled by a hidden "Select" plus the row's own header cell. That span used to sit in the header cell, which is where a `columnheader` takes its name from, so the column announced itself as "Select Select all rows" and every cell in it carried the extra word.
+- **The selection bar is a named region**, whose accessible name is its own count — "Selection: 2, region". It is not announced when it appears, because the table's live region already carries the count and two of them over one fact say it twice; being a landmark is what makes it findable to a reader who never saw it arrive. Its toolbar is `aria-describedby` the count, so tabbing into the actions states the number rather than only "Selection actions, toolbar".
+- **Render the bar AFTER the table.** Before it, forward Tab never reaches the actions the reader just summoned — they would walk backwards past every row checkbox. Put it visually above with CSS if the design wants it there; the package's rule is that visual position is CSS's business.
+- **Focus comes back when the bar goes**, by whatever route: our Clear button, or a bulk action of yours that empties the selection. The element focused when the bar appeared is restored, which scrolls the page back to it — a focus you cannot see is not a focus. A bar that mounts already visible has no origin to return to, and says so by doing nothing.
 - **The arrow is drawn inline**, not taken from the icon port. A table that could not show its sort direction until the app injected an icon set would be a table that breaks on somebody else's configuration. Its resting state is set by measurement rather than by eye: at the opacity first chosen it read 1.89:1 against the page, where WCAG 1.4.11 asks 3:1 of anything identifying a state.
 - **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
 - **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.

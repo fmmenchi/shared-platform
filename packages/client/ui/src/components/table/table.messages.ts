@@ -33,11 +33,15 @@ import { defineMessages } from '../../i18n/messages.js';
  * gender; "Selezione: 3" / "التحديد: 3" names the thing instead, which is what
  * a counter beside a filter does in every language.
  *
- * `TableSelectionBar` READS THIS CATALOG rather than shipping one of its own,
- * which is the exception to colocation and earns it: the bar and the table's
- * live region say the same two sentences about the same fact — one on screen,
- * one to a reader — and two catalogs would mean an app overriding
- * `"table.selectionCount"` fixed half of them.
+ * `TableSelectionBar` HAS ITS OWN CATALOG, and briefly did not. Sharing this
+ * one was argued as earned — "the bar and the live region say the same two
+ * sentences about the same fact" — and neither half survived being checked:
+ * three of the five keys the bar read were referenced by nothing else, so they
+ * were its copy filed under this namespace; and the two that were genuinely
+ * shared rendered DIFFERENTLY in the same instant while counting different
+ * things. They are different facts. This one announces what a click just did
+ * to the rows on THIS PAGE; the bar states what the rule covers, including
+ * rows nobody here has seen.
  *
  * Apps override the catalog when their wording differs, and a call site passes
  * `empty` when a particular table needs to say something specific.
@@ -55,9 +59,6 @@ export const tableMessages = defineMessages('table', {
     selectionCount: 'Selection: {count}',
     selectionAll: 'All rows selected.',
     selectionCleared: 'Selection cleared.',
-    selectionActions: 'Selection actions',
-    selectAllMatching: 'Select all {total}',
-    clearSelection: 'Clear selection',
   },
   it: {
     empty: 'Nessun risultato.',
@@ -71,9 +72,6 @@ export const tableMessages = defineMessages('table', {
     selectionCount: 'Selezione: {count}',
     selectionAll: 'Tutte le righe selezionate.',
     selectionCleared: 'Selezione annullata.',
-    selectionActions: 'Azioni sulla selezione',
-    selectAllMatching: 'Seleziona tutte le {total}',
-    clearSelection: 'Annulla selezione',
   },
   ar: {
     empty: 'لا توجد نتائج.',
@@ -87,8 +85,5 @@ export const tableMessages = defineMessages('table', {
     selectionCount: 'التحديد: {count}',
     selectionAll: 'تم تحديد كل الصفوف.',
     selectionCleared: 'تم إلغاء التحديد.',
-    selectionActions: 'إجراءات التحديد',
-    selectAllMatching: 'تحديد الكل ({total})',
-    clearSelection: 'إلغاء التحديد',
   },
 });

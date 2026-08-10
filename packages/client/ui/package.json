@@ -437,6 +437,12 @@
       "import": "./dist/toggle.js",
       "default": "./dist/toggle.js"
     },
+    "./alert": {
+      "@fmmenchi/source": "./src/components/alert/index.ts",
+      "types": "./dist/components/alert/index.d.ts",
+      "import": "./dist/alert.js",
+      "default": "./dist/alert.js"
+    },
     "./toast": {
       "@fmmenchi/source": "./src/components/toast/index.ts",
       "types": "./dist/components/toast/index.d.ts",
@@ -502,6 +508,12 @@
       "types": "./dist/components/table-foot/index.d.ts",
       "import": "./dist/table-foot.js",
       "default": "./dist/table-foot.js"
+    },
+    "./table-selection-bar": {
+      "@fmmenchi/source": "./src/components/table-selection-bar/index.ts",
+      "types": "./dist/components/table-selection-bar/index.d.ts",
+      "import": "./dist/table-selection-bar.js",
+      "default": "./dist/table-selection-bar.js"
     },
     "./table-row": {
       "@fmmenchi/source": "./src/components/table-row/index.ts",

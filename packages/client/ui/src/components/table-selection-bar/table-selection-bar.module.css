@@ -2,6 +2,25 @@
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 @layer fmmenchi {
+  /* THE PAGE'S OWN SURFACE, and the token matters more than it looks.
+     It painted `--fm-color-muted` first, which is the exact token `ghost` uses
+     for its HOVER (`button.module.css`) — so every control in this bar,
+     including the destructive one the docs put here, had a hover measured at
+     1.00:1 in both themes. Invisible by construction, and axe cannot see it:
+     it does not evaluate `:hover`.
+
+     `background` leaves `ghost` exactly where it is everywhere else in the
+     package, and both pairings it creates are ones the token package already
+     declares and validates: `background` × `foreground` for the text, and
+     `background` × `ring` for the focus outline that lands on it. Painting
+     nothing at all was the other candidate and is worse — a component that
+     sets a foreground and no surface is the axe failure this file already
+     shipped once, in reverse.
+
+     `forced-colors` needs no block: the fill here is a SURFACE, not a meaning
+     — the border says "these belong together" and a border is the one thing
+     that mode keeps. Compare the selected table row, whose fill WAS the state
+     and had to be restated in `Highlight`. */
   .bar {
     display: flex;
     flex-wrap: wrap;
@@ -9,25 +28,12 @@
     gap: var(--fm-space-inline-m);
     padding-block: var(--fm-space-internal-s);
     padding-inline: var(--fm-space-inline-s);
-    /* BOTH HALVES, and axe caught the half that was missing. `muted` ×
-       `foreground` is a pairing the token package declares and validates — but
-       only if the foreground is actually SET. Painting the surface and letting
-       the text inherit works in light, where the inherited colour happens to be
-       dark, and fails outright in dark, where a `data-theme` wrapper redefines
-       the tokens without repainting anything: dark surface, inherited dark
-       text. `Card` and `Toast` set both for this reason; a selected table row
-       had to learn it a milestone ago. */
-    background: var(--fm-color-muted);
+    background: var(--fm-color-background);
     color: var(--fm-color-foreground);
     border: var(--fm-border-width-default) solid var(--fm-color-border);
     border-radius: var(--fm-radius-md);
   }
 
-  /* No `forced-colors` block, and that is a decision rather than an omission.
-     The fill here is a SURFACE, not a meaning — it says "these controls belong
-     together", which the border says too, and a border is the one thing that
-     mode keeps. Compare the selected ROW, whose fill had to be restated in
-     `Highlight` because there the fill WAS the state. */
   .count {
     font-weight: var(--fm-font-weight-medium);
   }

@@ -1,5 +1,6 @@
 import type { ControlledUpdater } from '../../primitives/use-controlled.js';
 import type { Selection } from '../../selection/selection.types.js';
+import type { TableSelectionBarProps } from '../table-selection-bar/table-selection-bar.types.js';
 
 export interface UseRowSelectionOptions {
   /**
@@ -48,15 +49,17 @@ export interface UseRowSelectionResult {
   /**
    * Spread onto `TableSelectionBar` — the persistent statement of the count,
    * and the only place `exclude` is reachable through our own code.
+   *
+   * Typed by PICKING the bar's own props rather than restating their shape: an
+   * anonymous copy typechecks after the bar renames one of them, the spread
+   * gets no excess-property check, and the callback is silently dropped onto a
+   * `<div>` as an unknown attribute.
    */
-  barProps: {
-    selection: Selection;
-    count: number | undefined;
-    total: number | undefined;
-    /** Take the whole result set, including rows this client never received. */
-    onSelectEverything: () => void;
-    onClear: () => void;
-  };
+  barProps: Pick<TableSelectionBarProps, 'selection' | 'total' | 'onClear'> &
+    // The hook ALWAYS supplies the escalation, even though the bar takes it as
+    // optional — whether the offer appears is `total`'s business, not this
+    // one's. Saying so here is what lets a consumer call it without a guard.
+    Required<Pick<TableSelectionBarProps, 'onSelectEverything'>>;
   /** Spread onto `Table`. */
   props: {
     selection: Selection;

@@ -24,7 +24,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                           |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                        |
 | **Feedback**      | `Alert` · `Toast` (+ Region)                                                                                                                                              |
-| **Data display**  | `Badge` · `Table` (+ Head, Body, Row, Cell, HeaderCell)                                                                                                                   |
+| **Data display**  | `Badge` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, SelectionBar)                                                                                               |
 | **Utilities**     | `VisuallyHidden`                                                                                                                                                          |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is

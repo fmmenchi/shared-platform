@@ -86,6 +86,7 @@ export default defineConfig(() => ({
         'table-cell': 'src/components/table-cell/index.ts',
         'table-row': 'src/components/table-row/index.ts',
         'table-foot': 'src/components/table-foot/index.ts',
+        'table-selection-bar': 'src/components/table-selection-bar/index.ts',
         'table-body': 'src/components/table-body/index.ts',
         'table-head': 'src/components/table-head/index.ts',
         table: 'src/components/table/index.ts',
@@ -94,6 +95,7 @@ export default defineConfig(() => ({
         'segmented-control-item':
           'src/components/segmented-control-item/index.ts',
         'segmented-control': 'src/components/segmented-control/index.ts',
+        alert: 'src/components/alert/index.ts',
         'toast-region': 'src/components/toast-region/index.ts',
         toast: 'src/components/toast/index.ts',
         'form-switch': 'src/components/form-switch/index.ts',

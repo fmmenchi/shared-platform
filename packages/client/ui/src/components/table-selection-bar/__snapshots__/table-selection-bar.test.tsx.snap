@@ -2,16 +2,20 @@
 
 exports[`the selection bar > matches its markup 1`] = `
 <div
-  class="_bar_1llej_3"
+  aria-labelledby="«react-id»"
+  class="_bar_16thf_3"
+  role="region"
 >
   <span
-    class="_count_1llej_15"
+    class="_count_16thf_15"
+    id="«react-id»"
   >
     Selection: 2
   </span>
   <div
+    aria-describedby="«react-id»"
     aria-label="Selection actions"
-    class="_toolbar_tdrgw_4 _actions_1llej_18"
+    class="_toolbar_tdrgw_4 _actions_16thf_18"
     data-orientation="horizontal"
     role="toolbar"
     tabindex="-1"

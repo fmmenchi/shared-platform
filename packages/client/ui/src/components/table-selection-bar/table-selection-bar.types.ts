@@ -8,16 +8,14 @@ export interface TableSelectionBarProps extends Omit<
   /** The rule, as `useRowSelection` holds it. */
   selection: Selection;
   /**
-   * How many rows it covers, `undefined` when only the server knows.
+   * The result set's size — NOT the page's.
    *
-   * `undefined` is not a hole to paper over: it is the state the whole model
-   * exists for, and the bar says "all rows selected" rather than inventing a
-   * number. Pass `total` to `useRowSelection` and it becomes a count.
-   */
-  count: number | undefined;
-  /**
-   * The result set's size. Its presence is what makes the escalation possible —
-   * without it nobody on this side knows there is anything beyond the page.
+   * It does two jobs and they are the same job: it is what makes the count
+   * answerable under an `exclude` rule, and what tells the bar there is
+   * anything beyond the page to offer. The count is DERIVED from it here
+   * rather than passed alongside it, which was the first shape and a bad one:
+   * two places to put one number let the escalation say "Select all 7" and
+   * then select 2,450, with nothing warning.
    */
   total?: number;
   /**
@@ -28,13 +26,15 @@ export interface TableSelectionBarProps extends Omit<
   /** Put the selection back to nothing. */
   onClear: () => void;
   /**
-   * What the bar's controls are called as a group. Defaults to the design
-   * system's own wording; override it when a page carries two of them.
+   * What the bar is called — it is a labelled region, so a page carrying two
+   * of them owes each one a name of its own. Defaults to the design system's
+   * wording for the actions.
    */
   label?: string;
   /**
    * The bulk actions — delete, export, assign. Each wrapped in a `ToolbarItem`,
-   * like any other toolbar's controls.
+   * like any other toolbar's controls: an unwrapped control keeps its own tab
+   * stop, which is the one thing the bar exists to avoid.
    */
   children?: ReactNode;
 }

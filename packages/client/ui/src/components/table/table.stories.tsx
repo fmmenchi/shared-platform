@@ -179,6 +179,17 @@ export const BulkActions: Story = {
 
     return (
       <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <Table
+          caption="Persone"
+          rows={people}
+          getRowId={(p) => p.id}
+          columns={columns}
+          {...selection.props}
+        />
+        {/* AFTER the table, and that is not a layout preference. Placed before
+            it, forward Tab never reaches the actions the reader just summoned:
+            they would have to walk backwards past every row checkbox. Put it
+            visually on top with CSS if the design wants it there. */}
         <TableSelectionBar {...selection.barProps}>
           <ToolbarItem>
             <Button variant="ghost" size="sm">
@@ -191,13 +202,6 @@ export const BulkActions: Story = {
             </Button>
           </ToolbarItem>
         </TableSelectionBar>
-        <Table
-          caption="Persone"
-          rows={people}
-          getRowId={(p) => p.id}
-          columns={columns}
-          {...selection.props}
-        />
       </div>
     );
   },

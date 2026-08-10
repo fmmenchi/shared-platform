@@ -3,7 +3,10 @@ import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRowSelection } from './use-row-selection.js';
-import { EVERYTHING_SELECTED } from '../../selection/selection.js';
+import {
+  EVERYTHING_SELECTED,
+  NOTHING_SELECTED,
+} from '../../selection/selection.js';
 import type { Selection } from '../../selection/selection.types.js';
 import type { UseRowSelectionOptions } from './use-row-selection.types.js';
 
@@ -126,6 +129,79 @@ describe('useRowSelection and the count', () => {
     expect(read('mode')).toBe('exclude');
     // A range selection or a restore is ONE edit, not a loop of intents.
     expect(read('count')).toBe('undefined');
+  });
+});
+
+describe('useRowSelection and the bar', () => {
+  // Tested here rather than through `TableSelectionBar`: `barProps` is hook
+  // logic, and it shipped with its two escalations exercised by nothing.
+  function BarHarness(props: UseRowSelectionOptions) {
+    const selection = useRowSelection(props);
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => selection.barProps.onSelectEverything()}
+        >
+          everything
+        </button>
+        <button type="button" onClick={() => selection.barProps.onClear()}>
+          clear
+        </button>
+        <output data-mode="">{selection.barProps.selection.mode}</output>
+        <output data-ids="">
+          {[...selection.barProps.selection.ids].sort().join(',')}
+        </output>
+        <output data-count="">{String(selection.barProps.total)}</output>
+      </>
+    );
+  }
+
+  it('escalates to a rule covering rows nobody here has seen', async () => {
+    const user = userEvent.setup();
+    render(
+      <BarHarness
+        defaultSelection={{ mode: 'include', ids: new Set(['a']) }}
+        total={10_000}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'everything' }));
+    expect(read('mode')).toBe('exclude');
+    expect(read('ids')).toBe('');
+  });
+
+  it('clears back to nothing', async () => {
+    const user = userEvent.setup();
+    render(<BarHarness defaultSelection={EVERYTHING_SELECTED} />);
+
+    await user.click(screen.getByRole('button', { name: 'clear' }));
+    expect(read('mode')).toBe('include');
+    expect(read('ids')).toBe('');
+  });
+
+  it('reports both escalations to a consumer holding the state', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    render(
+      <BarHarness
+        selection={{ mode: 'include', ids: new Set() }}
+        onSelectionChange={onSelectionChange}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'everything' }));
+    expect(onSelectionChange).toHaveBeenLastCalledWith(EVERYTHING_SELECTED);
+    await user.click(screen.getByRole('button', { name: 'clear' }));
+    expect(onSelectionChange).toHaveBeenLastCalledWith(NOTHING_SELECTED);
+  });
+
+  it('carries the total rather than a count, so one number cannot outrank the other', async () => {
+    // It handed over both, and the bar's label came from one while its effect
+    // came from the other: measured, an offer reading "Select all 7" that
+    // selected 2,450.
+    render(<BarHarness total={2450} />);
+    expect(read('count')).toBe('2450');
   });
 });
 

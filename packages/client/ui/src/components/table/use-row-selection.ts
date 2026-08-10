@@ -77,9 +77,13 @@ export function useRowSelection(
     // `Table`. The two escalations are named rather than left to the consumer
     // to assemble from the exported constants: reaching for
     // `EVERYTHING_SELECTED` by hand was the trap, not the concept.
+    //
+    // It carries `total` and NOT `count`. Handing over both let the bar's
+    // label and its effect come from different numbers — measured, an offer
+    // reading "Select all 7" that selected 2,450 — so the bar derives the one
+    // from the other.
     barProps: {
       selection: state,
-      count: countSelected(state, total),
       total,
       onSelectEverything: () => setState(EVERYTHING_SELECTED),
       onClear: () => setState(NOTHING_SELECTED),

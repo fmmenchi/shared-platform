@@ -37,8 +37,12 @@ export const NOTHING_SELECTED: Selection = Object.freeze({
  * Not what a header checkbox produces — that one can only speak for the rows it
  * renders. This is the other affordance, the one a paginated table offers after
  * you tick the header: "all 20 on this page are selected — select all 10,000?".
- * Exported so a consumer can build that today, since only they know whether
- * their result set has more rows than the ones they handed over.
+ *
+ * `TableSelectionBar` OFFERS IT NOW, which it did not when this was written:
+ * for one milestone the constant was exported and the banner was left to the
+ * consumer, and every review of that arrangement called it a trap rather than
+ * an affordance. It stays exported for a consumer building their own bar, and
+ * `useRowSelection`'s `barProps.onSelectEverything` is the wired path.
  */
 export const EVERYTHING_SELECTED: Selection = Object.freeze({
   mode: 'exclude' as const,

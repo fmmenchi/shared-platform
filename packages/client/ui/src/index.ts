@@ -238,6 +238,17 @@ export { ToolbarItem } from './components/toolbar-item/toolbar-item.component.js
 export type { ToolbarItemProps } from './components/toolbar-item/toolbar-item.types.js';
 export { ToolbarSeparator } from './components/toolbar-separator/toolbar-separator.component.js';
 export type { ToolbarSeparatorProps } from './components/toolbar-separator/toolbar-separator.types.js';
+// `Alert` was SHIPPED AND UNREACHABLE: a full folder, a doc page, stories, a
+// test suite, a line in the roadmap's Shipped table — and no export here, no
+// vite entry, no `exports` subpath. Nothing could see it, because every gate
+// looked at the component and none looked at the way out. Found by
+// `src/test/subpath-exports.test.ts` on the day that check was written.
+export { Alert } from './components/alert/alert.component.js';
+export { alertVariants } from './components/alert/alert.variants.js';
+export type {
+  AlertProps,
+  AlertVariants,
+} from './components/alert/alert.types.js';
 export type {
   ToastOptions,
   ToastEntry,

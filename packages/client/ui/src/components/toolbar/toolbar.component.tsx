@@ -7,7 +7,7 @@ import { arrowTarget, directionOf, first } from '../../primitives/roving.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { ToolbarContext } from './toolbar.context.js';
 import type { ToolbarContextValue } from './toolbar.context.js';
-import { partition } from './toolbar.controls.js';
+import { partition, reportOrphans } from './toolbar.controls.js';
 import type { ToolbarProps } from './toolbar.types.js';
 import styles from './toolbar.module.css';
 
@@ -139,6 +139,13 @@ function Toolbar(props: ToolbarProps) {
   const apply = useCallback(() => {
     const all = items.items();
     const { ring, fields } = partition(all);
+
+    if (bar.current) {
+      reportOrphans(
+        bar.current,
+        all.map((item) => item.element),
+      );
+    }
 
     const previous = holder.current;
     const kept =
