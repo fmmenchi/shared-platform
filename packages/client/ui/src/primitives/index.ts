@@ -10,4 +10,5 @@ export { useControlled } from './use-controlled.js';
 export { useDevWarning } from './use-dev-warning.js';
 export type { PolymorphicProps } from './polymorphic.js';
 export { useNativeProperty } from './use-native-property.js';
+export { pointerMoved, useWatchPointer } from './pointer-moved.js';
 export type { NativePropertyOptions } from './use-native-property.types.js';

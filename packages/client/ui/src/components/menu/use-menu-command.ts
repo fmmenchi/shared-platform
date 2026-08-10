@@ -1,5 +1,9 @@
 import { useCallback, useId } from 'react';
 import {
+  pointerMoved,
+  useWatchPointer,
+} from '../../primitives/pointer-moved.js';
+import {
   useDescendant,
   emptyDescendants,
 } from '../../primitives/use-descendants.js';
@@ -32,6 +36,8 @@ export function useMenuCommand(
   options: UseMenuCommandOptions = {},
 ): UseMenuCommandResult {
   const { disabled: inert, textValue, closeOnSelect = true } = options;
+  // The document-wide pointer watch, alive for as long as a command is.
+  useWatchPointer();
 
   // The nearest family: a menu, or the bar itself for a command that sits
   // straight on one.
@@ -97,6 +103,14 @@ export function useMenuCommand(
           // the focus like any other: it is the ONE cursor, and leaving it
           // behind on the row the mouse has left is the disagreement this
           // exists to avoid.
+          //
+          // ONLY WHEN THE POINTER IS THE THING THAT MOVED. An enter also
+          // arrives when the page moves under a resting cursor — which is what
+          // a menu opening beneath the mouse does — and taking the focus then
+          // is the opposite of sharing a cursor: it takes it from the reader
+          // who opened the menu with the keyboard and gives it to a row nobody
+          // pointed at.
+          if (!pointerMoved(event)) return;
           event.currentTarget.focus();
         },
       } as P & MenuCommandProps;

@@ -127,18 +127,35 @@ function MenuContent(props: MenuContentProps) {
         // correctly, so the menu's own Escape needs nothing and only this
         // level does.
         //
-        // Not conditioned on where the focus IS: `toggle` arrives before the
-        // platform has dropped it, so asking here answers about the frame
-        // before — measured, the command was still focused and the repair
-        // never ran.
-        //
         // Nor on whether the command is still on screen, which an earlier
         // version guarded on at length: when the whole stack goes, the command
         // is inside a closed popover, and focusing an element in a closed
         // popover is a NO-OP — measured in all three engines, the focus stays
         // exactly where the platform put it. The guard could not be given a
         // failing test because there is nothing for it to prevent.
-        if (latest.current.nested) latest.current.anchor?.focus();
+        //
+        // BUT IT IS CONDITIONED ON WHOSE FOCUS IT IS. An earlier version asked
+        // whether the focus was still INSIDE the surface and the answer was
+        // always no: `toggle` arrives before the platform has dropped it, so at
+        // this moment the focus is still on the command — and the repair never
+        // ran. Removing the question altogether was the wrong correction, and
+        // it is what this is: an unconditional `focus()` on a queued `toggle`
+        // overwrites whatever has taken the focus in the meantime, and on a
+        // loaded machine "in the meantime" is long enough to hold a real
+        // interaction.
+        //
+        // So it asks the question that is timing-independent instead: is the
+        // focus still OURS to hand back? Body or nothing is the platform's
+        // drop, inside the surface is a row that is going away, and the anchor
+        // itself is a no-op. Anything else belongs to somebody else, and a menu
+        // that has just closed is the last thing entitled to take it.
+        const active = document.activeElement;
+        const ours =
+          active === null ||
+          active === document.body ||
+          active === latest.current.anchor ||
+          (surface.current?.contains(active) ?? false);
+        if (latest.current.nested && ours) latest.current.anchor?.focus();
         return;
       }
 

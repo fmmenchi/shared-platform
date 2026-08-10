@@ -51,13 +51,107 @@ jobs:
       # run separately, red at random when together, with a DIFFERENT test
       # falling each run and never one that the commit had touched.
       #
-      # So this buys two things — the contention goes, and a failure that does
-      # happen is legible instead of anonymous.
+      # The contention half of that held. The LEGIBILITY half did not, and this
+      # comment claimed it did: four failures later the suite still names no
+      # test. Keeping the split anyway — it is the right shape and it removed a
+      # real source of flakiness — but the instrument for the second half is on
+      # the step below, where it should have been.
+      #
+      # `--outputStyle=stream` for the same reason as the suite below, and this
+      # step is the one that had never been asked the question: it is the OTHER
+      # `run-many` over sixteen projects, so a lint or type error here would
+      # have been swallowed exactly the way the test failures were. Nothing has
+      # gone wrong here yet — this is the shape being fixed, not an incident.
+      #
+      # Deliberately NOT applied to the single-task `nx run` calls in the
+      # reusable workflows and the composite actions. Measured: a single task
+      # reports its failure in full — the FAIL line, the test name and the
+      # summary all arrive. The loss needs many tasks and a large output, which
+      # is a shape those bricks do not have, and a flag added on suspicion is a
+      # claim nobody can check later.
       - run: pnpm nx run-many -t typecheck build lint lint-css build-storybook
+          --outputStyle=stream
 
       # The browser-mode suite, alone. Second because a type error makes every
       # test below it meaningless, and this is the slower half.
-      - run: pnpm nx run-many -t test
+      #
+      # INSTRUMENTED, and the instrument has already earned its place. This step
+      # failed four times on `main` without ever naming a test: everything it
+      # printed was green, vitest never reached its summary, and the output
+      # stopped MID-LINE — which reads exactly like a process being killed.
+      #
+      # IT IS NOT BEING KILLED. `time -v` settled it on the first run: `Exit
+      # status: 1`, no signal, and a peak resident set of 1.9 GB against a runner
+      # with several times that. So the OOM theory is dead and so is the
+      # concurrency theory that followed from it — this is an ordinary failing
+      # test whose report is lost to GitHub's step-log TRUNCATION. One number
+      # closed two hypotheses that would each have taken a day.
+      #
+      # `time -v` stays, because that number is the one that tells a kill from a
+      # failure and it costs nothing to keep asking. Guarded, because a missing
+      # `/usr/bin/time` would turn a diagnostic into an outage. `tee` keeps the
+      # whole output for the step below.
+      #
+      # AND IT IS NOT GITHUB DOING THE TRUNCATING EITHER. With the whole run
+      # captured to a file, that file STILL names no failing test: it ends
+      # mid-stream, and Nx's own `Failed tasks:` line appears ~hundreds of lines
+      # BEFORE the end. Nx buffers each task's output internally and flushes it
+      # after its own summary — and the tail of the failing task's buffer never
+      # arrives. `--outputStyle=stream` takes that buffer out of the path
+      # entirely ("nx by default logs output to an internal output stream,
+      # enable this option to stream logs to stdout / stderr"). Lines come back
+      # interleaved, which is what the split above was meant to avoid, but
+      # `stream` prefixes every line with its project — attributable, and a
+      # prefix is a cheaper price than a verdict with no evidence.
+      - name: Browser-mode suite (instrumented — see the comment)
+        id: suite
+        run: |
+          # PIPEFAIL, EXPLICITLY, and this line is the whole difference between a
+          # gate and a decoration. The default shell for `run:` on Linux is
+          # `bash -e` WITHOUT pipefail — only an explicit `shell: bash` adds it —
+          # so `suite | tee` reports TEE's status and a failing suite comes out
+          # green. Measured on the first run of this very step: the suite exited
+          # 1, the job passed, and a red gate would have been converted into a
+          # release. A CI that lies green is worse than the failure it hides.
+          set -o pipefail
+          if [ -x /usr/bin/time ]; then
+            /usr/bin/time -v pnpm nx run-many -t test --outputStyle=stream 2>&1 | tee /tmp/test.log
+          else
+            pnpm nx run-many -t test --outputStyle=stream 2>&1 | tee /tmp/test.log
+          fi
+
+      # A SMALL step, so the truncation that ate the evidence cannot eat this
+      # too: the exit status, the lines that look like failures, and the tail of
+      # the run — which is where the failing test's name has been all along. The
+      # machine's memory and the kernel ring buffer are kept as the CONTROL: if a
+      # future failure really is a kill, they say so at once instead of sending
+      # somebody down the road this one did.
+      - name: Why the suite failed
+        # SCOPED TO THE SUITE, not to the job: `failure()` alone would fire for a
+        # lint failure too, and then read a `/tmp/test.log` that was never
+        # written.
+        if: failure() && steps.suite.conclusion == 'failure'
+        run: |
+          # NO `set -o pipefail` HERE, and that is deliberate — the opposite call
+          # from the step above. A `grep | tail` that matches nothing exits 1,
+          # and under pipefail this step would fail for having found no problem,
+          # taking the diagnostic down at the exact moment it is needed. Nothing
+          # here gates anything; it only prints.
+          echo '::group::exit status and peak memory (from `time -v`)'
+          grep -aE 'Command terminated|Exit status|Maximum resident|Elapsed' /tmp/test.log || echo 'no time -v output'
+          echo '::endgroup::'
+          echo '::group::anything that looks like a failure'
+          grep -anE 'FAIL|AssertionError|Unhandled|✗|×|Error:|Failed tasks' /tmp/test.log | tail -60 || echo 'nothing matched'
+          echo '::endgroup::'
+          echo '::group::last 120 lines of the run'
+          tail -120 /tmp/test.log
+          echo '::endgroup::'
+          echo '::group::machine'
+          free -m; df -h /
+          echo '::endgroup::'
+          echo '::group::kernel ring buffer'
+          sudo dmesg | tail -60 || echo 'dmesg unavailable'
+          echo '::endgroup::'
 
   # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
   # only the projects with releasing conventional commits, so a plain dry-run is already
