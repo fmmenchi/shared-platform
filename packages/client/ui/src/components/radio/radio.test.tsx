@@ -47,6 +47,22 @@ describe('Radio', () => {
     );
   });
 
+  it('keeps its type against something that passes one anyway', () => {
+    // The same untyped path `Checkbox` guards: a form adapter's bag is native
+    // props TypeScript never saw, and Conform's `getInputProps` emits `type`
+    // unconditionally (see `form/control-props.ts`).
+    render(
+      <Radio
+        aria-label="free"
+        {...({ type: 'text' } as Record<string, string>)}
+      />,
+    );
+    expect(screen.getByRole('radio', { name: 'free' })).toHaveAttribute(
+      'type',
+      'radio',
+    );
+  });
+
   it('forwards ref to the input element', () => {
     let el: HTMLElement | null = null;
     render(

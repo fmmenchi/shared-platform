@@ -32,9 +32,13 @@ function Radio(props: RadioProps) {
 
   return (
     <input
-      type="radio"
       className={cn(styles.radio, className)}
       {...fieldProps}
+      // AFTER THE SPREAD, for the reason `Checkbox` records: a form adapter's
+      // bag is untyped native props, and Conform's `getInputProps` emits `type`
+      // unconditionally (see `form/control-props.ts`). Written before the
+      // spread, that `type` won and the radio stopped being one.
+      type="radio"
     />
   );
 }

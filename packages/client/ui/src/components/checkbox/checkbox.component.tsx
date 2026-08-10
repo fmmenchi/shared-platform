@@ -65,7 +65,6 @@ function Checkbox(props: CheckboxProps) {
 
   return (
     <input
-      type="checkbox"
       ref={mergeRefs(el, ref)}
       className={cn(styles.checkbox, className)}
       // The element only ever sees booleans; the third state lives in the
@@ -75,6 +74,16 @@ function Checkbox(props: CheckboxProps) {
         defaultChecked === 'indeterminate' ? false : defaultChecked
       }
       {...fieldProps}
+      // AFTER THE SPREAD, and this is a fix rather than tidiness. `type` is
+      // omitted from the props, so TypeScript stops a caller — but a form
+      // adapter's bag is untyped native props, and `form/control-props.ts`
+      // records that Conform's `getInputProps` emits `type` unconditionally
+      // from the schema's constraints. `forTag` drops input-only props for a
+      // `<select>` and returns an `<input>`'s bag untouched, so before this the
+      // adapter's `type` won: measured, `<FormChoice>` under such an adapter
+      // rendered `type="text"` and the checkbox stopped being one — no role, no
+      // checked state, a string submitted.
+      type="checkbox"
     />
   );
 }
