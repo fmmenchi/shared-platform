@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef } from 'react';
 import { render, screen } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Popover } from '../popover/popover.component.js';
 import { PopoverTrigger } from '../popover-trigger/popover-trigger.component.js';
 import { PopoverContent } from './popover-content.component.js';

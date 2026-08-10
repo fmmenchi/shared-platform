@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Accordion } from './accordion.component.js';
 import { AccordionItem } from '../accordion-item/accordion-item.component.js';
 import { AccordionTrigger } from '../accordion-trigger/accordion-trigger.component.js';

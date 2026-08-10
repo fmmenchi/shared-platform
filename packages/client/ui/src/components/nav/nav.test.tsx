@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Nav } from './nav.component.js';
 import { NavGroup } from '../nav-group/nav-group.component.js';
 import { NavLink } from '../nav-link/nav-link.component.js';

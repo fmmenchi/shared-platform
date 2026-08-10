@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event';
 // `pointerenter` straight to the node, which reported "hoverable" for a tooltip
 // a real mouse could never reach, and its `Escape` is untrusted, so it cannot
 // close a `<dialog>` — the very thing one test has to prove we do NOT do.
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Tooltip } from './tooltip.component.js';
 import { TooltipProvider } from './tooltip.context.js';
 import { Button } from '../button/button.component.js';

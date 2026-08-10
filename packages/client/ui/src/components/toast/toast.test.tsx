@@ -6,7 +6,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { ToastRegion } from '../toast-region/toast-region.component.js';
 import { useToast } from '../toast-region/toast-region.context.js';
 import { Button } from '../button/button.component.js';

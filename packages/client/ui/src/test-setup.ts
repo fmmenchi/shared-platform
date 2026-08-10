@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { beforeEach, expect } from 'vitest';
 import { configure } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
@@ -30,6 +30,39 @@ import '@fmmenchi/tokens/styles/presets/dark.css';
  * failure takes to be reported.
  */
 configure({ asyncUtilTimeout: 5_000 });
+
+/*
+ * THIS SUITE IS NOT AN act ENVIRONMENT, and saying so is the fix rather than a
+ * silencing.
+ *
+ * Testing Library sets the flag to `true`, which is right when IT dispatches
+ * the events: `fireEvent` wraps them in `act` and React sees a complete render
+ * pass. Here almost nothing goes through `fireEvent` — measured, 32 of the test
+ * files drive a real Chromium through the automation protocol and exactly one
+ * uses `fireEvent`. React cannot see those updates as act-wrapped, because they
+ * are not, so it warns: 702 times in a single CI run, from at least twelve
+ * components.
+ *
+ * That flood is not free. It is what made a genuine failure unreadable for four
+ * runs on `main` — the warnings buried the reporter's output and nothing named
+ * a failing test.
+ *
+ * The flag is a claim about the ENVIRONMENT, not a preference, and the honest
+ * value here is `false`.
+ *
+ * IN A `beforeEach`, and not at setup time, because Testing Library's auto
+ * cleanup registers a `beforeAll` of its own that sets it back to `true` —
+ * measured: assigning it here at import time changed nothing, 444 warnings
+ * before and after. A hook is what runs late enough to be the last word.
+ *
+ * What it costs: `act()` called directly now warns instead. Exactly one file in
+ * the suite uses it, and it says so where it does.
+ */
+beforeEach(() => {
+  (
+    globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+  ).IS_REACT_ACT_ENVIRONMENT = false;
+});
 
 /**
  * Mask React's generated ids in snapshots.

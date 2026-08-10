@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
 import { AppLayoutMain } from '../app-layout-main/app-layout-main.component.js';

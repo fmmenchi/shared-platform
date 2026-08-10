@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Card } from './card.component.js';
 import { CardTitle } from '../card-title/card-title.component.js';
 import { CardActions } from '../card-actions/card-actions.component.js';

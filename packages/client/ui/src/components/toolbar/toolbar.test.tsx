@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { createElement, Fragment, StrictMode, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Toolbar } from './toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { ToolbarSeparator } from '../toolbar-separator/toolbar-separator.component.js';
