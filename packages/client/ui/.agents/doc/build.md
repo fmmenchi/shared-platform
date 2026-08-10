@@ -14,6 +14,19 @@
   `babel({ presets: [reactCompilerPreset()] })` (`@rolldown/plugin-babel`), NOT `react({ babel })`.
   Rules of React are enforced by `eslint-plugin-react-hooks` v7 `recommended-latest` — no ref
   read/write during render; keep code compiler-compatible (no manual memo needed).
+- **`'use client'` is written by the BUILD, on every emitted entry** (`tools/rsc/use-client.mjs`,
+  shared with both `*-ports` packages). React Server Components read the directive per MODULE, and a
+  consumer imports an entry — so without it every component here is a server module to their
+  bundler, and the first hook inside becomes a build error in THEIR repository, naming a file they
+  cannot fix. Output and not source: it has to be the first statement of the chunk, and sixty-odd
+  barrels would each have to remember it. **Entries only** — a shared chunk reached from a client
+  entry is already in the client graph, and marking more than the boundary says less about where it
+  is. The plugin READS THE FILE BACK and fails the build if the directive is not the first line: a
+  bundler that started hoisting imports above the banner would otherwise ship a package whose
+  directive is inert, with nothing to say so until a consumer's build broke. The cost is stated
+  rather than hidden — the whole package is client, including the few components that use no hook;
+  deciding per component would mean judging every transitive import server-safe, with nothing to
+  check it and a first hook to invalidate it.
 - **Tree-shaking**: the package is `sideEffects: ["**/*.css"]` — unused JS exports drop, CSS stays.
 - **Per-component subpaths** — each component is its own build entry + export so a consumer imports
   only what it uses. **Adding a component:**

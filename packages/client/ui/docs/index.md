@@ -51,3 +51,12 @@ import { Button } from '@fmmenchi/ui/button';
 - How and why it is styled this way: [Styling the design system](../../styling.md)
 - Consumer recipes (theming, granular imports): [Consuming packages](../../consuming-packages.md)
 - Source: `packages/client/ui` (Storybook: `pnpm nx storybook @fmmenchi/ui`)
+
+## React Server Components
+
+Every published entry carries `'use client'`, so the components work in the Next App Router with
+nothing to wrap. They are client components by nature — hooks, context, event handlers — and the
+directive marks the boundary where a consumer's bundler expects it.
+
+Import the **subpath** rather than the barrel when you care what reaches the client bundle:
+`@fmmenchi/ui/button` pulls one component, `@fmmenchi/ui` pulls the library.
