@@ -486,6 +486,13 @@ describe('Menubar', () => {
     await browser.keyboard('{ArrowDown}');
     await openedBy('File');
 
+    // THE POINTER ARRIVES BY MOVING, and the fixture has to as well: a hover
+    // with no travel behind it is indistinguishable from a surface opening
+    // under a cursor that never moved, which is the thing the bar now refuses.
+    // A real pointer cannot reach a menu without crossing the page first — this
+    // line is that crossing.
+    await browser.hover(command('File'));
+
     // Sweeping the pointer along an open application menu is how one is read.
     // Focusing without carrying left the menu the reader had walked away from
     // standing over the page, with the tab stop somewhere else entirely.

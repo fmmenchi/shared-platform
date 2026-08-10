@@ -46,6 +46,43 @@ const open = async () => {
 };
 
 describe('Menu with a submenu', () => {
+  it('does not take back a focus somebody else has taken', async () => {
+    render(
+      <>
+        <button type="button">Elsewhere</button>
+        {example()}
+      </>,
+    );
+    await open();
+
+    const share = item('Share');
+    await browser.click(share);
+    await waitFor(() => expect(share).toHaveAttribute('aria-expanded', 'true'));
+
+    const surface = document.getElementById(
+      share.getAttribute('popovertarget') as string,
+    ) as HTMLElement;
+
+    // THE FOCUS GOES SOMEWHERE ELSE FIRST, which is the whole case. The repair
+    // below exists because the platform drops a nested popover's focus on
+    // `<body>`; it was written unconditionally, and `toggle` is queued, so on a
+    // machine slow enough for the two to separate it overwrote whatever had
+    // taken the focus in between. That window is not hypothetical: it is where
+    // the menubar suite has been failing in CI, one command opening while the
+    // reader asked for another.
+    const elsewhere = screen.getByRole('button', { name: 'Elsewhere' });
+    elsewhere.focus();
+    expect(document.activeElement).toBe(elsewhere);
+
+    surface.hidePopover();
+
+    await waitFor(() =>
+      expect(share).toHaveAttribute('aria-expanded', 'false'),
+    );
+    // Unconditional, this is `Share`.
+    expect(document.activeElement).toBe(elsewhere);
+  });
+
   it('announces the command that opens one', async () => {
     render(example());
     await open();

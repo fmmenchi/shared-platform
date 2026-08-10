@@ -331,6 +331,44 @@ describe('Menu', () => {
     expect(document.activeElement).toBe(item('Rename'));
   });
 
+  it('does not light a row that arrives under a resting pointer', async () => {
+    render(example());
+    await open();
+
+    // A REAL hover first, which is what puts the cursor somewhere — and the
+    // position is READ from the browser rather than recomputed, because the
+    // centre it picks is its own and fractional.
+    let at = { x: 0, y: 0 };
+    const note = (event: Event) => {
+      const p = event as PointerEvent;
+      at = { x: p.clientX, y: p.clientY };
+    };
+    document.addEventListener('pointermove', note, true);
+    await browser.hover(item('Duplicate'));
+    document.removeEventListener('pointermove', note, true);
+    await waitFor(() => expect(document.activeElement).toBe(item('Duplicate')));
+
+    // The reader goes back to the keyboard and moves off it.
+    item('Rename').focus();
+    expect(document.activeElement).toBe(item('Rename'));
+
+    // NOW THE PAGE MOVES, not the pointer: a surface opening under a still
+    // cursor, a row appearing above one, a list scrolling. The browser reports
+    // that with an ordinary enter at the position the pointer already had — and
+    // read as an intention it takes the focus from the reader and hands it to a
+    // row nobody pointed at. This is the shape the menubar suite kept failing
+    // on in CI, one command opening while the reader had asked for another.
+    item('Duplicate').dispatchEvent(
+      new PointerEvent('pointerover', {
+        bubbles: true,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+
+    expect(document.activeElement).toBe(item('Rename'));
+  });
+
   it('paints the row the pointer is on, and only that one', async () => {
     render(example());
     await open();

@@ -8,6 +8,10 @@ import {
   type PointerEvent,
 } from 'react';
 import { cn } from '../../util/cn.js';
+import {
+  pointerMoved,
+  useWatchPointer,
+} from '../../primitives/pointer-moved.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import {
   useDescendant,
@@ -39,6 +43,9 @@ import styles from '../menu-item/menu-item.module.css';
  * stylesheets for one row is how a hover state ends up on one of them.
  */
 function MenuItemTrigger(props: MenuItemTriggerProps) {
+  // The document-wide pointer watch, alive for as long as this command is.
+  useWatchPointer();
+
   const {
     className,
     children,
@@ -93,6 +100,12 @@ function MenuItemTrigger(props: MenuItemTriggerProps) {
   const handlePointerEnter = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
       onPointerEnter?.(event);
+
+      // THE POINTER, not the page. An enter also arrives when a surface opens
+      // under a resting cursor, and acting on that one takes the focus from the
+      // reader who opened it — and, a few lines down, opens a menu they never
+      // swept onto. See `pointer-moved`.
+      if (!pointerMoved(event)) return;
       event.currentTarget.focus();
 
       // ON A BAR, the pointer carries an open menu the way the arrows do. Not
