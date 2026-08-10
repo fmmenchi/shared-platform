@@ -1,0 +1,127 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`a sortable table > matches its markup 1`] = `
+<div>
+  <table
+    class="_table_ywqct_3"
+  >
+    <caption
+      class="_caption_ywqct_8"
+    >
+      Persone
+    </caption>
+    <thead>
+      <tr>
+        <th
+          aria-sort="ascending"
+          scope="col"
+        >
+          <button
+            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_ywqct_37"
+            type="button"
+          >
+            Nome
+            <svg
+              aria-hidden="true"
+              class="_sortArrow_ywqct_49"
+              data-direction="asc"
+              viewBox="0 0 12 12"
+            >
+              <path
+                d="M6 1.5 L9.5 5.5 H2.5 Z"
+                data-arrow="asc"
+                fill="currentColor"
+              />
+              <path
+                d="M6 10.5 L2.5 6.5 H9.5 Z"
+                data-arrow="desc"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+          <span
+            class="_srOnly_m60i6_229"
+            role="status"
+          />
+        </th>
+        <th
+          aria-sort="none"
+          data-align="end"
+          scope="col"
+        >
+          <button
+            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_ywqct_37"
+            type="button"
+          >
+            Età
+            <svg
+              aria-hidden="true"
+              class="_sortArrow_ywqct_49"
+              data-direction="none"
+              viewBox="0 0 12 12"
+            >
+              <path
+                d="M6 1.5 L9.5 5.5 H2.5 Z"
+                data-arrow="asc"
+                fill="currentColor"
+              />
+              <path
+                d="M6 10.5 L2.5 6.5 H9.5 Z"
+                data-arrow="desc"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+          <span
+            class="_srOnly_m60i6_229"
+            role="status"
+          />
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th
+          scope="row"
+        >
+          Àosta
+        </th>
+        <td
+          data-align="end"
+        >
+          9
+        </td>
+      </tr>
+      <tr>
+        <th
+          scope="row"
+        >
+          Milano
+        </th>
+        <td
+          data-align="end"
+        >
+          41
+        </td>
+      </tr>
+      <tr>
+        <th
+          scope="row"
+        >
+          Zurigo
+        </th>
+        <td
+          data-align="end"
+        >
+          30
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <span
+    class="_visuallyHidden_tcu3i_3"
+    data-table-status=""
+    role="status"
+  />
+</div>
+`;

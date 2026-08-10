@@ -82,7 +82,15 @@ export function createCollator(
     numeric,
   });
 
-  if (collators.size >= MAX_CACHED_COLLATORS) collators.clear();
+  // OLDEST OUT, one at a time. Emptying the map instead is a cache that stops
+  // working under exactly the load it was capped for: a process serving more
+  // than `MAX_CACHED_COLLATORS` distinct `Accept-Language` tags would flush
+  // every entry, including the handful it is about to need again. A `Map`
+  // iterates in insertion order, so its first key is the oldest.
+  if (collators.size >= MAX_CACHED_COLLATORS) {
+    const oldest = collators.keys().next().value;
+    if (oldest !== undefined) collators.delete(oldest);
+  }
   collators.set(key, collator);
   return collator;
 }
@@ -194,9 +202,15 @@ function order2(a: string, b: string): number {
  * blank row to the top the moment the reader reverses the column.
  *
  * STABILITY IS THE SPEC'S. `Array.prototype.sort` has been required to be
- * stable since ES2019, so re-sorting an already-ordered list preserves the
- * previous order — which is what makes "sort by city, then by name" work by
- * clicking twice, with no multi-key machinery here.
+ * stable since ES2019, so re-sorting an ALREADY-ORDERED list preserves the
+ * previous order for rows that tie on the new key.
+ *
+ * Which is a property of this function and NOT a feature of the table: to chain
+ * "by city, then by name" a caller has to feed the output of one sort into the
+ * next, and `useTableSort` always sorts its INPUT array — the rows as the
+ * consumer handed them over. Two clicks there give the second sort, not both.
+ * Multi-key ordering is a `SortState[]`, and that is a decision deferred, not a
+ * technique already available.
  */
 export function byKey<T>(
   key: string,

@@ -29,11 +29,21 @@ interface ColumnShape {
    *
    * It declares the AFFORDANCE, not the ordering: what "sorted by priority"
    * means is the consumer's, and it reaches the table through `useTableSort`.
-   * A column marked sortable with nothing wired to it warns in development —
-   * an arrow that announces itself as sortable and reorders nothing is the
-   * table's version of a field that accepts typing and submits nothing.
+   * Marking it with nothing wired to `onSortToggle` warns in development and
+   * renders the plain header — a control that reorders nothing is the table's
+   * version of a field that accepts typing and submits nothing.
    */
   sortable?: boolean;
+  /**
+   * What the live region calls this column, when `header` is not a string.
+   *
+   * `header` is a `ReactNode` because a real header holds an icon, an `<abbr>`
+   * or a `<Badge>` — and the announcement needs WORDS. Without this the
+   * fallback is the column's `key`, so a reader hears "Sorted by first_name,
+   * ascending": a developer identifier, untranslated, inside DS-owned copy.
+   * A non-string header on a sortable column warns until this is supplied.
+   */
+  sortLabel?: string;
 }
 
 /**
@@ -114,17 +124,6 @@ interface TableShared extends Omit<
   caption: ReactNode;
   density?: TableDensity;
   /**
-   * Which column is ordered and which way — DISPLAYED, never acted on.
-   *
-   * `Table` does not sort. The rows arrive in the order somebody else chose —
-   * `useTableSort` in memory, or the server — and this only decides which
-   * header carries `aria-sort` and which way its arrow points. That is what
-   * makes one component serve both cases with the same markup.
-   */
-  sort?: SortState | null;
-  /** Called with the state a header click leads to: asc → desc → none. */
-  onSortChange?: (sort: SortState | null) => void;
-  /**
    * Something is arriving. Describes the ELEMENT's state, not where the data
    * comes from — which is why this exists and a `loading` prop does not: a
    * background refetch is busy while the old rows are still on screen, and a
@@ -148,6 +147,31 @@ interface TableFromData<T> extends TableShared {
   getRowId: (row: T) => string;
   /** Shown in place of the body when there are no rows. */
   empty?: ReactNode;
+  /**
+   * Which column is ordered and which way — DISPLAYED, never acted on.
+   *
+   * `Table` does not sort. The rows arrive in the order somebody else chose —
+   * `useTableSort` in memory, or the server — and this only decides which
+   * header carries `aria-sort` and which way its arrow points. That is what
+   * makes one component serve both cases with the same markup.
+   *
+   * It lives HERE rather than on the shared base because it needs the column
+   * list to mean anything: in composed mode there are no columns to put
+   * `aria-sort` on, so the prop was accepted, inert and unwarned.
+   */
+  sort?: SortState | null;
+  /**
+   * The user activated a column's sort control. It receives the COLUMN KEY,
+   * not the resulting state, and that is deliberate: the component reports the
+   * intent and never computes the transition, so the cycle belongs to whoever
+   * owns the state and can read its latest value.
+   *
+   * `useSortState` and `useTableSort` supply it through `props`. Wiring it by
+   * hand is `onSortToggle={(key) => setSort((prev) => nextSort(prev, key))}` —
+   * `nextSort` is exported for exactly this, and the functional form is what
+   * keeps a second click correct when the update is deferred.
+   */
+  onSortToggle?: (key: string) => void;
   children?: never;
 }
 
@@ -157,6 +181,14 @@ interface TableComposed extends TableShared {
   rows?: never;
   columns?: never;
   getRowId?: never;
+  /**
+   * Refused rather than ignored. `aria-sort` needs a column list to land on,
+   * so in composed mode these decided nothing while the prop doc claimed they
+   * chose which header carries it. Put the attribute on your own
+   * `TableHeaderCell` here — it takes `aria-sort` like any `<th>`.
+   */
+  sort?: never;
+  onSortToggle?: never;
   /**
    * Listed with the others, and its absence was a real bug rather than an
    * omission: without it the union had no member declaring `empty`, so the

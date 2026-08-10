@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
-import { nextSort } from './use-sort-state.js';
+import { SortArrow } from './sort-arrow.component.js';
 import { TableBody } from '../table-body/table-body.component.js';
 import { TableCell } from '../table-cell/table-cell.component.js';
 import { TableHead } from '../table-head/table-head.component.js';
@@ -58,11 +58,19 @@ function Table<T>(props: TableProps<T>) {
     empty,
     children,
     sort,
-    onSortChange,
+    onSortToggle,
     ...rest
   } = props;
 
   const t = useMessages(tableMessages);
+
+  // WHETHER THE READER HAS ASKED FOR ANYTHING YET, and the only reason `Table`
+  // holds any state at all. The live region must be silent on mount — a table
+  // rendered with `defaultSortKey` is already sorted, and announcing that on
+  // arrival is a sentence from nowhere — and must speak on every change after.
+  // A ref cannot answer it: the Rules of React forbid reading one during
+  // render, which is exactly when the announcement is built.
+  const [activated, setActivated] = useState(false);
 
   // `hasRenderableChildren` rather than a null check, and the difference is the
   // shape a real call site writes: `caption={showIt && t('orders')}` passes
@@ -80,25 +88,54 @@ function Table<T>(props: TableProps<T>) {
     'Table: two columns share a `key`. It is the React key for the header and every body cell, so the rows reconcile unpredictably on the next sort — and nothing on screen says so.',
   );
 
+  // The column can be ordered only when BOTH are true, and the header renders
+  // plain otherwise: a control that reports an intent nobody listens to is a
+  // dead button, so it is not drawn at all.
+  const sorts = columns?.some((column) => column.sortable) === true;
+  const wired = sorts && Boolean(onSortToggle);
+
   useDevWarning(
-    columns?.some((column) => column.sortable) === true && !onSortChange,
-    'Table: a column is marked `sortable` but nothing is wired to `onSortChange`, so the header announces itself as sortable and reorders nothing. Pass the props from `useTableSort` (or `useSortState`, if something else does the ordering).',
+    sorts && !onSortToggle,
+    'Table: a column is marked `sortable` but nothing is wired to `onSortToggle`, so the mark is ignored and the header renders as plain text. Pass the props from `useTableSort` (or `useSortState`, if something else does the ordering).',
   );
 
-  // Announced by RENDERING, not by an effect. The region is always in the tree
-  // and only its text changes, which is the reliable path — a live region
-  // mounted already-populated is routinely missed, which here is exactly what
-  // is wanted: the initial sort is not news, a click on a header is.
   const sortedColumn = columns?.find((column) => column.key === sort?.key);
-  const announcement =
-    sort && sortedColumn
+
+  // A `sort` naming no column is the shape a persisted state arrives in after
+  // somebody renames a column: nothing carries `aria-sort`, nothing is
+  // announced, and the table looks and sounds unsorted while the state says
+  // otherwise. Silence is the worst of the three possible answers.
+  useDevWarning(
+    Boolean(columns && sort && !sortedColumn),
+    `Table: \`sort\` names the column \`${String(sort?.key)}\`, which is not in \`columns\` — so no header claims it and nothing is announced. A key that outlived the column list usually comes from a URL or storage.`,
+  );
+
+  useDevWarning(
+    sortedColumn !== undefined &&
+      sortedColumn.sortLabel === undefined &&
+      typeof sortedColumn.header !== 'string',
+    'Table: the sorted column has a `header` that is not a string, so the announcement falls back to its `key` — a developer identifier, untranslated, read out inside localized copy. Give the column a `sortLabel`.',
+  );
+
+  // ANNOUNCED BY RENDERING, not by an effect. The region is always in the tree
+  // and only its text changes, which is the reliable path.
+  //
+  // ALL THREE STOPS SPEAK. The cleared stop used to render `''`, and emptying a
+  // live region announces NOTHING: `role="status"` implies
+  // `aria-relevant="additions text"`, so a removal is not in the relevant set.
+  // The one stop the design argues hardest for — back to the order the data
+  // arrived in — was the one nobody was told about.
+  const announcement = !activated
+    ? ''
+    : sort && sortedColumn
       ? t(sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending', {
           column:
-            typeof sortedColumn.header === 'string'
+            sortedColumn.sortLabel ??
+            (typeof sortedColumn.header === 'string'
               ? sortedColumn.header
-              : sortedColumn.key,
+              : sortedColumn.key),
         })
-      : '';
+      : t('sortCleared');
 
   return (
     <>
@@ -118,23 +155,33 @@ function Table<T>(props: TableProps<T>) {
               <TableRow>
                 {columns.map((column) => {
                   const active = sort?.key === column.key;
+                  const canSort = column.sortable === true && onSortToggle;
 
                   return (
                     <TableHeaderCell
                       key={column.key}
                       align={column.align}
-                      // On the ACTIVE column only. `aria-sort="none"` on every
-                      // sortable header is legal and says nothing a reader needs:
-                      // the button already tells them the column can be ordered.
+                      // THE STATE OF THE DATA, and separately the invitation.
+                      // `ascending`/`descending` is not gated on `sortable`:
+                      // rows that arrive ordered ARE ordered, and a read-only
+                      // server-sorted column should say so. `none` is the other
+                      // half, and the first version was wrong to leave it out —
+                      // the argument was "the button already tells them", and
+                      // it does not: the button's accessible name is the column
+                      // heading, and the only thing marking the column as
+                      // orderable was a glyph carrying `aria-hidden`. `none` is
+                      // what the attribute has that value for.
                       aria-sort={
                         active
                           ? sort.direction === 'asc'
                             ? 'ascending'
                             : 'descending'
-                          : undefined
+                          : canSort
+                            ? 'none'
+                            : undefined
                       }
                     >
-                      {column.sortable && onSortChange ? (
+                      {canSort ? (
                         // OUR Button, not a hand-rolled `<button>`. `NavGroup`
                         // wrote its own once — `border: 0; background: none`, the
                         // first two lines of what `button.module.css` does — and
@@ -144,9 +191,17 @@ function Table<T>(props: TableProps<T>) {
                           variant="ghost"
                           size="sm"
                           className={styles.sortTrigger}
-                          onClick={() =>
-                            onSortChange(nextSort(sort ?? null, column.key))
-                          }
+                          onClick={() => {
+                            // The KEY, not the next state. The transition is
+                            // computed by whoever owns the state and can read
+                            // its latest value; computed here it came from the
+                            // `sort` prop of the render that drew this arrow,
+                            // which a consumer committing in a transition has
+                            // not refreshed — two clicks then landed on
+                            // ascending twice.
+                            setActivated(true);
+                            onSortToggle(column.key);
+                          }}
                         >
                           {column.header}
                           <SortArrow
@@ -205,7 +260,14 @@ function Table<T>(props: TableProps<T>) {
         )}
       </table>
 
-      {/* OUTSIDE the table, because a `<span>` inside one is not legal markup and
+      {/* ONLY WHERE IT CAN SPEAK. Rendered unconditionally it shipped a
+        permanently-empty live region on every composed table and every table
+        with nothing sortable — in composed mode `columns` is `never`, so the
+        text it exists to carry could not be produced at all. An element is
+        justified by something it does that the alternative cannot (ADR-0016),
+        and the cost of one that does nothing is paid per table, per page.
+
+        OUTSIDE the table, because a `<span>` inside one is not legal markup and
         the parser would reparent it — and outside the `<caption>` especially,
         since the caption IS the accessible name and this text would join it.
         A fragment rather than a wrapper element: `Button` reached the same
@@ -217,38 +279,12 @@ function Table<T>(props: TableProps<T>) {
         They are all empty at rest and harmless, but "the status region" stops
         being a thing you can point at, and a test — or a consumer — needs to
         name which one it means. */}
-      <VisuallyHidden role="status" data-table-status="">
-        {announcement}
-      </VisuallyHidden>
+      {wired && (
+        <VisuallyHidden role="status" data-table-status="">
+          {announcement}
+        </VisuallyHidden>
+      )}
     </>
-  );
-}
-
-/**
- * The direction, drawn rather than borrowed.
- *
- * A functional glyph a component needs to work is drawn inline — an icon set is
- * brand identity and lives app-side, and a table that could not show its sort
- * direction without one would be a table that stops working when the app
- * forgets to inject icons. `aria-hidden` because `aria-sort` already says this
- * to anyone who is not looking.
- */
-function SortArrow(props: { direction?: 'asc' | 'desc' }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 12 12"
-      className={styles.sortArrow}
-      data-direction={props.direction ?? 'none'}
-    >
-      {/* Both are always drawn, and only their weight changes: the pair IS the
-          "this column can be ordered" affordance, and a glyph that appeared on
-          sort would leave an unsorted column looking inert. Which one is in
-          force is opacity — so the state is a value CSS can transition rather
-          than an attribute React swaps. */}
-      <path data-arrow="asc" d="M6 1.5 L9.5 5.5 H2.5 Z" fill="currentColor" />
-      <path data-arrow="desc" d="M6 10.5 L2.5 6.5 H9.5 Z" fill="currentColor" />
-    </svg>
   );
 }
 

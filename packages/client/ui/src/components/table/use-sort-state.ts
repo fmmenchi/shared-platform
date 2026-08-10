@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
 import { useControlled } from '../../primitives/use-controlled.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import type { SortState } from '../../sorting/compare.types.js';
 import type {
   UseSortStateOptions,
@@ -23,6 +23,14 @@ import type {
  * only ever DISPLAYS the state — which arrow, what `aria-sort` says. There is
  * no "sorts twice" case because it does not sort once.
  *
+ * THE CYCLE LIVES HERE TOO, and that was a correction. `Table` used to compute
+ * the next stop from the `sort` prop it had been rendered with, which is state
+ * logic in the one place that claims to hold none — and it read a value that
+ * can be stale: a consumer committing in `startTransition` gets a deferred
+ * prop, so a second click recomputed from the first click's input and landed on
+ * ascending twice. The component now reports the KEY the reader activated and
+ * the transition is computed here, against the state this hook owns.
+ *
  * So a consumer whose server does the ordering takes this hook, puts
  * `state` straight into their query key, and never pulls the collation engine
  * into their bundle.
@@ -32,27 +40,43 @@ export function useSortState(
 ): UseSortStateResult {
   const { sort, defaultSort, defaultSortKey, onSortChange } = options;
 
+  // KEY PRESENCE, NOT VALUE, and the difference is a corrupted table. The state
+  // this hook holds is nullable — `null` IS the third stop — so a consumer who
+  // round-trips it through a URL naturally hands back `undefined` for "no sort".
+  // Read as a value that would mean UNCONTROLLED, and `useControlled` then
+  // serves the last uncontrolled value it happened to record: a fossil from
+  // before the consumer took over. Measured, it announced "Sorted by Nome,
+  // ascending" over rows in arrival order.
+  const controlled = 'sort' in options;
   const seed =
-    defaultSort ??
-    (defaultSortKey
-      ? { key: defaultSortKey, direction: 'asc' as const }
-      : null);
+    'defaultSort' in options
+      ? defaultSort
+      : defaultSortKey
+        ? { key: defaultSortKey, direction: 'asc' as const }
+        : null;
 
   const [state, setState] = useControlled<SortState | null>({
-    value: sort,
-    defaultValue: seed,
+    value: controlled ? (sort ?? null) : undefined,
+    defaultValue: seed ?? null,
     onChange: onSortChange,
     name: 'useSortState',
   });
 
-  const change = useCallback(
-    (next: SortState | null) => setState(next),
-    [setState],
+  // Controlled and unwired is a table whose headers do nothing, forever — the
+  // shape a consumer reaches when the state lives in a URL param and they pass
+  // it in but forget the setter. `useControlled` cannot warn about it: it only
+  // knows about FLIPPING between the two modes.
+  useDevWarning(
+    controlled && !onSortChange,
+    'useSortState: `sort` is passed but `onSortChange` is not, so the state can never change and every header is inert. Pass both, or pass `defaultSort`/`defaultSortKey` and let the hook hold it.',
   );
 
   return {
     state: state ?? null,
-    props: { sort: state ?? null, onSortChange: change },
+    props: {
+      sort: state ?? null,
+      onSortToggle: (key: string) => setState(nextSort(state ?? null, key)),
+    },
   };
 }
 
@@ -65,7 +89,11 @@ export function useSortState(
  * carries meaning in a table of events, a ranking, or anything the server chose
  * deliberately.
  *
- * Pure, and exported so the cycle can be proved without rendering a table.
+ * Pure, and PUBLIC, because `Table` reports the key rather than the next state:
+ * a consumer holding the state themselves writes the cycle with this —
+ * `onSortToggle={(key) => setSort((prev) => nextSort(prev, key))}` — and one
+ * who wants a different cycle (descending first for dates and scores, or two
+ * stops instead of three) writes their own function in the same place.
  */
 export function nextSort(
   current: SortState | null,

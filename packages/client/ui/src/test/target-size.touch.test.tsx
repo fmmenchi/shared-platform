@@ -12,6 +12,7 @@ import { Checkbox } from '../components/checkbox/checkbox.component.js';
 import { Radio } from '../components/radio/radio.component.js';
 import { Switch } from '../components/switch/switch.component.js';
 import { Toggle } from '../components/toggle/toggle.component.js';
+import { Table } from '../components/table/table.component.js';
 
 /**
  * THE TARGET-SIZE POLICY, in one place because it belongs to the family rather
@@ -53,6 +54,17 @@ describe('every control this package draws, under a coarse pointer', () => {
             which is exactly why it is asserted here: the day someone gives
             Toggle its own box, this is what notices. */}
         <Toggle size="sm">Toggle</Toggle>
+        {/* And the one that DOES give the button its own box: the sort trigger
+            restates width, padding and font from another folder's stylesheet,
+            which is precisely the shape this file exists to catch. It leaves
+            `height` alone, and that is the claim being checked. */}
+        <Table
+          caption="Persone"
+          rows={[{ id: '1', name: 'Zurigo' }]}
+          getRowId={(p) => p.id}
+          columns={[{ key: 'name', header: 'Sortable', sortable: true }]}
+          onSortToggle={() => undefined}
+        />
       </>,
     );
 
@@ -64,6 +76,7 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('combobox', { name: 'Choice' }),
       screen.getByRole('textbox', { name: 'Notes' }),
       screen.getByRole('tab', { name: 'One' }),
+      screen.getByRole('button', { name: 'Sortable' }),
     ]) {
       expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(
         TAP,

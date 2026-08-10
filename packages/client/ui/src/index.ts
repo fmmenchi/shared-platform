@@ -269,7 +269,13 @@ export type {
   UseTableSortOptions,
   UseTableSortResult,
 } from './components/table/use-table-sort.types.js';
-export type { SortState, SortDirection } from './sorting/compare.types.js';
+// `Comparator` alongside them because the docs tell you to hoist your `compare`
+// map out of the render, and hoisting it is what forces you to name its type.
+export type {
+  SortState,
+  SortDirection,
+  Comparator,
+} from './sorting/compare.types.js';
 // The parts are the substrate `Table` is built on, exported for the layouts a
 // flat column list cannot express. Dropping to them is decomposition, not a
 // second product — the relationship `Field` has to `FormInput`.

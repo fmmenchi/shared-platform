@@ -15,4 +15,8 @@ export type {
   UseTableSortOptions,
   UseTableSortResult,
 } from './use-table-sort.types.js';
-export type { SortState, SortDirection } from '../../sorting/compare.types.js';
+export type {
+  SortState,
+  SortDirection,
+  Comparator,
+} from '../../sorting/compare.types.js';

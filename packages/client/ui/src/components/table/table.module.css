@@ -77,10 +77,19 @@
      header's own weight, no padding of its own, and the cell's alignment. */
   .sortTrigger {
     inline-size: 100%;
-    justify-content: inherit;
+    /* STATED, not inherited. It was `inherit`, commented as taking the cell's
+       alignment — `justify-content` is not an inherited property and the `<th>`
+       is not a flex container, so it resolved to `normal`, which behaves as
+       `flex-start` in a flex box. The right result by accident, and a constant
+       written as if it depended on something. */
+    justify-content: flex-start;
     gap: var(--fm-space-internal-xs);
     padding: 0;
-    font: inherit;
+    /* `font-size`, NOT the `font` shorthand. The shorthand resets
+       `font-variant-*` to its initial value, so it silently threw away the
+       `tabular-nums` set on `.table` — in the header of a numeric column,
+       which is the one place a table asks for lined-up digits. */
+    font-size: inherit;
     font-weight: var(--fm-font-weight-semibold);
     color: inherit;
   }
@@ -95,33 +104,41 @@
     flex: none;
   }
 
-  /* MICRO-FEEDBACK, so `xs`; between two visible points, so `standard`. Both
-     from the tokens — raw durations and easings are lint-banned here. */
+  /* An ICON changing state, so `s` — the accordion's chevron, the same class of
+     direction glyph on the same class of change, uses it; `xs` is the token for
+     hover and press. Between two visible points, so `standard`. Both from the
+     tokens: raw durations and easings are lint-banned here.
+
+     THE THREE LONGHANDS, not the shorthand, so the reduced-motion block can
+     override ONE declaration instead of restating the whole transition and
+     leaving two copies to keep in sync. */
   .sortArrow path {
-    /* Unsorted, the pair is a hint rather than a statement: visible enough to
-       say "this column can be ordered", quiet enough not to read as a state. */
-    opacity: 0.3;
-    transform-origin: center;
-    transition:
-      opacity var(--fm-duration-xs) var(--fm-ease-standard),
-      transform var(--fm-duration-xs) var(--fm-ease-standard);
+    /* AT REST, MEASURED. `0.3` was chosen by eye and fails WCAG 1.4.11: the
+       composite against the page reads 1.89:1 in light and 2.50:1 in dark,
+       where a state indicator owes 3:1 — and this glyph is the whole visual
+       affordance, so a low-vision reader had no channel at all. `0.55` gives
+       3.70:1 and 5.40:1, and stays visibly quieter than the one in force. */
+    opacity: 0.55;
+    transition-property: opacity, transform;
+    transition-duration: var(--fm-duration-s);
+    transition-timing-function: var(--fm-ease-standard);
   }
 
-  .sortArrow[data-direction='asc'] [data-arrow='asc'],
+  /* A small lean in the direction being applied: the movement is what makes the
+     change legible without reading, and it is small because a header is a
+     micro-interaction, not a surface. Written literally — a `--fm-` custom
+     property is the TOKEN package's namespace, and inventing one there puts a
+     value in a consumer's devtools that looks like a theme token no theme can
+     set. Every component-local variable in this package is unprefixed, and this
+     one was read once where it was declared, so it bought nothing either. */
+  .sortArrow[data-direction='asc'] [data-arrow='asc'] {
+    opacity: 1;
+    transform: translateY(-8%);
+  }
+
   .sortArrow[data-direction='desc'] [data-arrow='desc'] {
     opacity: 1;
-    /* A small lean in the direction being applied: the movement is what makes
-       the change legible without reading, and it is small because a header is
-       a micro-interaction, not a surface. */
-    transform: translateY(var(--fm-arrow-lean));
-  }
-
-  .sortArrow[data-direction='asc'] [data-arrow='asc'] {
-    --fm-arrow-lean: -8%;
-  }
-
-  .sortArrow[data-direction='desc'] [data-arrow='desc'] {
-    --fm-arrow-lean: 8%;
+    transform: translateY(8%);
   }
 
   /* KILL THE MOVEMENT, KEEP THE CHANGE. The transform is the vestibular
@@ -129,7 +146,7 @@
      asked for less motion still sees which column is in force. */
   @media (prefers-reduced-motion: reduce) {
     .sortArrow path {
-      transition: opacity var(--fm-duration-xs) var(--fm-ease-standard);
+      transition-property: opacity;
     }
 
     .sortArrow[data-direction='asc'] [data-arrow='asc'],
