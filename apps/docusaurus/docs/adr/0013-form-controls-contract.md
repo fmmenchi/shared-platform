@@ -4,6 +4,21 @@
 - **Date:** 2026-07-28
 - **Deciders:** Fabio Menchicchi
 
+> **Addendum (2026-08-11) — the adapter port assumes ONE control per field, and a GROUP is where
+> that shows.** The `UseFormField` port built on this decision hands back a bag of native props for
+> a single element, and every adapter produces it that way. A radio group — `FormSegmentedControl`
+> being the first — is N controls sharing one `name` with a distinct value each, so two of the
+> bag's three key members bend: `onChange` has no single input to sit on, so it goes on the group
+> and works by DELEGATION (`change` bubbles; `event.target.value` is the chosen option — a real
+> event from a real radio, read the way every adapter already reads); and `ref` has no right target
+> at all, so it is NOT forwarded — a library that focuses a field from an error summary will not
+> reach a group, which is documented at the component rather than papered over by pointing the ref
+> at whichever option renders first. The same shape is why the adapters' `types` map has no
+> `'radio'` member: an option's value cannot live in a map keyed by field name. A first-class
+> one-name-to-many-controls binding would be a new port member, to be added only when a second
+> consumer needs what delegation cannot give (per the rule that a member is owed by every adapter).
+> Nothing in this ADR changes; this records the boundary's edge.
+
 ## Context and problem statement
 
 Form controls look like the hardest cluster in the design system, and for the wrong reasons. The fear
