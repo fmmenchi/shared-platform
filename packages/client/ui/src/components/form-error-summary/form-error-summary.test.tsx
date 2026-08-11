@@ -207,4 +207,76 @@ describe('the form level of the adapter', () => {
       });
     }
   });
+
+  describe('what the review found', () => {
+    const withErrors = (
+      errors: Record<string, readonly string[]>,
+      ui?: (summary: React.ReactNode) => React.ReactNode,
+      locale = 'en',
+    ) => {
+      const summary = <FormErrorSummary labelFor={(n) => n} />;
+      const field: UseFormField = (name) => ({ control: { name } });
+      return render(
+        <UiProvider
+          adapters={{ i18n: { locale }, form: { field, errors: () => errors } }}
+        >
+          {ui ? ui(summary) : <form>{summary}</form>}
+        </UiProvider>,
+      );
+    };
+
+    it('speaks the heading in the app locale by default', () => {
+      // The default was an English literal in the component — the only DS
+      // default shipped outside a catalog — so an Italian app that did not
+      // pass `heading` had the box that takes focus on failure announce
+      // itself in English.
+      withErrors({ email: ['Obbligatoria.'] }, undefined, 'it');
+      expect(
+        screen.getByRole('region', { name: "C'è un problema" }),
+      ).toBeInTheDocument();
+    });
+
+    it('drops duplicate and blank messages, like the fields do', () => {
+      // Two rules failing with the same sentence produced two <li> with the
+      // same React key and a double announcement; a blank rendered "email: ".
+      withErrors({ email: ['Required.', 'Required.', '   '] });
+      expect(screen.getAllByRole('listitem')).toHaveLength(1);
+    });
+
+    it('says so when rendered outside a <form>', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      withErrors({ email: ['Required.'] }, (summary) => <div>{summary}</div>);
+      await waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('not inside a <form>'),
+        );
+      });
+      warn.mockRestore();
+    });
+
+    it('says so when the entries would read developer identifiers aloud', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <UiProvider
+          adapters={{
+            i18n: { locale: 'en' },
+            form: {
+              field: (name) => ({ control: { name } }),
+              errors: () => ({ created_at: ['Required.'] }),
+            },
+          }}
+        >
+          <form>
+            <FormErrorSummary />
+          </form>
+        </UiProvider>,
+      );
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('labelFor'));
+      warn.mockRestore();
+    });
+  });
 });

@@ -38,9 +38,11 @@ Submit the empty form below, then try the list with the keyboard.
   again is never silent. Those two edges are the whole trigger; the error _count_ is not, because a
   library that revalidates as you type drops it the moment a field becomes valid, and focus must not
   leave the input you are still typing in.
-- **A labelled `role="group"`, not `role="alert"`.** Focusing the summary already announces it, where
-  an alert would announce it a second time from wherever you happened to be. Note that `group` is not
-  a landmark role, so the summary does not appear in a landmark rotor.
+- **A labelled `role="region"`, not `role="alert"`.** Focusing the summary already announces it, where
+  an alert would announce it a second time from wherever the user happened to be. A named region is a
+  **landmark**, so the summary appears in a screen reader's rotor and can be returned to on its own —
+  which is exactly why it replaced the `role="group"` an earlier version used (a group is not a
+  landmark, and this page used to describe that older behaviour as if it were current).
 - **Each entry moves focus to its control.** Fields carry generated ids, so the link cannot point at
   one; the field **name** is the stable handle, and it is what the form library and the DOM already
   agree on.

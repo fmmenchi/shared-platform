@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
+import { useMessages } from '../../i18n/provider.js';
+import { toMessages } from '../../form/messages.js';
+import { formErrorSummaryMessages } from './form-error-summary.messages.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useFormErrors } from '../../form/form-adapter.context.js';
 import type { FormErrorSummaryProps } from './form-error-summary.types.js';
 import styles from './form-error-summary.module.css';
@@ -25,13 +29,13 @@ import styles from './form-error-summary.module.css';
  * the control, so acting on it is one keystroke.
  */
 function FormErrorSummary(props: FormErrorSummaryProps) {
-  const {
-    className,
-    heading = 'There is a problem',
-    labelFor,
-    ref,
-    ...rest
-  } = props;
+  const { className, heading, labelFor, ref, ...rest } = props;
+  const t = useMessages(formErrorSummaryMessages);
+  // The DEFAULT comes from the catalog, so it follows the locale like every
+  // other piece of DS copy — it was an English literal here, the only one in
+  // the package, on the surface that takes focus when a form fails. The prop
+  // stays as the per-form override.
+  const headingText = heading ?? t('heading');
   const errors = useFormErrors('FormErrorSummary');
   const el = useRef<HTMLDivElement>(null);
   // Generated, not a literal: two forms on one page each get a summary, and a
@@ -40,9 +44,15 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
   // it. Every other part of a field mints its id the same way.
   const headingId = useId();
 
-  const entries = Object.entries(errors).filter(
-    ([, messages]) => messages.length > 0,
-  );
+  // THROUGH `toMessages`, like the fields: blanks dropped, duplicates dropped.
+  // Raw, two rules failing with the same sentence produced two <li> with the
+  // SAME key (`name-message`) — a React console error and a double
+  // announcement — and a blank message rendered "Label: ". The JSDoc of
+  // `FieldMessages` promises "a repeated one is a duplicate and is dropped";
+  // it was true at the field and false here: one question, two answers.
+  const entries = Object.entries(errors)
+    .map(([name, messages]) => [name, toMessages(messages)] as const)
+    .filter(([, messages]) => messages.length > 0);
   const count = entries.length;
 
   // Every failed submission counts the form's own `submit` event, in the
@@ -54,6 +64,25 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
   // that PUT it there is the 0 → n edge below, and every later one arrives here.
   const [submits, setSubmits] = useState(0);
   const shown = count > 0;
+
+  // OUTSIDE A <form> both jobs die silently: the submit listener never
+  // attaches and `closest('form')` in every link's click finds nothing, so
+  // each entry is a dead link. Only the DOM can answer, after the commit.
+  const [orphan, setOrphan] = useState(false);
+  useEffect(() => {
+    setOrphan(shown && el.current?.closest('form') == null);
+  }, [shown, submits]);
+  useDevWarning(
+    orphan,
+    "FormErrorSummary: not inside a <form>, so failed submissions cannot be counted and every entry is a dead link — the control lookup starts from the summary's own form. Render it inside the form it summarises.",
+  );
+
+  // The same failure Table warns about by name: an untranslated developer
+  // identifier read aloud inside localized copy.
+  useDevWarning(
+    shown && labelFor === undefined,
+    "FormErrorSummary: no `labelFor`, so each entry shows the field NAME — a developer identifier, untranslated, announced as the link's text. Pass the same words the field's label shows.",
+  );
   useEffect(() => {
     if (!shown) return;
     const form = el.current?.closest('form');
@@ -105,7 +134,7 @@ function FormErrorSummary(props: FormErrorSummaryProps) {
       className={cn(styles.summary, className)}
     >
       <h2 id={headingId} className={styles.heading}>
-        {heading}
+        {headingText}
       </h2>
       <ul className={styles.list}>
         {entries.map(([name, messages]) =>
