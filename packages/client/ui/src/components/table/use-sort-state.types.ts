@@ -1,32 +1,25 @@
-import type { SortState } from '../../sorting/compare.types.js';
+import type { SortBy } from '../../sorting/compare.types.js';
 
 export interface UseSortStateOptions {
   /**
-   * Controlled: you hold the state, and the table only displays it.
-   *
-   * Read by PRESENCE, not by value — passing `sort={undefined}` is controlled
-   * and unsorted, not uncontrolled — because `null` is a legal state here and a
-   * consumer round-tripping it through a URL hands back `undefined` for it.
+   * Controlled: you hold the order. Read by PRESENCE, not by value — an empty
+   * list is a legal state ("nothing sorted") and a consumer round-tripping it
+   * through a URL naturally hands back nothing for it.
    */
-  sort?: SortState | null;
-  /** Uncontrolled seed. `null` is honoured: it is not "not passed". */
-  defaultSort?: SortState | null;
-  /** Shorthand for `defaultSort: { key, direction: 'asc' }`. */
+  sort?: SortBy;
+  /** Uncontrolled seed — a restored order, or the one the page opens with. */
+  defaultSort?: SortBy;
+  /** Shorthand for a single ascending column. */
   defaultSortKey?: string;
-  onSortChange?: (sort: SortState | null) => void;
+  onSortChange?: (sort: SortBy) => void;
 }
 
 export interface UseSortStateResult {
-  /** The current state — the value a query key wants, unchanged. */
-  state: SortState | null;
+  /** The whole order, in precedence. Empty is unsorted. */
+  state: SortBy;
   /** Spread onto `Table`. */
   props: {
-    sort: SortState | null;
-    /**
-     * Receives the KEY the reader activated, never the resulting state: the
-     * cycle is computed here, against the state this hook owns, so `Table`
-     * holds no state logic and cannot compute a transition from a stale prop.
-     */
-    onSortToggle: (key: string) => void;
+    sort: SortBy;
+    onSortToggle: (key: string, options: { additive: boolean }) => void;
   };
 }

@@ -6,7 +6,7 @@ import { Table } from './table.component.js';
 import { useSortState, nextSort } from './use-sort-state.js';
 import { useTableSort } from './use-table-sort.js';
 import type { Column } from './table.types.js';
-import type { SortState } from '../../sorting/compare.types.js';
+import type { SortBy } from '../../sorting/compare.types.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -241,7 +241,7 @@ describe('when something else does the ordering', () => {
     // state and touches the rows never. If it sorted too, a server-ordered page
     // would be re-sorted on top of itself.
     function Controlled() {
-      const [sort, setSort] = useState<SortState | null>(null);
+      const [sort, setSort] = useState<SortBy>([]);
       return (
         <>
           <Table
@@ -253,9 +253,15 @@ describe('when something else does the ordering', () => {
             // The KEY, and the cycle written with the exported `nextSort` —
             // in the functional form, which is what keeps a second click
             // correct when the consumer defers the update.
-            onSortToggle={(key) => setSort((prev) => nextSort(prev, key))}
+            onSortToggle={(key, options) =>
+              setSort((prev) => nextSort(prev, key, options))
+            }
           />
-          <output>{sort ? `${sort.key}:${sort.direction}` : 'none'}</output>
+          <output>
+            {sort.length === 0
+              ? 'none'
+              : sort.map((r) => `${r.key}:${r.direction}`).join(',')}
+          </output>
         </>
       );
     }
@@ -333,7 +339,7 @@ describe('what it refuses to do quietly', () => {
         rows={people}
         columns={columns}
         getRowId={(p) => p.id}
-        sort={{ key: 'nmae', direction: 'asc' }}
+        sort={[{ key: 'nmae', direction: 'asc' }]}
         onSortToggle={() => undefined}
       />,
     );
@@ -350,7 +356,7 @@ describe('what it refuses to do quietly', () => {
         rows={people}
         columns={[{ key: 'name', header: <em>Nome</em>, sortable: true }]}
         getRowId={(p) => p.id}
-        sort={{ key: 'name', direction: 'asc' }}
+        sort={[{ key: 'name', direction: 'asc' }]}
         onSortToggle={() => undefined}
       />,
     );
@@ -405,5 +411,138 @@ describe('what it refuses to do quietly', () => {
     );
 
     expect(status()).toBeNull();
+  });
+});
+
+describe('more than one column at a time', () => {
+  const header = (name: RegExp) => screen.getByRole('button', { name });
+  const cells = () =>
+    screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => row.querySelectorAll('td, th'))
+      .map((tds) => [tds[0]?.textContent, tds[1]?.textContent].join('/'));
+
+  /** Two people share a city, so the second rung decides their order. */
+  interface Guest {
+    id: string;
+    city: string;
+    age: number;
+  }
+  const guests: Guest[] = [
+    { id: '1', city: 'Roma', age: 41 },
+    { id: '2', city: 'Bari', age: 30 },
+    { id: '3', city: 'Roma', age: 9 },
+  ];
+  const guestColumns: Column<Guest>[] = [
+    { key: 'city', header: 'Città', rowHeader: true, sortable: true },
+    { key: 'age', header: 'Età', align: 'end', sortable: true },
+  ];
+
+  function TwoRungs() {
+    const sort = useTableSort(guests, { defaultSortKey: 'city' });
+    return (
+      <Table
+        caption="Ospiti"
+        rows={sort.rows}
+        columns={guestColumns}
+        getRowId={(g) => g.id}
+        {...sort.props}
+      />
+    );
+  }
+
+  it('breaks the first column’s ties with the second', async () => {
+    renderUi(<TwoRungs />);
+
+    // Ordered by city alone, the two Romans are in whatever order the previous
+    // pass left them — stable, and arbitrary to a reader who sees nothing on
+    // screen explaining it.
+    expect(cells()).toEqual(['Bari/30', 'Roma/41', 'Roma/9']);
+
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+
+    expect(cells()).toEqual(['Bari/30', 'Roma/9', 'Roma/41']);
+  });
+
+  it('marks only the leading column with aria-sort', async () => {
+    renderUi(<TwoRungs />);
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+
+    const [city, age] = screen.getAllByRole('columnheader');
+    // ARIA asks for one at a time: two headers both announced "sorted
+    // ascending" say nothing about which of them decided the order, and the
+    // rank a reader actually needs is not expressible in the attribute at all.
+    expect(city).toHaveAttribute('aria-sort', 'ascending');
+    expect(age).toHaveAttribute('aria-sort', 'none');
+  });
+
+  it('says each column’s rank in words, because the attribute cannot', async () => {
+    renderUi(<TwoRungs />);
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+
+    // Without this the secondary column is a silent arrow: something is
+    // clearly sorted, and nothing says it comes second.
+    expect(header(/Città/)).toHaveAccessibleName(/sort 1 of 2/);
+    expect(header(/Età/)).toHaveAccessibleName(/sort 2 of 2/);
+  });
+
+  it('says nothing about rank when there is only one', async () => {
+    renderUi(<TwoRungs />);
+    // A rank on a table sorted by one column is noise read out on every visit.
+    expect(header(/Città/)).not.toHaveAccessibleName(/sort 1 of/);
+  });
+
+  it('announces the column that leads and how many follow', async () => {
+    renderUi(<TwoRungs />);
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+
+    // Four column names read on every click is a sentence nobody waits
+    // through; the leading column is the fact that changes what you are
+    // looking at, and the rest are tie-breaks with their rank on their header.
+    await waitFor(() =>
+      expect(status()).toHaveTextContent(
+        /Sorted by Città, ascending\. Then by 1 more\./,
+      ),
+    );
+  });
+
+  it('starts again when the modifier is not held', async () => {
+    renderUi(<TwoRungs />);
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+    expect(header(/Età/)).toHaveAccessibleName(/sort 2 of 2/);
+
+    await browser.click(header(/Età/));
+    // "Sort by age" on a table ordered by city and age is a fresh start, which
+    // is what the gesture with no modifier says.
+    expect(header(/Età/)).not.toHaveAccessibleName(/of 2/);
+    expect(screen.getAllByRole('columnheader')[1]).toHaveAttribute(
+      'aria-sort',
+      'ascending',
+    );
+  });
+
+  it('reaches the same order from the keyboard', async () => {
+    renderUi(<TwoRungs />);
+    header(/Età/).focus();
+
+    // ONE PATH FOR BOTH. `Enter` on a button produces a click carrying the
+    // modifiers, so the pointer and the keyboard cannot drift apart — which is
+    // the whole reason the component reads `shiftKey` rather than tracking a
+    // modifier of its own.
+    await browser.keyboard('{Shift>}{Enter}{/Shift}');
+
+    expect(header(/Città/)).toHaveAccessibleName(/sort 1 of 2/);
+    expect(header(/Età/)).toHaveAccessibleName(/sort 2 of 2/);
   });
 });

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { UI_FALLBACK_LOCALE } from '../../i18n/messages.js';
 import { useUiAdapters } from '../../i18n/provider.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { byKey, createCollator, sortRows } from '../../sorting/compare.js';
+import { bySortBy, createCollator, sortRows } from '../../sorting/compare.js';
 import { useSortState } from './use-sort-state.js';
 import type {
   UseTableSortOptions,
@@ -62,7 +62,16 @@ export function useTableSort<T>(
   // row) marked sortable, and a typo in `compare`, which an index signature
   // cannot catch at compile time. Both leave every value `undefined`, which the
   // engine reads as empty on both sides and reports equal for every pair.
-  const key = sort.state?.key;
+  // EVERY RANK IS ASKED, not just the first: a secondary column that names
+  // nothing breaks ties with silence, which is even harder to see than a
+  // primary that does — the rows move, just not for the reason the header
+  // claims.
+  const key = sort.state.find(
+    (rung) =>
+      !compare?.[rung.key] &&
+      rows.length > 0 &&
+      rows.every((row) => row == null || !(rung.key in (row as object))),
+  )?.key;
   // `in`, NOT `Object.hasOwn`, and EVERY row, not the first few — the same two
   // corrections `useTableFilters` already records for the same probe: a row
   // that exposes its value through a prototype getter (a class instance, a
@@ -71,31 +80,14 @@ export function useTableSort<T>(
   // answered two ways, and one of them had already been declared wrong in the
   // sibling file. `every` short-circuits on the first row that has the key, so
   // the full scan is only ever paid in the case that deserves the warning.
-  const orphan =
-    key !== undefined &&
-    !compare?.[key] &&
-    rows.length > 0 &&
-    rows.every((row) => row == null || !(key in (row as object)));
   useDevWarning(
-    orphan,
+    key !== undefined,
     `useTableSort: sorting by \`${String(key)}\`, which none of the rows has as a property and \`compare\` has no entry for — so the rows do not move while the header announces that they did. A computed column needs a \`compare\` entry; a key that looks right may be a typo.`,
   );
 
   const ordered = useMemo<readonly T[]>(() => {
-    if (sort.state === null) return rows;
-
-    const own = compare?.[sort.state.key];
-    if (own) {
-      // The consumer's comparator describes the ASCENDING order; the direction
-      // is ours to apply, so they never write it twice.
-      const flip = sort.state.direction === 'desc' ? -1 : 1;
-      return sortRows(rows, (a, b) => flip * own(a, b));
-    }
-
-    return sortRows(
-      rows,
-      byKey<T>(sort.state.key, sort.state.direction, collator),
-    );
+    if (sort.state.length === 0) return rows;
+    return sortRows(rows, bySortBy<T>(sort.state, collator, compare));
   }, [rows, sort.state, compare, collator]);
 
   return { rows: ordered, state: sort.state, props: sort.props };

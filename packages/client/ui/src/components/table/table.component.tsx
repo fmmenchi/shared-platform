@@ -342,15 +342,22 @@ function Table<T>(props: TableProps<T>) {
     'Table: a resizable column declares a relative `width` (`%`, `vw`). Resizing reports pixels, so the first drag replaces the relative width with a fixed one and it stops responding to the container. `Enter` on the handle puts it back.',
   );
 
-  const sortedColumn = columns?.find((column) => column.key === sort?.key);
+  // THE ONE THAT LEADS. The announcement names it and says how many follow;
+  // reading out four column names on every click would be a sentence nobody
+  // waits through, and the rank of each is on its own header for whoever goes
+  // looking.
+  const primarySort = sort?.[0];
+  const sortedColumn = columns?.find(
+    (column) => column.key === primarySort?.key,
+  );
 
   // A `sort` naming no column is the shape a persisted state arrives in after
   // somebody renames a column: nothing carries `aria-sort`, nothing is
   // announced, and the table looks and sounds unsorted while the state says
   // otherwise. Silence is the worst of the three possible answers.
   useDevWarning(
-    Boolean(columns && sort && !sortedColumn),
-    `Table: \`sort\` names the column \`${String(sort?.key)}\`, which is not in \`columns\` — so no header claims it and nothing is announced. A key that outlived the column list usually comes from a URL or storage.`,
+    Boolean(columns && primarySort && !sortedColumn),
+    `Table: \`sort\` names the column \`${String(primarySort?.key)}\`, which is not in \`columns\` — so no header claims it and nothing is announced. A key that outlived the column list usually comes from a URL or storage.`,
   );
 
   useDevWarning(
@@ -466,9 +473,11 @@ function Table<T>(props: TableProps<T>) {
       ? ''
       : acted.kind === 'said'
         ? acted.text
-        : sort && sortedColumn
+        : primarySort && sortedColumn
           ? t(
-              sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending',
+              primarySort.direction === 'asc'
+                ? 'sortedAscending'
+                : 'sortedDescending',
               {
                 column:
                   sortedColumn.label ??
@@ -476,7 +485,14 @@ function Table<T>(props: TableProps<T>) {
                     ? sortedColumn.header
                     : sortedColumn.key),
               },
-            )
+            ) +
+            // AND HOW MANY MORE, when there are. Said as a count rather than as
+            // a list: the leading column is the fact that changes what the
+            // reader is looking at, and the rest are tie-breaks they can go and
+            // read one header at a time.
+            ((sort?.length ?? 0) > 1
+              ? ` ${t('sortThen', { count: (sort?.length ?? 0) - 1 })}`
+              : '')
           : t('sortCleared');
 
   // What the header box is ABOUT to do, which is knowable: `toggleRows` clears
@@ -577,7 +593,15 @@ function Table<T>(props: TableProps<T>) {
                 </TableHeaderCell>
               )}
               {columns.map((column, index) => {
-                const active = sort?.key === column.key;
+                // ITS RANK IN THE ORDER, not merely whether it is in it. A
+                // secondary column that shows an arrow and says nothing else
+                // claims to be the order when it only breaks its ties.
+                const rank = sort
+                  ? sort.findIndex((r) => r.key === column.key)
+                  : -1;
+                const rung = rank === -1 ? undefined : sort?.[rank];
+                const active = rung !== undefined;
+                const primary = rank === 0;
                 const canSort = column.sortable === true && onSortToggle;
                 const canFilter = column.filterable === true && onFilterApply;
                 // NEVER ON THE LAST COLUMN. Its trailing edge is the edge of
@@ -613,7 +637,7 @@ function Table<T>(props: TableProps<T>) {
                     variant="ghost"
                     size="sm"
                     className={styles.sortTrigger}
-                    onClick={() => {
+                    onClick={(event) => {
                       // The KEY, not the next state. The transition is
                       // computed by whoever owns the state and can read
                       // its latest value; computed here it came from the
@@ -622,13 +646,29 @@ function Table<T>(props: TableProps<T>) {
                       // not refreshed — two clicks then landed on
                       // ascending twice.
                       setActed({ kind: 'sort' });
-                      onSortToggle(column.key);
+                      // SHIFT IS THE WHOLE OF IT, and it arrives the same way
+                      // from a pointer and from a keyboard: `Enter` and `Space`
+                      // on a button produce a click event carrying the
+                      // modifiers, so there is one path and the two cannot
+                      // drift apart.
+                      onSortToggle(column.key, { additive: event.shiftKey });
                     }}
                   >
                     {column.header}
-                    <SortArrow
-                      direction={active ? sort.direction : undefined}
-                    />
+                    <SortArrow direction={rung?.direction} />
+                    {/* THE RANK IN WORDS, and only when there is more than one
+                        to rank. `aria-sort` can mark a single column (ARIA asks
+                        for one at a time, because two "sorted ascending" say
+                        nothing about which decided), so everything below the
+                        primary would otherwise be a silent arrow. */}
+                    {active && (sort?.length ?? 0) > 1 && (
+                      <VisuallyHidden>
+                        {t('sortRank', {
+                          rank: rank + 1,
+                          total: sort?.length ?? 0,
+                        })}
+                      </VisuallyHidden>
+                    )}
                   </Button>
                 ) : (
                   column.header
@@ -677,9 +717,15 @@ function Table<T>(props: TableProps<T>) {
                     // heading, and the only thing marking the column as
                     // orderable was a glyph carrying `aria-hidden`. `none` is
                     // what the attribute has that value for.
+                    // THE PRIMARY ONLY. ARIA asks for `aria-sort` on one header
+                    // at a time: two columns both announced "sorted ascending"
+                    // say nothing about which of them decided the order, and
+                    // the rank a reader actually needs is not expressible in
+                    // the attribute at all. So the attribute marks what leads
+                    // and the rest say their rank in words, above.
                     aria-sort={
-                      active
-                        ? sort.direction === 'asc'
+                      primary && rung
+                        ? rung.direction === 'asc'
                           ? 'ascending'
                           : 'descending'
                         : canSort

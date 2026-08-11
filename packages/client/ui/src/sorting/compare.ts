@@ -1,4 +1,4 @@
-import type { Comparator, SortDirection } from './compare.types.js';
+import type { Comparator, SortBy, SortDirection } from './compare.types.js';
 
 /**
  * Ordering values the way a reader expects, which is not the way `<` does it.
@@ -242,6 +242,41 @@ export function byKey<T>(
  * and with React that is a mutation of state they may be rendering from, which
  * shows up as a list that changes under a component that never re-rendered.
  */
+/**
+ * One comparator for the whole order: each entry decides, and hands the pair to
+ * the next only when it cannot tell them apart.
+ *
+ * TIES ARE THE POINT. A single-key sort leaves rows in whatever order the
+ * previous pass left them — stable, but arbitrary to the reader, who sees two
+ * people of the same age in an order nothing on screen explains. Naming the
+ * next column is how that stops being luck.
+ *
+ * A CONSUMER'S COMPARATOR STILL DESCRIBES THE ASCENDING ORDER, at every rank,
+ * so the direction is applied here and they never write it twice — the same
+ * bargain `byKey` makes and the reason the two are built the same way.
+ */
+export function bySortBy<T>(
+  sort: SortBy,
+  collator: Intl.Collator,
+  custom?: Partial<Readonly<Record<string, Comparator<T>>>>,
+): Comparator<T> {
+  const rungs = sort.map(({ key, direction }) => {
+    const own = custom?.[key];
+    if (!own) return byKey<T>(key, direction, collator);
+
+    const flip = direction === 'desc' ? -1 : 1;
+    return (a: T, b: T) => flip * own(a, b);
+  });
+
+  return (a, b) => {
+    for (const rung of rungs) {
+      const verdict = rung(a, b);
+      if (verdict !== 0) return verdict;
+    }
+    return 0;
+  };
+}
+
 export function sortRows<T>(rows: readonly T[], compare: Comparator<T>): T[] {
   return [...rows].sort(compare);
 }

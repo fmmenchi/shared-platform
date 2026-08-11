@@ -144,6 +144,27 @@ The cycle we ship is **three stops, not two**: ascending, descending, and back t
 
 **One state, one column.** `SortState` holds a single key; ordering by city and then by name is a `SortState[]`, and widening the type after consumers have put it in a query key is a breaking change — so it is deferred deliberately rather than half-available. Stability in `sortRows` does not give it to you: the hook always sorts the rows you hand it, not the ones it produced last time.
 
+### More than one column
+
+Hold **Shift** while activating a header — with the pointer or with `Enter`/`Space` — and the column joins the order instead of replacing it. The first entry decides, the second breaks its ties, and so on.
+
+```tsx
+sort={[
+  { key: 'city', direction: 'asc' },
+  { key: 'age', direction: 'desc' },
+]}
+```
+
+**`sort` is a list, always.** Filters have always been plural — several columns narrow the view at once — and sorting was the one axis that could hold a single opinion. The single case is a list of one; the alternative is two shapes and a normalisation at every read.
+
+**One gesture, one path.** `Enter` on a button produces a click carrying the modifiers, so the component reads `event.shiftKey` once and the pointer and the keyboard cannot drift apart. What reaches you is the intent — `onSortToggle(key, { additive })` — and never the resulting state, the same bargain the key already made.
+
+**`aria-sort` marks the leading column only.** ARIA asks for one at a time, and rightly: two headers both announced "sorted ascending" say nothing about which of them decided the order. What a reader actually needs is the rank, which the attribute cannot express — so every sorted header carries it in words ("sort 2 of 3"), and only when there is more than one to rank.
+
+**The announcement names the leader and counts the rest** ("Sorted by Città, ascending. Then by 1 more."). Reading four column names on every click is a sentence nobody waits through; the leading column is what changed what you are looking at, and the rest are tie-breaks whose rank is on their own header.
+
+**Shift is not discoverable, and that is the honest cost.** It is the convention every table library settled on, and a menu per column would charge two clicks to the case that only ever sorts by one. If your readers need to find it without being told, put the affordance in the toolbar where the other view controls live.
+
 ### Selecting rows
 
 <Canvas of={TableStories.Selectable} />

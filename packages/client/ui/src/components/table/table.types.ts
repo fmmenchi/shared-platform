@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
-import type { SortState } from '../../sorting/compare.types.js';
+import type { SortBy } from '../../sorting/compare.types.js';
 import type { ColumnWidths } from './use-column-widths.types.js';
 import type { ExpandedRows } from './use-row-expansion.types.js';
 import type { Selection } from '../../selection/selection.types.js';
@@ -291,7 +291,7 @@ interface TableFromData<T> extends TableShared {
    * list to mean anything: in composed mode there are no columns to put
    * `aria-sort` on, so the prop was accepted, inert and unwarned.
    */
-  sort?: SortState | null;
+  sort?: SortBy;
   /**
    * The user activated a column's sort control. It receives the COLUMN KEY,
    * not the resulting state, and that is deliberate: the component reports the
@@ -299,11 +299,18 @@ interface TableFromData<T> extends TableShared {
    * owns the state and can read its latest value.
    *
    * `useSortState` and `useTableSort` supply it through `props`. Wiring it by
-   * hand is `onSortToggle={(key) => setSort((prev) => nextSort(prev, key))}` —
+   * hand is
+   * `onSortToggle={(key, o) => setSort((prev) => nextSort(prev, key, o))}` —
    * `nextSort` is exported for exactly this, and the functional form is what
    * keeps a second click correct when the update is deferred.
+   *
+   * `additive` is TRUE when the reader held Shift — "add this column to the
+   * order" rather than "start again with this one". The component reports which
+   * gesture it saw and computes neither, which is the same bargain the key
+   * makes: a consumer who wants a different meaning for Shift writes it in
+   * their own transition.
    */
-  onSortToggle?: (key: string) => void;
+  onSortToggle?: (key: string, options: { additive: boolean }) => void;
   /**
    * What is applied to each column right now — DISPLAYED, never acted on, the
    * same bargain `sort` makes.

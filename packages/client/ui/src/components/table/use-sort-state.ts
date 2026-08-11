@@ -1,6 +1,6 @@
 import { useControlled } from '../../primitives/use-controlled.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import type { SortState } from '../../sorting/compare.types.js';
+import type { SortBy } from '../../sorting/compare.types.js';
 import type {
   UseSortStateOptions,
   UseSortStateResult,
@@ -42,6 +42,9 @@ import type {
  * `state` straight into their query key, and never pulls the collation engine
  * into their bundle.
  */
+/** Nothing sorted. Shared, because an empty list has no identity worth having. */
+const NOTHING: SortBy = Object.freeze([]);
+
 export function useSortState(
   options: UseSortStateOptions = {},
 ): UseSortStateResult {
@@ -55,16 +58,16 @@ export function useSortState(
   // before the consumer took over. Measured, it announced "Sorted by Nome,
   // ascending" over rows in arrival order.
   const controlled = 'sort' in options;
-  const seed =
+  const seed: SortBy =
     'defaultSort' in options
-      ? defaultSort
+      ? (defaultSort ?? NOTHING)
       : defaultSortKey
-        ? { key: defaultSortKey, direction: 'asc' as const }
-        : null;
+        ? [{ key: defaultSortKey, direction: 'asc' as const }]
+        : NOTHING;
 
-  const [state, setState] = useControlled<SortState | null>({
-    value: controlled ? (sort ?? null) : undefined,
-    defaultValue: seed ?? null,
+  const [state, setState] = useControlled<SortBy>({
+    value: controlled ? (sort ?? NOTHING) : undefined,
+    defaultValue: seed,
     onChange: onSortChange,
     name: 'useSortState',
   });
@@ -79,11 +82,11 @@ export function useSortState(
   );
 
   return {
-    state: state ?? null,
+    state,
     props: {
-      sort: state ?? null,
-      onSortToggle: (key: string) =>
-        setState((previous) => nextSort(previous ?? null, key)),
+      sort: state,
+      onSortToggle: (key: string, toggleOptions: { additive: boolean }) =>
+        setState((previous) => nextSort(previous, key, toggleOptions)),
     },
   };
 }
@@ -104,12 +107,39 @@ export function useSortState(
  * stops instead of three) writes their own function in the same place.
  */
 export function nextSort(
-  current: SortState | null,
+  current: SortBy,
   key: string,
-): SortState | null {
-  if (current === null || current.key !== key) {
-    return { key, direction: 'asc' };
+  options: { additive?: boolean } = {},
+): SortBy {
+  const at = current.findIndex((rung) => rung.key === key);
+  const rung = at === -1 ? undefined : current[at];
+
+  // THE THIRD RUNG IS STILL "OFF", and that is what makes the additive case
+  // reachable in both directions: a column joins the order, reverses, and
+  // leaves it — so a reader who added one by mistake gets out with the same
+  // gesture that got them in, rather than having to find a reset.
+  const cycled: 'asc' | 'desc' | null =
+    rung === undefined ? 'asc' : rung.direction === 'asc' ? 'desc' : null;
+
+  if (!options.additive) {
+    // Plain activation REPLACES the order. Cycling in place only when this
+    // column is already the whole of it — otherwise "sort by city" on a table
+    // ordered by name and age is a fresh start, which is what the gesture with
+    // no modifier says.
+    const alone = current.length === 1 && at === 0;
+    if (!alone) return [{ key, direction: 'asc' }];
+    return cycled === null ? [] : [{ key, direction: cycled }];
   }
-  if (current.direction === 'asc') return { key, direction: 'desc' };
-  return null;
+
+  if (rung === undefined) return [...current, { key, direction: 'asc' }];
+
+  const without = current.filter((_, index) => index !== at);
+  if (cycled === null) return without;
+
+  // IN PLACE, not moved to the end. Reversing a column is not re-choosing it,
+  // and a rank that jumped on every reversal would make the order impossible
+  // to hold in your head.
+  const next = [...current];
+  next[at] = { key, direction: cycled };
+  return next;
 }

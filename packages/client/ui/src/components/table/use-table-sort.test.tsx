@@ -70,7 +70,7 @@ describe('useTableSort and the rows it is given', () => {
     // Identity is the point: no copy is made when nothing is ordered, so the
     // type must forbid `rows.sort()` — which would reorder the consumer's state
     // in place on that one stop, and throw outright on a frozen array.
-    render(<Ordered options={{ defaultSort: null }} />);
+    render(<Ordered options={{ defaultSort: [] }} />);
     expect(document.querySelector('[data-same]')).toHaveTextContent('true');
   });
 
