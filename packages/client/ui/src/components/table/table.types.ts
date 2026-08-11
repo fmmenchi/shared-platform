@@ -262,8 +262,15 @@ interface TableFromData<T> extends TableShared {
    * agreement, the counted `colSpan` and the empty state — a large trade for a
    * small mark.
    *
-   * NARROW ON PURPOSE. It is not `ComponentProps<'tr'>`, and the two exclusions
-   * are the point:
+   * NARROW ON PURPOSE, and THE NARROWING IS NOT ENFORCED WHERE YOU WRITE IT —
+   * which is worth knowing before trusting it. `TableRowAttributes` refuses an
+   * extra key through excess-property checking, and an object literal loses
+   * that in a function's RETURN position: measured, a direct annotation refuses
+   * `onClick` and `getRowProps={() => ({ onClick })}` compiles clean. A generic
+   * that maps unknown keys to `never` was tried and rejects valid calls too,
+   * because `A` cannot be inferred from a return position. So the guard that
+   * actually runs is the dev warning in the component, which names the keys it
+   * dropped. The two exclusions, and why they are worth a warning at all:
    *
    * - **No handlers.** A `<tr>` is not focusable, so an `onClick` here is a
    *   control a keyboard cannot reach — the trap the "Not a grid" section

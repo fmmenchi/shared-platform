@@ -446,6 +446,60 @@ describe('Table', () => {
       expect(bruno).not.toHaveAttribute('data-selected');
     });
 
+    it('drops what a row does not take, and says which', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      render(
+        basic({
+          // The shape a JavaScript consumer reaches, and a TypeScript one too:
+          // the type refuses this only under a direct annotation, never in the
+          // return position it is always written in.
+          getRowProps: (() => ({
+            className: 'ok',
+            onClick: () => undefined,
+            hidden: true,
+          })) as never,
+        }),
+      );
+
+      const [first] = screen
+        .getAllByRole('row')
+        .filter((r) => r.closest('tbody') !== null);
+
+      // `hidden` would have taken the row out of the accessibility tree while
+      // its controls stayed focusable — axe reports `aria-hidden-focus`.
+      expect(first).toHaveClass('ok');
+      expect(first).not.toHaveAttribute('hidden');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('`onClick`, `hidden`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('does not reach the detail row a datum also produced', () => {
+      // MUTATION-TESTED AS MISSING: spreading these onto the detail row as well
+      // left both suites green, because nothing combined `getRowProps` with
+      // `renderDetail` and the helper that lists rows filters `hidden` ones out.
+      // "The row this data produced" is the data row; a detail row is the
+      // component's own, and a consumer's class landing on it is a surprise
+      // they cannot see coming.
+      render(
+        basic({
+          expandedRows: new Set(['1']),
+          onRowExpandToggle: () => undefined,
+          renderDetail: () => <span>dettaglio</span>,
+          getRowProps: () => ({ className: 'mine', 'data-mine': '' }),
+        }),
+      );
+
+      const detail = screen.getByText('dettaglio').closest('tr');
+      expect(detail).not.toBeNull();
+      expect(detail).not.toHaveClass('mine');
+      expect(detail).not.toHaveAttribute('data-mine');
+    });
+
     it('refuses what would make the row behave', () => {
       // THE ONE GUARANTEE THAT IS TYPE-LEVEL ONLY, so `@ts-expect-error` is the
       // only thing that can assert it: every runtime check here would still

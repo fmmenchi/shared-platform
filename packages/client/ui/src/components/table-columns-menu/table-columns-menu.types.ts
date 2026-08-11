@@ -12,6 +12,18 @@ import type { HiddenColumns } from '../table/use-column-visibility.types.js';
 export interface ColumnListing {
   key: string;
   header: ReactNode;
+  /**
+   * The column's name IN WORDS, for the places a `header` cannot go — which is
+   * every place this menu needs one: the typeahead, and the sentence that says
+   * why a column cannot be put away.
+   *
+   * IT WAS LEFT OUT AT FIRST, and the narrowing was called "the point". It was
+   * the wrong thing to narrow away: a column headed by an icon, an `<abbr>` or
+   * a `Badge` — the exact cases `label` exists for — came out of this menu with
+   * an empty name, so a locked entry announced as ", always shown because it
+   * names the rows" and typeahead could not reach it at all.
+   */
+  label?: string;
 }
 
 export interface TableColumnsMenuProps {

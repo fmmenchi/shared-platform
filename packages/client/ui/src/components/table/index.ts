@@ -67,3 +67,15 @@ export type {
   UseRowExpansionOptions,
   UseRowExpansionResult,
 } from './use-row-expansion.types.js';
+
+// The subpath barrel had drifted from the root one, which re-exports from the
+// leaf files directly: a consumer on `@fmmenchi/ui/table` — the entry the build
+// doc pushes for tree-shaking — could not reach column visibility at all and
+// had to pull the root barrel back in for one hook.
+export { useColumnVisibility } from './use-column-visibility.js';
+export type {
+  HiddenColumns,
+  UseColumnVisibilityOptions,
+  UseColumnVisibilityResult,
+} from './use-column-visibility.types.js';
+export type { TableRowAttributes } from './table.types.js';

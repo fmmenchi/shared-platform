@@ -414,6 +414,21 @@ describe('what it refuses to do quietly', () => {
   });
 });
 
+describe('the announcement, exactly', () => {
+  it('says nothing about "more" when there is only one column', async () => {
+    // MUTATION-TESTED AS MISSING: dropping the `> 1` guard let a single-column
+    // table announce "Sorted by Nome, ascending. Then by 0 more." and all 25
+    // tests stayed green, because every assertion on the region was a
+    // substring and the snapshot is taken while it is deliberately empty.
+    renderUi(<Sorted />);
+    await browser.click(screen.getByRole('button', { name: /Nome/ }));
+
+    await waitFor(() =>
+      expect(status()?.textContent).toBe('Sorted by Nome, ascending.'),
+    );
+  });
+});
+
 describe('more than one column at a time', () => {
   const header = (name: RegExp) => screen.getByRole('button', { name });
   const cells = () =>
@@ -478,7 +493,11 @@ describe('more than one column at a time', () => {
     // ascending" say nothing about which of them decided the order, and the
     // rank a reader actually needs is not expressible in the attribute at all.
     expect(city).toHaveAttribute('aria-sort', 'ascending');
-    expect(age).toHaveAttribute('aria-sort', 'none');
+    // AND THE SECOND SAYS NOTHING rather than saying `none`, which this
+    // assertion used to demand. ARIA defines `none` as "no defined sort applied
+    // to the column" — false for a tie-break, and it sat in the same element as
+    // the words "sort 2 of 2". Omitting says less and contradicts nothing.
+    expect(age).not.toHaveAttribute('aria-sort');
   });
 
   it('says each column’s rank in words, because the attribute cannot', async () => {
@@ -508,10 +527,33 @@ describe('more than one column at a time', () => {
     // Four column names read on every click is a sentence nobody waits
     // through; the leading column is the fact that changes what you are
     // looking at, and the rest are tie-breaks with their rank on their header.
+    // THE COLUMN THAT WAS ACTED ON, with its rank. Describing the LEADER and
+    // counting the rest — what this asserted first — is silent for the
+    // commonest multi-column gesture there is: reversing a secondary changes
+    // neither the leader nor the count, so the sentence came out byte-identical
+    // and a live region whose text does not change announces nothing.
     await waitFor(() =>
       expect(status()).toHaveTextContent(
-        /Sorted by Città, ascending\. Then by 1 more\./,
+        'Sorted by Età, ascending, sort 2 of 2.',
       ),
+    );
+  });
+
+  it('speaks when a secondary column is reversed', async () => {
+    renderUi(<TwoRungs />);
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+    const before = status()?.textContent;
+
+    await browser.keyboard('{Shift>}');
+    await browser.click(header(/Età/));
+    await browser.keyboard('{/Shift}');
+
+    // Measured before the fix: every row moved and this string was identical.
+    await waitFor(() => expect(status()?.textContent).not.toBe(before));
+    expect(status()).toHaveTextContent(
+      'Sorted by Età, descending, sort 2 of 2.',
     );
   });
 
@@ -544,5 +586,53 @@ describe('more than one column at a time', () => {
 
     expect(header(/Città/)).toHaveAccessibleName(/sort 1 of 2/);
     expect(header(/Età/)).toHaveAccessibleName(/sort 2 of 2/);
+  });
+
+  it('names a read-only column’s rank, because it has no control to carry it', () => {
+    // MUTATION-TESTED AS MISSING: nothing rendered a sorted column that is not
+    // `sortable`, so the rule the component states — "rows that arrive ordered
+    // ARE ordered" — was unprotected, and multi-column sorting had already
+    // broken it for every rank but the first.
+    const mixed: Column<Guest>[] = [
+      { key: 'city', header: 'Città', rowHeader: true, sortable: true },
+      { key: 'age', header: 'Età', align: 'end' },
+    ];
+    renderUi(
+      <Table
+        caption="Ospiti"
+        rows={guests}
+        columns={mixed}
+        getRowId={(g) => g.id}
+        sort={[
+          { key: 'city', direction: 'asc' },
+          { key: 'age', direction: 'desc' },
+        ]}
+        onSortToggle={() => undefined}
+      />,
+    );
+
+    const [, age] = screen.getAllByRole('columnheader');
+    // No button to hide the words in, so the cell carries them — the one place
+    // the rank is allowed into a header cell's name.
+    expect(age).toHaveTextContent('sort 2 of 2');
+  });
+
+  it('marks a read-only LEADING column, control or no control', () => {
+    const mixed: Column<Guest>[] = [
+      { key: 'city', header: 'Città', rowHeader: true },
+      { key: 'age', header: 'Età', align: 'end' },
+    ];
+    renderUi(
+      <Table
+        caption="Ospiti"
+        rows={guests}
+        columns={mixed}
+        getRowId={(g) => g.id}
+        sort={[{ key: 'city', direction: 'asc' }]}
+        onSortToggle={() => undefined}
+      />,
+    );
+    const [city] = screen.getAllByRole('columnheader');
+    expect(city).toHaveAttribute('aria-sort', 'ascending');
   });
 });

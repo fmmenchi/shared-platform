@@ -49,12 +49,23 @@ describe('nextSort', () => {
     expect(nextSort([desc('name')], 'age')).toEqual([asc('age')]);
   });
 
-  it('replaces the whole order when the gesture carries no modifier', () => {
+  it('replaces the order — unless the column already leads it', () => {
     // "Sort by city" on a table ordered by name and age is a fresh start, which
-    // is what a plain activation says. Cycling in place would make the third
-    // click on a secondary column delete a rank the reader never chose.
+    // is what a plain activation says.
     expect(nextSort([asc('name'), desc('age')], 'city')).toEqual([asc('city')]);
-    expect(nextSort([asc('name'), desc('age')], 'name')).toEqual([asc('name')]);
+
+    // BUT ACTIVATING THE LEADER IS A REVERSAL, not a new choice — and this
+    // assertion used to demand the opposite, which is how the defect survived
+    // review: it asked for `[asc('name')]`, meaning the reader clicked the
+    // header they were already sorted by and nothing they could see changed.
+    // Three clicks to reach "off", two of them showing ascending.
+    expect(nextSort([asc('name'), desc('age')], 'name')).toEqual([
+      desc('name'),
+    ]);
+    expect(nextSort([desc('name'), asc('age')], 'name')).toEqual([]);
+
+    // A column in the order but NOT leading it is still a fresh start.
+    expect(nextSort([asc('name'), desc('age')], 'age')).toEqual([asc('age')]);
   });
 
   describe('additive', () => {
@@ -118,10 +129,53 @@ describe('useSortState, holding the state itself', () => {
   });
 
   it('honours an explicit empty `defaultSort` over the shorthand', () => {
-    // `??` could not tell "not passed" from "passed as empty", so the shorthand
-    // silently won and the table started sorted against an explicit request not
-    // to be. Presence of the key is the question, not the value behind it.
+    // Presence of the KEY is the question, not the value behind it.
     render(<Harness defaultSort={[]} defaultSortKey="name" />);
+    expect(state()).toBe('[]');
+  });
+
+  it('reads the seed by presence, which an empty list cannot prove', () => {
+    // THE ASSERTION ABOVE CANNOT FAIL, and its comment used to claim it could:
+    // `[] ?? x` is `[]` and `[] || x` is `[]`, so the very shape it blamed
+    // passes it. Mutation-tested — replacing the presence check with a value
+    // check left every test in this file green.
+    //
+    // `undefined` is the value that separates them, and it is the shape a
+    // conditional spread produces: `{...(saved && { defaultSort: saved })}`
+    // passes the key with nothing behind it, and the shorthand must not then
+    // sneak the table into a sorted state nobody asked for.
+    render(<Harness defaultSort={undefined} defaultSortKey="name" />);
+    expect(state()).toBe('[]');
+  });
+
+  it('applies two toggles in one tick, not just the last', async () => {
+    // THE UPDATER, which nothing pinned: mutation-tested, replacing
+    // `setState((previous) => …)` with `setState(nextSort(state, …))` left all
+    // 37 tests in this file and the sorting suite green. Two dispatches in one
+    // batch both read the same closure, so the second overwrites the first and
+    // the second click of a double-click does nothing.
+    const user = userEvent.setup();
+    function Double() {
+      const sort = useSortState({ defaultSortKey: 'name' });
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              sort.props.onSortToggle('name', { additive: false });
+              sort.props.onSortToggle('name', { additive: false });
+            }}
+          >
+            twice
+          </button>
+          <output>{JSON.stringify(sort.state)}</output>
+        </>
+      );
+    }
+    render(<Double />);
+
+    await user.click(screen.getByRole('button', { name: 'twice' }));
+    // asc → desc → off. Read from the closure both times it would be `desc`.
     expect(state()).toBe('[]');
   });
 });

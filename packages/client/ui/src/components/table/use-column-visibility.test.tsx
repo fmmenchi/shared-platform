@@ -88,6 +88,50 @@ describe('useColumnVisibility', () => {
     expect(visible()).toBe('name,city,age');
   });
 
+  it('refuses to hide the last one standing, with no row header to lean on', async () => {
+    // THE TEST BELOW REFUSED NOTHING, and mutation testing said so: deleting
+    // the floor entirely left every suite green. Its fixture's only
+    // non-row-header columns are `city` and `age`, so the state it walks to is
+    // held by the ROW HEADER rule — the floor was never reached. It is only
+    // reachable when no column is `rowHeader`, which nothing constructed.
+    function Plain() {
+      const visibility = useColumnVisibility({
+        columns: [
+          { key: 'city', header: 'Città' },
+          { key: 'age', header: 'Età' },
+        ] as Column<Person>[],
+      });
+      return (
+        <>
+          <button type="button" onClick={() => visibility.toggle('city')}>
+            città
+          </button>
+          <button type="button" onClick={() => visibility.toggle('age')}>
+            età
+          </button>
+          <output data-testid="visible">
+            {visibility.columns.map((c) => c.key).join(',')}
+          </output>
+          <output data-testid="canHide">
+            {['city', 'age'].filter((k) => visibility.canHide(k)).join(',')}
+          </output>
+        </>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<Plain />);
+
+    await user.click(screen.getByRole('button', { name: 'città' }));
+    expect(visible()).toBe('age');
+    // `age` is now the only thing to look at, and a caption over an empty grid
+    // reads as broken rather than chosen.
+    expect(hideable()).toBe('city');
+
+    await user.click(screen.getByRole('button', { name: 'età' }));
+    expect(visible()).toBe('age');
+  });
+
   it('refuses to hide the last one standing', async () => {
     const user = userEvent.setup();
     render(<Harness defaultHidden={new Set(['city'])} />);
@@ -129,6 +173,22 @@ describe('useColumnVisibility', () => {
       expect(visible()).toBe('name,city');
       await user.click(screen.getByRole('button', { name: 'città' }));
       expect(visible()).toBe('name');
+    });
+
+    it('stays controlled when the value it is handed is `undefined`', async () => {
+      // THE ASSERTION BELOW CANNOT SEE THIS: it passes `new Set()`, which is not
+      // `undefined`, so a value check behaves identically — mutation-tested,
+      // swapping `'hidden' in options` for `hidden !== undefined` left it
+      // green. `undefined` is the shape a round-trip through storage produces,
+      // and reading it as UNCONTROLLED makes the hook keep its own copy and
+      // stop reporting.
+      const user = userEvent.setup();
+      const onHiddenChange = vi.fn();
+      render(<Harness hidden={undefined} onHiddenChange={onHiddenChange} />);
+
+      await user.click(screen.getByRole('button', { name: 'città' }));
+      expect(onHiddenChange).toHaveBeenCalledTimes(1);
+      expect(visible()).toBe('name,city,age');
     });
 
     it('is controlled by PRESENCE, so an empty set is not uncontrolled', async () => {

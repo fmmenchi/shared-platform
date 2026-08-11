@@ -6,11 +6,18 @@ import { MenuItemCheckbox } from '../menu-item-checkbox/menu-item-checkbox.compo
 import { tableColumnsMenuMessages } from './table-columns-menu.messages.js';
 import type { TableColumnsMenuProps } from './table-columns-menu.types.js';
 
-/** A column's name as a string, for the places a node cannot go. */
-const textOf = (header: unknown): string =>
-  typeof header === 'string' || typeof header === 'number'
-    ? String(header)
-    : '';
+/**
+ * A column's name as a string, for the places a node cannot go.
+ *
+ * `label` FIRST, because that is what it is for. Reading only the header left
+ * an icon-headed column with an empty name — a menu entry that began with a
+ * comma and never said which column it was.
+ */
+const textOf = (column: { header: unknown; label?: string }): string =>
+  column.label ??
+  (typeof column.header === 'string' || typeof column.header === 'number'
+    ? String(column.header)
+    : '');
 
 /**
  * Which columns the table is showing, and the control that changes it.
@@ -51,7 +58,7 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
         {columns.map((column) => {
           const isHidden = hidden.has(column.key);
           const locked = !canHide(column.key);
-          const name = textOf(column.header);
+          const name = textOf(column);
 
           // WHY IT IS LOCKED, said rather than implied. A disabled control with
           // no reason is a dead end; and the two reasons are different facts —

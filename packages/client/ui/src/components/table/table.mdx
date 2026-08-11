@@ -134,7 +134,7 @@ It does not compute the transition either. `onSortToggle` receives the **column 
 ```tsx
 <Table
   sort={sort}
-  onSortToggle={(key) => setSort((prev) => nextSort(prev, key))}
+  onSortToggle={(key, o) => setSort((prev) => nextSort(prev, key, o))}
 />
 ```
 
@@ -142,7 +142,7 @@ That is what `nextSort` is exported for, and the functional form is the point: c
 
 The cycle we ship is **three stops, not two**: ascending, descending, and back to the order the data arrived in. A two-state toggle is more common and worse — once a reader has sorted a table there is no way back to the order the server chose, which in a ranking or a feed of events is the one that carries meaning.
 
-**One state, one column.** `SortState` holds a single key; ordering by city and then by name is a `SortState[]`, and widening the type after consumers have put it in a query key is a breaking change — so it is deferred deliberately rather than half-available. Stability in `sortRows` does not give it to you: the hook always sorts the rows you hand it, not the ones it produced last time.
+**Stability does not give you a second column.** `sortRows` is stable, but the hook always sorts the rows you hand it rather than the ones it produced last time — so sorting by name and then re-sorting by city does not leave name as a tie-break. Say what you mean with a list; see [More than one column](#more-than-one-column).
 
 ### More than one column
 
@@ -159,9 +159,13 @@ sort={[
 
 **One gesture, one path.** `Enter` on a button produces a click carrying the modifiers, so the component reads `event.shiftKey` once and the pointer and the keyboard cannot drift apart. What reaches you is the intent — `onSortToggle(key, { additive })` — and never the resulting state, the same bargain the key already made.
 
-**`aria-sort` marks the leading column only.** ARIA asks for one at a time, and rightly: two headers both announced "sorted ascending" say nothing about which of them decided the order. What a reader actually needs is the rank, which the attribute cannot express — so every sorted header carries it in words ("sort 2 of 3"), and only when there is more than one to rank.
+**`aria-sort` marks the leading column only.** ARIA asks for one at a time, and rightly: two headers both announced "sorted ascending" say nothing about which of them decided the order. The others carry no `aria-sort` at all rather than `none`, which ARIA defines as "no defined sort applied" — false for a tie-break.
 
-**The announcement names the leader and counts the rest** ("Sorted by Città, ascending. Then by 1 more."). Reading four column names on every click is a sentence nobody waits through; the leading column is what changed what you are looking at, and the rest are tie-breaks whose rank is on their own header.
+What a reader needs instead is the rank, which the attribute cannot express, so every sorted header carries it in words ("sort 2 of 3") and only when there is more than one to rank. **The words go on the control when there is one**, because a header cell's name is re-announced with every data cell under it — measured once already for the filter trigger, and again here ("Età sort 2 of 2, 41" on two hundred rows). A column the server ordered has no control, so its cell carries the rank and pays that price; it is the only place the rank enters a header's name.
+
+**The announcement is about the column you acted on** ("Sorted by Età, ascending, sort 2 of 2."), not about the leader. Describing the leader was the first design and it was silent for the commonest multi-column gesture there is: reversing a secondary changes neither the leader nor the count, so the sentence came out byte-identical — and a live region whose text does not change announces nothing at all.
+
+**Hiding a sorted column is a hole worth knowing about.** The rows stay ordered by it, its header is gone, and nothing on screen can change or clear it; `showAll()` is the way out. The component warns in development, and the announcement says "Sorting changed." rather than claiming the sorting was removed.
 
 **Shift is not discoverable, and that is the honest cost.** It is the convention every table library settled on, and a menu per column would charge two clicks to the case that only ever sorts by one. If your readers need to find it without being told, put the affordance in the toolbar where the other view controls live.
 
@@ -323,9 +327,11 @@ getRowProps={(invoice) => ({
 })}
 ```
 
-**It takes no handlers, and that is the same refusal as [Not a grid](#not-a-grid).** A `<tr>` is not focusable, so an `onClick` here is a control no keyboard can reach. A row that acts puts a link or a button in a cell, where the platform announces it and Tab arrives at it.
+**It takes no handlers, and that is the same refusal as [Not a grid](#not-a-grid).** A `<tr>` is not focusable, so an `onClick` here is a control no keyboard can reach. A row that acts puts a link or a button in a cell, where the platform announces it and Tab arrives at it. It also takes no `id` and no `hidden`: those tie a detail row to the button that controls it, and `hidden` takes the row out of the accessibility tree while its checkbox stays focusable.
 
-It also takes no `id` and no `hidden`: those tie a detail row to the button that controls it. And what the component sets wins — a `data-selected` returned from here is overwritten rather than honoured, because the checkbox and the attribute have to agree and only one of them can be the source.
+**The refusal is a runtime one, not a type one**, and it is worth knowing which. `TableRowAttributes` rejects an extra key only under a direct annotation — an object literal loses excess-property checking in a function's return position, which is the one position this prop is ever written in. So anything else you return is **dropped**, with a development warning naming it.
+
+What the component sets wins: a `data-selected` returned from here is overwritten rather than honoured, because the checkbox and the attribute have to agree and only one of them can be the source. And these attributes reach the row the datum produced, never the detail row beside it.
 
 ### Expandable rows
 
