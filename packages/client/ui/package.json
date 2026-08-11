@@ -550,6 +550,12 @@
       "types": "./dist/components/table-header-cell/index.d.ts",
       "import": "./dist/table-header-cell.js",
       "default": "./dist/table-header-cell.js"
+    },
+    "./separator": {
+      "@fmmenchi/source": "./src/components/separator/index.ts",
+      "types": "./dist/components/separator/index.d.ts",
+      "import": "./dist/separator.js",
+      "default": "./dist/separator.js"
     }
   },
   "nx": {

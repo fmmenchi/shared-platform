@@ -24,10 +24,9 @@ import styles from './toolbar-separator.module.css';
  * consumer who turns a toolbar vertical should not have to remember to turn
  * every separator in it as well.
  *
- * WHY IT IS NOT THE DEFERRED `Separator`. A general-purpose one is on the
- * roadmap and still deferred; this is a part of a family, like `MenuSeparator`,
- * and it exists because a toolbar's separator has an answer of its own to give.
- * When the generic one lands, these stay: they are what the family's own
+ * WHY IT IS NOT `Separator`. The general-purpose one exists; this is a part
+ * of a family, like `MenuSeparator`, and it stays because a toolbar's
+ * separator has an answer of its own to give: it is what the family's own
  * stylesheet knows about spacing between groups.
  */
 function ToolbarSeparator(props: ToolbarSeparatorProps) {

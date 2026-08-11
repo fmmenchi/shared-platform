@@ -1,0 +1,63 @@
+/* The line between two regions of content, whichever way it runs. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /* Selected WITH the module class, never bare `[data-orientation]` — that
+     attribute belongs to half the component libraries in the world. */
+  .separator {
+    /* The UA draws `<hr>` as `border: 1px inset` on all four sides (the
+       visible ~2px line is the two inset borders) with `margin-block: 0.5em;
+       margin-inline: auto` — no engine gives it a `block-size`. Reset here
+       rather than relying on a page reset: this CSS ships to apps that run no
+       Preflight (ADR-0002); `block-size: 0` stays as defence for a consumer
+       sheet sizing bare `hr`. No margin of our own either — spacing around a
+       region boundary belongs to the consuming layout, not to the line that
+       marks it. */
+    border: 0;
+    margin: 0;
+    block-size: 0;
+    /* Not a control: a flex line must neither grow it to the size of one nor
+       shrink its border away. */
+    flex: none;
+    /* Span the container's cross axis, in flex and in grid, so a centred
+       stack (`align-items: center` / `justify-items: center`) cannot collapse
+       an empty element to its 0px fit-content and lose the line. Safe in the
+       base rule for BOTH orientations: stretch resolves only an `auto` size
+       (css-flexbox §9.4, and grid behaves the same), so it is inert on the
+       axis the rules below pin to a definite 0. */
+    align-self: stretch;
+    justify-self: stretch;
+  }
+
+  .separator[data-orientation='horizontal'] {
+    border-block-start: var(--fm-border-width-divider) solid
+      var(--fm-color-border);
+  }
+
+  /* A line running down the page. In a flex or grid row the stretch above
+     takes the height from the row — which needs `block-size` back at `auto`:
+     the reset's `0` is a definite cross size, and a definite cross size turns
+     stretch off (css-flexbox §9.4). Standing alone there is no row to take a
+     height from, so the consumer must give it an explicit `block-size`. */
+  .separator[data-orientation='vertical'] {
+    border-inline-start: var(--fm-border-width-divider) solid
+      var(--fm-color-border);
+    inline-size: 0;
+    block-size: auto;
+  }
+
+  /* Forced colours repaints border colours with the system palette on its
+     own — borders are not among the things it takes away (box-shadow,
+     outline-color, meaningful fills). This block only pins WHICH system
+     colour the line gets (CanvasText), and guards a future move to
+     background-drawn lines, which WOULD be flattened to Canvas. */
+  @media (forced-colors: active) {
+    .separator[data-orientation='horizontal'] {
+      border-block-start-color: CanvasText;
+    }
+
+    .separator[data-orientation='vertical'] {
+      border-inline-start-color: CanvasText;
+    }
+  }
+}

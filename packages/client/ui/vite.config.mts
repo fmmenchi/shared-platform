@@ -82,6 +82,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        separator: 'src/components/separator/index.ts',
         progress: 'src/components/progress/index.ts',
         'table-header-cell': 'src/components/table-header-cell/index.ts',
         'table-cell': 'src/components/table-cell/index.ts',

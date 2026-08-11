@@ -370,3 +370,5 @@ export { TableCell } from './components/table-cell/table-cell.component.js';
 export type { TableCellProps } from './components/table-cell/table-cell.types.js';
 export { TableHeaderCell } from './components/table-header-cell/table-header-cell.component.js';
 export type { TableHeaderCellProps } from './components/table-header-cell/table-header-cell.types.js';
+export { Separator } from './components/separator/separator.component.js';
+export type { SeparatorProps } from './components/separator/separator.types.js';
