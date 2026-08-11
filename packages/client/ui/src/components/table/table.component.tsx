@@ -598,9 +598,14 @@ function Table<T>(props: TableProps<T>) {
                   column.header
                 );
 
+                const headerId = `${baseId}-c-${column.key}`;
+
                 return (
                   <TableHeaderCell
                     key={column.key}
+                    // ONLY WHERE SOMETHING POINTS AT IT. An id on every header
+                    // cell of every table is markup nobody reads.
+                    id={canResize !== undefined ? headerId : undefined}
                     align={column.align}
                     // AN EXPLICIT NAME, and only when a control that is not the
                     // heading lives in the cell. A `columnheader` is named FROM
@@ -679,6 +684,7 @@ function Table<T>(props: TableProps<T>) {
                     {canResize && (
                       <TableColumnResizer
                         label={columnName}
+                        controls={headerId}
                         onResize={(next) => {
                           canResize(column.key, `${next}px`);
                         }}

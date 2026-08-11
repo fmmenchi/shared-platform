@@ -254,6 +254,23 @@ const widths = useColumnWidths();
 
 `useColumnWidths` overrides `Column.width` key by key; a column with no entry keeps what it declared, which is why a reset **deletes** rather than storing the declared value back. Unlike the sort and the filters this is a **layout** parameter, not a projection one: it decides nothing about which rows exist, so it belongs in whatever remembers a reader's preferences and **not** in a query key — putting it there refetches the rows because somebody dragged a border.
 
+**There is no persistence adapter here, and that is a decision rather than a gap.** Storage is where a design system stops being framework-agnostic: `localStorage` is wrong for an app that syncs preferences to a profile, a profile is wrong for one that does not have accounts, and both are wrong on a server render where neither exists. What the hook owes is a state shape that survives a round trip — a plain `Record<string, string>` of CSS lengths, no class instances, no functions, `JSON.stringify` and back — and it does. Wiring is four lines the consumer writes once:
+
+```tsx
+const [widths, setWidths] = useState(() =>
+  JSON.parse(localStorage.getItem('people.widths') ?? '{}'),
+);
+const columns = useColumnWidths({
+  widths,
+  onWidthsChange: (next) => {
+    setWidths(next);
+    localStorage.setItem('people.widths', JSON.stringify(next));
+  },
+});
+```
+
+One thing to know before storing it: a stored width outlives the column it named. Rename a column's `key` and the old entry stays in the object forever, sizing nothing — harmless, but it is why the reset is a delete and why `resetWidths()` is worth putting behind a control somewhere.
+
 #### Three ways to move a border, and why there are three
 
 **There is no APG pattern for column resize.** The nearest is Window Splitter, which divides two panes; every accessible implementation in the wild is a `grid`, where the arrow keys belong to the component. This table is not a grid on purpose (ADR-0016), so the handle costs a **tab stop** — the price stated once rather than discovered.
