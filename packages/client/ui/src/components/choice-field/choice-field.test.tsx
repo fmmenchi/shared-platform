@@ -224,4 +224,30 @@ describe('ChoiceField', () => {
       });
     }
   });
+
+  it('keeps the control on the FIRST line of a label that wraps', () => {
+    // The canonical checkbox case: a consent label two or three lines long.
+    // `align-items: center` centred the control in its row — the whole label
+    // block — so the box floated at mid-paragraph; the single-line test could
+    // never see it. Baseline alignment is what the platform does for an
+    // inline <label><input>…</label>, and it holds wherever the paragraph
+    // ends: the control's centre stays within 3px of the first line's.
+    render(
+      <div style={{ width: '260px' }}>
+        <ChoiceField label="Accetto i termini e le condizioni del servizio, comprese le clausole sul trattamento dei dati personali">
+          <Checkbox />
+        </ChoiceField>
+      </div>,
+    );
+    const box = screen.getByRole('checkbox');
+    const label = screen.getByText(/Accetto i termini/);
+    const line = Number.parseFloat(getComputedStyle(label).lineHeight);
+    // Precondition: the label actually wrapped, or this proves nothing.
+    expect(label.getBoundingClientRect().height).toBeGreaterThan(line * 1.5);
+
+    const boxCenter =
+      box.getBoundingClientRect().top + box.getBoundingClientRect().height / 2;
+    const firstLineCenter = label.getBoundingClientRect().top + line / 2;
+    expect(Math.abs(boxCenter - firstLineCenter)).toBeLessThanOrEqual(3);
+  });
 });
