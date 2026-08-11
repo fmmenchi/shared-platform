@@ -35,6 +35,7 @@ function Fieldset(props: FieldsetProps) {
     children,
     ref,
     'aria-describedby': ariaDescribedBy,
+    'aria-invalid': ariaInvalid,
     ...rest
   } = props;
   const { describedBy, register } = useDescribedByRegistry();
@@ -96,7 +97,13 @@ function Fieldset(props: FieldsetProps) {
         {...rest}
         ref={mergeRefs(el, ref)}
         aria-describedby={describedByAll}
-        aria-invalid={supportsAriaInvalid && invalid ? true : undefined}
+        // The consumer's own attribute WINS, like its describedby two lines up:
+        // written after the spread from a prop that could be undefined, an
+        // explicit `aria-invalid` on the call site was deleted — the one
+        // attribute this element hijacked while honouring its twin.
+        aria-invalid={
+          ariaInvalid ?? (supportsAriaInvalid && invalid ? true : undefined)
+        }
         data-invalid={invalid || undefined}
       >
         {children}
