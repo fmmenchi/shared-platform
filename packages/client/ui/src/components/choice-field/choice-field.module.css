@@ -11,18 +11,42 @@
   /* The control takes column 1; everything with words goes in column 2, so the
      hint and error line up under the LABEL rather than under an 18px box.
 
-     `align-items: center` centres each item in ITS OWN row, and the control's
-     row is the label's — so the control lands optically centred on the label's
-     first line with no magic offset.
+     START-ALIGNED, with the control centred on the label's FIRST LINE by
+     arithmetic — and the difference only shows when the label wraps.
+     `align-items: center` centres the control in its ROW, and the row is as
+     tall as the whole label block: beside a two-line consent label (the
+     canonical checkbox case) the box floated at mid-paragraph while the
+     comment here claimed first-line centring. `baseline` was tried on the way
+     to this and measured 5px off on a single line — a native input's baseline
+     is its bottom edge, not the text's.
+
+     The arithmetic couples this file to two facts, both guarded: the label is
+     `FieldLabel`, which is `text-sm` — so its line box is text-sm × leading-sm,
+     written below from the same tokens — and the DS choice controls are
+     1.125rem tall, except the switch at 1.5rem, which gets its own rule. The
+     multiline test measures the two centres against each other, so either side
+     moving turns it red instead of drifting.
 
      Placed by ELEMENT, not by position: composing the parts by hand in any
      order lays out the same, so the escape hatch cannot drift from the props. */
   .choice {
     @apply grid gap-internal-xs;
     grid-template-columns: auto 1fr;
-    align-items: center;
+    align-items: start;
     column-gap: var(--fm-space-internal-s);
+    --choice-line: calc(var(--fm-text-sm) * var(--fm-leading-sm));
   }
+
+  .choice > :not(label, p) {
+    margin-block-start: calc((var(--choice-line) - 1.125rem) / 2);
+  }
+
+  /* The switch is taller than the line: the margin goes negative and pulls it
+     up so its centre still sits on the first line's. */
+  .choice > [role='switch'] {
+    margin-block-start: calc((var(--choice-line) - 1.5rem) / 2);
+  }
+
   .choice > label,
   .choice > p {
     grid-column: 2;
