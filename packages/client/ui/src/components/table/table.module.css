@@ -356,11 +356,19 @@
     justify-content: center;
   }
 
-  /* A CELL THE HANDLE CAN BE POSITIONED IN. Relative positioning on a
-     table-cell is well defined and widely supported; the alternative was a
-     wrapper element in every header cell, which is an element that exists for
-     one absolutely-positioned sibling. */
-  .table[data-resizable] > thead > tr > th {
+  /* A CELL THE HANDLE CAN BE POSITIONED IN — and ONLY when the header is not
+     already sticky, which is the correction. `position: sticky` is a positioned
+     value, so a sticky header cell is already a containing block for the
+     handle; declaring `relative` here as well outspecified the sticky rule
+     (0,2,3 against 0,2,2, same layer) and silently turned it off. Measured: the
+     header scrolled away with the rows, taking the opaque surface, the
+     `--table-head-block-size` and the 2.4.11 scroll padding with it. The
+     `:not()` makes the two selectors mutually exclusive rather than a race.
+
+     Relative positioning on a table-cell is well defined and widely supported;
+     the alternative was a wrapper element in every header cell, which is an
+     element that exists for one absolutely-positioned sibling. */
+  .table[data-resizable]:not([data-sticky-header]) > thead > tr > th {
     position: relative;
   }
 

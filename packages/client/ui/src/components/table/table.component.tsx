@@ -133,7 +133,15 @@ function Table<T>(props: TableProps<T>) {
   const resizes = (column: Column<T>) =>
     (column.resizable ?? resizableColumns) === true;
   const resizable = columns?.some(resizes) === true;
-  const resizesWired = resizable && Boolean(onColumnResize);
+  // A HANDLE THAT WILL ACTUALLY BE DRAWN. The last column never gets one, so a
+  // single-column table — or one where only the last column is resizable — was
+  // paying the whole cost (a fixed layout, the wider cell padding) for nothing
+  // on screen.
+  const resizesWired =
+    Boolean(onColumnResize) &&
+    columns?.some(
+      (column, index) => resizes(column) && index < columns.length - 1,
+    ) === true;
 
   // WHAT THE COLUMN IS ACTUALLY WIDE, and the order is the whole rule: a width
   // the reader chose overrides the one the column declared, and a column with
@@ -171,8 +179,16 @@ function Table<T>(props: TableProps<T>) {
   // meaning what it says: the fixed algorithm redistributes the table's leftover
   // width across the columns, so the declarations become ratios. Leave one
   // column unsized and the rest hold exactly.
+  // DECLARED widths, not the ones the reader chose. Derived from `widthOf` this
+  // scolded a developer, on every render and unfixably, for a reader having
+  // dragged every border — or for the restored layout the hook's own doc
+  // recommends storing.
+  const declared =
+    columns?.filter((column) => column.width !== undefined) ?? [];
   useDevWarning(
-    fixed && columns !== undefined && sized.length === columns.length,
+    declared.length > 0 &&
+      columns !== undefined &&
+      declared.length === columns.length,
     'Table: every column declares a `width`, so the fixed layout has nothing to absorb the leftover and spreads it across all of them — the declared values become proportions rather than sizes. Leave at least one column unsized.',
   );
 

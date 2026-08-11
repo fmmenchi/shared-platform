@@ -8,6 +8,11 @@ import { defineMessages } from '../../i18n/messages.js';
  * satisfied by a path nobody can find only on paper. It is the control's
  * description, so it is announced after the name and read once.
  *
+ * IT NAMES EVERY KEY, which the first version did not: it mentioned "arrow
+ * keys" and stopped, leaving `Shift`, `Home`, `End` and `Enter` undocumented —
+ * and `End` is the one that takes the whole table while `Enter` is the only way
+ * back from it.
+ *
  * `value` says pixels because pixels are what the reader is choosing — the
  * width is measured off the rendered column, not converted into whatever unit
  * the column happened to declare.
@@ -15,23 +20,23 @@ import { defineMessages } from '../../i18n/messages.js';
 export const tableColumnResizerMessages = defineMessages('tableColumnResizer', {
   en: {
     name: 'Resize {column}',
-    hint: 'Arrow keys resize. Click once to adjust with the pointer, click again to finish.',
+    hint: 'Left and right arrows resize, with Shift for a larger step. Home for the narrowest, End for the widest, Enter to restore. Or press the handle once, then press where the border should go.',
     value: '{width} pixels',
     adjusting:
-      'Adjusting {column}. Move the pointer, then click to finish, or press Escape to cancel.',
+      'Placing the border of {column}. Press where it should go, or press Escape to cancel.',
   },
   it: {
     name: 'Ridimensiona {column}',
-    hint: 'Le frecce ridimensionano. Un clic per regolare col puntatore, un altro per finire.',
+    hint: 'Frecce sinistra e destra ridimensionano, con Maiusc per un passo maggiore. Home per la più stretta, Fine per la più larga, Invio per ripristinare. Oppure premi la maniglia una volta, poi premi dove va il bordo.',
     value: '{width} pixel',
     adjusting:
-      'Regolazione di {column}. Muovi il puntatore, poi fai clic per finire, o premi Esc per annullare.',
+      'Posizionamento del bordo di {column}. Premi dove deve andare, o premi Esc per annullare.',
   },
   ar: {
     name: 'تغيير حجم {column}',
-    hint: 'مفاتيح الأسهم تغيّر الحجم. انقر مرة للضبط بالمؤشر، ثم انقر مرة أخرى للإنهاء.',
+    hint: 'سهما اليسار واليمين يغيّران الحجم، ومع Shift بخطوة أكبر. Home للأضيق، End للأوسع، Enter للاستعادة. أو اضغط المقبض مرة، ثم اضغط حيث يجب أن يكون الحد.',
     value: '{width} بكسل',
     adjusting:
-      'ضبط {column}. حرّك المؤشر ثم انقر للإنهاء، أو اضغط Escape للإلغاء.',
+      'تحديد موضع حد {column}. اضغط حيث يجب أن يكون، أو اضغط Escape للإلغاء.',
   },
 });

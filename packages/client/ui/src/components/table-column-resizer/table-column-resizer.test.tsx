@@ -204,7 +204,7 @@ describe('a column resize handle', () => {
     // told about is a mode nobody knows they are in.
     await waitFor(() => expect(grip).toHaveAttribute('data-mode', 'adjust'));
     expect(document.querySelector('[role="status"]')).toHaveTextContent(
-      /Adjusting Città/,
+      /Placing the border of Città/,
     );
 
     // The pointer now moves the border with nothing held down.
@@ -219,10 +219,13 @@ describe('a column resize handle', () => {
     expect(measured()).toBe(240);
     expect(onWidths).not.toHaveBeenCalled();
 
-    // And the next press finishes it — `pointerdown` and not `click`, because
-    // the click that began the mode had not been dispatched yet and would have
-    // ended it on arrival.
-    document.dispatchEvent(
+    // And the next press finishes it. ON THE GRIP, which is where it lands in
+    // life: the border follows the pointer, so the handle is under it when the
+    // reader presses to finish. Dispatching this on `document` was how the
+    // first version of this test passed while the mode could not be left at
+    // all — the same event reached the handle's own `pointerdown`, found the
+    // gesture settled, started a new one, and re-latched on release.
+    grip.dispatchEvent(
       new PointerEvent('pointerdown', {
         bubbles: true,
         button: 0,
@@ -235,6 +238,321 @@ describe('a column resize handle', () => {
       expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '240px' }),
     );
     expect(grip).not.toHaveAttribute('data-mode');
+
+    // AND IT STAYS FINISHED. A free pointer move now moves the pointer, not the
+    // column.
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 140,
+        clientY: at.y,
+      }),
+    );
+    expect(measured()).toBe(240);
+  });
+
+  it('reports nothing when the border ends where it started', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    const press = (target: Element, clientX: number) =>
+      target.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          clientX,
+          clientY: at.y,
+        }),
+      );
+
+    press(grip, at.x);
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    await waitFor(() => expect(grip).toHaveAttribute('data-mode', 'adjust'));
+
+    // Placed back where it already was. Not merely redundant: a double-click
+    // arrives as exactly this, and a reported width would overwrite the
+    // declaration the second click is about to restore.
+    press(grip, at.x);
+
+    await waitFor(() => expect(grip).not.toHaveAttribute('data-mode'));
+    expect(onWidths).not.toHaveBeenCalled();
+  });
+
+  it('reports the width it painted, not the one the table measured back', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 50,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 50,
+        clientY: at.y,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '250px' }),
+    );
+    // AND THE VALUE IT ANNOUNCES CATCHES UP. The observer is told to stay quiet
+    // for the whole gesture and the committed width is already on screen, so
+    // nothing makes it fire again — `aria-valuetext` kept reporting the width
+    // from before the drag, and it takes precedence over `aria-valuenow`.
+    await waitFor(() =>
+      expect(grip).toHaveAttribute('aria-valuetext', '250 pixels'),
+    );
+    expect(grip).toHaveAttribute('aria-valuenow', '250');
+  });
+
+  it('survives a pointer the browser takes away', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 60,
+        clientY: at.y,
+      }),
+    );
+    // The browser taking over for a scroll, a system gesture, the window losing
+    // the device: no `pointerup` ever comes. Without a handler the gesture
+    // never ended — the handle was dead for the life of the mount and a later
+    // move still repainted the column.
+    document.dispatchEvent(
+      new PointerEvent('pointercancel', { bubbles: true, pointerId: 1 }),
+    );
+
+    await waitFor(() => expect(measured()).toBe(200));
+    expect(onWidths).not.toHaveBeenCalled();
+
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 200,
+        clientY: at.y,
+      }),
+    );
+    expect(measured()).toBe(200);
+
+    // And it still works afterwards.
+    grip.focus();
+    await browser.keyboard('{ArrowRight}');
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '216px' }),
+    );
+  });
+
+  it('ignores a second finger', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    // A pinch begun near the boundary, or a second cursor: it drove the column
+    // to wherever that pointer happened to be, and committed there.
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 2,
+        clientX: 10,
+        clientY: at.y,
+      }),
+    );
+    expect(measured()).toBe(200);
+
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 2,
+        clientX: 10,
+        clientY: at.y,
+      }),
+    );
+    expect(onWidths).not.toHaveBeenCalled();
+  });
+
+  it('places the border from the press itself, which is all a finger can do', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    // Tap to latch.
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        pointerType: 'touch',
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    await waitFor(() => expect(grip).toHaveAttribute('data-mode', 'adjust'));
+
+    // AND NOW TAP WHERE THE BORDER GOES — with NO `pointermove` in between,
+    // because a touch pointer only moves while it is touching and touching is
+    // the drag. The first version moved the border on hover and used this press
+    // only to stop, so on a real touchscreen the reader was told to "move the
+    // pointer" and the second tap committed the width unchanged: the criterion
+    // was unmet for exactly the people it is written for.
+    cell().dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 2,
+        pointerType: 'touch',
+        clientX: at.x + 70,
+        clientY: at.y,
+      }),
+    );
+
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '270px' }),
+    );
+    expect(grip).not.toHaveAttribute('data-mode');
+  });
+
+  it('leaves the latched mode alone when the press is somewhere else', async () => {
+    const onWidths = vi.fn();
+    render(
+      <>
+        <button type="button">altrove</button>
+        <Resizable onWidths={onWidths} />
+      </>,
+    );
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    await waitFor(() => expect(grip).toHaveAttribute('data-mode', 'adjust'));
+
+    // A press outside the table is somebody going elsewhere, not a border
+    // being placed six hundred pixels away.
+    screen.getByRole('button', { name: 'altrove' }).dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: 10,
+        clientY: 10,
+      }),
+    );
+
+    await waitFor(() => expect(grip).not.toHaveAttribute('data-mode'));
+    expect(onWidths).not.toHaveBeenCalled();
+    expect(measured()).toBe(200);
+  });
+
+  it('never widens a column past what the other columns need to exist', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    grip.focus();
+    await browser.keyboard('{End}');
+
+    // `End` used to mean the whole table: measured, a three-column table went
+    // to `[968, 0, 0]` and the other two rendered nothing, with `Escape` no
+    // help and `Enter` — the only way back — named nowhere the reader could
+    // see it.
+    const table = screen.getByRole('table').getBoundingClientRect().width;
+    await waitFor(() => expect(onWidths).toHaveBeenCalled());
+    const chosen = Number(
+      String(onWidths.mock.lastCall?.[0].name).replace('px', ''),
+    );
+    expect(chosen).toBeLessThanOrEqual(Math.round(table) - 48);
+    expect(grip.getAttribute('aria-valuemax')).toBe(String(chosen));
   });
 
   it('gives the column back on Escape, mid-gesture', async () => {
@@ -270,6 +588,60 @@ describe('a column resize handle', () => {
     // a choice.
     await waitFor(() => expect(measured()).toBe(200));
     expect(onWidths).not.toHaveBeenCalled();
+    // AND THE CELL IS REACT'S AGAIN. Writing the measured pixels back instead
+    // of what React had written left a fixed width that React never overwrote,
+    // because its own prop had not changed — a relative column silently stopped
+    // following its container.
+    expect(cell().style.inlineSize).toBe('200px');
+  });
+
+  it('gives a relative column back to its container on Escape', async () => {
+    function Relative() {
+      const widths = useColumnWidths();
+      return (
+        <Table
+          caption="Città"
+          rows={cities}
+          columns={[
+            { key: 'name', header: 'Città', rowHeader: true, width: '40%' },
+            { key: 'region', header: 'Regione' },
+          ]}
+          getRowId={(city) => city.id}
+          resizableColumns
+          {...widths.props}
+        />
+      );
+    }
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(<Relative />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 80,
+        clientY: at.y,
+      }),
+    );
+    await browser.keyboard('{Escape}');
+
+    // Verbatim, not measured: `'40%'` is what React wrote and what it still
+    // believes, so anything else here is a value nothing will ever correct.
+    await waitFor(() => expect(cell().style.inlineSize).toBe('40%'));
+    warn.mockRestore();
   });
 
   it('restores the declared width on a double click', async () => {

@@ -3,17 +3,17 @@
 exports[`a selectable table > matches its markup 1`] = `
 <div>
   <table
-    class="_table_1taqr_4"
+    class="_table_1t8rl_4"
   >
     <caption
-      class="_caption_1taqr_12"
+      class="_caption_1t8rl_12"
     >
       Persone
     </caption>
     <thead>
       <tr>
         <th
-          class="_selectCell_1taqr_66"
+          class="_selectCell_1t8rl_66"
           scope="col"
         >
           <input
@@ -38,7 +38,7 @@ exports[`a selectable table > matches its markup 1`] = `
     <tbody>
       <tr>
         <td
-          class="_selectCell_1taqr_66"
+          class="_selectCell_1t8rl_66"
         >
           <input
             aria-label="Select Zurigo"
@@ -59,7 +59,7 @@ exports[`a selectable table > matches its markup 1`] = `
       </tr>
       <tr>
         <td
-          class="_selectCell_1taqr_66"
+          class="_selectCell_1t8rl_66"
         >
           <input
             aria-label="Select Àosta"
@@ -80,7 +80,7 @@ exports[`a selectable table > matches its markup 1`] = `
       </tr>
       <tr>
         <td
-          class="_selectCell_1taqr_66"
+          class="_selectCell_1t8rl_66"
         >
           <input
             aria-label="Select Milano"
