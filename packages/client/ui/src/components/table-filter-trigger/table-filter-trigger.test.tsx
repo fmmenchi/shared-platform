@@ -237,18 +237,11 @@ describe('a column filter trigger', () => {
 
     await browser.click(trigger());
     await waitFor(() => expect(field()).toBeVisible());
-    // WAIT FOR IT TO BE WHERE IT WILL BE. The surface is anchored by an async
-    // `computePosition`, so between the popover being shown and that promise
-    // resolving it sits at its unpositioned coordinates — on top of the trigger
-    // and whatever else is there. Axe's contrast check reads what is BEHIND an
-    // element, so measuring in that window reports four failures inside the
-    // editor that no reader ever sees; it turned up as a test that passed alone
-    // and failed under load.
-    await waitFor(() =>
-      expect(
-        screen.getByRole('dialog').style.getPropertyValue('--anchored-x'),
-      ).not.toBe(''),
-    );
+    // The surface fades in, and axe composites what it measures — so this used
+    // to report four contrast failures inside an editor that is perfectly
+    // legible once it has arrived. `expectNoA11yViolations` waits for the
+    // animations now, because every a11y assertion over a surface has the same
+    // shape.
     await expectNoA11yViolations(container);
   });
 });

@@ -9,6 +9,28 @@ import { expect } from 'vitest';
 export async function expectNoA11yViolations(
   container: HTMLElement,
 ): Promise<void> {
+  // THE SETTLED RENDER, NOT THE ONE THAT HAPPENS TO BE ON SCREEN. Axe
+  // COMPOSITES what it measures, so a surface caught mid-fade is measured at
+  // whatever opacity it has reached: `PopoverContent` enters on an opacity
+  // transition, and half way through it axe read near-black text as `#999ca0`
+  // on white (2.75:1) and a primary button's fill as `#8eafce`, reporting four
+  // contrast failures inside an editor that is perfectly legible once it has
+  // arrived. That test passed alone and failed about half the time in a full
+  // run, where the machine is busy enough for the transition to still be
+  // going — the shape EVERY a11y assertion over an animated surface has, so the
+  // wait belongs here rather than in the one test that happened to notice.
+  //
+  // INFINITE ANIMATIONS ARE SKIPPED, or a spinner would hang the suite; a
+  // cancelled one rejects, which is not a failure of the thing being asserted.
+  await Promise.all(
+    container
+      .getAnimations({ subtree: true })
+      .filter(
+        (animation) => animation.effect?.getTiming().iterations !== Infinity,
+      )
+      .map((animation) => animation.finished.catch(() => undefined)),
+  );
+
   const results = await axe.run(container, {
     resultTypes: ['violations'],
   });
