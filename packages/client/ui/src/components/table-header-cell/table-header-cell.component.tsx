@@ -26,6 +26,17 @@ import type { TableHeaderCellProps } from './table-header-cell.types.js';
  * two-level header whose top cell claimed plain `col` would attach the group's
  * label to its first column only, and every column under it would lose it.
  * Which is the case the docs send people to the composed parts FOR.
+ *
+ * A FOOTER'S CELL HEADS ITS ROW, and the first version derived `col` there —
+ * with a comment arguing that a totals label "describes the column above it",
+ * which is a relationship `scope` cannot express: every value of `scope`
+ * points at SUBSEQUENT cells, per the HTML spec's own definition, and a
+ * `<tfoot>` renders last, so `col` named cells that do not exist. The cell a
+ * totals label actually describes is the value beside it — "Totale: 123" —
+ * which is `row`, and it is what MDN's own `<tfoot>` example and the WAI
+ * tables tutorial both write. A footer repeating the column headers can still
+ * say `scope="col"` explicitly; it loses nothing, since the attribute pointed
+ * at nothing there under either derivation.
  */
 function TableHeaderCell(props: TableHeaderCellProps) {
   const { align, scope, children, ...rest } = props;
@@ -35,11 +46,11 @@ function TableHeaderCell(props: TableHeaderCellProps) {
   const spansRows = Number(rest.rowSpan ?? 1) > 1;
 
   const derived =
-    section === 'head' || section === 'foot'
+    section === 'head'
       ? spansColumns
         ? 'colgroup'
         : 'col'
-      : section === 'body'
+      : section === 'body' || section === 'foot'
         ? spansRows
           ? 'rowgroup'
           : 'row'

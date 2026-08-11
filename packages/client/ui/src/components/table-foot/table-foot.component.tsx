@@ -10,8 +10,9 @@ import type { TableFootProps } from './table-foot.types.js';
  * `TableHeaderCell` cannot tell what its cells head. The section union had
  * declared `'foot'` from the start with nothing to produce it.
  *
- * A `<th>` in here heads a COLUMN, like one in the header: a totals row's label
- * cell describes the column above it, not the row beside it.
+ * A `<th>` in here heads its ROW: "Totale" describes the values beside it, so
+ * the reader hears "Totale: 123" on the cell — `scope` can only point at
+ * subsequent cells, and below a footer there are none for `col` to name.
  */
 function TableFoot(props: TableFootProps) {
   const { children, ...rest } = props;

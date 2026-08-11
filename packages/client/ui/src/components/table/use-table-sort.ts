@@ -9,9 +9,6 @@ import type {
   UseTableSortResult,
 } from './use-table-sort.types.js';
 
-/** How many rows to look at before deciding a key names nothing. */
-const PROBE_ROWS = 5;
-
 /**
  * `useSortState` plus the collation engine: the rows, in order.
  *
@@ -66,16 +63,19 @@ export function useTableSort<T>(
   // cannot catch at compile time. Both leave every value `undefined`, which the
   // engine reads as empty on both sides and reports equal for every pair.
   const key = sort.state?.key;
+  // `in`, NOT `Object.hasOwn`, and EVERY row, not the first few — the same two
+  // corrections `useTableFilters` already records for the same probe: a row
+  // that exposes its value through a prototype getter (a class instance, a
+  // proxy) sorts perfectly well and was being warned about, and a property
+  // that only appears from the sixth row on warned too. One question was being
+  // answered two ways, and one of them had already been declared wrong in the
+  // sibling file. `every` short-circuits on the first row that has the key, so
+  // the full scan is only ever paid in the case that deserves the warning.
   const orphan =
     key !== undefined &&
     !compare?.[key] &&
     rows.length > 0 &&
-    rows
-      .slice(0, PROBE_ROWS)
-      .every(
-        (row) =>
-          row == null || !Object.hasOwn(row as Record<string, unknown>, key),
-      );
+    rows.every((row) => row == null || !(key in (row as object)));
   useDevWarning(
     orphan,
     `useTableSort: sorting by \`${String(key)}\`, which none of the rows has as a property and \`compare\` has no entry for — so the rows do not move while the header announces that they did. A computed column needs a \`compare\` entry; a key that looks right may be a typo.`,

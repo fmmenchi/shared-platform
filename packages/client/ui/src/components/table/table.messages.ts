@@ -58,6 +58,7 @@ export const tableMessages = defineMessages('table', {
     selectAllRows: 'Select all rows',
     selectionCount: 'Selection: {count}',
     selectionAll: 'All rows selected.',
+    selectionAllExcept: 'All rows selected except {count}.',
     selectionCleared: 'Selection cleared.',
   },
   it: {
@@ -71,6 +72,7 @@ export const tableMessages = defineMessages('table', {
     selectAllRows: 'Seleziona tutte le righe',
     selectionCount: 'Selezione: {count}',
     selectionAll: 'Tutte le righe selezionate.',
+    selectionAllExcept: 'Tutte le righe selezionate tranne {count}.',
     selectionCleared: 'Selezione annullata.',
   },
   ar: {
@@ -84,6 +86,7 @@ export const tableMessages = defineMessages('table', {
     selectAllRows: 'تحديد كل الصفوف',
     selectionCount: 'التحديد: {count}',
     selectionAll: 'تم تحديد كل الصفوف.',
+    selectionAllExcept: 'تم تحديد كل الصفوف باستثناء {count}.',
     selectionCleared: 'تم إلغاء التحديد.',
   },
 });

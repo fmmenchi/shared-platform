@@ -305,6 +305,49 @@ describe('a selectable table', () => {
   });
 });
 
+describe('under an exclude rule', () => {
+  // The mode had NO component-level coverage at all: the algebra is proved in
+  // `selection.test.ts`, and the announcements — which read the mode — were
+  // not. The overstatement below lived in that gap.
+  const excluding = (ids: string[]) => (
+    <Table
+      caption="Persone"
+      rows={people}
+      columns={columns}
+      getRowId={(p) => p.id}
+      selection={{ mode: 'exclude', ids: new Set(ids) }}
+      onRowSelectToggle={() => undefined}
+      onSelectAllToggle={() => undefined}
+    />
+  );
+
+  it('does not claim every row when exceptions survive on other pages', async () => {
+    // EVERYTHING_SELECTED, then one row unticked on a page this table never
+    // rendered ('p2-77') and one on this page ('1'). Completing the page
+    // removes only the visible exception, so the off-page one lives on — and
+    // "All rows selected." was announced over it, false precisely for the
+    // reader who cannot see page 2. The bar answers this same state "All rows
+    // selected except 1."; the region now agrees with it about the same click.
+    render(excluding(['p2-77', '1']));
+
+    await browser.click(
+      screen.getByRole('checkbox', { name: 'Select all rows' }),
+    );
+
+    expect(status()).toHaveTextContent('All rows selected except 1.');
+  });
+
+  it('claims every row only when completing the page makes it true', async () => {
+    render(excluding(['1']));
+
+    await browser.click(
+      screen.getByRole('checkbox', { name: 'Select all rows' }),
+    );
+
+    expect(status()).toHaveTextContent('All rows selected.');
+  });
+});
+
 describe('what it refuses to do quietly', () => {
   it('draws no column, and says so, when nothing listens', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

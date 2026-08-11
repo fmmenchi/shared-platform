@@ -233,20 +233,28 @@ describe('Table', () => {
       ).toHaveAttribute('scope', 'colgroup');
     });
 
-    it('gives a footer its own section, so its cells head columns', async () => {
+    it('gives a footer its own section, so its label heads the totals row', async () => {
+      // A row with VALUES beside the label, deliberately: the first version of
+      // this test used a single-cell row — the one layout where `col` and
+      // `row` are indistinguishable — and pinned `col`, which points at
+      // subsequent cells in the column and below a footer names nothing. The
+      // label describes the totals beside it, so a reader hears "Totale: 123".
       render(
         <Table caption="Persone">
           <TableFoot>
             <TableRow>
               <TableHeaderCell>Totale</TableHeaderCell>
+              <TableCell>123</TableCell>
+              <TableCell>456</TableCell>
             </TableRow>
           </TableFoot>
         </Table>,
       );
 
-      expect(
-        screen.getByRole('columnheader', { name: 'Totale' }),
-      ).toHaveAttribute('scope', 'col');
+      expect(screen.getByRole('rowheader', { name: 'Totale' })).toHaveAttribute(
+        'scope',
+        'row',
+      );
     });
 
     it('names the table even when the caption arrives as `false`', async () => {
