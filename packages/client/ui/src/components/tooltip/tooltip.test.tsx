@@ -796,4 +796,21 @@ describe('Tooltip', () => {
       });
     }
   });
+
+  it('survives a JavaScript consumer handing content that is not a string', () => {
+    // The type says string; a JS consumer with a mapped/spread source gets no
+    // check, and `content.trim()` in the name-repeat guard ran on every
+    // render — a TypeError that took the page down, naming neither the
+    // component nor the mistake, while the render itself would have coped.
+    const node = 42 as unknown as string;
+    expect(() =>
+      render(
+        <Tooltip content={node}>
+          <button type="button" aria-label="Save">
+            S
+          </button>
+        </Tooltip>,
+      ),
+    ).not.toThrow();
+  });
 });

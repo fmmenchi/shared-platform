@@ -218,7 +218,16 @@ function Tooltip(props: TooltipProps) {
   // accessible name by hand, which was tried here and got `<img alt>` wrong.
   // An unnamed trigger is `axe`'s `button-name`, where it is computed properly.
   useDevWarning(
-    triggerNode?.getAttribute('aria-label')?.trim() === content.trim(),
+    // `typeof` FIRST, because this predicate runs on every render in prod too:
+    // `content` is typed string, but a JavaScript consumer building props from
+    // a mapped or spread source gets no excess-property check — the exact
+    // audience Table defends for `sortLabel` — and handing a node or a number
+    // here made `.trim()` a TypeError that took the page down, with an error
+    // naming neither the component nor the mistake (the failure mode this
+    // file records eliminating once already, for `cloneElement`). The render
+    // itself would have coped.
+    typeof content === 'string' &&
+      triggerNode?.getAttribute('aria-label')?.trim() === content.trim(),
     `Tooltip: \`content\` repeats the trigger's accessible name, so a screen ` +
       'reader announces it twice. Either describe something the name does not ' +
       'say, or drop the tooltip.',
