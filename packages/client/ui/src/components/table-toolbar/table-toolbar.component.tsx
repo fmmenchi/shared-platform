@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
 import { cn } from '../../util/cn.js';
 import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { countSelected } from '../../selection/selection.js';
+import { activeFilters } from '../../filtering/filter.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { Button } from '../button/button.component.js';
 import { Toolbar } from '../toolbar/toolbar.component.js';
@@ -57,6 +58,9 @@ function TableToolbar({
   total,
   onSelectEverything,
   onClear,
+  filters,
+  rowCount,
+  onClearFilters,
   className,
   children,
   ...rest
@@ -79,9 +83,17 @@ function TableToolbar({
   // rule covers nothing, reachable under `exclude` by unticking every row.
   const picked = selection !== undefined && (count === undefined || count > 0);
 
+  // A blank value is not a filter that matches nothing — it is no filter, so a
+  // cleared box leaves nothing behind to describe.
+  const active = filters === undefined ? [] : activeFilters(filters);
+  const filtered = active.length > 0;
+
   // ANYTHING TO SAY OR ANYTHING TO DO. A toolbar with neither is chrome.
   const visible =
-    picked || hasRenderableChildren(summary) || hasRenderableChildren(children);
+    picked ||
+    filtered ||
+    hasRenderableChildren(summary) ||
+    hasRenderableChildren(children);
 
   const returnTo = useRef<HTMLElement | null>(null);
   useEffect(() => {
@@ -121,6 +133,27 @@ function TableToolbar({
             t('allExcept', { count: numbers.format(selection.ids.size) })
         : t('count', { count: numbers.format(count) });
 
+  // SHOWN ONLY WHEN FILTERED, which is the same rule that keeps the live region
+  // silent on arrival: the count of an unfiltered table is not news. With a
+  // `total` it is a fraction — "12 of 240" is what a reader needs to know they
+  // are not seeing everything — and without one it says what it can.
+  const shown = !filtered
+    ? null
+    : rowCount === undefined
+      ? null
+      : total === undefined
+        ? t('filteredCount', { shown: numbers.format(rowCount) })
+        : t('filtered', {
+            shown: numbers.format(rowCount),
+            total: numbers.format(total),
+          });
+
+  // THE COLUMNS, NOT THE VALUES. A value can be anything the reader typed and
+  // belongs beside its own column's control, where it is editable; here it
+  // would be a sentence that grows without bound and says less the longer it
+  // gets.
+  const by = filtered ? t('filteredBy', { columns: active.join(', ') }) : null;
+
   const escalates =
     onSelectEverything !== undefined &&
     selection?.mode === 'include' &&
@@ -144,7 +177,9 @@ function TableToolbar({
         PERSISTENT statement; the announcement is the transient one. */}
       <div id={summaryId} className={styles.summary}>
         {summary}
-        {said}
+        {shown !== null && <span>{shown}</span>}
+        {by !== null && <span className={styles.quiet}>{by}</span>}
+        {said !== null && <span>{said}</span>}
       </div>
 
       <Toolbar label={t('actions')} className={styles.actions}>
@@ -159,6 +194,13 @@ function TableToolbar({
               onClick={() => onSelectEverything()}
             >
               {t('selectAllMatching', { total: numbers.format(total) })}
+            </Button>
+          </ToolbarItem>
+        )}
+        {filtered && onClearFilters !== undefined && (
+          <ToolbarItem>
+            <Button variant="ghost" size="sm" onClick={() => onClearFilters()}>
+              {t('clearFilters')}
             </Button>
           </ToolbarItem>
         )}

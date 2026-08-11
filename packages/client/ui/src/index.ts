@@ -325,6 +325,28 @@ export type { TableFootProps } from './components/table-foot/table-foot.types.js
 // What is selected, said on the screen and not only announced — and the one
 // affordance the table itself cannot offer, since only the bar knows there is
 // anything beyond the page.
+// Filters are a PROJECTION PARAMETER, like the sort and unlike the selection:
+// they decide which rows exist, so they belong in a query key and in a URL. Two
+// hooks for the same reason sorting has two — a consumer whose server filters
+// takes the state one and the matching never enters their bundle.
+export { useFilterState } from './components/table/use-filter-state.js';
+export type {
+  UseFilterStateOptions,
+  UseFilterStateResult,
+} from './components/table/use-filter-state.types.js';
+export { useTableFilters } from './components/table/use-table-filters.js';
+export type {
+  UseTableFiltersOptions,
+  UseTableFiltersResult,
+} from './components/table/use-table-filters.types.js';
+export {
+  foldForSearch,
+  activeFilters,
+  isFiltered,
+  matchesFilters,
+  filterRows,
+} from './filtering/filter.js';
+export type { FilterState, RowFilter } from './filtering/filter.types.js';
 export { TableToolbar } from './components/table-toolbar/table-toolbar.component.js';
 export type { TableToolbarProps } from './components/table-toolbar/table-toolbar.types.js';
 export { TableRow } from './components/table-row/table-row.component.js';

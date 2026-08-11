@@ -27,6 +27,10 @@ export const tableToolbarMessages = defineMessages('tableToolbar', {
     allExcept: 'All rows selected except {count}.',
     selectAllMatching: 'Select all {total}',
     clear: 'Clear selection',
+    filtered: 'Showing {shown} of {total}',
+    filteredCount: 'Showing {shown}',
+    filteredBy: 'Filtered by: {columns}',
+    clearFilters: 'Clear filters',
   },
   it: {
     region: 'Controlli tabella',
@@ -36,6 +40,10 @@ export const tableToolbarMessages = defineMessages('tableToolbar', {
     allExcept: 'Tutte le righe selezionate tranne {count}.',
     selectAllMatching: 'Seleziona tutte le {total}',
     clear: 'Annulla selezione',
+    filtered: 'Mostrate {shown} di {total}',
+    filteredCount: 'Mostrate {shown}',
+    filteredBy: 'Filtrato per: {columns}',
+    clearFilters: 'Annulla filtri',
   },
   ar: {
     region: 'أدوات الجدول',
@@ -45,5 +53,9 @@ export const tableToolbarMessages = defineMessages('tableToolbar', {
     allExcept: 'تم تحديد كل الصفوف باستثناء {count}.',
     selectAllMatching: 'تحديد الكل ({total})',
     clear: 'إلغاء التحديد',
+    filtered: 'عرض {shown} من {total}',
+    filteredCount: 'عرض {shown}',
+    filteredBy: 'مُرشَّح حسب: {columns}',
+    clearFilters: 'إلغاء عوامل التصفية',
   },
 });

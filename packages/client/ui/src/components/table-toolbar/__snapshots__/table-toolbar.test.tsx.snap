@@ -4,18 +4,20 @@ exports[`the table toolbar > matches its markup 1`] = `
 <div
   aria-describedby="«react-id»"
   aria-label="Table controls"
-  class="_bar_5wzf5_3"
+  class="_bar_1us9o_3"
   role="region"
 >
   <div
-    class="_summary_5wzf5_15"
+    class="_summary_1us9o_15"
     id="«react-id»"
   >
-    Selection: 2
+    <span>
+      Selection: 2
+    </span>
   </div>
   <div
     aria-label="Table actions"
-    class="_toolbar_tdrgw_4 _actions_5wzf5_22"
+    class="_toolbar_tdrgw_4 _actions_1us9o_26"
     data-orientation="horizontal"
     role="toolbar"
     tabindex="-1"

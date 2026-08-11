@@ -253,6 +253,51 @@ describe('the table toolbar', () => {
     expect(document.activeElement).not.toBe(document.body);
   });
 
+  it('says what is filtered, and how much is left', async () => {
+    const onClearFilters = vi.fn();
+    render(
+      <TableToolbar
+        filters={{ city: 'Milano' }}
+        rowCount={12}
+        total={240}
+        onClearFilters={onClearFilters}
+      />,
+    );
+
+    // A fraction, because "12" alone does not tell a reader they are not
+    // seeing everything.
+    expect(screen.getByText('Showing 12 of 240')).toBeInTheDocument();
+    // The COLUMNS, not the values: a value can be anything typed and belongs
+    // beside its own control, where it is editable.
+    expect(screen.getByText(/Filtered by: city/)).toBeInTheDocument();
+
+    await browser.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(onClearFilters).toHaveBeenCalledOnce();
+  });
+
+  it('says nothing about a count when nothing is filtered', async () => {
+    // The count of an unfiltered table is not news — the same rule that keeps
+    // the live region silent on arrival.
+    const { container } = render(
+      <TableToolbar filters={{}} rowCount={240} total={240} />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('does not treat a cleared box as a filter that matches nothing', async () => {
+    const { container } = render(
+      <TableToolbar
+        filters={{ city: '   ' }}
+        rowCount={240}
+        total={240}
+        onClearFilters={() => undefined}
+      />,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+
   it('costs one tab stop, not one per action', async () => {
     // The reason it is a `Toolbar` at all: a bar that appears and disappears
     // would otherwise grow and shrink the reader's keyboard under them.

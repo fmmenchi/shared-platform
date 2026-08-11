@@ -1,5 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import type { Selection } from '../../selection/selection.types.js';
+import type { FilterState } from '../../filtering/filter.types.js';
 
 export interface TableToolbarProps extends Omit<
   ComponentPropsWithRef<'div'>,
@@ -49,6 +50,19 @@ export interface TableToolbarProps extends Omit<
   onSelectEverything?: () => void;
   /** Put the selection back to nothing. */
   onClear?: () => void;
+  /**
+   * What is filtered, as `useTableFilters` holds it. Optional: a table that
+   * selects and does not filter has a toolbar too.
+   */
+  filters?: FilterState;
+  /**
+   * How many rows are left after filtering. Shown only WHEN filtered — the
+   * count of an unfiltered table is not news, which is the same rule that keeps
+   * the live region silent on arrival.
+   */
+  rowCount?: number;
+  /** Put the view back to every row. */
+  onClearFilters?: () => void;
   /**
    * The bulk actions — delete, export, assign. Each wrapped in a `ToolbarItem`,
    * like any other toolbar's controls: an unwrapped control keeps its own tab

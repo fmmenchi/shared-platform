@@ -45,6 +45,13 @@
     font-weight: var(--fm-font-weight-medium);
   }
 
+  /* The columns a filter is on, said more quietly than the count: it is context
+     for the number beside it, not a second headline. */
+  .quiet {
+    font-weight: var(--fm-font-weight-regular);
+    color: var(--fm-color-muted-foreground);
+  }
+
   /* The actions sit at the far end, and wrap under the count on a narrow
      screen rather than squeezing it. */
   .actions {
