@@ -29,6 +29,19 @@ beforeAll(() => {
     join(dir, 'bad.css'),
     "[data-theme='x'] {\n  --fm-color-border: oklch(91% 0.008 256);\n}\n",
   );
+  // `primary` exists ONLY inside a comment — the retune leftover. The gate must
+  // read what the browser reads, so this theme is INCOMPLETE; before comments
+  // were stripped, the regex found the role in the comment and the validator
+  // scored a value the shipped CSS does not define.
+  writeFileSync(
+    join(dir, 'commented.css'),
+    "[data-theme='x'] {\n" +
+      '  /* off for now\n' +
+      '  --fm-color-primary: oklch(41% 0.135 255);\n' +
+      '  */\n' +
+      '  --fm-color-border: oklch(91% 0.008 256);\n' +
+      '}\n',
+  );
 });
 
 const context = () =>
@@ -50,6 +63,14 @@ describe('validate executor', () => {
   it('fails when a theme violates the contract', async () => {
     const out = await executor(
       { themes: ['good.css', 'bad.css'], tokensPath },
+      context(),
+    );
+    expect(out.success).toBe(false);
+  });
+
+  it('does not read a role out of a comment', async () => {
+    const out = await executor(
+      { themes: ['commented.css'], tokensPath },
       context(),
     );
     expect(out.success).toBe(false);

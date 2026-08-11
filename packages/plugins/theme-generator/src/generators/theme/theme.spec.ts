@@ -5,7 +5,8 @@ import {
   readProjectConfiguration,
   type Tree,
 } from '@nx/devkit';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { themeGenerator } from './theme';
@@ -83,6 +84,59 @@ describe('theme generator', () => {
     expect(
       readProjectConfiguration(tree, 'web').targets?.['validate-themes'],
     ).toBeUndefined();
+  });
+
+  it('does not scaffold a role that is commented out', async () => {
+    // The completeness assertion above cannot see this: it derives the expected
+    // set with the same regex, so a commented-out role would appear on BOTH
+    // sides and the test would agree with the bug. A synthetic contract with
+    // one live role and one dead one is the only honest probe — the ordinary
+    // `/* off for now` around a block during a retune.
+    const dir = mkdtempSync(join(tmpdir(), 'fm-theme-'));
+    const synthetic = join(dir, 'vars.css');
+    writeFileSync(
+      synthetic,
+      ':root {\n' +
+        '  --fm-color-primary: oklch(41% 0.135 255);\n' +
+        '  /* off for now\n' +
+        '  --fm-color-accent: oklch(50% 0.1 200);\n' +
+        '  */\n' +
+        '}\n',
+    );
+
+    await themeGenerator(tree, {
+      name: 'acme',
+      project: 'web',
+      tokensPath: synthetic,
+    });
+    const css = tree.read('apps/web/src/themes/acme.css', 'utf-8') as string;
+    expect(css).toContain('--fm-color-primary:');
+    expect(css).not.toContain('--fm-color-accent');
+  });
+
+  it("declares the theme's color-scheme, light unless told otherwise", async () => {
+    // Without it, the parts the BROWSER paints — a select's popup, a native
+    // checkbox — keep the page's scheme, and a dark brand theme ships white
+    // native lists on Safari and Firefox (the recorded defect of hand-written
+    // presets).
+    await themeGenerator(tree, {
+      name: 'acme',
+      project: 'web',
+      tokensPath: varsPath,
+    });
+    expect(tree.read('apps/web/src/themes/acme.css', 'utf-8')).toContain(
+      'color-scheme: light;',
+    );
+
+    await themeGenerator(tree, {
+      name: 'noir',
+      project: 'web',
+      scheme: 'dark',
+      tokensPath: varsPath,
+    });
+    expect(tree.read('apps/web/src/themes/noir.css', 'utf-8')).toContain(
+      'color-scheme: dark;',
+    );
   });
 
   it('rejects an invalid data-theme name', async () => {

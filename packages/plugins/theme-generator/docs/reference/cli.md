@@ -39,6 +39,7 @@ pnpm nx g @fmmenchi/nx-theme-generator:theme <name> --project=<project> [options
 | `--project`        | `string`  | **Required** | The project the theme belongs to (gets the `validate-themes` target).                                          |
 | `--directory`      | `string`  | `src/themes` | Directory for the theme file, relative to the project root.                                                    |
 | `--skipValidation` | `boolean` | `false`      | Do not wire the `validate-themes` target.                                                                      |
+| `--scheme`         | `string`  | `light`      | `light` or `dark` — emitted as `color-scheme`, so the parts the browser paints follow the theme.               |
 | `--tokensPath`     | `string`  | _(auto)_     | Advanced: explicit path to `@fmmenchi/tokens`' `vars.css`, when it cannot be resolved from the workspace root. |
 
 :::tip[Interactive prompts]
