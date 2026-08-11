@@ -101,6 +101,32 @@ describe('Badge', () => {
       );
     });
 
+    it('warns on the shapes the hand-written check let through', () => {
+      // `{items}` from a filter that matched nothing, whitespace, and `true` —
+      // each renders NOTHING and each passed the old `!= null && !== false &&
+      // !== ''` check, so the badge this guard exists for shipped unnamed
+      // through exactly the inputs a real call site produces.
+      for (const empty of [[], '   ', true] as const) {
+        const warn = vi
+          .spyOn(console, 'warn')
+          .mockImplementation(() => undefined);
+        render(<Badge icon={<svg />}>{empty}</Badge>);
+        expect(warn, JSON.stringify(empty)).toHaveBeenCalledWith(
+          expect.stringContaining('no discernible text'),
+        );
+        warn.mockRestore();
+      }
+    });
+
+    it('counts a zero as a label, because a zero is a real count', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<Badge icon={<svg />}>{0}</Badge>);
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
     it('does not warn when the icon is paired with text', () => {
       const warn = vi
         .spyOn(console, 'warn')
