@@ -1,4 +1,5 @@
 import { cn } from '../../util/cn.js';
+import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { badgeVariants } from './badge.variants.js';
 import type { BadgeProps } from './badge.types.js';
@@ -16,11 +17,15 @@ function Badge(props: BadgeProps) {
 
   // Colour alone is never the signal: a badge with an icon but no text (and no
   // explicit label) has no discernible name. Warn instead of failing silently.
-  // A falsy child that renders nothing (`false`/`''` from a conditional, `null`)
-  // counts as NO label — but `0` is a real count, so it does count. axe won't
-  // flag an unnamed <span>, so this guard is the only protection.
+  // THROUGH `hasRenderableChildren`, not a hand check: the hand-written one
+  // covered `null`/`false`/`''` and let through the three shapes the util's own
+  // doc names — the empty array (`{items}` from a filter that matched nothing),
+  // whitespace, and `true` — so the badge this guard exists for shipped unnamed
+  // through exactly the inputs a real call site produces. `0` still counts as a
+  // label, because the util renders it: a zero is a real count. axe won't flag
+  // an unnamed <span>, so this guard is the only protection.
   const hasLabel =
-    (children != null && children !== false && children !== '') ||
+    hasRenderableChildren(children) ||
     attrs['aria-label'] != null ||
     attrs['aria-labelledby'] != null;
   useDevWarning(
