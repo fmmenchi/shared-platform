@@ -61,8 +61,15 @@
   /* Reduced motion: kill the movement, keep the change. The panel still opens
      and closes, it just gets there at once — `block-size` is a size animation,
      which is movement (WCAG 2.3.3). */
+  /* BOTH branches, and the second is the one that was escaping: a media query
+     adds no specificity, and the `[open]` rule redeclares the whole
+     `transition` shorthand at (0,2,1) — beating this longhand at (0,1,1). So
+     with reduced motion on, CLOSING was instant and OPENING still animated: a
+     size animation, which is movement (WCAG 2.3.3), on exactly half the
+     interaction. */
   @media (prefers-reduced-motion: reduce) {
-    .item::details-content {
+    .item::details-content,
+    .item[open]::details-content {
       transition-duration: var(--fm-duration-none);
     }
   }

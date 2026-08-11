@@ -63,7 +63,16 @@ export function useOpenMirror(
     }
 
     const onToggle = (event: Event) => {
-      mirror((event as Event & { newState?: string }).newState === 'open');
+      // A <details> answers its OWN property — the same fact the read above
+      // uses, and the one every engine has. `newState` is ToggleEvent's, and a
+      // details' toggle is a plain Event in engines that predate it: read
+      // there, `undefined === 'open'` reported CLOSED on every opening. The
+      // popover keeps `newState`, which its event has had from the start.
+      mirror(
+        node instanceof HTMLDetailsElement
+          ? node.open
+          : (event as Event & { newState?: string }).newState === 'open',
+      );
     };
     node.addEventListener('toggle', onToggle);
 

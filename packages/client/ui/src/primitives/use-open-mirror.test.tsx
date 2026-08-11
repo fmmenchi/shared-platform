@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { useRef } from 'react';
-import { render } from '@testing-library/react';
+import { useCallback, useRef } from 'react';
+import { act, render } from '@testing-library/react';
 import { useOpenMirror } from './use-open-mirror.js';
 
 /**
@@ -89,5 +89,35 @@ describe('useOpenMirror', () => {
     // a spurious `false` would tell a consumer's `onOpenChange` that something
     // had closed which was never open.
     expect(report).not.toHaveBeenCalled();
+  });
+
+  it('reports a <details> open from a PLAIN toggle event, without newState', () => {
+    // ToggleEvent's `newState` is the popover's vocabulary; a details' toggle
+    // is a plain Event in engines that predate it. Read there,
+    // `undefined === 'open'` reported CLOSED on every opening — the mirror
+    // said shut while the panel stood open. The platform's own property is
+    // the fact, and every engine has it.
+    const reports: boolean[] = [];
+    function Probe() {
+      const ref = useRef<HTMLDetailsElement>(null);
+      useOpenMirror(
+        ref,
+        useCallback((open: boolean) => {
+          reports.push(open);
+        }, []),
+      );
+      return (
+        <details ref={ref}>
+          <summary>s</summary>
+        </details>
+      );
+    }
+    render(<Probe />);
+    const details = document.querySelector('details') as HTMLDetailsElement;
+    act(() => {
+      details.open = true;
+      details.dispatchEvent(new Event('toggle'));
+    });
+    expect(reports).toContain(true);
   });
 });
