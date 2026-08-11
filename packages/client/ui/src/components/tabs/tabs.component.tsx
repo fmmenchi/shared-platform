@@ -52,24 +52,45 @@ function Tabs(props: TabsProps) {
     ...rest
   } = props;
 
-  const [value, setValue] = useControlled<string | undefined>({
-    value: controlled,
+  // KEY PRESENCE, NOT VALUE — the correction all three table hooks already
+  // carry, applied to the component that stayed on the old form. A consumer
+  // syncing to a URL writes `value={searchParams.get('tab') ?? undefined}`:
+  // read as a value, that is UNCONTROLLED on the parameterless URL, so the
+  // component kept private state nobody asked for and flipped modes — blaming
+  // the consumer via useControlled's warning — the moment the parameter
+  // appeared. `null` stands for "controlled, nothing selected", the same
+  // coercion the hooks use.
+  const isControlled = 'value' in props;
+  const [value, setValue] = useControlled<string | null | undefined>({
+    value: isControlled ? (controlled ?? null) : undefined,
     defaultValue,
     onChange: onValueChange as
-      ((value: string | undefined) => void) | undefined,
+      ((value: string | null | undefined) => void) | undefined,
     name: 'Tabs',
   });
 
   const known = readTabs(children);
+
+  // The React key discipline, for the axis this family keys everything on:
+  // tab and panel ids are DERIVED from the value, so two tabs sharing one
+  // produce duplicate DOM ids, two `aria-selected="true"` at once, and a
+  // panel labelled by whichever comes first — invisible on screen. Table
+  // warns for its column keys and row ids; this is the same defect here.
+  useDevWarning(
+    new Set(known.map((tab) => tab.value)).size !== known.length,
+    'Tabs: two <Tab> elements share a `value`. Ids are derived from it, so the DOM gets duplicate ids and two selected tabs at once. Give every tab its own value.',
+  );
   const matched = known.some((tab) => tab.value === value);
   // SHOWING and TAB STOP are two questions. With every tab disabled there is
   // nothing to show — a product that marked them all unavailable should not
   // find one of those panels open — but something must still hold
   // `tabindex="0"`, or the list drops out of the page's tab order entirely.
-  const showing = matched ? value : fallbackTab(known)?.value;
+  // `?? undefined` collapses the internal null (controlled, nothing
+  // selected) back to the context's vocabulary.
+  const showing = matched ? (value ?? undefined) : fallbackTab(known)?.value;
 
   useDevWarning(
-    value !== undefined && !matched && known.length > 0,
+    value != null && !matched && known.length > 0,
     `Tabs: value ${JSON.stringify(value)} names no tab, so the first usable one is showing instead. Left as it is, no tab would carry \`tabindex="0"\` and the whole list would be unreachable by Tab.`,
   );
 
