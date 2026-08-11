@@ -106,6 +106,66 @@ describe('useTableSort and the rows it is given', () => {
     warn.mockRestore();
   });
 
+  it('stays quiet when the rows expose the key through a prototype getter', () => {
+    // A class instance sorts perfectly well — `byKey` reads `row[key]`, which
+    // walks the prototype — and was being warned about: the probe asked with
+    // `Object.hasOwn`, which the filter probe had already corrected to `in`
+    // for exactly this shape. One question, two answers, one already known
+    // wrong. A false warning teaches people to ignore the true ones.
+    class Star {
+      constructor(
+        public id: string,
+        private called: string,
+      ) {}
+      get name(): string {
+        return this.called;
+      }
+    }
+    const stars = [new Star('1', 'Vega'), new Star('2', 'Altair')];
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    function Getters() {
+      const sort = useTableSort<Star>(stars, { defaultSortKey: 'name' });
+      return (
+        <output data-order="">{sort.rows.map((s) => s.name).join(',')}</output>
+      );
+    }
+    render(<Getters />);
+
+    expect(readOrder()).toBe('Altair,Vega');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it('stays quiet when the property only appears in later rows', () => {
+    // Sparse data: the first rows carry no `age` and a later one does. The old
+    // probe looked at the first five rows only, so a real, sortable property
+    // was reported as naming nothing — the second correction the filter probe
+    // already documents, applied here.
+    const sparse = [
+      { id: '1', name: 'a' },
+      { id: '2', name: 'b' },
+      { id: '3', name: 'c' },
+      { id: '4', name: 'd' },
+      { id: '5', name: 'e' },
+      { id: '6', name: 'f', age: 9 },
+    ];
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    function Sparse() {
+      const sort = useTableSort(sparse, { defaultSortKey: 'age' });
+      return (
+        <output data-order="">{sort.rows.map((r) => r.id).join(',')}</output>
+      );
+    }
+    render(<Sparse />);
+
+    // The one row with a value leads; the empties keep their arrival order.
+    expect(readOrder()).toBe('6,1,2,3,4,5');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   it('stays quiet when the comparator is the one thing that knows the column', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(

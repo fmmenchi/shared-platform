@@ -394,15 +394,27 @@ function Table<T>(props: TableProps<T>) {
   // when the page is already covered and selects otherwise. Under an `exclude`
   // rule "Selected: 3" would understate a selection that reaches rows nobody
   // here has seen, so it says so instead of counting.
-  const selectAllSaid = () =>
-    coverage === 'all'
-      ? t('selectionCleared')
-      : selection?.mode === 'exclude'
+  const selectAllSaid = () => {
+    if (coverage === 'all') return t('selectionCleared');
+    if (selection?.mode === 'exclude') {
+      // WHAT SURVIVES THE CLICK, not what the mode implies. Completing the page
+      // removes only the VISIBLE exceptions from the rule, so exceptions on
+      // pages nobody here has seen live on — and "All rows selected." was
+      // false precisely for the reader who cannot see those pages. The bar
+      // answers the same state with the same sentence (`allExcept`), and the
+      // two must not disagree about the same click.
+      const visible = new Set(visibleIds);
+      let remaining = 0;
+      for (const id of selection.ids) if (!visible.has(id)) remaining += 1;
+      return remaining === 0
         ? t('selectionAll')
-        : // THROUGH `Intl`, like the bar's. The two say the same-looking
-          // sentence about the same click, and rendering one as "1,500" while
-          // the other says "1500" is a drift a reader hears.
-          t('selectionCount', { count: numbers.format(visibleIds.length) });
+        : t('selectionAllExcept', { count: numbers.format(remaining) });
+    }
+    // THROUGH `Intl`, like the bar's. The two say the same-looking sentence
+    // about the same click, and rendering one as "1,500" while the other says
+    // "1500" is a drift a reader hears.
+    return t('selectionCount', { count: numbers.format(visibleIds.length) });
+  };
 
   const table = (
     <table
