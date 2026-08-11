@@ -49,7 +49,7 @@ function DemoForm({ children }: { children: ReactNode }) {
 }
 
 const meta: Meta<typeof FormSegmentedControl> = {
-  title: 'Components/Inputs/FormSegmentedControl',
+  title: 'Components/Form adapters/FormSegmentedControl',
   component: FormSegmentedControl,
   argTypes: {
     name: {

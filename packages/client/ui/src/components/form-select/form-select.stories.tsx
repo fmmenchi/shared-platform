@@ -50,7 +50,7 @@ const countries = (
 );
 
 const meta: Meta<typeof FormSelect> = {
-  title: 'Components/Inputs/FormSelect',
+  title: 'Components/Form adapters/FormSelect',
   component: FormSelect,
   args: { name: 'country', label: 'Country', children: countries },
   argTypes: {

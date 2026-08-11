@@ -77,7 +77,7 @@ function DemoForm() {
 }
 
 const meta: Meta<typeof FormErrorSummary> = {
-  title: 'Components/Inputs/FormErrorSummary',
+  title: 'Components/Form adapters/FormErrorSummary',
   component: FormErrorSummary,
   argTypes: {
     heading: {

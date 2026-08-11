@@ -3,7 +3,7 @@ import { Breadcrumb } from './breadcrumb.component.js';
 import { BreadcrumbLink } from '../breadcrumb-link/breadcrumb-link.component.js';
 
 const meta: Meta<typeof Breadcrumb> = {
-  title: 'Components/Breadcrumb',
+  title: 'Components/Navigation/Breadcrumb',
   component: Breadcrumb,
   subcomponents: { BreadcrumbLink },
   // The Props table is CURATED here (react-docgen can't derive it) — declare

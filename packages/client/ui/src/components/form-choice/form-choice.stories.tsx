@@ -49,7 +49,7 @@ function DemoForm({ children }: { children: ReactNode }) {
 }
 
 const meta: Meta<typeof FormChoice> = {
-  title: 'Components/Inputs/FormChoice',
+  title: 'Components/Form adapters/FormChoice',
   component: FormChoice,
   argTypes: {
     name: {

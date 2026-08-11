@@ -41,6 +41,17 @@ const familyDocs = new Map(
   ).map(([path, raw]) => [path.split('/').slice(-2)[0] as string, raw]),
 );
 
+/** Every story file by folder — how a component appears in Storybook's sidebar. */
+const storyFiles = new Map(
+  Object.entries(
+    import.meta.glob('../components/**/*.stories.tsx', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>,
+  ).map(([path, raw]) => [path.split('/').slice(-2)[0] as string, raw]),
+);
+
 /** `../components/input-group/input-group.component.tsx` → `input-group`. */
 const folderOf = (path: string) => path.split('/').slice(-2)[0] as string;
 
@@ -126,5 +137,60 @@ describe('the component roadmap', () => {
       stale,
       `these are listed as unbuilt but exist: ${stale.join(', ')}. Move them into the Shipped table.`,
     ).toEqual([]);
+  });
+
+  /**
+   * THE SIDEBAR IS THE SAME TAXONOMY, so the page owns it too.
+   *
+   * A story's `title` decides where a component lands in Storybook, and nothing
+   * derived it: the generator emits `Components/<Name>` with no group, so a new
+   * component sits loose at the top of the sidebar until somebody notices.
+   * Three had — `Breadcrumb`, `Progress` and `Separator` — and noticing is not
+   * a mechanism.
+   *
+   * The group is read from the row of the Shipped table that NAMES the
+   * component, matched on the backticked form so a part mentioned inside a
+   * family's parentheses (`Table` (+ …, Toolbar)) is not mistaken for the
+   * family `Toolbar` two rows up.
+   */
+  describe('the Storybook sidebar follows the same groups', () => {
+    const rows = [
+      ...sectionOf('## Shipped').matchAll(/^\| \*\*([^*]+)\*\*([^\n]*)/gm),
+    ];
+
+    const groupOf = (name: string): string[] =>
+      rows
+        .filter((row) => (row[2] as string).includes(`\`${name}\``))
+        .map((row) => (row[1] as string).trim());
+
+    const withStories = families.filter((folder) => storyFiles.has(folder));
+
+    it('reads the groups off the table', () => {
+      expect(rows.length).toBeGreaterThan(5);
+      expect(withStories.length).toBeGreaterThan(10);
+    });
+
+    it.each(withStories.map((f) => [f, pascal(f)]))(
+      'files %s where the roadmap puts it',
+      (folder, name) => {
+        const groups = groupOf(name as string);
+        // A name in two rows is the roadmap being ambiguous, not the story
+        // being wrong — and it is a defect of its own, so it is reported here
+        // rather than skipped into silence.
+        expect(
+          groups.length,
+          `${name} is named in ${groups.length} rows of the Shipped table (${groups.join(', ')}); it needs exactly one for the sidebar to follow it.`,
+        ).toBe(1);
+
+        const raw = storyFiles.get(folder as string) as string;
+        const title = /^\s*title:\s*'([^']+)'/m.exec(raw)?.[1];
+
+        expect(title, `${name} has no story title to place it.`).toBeTruthy();
+        expect(
+          title,
+          `${name} is filed as "${title}" but the roadmap puts it under ${groups[0]}. The sidebar and the page are one taxonomy.`,
+        ).toBe(`Components/${groups[0]}/${name}`);
+      },
+    );
   });
 });

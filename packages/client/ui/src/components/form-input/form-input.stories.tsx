@@ -51,7 +51,7 @@ function DemoForm({ children }: { children: ReactNode }) {
 }
 
 const meta: Meta<typeof FormInput> = {
-  title: 'Components/Inputs/FormInput',
+  title: 'Components/Form adapters/FormInput',
   component: FormInput,
   argTypes: {
     name: {
