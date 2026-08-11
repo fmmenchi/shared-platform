@@ -244,4 +244,24 @@ describe('InputGroup', () => {
       });
     }
   });
+
+  it('does not dress another form control up as an affix', () => {
+    // A currency prefix beside a <Select> is a real form. The affix bucket was
+    // `:not(input)`, so the select fell in: placeholder colour, `shrink-0`,
+    // affix padding — a control in an affix costume, silently. The bucket now
+    // means what it says (not a form control); the select keeps its own face.
+    render(
+      <InputGroup>
+        <span>€</span>
+        <select aria-label="Valuta">
+          <option>EUR</option>
+        </select>
+      </InputGroup>,
+    );
+    const affix = screen.getByText('€');
+    const select = screen.getByRole('combobox');
+    const affixColor = getComputedStyle(affix).color;
+    expect(getComputedStyle(select).color).not.toBe(affixColor);
+    expect(getComputedStyle(select).flexShrink).not.toBe('0');
+  });
 });
