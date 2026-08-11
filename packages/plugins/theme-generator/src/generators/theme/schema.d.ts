@@ -7,6 +7,8 @@ export interface ThemeGeneratorSchema {
   directory?: string;
   /** Do not wire the validate-themes target. */
   skipValidation?: boolean;
+  /** Whether this is a light or a dark theme — emitted as `color-scheme`. */
+  scheme?: 'light' | 'dark';
   /** Advanced: explicit path to @fmmenchi/tokens' vars.css. */
   tokensPath?: string;
 }

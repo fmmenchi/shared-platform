@@ -43,7 +43,15 @@ const runExecutor: PromiseExecutor<ValidateExecutorSchema> = async (
   let success = true;
   for (const theme of options.themes) {
     const file = isAbsolute(theme) ? theme : join(context.root, theme);
-    const css = readFileSync(file, 'utf8');
+    // COMMENTS STRIPPED FIRST — the gate must read what the browser reads. A
+    // role commented out during a retune (`/* off for now`) still matches the
+    // regex, so before this the validator scored contrast on a value the
+    // shipped CSS does not define — and completeness passed on a role that
+    // resolves to the `@property` initial-value, black, in production. The
+    // same defence, with the full reasoning, is `readVars` in
+    // `@fmmenchi/tokens`; inlined here because the tokens module this executor
+    // resolves is the INSTALLED one, whose version may predate any export.
+    const css = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
     const colors = Object.fromEntries(
       [...css.matchAll(/--fm-color-([a-z0-9-]+)\s*:\s*([^;]+);/g)].map((m) => [
         m[1],

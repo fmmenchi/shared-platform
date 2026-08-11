@@ -48,7 +48,14 @@ export async function themeGenerator(
     }
   }
 
-  const vars = readFileSync(varsPath, 'utf8');
+  // COMMENTS STRIPPED FIRST, for the reason `@fmmenchi/tokens`' own `readVars`
+  // documents at length: a role commented out during a retune still matches the
+  // regex, and the scaffold would then carry a token the shipped CSS does not
+  // define — the theme starts life already ahead of the contract it claims to
+  // instantiate. Stripping is inlined rather than imported because the tokens
+  // package resolved here is the INSTALLED one, whose version may predate the
+  // export; two lines beat a version negotiation.
+  const vars = readFileSync(varsPath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
   const roles = [
     ...vars.matchAll(/(--fm-color-[a-z0-9-]+)\s*:\s*([^;]+);/g),
   ].map((m) => [m[1], m[2].replace(/\s+/g, ' ').trim()] as const);
@@ -74,6 +81,13 @@ export async function themeGenerator(
  * reference preset. Apply with \`<html data-theme="${options.name}">\`.
  */
 [data-theme='${options.name}'] {
+  /* The parts the BROWSER paints — a select's popup, a native checkbox — take
+     their palette from \`color-scheme\`, never from the roles below. Without
+     this line a dark brand theme ships white native lists on Safari and
+     Firefox (a recorded defect of hand-written presets, which is why the
+     scaffold states it). Keep it in step with the theme's own lightness. */
+  color-scheme: ${options.scheme ?? 'light'};
+
 ${roles.map(([name, value]) => `  ${name}: ${value};`).join('\n')}
 }
 `;

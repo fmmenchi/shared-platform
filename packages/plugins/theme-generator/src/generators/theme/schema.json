@@ -30,6 +30,12 @@
       "description": "Do not wire the validate-themes target.",
       "default": false
     },
+    "scheme": {
+      "type": "string",
+      "enum": ["light", "dark"],
+      "description": "Whether this is a light or a dark theme — emitted as `color-scheme`, so the parts the browser paints (a select's popup, a native checkbox) follow the theme. Without it a dark brand theme ships white native lists on Safari and Firefox.",
+      "default": "light"
+    },
     "tokensPath": {
       "type": "string",
       "description": "Advanced: explicit path to @fmmenchi/tokens' vars.css (when it cannot be resolved from the workspace root)."
