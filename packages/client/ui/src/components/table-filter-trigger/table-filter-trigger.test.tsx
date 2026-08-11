@@ -183,6 +183,53 @@ describe('a column filter trigger', () => {
     expect(trigger()).toHaveAccessibleName('Filtra Città, attualmente Milano');
   });
 
+  it('keeps the draft when the applied value changes under an open editor', async () => {
+    const { rerender } = render(
+      <TableFilterTrigger
+        label="Città"
+        value="Milano"
+        onApply={() => undefined}
+      />,
+    );
+
+    await browser.click(trigger());
+    await waitFor(() => expect(field()).toHaveFocus());
+    await browser.fill(field(), 'Torino');
+
+    // NOT A CLICK OUTSIDE — that light-dismisses the popover, which is the
+    // platform working. This is the other route: a URL sync, a refetch, or the
+    // toolbar's own "clear filters" reached by keyboard, all of which arrive as
+    // a new `value` while the editor is open. The first version of this
+    // component reseeded the draft on every report of `open`, and a report
+    // arrives whenever the handler's identity changes — so the reader's typing
+    // was replaced and the focus yanked back into the field.
+    rerender(
+      <TableFilterTrigger
+        label="Città"
+        value="Napoli"
+        onApply={() => undefined}
+      />,
+    );
+
+    expect(field()).toHaveValue('Torino');
+  });
+
+  it('reports nothing when Apply changes nothing', async () => {
+    const onApply = vi.fn();
+    render(<Controlled initial="Milano" onApply={onApply} />);
+
+    await browser.click(trigger());
+    await waitFor(() => expect(field()).toBeVisible());
+    await browser.click(screen.getByRole('button', { name: 'Apply' }));
+
+    // Not merely redundant: the state hook returns a fresh object either way,
+    // so the matcher re-runs over every row and a consumer told to put this in
+    // a query key gets a refetch and a history entry for a view that did not
+    // move.
+    await waitFor(() => expect(noField()).toBeNull());
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
   it('has no violations, open or closed', async () => {
     const { container } = render(<Controlled initial="Milano" />);
 

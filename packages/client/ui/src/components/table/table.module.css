@@ -322,15 +322,37 @@
   }
 
   /* The header's controls when there are two of them. It exists BECAUSE the
-     cell cannot do this itself: `display: flex` on a `<th>` drops its
-     `columnheader` role in Chromium and Firefox — for table elements the role
-     follows the display type — so the layout box has to be inside the cell. */
+     cell cannot do this itself: `display: flex` on a `<th>` takes it out of the
+     table box model, an anonymous cell is generated around it, and the declared
+     column widths stop deciding anything. The ROLE survives — measured — so the
+     reason is layout, not semantics. */
   .headerControls {
     display: flex;
     align-items: center;
     gap: var(--fm-space-internal-xs);
-    /* The filter trigger keeps to the far edge whichever way the column is
-       aligned, so a reader scanning a row of headers finds it in one place. */
+    /* The filter trigger keeps to the far edge, so a reader scanning a row of
+       headers finds it in one place. */
     justify-content: space-between;
+    /* CLIPPED AT THE CELL. Under `table-layout: fixed` a declared width is
+       authoritative, and this row of controls has a hard minimum that
+       `overflow-wrap` cannot reduce — so in a column narrower than the controls
+       the trigger PAINTED AND HIT-TESTED inside the next column's header
+       (measured: 11.8px past the cell, `elementFromPoint` over column 2 landing
+       on column 1's button). `clip` and not `hidden` because this must not
+       become a scroll container, and the margin keeps a focus ring that sits
+       just outside a control's box from being cut with it. */
+    overflow: clip;
+    overflow-clip-margin: 3px;
+  }
+
+  /* `text-align` cannot reach into a flex box, which is why `.sortTrigger` has
+     the same pair — and why an end-aligned filterable column put its heading at
+     the LEFT edge while every number under it sat at the right. */
+  [data-align='end'] .headerControls {
+    justify-content: flex-end;
+  }
+
+  [data-align='center'] .headerControls {
+    justify-content: center;
   }
 }

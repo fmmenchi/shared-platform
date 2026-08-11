@@ -75,10 +75,15 @@ interface ColumnShape {
    * The column's name IN WORDS, for the places a `header` cannot go.
    *
    * `header` is a `ReactNode` because a real header holds an icon, an `<abbr>`
-   * or a `<Badge>` — and a live region needs words, a filter control needs a
-   * name, and the toolbar's summary needs something to print. Without this the
-   * fallback is the column's `key`, so a reader hears "Sorted by first_name":
-   * a developer identifier, untranslated, inside localized copy.
+   * or a `<Badge>` — and a live region needs words, and so does a filter
+   * control's name and the header cell's own. Without this the fallback is the
+   * column's `key`, so a reader hears "Sorted by first_name": a developer
+   * identifier, untranslated, inside localized copy.
+   *
+   * `TableToolbar` is NOT one of its readers, and cannot be: it never sees the
+   * column model, so it takes the same words again as `filterLabels`. Two homes
+   * for one fact, and the seam is where they meet rather than something either
+   * of them can fix — it is the price of a toolbar that works without a table.
    *
    * It was `sortLabel` and is not any more, because it was never about sorting:
    * one fact with two names is how the second feature starts disagreeing with

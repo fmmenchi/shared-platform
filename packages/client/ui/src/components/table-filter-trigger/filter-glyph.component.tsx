@@ -21,8 +21,10 @@ function FilterGlyph({ active, className, ...rest }: FilterGlyphProps) {
       className={cn(styles.glyph, className)}
       data-active={active === true ? '' : undefined}
     >
-      {/* One shape, filled or outlined — not two glyphs swapped, so the change
-          is a value CSS can transition rather than an element React replaces. */}
+      {/* ONE SHAPE, always the same element. The active state is a change of
+          opacity on this path rather than a second glyph swapped in for the
+          first, so nothing is unmounted and remounted under a reader — and the
+          `data-active` attribute is the whole difference. */}
       <path
         d="M1.5 2h9l-3.5 4v3.5l-2 1V6z"
         fill="currentColor"

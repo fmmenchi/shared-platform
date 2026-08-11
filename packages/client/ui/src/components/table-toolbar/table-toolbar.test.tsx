@@ -280,7 +280,7 @@ describe('the table toolbar', () => {
   it('says so when a filtered column has no human name', async () => {
     // The first version joined the RAW KEYS, so an Italian reader was told
     // "Filtrato per: created_at" — a developer identifier inside localized
-    // copy, which is the failure `Column.sortLabel` exists to prevent one
+    // copy, which is the failure `Column.label` exists to prevent one
     // feature over. The old test used `city`, a key that reads as a word.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     render(
@@ -358,7 +358,15 @@ describe('the table toolbar', () => {
       <TableToolbar filters={{}} rowCount={240} total={240} />,
     );
 
-    expect(container.firstChild).toBeNull();
+    // NO CHROME, but the region stays. It used to render nothing at all, and
+    // that cost both boundary announcements: the first application inserted a
+    // live region that already contained its sentence, which is the canonical
+    // case a screen reader does not speak, and clearing the last filter took the
+    // region away before it could say the rows had come back.
+    expect(container.querySelector('[role="region"]')).toBeNull();
+    expect(container.querySelector('[data-toolbar-status]')).toHaveTextContent(
+      '',
+    );
   });
 
   it('does not treat a cleared box as a filter that matches nothing', async () => {
@@ -371,7 +379,51 @@ describe('the table toolbar', () => {
       />,
     );
 
+    expect(container.querySelector('[role="region"]')).toBeNull();
+  });
+
+  it('renders nothing at all when it is not the filters’ bar', async () => {
+    // Without `filters` there is no live region to keep: nothing to say, nothing
+    // to do, and nothing that will later need to announce a transition.
+    const { container } = render(<TableToolbar />);
+
     expect(container.firstChild).toBeNull();
+  });
+
+  it('announces the first application, and the clear that undoes it', async () => {
+    function Filtered() {
+      const [filters, setFilters] = useState<Record<string, string>>({});
+      const rows = filters.city === undefined ? 240 : 3;
+      return (
+        <>
+          <button type="button" onClick={() => setFilters({ city: 'Milano' })}>
+            filtra
+          </button>
+          <TableToolbar
+            filters={filters}
+            filterLabels={{ city: 'Città' }}
+            rowCount={rows}
+            total={240}
+            onClearFilters={() => setFilters({})}
+          />
+        </>
+      );
+    }
+    render(<Filtered />);
+
+    const status = () => document.querySelector('[data-toolbar-status]');
+    expect(status()).toHaveTextContent('');
+
+    await browser.click(screen.getByRole('button', { name: 'filtra' }));
+    // The region was already on the page and empty, so this is an ADDITION to a
+    // live region rather than a populated one being inserted.
+    await waitFor(() => expect(status()).toHaveTextContent('Showing 3 of 240'));
+
+    await browser.click(screen.getByRole('button', { name: /Clear filters/ }));
+    // NOT `''`. Emptying a `role="status"` announces nothing — it implies
+    // `aria-relevant="additions text"`, so a removal is not relevant — and every
+    // row coming back is exactly the kind of change that has to be spoken.
+    await waitFor(() => expect(status()).toHaveTextContent(/Filters cleared/i));
   });
 
   it('costs one tab stop, not one per action', async () => {

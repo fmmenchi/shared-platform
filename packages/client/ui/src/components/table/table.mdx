@@ -23,13 +23,14 @@ Rows and columns, announced correctly.
 
 ## Anatomy
 
-| part                                         | what it is                                              |
-| -------------------------------------------- | ------------------------------------------------------- |
-| `Table`                                      | the `<table>`, the caption, and the column model        |
-| `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable         |
-| `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express |
-| `TableToolbar`                               | what is selected, on screen — and the bulk actions      |
-| the scroll region                            | added by `stickyHeader`: the box the header sticks in   |
+| part                                         | what it is                                                |
+| -------------------------------------------- | --------------------------------------------------------- |
+| `Table`                                      | the `<table>`, the caption, and the column model          |
+| `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable           |
+| `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express   |
+| `TableToolbar`                               | what is selected, on screen — and the bulk actions        |
+| `TableFilterTrigger`                         | one column's filter: the control, and the editor it opens |
+| the scroll region                            | added by `stickyHeader`: the box the header sticks in     |
 
 ## Props
 
@@ -276,6 +277,8 @@ Two things it deliberately does **not** do:
 
 **Every way out that is not Apply discards.** `Escape`, a click outside, closing — all of them leave the applied value alone, and the draft is reseeded from it on the next visit, so nothing abandoned waits around to be applied by a later Enter. Clearing is an **apply of nothing** rather than a second mode: same callback, same announcement, and the key leaves the state rather than sitting there empty, because `{ city: '' }` and `{}` are two cache entries for one view.
 
+**The column's words live in two places, and that is the toolbar's price.** `Column.label` names the trigger and the header cell; `TableToolbar.filterLabels` names the same column in the summary, because the toolbar never sees the column model — which is what lets it work above a table it knows nothing about. Pass both, or the summary prints the key.
+
 For a layout the column model cannot express, `TableFilterTrigger` is exported on its own and takes `label`, `value` and `onApply` — drive it with `useFilterState` from your own `TableHeaderCell`.
 
 **Give the toolbar `filterLabels`.** The summary names the columns in force, and without a label it prints the key: `Filtrato per: created_at`, a developer identifier inside localized copy. It warns. Values are deliberately not shown — a value is whatever was typed, it belongs beside its own control where it is editable, and as a sentence it grows without bound.
@@ -344,14 +347,15 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 
 ## i18n
 
-Two catalogs, because they say different things about different facts. Override a label through the `messages` port with `"<namespace>.<key>"`.
+Three catalogs, because they say different things about different facts. Override a label through the `messages` port with `"<namespace>.<key>"`.
 
-| namespace      | keys                                                                                                                                                                                    |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `table`        | `empty` · `sortedAscending` · `sortedDescending` · `sortCleared` · `select` · `selectRow` · `selectRowNamed` · `selectAllRows` · `selectionCount` · `selectionAll` · `selectionCleared` |
-| `tableToolbar` | `region` · `actions` · `count` · `all` · `allExcept` · `selectAllMatching` · `clear` · `filtered` · `filteredCount` · `filteredBy` · `clearFilters`                                     |
+| namespace            | keys                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `table`              | `empty` · `sortedAscending` · `sortedDescending` · `sortCleared` · `select` · `selectRow` · `selectRowNamed` · `selectAllRows` · `selectionCount` · `selectionAll` · `selectionCleared` |
+| `tableToolbar`       | `region` · `actions` · `count` · `all` · `allExcept` · `selectAllMatching` · `clear` · `filtered` · `filteredCount` · `unfiltered` · `unfilteredCount` · `filteredBy` · `clearFilters`  |
+| `tableFilterTrigger` | `name` · `activeName` · `heading` · `apply` · `clear`                                                                                                                                   |
 
-`table` announces what a click just did to the rows on **this page**; `tableToolbar` states what the rule and the filters cover, including rows nobody here has seen. They were one catalog briefly and it did not survive being checked — the shared keys rendered differently in the same instant while counting different things.
+`table` announces what a click just did to the rows on **this page**; `tableToolbar` states what the rule and the filters cover, including rows nobody here has seen; `tableFilterTrigger` names one column's control and nothing else. What the trigger shares with the toolbar is the fact, not the sentence. They were one catalog briefly and it did not survive being checked — the shared keys rendered differently in the same instant while counting different things.
 
 **The `tableToolbar` namespace was `tableSelectionBar`.** An app overriding the old keys is overriding nothing.
 

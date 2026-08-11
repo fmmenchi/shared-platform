@@ -13,7 +13,7 @@ import { expectNoA11yViolations } from '../../test/axe.js';
  * nothing rather than a dead button.
  *
  * The matching is proved in `filter.test.ts`, the state in
- * `use-filter-state.test.tsx`, and the control's own behaviour in
+ * `use-table-filters.test.tsx`, and the control's own behaviour in
  * `table-filter-trigger.test.tsx` — not here, through a table.
  */
 interface City {
@@ -152,6 +152,47 @@ describe('a filterable table', () => {
     // localized copy. The same failure the sorted column warns about, in a
     // control rather than in an announcement.
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('`label`'));
+    warn.mockRestore();
+  });
+
+  it('names the header cell itself, so the control does not join the column', async () => {
+    render(<Filtered />);
+
+    // A `columnheader` is named FROM ITS CONTENTS, and a name is computed for
+    // each descendant — so the trigger's own "Filter Regione, currently
+    // Lombardia" became part of the column's name and was read before every
+    // cell under it. Measured against Chromium's AX tree: with the attribute
+    // the name is "Regione", without it "Regione Filter Regione".
+    //
+    // ASSERTED ON THE ATTRIBUTE, not on the name, and that is the point:
+    // `dom-accessibility-api` — what `toHaveAccessibleName` and axe use here —
+    // computes the cell as "Regione" either way, so the suite is blind to the
+    // defect. This is the one thing about it a test can see.
+    const [, regione] = screen.getAllByRole('columnheader');
+    expect(regione).toHaveAttribute('aria-label', 'Regione');
+    expect(screen.getAllByRole('columnheader')[0]).not.toHaveAttribute(
+      'aria-label',
+    );
+  });
+
+  it('warns about a column still carrying the prop this release renamed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Table
+        caption="Città"
+        rows={cities}
+        // A mapped or spread source gets no excess-property check, so the
+        // rename lands as SILENCE — the announcement falls back to the key.
+        columns={
+          [
+            { key: 'name', header: 'Città', rowHeader: true, sortLabel: 'X' },
+          ] as unknown as Column<City>[]
+        }
+        getRowId={(city) => city.id}
+      />,
+    );
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('`sortLabel`'));
     warn.mockRestore();
   });
 

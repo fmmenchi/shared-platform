@@ -66,7 +66,7 @@ export interface TableToolbarProps extends Omit<
    *
    * Without it the summary prints the key — `created_at`, `fullName` — which is
    * a developer identifier read out inside localized copy, and is exactly what
-   * `Column.sortLabel` exists to prevent one feature over. The toolbar cannot
+   * `Column.label` exists to prevent one feature over. The toolbar cannot
    * derive it: it never sees the column model. A key with no label falls back
    * to itself and warns.
    */

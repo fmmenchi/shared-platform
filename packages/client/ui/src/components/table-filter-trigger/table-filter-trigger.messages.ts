@@ -25,7 +25,11 @@ export const tableFilterTriggerMessages = defineMessages('tableFilterTrigger', {
     activeName: 'Filtra {column}, attualmente {value}',
     heading: 'Filtra {column}',
     apply: 'Applica',
-    clear: 'Annulla',
+    // NOT "Annulla". `Applica`/`Annulla` is THE Apply/Cancel pair in Italian
+    // UI, and this button is not a cancel: it applies an empty value and wipes
+    // the column's filter. A reader who typed, thought better of it and pressed
+    // it to back out would lose what was already applied.
+    clear: 'Cancella',
   },
   ar: {
     name: 'تصفية {column}',

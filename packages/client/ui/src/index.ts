@@ -346,6 +346,8 @@ export type {
 // consumer the rule asks for. The rest are reachable through the hooks.
 export { foldForSearch } from './filtering/filter.js';
 export type { FilterState, RowFilter } from './filtering/filter.types.js';
+export { TableFilterTrigger } from './components/table-filter-trigger/table-filter-trigger.component.js';
+export type { TableFilterTriggerProps } from './components/table-filter-trigger/table-filter-trigger.types.js';
 export { TableToolbar } from './components/table-toolbar/table-toolbar.component.js';
 export type { TableToolbarProps } from './components/table-toolbar/table-toolbar.types.js';
 export { TableRow } from './components/table-row/table-row.component.js';

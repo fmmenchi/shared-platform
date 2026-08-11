@@ -233,7 +233,7 @@ export const Filterable: Story = {
       <div style={{ display: 'grid', gap: '0.75rem' }}>
         <TableToolbar
           {...filters.toolbarProps}
-          filterLabels={{ city: 'Città' }}
+          filterLabels={{ name: 'Nome', city: 'Città' }}
           total={people.length}
         />
         <Table

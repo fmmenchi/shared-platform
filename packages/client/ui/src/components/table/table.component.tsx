@@ -239,7 +239,8 @@ function Table<T>(props: TableProps<T>) {
   // The same rule the sort trigger follows, and it is the rule rather than a
   // copy of it: a control that reports an intent nobody handles is a dead
   // control, so it is not drawn.
-  const filterable = columns?.some((column) => column.filterable) === true;
+  const filterable =
+    columns?.some((column) => column.filterable === true) === true;
   const filtersWired = filterable && Boolean(onFilterApply);
 
   useDevWarning(
@@ -259,6 +260,18 @@ function Table<T>(props: TableProps<T>) {
   useDevWarning(
     filtersWired && unnamed !== undefined,
     `Table: the filterable column \`${String(unnamed?.key)}\` has a \`header\` that is not a string, so its filter control is called after its \`key\` — a developer identifier, untranslated, inside localized copy. Give the column a \`label\`.`,
+  );
+
+  // THE PROP THIS RELEASE REMOVED, and the reason it gets a warning rather than
+  // a line in the changelog: `Column.sortLabel` shipped in 0.3.1, and a consumer
+  // building their columns from a mapped or spread source gets NO excess-
+  // property check — so the rename lands as silence, with the announcement
+  // falling back to the column's `key`. TypeScript catches the literal case;
+  // this catches the other one.
+  const renamed = columns?.some((column) => 'sortLabel' in (column as object));
+  useDevWarning(
+    renamed === true,
+    "Table: a column carries `sortLabel`, which is now `label` — it was never about sorting, and the filter control is named from it too. The old name is ignored, so the announcement falls back to the column's `key`.",
   );
 
   const sortedColumn = columns?.find((column) => column.key === sort?.key);
@@ -453,6 +466,14 @@ function Table<T>(props: TableProps<T>) {
                 const active = sort?.key === column.key;
                 const canSort = column.sortable === true && onSortToggle;
                 const canFilter = column.filterable === true && onFilterApply;
+                // THE COLUMN'S NAME IN WORDS, computed once: it names the
+                // trigger and it names the cell, and two copies of a fallback
+                // chain are two places for those to disagree.
+                const columnName =
+                  column.label ??
+                  (typeof column.header === 'string'
+                    ? column.header
+                    : column.key);
 
                 // THE COLUMN'S OWN CONTENT, control or not — built once
                 // because the filter trigger puts it inside a wrapper and the
@@ -493,6 +514,21 @@ function Table<T>(props: TableProps<T>) {
                   <TableHeaderCell
                     key={column.key}
                     align={column.align}
+                    // AN EXPLICIT NAME, and only when a control that is not the
+                    // heading lives in the cell. A `columnheader` is named FROM
+                    // ITS CONTENTS, and a name is computed for each descendant
+                    // — so the trigger's own `aria-label` joined the column's
+                    // name and every cell under it was announced as "Regione
+                    // Filter Regione, currently Lombardia". Measured against
+                    // Chromium's AX tree, both closed and open; `dom-
+                    // accessibility-api`, which this suite's matchers and axe
+                    // use, does not reproduce it, so no assertion on the NAME
+                    // can guard this — the test asserts the attribute instead.
+                    //
+                    // It is the same defect the checkbox column already fixed
+                    // by moving its words out of the cell, and the sort trigger
+                    // never had, because that button's name IS the heading.
+                    aria-label={canFilter ? columnName : undefined}
                     // ON THE HEADER CELL ONLY, because under `table-layout:
                     // fixed` the first row is what decides every column — the
                     // body cells inherit the answer and repeating it there
@@ -523,21 +559,20 @@ function Table<T>(props: TableProps<T>) {
                     }
                   >
                     {/* TWO CONTROLS NEED A BOX, and it cannot be the cell:
-                        `display: flex` on a `<th>` is what removes its
-                        `columnheader` role in Chromium and Firefox — the role
-                        follows the display type for table elements. So the
-                        wrapper appears only when there is something to lay
-                        out, which is the one thing that earns it. */}
+                        `display: flex` on a `<th>` takes it out of the table
+                        box model, so an anonymous cell is generated around it
+                        and the declared column widths stop meaning anything.
+                        (The role SURVIVES — measured against Chromium's AX
+                        tree, a flexed `<th scope="col">` is still a
+                        `columnheader`. An earlier version of this comment
+                        claimed otherwise.) So the wrapper appears only when
+                        there is something to lay out, which is what earns
+                        it. */}
                     {canFilter ? (
                       <span className={styles.headerControls}>
                         {heading}
                         <TableFilterTrigger
-                          label={
-                            column.label ??
-                            (typeof column.header === 'string'
-                              ? column.header
-                              : column.key)
-                          }
+                          label={columnName}
                           value={filters?.[column.key] ?? ''}
                           onApply={(value) => {
                             onFilterApply(column.key, value);

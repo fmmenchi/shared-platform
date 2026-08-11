@@ -3,10 +3,17 @@
 
 @layer fmmenchi {
   .trigger {
-    /* The same floor the sort trigger has, and for the same reason: a ghost
-       button whose only child is a 12px glyph collapses to a target smaller
-       than a finger. 24px is what WCAG 2.5.8 asks of a control inside a line of
-       text; the padding around it does the rest. */
+    /* BOTH INHERITED, and both were missing. The `sm` button size sets a
+       smaller type scale, which shrank an `em`-sized glyph to three quarters of
+       the sort arrow beside it; and `ghost` sets the PAGE's foreground, which on
+       a table painted with `--table-surface` left the funnel at 1.45:1 against
+       its own header while the sort label read 8.94:1. `.sortTrigger` ends with
+       the same two declarations and says why. Measured, both. */
+    font-size: inherit;
+    color: inherit;
+    /* Not a floor against collapse — the button's natural width is over 30px.
+       It is a floor against SHRINKING: this is a flex item, and without it the
+       control could be squeezed below the 24px WCAG 2.5.8 asks for. */
     min-inline-size: 24px;
     gap: var(--fm-space-internal-xs);
   }
@@ -30,6 +37,12 @@
      and the whole value is in the control's accessible name, so shortening what
      is drawn loses nothing. */
   .value {
+    /* A FLOOR AS WELL AS A CEILING. With only a maximum it is a flex item that
+       shrinks to nothing: measured at 0px in a narrow column, so the value was
+       not truncated but GONE, and the ellipsis has no width to paint in either.
+       What was left carrying "this column is filtered" was the funnel's opacity
+       — a state in colour alone, which is the one thing this design refuses. */
+    min-inline-size: 3ch;
     max-inline-size: 8ch;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -38,7 +51,9 @@
   }
 
   .surface {
-    min-inline-size: 14rem;
+    /* On the same scale as the `max-w-80` the surface already carries: two
+       constraints on one box, expressed two ways, is how they drift. */
+    @apply min-w-56;
   }
 
   .heading {

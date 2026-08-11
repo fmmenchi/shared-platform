@@ -108,7 +108,7 @@ function TableToolbar({
 
   useDevWarning(
     filtered && active.some((key) => filterLabels?.[key] === undefined),
-    `TableToolbar: a filtered column has no entry in \`filterLabels\`, so the summary prints its key — a developer identifier, untranslated, inside localized copy. Pass the column's header text, the way a sortable column passes \`sortLabel\`.`,
+    `TableToolbar: a filtered column has no entry in \`filterLabels\`, so the summary prints its key — a developer identifier, untranslated, inside localized copy. Pass the column's header text, the way a column passes \`label\`.`,
   );
 
   // SHOWN ONLY WHEN FILTERED, which is the same rule that keeps the live region
@@ -133,6 +133,9 @@ function TableToolbar({
   // region in this family: the first render is not news.
   const [announcement, setAnnouncement] = useState('');
   const arrived = useRef(false);
+  // Was it filtered a moment ago — the fact the clear needs and the props no
+  // longer carry once the filter is gone.
+  const wasFiltered = useRef(false);
 
   // A control in the summary slot is a tab stop outside the toolbar's ring —
   // one more stop than the toolbar exists to save. Dev only, after the commit,
@@ -178,14 +181,42 @@ function TableToolbar({
   useEffect(() => {
     if (!arrived.current) {
       arrived.current = true;
+      wasFiltered.current = filtered;
       return;
     }
     // The row count IS the news — "your filter left twelve rows" — and the
-    // sentence is the same one on screen, so the two cannot drift.
-    setAnnouncement(shown ?? '');
-  }, [shown]);
+    // sentence is the same one on screen, so the two cannot drift. When there
+    // is no sentence but there WAS one, the news is that the filter went: the
+    // old code rendered `''` here, and emptying a `role="status"` announces
+    // NOTHING — it implies `aria-relevant="additions text"`, so a removal is
+    // not relevant. Every row came back and nobody was told, which is the trap
+    // sorting's "original order" stop already fell into once.
+    const next =
+      shown ??
+      (wasFiltered.current
+        ? total === undefined
+          ? t('unfiltered')
+          : t('unfilteredCount', { total: numbers.format(total) })
+        : null);
+    wasFiltered.current = filtered;
+    if (next !== null) setAnnouncement(next);
+  }, [shown, filtered, total, t, numbers]);
 
-  if (!visible) return null;
+  // OUTSIDE THE CHROME, and that is the whole fix. The bar renders nothing when
+  // it has nothing to show, and the live region used to go with it — so the
+  // FIRST application inserted a region already containing its sentence, which
+  // is the canonical case a screen reader does not speak, and the clear that
+  // emptied the bar took the region away before it could say the rows were
+  // back. Mounted for as long as the caller is filtering at all, it sits there
+  // present, empty and silent until it has news.
+  const status =
+    filters === undefined ? null : (
+      <VisuallyHidden role="status" data-toolbar-status="">
+        {announcement}
+      </VisuallyHidden>
+    );
+
+  if (!visible) return status;
 
   const said: ReactNode =
     selection === undefined || !picked
@@ -205,7 +236,7 @@ function TableToolbar({
   //
   // NAMED, not keyed. The first version joined the raw keys, so an Italian
   // reader was told "Filtrato per: created_at" — a developer identifier inside
-  // localized copy, which is the failure `Column.sortLabel` exists to prevent
+  // localized copy, which is the failure `Column.label` exists to prevent
   // one feature over.
   const by = filtered
     ? t('filteredBy', {
@@ -227,80 +258,79 @@ function TableToolbar({
     count < total;
 
   return (
-    <div
-      {...rest}
-      role="region"
-      aria-label={label ?? t('region')}
-      // THE COUNT AS A DESCRIPTION. A reader entering the landmark hears its
-      // name and then this, so "how many?" is still answered — without the name
-      // itself moving every time the view does.
-      aria-describedby={summaryId}
-      className={cn(styles.bar, className)}
-    >
-      {/* NOT a live region. `Table` already announces a change through its own,
+    <>
+      {status}
+      <div
+        {...rest}
+        role="region"
+        aria-label={label ?? t('region')}
+        // THE COUNT AS A DESCRIPTION. A reader entering the landmark hears its
+        // name and then this, so "how many?" is still answered — without the name
+        // itself moving every time the view does.
+        aria-describedby={summaryId}
+        className={cn(styles.bar, className)}
+      >
+        {/* NOT a live region. `Table` already announces a change through its own,
         and a second one over the same fact says it twice. This is the
         PERSISTENT statement; the announcement is the transient one. */}
-      <div className={styles.summary}>
-        {/* THE CONSUMER'S SLOT IS NOT PART OF THE DESCRIPTION. Pointed at the
+        <div className={styles.summary}>
+          {/* THE CONSUMER'S SLOT IS NOT PART OF THE DESCRIPTION. Pointed at the
           whole summary, `aria-describedby` flattened whatever was passed here
           into prose — a button in it was announced as words with no hint it was
           operable, and it took a tab stop of its own BEFORE the toolbar,
           defeating the one-stop property the toolbar exists for. */}
-        <div ref={slotRef}>{summary}</div>
-        <div id={summaryId} className={styles.summary}>
-          {shown !== null && <span>{shown}</span>}
-          {by !== null && <span className={styles.quiet}>{by}</span>}
-          {said !== null && <span>{said}</span>}
+          <div ref={slotRef}>{summary}</div>
+          <div id={summaryId} className={styles.summary}>
+            {shown !== null && <span>{shown}</span>}
+            {by !== null && <span className={styles.quiet}>{by}</span>}
+            {said !== null && <span>{said}</span>}
+          </div>
         </div>
+
+        <Toolbar
+          label={t('actions')}
+          // ALSO ON THE TOOLBAR. The region carries it for a reader entering the
+          // landmark; a keyboard user who tabs straight into the actions never
+          // enters it, and the predecessor put it here for exactly that reason.
+          aria-describedby={summaryId}
+          className={styles.actions}
+        >
+          {escalates && (
+            <ToolbarItem>
+              <Button
+                variant="ghost"
+                size="sm"
+                // Wrapped: `onClick={onSelectEverything}` hands the callback a
+                // click event that its `() => void` type says it never receives,
+                // which TypeScript cannot see and a variadic consumer can.
+                onClick={() => onSelectEverything()}
+              >
+                {t('selectAllMatching', { total: numbers.format(total) })}
+              </Button>
+            </ToolbarItem>
+          )}
+          {filtered && onClearFilters !== undefined && (
+            <ToolbarItem>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onClearFilters()}
+              >
+                {t('clearFilters')}
+              </Button>
+            </ToolbarItem>
+          )}
+          {picked && onClear !== undefined && (
+            <ToolbarItem>
+              <Button variant="ghost" size="sm" onClick={() => onClear()}>
+                {t('clear')}
+              </Button>
+            </ToolbarItem>
+          )}
+          {children}
+        </Toolbar>
       </div>
-
-      {/* Only where it can speak, and silent on arrival — the discipline every
-        other region in this family follows. */}
-      {filters !== undefined && (
-        <VisuallyHidden role="status" data-toolbar-status="">
-          {announcement}
-        </VisuallyHidden>
-      )}
-
-      <Toolbar
-        label={t('actions')}
-        // ALSO ON THE TOOLBAR. The region carries it for a reader entering the
-        // landmark; a keyboard user who tabs straight into the actions never
-        // enters it, and the predecessor put it here for exactly that reason.
-        aria-describedby={summaryId}
-        className={styles.actions}
-      >
-        {escalates && (
-          <ToolbarItem>
-            <Button
-              variant="ghost"
-              size="sm"
-              // Wrapped: `onClick={onSelectEverything}` hands the callback a
-              // click event that its `() => void` type says it never receives,
-              // which TypeScript cannot see and a variadic consumer can.
-              onClick={() => onSelectEverything()}
-            >
-              {t('selectAllMatching', { total: numbers.format(total) })}
-            </Button>
-          </ToolbarItem>
-        )}
-        {filtered && onClearFilters !== undefined && (
-          <ToolbarItem>
-            <Button variant="ghost" size="sm" onClick={() => onClearFilters()}>
-              {t('clearFilters')}
-            </Button>
-          </ToolbarItem>
-        )}
-        {picked && onClear !== undefined && (
-          <ToolbarItem>
-            <Button variant="ghost" size="sm" onClick={() => onClear()}>
-              {t('clear')}
-            </Button>
-          </ToolbarItem>
-        )}
-        {children}
-      </Toolbar>
-    </div>
+    </>
   );
 }
 
