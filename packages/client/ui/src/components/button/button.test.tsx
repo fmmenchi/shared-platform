@@ -326,4 +326,36 @@ describe('Button', () => {
       await expectNoA11yViolations(container);
     });
   });
+
+  describe('what counts as a label', () => {
+    it('does not mistake a zero for an icon-only button', () => {
+      // `children={0}` is falsy, and the old `!children` classified a counter
+      // at zero as icon-only: squeezed square, icon exposed, and a warning
+      // demanding `aria-label` over a label anyone can read.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<Button icon={<svg />}>{0}</Button>);
+      const button = screen.getByRole('button', { name: '0' });
+      expect(button.className).not.toMatch(/iconOnly/);
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('warns for children that render nothing beside an icon', () => {
+      // `{items}` from a filter that matched nothing, and whitespace: truthy,
+      // so the old check called them a label and the unnamed button this guard
+      // exists for shipped silently.
+      for (const empty of [[], '   '] as const) {
+        const warn = vi
+          .spyOn(console, 'warn')
+          .mockImplementation(() => undefined);
+        render(<Button icon={<svg />}>{empty}</Button>);
+        expect(warn, JSON.stringify(empty)).toHaveBeenCalledWith(
+          expect.stringContaining('no discernible text'),
+        );
+        warn.mockRestore();
+      }
+    });
+  });
 });
