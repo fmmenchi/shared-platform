@@ -28,8 +28,8 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Utilities**     | `VisuallyHidden`                                                                                                                                                          |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
-complete at one. **Feedback** is now the one where a consumer predictably has to write their own,
-and the order below follows from that.
+complete at one. **No group is now thin enough for the third question below to pick the next item
+on its own**, which is why the section after it is a question rather than a queue.
 
 ## How the order is decided
 
@@ -45,12 +45,20 @@ Not by popularity. Three questions, in this order:
 
 ## Next
 
-### 1. `Table` — the Data display group is one wide
+**Open.** The two items this section named — `Table` and `Progress` — have both shipped, and with
+them the third question above stops choosing: no remaining group is one component wide.
 
-Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
-the "next" items and the one most often re-implemented per app.
+That leaves the first two questions to decide it, and neither has an obvious answer waiting:
 
-### 1. `Progress` — the Feedback group is one wide
+1. **A native shell nobody has claimed yet.** `<details>` is taken by `Accordion`, `<dialog>` by
+   `Dialog`, `<progress>` by `Progress`. `<meter>` is the one still unbuilt — a different claim from
+   `<progress>` (a measurement inside a range, not a task advancing), which is exactly why it would
+   need its own reason rather than inheriting this one's.
+2. **A written contract waiting on a component.** Nothing in the tree currently defers a decision to
+   a component that does not exist; the deferrals below are all deliberate refusals rather than
+   queued work.
+
+So the next item is a decision, not a deduction — and this page will say which, once it is one.
 
 ## Deferred, with the reason
 
