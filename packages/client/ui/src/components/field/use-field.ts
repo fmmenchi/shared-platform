@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import {
   applyFieldProps,
@@ -31,8 +31,23 @@ export function useField(): UseFieldResult {
 
   // One `useField` stands for one control, so register its presence the way a DS
   // control does — that keeps the Field's "more than one control" guard honest.
+  //
+  // AND ITS ID, the way the internal path does. `getControlProps({ id })` puts
+  // the caller's id on the element (own id wins — transparency), but the field
+  // only adopts an id it is TOLD about, and the public hook never told it: the
+  // label kept pointing at the minted id while the control carried the
+  // caller's, so clicking the label focused nothing — for exactly the audience
+  // this hook exists for (Conform mints its own ids). The getter runs during
+  // render, so it writes a ref and an after-commit effect reports the change —
+  // the same read-then-report shape the package uses wherever only the commit
+  // can answer.
+  const requestedId = useRef<string | undefined>(undefined);
+  const [reportedId, setReportedId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (requestedId.current !== reportedId) setReportedId(requestedId.current);
+  });
   const registerControl = field?.registerControl;
-  useEffect(() => registerControl?.(), [registerControl]);
+  useEffect(() => registerControl?.(reportedId), [registerControl, reportedId]);
 
   // Unlike the internal hook, which is a silent no-op so a control works standalone,
   // this one is called BECAUSE the caller believes they are inside a Field. Say so
@@ -44,8 +59,10 @@ export function useField(): UseFieldResult {
 
   return {
     isInsideField: field != null,
-    getControlProps: <P extends object>(props?: P): P & FieldControlProps =>
-      applyFieldProps(field, (props ?? ({} as P)) as P),
+    getControlProps: <P extends object>(props?: P): P & FieldControlProps => {
+      requestedId.current = (props as { id?: string } | undefined)?.id;
+      return applyFieldProps(field, (props ?? ({} as P)) as P);
+    },
     getLabelProps: <P extends object>(props?: P): P & FieldLabelSlotProps => ({
       ...((props ?? {}) as P),
       htmlFor: field?.controlId,

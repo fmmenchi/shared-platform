@@ -143,8 +143,9 @@ Shared with `Fieldset`: it describes whichever container is nearest.
 - **One control per Field.** The field owns a single `id`; put two controls in one `Field` and they
   collide (a dev warning fires). For a **radio/checkbox group** use a `<fieldset>` with a `<legend>`,
   not this single-control Field.
-- **Precedence:** the field **owns the control's `id`** (so the label always associates — a control's
-  own `id` is ignored inside a Field); `aria-describedby` **merges** the field's with the control's;
+- **Precedence:** a control's **own `id` wins and the field adopts it** — the label's `htmlFor`
+  follows, so the two never disagree (this is what lets a library that mints its own ids, like
+  Conform, keep its references); `aria-describedby` **merges** the field's with the control's;
   the control's own `aria-invalid` **wins**.
 - **The a11y ids resolve on the client.** The control itself renders server-side; the
   `aria-describedby` association is added on hydration (the description/error register via effect), so
