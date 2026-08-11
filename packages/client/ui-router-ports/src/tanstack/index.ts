@@ -23,3 +23,8 @@ export const tanstackAdapters: Pick<UiAdapters, 'Link' | 'useIsCurrent'> = {
 
 export { TanstackLink } from './tanstack-link.js';
 export { useTanstackIsCurrent } from './use-tanstack-is-current.js';
+export { createTanstackNav } from './create-tanstack-nav.js';
+export type {
+  MissingRouter,
+  TanstackNavKit,
+} from './create-tanstack-nav.types.js';

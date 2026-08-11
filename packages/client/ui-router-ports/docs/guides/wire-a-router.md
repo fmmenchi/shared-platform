@@ -66,11 +66,31 @@ tab" and the browser's status bar working.
 ## What does not pass through
 
 The richer forms of `to` are not available on `NavLink`: no object form
-(`{ pathname, search, hash }`), no typed `params`/`search`, and under TanStack the compile-time route
-check is spent.
+(`{ pathname, search, hash }`), and no typed `params`/`search`.
 
 For the one item that needs them, use the router's own `Link` directly and keep `NavLink` for the
 menu. That is a deliberate trade — see [Concepts](../concepts/index.md).
+
+### Buying the TanStack path check back
+
+Under TanStack the compile-time route check is normally spent in the adapter (`to={href as never}`).
+`createTanstackNav` buys it back at the call site — a module-level kit like the form ones, which
+**re-types the component rather than wrapping it**, so nothing remounts:
+
+```tsx
+// nav.ts — beside the router, outside any component
+import { createTanstackNav } from '@fmmenchi/ui-router-ports/tanstack';
+export const { NavLink } = createTanstackNav<typeof router>();
+
+<NavLink href="/settings">Settings</NavLink>
+<NavLink href="/setings">Settings</NavLink>   // does not compile
+```
+
+With the router [registered](https://tanstack.com/router/latest/docs/framework/react/guide/type-safety)
+the type argument can be omitted; with neither, the return is a message type and the mistake fails
+at the destructuring. It types `href` — the prop the design system actually reads for
+`useIsCurrent` and the external-destination test — so the checked path is also the working one.
+`params`/`search` stay out: those belong to the router's own `Link`.
 
 ## Verify
 
