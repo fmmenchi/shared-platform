@@ -283,4 +283,25 @@ describe('Popover', () => {
       });
     }
   });
+
+  it('focuses the surface when it opens at MOUNT, not only on click', async () => {
+    // The autofocus attribute was written by the LAST effect while the
+    // `defaultOpen` seed showed the surface in the same commit: the UA found
+    // no attribute, focus stayed on <body>, and the mdx's promise — "the
+    // dialog is focused and its name announced" — held only on the click
+    // path. Effects run in declaration order; the attribute now lands first.
+    render(
+      <Popover defaultOpen>
+        <PopoverTrigger>Apri</PopoverTrigger>
+        <PopoverContent>
+          <PopoverHeading>Filtri</PopoverHeading>
+          <p>contenuto</p>
+        </PopoverContent>
+      </Popover>,
+    );
+    const surface = screen.getByRole('dialog');
+    await waitFor(() => {
+      expect(surface).toHaveFocus();
+    });
+  });
 });
