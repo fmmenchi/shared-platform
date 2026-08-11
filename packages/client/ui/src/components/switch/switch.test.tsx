@@ -336,6 +336,41 @@ describe('Switch', () => {
       }
     });
 
+    it('follows the COMPUTED direction, not the attribute', () => {
+      // The two shapes the attribute selectors answered wrong, measured first
+      // by `dialog-content.module.css`: an `ltr` island inside an `rtl` page
+      // matched `[dir='rtl'] .switch` through the ancestor — knob positions
+      // inverted inside the island — and rtl inherited from an ancestor with
+      // nothing on the control still has to flip. `:dir()` resolves what the
+      // element actually is, so both come out right with one selector.
+      //
+      // (`dir="auto"` is deliberately NOT here: on an <input> it resolves from
+      // the VALUE, not the surroundings, so an empty checkbox is ltr per spec
+      // — with either implementation.)
+      renderUi(
+        <div dir="rtl">
+          <div dir="ltr">
+            <label>
+              <Switch defaultChecked /> Island
+            </label>
+          </div>
+          <label>
+            <Switch defaultChecked /> Inherited
+          </label>
+        </div>,
+      );
+      const [island, inherited] = screen.getAllByRole('switch');
+      // The island is ltr: checked sits at the RIGHT — the ltr answer the
+      // ancestor-matching selector used to get wrong.
+      expect(getComputedStyle(island as Element).backgroundPosition).toBe(
+        '100% 50%',
+      );
+      // Inherited rtl, nothing on the control itself: checked sits LEFT.
+      expect(getComputedStyle(inherited as Element).backgroundPosition).toBe(
+        '0% 50%',
+      );
+    });
+
     it('puts the knob at the other end under dir="rtl"', () => {
       renderUi(
         <>

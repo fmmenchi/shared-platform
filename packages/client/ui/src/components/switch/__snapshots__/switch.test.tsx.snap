@@ -4,7 +4,7 @@ exports[`Switch > matches the rendered snapshot 1`] = `
 <label>
   <input
     checked=""
-    class="_switch_17ux2_4"
+    class="_switch_1fom0_4"
     role="switch"
     type="checkbox"
   />

@@ -120,19 +120,20 @@
     );
   }
 
-  /* Both forms, because a descendant selector alone is a trap: `dir` sits on the
-     `<html>` element in most apps, but it is equally legal ON the control (a
-     single rtl field in an ltr form), and `[dir='rtl'] .switch` does not match an
-     element that carries the attribute itself. Ordered after `:checked` so the
-     unchecked rule (0,2,0) is not beaten by it on a tie; the checked rtl rule
-     below is (0,3,0) and wins outright. */
-  [dir='rtl'] .switch,
-  .switch[dir='rtl'] {
+  /* `:dir()`, not the attribute selectors this rule used to be — the sibling
+     that measured the difference is `dialog-content.module.css`: an attribute
+     selector matches the ATTRIBUTE while `:dir()` resolves the COMPUTED
+     direction, and the two diverge exactly where it matters. An `ltr` island
+     inside an `rtl` page matched `[dir='rtl'] .switch` through the ancestor and
+     flipped the knob's on/off positions inside the island; `dir="auto"`
+     resolving rtl matched neither form and kept ltr geometry. One selector now
+     answers both correctly. Ordered after `:checked` so the unchecked rule
+     is not beaten by it on a tie; the checked rtl rule wins outright. */
+  .switch:dir(rtl) {
     background-position: right center;
   }
 
-  [dir='rtl'] .switch:checked,
-  .switch[dir='rtl']:checked {
+  .switch:dir(rtl):checked {
     background-position: left center;
   }
 
