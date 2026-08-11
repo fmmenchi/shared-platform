@@ -7,7 +7,7 @@ import { TableHead } from '../table-head/table-head.component.js';
 import { TableHeaderCell } from '../table-header-cell/table-header-cell.component.js';
 import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
-import type { Column, TableProps } from './table.types.js';
+import type { Column, TableProps, TableRowAttributes } from './table.types.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -384,5 +384,92 @@ describe('Table', () => {
   it('matches its markup', async () => {
     const { container } = render(basic());
     expect(container.firstChild).toMatchSnapshot();
+  });
+  describe('per-row attributes', () => {
+    const rowsOf = () =>
+      screen
+        .getAllByRole('row')
+        .filter(
+          (r) => r.closest('tbody') !== null && !r.hasAttribute('hidden'),
+        );
+
+    it('puts a class and a data attribute on the row the data produced', () => {
+      render(
+        basic({
+          getRowProps: (person) => ({
+            className: person.age < 18 ? 'minor' : undefined,
+            'data-age': person.age,
+          }),
+        }),
+      );
+
+      const [alice, bruno] = rowsOf();
+      // THE GAP THIS CLOSES was named on the component's own page before it
+      // existed: dropping to the parts to strike out one row costs the
+      // header/body agreement, the counted colSpan and the empty state.
+      expect(alice).not.toHaveClass('minor');
+      expect(bruno).toHaveClass('minor');
+      expect(alice).toHaveAttribute('data-age', '34');
+    });
+
+    it('passes the index, so a rule about position can be written', () => {
+      render(
+        basic({
+          getRowProps: (_person, index) => ({
+            'data-even': index % 2 === 0 ? '' : undefined,
+          }),
+        }),
+      );
+
+      const [first, second] = rowsOf();
+      expect(first).toHaveAttribute('data-even');
+      expect(second).not.toHaveAttribute('data-even');
+    });
+
+    it('cannot overwrite the selection the checkbox speaks for', () => {
+      render(
+        basic({
+          selection: { mode: 'include', ids: new Set(['1']) },
+          onRowSelectToggle: () => undefined,
+          onSelectAllToggle: () => undefined,
+          // A consumer claiming the opposite of the truth, on both rows.
+          getRowProps: () => ({ 'data-selected': 'lie' }),
+        }),
+      );
+
+      const [alice, bruno] = rowsOf();
+      // THE ATTRIBUTE AND THE CHECKBOX HAVE TO AGREE, and only one of them can
+      // be the source. Row 1 is selected and says so with the component's own
+      // empty value; row 2 is not selected and carries nothing at all — not the
+      // string that was passed in.
+      expect(alice).toHaveAttribute('data-selected', '');
+      expect(bruno).not.toHaveAttribute('data-selected');
+    });
+
+    it('refuses what would make the row behave', () => {
+      // THE ONE GUARANTEE THAT IS TYPE-LEVEL ONLY, so `@ts-expect-error` is the
+      // only thing that can assert it: every runtime check here would still
+      // pass with the type widened to `ComponentProps<'tr'>`.
+      //
+      // Asserted on the TYPE and not through a render, which was the first
+      // attempt and proved nothing — `Partial<…>` on the test's own fixture
+      // loses the excess-property check, so both directives sat unused and the
+      // suite reported a guarantee it had not looked at.
+      //
+      // A `<tr>` is not focusable, so a handler here is a control no keyboard
+      // can reach; `id` and `hidden` are the component's, tying a detail row to
+      // the button that controls it.
+      const handler: TableRowAttributes = {
+        // @ts-expect-error — a row does not take handlers.
+        onClick: () => undefined,
+      };
+      const identity: TableRowAttributes = {
+        // @ts-expect-error — `id` belongs to the component.
+        id: 'mine',
+      };
+
+      expect(handler).toBeTruthy();
+      expect(identity).toBeTruthy();
+    });
   });
 });

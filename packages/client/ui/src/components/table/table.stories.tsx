@@ -12,6 +12,8 @@ import { useTableFilters } from './use-table-filters.js';
 import { useColumnWidths } from './use-column-widths.js';
 import { useRowExpansion } from './use-row-expansion.js';
 import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
+import { TableColumnsMenu } from '../table-columns-menu/table-columns-menu.component.js';
+import { useColumnVisibility } from './use-column-visibility.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
 import type { Column } from './table.types.js';
@@ -143,6 +145,45 @@ export const Sortable: Story = {
  * checkbox carries the state for everybody, which is also why it is not
  * optional.
  */
+/**
+ * Which columns the table is showing, decided in the toolbar.
+ *
+ * A DECISION ABOUT THE VIEW, so it sits where the other view controls do — a
+ * header cell's menu decides things about THAT column, and a control for which
+ * columns exist, tucked inside one of them, is a control nobody finds.
+ *
+ * `Table` learns nothing about any of it: `useColumnVisibility` hands back
+ * fewer columns and the table draws fewer columns, the same silence it keeps
+ * about where the rows came from.
+ *
+ * Two entries refuse to go, each saying which reason applies. `Nome` names the
+ * rows — hide it and a screen reader announces every cell as "column 3, 47",
+ * with nothing on screen to say anything went wrong. And whichever is last
+ * standing refuses too, because an empty grid under a caption reads as broken
+ * rather than chosen.
+ */
+export const ColumnVisibility: Story = {
+  render: function Render() {
+    const visibility = useColumnVisibility({ columns });
+
+    return (
+      <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <TableToolbar label="Vista">
+          <ToolbarItem>
+            <TableColumnsMenu {...visibility.menuProps} />
+          </ToolbarItem>
+        </TableToolbar>
+        <Table
+          caption="Persone"
+          rows={people}
+          getRowId={(p) => p.id}
+          columns={visibility.columns}
+        />
+      </div>
+    );
+  },
+};
+
 export const Selectable: Story = {
   render: function Render() {
     const selection = useRowSelection();

@@ -79,6 +79,7 @@ function Table<T>(props: TableProps<T>) {
     columns,
     rows,
     getRowId,
+    getRowProps,
     empty,
     children,
     sort,
@@ -793,6 +794,11 @@ function Table<T>(props: TableProps<T>) {
                   // data does not have.
                   <Fragment key={rowId}>
                     <TableRow
+                      // THE CONSUMER'S ATTRIBUTES FIRST, so what follows wins.
+                      // `data-selected` is the component's to set: the checkbox
+                      // and the attribute have to agree, and two writers is how
+                      // they stop agreeing.
+                      {...getRowProps?.(row, index)}
                       // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
                       // belongs to `grid` and `treegrid`; on a row inside a
                       // `table` it is ignored, and writing it would be a
