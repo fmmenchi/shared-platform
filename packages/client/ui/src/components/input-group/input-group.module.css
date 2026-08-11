@@ -52,18 +52,28 @@
 
   /* Content inset beside the control — an icon, a prefix — reads as secondary and
      must not collapse when the field is narrow. No element of its own: this is the
-     whole of what a slot component would have carried (ADR-0016). */
-  .group > :not(input) {
+     whole of what a slot component would have carried (ADR-0016).
+
+     `:not(input, select, textarea)`, not `:not(input)` — the affix bucket is
+     everything that is NOT a form control, and the old selector said "not an
+     <input>". A <Select> or <Textarea> dropped inside the group (a currency
+     prefix beside a select is a real form) fell into this bucket: painted as a
+     placeholder-coloured affix, told not to shrink, given affix padding — a
+     control in an affix costume, silently. The group still styles only the
+     <input> as ITS control (the reset rules below stay `> input`): another
+     control is out of the group's contract, and the mdx now says so — but it
+     keeps its own face instead of borrowing the wrong one. */
+  .group > :not(input, select, textarea) {
     @apply text-input-placeholder shrink-0;
   }
   /* …and it is inset from the border by the same step the control's own padding
      gives its text. Without this the symbol sits flush against the edge while the
      value beside it does not — the group has no padding of its own, because the
      control's belongs to the control (a drag started in it still selects text). */
-  .group > :not(input):first-child {
+  .group > :not(input, select, textarea):first-child {
     @apply ps-3;
   }
-  .group > :not(input):last-child {
+  .group > :not(input, select, textarea):last-child {
     @apply pe-3;
   }
 

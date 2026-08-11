@@ -101,6 +101,16 @@ The border is drawn as an inset shadow rather than a real border, because a real
 to the field: the same control would stand 38px tall in a group and 36px bare, and a form row would not
 line up.
 
+## What the group is for
+
+The control is an **`Input`**, direct child. That is the contract, not a
+current limitation: every reset rule in the stylesheet (`border`, invalid,
+disabled, the ring on the group) targets `> input`, because an `<input>` is the
+one control whose border the group can take over without a fight. A `Select` or
+`Textarea` placed inside is not restyled as an affix — it keeps its own face —
+but it also keeps its own border inside the group's, which is the double frame
+the reset exists to prevent. Compose those with `Field` instead.
+
 ## Accessibility
 
 - **The group is not a control and takes no role.** It is a box around one; the name, the value and the
