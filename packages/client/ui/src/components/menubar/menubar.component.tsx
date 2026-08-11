@@ -94,8 +94,15 @@ function Menubar(props: MenubarProps) {
       // text could not be walked, because the menu hands the bar these keys on
       // purpose and the bar was taking them from anybody.
       const target = event.target as Element;
+      // ALL FOUR row roles: attribute selectors match exactly, and
+      // `menuitemcheckbox`/`menuitemradio` are not `menuitem` — so from a
+      // checkable row (a "Show sidebar" in a View menu, the canonical menubar
+      // content) ArrowRight bubbled up and the guard refused it: the bar did
+      // not walk, while the mdx promised "walking on from there still works".
       if (
-        !target.matches('[role="menuitem"], [role="menu"], [role="menubar"]')
+        !target.matches(
+          '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"], [role="menu"], [role="menubar"]',
+        )
       ) {
         return;
       }
