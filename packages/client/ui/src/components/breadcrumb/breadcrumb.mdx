@@ -1,0 +1,80 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as BreadcrumbStories from './breadcrumb.stories.tsx';
+
+<Meta of={BreadcrumbStories} />
+
+# Breadcrumb
+
+Shows the reader where they are as the trail of links that leads there, each
+level one click away. A named `<nav>` landmark around an ordered list, with the
+current crumb announced (`aria-current`) as well as painted.
+
+## Anatomy
+
+```tsx
+<Breadcrumb>
+  <BreadcrumbLink href="/">Home</BreadcrumbLink>
+  <BreadcrumbLink href="/tea">Tea</BreadcrumbLink>
+  <BreadcrumbLink href="/tea/oolong" current>
+    Oolong
+  </BreadcrumbLink>
+</Breadcrumb>
+```
+
+`Breadcrumb` renders the landmark and the list (`<nav><ol>`); each
+`BreadcrumbLink` is a list item around a real `<a>`. The separator between
+crumbs is painted by the stylesheet — it is not an element, so it can never
+leak into the accessibility tree or a copy-paste.
+
+`BreadcrumbLink` shares the nav family's link seam: the app's router arrives
+once through the `Link` adapter on `UiProvider`; an href that leaves the app (a
+scheme, `//`) renders a plain anchor unasked; `as` overrides per call and
+`asChild` slots an element the app already wrote. `current` marks where the
+reader is — `true` means `'page'`, `'step'` fits a flow — and with a
+`useIsCurrent` adapter the marking arrives from the app's own matcher instead
+(only its `page` answer is kept: every ancestor crumb is trivially the
+reader's "location", so announcing it would be noise).
+
+## Props
+
+<Controls of={BreadcrumbStories.Default} />
+
+## Usage
+
+Use a breadcrumb when the page sits in a hierarchy deeper than one level and
+the levels are real destinations. It is secondary navigation: it never replaces
+the main `Nav`, and it starts at the hierarchy's root, not at the site's every
+entry point.
+
+<Canvas of={BreadcrumbStories.Default} />
+
+A deep trail wraps between crumbs on a narrow container:
+
+<Canvas of={BreadcrumbStories.DeepTrail} />
+
+A flow marks its current entry as a step rather than a page:
+
+<Canvas of={BreadcrumbStories.WizardSteps} />
+
+## Accessibility
+
+- The landmark carries a localized default name ("Breadcrumb"), so two
+  navigations on a page stay apart; your own `aria-label`/`aria-labelledby`
+  wins over it (every story shows the named landmark).
+- The list is ORDERED — the sequence is the meaning — and a screen reader
+  counts it ("list, 3 items").
+- The current crumb stays a real link to the page it names (APG), marked
+  `aria-current="page"` and painted with weight as well as colour
+  (WCAG 1.4.1) — see [Default](#default).
+- Separators are CSS-generated with empty alternative text: nothing between
+  the crumbs is announced, focusable, or copyable.
+- Targets grow to 44px under a coarse primary pointer, like every control in
+  the package.
+
+## i18n
+
+The landmark's default name is DS-owned copy, colocated in
+`breadcrumb.messages.ts` (`en`/`it`/`ar`); an app overrides it via the
+`messages` port with the key `"breadcrumb.label"`, or per instance with
+`aria-label`. Layout is fully logical — in RTL the trail runs right to left
+and the direction-neutral separator needs no flip.

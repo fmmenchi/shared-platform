@@ -1,0 +1,76 @@
+/* One level of the trail, and the separator before it. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .item {
+    /* A flex row so the generated separator sits on the text's baseline
+       geometry instead of the line box's. */
+    @apply flex items-center;
+
+    /* The coarse-pointer type bump lives HERE, not on the link, because the
+       separator is this element's pseudo and inherits from it — on the link
+       it produced 16px crumbs with 14px slashes. */
+    @media (pointer: coarse) {
+      @apply text-base;
+    }
+  }
+
+  /* THE SEPARATOR — generated, not an element. It carries no meaning a
+     reader should hear, so there is nothing for the accessibility tree to
+     hold; every-item-but-the-first is the sibling combinator's own grammar.
+     The second value is the CSS alternative-text syntax: empty, so engines
+     that expose generated content to assistive tech (modern ones do) expose
+     nothing. A slash rather than a chevron because it is direction-neutral —
+     the one separator that needs no RTL flip. */
+  .item + .item::before {
+    /* TWO declarations, the ADR-0010 shape (ledger row in known-issues.md,
+       Widely ~2027-01): the alternative-text syntax is Baseline Newly, so an
+       engine without it drops that declaration ENTIRELY — and with it the
+       glyph and the spacing that ride on this pseudo. The plain form first
+       keeps every engine drawing the slash (worst case some announce it, the
+       trade every aria-hidden-separator library makes); the empty alt then
+       silences it wherever the syntax exists. */
+    content: '/';
+    content: '/' / '';
+    @apply mx-2;
+  }
+
+  .link {
+    @apply rounded-sm no-underline underline-offset-4;
+    color: inherit;
+    /* The ring this package promises to draw itself — a consumer's reset
+       that zeroes `outline` must not leave the keyboard nothing to follow. */
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+
+    /* A finger is not a cursor: 44px under a COARSE primary pointer, the
+       same call `nav-link` and `menu-item` make (and the cross-cutting
+       target-size test holds together). Inline padding, not only height, so
+       two crumbs' targets do not touch. */
+    @media (pointer: coarse) {
+      min-height: 2.75rem;
+      @apply flex items-center px-2;
+    }
+  }
+
+  .link:hover {
+    @apply text-foreground underline;
+  }
+
+  /* WHERE YOU ARE. The trail is muted and the current crumb is not, plus
+     weight — never colour alone (WCAG 1.4.1): the component renders
+     `aria-current`, which is what a screen reader announces, and weight is
+     the channel that survives both forced colors and monochrome. */
+  .link[aria-current] {
+    @apply text-foreground font-medium;
+  }
+
+  @media (forced-colors: active) {
+    /* Text colours are the system's here and lose nothing — muted vs
+       foreground collapses, and weight still tells the current crumb apart.
+       What forced colors does take is the ring's colour: name the one it
+       keeps for exactly this. */
+    .link:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

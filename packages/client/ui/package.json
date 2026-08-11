@@ -550,6 +550,18 @@
       "types": "./dist/components/table-header-cell/index.d.ts",
       "import": "./dist/table-header-cell.js",
       "default": "./dist/table-header-cell.js"
+    },
+    "./breadcrumb": {
+      "@fmmenchi/source": "./src/components/breadcrumb/index.ts",
+      "types": "./dist/components/breadcrumb/index.d.ts",
+      "import": "./dist/breadcrumb.js",
+      "default": "./dist/breadcrumb.js"
+    },
+    "./breadcrumb-link": {
+      "@fmmenchi/source": "./src/components/breadcrumb-link/index.ts",
+      "types": "./dist/components/breadcrumb-link/index.d.ts",
+      "import": "./dist/breadcrumb-link.js",
+      "default": "./dist/breadcrumb-link.js"
     }
   },
   "nx": {

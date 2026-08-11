@@ -370,3 +370,7 @@ export { TableCell } from './components/table-cell/table-cell.component.js';
 export type { TableCellProps } from './components/table-cell/table-cell.types.js';
 export { TableHeaderCell } from './components/table-header-cell/table-header-cell.component.js';
 export type { TableHeaderCellProps } from './components/table-header-cell/table-header-cell.types.js';
+export { Breadcrumb } from './components/breadcrumb/breadcrumb.component.js';
+export type { BreadcrumbProps } from './components/breadcrumb/breadcrumb.types.js';
+export { BreadcrumbLink } from './components/breadcrumb-link/breadcrumb-link.component.js';
+export type { BreadcrumbLinkProps } from './components/breadcrumb-link/breadcrumb-link.types.js';

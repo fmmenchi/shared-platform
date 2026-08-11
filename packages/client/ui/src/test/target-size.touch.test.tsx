@@ -13,6 +13,8 @@ import { Radio } from '../components/radio/radio.component.js';
 import { Switch } from '../components/switch/switch.component.js';
 import { Toggle } from '../components/toggle/toggle.component.js';
 import { Table } from '../components/table/table.component.js';
+import { Breadcrumb } from '../components/breadcrumb/breadcrumb.component.js';
+import { BreadcrumbLink } from '../components/breadcrumb-link/breadcrumb-link.component.js';
 
 /**
  * THE TARGET-SIZE POLICY, in one place because it belongs to the family rather
@@ -74,6 +76,13 @@ describe('every control this package draws, under a coarse pointer', () => {
           columns={[{ key: 'name', header: 'Sortable', sortable: true }]}
           onSortToggle={() => undefined}
         />
+        {/* A crumb is an inline text link everywhere else — under a coarse
+            pointer its own stylesheet promises the same 44px row every other
+            copy of this policy makes, and this file is where the copies are
+            held together. */}
+        <Breadcrumb>
+          <BreadcrumbLink href="#crumb">Crumb</BreadcrumbLink>
+        </Breadcrumb>
       </>,
     );
 
@@ -86,6 +95,7 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('textbox', { name: 'Notes' }),
       screen.getByRole('tab', { name: 'One' }),
       screen.getByRole('button', { name: 'Sortable' }),
+      screen.getByRole('link', { name: 'Crumb' }),
     ]) {
       expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(
         TAP,
