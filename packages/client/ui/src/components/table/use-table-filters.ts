@@ -9,9 +9,6 @@ import type {
   UseTableFiltersResult,
 } from './use-table-filters.types.js';
 
-/** How many rows to look at before deciding a key names nothing. */
-const PROBE_ROWS = 5;
-
 /**
  * `useFilterState` plus the matching engine: the rows that survive.
  *
@@ -50,12 +47,11 @@ export function useTableFilters<T>(
     (key) =>
       !filter?.[key] &&
       rows.length > 0 &&
-      rows
-        .slice(0, PROBE_ROWS)
-        .every(
-          (row) =>
-            row == null || !Object.hasOwn(row as Record<string, unknown>, key),
-        ),
+      // `in`, NOT `Object.hasOwn`: a row that exposes its value through a
+      // prototype getter — a class instance, a proxy — filters perfectly well
+      // and was being warned about. And every row rather than the first few,
+      // because a property that only appears later warned too.
+      rows.every((row) => row == null || !(key in (row as object))),
   );
   useDevWarning(
     orphan !== undefined,

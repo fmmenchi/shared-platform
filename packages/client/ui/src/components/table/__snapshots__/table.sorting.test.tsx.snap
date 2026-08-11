@@ -3,10 +3,10 @@
 exports[`a sortable table > matches its markup 1`] = `
 <div>
   <table
-    class="_table_xy4k3_4"
+    class="_table_q5weu_4"
   >
     <caption
-      class="_caption_xy4k3_12"
+      class="_caption_q5weu_12"
     >
       Persone
     </caption>
@@ -17,13 +17,13 @@ exports[`a sortable table > matches its markup 1`] = `
           scope="col"
         >
           <button
-            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_xy4k3_85"
+            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_q5weu_86"
             type="button"
           >
             Nome
             <svg
               aria-hidden="true"
-              class="_sortArrow_xy4k3_97"
+              class="_sortArrow_q5weu_99"
               data-direction="asc"
               viewBox="0 0 12 12"
             >
@@ -50,13 +50,13 @@ exports[`a sortable table > matches its markup 1`] = `
           scope="col"
         >
           <button
-            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_xy4k3_85"
+            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_q5weu_86"
             type="button"
           >
             Età
             <svg
               aria-hidden="true"
-              class="_sortArrow_xy4k3_97"
+              class="_sortArrow_q5weu_99"
               data-direction="none"
               viewBox="0 0 12 12"
             >

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Table } from '../table/table.component.js';
@@ -63,21 +64,14 @@ function Bare(props: {
 }
 
 /**
- * Table and bar wired the way a consumer wires them — bar AFTER the table.
- * Before it, forward Tab never reaches the actions the reader just summoned:
- * they would have to walk backwards past every row checkbox.
+ * Table and toolbar wired the way a consumer wires them — toolbar ABOVE the
+ * table. It shipped the other way round as an appearing bar, and this comment
+ * argued for it; permanent, the description has to come before the rows.
  */
 function Wired(props: { total?: number; bulk?: boolean }) {
   const selection = useRowSelection({ total: props.total });
   return (
     <>
-      <Table
-        caption="Persone"
-        rows={people}
-        columns={columns}
-        getRowId={(p) => p.id}
-        {...selection.props}
-      />
       <TableToolbar {...selection.toolbarProps}>
         {props.bulk === true && (
           <ToolbarItem>
@@ -91,6 +85,13 @@ function Wired(props: { total?: number; bulk?: boolean }) {
           </ToolbarItem>
         )}
       </TableToolbar>
+      <Table
+        caption="Persone"
+        rows={people}
+        columns={columns}
+        getRowId={(p) => p.id}
+        {...selection.props}
+      />
     </>
   );
 }
@@ -258,6 +259,7 @@ describe('the table toolbar', () => {
     render(
       <TableToolbar
         filters={{ city: 'Milano' }}
+        filterLabels={{ city: 'Città' }}
         rowCount={12}
         total={240}
         onClearFilters={onClearFilters}
@@ -269,10 +271,84 @@ describe('the table toolbar', () => {
     expect(screen.getByText('Showing 12 of 240')).toBeInTheDocument();
     // The COLUMNS, not the values: a value can be anything typed and belongs
     // beside its own control, where it is editable.
-    expect(screen.getByText(/Filtered by: city/)).toBeInTheDocument();
+    expect(screen.getByText(/Filtered by: Città/)).toBeInTheDocument();
 
     await browser.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(onClearFilters).toHaveBeenCalledOnce();
+  });
+
+  it('says so when a filtered column has no human name', async () => {
+    // The first version joined the RAW KEYS, so an Italian reader was told
+    // "Filtrato per: created_at" — a developer identifier inside localized
+    // copy, which is the failure `Column.sortLabel` exists to prevent one
+    // feature over. The old test used `city`, a key that reads as a word.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <TableToolbar
+        filters={{ created_at: '2026' }}
+        rowCount={12}
+        total={240}
+        onClearFilters={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText(/Filtered by: created_at/)).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`filterLabels`'),
+    );
+    warn.mockRestore();
+  });
+
+  it('announces a filter change, because nothing else can', async () => {
+    // `Table`'s live region only exists when sorting or selection is wired, and
+    // filtering happens outside the component entirely — so applying one
+    // deleted rows and told a reader who could not see the table nothing.
+    function Filtering() {
+      const [rows, setRows] = useState(240);
+      return (
+        <>
+          <button type="button" onClick={() => setRows(12)}>
+            filtra
+          </button>
+          <TableToolbar
+            filters={{ city: 'Milano' }}
+            filterLabels={{ city: 'Città' }}
+            rowCount={rows}
+            total={240}
+            onClearFilters={() => undefined}
+          />
+        </>
+      );
+    }
+
+    render(<Filtering />);
+    const status = document.querySelector('[data-toolbar-status]');
+    // Silent on arrival: the first render is not news.
+    expect(status).toHaveTextContent('');
+
+    await browser.click(screen.getByRole('button', { name: 'filtra' }));
+    await waitFor(() => expect(status).toHaveTextContent('Showing 12 of 240'));
+  });
+
+  it('does not offer to select rows the filter just removed', async () => {
+    // "Select all matching" means everything the QUERY matched, and the query a
+    // reader can see is the filter — but `total` is the unfiltered size, so the
+    // offer sat inches from "Showing 3 of 240" and took the 237 rows they had
+    // just filtered away.
+    render(
+      <TableToolbar
+        selection={include('1')}
+        total={240}
+        onSelectEverything={() => undefined}
+        onClear={() => undefined}
+        filters={{ city: 'Milano' }}
+        filterLabels={{ city: 'Città' }}
+        rowCount={3}
+        onClearFilters={() => undefined}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /Select all/ })).toBeNull();
   });
 
   it('says nothing about a count when nothing is filtered', async () => {
@@ -397,6 +473,22 @@ describe('the table toolbar', () => {
         await expectNoA11yViolations(view.container);
         view.unmount();
       }
+
+      // AND THE FILTERED STATE, which is the one that introduced a new colour
+      // (`.quiet`) and a new control — and which the matrix skipped, along the
+      // very axis this commit added.
+      const filtered = renderUi(
+        <TableToolbar
+          filters={{ city: 'Milano' }}
+          filterLabels={{ city: 'Città' }}
+          rowCount={12}
+          total={240}
+          onClearFilters={() => undefined}
+        />,
+        { theme },
+      );
+      await expectNoA11yViolations(filtered.container);
+      filtered.unmount();
     }
   });
 

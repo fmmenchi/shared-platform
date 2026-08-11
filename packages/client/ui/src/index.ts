@@ -339,13 +339,12 @@ export type {
   UseTableFiltersOptions,
   UseTableFiltersResult,
 } from './components/table/use-table-filters.types.js';
-export {
-  foldForSearch,
-  activeFilters,
-  isFiltered,
-  matchesFilters,
-  filterRows,
-} from './filtering/filter.js';
+// ONLY `foldForSearch`, and the sibling engine is the control: `sorting/` puts
+// none of its functions in this barrel. A consumer writing a `RowFilter` needs
+// the same notion of "contains" the default uses — folding it themselves is how
+// one column starts disagreeing with the others — and that is the second
+// consumer the rule asks for. The rest are reachable through the hooks.
+export { foldForSearch } from './filtering/filter.js';
 export type { FilterState, RowFilter } from './filtering/filter.types.js';
 export { TableToolbar } from './components/table-toolbar/table-toolbar.component.js';
 export type { TableToolbarProps } from './components/table-toolbar/table-toolbar.types.js';

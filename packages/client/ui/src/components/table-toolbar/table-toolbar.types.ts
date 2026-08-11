@@ -61,6 +61,16 @@ export interface TableToolbarProps extends Omit<
    * the live region silent on arrival.
    */
   rowCount?: number;
+  /**
+   * What to CALL each filtered column, keyed by the same key the filter is.
+   *
+   * Without it the summary prints the key — `created_at`, `fullName` — which is
+   * a developer identifier read out inside localized copy, and is exactly what
+   * `Column.sortLabel` exists to prevent one feature over. The toolbar cannot
+   * derive it: it never sees the column model. A key with no label falls back
+   * to itself and warns.
+   */
+  filterLabels?: Readonly<Record<string, string>>;
   /** Put the view back to every row. */
   onClearFilters?: () => void;
   /**

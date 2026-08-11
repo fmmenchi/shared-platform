@@ -124,7 +124,29 @@ function Table<T>(props: TableProps<T>) {
   // agree with `Column.width` and can be set to disagree with it — the shape
   // this component has spent four milestones removing. One column asking for a
   // width is the whole condition.
-  const fixed = columns?.some((column) => column.width !== undefined) === true;
+  const sized = columns?.filter((column) => column.width !== undefined) ?? [];
+  const fixed = sized.length > 0;
+
+  // A WIDTH CSS CANNOT PARSE IS DROPPED BY THE CSSOM, silently — and it still
+  // switches the table's layout algorithm, so one typo re-lays-out every OTHER
+  // column into an equal share. Measured with `width: 'banana'`.
+  useDevWarning(
+    sized.some(
+      (column) =>
+        typeof CSS !== 'undefined' &&
+        !CSS.supports('inline-size', column.width as string),
+    ),
+    'Table: a column declares a `width` that is not a valid CSS length, so the browser drops it — and the table is in a fixed layout anyway, which re-sizes every other column. Check the value.',
+  );
+
+  // EVERY column sized is the one arrangement where declaring a width stops
+  // meaning what it says: the fixed algorithm redistributes the table's leftover
+  // width across the columns, so the declarations become ratios. Leave one
+  // column unsized and the rest hold exactly.
+  useDevWarning(
+    fixed && columns !== undefined && sized.length === columns.length,
+    'Table: every column declares a `width`, so the fixed layout has nothing to absorb the leftover and spreads it across all of them — the declared values become proportions rather than sizes. Leave at least one column unsized.',
+  );
 
   const scroller = useRef<HTMLDivElement>(null);
   // WHETHER IT ACTUALLY SCROLLS, and it decides the tab stop. A region that

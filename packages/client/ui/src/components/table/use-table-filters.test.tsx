@@ -71,13 +71,18 @@ describe('useTableFilters', () => {
   });
 
   it('folds case in the READER’s language, not the runtime’s', async () => {
-    // `'İ'.toLowerCase()` produces an `i` with a combining dot — a different
-    // string from `i` — while the Turkish mapping produces the plain letter.
-    const user = userEvent.setup();
-    renderUi(<Filtered />, { locale: 'tr' });
+    // THE ASSERTION THAT DISCRIMINATES. The first version applied "a" under a
+    // Turkish locale and expected the same two rows the default locale gives —
+    // an assertion that passes with no locale, with English, and with a fold
+    // that ignores the locale entirely, because `İzmir` contains no "a". The
+    // letter that separates them is "i": `'İ'.toLowerCase()` produces an `i`
+    // followed by a combining dot, a different string, while the Turkish
+    // mapping produces the plain letter.
+    renderUi(<Filtered options={{ defaultFilters: { name: 'i' } }} />, {
+      locale: 'tr',
+    });
 
-    await user.click(screen.getByRole('button', { name: 'apply a' }));
-    expect(read('rows')).toBe('Àosta,Milano');
+    expect(read('rows')).toContain('İzmir');
   });
 
   it('removes the key when a filter is cleared, rather than leaving it empty', async () => {
@@ -109,6 +114,30 @@ describe('useTableFilters', () => {
     // Every name is longer than one character, so the predicate keeps them all
     // — which "contains an a" would not have.
     expect(read('rows')).toBe('Àosta,Milano,İzmir');
+  });
+
+  it('does not false-warn about a value the row exposes through its prototype', async () => {
+    // `Object.hasOwn` misses an inherited getter, so the hook warned about a
+    // key it was filtering by perfectly well — and it probed only the first
+    // rows, so a property that appears later warned too.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    class Row {
+      constructor(public id: string) {}
+      get name(): string {
+        return 'Milano';
+      }
+    }
+    function Inherited() {
+      const filters = useTableFilters([new Row('1')] as unknown as City[], {
+        defaultFilters: { name: 'mi' },
+      });
+      return <output data-rows="">{filters.rows.length}</output>;
+    }
+
+    render(<Inherited />);
+    expect(read('rows')).toBe('1');
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('says so when the filtered key names neither a property nor a predicate', async () => {

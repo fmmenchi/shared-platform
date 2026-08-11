@@ -55,6 +55,12 @@
        before it was here. No effect on a cell with no declared width, which is
        every cell until somebody asks. */
     box-sizing: border-box;
+    /* WHAT MAKES THE STATED COST TRUE. The `width` docs say long text wraps —
+       and a token with no break opportunity (a surname, an email, an id) does
+       not wrap, does not clip, and PAINTS OVER the next column: measured at
+       213px of overlap on a `6ch` column. Two strings on the same pixels are
+       unreadable to everyone. */
+    overflow-wrap: anywhere;
     padding-block: var(--fm-space-internal-s);
     padding-inline: var(--fm-space-inline-s);
     text-align: start;
@@ -185,7 +191,10 @@
      1000px table is 10px, and the checkbox is 18. Under `fixed` the column has
      to be told a real width — the control plus the inline padding the cell
      already has on both sides. */
-  .table[data-layout='fixed'] .selectCell {
+  /* The child chain, not a descendant selector — the leak this file already
+     diagnosed once for the row separators, 110 lines up. As a descendant it
+     forced the selection column of a table nested in a cell to 40px. */
+  .table[data-layout='fixed'] > * > tr > .selectCell {
     inline-size: calc(1.5rem + 2 * var(--fm-space-inline-s));
   }
 
@@ -230,6 +239,10 @@
      header's own weight, no padding of its own, and the cell's alignment. */
   .sortTrigger {
     inline-size: 100%;
+    /* A FLOOR, because a declared width can be narrower than a target. On a
+       `3ch` column the trigger measured 8×32 against the 24×24 WCAG 2.5.8 asks
+       — a target the width made small, not one the component chose. */
+    min-inline-size: 24px;
     /* STATED, not inherited. It was `inherit`, commented as taking the cell's
        alignment — `justify-content` is not an inherited property and the `<th>`
        is not a flex container, so it resolved to `normal`, which behaves as

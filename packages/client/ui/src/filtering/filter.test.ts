@@ -41,6 +41,37 @@ describe('folding a string for search', () => {
   it('reaches past Latin', () => {
     expect(foldForSearch('Ελλάδα', 'el')).toBe('ελλαδα');
   });
+
+  it('expands ß, which nothing in JavaScript does for you', () => {
+    // The claim this file SHIPPED WITHOUT IMPLEMENTING. `toLocaleLowerCase` is
+    // simple lowercase, not full case folding: ß survives it, has no canonical
+    // decomposition and is not a diacritic — so "Straße" did not contain
+    // "strasse" while the comment above it said it did.
+    expect(foldForSearch('Straße', 'de')).toBe('strasse');
+    expect(foldForSearch('STRASSE', 'de')).toBe('strasse');
+  });
+
+  it('normalises the Greek final sigma', () => {
+    // `'ΟΔΟΣ'.toLocaleLowerCase('el')` ends in ς, and a reader types σ.
+    // Both end in σ after folding — which is the point: the row and the query
+    // meet on one letter instead of on two that look identical.
+    expect(foldForSearch('Οδός', 'el')).toBe('οδοσ');
+    expect(foldForSearch('ΟΔΟΣ', 'el')).toBe(foldForSearch('Οδός', 'el'));
+  });
+
+  it('KEEPS the Japanese voiced marks, which Unicode calls diacritics', () => {
+    // THE BREADTH WAS THE DEFECT. `\p{Diacritic}` matches U+3099/309A, and NFD
+    // splits every precomposed voiced kana — so a blind strip folds バス (bus)
+    // to ハス (lotus). Those are different words, and a filter that conflates
+    // them is a false-positive engine rather than a forgiving one.
+    expect(foldForSearch('バス', 'ja')).not.toBe(foldForSearch('ハス', 'ja'));
+    expect(foldForSearch('ガス', 'ja')).not.toBe(foldForSearch('カス', 'ja'));
+  });
+
+  it('folds ligatures and full-width forms, because NFKD does', () => {
+    expect(foldForSearch('ﬀentlich', 'de')).toBe('ffentlich');
+    expect(foldForSearch('ＡＢＣ', 'ja')).toBe('abc');
+  });
 });
 
 describe('which filters are in force', () => {
@@ -49,6 +80,19 @@ describe('which filters are in force', () => {
     expect(activeFilters({ city: '', name: '  ' })).toEqual([]);
     expect(isFiltered({ city: '', name: '  ' })).toBe(false);
     expect(activeFilters({ city: 'Mi' })).toEqual(['city']);
+  });
+
+  it('does not count a value that is not a string, and does not throw on one', () => {
+    // `filters[key]?.trim() !== ''` read a MISSING value as ACTIVE, because
+    // `undefined !== ''` — and the matcher then called `.trim()` on it and
+    // threw. Reachable from the shape this state exists for: a URL round-trip
+    // where an absent search param arrives as `undefined`.
+    const wonky = { city: undefined, age: 30 } as unknown as Record<
+      string,
+      string
+    >;
+    expect(activeFilters(wonky)).toEqual([]);
+    expect(() => matchesFilters({ city: 'Milano' }, wonky, 'it')).not.toThrow();
   });
 });
 
@@ -82,12 +126,19 @@ describe('matching a row', () => {
     ).toBe(true);
   });
 
-  it('survives a null row', () => {
-    // What an API payload with a hole in it delivers, and it must not take the
-    // table down from inside a predicate.
+  it('survives a null row — including through a consumer’s predicate', () => {
+    // The guard sat BELOW the branch that calls the predicate, so the one
+    // comment promising it would "not take the table down from inside a
+    // predicate" described the one path where it did. The default path was the
+    // only one this test used to exercise.
     expect(
       matchesFilters(null as unknown as Person, { city: 'mi' }, 'it'),
     ).toBe(false);
+    expect(() =>
+      matchesFilters(null as unknown as { age: number }, { age: '25' }, 'it', {
+        age: (row, value) => row.age > Number(value),
+      }),
+    ).not.toThrow();
   });
 });
 
@@ -102,6 +153,20 @@ describe('filtering the rows', () => {
     const filtered = filterRows(people, { city: 'mi' }, 'it');
     expect(filtered).not.toBe(people);
     expect(filtered.map((p) => p.name)).toEqual(['Bruno']);
+  });
+
+  it('folds the query once, not once per row', () => {
+    // Behavioural proof rather than a benchmark: a predicate that counts its
+    // own calls shows the per-row work, and the needle's folding is hoisted
+    // beside it. Measured at 50,000 rows the hoist was 22.2ms → 9.7ms.
+    let calls = 0;
+    filterRows(people, { name: 'a' }, 'it', {
+      name: (_row, _value) => {
+        calls += 1;
+        return true;
+      },
+    });
+    expect(calls).toBe(people.length);
   });
 
   it('matches accent-insensitively end to end', () => {

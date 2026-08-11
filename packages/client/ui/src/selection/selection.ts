@@ -42,7 +42,7 @@ export const NOTHING_SELECTED: Selection = Object.freeze({
  * for one milestone the constant was exported and the banner was left to the
  * consumer, and every review of that arrangement called it a trap rather than
  * an affordance. It stays exported for a consumer building their own bar, and
- * `useRowSelection`'s `barProps.onSelectEverything` is the wired path.
+ * `useRowSelection`'s `toolbarProps.onSelectEverything` is the wired path.
  */
 export const EVERYTHING_SELECTED: Selection = Object.freeze({
   mode: 'exclude' as const,

@@ -10,7 +10,7 @@ import viteConfig from '../../vite.config.mts?raw';
  *
  * `build.md` and ADR-0019 both say a component is three steps: a barrel, a
  * `build.lib.entry` line, and an `exports` subpath. Nothing checked the last
- * two — so `TableToolbar` shipped having done only the first, and every
+ * two — so `TableSelectionBar` (as it was then called) shipped having done only the first, and every
  * gate stayed green: it typechecks, it builds, it renders, it is exported from
  * the root barrel. It simply had no `@fmmenchi/ui/table-toolbar`, which
  * nobody notices until a consumer imports granularly and the package's whole

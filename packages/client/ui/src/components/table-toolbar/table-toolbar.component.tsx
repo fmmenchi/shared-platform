@@ -1,9 +1,18 @@
-import { useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { cn } from '../../util/cn.js';
 import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { countSelected } from '../../selection/selection.js';
 import { activeFilters } from '../../filtering/filter.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { Button } from '../button/button.component.js';
 import { Toolbar } from '../toolbar/toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
@@ -60,6 +69,7 @@ function TableToolbar({
   onClear,
   filters,
   rowCount,
+  filterLabels,
   onClearFilters,
   className,
   children,
@@ -67,6 +77,7 @@ function TableToolbar({
 }: TableToolbarProps) {
   const t = useMessages(tableToolbarMessages);
   const summaryId = useId();
+  const slotRef = useRef<HTMLDivElement>(null);
 
   // THE COPY'S LOCALE, not the reader's. Collation asks a different question
   // and gets a different answer (`useTableSort` reads the raw tag); a number
@@ -95,6 +106,50 @@ function TableToolbar({
     hasRenderableChildren(summary) ||
     hasRenderableChildren(children);
 
+  useDevWarning(
+    filtered && active.some((key) => filterLabels?.[key] === undefined),
+    `TableToolbar: a filtered column has no entry in \`filterLabels\`, so the summary prints its key — a developer identifier, untranslated, inside localized copy. Pass the column's header text, the way a sortable column passes \`sortLabel\`.`,
+  );
+
+  // SHOWN ONLY WHEN FILTERED, which is the same rule that keeps the live region
+  // silent on arrival: the count of an unfiltered table is not news. With a
+  // `total` it is a fraction — "12 of 240" is what a reader needs to know they
+  // are not seeing everything — and without one it says what it can.
+  const shown = !filtered
+    ? null
+    : rowCount === undefined
+      ? null
+      : total === undefined
+        ? t('filteredCount', { shown: numbers.format(rowCount) })
+        : t('filtered', {
+            shown: numbers.format(rowCount),
+            total: numbers.format(total),
+          });
+
+  // ANNOUNCED, because nothing else can. Applying a filter deletes rows, and
+  // `Table`'s live region only exists when sorting or selection is wired —
+  // filtering happens outside the component entirely, so a reader who could not
+  // see the table was told nothing at all. Silent on arrival, like every other
+  // region in this family: the first render is not news.
+  const [announcement, setAnnouncement] = useState('');
+  const arrived = useRef(false);
+
+  // A control in the summary slot is a tab stop outside the toolbar's ring —
+  // one more stop than the toolbar exists to save. Dev only, after the commit,
+  // because only the DOM can answer it.
+  const [slotHasControls, setSlotHasControls] = useState(false);
+  useEffect(() => {
+    setSlotHasControls(
+      slotRef.current?.querySelector(
+        'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      ) != null,
+    );
+  });
+  useDevWarning(
+    slotHasControls,
+    "TableToolbar: `summary` contains a control. It keeps a tab stop of its own, before the toolbar — which is one more stop than the toolbar exists to save — and its label is flattened into the region's description. Pass controls as `children`, wrapped in `ToolbarItem`.",
+  );
+
   const returnTo = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (visible) {
@@ -120,6 +175,16 @@ function TableToolbar({
     }
   }, [visible]);
 
+  useEffect(() => {
+    if (!arrived.current) {
+      arrived.current = true;
+      return;
+    }
+    // The row count IS the news — "your filter left twelve rows" — and the
+    // sentence is the same one on screen, so the two cannot drift.
+    setAnnouncement(shown ?? '');
+  }, [shown]);
+
   if (!visible) return null;
 
   const said: ReactNode =
@@ -133,29 +198,29 @@ function TableToolbar({
             t('allExcept', { count: numbers.format(selection.ids.size) })
         : t('count', { count: numbers.format(count) });
 
-  // SHOWN ONLY WHEN FILTERED, which is the same rule that keeps the live region
-  // silent on arrival: the count of an unfiltered table is not news. With a
-  // `total` it is a fraction — "12 of 240" is what a reader needs to know they
-  // are not seeing everything — and without one it says what it can.
-  const shown = !filtered
-    ? null
-    : rowCount === undefined
-      ? null
-      : total === undefined
-        ? t('filteredCount', { shown: numbers.format(rowCount) })
-        : t('filtered', {
-            shown: numbers.format(rowCount),
-            total: numbers.format(total),
-          });
-
   // THE COLUMNS, NOT THE VALUES. A value can be anything the reader typed and
   // belongs beside its own column's control, where it is editable; here it
   // would be a sentence that grows without bound and says less the longer it
   // gets.
-  const by = filtered ? t('filteredBy', { columns: active.join(', ') }) : null;
+  //
+  // NAMED, not keyed. The first version joined the raw keys, so an Italian
+  // reader was told "Filtrato per: created_at" — a developer identifier inside
+  // localized copy, which is the failure `Column.sortLabel` exists to prevent
+  // one feature over.
+  const by = filtered
+    ? t('filteredBy', {
+        columns: active.map((key) => filterLabels?.[key] ?? key).join(', '),
+      })
+    : null;
 
+  // NOT WHILE A FILTER IS ON. "Select all matching" is documented as everything
+  // the QUERY matched, and the query a reader can see is the filter — but
+  // `total` is the unfiltered size, so the offer sat inches from "Showing 3 of
+  // 240" and took the 237 rows they had just filtered away. The two numbers
+  // cannot be reconciled from here, so the offer waits until there is only one.
   const escalates =
     onSelectEverything !== undefined &&
+    !filtered &&
     selection?.mode === 'include' &&
     total !== undefined &&
     count !== undefined &&
@@ -175,14 +240,36 @@ function TableToolbar({
       {/* NOT a live region. `Table` already announces a change through its own,
         and a second one over the same fact says it twice. This is the
         PERSISTENT statement; the announcement is the transient one. */}
-      <div id={summaryId} className={styles.summary}>
-        {summary}
-        {shown !== null && <span>{shown}</span>}
-        {by !== null && <span className={styles.quiet}>{by}</span>}
-        {said !== null && <span>{said}</span>}
+      <div className={styles.summary}>
+        {/* THE CONSUMER'S SLOT IS NOT PART OF THE DESCRIPTION. Pointed at the
+          whole summary, `aria-describedby` flattened whatever was passed here
+          into prose — a button in it was announced as words with no hint it was
+          operable, and it took a tab stop of its own BEFORE the toolbar,
+          defeating the one-stop property the toolbar exists for. */}
+        <div ref={slotRef}>{summary}</div>
+        <div id={summaryId} className={styles.summary}>
+          {shown !== null && <span>{shown}</span>}
+          {by !== null && <span className={styles.quiet}>{by}</span>}
+          {said !== null && <span>{said}</span>}
+        </div>
       </div>
 
-      <Toolbar label={t('actions')} className={styles.actions}>
+      {/* Only where it can speak, and silent on arrival — the discipline every
+        other region in this family follows. */}
+      {filters !== undefined && (
+        <VisuallyHidden role="status" data-toolbar-status="">
+          {announcement}
+        </VisuallyHidden>
+      )}
+
+      <Toolbar
+        label={t('actions')}
+        // ALSO ON THE TOOLBAR. The region carries it for a reader entering the
+        // landmark; a keyboard user who tabs straight into the actions never
+        // enters it, and the predecessor put it here for exactly that reason.
+        aria-describedby={summaryId}
+        className={styles.actions}
+      >
         {escalates && (
           <ToolbarItem>
             <Button

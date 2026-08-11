@@ -1,4 +1,4 @@
-/* The selection bar: what is picked, and what can be done with it. */
+/* The table's own controls: what the view is showing, and what can be done to it. */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 @layer fmmenchi {
