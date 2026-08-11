@@ -76,4 +76,4 @@ Three things follow, all visible in the story below:
 
 The stylesheet is a near-copy of `radio.module.css`. That is deliberate: each component owns its stylesheet ([ADR-0019](../../../../../apps/docusaurus/docs/adr/0019-ui-package-organisation.md)), and the alternative is a file reaching into a sibling's styles for eight lines.
 
-The `margin: 0` reset of the UA's asymmetric margin is **not** covered by a computed-style test — this page loads Tailwind Preflight, which zeroes it anyway, so such a test would pass with the line deleted. It is verified against the built `dist/checkbox.css`.
+The `margin: 0` reset of the UA's asymmetric margin **is** covered by a computed-style test: since ADR-0022 the test page loads no reset — the same page a consumer has — so deleting the line turns the suite red. (An older note here claimed the opposite, from the era when the page loaded Preflight; the per-component `dist/checkbox.css` it pointed to no longer exists either — ADR-0023 ships one stylesheet.)

@@ -273,10 +273,19 @@ describe('Radio', () => {
       expect(radio.getBoundingClientRect().width).toBe(18);
     });
 
-    // NOT asserted here: the `margin: 0` reset of the UA's asymmetric margin.
-    // This page loads Tailwind Preflight, which zeroes that margin anyway, so a
-    // computed-style assertion would pass with the reset deleted. It is verified
-    // against the BUILT stylesheet instead — see the note in radio.mdx.
+    it('zeroes the UA margin, and the page can finally see it', () => {
+      // Asserted at last: the refusal above it dated from the page that loaded
+      // Preflight, which ADR-0022 removed — the suite now renders on the page a
+      // consumer actually has, so deleting `margin: 0` turns this red.
+      const { container } = render(
+        <label>
+          Uno
+          <Radio name="g" value="1" />
+        </label>,
+      );
+      const radio = container.querySelector('input') as HTMLInputElement;
+      expect(getComputedStyle(radio).margin).toBe('0px');
+    });
   });
 
   describe('accessibility (axe)', () => {

@@ -471,9 +471,22 @@ describe('Checkbox', () => {
       expect(box.getBoundingClientRect().width).toBe(18);
     });
 
-    // NOT asserted: the `margin: 0` reset — this page loads Tailwind Preflight,
-    // which zeroes it anyway, so the test would pass with the line deleted.
-    // Verified against the built stylesheet; see checkbox.mdx.
+    it('zeroes the UA margin, and the page can finally see it', () => {
+      // This assertion was refused for as long as the test page loaded
+      // Preflight, which zeroed the margin anyway — the comment refusing it
+      // outlived the fact by two ADRs. Since ADR-0022 the suite loads
+      // `vars.css` and no reset, which is exactly a consumer's page: deleting
+      // `margin: 0` from the stylesheet turns this red instead of shipping
+      // Chromium's asymmetric `3px 3px 0 5px` to every consumer without one.
+      const { container } = render(
+        <label>
+          Ricordami
+          <Checkbox />
+        </label>,
+      );
+      const box = container.querySelector('input') as HTMLInputElement;
+      expect(getComputedStyle(box).margin).toBe('0px');
+    });
   });
 
   describe('accessibility (axe)', () => {
