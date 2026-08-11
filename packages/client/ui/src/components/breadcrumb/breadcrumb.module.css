@@ -1,0 +1,30 @@
+/*
+ * Breadcrumb styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. `@reference` resolves
+ * `@apply` at THIS library's build; the output stays themable at runtime.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* No rule for the landmark itself, on purpose: the `<nav>` is a box around
+     a list and nothing more, so the list carries the layout and a consumer
+     styling the nav (a border, a background) never fights the flex row. An
+     empty rule here compiled to nothing and left the component shipping
+     `class=""`. */
+
+  .list {
+    /* The DS ships no reset (ADR-0022): whatever the UA puts on an `<ol>` is
+       what a consumer's page sees, and that is a left indent, a top and
+       bottom margin, and decimal markers — all three of them wrong here and
+       all three invisible on the Preflight-carrying test page. */
+    @apply m-0 list-none p-0;
+    /* One row that WRAPS: a deep trail on a narrow screen breaks after a
+       crumb, never inside one. */
+    @apply flex flex-wrap items-center;
+    @apply text-sm text-muted-foreground;
+  }
+}

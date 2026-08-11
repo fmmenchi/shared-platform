@@ -1,0 +1,43 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Breadcrumb > matches the rendered snapshot 1`] = `
+<nav
+  aria-label="Breadcrumb"
+>
+  <ol
+    class="_list_woitp_3"
+  >
+    <li
+      class="_item_lnflv_4"
+    >
+      <a
+        class="_link_lnflv_17"
+        href="#home"
+      >
+        Home
+      </a>
+    </li>
+    <li
+      class="_item_lnflv_4"
+    >
+      <a
+        class="_link_lnflv_17"
+        href="#tea"
+      >
+        Tea
+      </a>
+    </li>
+    <li
+      class="_item_lnflv_4"
+    >
+      <a
+        aria-current="page"
+        class="_link_lnflv_17"
+        href="#oolong"
+      >
+        Oolong
+      </a>
+    </li>
+  </ol>
+</nav>
+`;

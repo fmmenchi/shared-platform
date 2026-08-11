@@ -1,10 +1,6 @@
-import type { ElementType } from 'react';
 import { cn } from '../../util/cn.js';
-import { useUiAdapters } from '../../i18n/provider.js';
 import { useInjectedCurrent } from './nav-link.current.js';
-import { isExternalHref } from '../../primitives/is-external-href.js';
-import { Slot } from '../../primitives/slot.js';
-import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { useLinkElement } from '../../primitives/use-link-element.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -20,33 +16,16 @@ import styles from './nav-link.module.css';
 function NavLink(props: NavLinkProps) {
   const { as, asChild, current, className, children, ...rest } = props;
 
-  /*
-   * THE ROUTER COMES FROM THE PROVIDER, not from every call site. `Link` is an
-   * adapter this design system already declares — injected once, next to the
-   * locale and the form binding — and this is its first consumer, so it is also
-   * the first time that port is put to work rather than described.
-   *
-   * `as` stays as the per-call override, for the link that must NOT go through
-   * the router: an absolute URL to another site, a download, a `mailto:`. Read
-   * tolerantly, so a `NavLink` outside a provider is still a plain anchor.
-   */
-  const injected = useUiAdapters()?.Link;
-  // A destination that LEAVES the app never goes through the router, and the
-  // component decides that rather than asking the caller to remember: `as="a"`
-  // was the only defence, so forgetting it handed `https://…` or a `mailto:` to
-  // a client-side router. It is the same call this component already makes —
-  // which element renders — applied to the one case where the answer is in the
-  // href itself.
-  // Two ways of saying who renders, given together: `asChild` wins by the
-  // precedence below and `as` does nothing — compiling, autocompleting, and
-  // deciding nothing. The same conflict `CardTitle` warns about by name for
-  // its `asChild`+`href` pair.
-  useDevWarning(
-    Boolean(asChild && as),
-    'NavLink: given both `asChild` and `as`. The child renders, so `as` is ignored — remove it.',
-  );
+  // Which element renders — the injected router link, a plain anchor for a
+  // destination that leaves the app, `as`, or the slotted child — is the
+  // shared decision `useLinkElement` documents; `BreadcrumbLink` makes the
+  // same one, which is why it is a primitive and not this component's.
+  const { Component, external } = useLinkElement('NavLink', {
+    as,
+    asChild,
+    href: rest.href,
+  });
 
-  const external = isExternalHref(rest.href);
   // THREE levels, most specific first. An explicit `current` wins, because it
   // is the only one that can know what matching cannot. Then the adapter, if
   // the app gave one. Outside the chain entirely: an injected `Link` that marks
@@ -56,13 +35,6 @@ function NavLink(props: NavLinkProps) {
   // asking sends another site's URL into the app's own matcher.
   const fromAdapter = useInjectedCurrent(external ? undefined : rest.href);
   const active = current ?? fromAdapter;
-  // `asChild` slots into the SAME position every other choice does, and that
-  // is why it costs one line: whatever renders here is handed `aria-current`,
-  // the class and the rest, and `Slot` differs only in putting them on an
-  // element the app already wrote instead of one of its own.
-  const Component = (
-    asChild ? Slot : (as ?? (external ? 'a' : injected) ?? 'a')
-  ) as ElementType;
 
   return (
     <li className={styles.item}>
