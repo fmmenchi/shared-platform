@@ -299,4 +299,26 @@ describe('AppLayout, above the breakpoint', () => {
     expect(Math.round(box(main).width)).toBe(Math.round(box(header).width));
     expect(Math.round(box(main).left)).toBe(Math.round(box(header).left));
   });
+
+  it('does not shadow a header offset the consumer sets on :root', async () => {
+    // The 0px default used to be declared on the layout itself, and a local
+    // declaration beats inheritance: the value the mdx told consumers to set
+    // was silently ignored by the sticky column. The default is a var()
+    // fallback now.
+    document.documentElement.style.setProperty(
+      '--app-layout-header-offset',
+      '64px',
+    );
+    render(shell());
+    // The sticky element is the REGION wrapper, not the <nav> inside it, and
+    // only once the container has resolved it to a column. Physical `top`,
+    // because that is what Chromium's computed style serialises the logical
+    // inset to in ltr.
+    await waitFor(() => {
+      const region = document.querySelector('[data-region="nav"]');
+      expect(region).toHaveAttribute('data-form', 'column');
+      expect(getComputedStyle(region as Element).top).toBe('64px');
+    });
+    document.documentElement.style.removeProperty('--app-layout-header-offset');
+  });
 });

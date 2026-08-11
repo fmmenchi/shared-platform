@@ -12,15 +12,19 @@ import styles from './app-layout-main.module.css';
  * Not tabbable — reachable, which is what `-1` means.
  */
 function AppLayoutMain(props: AppLayoutMainProps) {
-  const { className, children, ...rest } = props;
+  const { className, children, id, ...rest } = props;
   const layout = useAppLayoutPart('AppLayoutMain');
 
   return (
     <main
       {...rest}
-      // NOT overridable: the shell's skip link points here, and an id from
-      // outside would cut that wire.
-      id={layout?.mainId}
+      // NOT overridable INSIDE the shell: the skip link points here, and an id
+      // from outside would cut that wire. Outside it there is no wire to cut,
+      // and `id={undefined}` after the spread was DELETING the consumer's own
+      // — a standalone `<AppLayoutMain id="content">` with the app's own skip
+      // link pointing at it went dark, while the orphan warning talked about
+      // wiring, not about the id it had just eaten.
+      id={layout?.mainId ?? id}
       tabIndex={-1}
       className={cn(styles.main, className)}
     >

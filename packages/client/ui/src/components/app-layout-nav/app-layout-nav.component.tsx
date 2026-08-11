@@ -14,6 +14,7 @@ import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useMessages } from '../../i18n/provider.js';
 import { appLayoutMessages } from '../app-layout/app-layout.messages.js';
+import { useAppLayoutPart } from '../app-layout/app-layout.context.js';
 import { Dialog } from '../dialog/dialog.component.js';
 import { DialogTrigger } from '../dialog-trigger/dialog-trigger.component.js';
 import { DialogContent } from '../dialog-content/dialog-content.component.js';
@@ -179,6 +180,13 @@ const FOCUSABLE =
  */
 function AppLayoutNav(props: AppLayoutNavProps) {
   const { className, children, label } = props;
+  // The warn-by-name discipline every sibling part already has, and the one
+  // part whose orphanhood is the most expensive: outside the shell there is no
+  // container-typed ancestor, so `@variant @xl` never matches, `--nav-form`
+  // stays 'drawer', and a desktop at 1920px keeps its navigation behind a
+  // "Menu" button forever — silently. The value is unused on purpose; the
+  // registration is the warning.
+  useAppLayoutPart('AppLayoutNav');
   const t = useMessages(appLayoutMessages);
 
   // NULL until measured — see above. Not a form, and not spelled like one.
