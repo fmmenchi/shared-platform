@@ -215,9 +215,10 @@ describe('the form level of the adapter', () => {
       locale = 'en',
     ) => {
       const summary = <FormErrorSummary labelFor={(n) => n} />;
+      const field: UseFormField = (name) => ({ control: { name } });
       return render(
         <UiProvider
-          adapters={{ i18n: { locale }, form: { errors: () => errors } }}
+          adapters={{ i18n: { locale }, form: { field, errors: () => errors } }}
         >
           {ui ? ui(summary) : <form>{summary}</form>}
         </UiProvider>,
@@ -263,7 +264,10 @@ describe('the form level of the adapter', () => {
         <UiProvider
           adapters={{
             i18n: { locale: 'en' },
-            form: { errors: () => ({ created_at: ['Required.'] }) },
+            form: {
+              field: (name) => ({ control: { name } }),
+              errors: () => ({ created_at: ['Required.'] }),
+            },
           }}
         >
           <form>
