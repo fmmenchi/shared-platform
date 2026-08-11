@@ -79,6 +79,17 @@ function SegmentedControl(props: SegmentedControlProps) {
     select: (next) => onValueChange?.(next),
   };
 
+  // ONE chain for the name, whichever channel it arrives on. `aria-label` is a
+  // legal native attribute the types do not exclude, and written after the
+  // spread with `label` undefined it was OVERWRITTEN WITH `undefined` — React
+  // then removes the attribute, so `<SegmentedControl aria-label="…">` lost
+  // its name AND its role, silently. The class of defect `nav-link` records
+  // as already paid for once. The native attribute now feeds the same logic
+  // `label` does instead of being its casualty.
+  const attrs = rest as Record<string, unknown>;
+  const accessibleName = label ?? (attrs['aria-label'] as string | undefined);
+  delete attrs['aria-label'];
+
   return (
     <div
       className={cn(styles.group, className)}
@@ -87,8 +98,8 @@ function SegmentedControl(props: SegmentedControlProps) {
       // outside — by a `Fieldset`'s legend — this wrapper is not a group of its
       // own: the radios are already grouped by the fieldset and paired by
       // `name`, so a second, nameless `radiogroup` would only be announced.
-      role={label === undefined ? undefined : 'radiogroup'}
-      aria-label={label}
+      role={accessibleName === undefined ? undefined : 'radiogroup'}
+      aria-label={accessibleName}
     >
       <SegmentedControlContext.Provider value={context}>
         {children}
