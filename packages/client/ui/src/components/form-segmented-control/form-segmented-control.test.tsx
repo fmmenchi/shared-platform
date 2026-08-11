@@ -218,4 +218,30 @@ describe('FormSegmentedControl', () => {
       });
     }
   });
+
+  it("forwards the binding's onBlur, which touched-gated adapters live on", async () => {
+    // Formik shows errors only once `meta.touched` is true, and `touched` is
+    // written by `field.onBlur`. The group forwarded `name`, `value` and
+    // `onChange` and dropped `onBlur`, so it never became touched: its error
+    // appeared only after a submit, unlike every sibling bound control.
+    // React's onBlur is `focusout`, which bubbles — the same delegation the
+    // comment already argues for `onChange`.
+    const blurred = vi.fn();
+    const field: UseFormField = (name) => ({
+      control: { name, onBlur: blurred },
+    });
+    render(
+      <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field } }}>
+        <FormSegmentedControl name="align" label="Allineamento">
+          <SegmentedControlItem value="l">Sinistra</SegmentedControlItem>
+          <SegmentedControlItem value="r">Destra</SegmentedControlItem>
+        </FormSegmentedControl>
+      </UiProvider>,
+    );
+    const [first] = screen.getAllByRole('radio');
+    (first as HTMLElement).focus();
+    await userEvent.tab();
+    await userEvent.tab();
+    expect(blurred).toHaveBeenCalled();
+  });
 });
