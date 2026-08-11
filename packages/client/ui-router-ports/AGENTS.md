@@ -37,6 +37,17 @@ pnpm nx test @fmmenchi/ui-ports-validation   # THE suite — same assertions, bo
   the same router**, and that is a fact about this design system rather than one a consumer should
   hold. Mixing them yields a menu that navigates correctly and highlights nothing. **They are not a
   place to put anything else:** a member is added only when `@fmmenchi/ui` declares a port for it.
+- **`createTanstackNav` buys the spent path check back, and only that.** `TanstackLink` spends
+  TanStack's typed-`to` guarantee once (`to={href as never}`); the kit re-types `NavLink`'s `href`
+  against the router's tree at the call site — a module-level re-typing like the form kits, never a
+  wrapper, so the component identity is unchanged. It types `href` because that is the prop the
+  design system reads (`useIsCurrent`, the external-destination test); `params`/`search` stay with
+  the router's own `Link`, and the `NavLinkExtraProps` augmentation remains the tool for typing
+  EXTRA props in the router's vocabulary — the two compose. Without a router type (passed or
+  registered) it returns a message type rather than silently widening every path to `string`. The
+  compile-time proof is `src/tanstack/create-tanstack-nav.spec.ts`, harnessed by `typecheck`
+  against a route tree built with TanStack's own constructors. React Router gets no kit: its `to`
+  is untyped strings, so there is nothing to buy back.
 - **One suite covers both**, in `apps/ui-ports-validation` (`routers.test.tsx`): the same assertions
   against both routers — **if either needs its own, the port is leaking.** That suite is what found
   the TanStack default above. A new subpath is not done until it is a row in it.
