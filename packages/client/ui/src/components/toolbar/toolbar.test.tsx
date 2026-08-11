@@ -1160,6 +1160,23 @@ describe('Toolbar', () => {
       expect(stops()).toEqual(['Left']);
     });
 
+    it('draws a line a reader can actually see, in both orientations', () => {
+      // The defect this pins was invisible to every other test in this block:
+      // the base reset's definite `block-size: 0` / `inline-size: 0` disabled
+      // `align-self: stretch` (css-flexbox §9.4 resolves stretch only for an
+      // AUTO cross size), so the separator rendered 1px × 0 — right ARIA,
+      // right margins, no line. Geometry is the only witness.
+      render(grouped());
+      const vertical = screen.getByRole('separator').getBoundingClientRect();
+      expect(vertical.height).toBeGreaterThan(0);
+
+      render(grouped({ orientation: 'vertical' }));
+      const [, horizontal] = screen
+        .getAllByRole('separator')
+        .map((rule) => rule.getBoundingClientRect());
+      expect(horizontal.width).toBeGreaterThan(0);
+    });
+
     it('is a plain rule with no bar around it', async () => {
       const warn = vi
         .spyOn(console, 'warn')
