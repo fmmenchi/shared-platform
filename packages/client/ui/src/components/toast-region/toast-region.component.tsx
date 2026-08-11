@@ -93,6 +93,8 @@ function ToastRegion(props: ToastRegionProps) {
   const seq = useRef(0);
   const base = useId();
   const region = useRef<HTMLDivElement | null>(null);
+  /** Was the reader inside the region at the last commit — the drop rescue's fact. */
+  const focusWasInside = useRef(false);
 
   /**
    * Take one back — and let it LEAVE, rather than blinking out.
@@ -163,15 +165,35 @@ function ToastRegion(props: ToastRegionProps) {
       setPaused(false);
       return;
     }
+    // THE RESCUE, before the pause is re-derived. `slice(0, max)` drops the
+    // oldest toast, and when the reader's focus was on ITS dismiss button the
+    // browser moves focus to <body> in silence — the same mechanism the
+    // comment above records for the dismiss button, arriving through arrival
+    // rather than through action: thirty Tabs from the region for a keyboard
+    // reader who was one keystroke from dismissing. Focus goes to the nearest
+    // surviving control instead.
+    if (focusWasInside.current && document.activeElement === document.body) {
+      element.querySelector<HTMLElement>('button')?.focus();
+    }
     setPaused(
       element.contains(document.activeElement) || element.matches(':hover'),
     );
   }, [toasts]);
 
   // THE TOP LAYER, once. `popover="manual"` never light-dismisses, so this is
-  // the only call it needs.
+  // the only call it needs — GUARDED twice. Feature-detected (`'showPopover'
+  // in node`), because the Popover API rides an ADR-0010 waiver and a browser
+  // inside the target may lack it: unguarded, the TypeError fired in the
+  // effect of the component that WRAPS THE APP, taking the whole page down —
+  // while the CSS fallback (`position: fixed` + z-index) sat right there,
+  // unreachable behind the crash. And `:popover-open`-checked for the engines
+  // where a re-show throws (popover-content measured one; CURRENT Chromium,
+  // re-measured for this guard, silently no-ops — so the check is defensive
+  // there and load-bearing only off it).
   useEffect(() => {
-    region.current?.showPopover();
+    const node = region.current;
+    if (!node || !('showPopover' in node)) return;
+    if (!node.matches(':popover-open')) node.showPopover();
   }, []);
 
   const value: ToastContextValue = { toast, dismiss, toasts };
@@ -202,11 +224,15 @@ function ToastRegion(props: ToastRegionProps) {
         }}
         onFocusCapture={(event) => {
           onFocusCapture?.(event);
+          focusWasInside.current = true;
           setPaused(true);
         }}
         onBlurCapture={(event) => {
           onBlurCapture?.(event);
           if (!event.currentTarget.contains(event.relatedTarget)) {
+            // A REAL departure. The removal path fires no blur at all — which
+            // is what lets the rescue above trust this flag at drop time.
+            focusWasInside.current = false;
             setPaused(false);
           }
         }}

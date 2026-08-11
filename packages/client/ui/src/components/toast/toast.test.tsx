@@ -530,13 +530,25 @@ describe('Toast', () => {
       '[data-toast] [aria-hidden="true"]',
     ) as HTMLElement;
     expect(getComputedStyle(bar).animationPlayState).toBe('running');
+    const name = getComputedStyle(bar).animationName;
 
     fireEvent.pointerEnter(region());
-    // An indicator that kept draining while the timer was stopped would be a
-    // lie told sixty times a second.
+    // RESET, not paused — because the clock resets. The timer, by the tested
+    // decision above, gives the WHOLE duration back on resume; a bar merely
+    // paused resumed from where it was, so after any pause the two promised
+    // different moments — the drift the comments swear impossible, shipped.
+    // During the pause the animation is removed (the bar shows full, which is
+    // the truth: resume and you have it all)…
     await waitFor(() =>
-      expect(getComputedStyle(bar).animationPlayState).toBe('paused'),
+      expect(getComputedStyle(bar).animationName).toBe('none'),
     );
+
+    // …and on resume it restarts from zero, in step with the restarted clock.
+    fireEvent.pointerLeave(region());
+    await waitFor(() => {
+      expect(getComputedStyle(bar).animationName).toBe(name);
+      expect(getComputedStyle(bar).animationPlayState).toBe('running');
+    });
   });
 
   it('paints the status as an edge, not as a flood', async () => {
@@ -798,5 +810,96 @@ describe('Toast', () => {
     await Promise.all(panel.getAnimations().map((a) => a.finished));
 
     await expectNoA11yViolations(container);
+  });
+
+  describe('what the fourth review found', () => {
+    it('stands without the Popover API, on the CSS fallback', () => {
+      // The API rides an ADR-0010 waiver, so a browser in the target may lack
+      // it — and the region wraps the whole app: unguarded, the TypeError in
+      // its mount effect took the page down while the `position: fixed`
+      // fallback sat unreachable behind the crash. (A StrictMode double-show
+      // was probed as the other risk and measured harmless in current
+      // Chromium: a re-show silently no-ops.)
+      const original = HTMLElement.prototype.showPopover;
+      // @ts-expect-error — simulating an engine without the API.
+      delete HTMLElement.prototype.showPopover;
+      try {
+        expect(() =>
+          render(
+            <ToastRegion>
+              <p>app</p>
+            </ToastRegion>,
+          ),
+        ).not.toThrow();
+        expect(
+          screen.getByRole('status', { name: 'Notifications' }),
+        ).toBeInTheDocument();
+      } finally {
+        HTMLElement.prototype.showPopover = original;
+      }
+    });
+
+    it('keeps the reader in the region when the overflow drops their toast', async () => {
+      // Focus on the oldest toast's dismiss button; a new toast arrives and
+      // `slice(0, max)` drops the oldest — the browser moves focus to <body>
+      // in silence (the same mechanism the pause repair documents), thirty
+      // Tabs from where the reader stood. It lands on the nearest surviving
+      // control instead.
+      render(
+        <ToastRegion max={2}>
+          <Raise options={{ title: 'Uno' }} />
+        </ToastRegion>,
+      );
+      await raise();
+      await raise();
+      await waitFor(() => expect(screen.getAllByText('Uno')).toHaveLength(2));
+
+      const buttons = screen.getAllByRole('button', {
+        name: /dismiss|chiudi/i,
+      });
+      const oldest = buttons[buttons.length - 1] as HTMLElement;
+      oldest.focus();
+
+      // WITHOUT the click driver: a real click moves focus to the Raise
+      // button first, which is a legitimate departure — the defect is the
+      // SILENT one, where the node under the reader is removed and no blur
+      // ever fires.
+      raiseNow();
+      // Still two: the third arrival dropped the oldest — the one holding the
+      // reader's focus.
+      await waitFor(() => expect(screen.getAllByText('Uno')).toHaveLength(2));
+      await waitFor(() => {
+        expect(document.activeElement).not.toBe(document.body);
+        expect(region().contains(document.activeElement)).toBe(true);
+      });
+    });
+
+    it('warns when a timed toast contains a control the clock races', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <ToastRegion>
+          <Raise
+            options={{
+              title: 'Saved',
+              duration: 4000,
+              children: (
+                <button type="button" onClick={() => undefined}>
+                  Undo
+                </button>
+              ),
+            }}
+          />
+        </ToastRegion>,
+      );
+      await raise();
+      await waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('races the reader'),
+        );
+      });
+      warn.mockRestore();
+    });
   });
 });

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
 import { cn } from '../../util/cn.js';
 import { Alert } from '../alert/alert.component.js';
+import { useEffect, useRef, useState } from 'react';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { Button } from '../button/button.component.js';
 import { useMessages } from '../../i18n/provider.js';
 import { toastMessages } from './toast.messages.js';
@@ -43,6 +44,27 @@ function Toast(props: ToastProps) {
   const duration = props.duration ?? 0;
   const timed = duration > 0;
 
+  // A control inside a TIMED toast is a race the reader loses: the split rule
+  // gives a timed toast no dismiss button precisely because nothing may race
+  // you to a control, and a consumer's own link or Undo button recreates the
+  // race with the clock running. Only the DOM can see children, so it is
+  // asked after commit — the same probe TableToolbar runs on its summary
+  // slot. (No exclusion needed for our own ✕: a timed toast renders none.)
+  const shell = useRef<HTMLDivElement | null>(null);
+  const [racing, setRacing] = useState(false);
+  useEffect(() => {
+    setRacing(
+      timed === true &&
+        shell.current?.querySelector(
+          'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ) != null,
+    );
+  });
+  useDevWarning(
+    racing,
+    'Toast: a timed toast contains a control, and the clock races the reader to it. Give this toast no `duration` (it gains a dismiss button), or move the action somewhere that does not disappear.',
+  );
+
   useEffect(() => {
     if (!timed || paused) return;
     const timer = setTimeout(() => onDismiss(id), duration);
@@ -51,6 +73,7 @@ function Toast(props: ToastProps) {
 
   return (
     <div
+      ref={shell}
       className={cn(styles.toast)}
       data-toast={id}
       // The status, as a hook this file's own stylesheet can read. It cannot
