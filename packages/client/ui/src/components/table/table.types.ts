@@ -25,6 +25,28 @@ interface ColumnShape {
    */
   rowHeader?: boolean;
   /**
+   * How wide this column is — any CSS length: `'8rem'`, `'12ch'`, `'20%'`.
+   *
+   * DECLARING ONE PUTS THE WHOLE TABLE IN `table-layout: fixed`, and that is
+   * the part to understand before using it. Under the automatic algorithm a
+   * width is a SUGGESTION the browser overrides whenever the content is wider,
+   * so a declaration would sometimes do nothing and never say so — the class of
+   * defect this component spends its warnings on. Fixed makes it mean what it
+   * says.
+   *
+   * What that costs, stated rather than discovered: content no longer widens
+   * its column. Long text wraps, and `white-space: nowrap` clips instead.
+   * Columns with no width share what is left, equally.
+   *
+   * `ch` is usually the right unit for text — it is the width of a "0", so
+   * `'12ch'` is about twelve digits and stays right when the reader changes
+   * their font size, which a `rem` does not.
+   *
+   * This is a LAYOUT declaration, not a resize affordance: nothing here can be
+   * dragged, and nothing here needs a keyboard.
+   */
+  width?: string;
+  /**
    * Puts a real `<button>` in the header and lets `aria-sort` land on this
    * column when it is the one in force.
    *

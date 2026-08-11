@@ -120,6 +120,12 @@ function Table<T>(props: TableProps<T>) {
   // is the exact combination this feature exists to make unreachable.
   const sticky = stickyHeader === true;
 
+  // DERIVED, NOT A SECOND PROP. A `layout` prop would be a fact that has to
+  // agree with `Column.width` and can be set to disagree with it — the shape
+  // this component has spent four milestones removing. One column asking for a
+  // width is the whole condition.
+  const fixed = columns?.some((column) => column.width !== undefined) === true;
+
   const scroller = useRef<HTMLDivElement>(null);
   // WHETHER IT ACTUALLY SCROLLS, and it decides the tab stop. A region that
   // scrolls nothing is a dead stop and a landmark over no content — the same
@@ -341,6 +347,7 @@ function Table<T>(props: TableProps<T>) {
       aria-busy={busy || undefined}
       data-density={density}
       data-sticky-header={sticky ? '' : undefined}
+      data-layout={fixed ? 'fixed' : undefined}
       className={cn(styles.table, className)}
     >
       {/* First child, as the parser requires — and a real `<caption>` rather
@@ -400,6 +407,15 @@ function Table<T>(props: TableProps<T>) {
                   <TableHeaderCell
                     key={column.key}
                     align={column.align}
+                    // ON THE HEADER CELL ONLY, because under `table-layout:
+                    // fixed` the first row is what decides every column — the
+                    // body cells inherit the answer and repeating it there
+                    // would be the same declaration written N times.
+                    style={
+                      column.width === undefined
+                        ? undefined
+                        : { inlineSize: column.width }
+                    }
                     // THE STATE OF THE DATA, and separately the invitation.
                     // `ascending`/`descending` is not gated on `sortable`:
                     // rows that arrive ordered ARE ordered, and a read-only

@@ -48,6 +48,13 @@
      table look like a spreadsheet and read like a cage; the eye already groups
      a column by alignment. */
   .table :is(th, td) {
+    /* A DECLARED WIDTH HAS TO BE THE OUTER ONE. Without this `width: '10rem'`
+       renders 176px — the content box plus the cell's own 8px of inline
+       padding on each side — so the number a consumer wrote and the number on
+       screen differ by an amount they cannot see and did not choose. Measured
+       before it was here. No effect on a cell with no declared width, which is
+       every cell until somebody asks. */
+    box-sizing: border-box;
     padding-block: var(--fm-space-internal-s);
     padding-inline: var(--fm-space-inline-s);
     text-align: start;
@@ -155,14 +162,31 @@
     color: var(--table-surface-foreground);
   }
 
+  /* A DECLARED WIDTH ONLY MEANS SOMETHING UNDER `fixed`. The automatic
+     algorithm treats one as a suggestion and overrides it whenever the content
+     is wider, so the declaration would sometimes do nothing and never say so.
+     Set by the component when any column asks for a width — never by a prop of
+     its own, which would be a second fact able to disagree with the first. */
+  .table[data-layout='fixed'] {
+    table-layout: fixed;
+  }
+
   /* The checkbox column takes the width of a checkbox and no more: a column of
      boxes given an equal share of the table pushes the data around for nothing.
-     `1%` rather than a length — a table's layout algorithm reads a small
+     `1%` rather than a length — the AUTOMATIC layout algorithm reads a small
      percentage as "as narrow as the content allows", and the content is one
      control whose size the platform owns. */
   .selectCell {
     inline-size: 1%;
     white-space: nowrap;
+  }
+
+  /* AND THE FIXED ALGORITHM READS IT LITERALLY, which is the trap: `1%` of a
+     1000px table is 10px, and the checkbox is 18. Under `fixed` the column has
+     to be told a real width — the control plus the inline padding the cell
+     already has on both sides. */
+  .table[data-layout='fixed'] .selectCell {
+    inline-size: calc(1.5rem + 2 * var(--fm-space-inline-s));
   }
 
   /* BOTH HALVES OF THE PAIR, and that is the point rather than thoroughness.

@@ -212,6 +212,26 @@ Three things it does that a hand-rolled bar does not:
 
 **It is not a projection parameter.** Sorting and filtering derive the rows; selection is downstream of them and derives nothing, so it belongs in a request body rather than in a query key — which is also why it is a `Set` and not an array. Putting it in a query key is how ticking a box refetches the page.
 
+### Declaring widths
+
+<Canvas of={TableStories.DeclaredWidths} />
+
+```tsx
+columns={[
+  { key: 'name', header: 'Nome', rowHeader: true },
+  { key: 'city', header: 'Città', width: '10ch' },
+  { key: 'age', header: 'Età', align: 'end', width: '6ch' },
+]}
+```
+
+`width` takes any CSS length. **`ch` is usually the right unit for text** — it is the width of a "0", so `'10ch'` is about ten digits and stays right when the reader changes their font size, which a `rem` does not.
+
+**Declaring one puts the table in `table-layout: fixed`**, and that is the point rather than a side effect: under the automatic algorithm a width is a _suggestion_ the browser overrides whenever the content is wider, so the declaration would sometimes do nothing and never say so — the class of defect this component spends its warnings on. Deriving the layout from the columns is also why there is no `layout` prop: a second fact that has to agree with the first is a second fact that can disagree with it.
+
+What it costs, said rather than discovered: content no longer widens its column, so long text wraps and `white-space: nowrap` clips. Columns with no width share what is left, equally. And the width is the **outer** one — the cell's own padding is inside it, so `'10rem'` measures 10rem on screen rather than 10rem plus sixteen pixels you did not choose.
+
+**This is layout, not a resize affordance.** Nothing here is dragged and nothing needs a keyboard; it is the declarative half of the same fact, and the one that covers the common case of "that column is three times wider than it needs to be".
+
 ### A header that stays
 
 <Canvas of={TableStories.StickyHeader} />

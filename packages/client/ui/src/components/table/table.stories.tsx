@@ -249,6 +249,33 @@ export const StickyHeader: Story = {
   },
 };
 
+/**
+ * Declared widths. `width` takes any CSS length — `ch` is usually the right
+ * unit for text, because it is the width of a "0" and stays right when the
+ * reader changes their font size, which a `rem` does not.
+ *
+ * Declaring one puts the table in `table-layout: fixed`, and that is the point
+ * rather than a side effect: under the automatic algorithm a width is a
+ * suggestion the browser overrides whenever the content is wider, so the
+ * declaration would sometimes do nothing and never say so. What it costs is
+ * stated too — content no longer widens its column, so long text wraps.
+ *
+ * This is layout, not a resize affordance: nothing here is dragged and nothing
+ * needs a keyboard.
+ */
+export const DeclaredWidths: Story = {
+  args: {
+    caption: 'Persone',
+    rows: people,
+    getRowId: (p: Person) => p.id,
+    columns: [
+      { key: 'name', header: 'Nome', rowHeader: true },
+      { key: 'city', header: 'Città', width: '10ch' },
+      { key: 'age', header: 'Età', align: 'end', width: '6ch' },
+    ],
+  },
+};
+
 /** Same table, tighter rows. */
 export const Compact: Story = {
   args: {
