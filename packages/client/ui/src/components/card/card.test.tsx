@@ -210,4 +210,20 @@ describe('Card', () => {
 
     await expectNoA11yViolations(container);
   });
+
+  it('warns about interactive content the old selector could not see', async () => {
+    // "Per the HTML content model", said the comment — and the selector
+    // covered half the spec's list. A <video controls> inside an anchor-card
+    // is invalid markup with unreliable keyboard, and shipped silently.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Card as="a" href="/clip">
+        <video controls />
+      </Card>,
+    );
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalled();
+    });
+    warn.mockRestore();
+  });
 });

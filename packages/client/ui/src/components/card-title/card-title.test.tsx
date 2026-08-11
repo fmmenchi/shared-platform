@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { CardTitle } from './card-title.component.js';
 import { Card } from '../card/card.component.js';
 
@@ -154,6 +154,48 @@ describe('CardTitle', () => {
         expect.stringContaining('both `asChild` and `href`'),
       );
       expect(screen.getByRole('link')).toHaveAttribute('href', '/orders');
+      warn.mockRestore();
+    });
+  });
+
+  describe("the layer's anchor", () => {
+    it('warns when nothing positioned will catch the invisible layer', async () => {
+      // `.link::after { inset: 0 }` resolves against the nearest positioned
+      // ancestor; standalone there is none, so it resolves against the
+      // initial containing block — the whole viewport at the page origin
+      // becomes the link's hit area, and clicks on "nothing" navigate.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <CardTitle level={2} href="/x">
+          Solo
+        </CardTitle>,
+      );
+      await waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('no positioned ancestor'),
+        );
+      });
+      warn.mockRestore();
+    });
+
+    it('stays quiet inside a Card, which positions itself for this', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Card>
+          <CardTitle level={2} href="/x">
+            Dentro
+          </CardTitle>
+        </Card>,
+      );
+      // Deliberately generous: the check runs after commit.
+      await new Promise((r) => setTimeout(r, 30));
+      expect(warn).not.toHaveBeenCalledWith(
+        expect.stringContaining('no positioned ancestor'),
+      );
       warn.mockRestore();
     });
   });

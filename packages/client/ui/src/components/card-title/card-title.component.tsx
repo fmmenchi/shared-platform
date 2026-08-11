@@ -1,6 +1,7 @@
 import type { ElementType } from 'react';
 import { useUiAdapters } from '../../i18n/provider.js';
 import { Slot } from '../../primitives/slot.js';
+import { useEffect, useRef, useState } from 'react';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { Heading } from '../heading/heading.component.js';
 import type { CardTitleProps } from './card-title.types.js';
@@ -53,6 +54,28 @@ function CardTitle(props: CardTitleProps) {
     'CardTitle: given both `asChild` and `href`. The child carries the destination, so the `href` is ignored — remove it.',
   );
 
+  // THE LAYER NEEDS A POSITIONED ANCESTOR, and only the DOM can say if one
+  // exists. `.link::after { inset: 0 }` resolves against the nearest
+  // positioned ancestor — `Card` provides one — and against the initial
+  // containing block otherwise: a standalone linked title makes the whole
+  // viewport-at-origin its hit area, so clicks on "nothing" navigate and text
+  // drags select nothing. Asked after commit, dev only.
+  const anchor = useRef<HTMLHeadingElement>(null);
+  const [unanchored, setUnanchored] = useState(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    const a = anchor.current?.querySelector('a');
+    setUnanchored(
+      (href !== undefined || asChild === true) &&
+        a != null &&
+        (a.offsetParent == null || a.offsetParent === document.body),
+    );
+  }, [href, asChild]);
+  useDevWarning(
+    unanchored,
+    'CardTitle: the whole-card layer has no positioned ancestor to size against, so its hit area is the page itself. Put the title inside a `Card`, or give your own container `position: relative`.',
+  );
+
   const link = {
     // The hook `card.module.css` paints the surface from. A hashed class from
     // this file could not be named from that one — which is also why a
@@ -62,7 +85,7 @@ function CardTitle(props: CardTitleProps) {
   };
 
   return (
-    <Heading {...heading}>
+    <Heading {...heading} ref={anchor}>
       {asChild ? (
         <Slot {...link}>{children}</Slot>
       ) : href === undefined ? (

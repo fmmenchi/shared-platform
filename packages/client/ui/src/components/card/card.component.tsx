@@ -7,7 +7,14 @@ import { cardVariants } from './card.variants.js';
 import type { CardElement, CardProps } from './card.types.js';
 
 /** What an `<a>` may not contain, per the HTML content model. */
-const INTERACTIVE = 'a[href], button, input, select, textarea, [tabindex]';
+// The HTML content model's interactive set, per spec — the comment on the
+// guard says "per the HTML content model" and the old list covered half of
+// it: a <video controls> inside <Card as="a"> shipped invalid markup with no
+// warning, while a hidden input (NOT interactive content) drew a false one.
+// `[tabindex]` with any value is interactive per spec — the tab-stop question
+// (which excludes -1) is a different question, and TableToolbar's.
+const INTERACTIVE =
+  'a[href], audio[controls], button, details, embed, iframe, img[usemap], input:not([type="hidden"]), label, select, textarea, video[controls], [tabindex]';
 
 /**
  * A card: a bounded surface holding one thing, and nothing about what that

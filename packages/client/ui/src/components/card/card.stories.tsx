@@ -15,6 +15,27 @@ const meta: Meta<typeof Card> = {
         'Whatever the card holds. `CardTitle`, `CardCover` and `CardActions` are parts because each carries CSS a consumer gets wrong; everything else is your own markup.',
       table: { type: { summary: 'ReactNode' } },
     },
+    // Curated because docgen cannot read the polymorphic signature — the
+    // component-docs rule is that EVERY own prop appears.
+    as: {
+      control: 'select',
+      options: ['div', 'article', 'section', 'li', 'a'],
+      description:
+        'The element the card is. Constrained to what a container may legally be; `a` is the one-destination tile, and a DOM guard warns if interactive content ends up inside it.',
+      table: {
+        type: { summary: "'div' | 'article' | 'section' | 'li' | 'a'" },
+        defaultValue: { summary: "'div'" },
+      },
+    },
+    variant: {
+      control: 'select',
+      options: ['outlined', 'filled'],
+      description: 'Paint. Spacing comes from tokens, not from the variant.',
+      table: {
+        type: { summary: "'outlined' | 'filled'" },
+        defaultValue: { summary: "'outlined'" },
+      },
+    },
   },
 };
 export default meta;

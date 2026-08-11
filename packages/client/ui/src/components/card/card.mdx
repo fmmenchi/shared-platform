@@ -1,6 +1,9 @@
-import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
 
 import * as CardStories from './card.stories.tsx';
+import { CardTitle } from '../card-title/card-title.component.js';
+import { CardCover } from '../card-cover/card-cover.component.js';
+import { CardActions } from '../card-actions/card-actions.component.js';
 
 <Meta of={CardStories} />
 
@@ -35,6 +38,18 @@ There is no `CardHeader`, `CardContent` or `CardFooter`. Each part here earns it
 ## Props
 
 <Controls of={CardStories.Default} />
+
+### CardTitle
+
+<ArgTypes of={CardTitle} />
+
+### CardCover
+
+<ArgTypes of={CardCover} />
+
+### CardActions
+
+<ArgTypes of={CardActions} />
 
 ## Usage
 

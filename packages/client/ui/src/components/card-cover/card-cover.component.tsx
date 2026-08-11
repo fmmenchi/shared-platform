@@ -1,5 +1,6 @@
 import type { CSSProperties, ElementType } from 'react';
 import { cn } from '../../util/cn.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import type { CardCoverElement, CardCoverProps } from './card-cover.types.js';
 import styles from './card-cover.module.css';
 
@@ -37,6 +38,18 @@ function CardCover<As extends CardCoverElement = 'img'>(
 ) {
   const { as, ratio, className, style, ...rest } = props;
   const Component = (as ?? 'img') as ElementType;
+
+  // The class of defect Table warns about for `width`: a value CSS cannot
+  // parse is dropped by the CSSOM silently — `aspect-ratio: var(--x)` with an
+  // unparsable value is invalid at computed-value time, resolves to `auto`,
+  // and the grid the prop exists to align stops aligning. "16:9" (the
+  // colloquial colon) is the shape that arrives.
+  useDevWarning(
+    ratio !== undefined &&
+      typeof CSS !== 'undefined' &&
+      !CSS.supports('aspect-ratio', ratio),
+    'CardCover: `ratio` is not a valid CSS aspect-ratio — "16:9" wants the slash: "16 / 9". The browser drops it and the media keeps its intrinsic proportions.',
+  );
 
   return (
     <Component
