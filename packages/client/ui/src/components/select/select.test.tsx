@@ -282,4 +282,80 @@ describe('Select', () => {
       }
     }
   });
+
+  describe('the base-select branch, on the one engine that has it', () => {
+    // Every claim in the `@supports (appearance: base-select)` block was
+    // measured by hand and guarded by nothing — while the suite runs on
+    // Chromium, which is exactly the engine that implements it. These pin the
+    // two decisions a refactor would silently undo.
+
+    const supported = CSS.supports('appearance', 'base-select');
+
+    it('draws the closed chevron with PHYSICAL borders, so rtl cannot lay it down', () => {
+      if (!supported) return;
+      render(
+        <div dir="rtl">
+          <Select aria-label="Città" defaultValue="a">
+            <option value="a">Aosta</option>
+          </Select>
+        </div>,
+      );
+      const style = getComputedStyle(
+        screen.getByRole('combobox'),
+        '::picker-icon',
+      );
+      // Logical borders swap under rtl while the rotation does not: the glyph
+      // then points LEFT when closed. Physical right+bottom cannot swap.
+      expect(Number.parseFloat(style.borderRightWidth)).toBeGreaterThan(0);
+      expect(Number.parseFloat(style.borderBottomWidth)).toBeGreaterThan(0);
+      expect(Number.parseFloat(style.borderLeftWidth)).toBe(0);
+      expect(Number.parseFloat(style.borderTopWidth)).toBe(0);
+    });
+
+    it('keeps the picker icon transition inside the motion tokens', () => {
+      if (!supported) return;
+      render(
+        <Select aria-label="Città" defaultValue="a">
+          <option value="a">Aosta</option>
+        </Select>,
+      );
+      const style = getComputedStyle(
+        screen.getByRole('combobox'),
+        '::picker-icon',
+      );
+      expect(style.transitionProperty).toContain('rotate');
+      expect(Number.parseFloat(style.transitionDuration)).toBeGreaterThan(0);
+    });
+  });
+
+  describe('direction is computed, not matched by attribute', () => {
+    it('keeps the fallback arrow on the reading side inside an ltr island', () => {
+      // `[dir='rtl'] .select` matched through the ancestor while the control
+      // resolved ltr: `pe-8` freed the right, the rule forced the arrow left,
+      // and the label ran underneath it. `:dir()` resolves what the element
+      // actually is.
+      render(
+        <div dir="rtl">
+          <div dir="ltr">
+            <Select aria-label="Città" defaultValue="a">
+              <option value="a">Aosta</option>
+            </Select>
+          </div>
+          <Select aria-label="مدينة" defaultValue="a">
+            <option value="a">أوستا</option>
+          </Select>
+        </div>,
+      );
+      const [island, inherited] = screen.getAllByRole('combobox');
+      // Chromium serialises the computed anchors distinguishably: a
+      // right-anchored offset computes to `calc(100% - …)`, a left-anchored
+      // one to plain pixels from the left edge. Measured, not assumed.
+      // The island resolves ltr: the arrow anchors right, like any ltr select…
+      expect(getComputedStyle(island).backgroundPosition).toContain('100%');
+      // …and the inherited-rtl one anchors left, with nothing on the element.
+      const inheritedPosition = getComputedStyle(inherited).backgroundPosition;
+      expect(inheritedPosition).not.toContain('100%');
+      expect(inheritedPosition).toMatch(/^\d/);
+    });
+  });
 });

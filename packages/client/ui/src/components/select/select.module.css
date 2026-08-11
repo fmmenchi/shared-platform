@@ -58,14 +58,15 @@
       right 0.75rem center;
   }
 
-  /* Both forms, because a descendant selector alone is a trap: `dir` sits on the
-     `<html>` element in most apps, but it is equally legal ON the control (a
-     single rtl field in an ltr form), and `[dir='rtl'] .select` does not match
-     an element that carries the attribute itself. Measured: in that case the
-     logical `pe-8` moved the free space to the inline-end (left) while the arrow
-     stayed physically right, and the option label ran underneath it. */
-  [dir='rtl'] .select,
-  .select[dir='rtl'] {
+  /* `:dir()`, not the attribute selectors this rule used to be. The attribute
+     matches the ATTRIBUTE while `:dir()` resolves the COMPUTED direction — the
+     divergence `dialog-content.module.css` measured — and the mirror of the
+     case this comment used to describe is real too: inside an `ltr` island on
+     an `rtl` page, `[dir='rtl'] .select` matched through the ancestor while
+     the control resolved ltr, so the logical `pe-8` freed the right while this
+     rule forced the arrow left — under the label. One selector answers the
+     control-with-attribute, the inherited page, and the island correctly. */
+  .select:dir(rtl) {
     /* The two OFFSETS swap as well as the edge they count from. The arrow is two
        half-tiles — the 45deg one is its left half, the 135deg its right — so
        anchoring them to `left` in the same 1.05/0.75 order mirrors the pair and
@@ -178,8 +179,12 @@
       content: '';
       @apply size-2 shrink-0;
       border: 0 solid currentColor;
-      border-inline-end-width: 1.5px;
-      border-block-end-width: 1.5px;
+      /* PHYSICAL borders, not logical — the lesson the accordion's chevron
+         measured first: logical borders swap under `dir="rtl"`, the rotation
+         does not, so the closed glyph pointed LEFT (a lying-down chevron) on
+         every rtl select, in the one engine this branch exists for. */
+      border-right-width: 1.5px;
+      border-bottom-width: 1.5px;
       rotate: 45deg;
       translate: 0 -0.15rem;
       transition: rotate var(--fm-duration-s) var(--fm-ease-standard);
@@ -269,7 +274,12 @@
     .select {
       border: 1px solid ButtonText;
     }
-    /* Restore the OS focus convention, like every other DS control. */
+    /* Restore the OS focus convention, like every other DS control — on BOTH
+       selectors this file draws a ring with. The ring exists on `:focus`
+       precisely because Firefox does not match `:focus-visible` on a clicked
+       select, so an FC block that only covered `:focus-visible` missed the one
+       engine the `:focus` rule was written for. */
+    .select:focus,
     .select:focus-visible {
       outline-color: Highlight;
     }
