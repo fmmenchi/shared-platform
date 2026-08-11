@@ -21,6 +21,24 @@ All four library subpaths take the same map, so swapping libraries does not mean
 createFormikField({ types: { tos: 'checkbox', seats: 'number' } });
 ```
 
+## Give it the values type, and the keys are checked
+
+A misspelt key here is not an error — it is a field quietly bound as text, which is the exact
+failure the map exists to prevent. Hand the factory your form's values type and the keys become
+paths checked against it, the same guarantee the typed kits give `name`:
+
+```tsx
+createFormikField<SignupValues>({
+  types: { tos: 'checkbox', seats: 'number' },
+});
+createFormikField<SignupValues>({ types: { seat: 'number' } }); // does not compile
+```
+
+Each adapter checks in **its own path syntax** — `guests.0.name` for Formik, `guests[0].name` for
+TanStack and Conform, react-hook-form's `FieldPath` for react-hook-form — so pasting one library's
+paths into another's adapter is a compile error too. Without the type argument the keys stay
+`string`, and every existing call site compiles unchanged.
+
 ## The two questions it answers
 
 **Which prop holds the state.** A controlled library binds a text input through `value` and a

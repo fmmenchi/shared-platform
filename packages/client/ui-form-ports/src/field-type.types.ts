@@ -47,13 +47,20 @@ export type FormFieldType =
   | 'select'
   | 'textarea';
 
-export interface FormFieldTypeOptions {
+export interface FormFieldTypeOptions<Name extends string = string> {
   /**
    * The type of each field that is not a plain text input, by name:
    *
-   *     createFormikField({ types: { tos: 'checkbox' } })
+   *     createFormikField<SignupValues>({ types: { tos: 'checkbox' } })
    *
    * A field left out is bound as text.
+   *
+   * THE KEYS ARE CHECKED when the factory is given the form's values type —
+   * the same guarantee the typed kits give `name`, and for the same reason: a
+   * misspelt key here is not an error, it is a field quietly bound as text, so
+   * a `number` field stores `"31"` where the schema expects `31` and the form
+   * fails validation forever. Without the values type, `Name` stays `string`
+   * and every call site compiles as before.
    */
-  types?: Readonly<Record<string, FormFieldType>>;
+  types?: Readonly<Partial<Record<Name, FormFieldType>>>;
 }

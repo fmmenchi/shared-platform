@@ -1,6 +1,15 @@
-import { useFormContext, useFormState, type FieldError } from 'react-hook-form';
+import {
+  useFormContext,
+  useFormState,
+  type FieldError,
+  type FieldPath,
+  type FieldValues,
+} from 'react-hook-form';
 import type { UseFormField } from '@fmmenchi/ui';
-import type { FormFieldTypeOptions } from '../field-type.types.js';
+import type {
+  FormFieldType,
+  FormFieldTypeOptions,
+} from '../field-type.types.js';
 import { toFieldMessages } from './rhf-messages.js';
 
 /**
@@ -33,11 +42,21 @@ import { toFieldMessages } from './rhf-messages.js';
  * with a message the user cannot act on by typing anything. `valueAsNumber` is
  * react-hook-form's own switch for exactly that; the map is what tells us to
  * throw it.
+ *
+ * Give it the VALUES type — `createRhfField<SignupValues>({ types })` — and the
+ * map's keys are checked as `FieldPath`s, the same guarantee `createRhfForm`
+ * gives `name`. Without it the keys stay `string`, as before.
  */
-export function createRhfField(
-  options: FormFieldTypeOptions = {},
+export function createRhfField<T extends FieldValues = never>(
+  options: FormFieldTypeOptions<
+    [T] extends [never] ? string : FieldPath<T>
+  > = {},
 ): UseFormField {
-  const { types = {} } = options;
+  // The generic narrows what a CALLER may write; at run time a name is
+  // whatever the port hands over, so the lookup widens back to string.
+  const types = (options.types ?? {}) as Readonly<
+    Partial<Record<string, FormFieldType>>
+  >;
 
   return function useRhfField(name) {
     const { register, control } = useFormContext();

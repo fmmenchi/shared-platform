@@ -1,7 +1,11 @@
 import { useField, useFormikContext } from 'formik';
 import type { UseFormField } from '@fmmenchi/ui';
 import { isBooleanField, readValue } from '../field-type.js';
-import type { FormFieldTypeOptions } from '../field-type.types.js';
+import type {
+  FormFieldType,
+  FormFieldTypeOptions,
+} from '../field-type.types.js';
+import type { FormikPath } from './formik-path.types.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for Formik.
@@ -25,10 +29,16 @@ import type { FormFieldTypeOptions } from '../field-type.types.js';
  * the user has been near it. A submit attempt marks every field touched, so the
  * messages then appear together.
  */
-export function createFormikField(
-  options: FormFieldTypeOptions = {},
+export function createFormikField<T = never>(
+  options: FormFieldTypeOptions<
+    [T] extends [never] ? string : FormikPath<T>
+  > = {},
 ): UseFormField {
-  const { types = {} } = options;
+  // The generic narrows what a CALLER may write; at run time a name is
+  // whatever the port hands over, so the lookup widens back to string.
+  const types = (options.types ?? {}) as Readonly<
+    Partial<Record<string, FormFieldType>>
+  >;
 
   return function useFormikField(name) {
     const type = types[name];

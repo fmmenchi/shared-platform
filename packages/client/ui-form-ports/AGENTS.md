@@ -50,6 +50,14 @@ pnpm nx test @fmmenchi/ui-ports-validation   # THE suite — same assertions, fo
   - **Conform gets no kit, on purpose.** Its names come from the metadata object, so a typo is a
     property that does not exist. Its own `FieldName<Schema>` has an OPTIONAL brand, so it accepts
     any string — typing against it would add nothing. Measured, not assumed.
+  - **The `types` map is checked the same way, in all four.** Each field factory takes the VALUES
+    type — `createRhfField<T>({ types })` — and checks the map's keys as paths in its own syntax; a
+    misspelt key was a field quietly bound as text, the exact failure the map exists to prevent.
+    This includes Conform, and does not contradict the no-kit rule: `ConformPath` derives from the
+    values type (bracket rows, `tasks[0].content`), never from Conform's accept-anything
+    `FieldName`. Without the type argument the keys stay `string`. The compile-time proof is
+    `src/field-type.spec.ts`, harnessed by `typecheck` — a `@ts-expect-error` that stops erroring
+    fails the build.
 - **No `rules` prop, ever.** Library-specific per-field rules are not portable, and the design system
   cannot type `RegisterOptions` without importing react-hook-form — such a prop would be `unknown`,
   and a typo in it would compile. The answers are a schema, a six-line wrapper in the consuming app,

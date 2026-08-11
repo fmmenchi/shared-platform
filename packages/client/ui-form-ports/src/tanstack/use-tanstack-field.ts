@@ -1,8 +1,11 @@
-import type { AnyFieldApi, AnyFormApi } from '@tanstack/react-form';
+import type { AnyFieldApi, AnyFormApi, DeepKeys } from '@tanstack/react-form';
 import { useField, useSelector } from '@tanstack/react-form';
 import type { UseFormErrors, UseFormField } from '@fmmenchi/ui';
 import { isBooleanField, readValue } from '../field-type.js';
-import type { FormFieldTypeOptions } from '../field-type.types.js';
+import type {
+  FormFieldType,
+  FormFieldTypeOptions,
+} from '../field-type.types.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for TanStack Form.
@@ -34,11 +37,17 @@ import type { FormFieldTypeOptions } from '../field-type.types.js';
  * It takes the form object rather than reading a context because TanStack has
  * no provider; the form is what a screen already holds.
  */
-export function createTanstackField(
+export function createTanstackField<T = never>(
   form: AnyFormApi,
-  options: FormFieldTypeOptions = {},
+  options: FormFieldTypeOptions<
+    [T] extends [never] ? string : DeepKeys<T>
+  > = {},
 ): UseFormField {
-  const { types = {} } = options;
+  // The generic narrows what a CALLER may write; at run time a name is
+  // whatever the port hands over, so the lookup widens back to string.
+  const types = (options.types ?? {}) as Readonly<
+    Partial<Record<string, FormFieldType>>
+  >;
 
   return function useTanstackField(name) {
     const type = types[name];

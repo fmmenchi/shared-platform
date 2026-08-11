@@ -5,7 +5,11 @@ import {
   useField,
 } from '@conform-to/react';
 import type { UseFormField } from '@fmmenchi/ui';
-import type { FormFieldTypeOptions } from '../field-type.types.js';
+import type {
+  FormFieldType,
+  FormFieldTypeOptions,
+} from '../field-type.types.js';
+import type { ConformPath } from './conform-path.types.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for Conform.
@@ -25,10 +29,16 @@ import type { FormFieldTypeOptions } from '../field-type.types.js';
  * shapes the props by it, so a checkbox asked for as text never carries
  * `checked`. Hence the `types` map.
  */
-export function createConformField(
-  options: FormFieldTypeOptions = {},
+export function createConformField<T = never>(
+  options: FormFieldTypeOptions<
+    [T] extends [never] ? string : ConformPath<T>
+  > = {},
 ): UseFormField {
-  const { types = {} } = options;
+  // The generic narrows what a CALLER may write; at run time a name is
+  // whatever the port hands over, so the lookup widens back to string.
+  const types = (options.types ?? {}) as Readonly<
+    Partial<Record<string, FormFieldType>>
+  >;
 
   return function useConformField(name) {
     const [meta] = useField(name);
