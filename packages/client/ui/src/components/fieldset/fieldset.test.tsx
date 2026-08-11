@@ -383,4 +383,25 @@ describe('Fieldset', () => {
       });
     }
   });
+
+  it("keeps a consumer's own aria-invalid, like it keeps their describedby", () => {
+    // The attribute rode in through the spread and was overwritten with
+    // `undefined` when the `invalid` prop was absent — deleted from the DOM.
+    // Transparency (ADR-0013) on the exact element that honours it for the
+    // twin attribute two lines up.
+    render(
+      <Fieldset role="radiogroup" aria-invalid="true">
+        <FieldsetLegend>Piano</FieldsetLegend>
+        <FieldsetContent>
+          <label>
+            A <input type="radio" name="p" />
+          </label>
+        </FieldsetContent>
+      </Fieldset>,
+    );
+    expect(screen.getByRole('radiogroup')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+  });
 });
