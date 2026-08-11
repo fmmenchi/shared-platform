@@ -291,6 +291,31 @@ A column declared in `%` or `vw` warns: the gesture measures the rendered column
 
 For a layout the column model cannot express, `TableColumnResizer` is exported on its own — it takes `label`, `onResize` and `onReset`, and reads the cell it sits in.
 
+### Expandable rows
+
+```tsx
+const rows = useRowExpansion();
+
+<Table
+  rows={people}
+  getRowId={(p) => p.id}
+  columns={columns}
+  renderDetail={(person) => <PersonSummary person={person} />}
+  {...rows.props}
+/>;
+```
+
+**This is the first thing the column model cannot express**, and `renderDetail` is the escape hatch rather than a hole: a detail is prose, a form, a nested list, a chart — none of which a `Column` describes. Given nothing to render the control is not drawn at all, because a chevron that opens an empty row reads as missing data rather than as an unwired feature.
+
+**The state is on the button, and that is forced.** `aria-expanded` is listed as supported on `row` — but only inside a `grid` or `treegrid`; on a row in a `table` it is not announced, so writing it there would be an attribute that reads as a promise and delivers nothing. It is the same trap `aria-selected` sets one feature over, and the same answer: the control carries the state, for everybody.
+
+**The detail row is rendered while it is shut**, and merely `hidden`. That is what keeps `aria-controls` honest — a reference to an element that is not in the document is a promise to nobody — and `hidden` takes the row out of the accessibility tree and out of the tab order, which a class cannot. What is _inside_ it is built only when it is open, because `renderDetail` is a function and calling it for every shut row of a long table is work nobody asked for.
+
+Two costs, stated:
+
+- **A spanning cell is joined to every column header.** A cell across the whole table is associated with all of them, so a reader hears every heading before the detail. It is named — "Details for Milano" — which is the one thing that makes that bearable, and it is why the row header matters here as much as it does for the checkboxes.
+- **A detail row is a row.** A screen reader counts it, and "row 4 of 7" becomes "row 4 of 13" on a table with six open panels. Nothing can fix that inside a `<table>`; a `treegrid` could, and it is a different component.
+
 ### Filtering
 
 ```tsx

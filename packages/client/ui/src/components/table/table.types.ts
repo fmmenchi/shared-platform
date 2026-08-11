@@ -1,6 +1,7 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import type { SortState } from '../../sorting/compare.types.js';
 import type { ColumnWidths } from './use-column-widths.types.js';
+import type { ExpandedRows } from './use-row-expansion.types.js';
 import type { Selection } from '../../selection/selection.types.js';
 
 /** Which edge a column's content sits against. Numbers want `end`. */
@@ -323,6 +324,34 @@ interface TableFromData<T> extends TableShared {
    */
   onColumnResize?: (key: string, width: string) => void;
   /**
+   * Which rows have their detail showing.
+   *
+   * With `onRowExpandToggle` and `renderDetail` it adds a control column — ours
+   * to draw rather than yours to write as a `cell`, for the reason the checkbox
+   * column is: the part nobody gets right is not the chevron, it is what the
+   * chevron is CALLED and what it says it controls.
+   *
+   * Note where the state does NOT go. `aria-expanded` is meaningless on a row
+   * in a `table` — it belongs to `row` inside a `grid` or `treegrid` — so it
+   * goes on the BUTTON, which is where it is announced, and the button points
+   * at the detail row with `aria-controls`. That is also why the detail row is
+   * rendered while it is closed and merely `hidden`: a reference to an element
+   * that does not exist is a promise to nobody.
+   */
+  expandedRows?: ExpandedRows;
+  /** A row's detail control was activated. Receives the id `getRowId` produced. */
+  onRowExpandToggle?: (id: string) => void;
+  /**
+   * What a row's detail IS — the panel that opens under it, across every
+   * column.
+   *
+   * It is the escape hatch from the column model rather than a hole in it: a
+   * detail is prose, a form, a nested list, none of which a `Column` can
+   * express. Given nothing to render, the control is not drawn at all, because
+   * a chevron that opens an empty row is the table's version of a dead button.
+   */
+  renderDetail?: (row: T) => ReactNode;
+  /**
    * Which rows are picked. With `onRowSelectToggle` it adds the checkbox
    * column — the column is OURS to draw rather than yours to write as a `cell`,
    * because the part nobody gets right is not the box, it is what the box is
@@ -381,6 +410,15 @@ interface TableComposed extends TableShared {
   resizableColumns?: never;
   columnWidths?: never;
   onColumnResize?: never;
+  /**
+   * Refused with the others: the control column and the detail row are placed
+   * from the column list, and there is none here. Write the two rows yourself —
+   * but read what `Table` does with `aria-controls` and `hidden` first, because
+   * that is the part that goes wrong.
+   */
+  expandedRows?: never;
+  onRowExpandToggle?: never;
+  renderDetail?: never;
   /**
    * Refused for the same reason as `sort`: the checkbox column is generated
    * from the column list, and there is none here. Write the cells yourself and

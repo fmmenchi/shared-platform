@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useId,
   useMemo,
@@ -17,6 +18,7 @@ import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { coverageOf, isRowSelected } from '../../selection/selection.js';
 import { SortArrow } from './sort-arrow.component.js';
+import { ExpandChevron } from './expand-chevron.component.js';
 import { TableBody } from '../table-body/table-body.component.js';
 import { TableCell } from '../table-cell/table-cell.component.js';
 import { TableHead } from '../table-head/table-head.component.js';
@@ -86,6 +88,9 @@ function Table<T>(props: TableProps<T>) {
     resizableColumns,
     columnWidths,
     onColumnResize,
+    expandedRows,
+    onRowExpandToggle,
+    renderDetail,
     selection,
     onRowSelectToggle,
     onSelectAllToggle,
@@ -372,6 +377,27 @@ function Table<T>(props: TableProps<T>) {
     'Table: the rows are selectable but nothing is wired to `onSelectAllToggle`, so the header cell carries no box and there is no way to take a whole page. Pass the props from `useRowSelection`.',
   );
 
+  // THE CONTROL COLUMN EXISTS ONLY WHEN ALL THREE ARE THERE, which is the same
+  // rule the checkbox column follows with one more term: a chevron with nobody
+  // listening is a dead control, and a chevron that opens an empty row is
+  // worse — it looks like the data is missing rather than like the feature is.
+  const expands =
+    expandedRows !== undefined &&
+    Boolean(onRowExpandToggle) &&
+    Boolean(renderDetail);
+
+  useDevWarning(
+    expandedRows !== undefined && !onRowExpandToggle,
+    'Table: `expandedRows` is passed but nothing is wired to `onRowExpandToggle`, so no detail control is drawn. Pass the props from `useRowExpansion`.',
+  );
+
+  useDevWarning(
+    expandedRows !== undefined &&
+      Boolean(onRowExpandToggle) &&
+      renderDetail === undefined,
+    'Table: the rows are expandable but `renderDetail` is missing, so there is nothing for a control to open and none is drawn. A detail is prose, a form, a nested list — the things a `Column` cannot express, which is what this prop is for.',
+  );
+
   // The column that NAMES the row, and the reason selection needs one. A
   // checkbox labelled "Select row" five times over is a control a screen reader
   // cannot tell apart from the other four; named after its row it says "Select
@@ -538,6 +564,15 @@ function Table<T>(props: TableProps<T>) {
                       }}
                     />
                   )}
+                </TableHeaderCell>
+              )}
+              {expands && (
+                <TableHeaderCell className={styles.expandCell}>
+                  {/* NAMED BUT NOT SHOWN. A column of chevrons with an empty
+                      header is a column a screen reader announces as nothing,
+                      and a visible word here would be a heading for a control
+                      rather than for data. */}
+                  <VisuallyHidden>{t('expand')}</VisuallyHidden>
                 </TableHeaderCell>
               )}
               {columns.map((column, index) => {
@@ -709,7 +744,10 @@ function Table<T>(props: TableProps<T>) {
                     column is added, and a short `colSpan` leaves the message
                     sitting under one column instead of across the table. */}
                 <TableCell
-                  colSpan={Math.max(columns.length + (picks ? 1 : 0), 1)}
+                  colSpan={Math.max(
+                    columns.length + (picks ? 1 : 0) + (expands ? 1 : 0),
+                    1,
+                  )}
                   className={styles.empty}
                 >
                   {hasRenderableChildren(empty) ? empty : t('empty')}
@@ -744,92 +782,182 @@ function Table<T>(props: TableProps<T>) {
                     ? String(rowName).trim()
                     : '';
 
+                const detailId = `${baseId}-d${index}`;
+                const open = expands && expandedRows?.has(rowId) === true;
+
                 return (
-                  <TableRow
-                    key={rowId}
-                    // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
-                    // belongs to `grid` and `treegrid`; on a row inside a
-                    // `table` it is ignored, and writing it would be a
-                    // component claiming to say something it does not. The
-                    // checkbox carries the state for everybody — which is
-                    // also why the box is not optional.
-                    data-selected={picked ? '' : undefined}
-                  >
-                    {picks && (
-                      <TableCell className={styles.selectCell}>
-                        <Checkbox
-                          checked={picked}
-                          // A WHOLE SENTENCE WHEN THE NAME IS WORDS, and a
-                          // reference only when it is not. Two fragments
-                          // joined by `aria-labelledby` put the WORD ORDER in
-                          // the code — "«verb» «name»", which Japanese and
-                          // Turkish are not — and i18n.md forbids exactly
-                          // that, for exactly that reason. A string row name
-                          // is the overwhelmingly common case and it fills a
-                          // one-hole message the catalog can reorder. A node
-                          // (an icon, an `<abbr>`, a link) has no string to
-                          // put in a hole, so it is pointed at instead: worse
-                          // for word order, better than losing the name.
+                  // A FRAGMENT, because a row's detail is a SECOND ROW and a
+                  // `<tbody>` takes rows. Wrapping the pair in a `<tbody>` of
+                  // its own was the alternative and it is worse: a table with
+                  // one body section per row announces a group boundary the
+                  // data does not have.
+                  <Fragment key={rowId}>
+                    <TableRow
+                      // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
+                      // belongs to `grid` and `treegrid`; on a row inside a
+                      // `table` it is ignored, and writing it would be a
+                      // component claiming to say something it does not. The
+                      // checkbox carries the state for everybody — which is
+                      // also why the box is not optional.
+                      data-selected={picked ? '' : undefined}
+                    >
+                      {expands && (
+                        <TableCell className={styles.expandCell}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={styles.expandTrigger}
+                            // THE STATE GOES HERE, and this is the whole reason
+                            // the control is a button in a cell rather than
+                            // something on the row: `aria-expanded` is listed for
+                            // `row`, but only inside a `grid` or `treegrid`. On a
+                            // row in a `table` it is not announced, so writing it
+                            // there would be an attribute that reads as a promise
+                            // and delivers nothing — the same trap `aria-selected`
+                            // sets one feature over.
+                            aria-expanded={open}
+                            // AND WHAT IT OPENS. The detail row exists while it
+                            // is closed and is merely `hidden`, so this always
+                            // points at something: a reference to an element that
+                            // is not in the document is a promise to nobody.
+                            aria-controls={detailId}
+                            aria-label={
+                              namedInWords !== ''
+                                ? t('expandRowNamed', { name: namedInWords })
+                                : rowName === undefined ||
+                                    !hasRenderableChildren(rowName)
+                                  ? t('expandRow')
+                                  : undefined
+                            }
+                            aria-labelledby={
+                              namedInWords === '' &&
+                              rowName !== undefined &&
+                              hasRenderableChildren(rowName)
+                                ? `${baseId}-expand ${rowHeaderId}`
+                                : undefined
+                            }
+                            onClick={() => {
+                              // The region falls silent: `aria-expanded` on the
+                              // control announces the change, and a sentence read
+                              // over it doubles what the reader was just told.
+                              setActed(null);
+                              onRowExpandToggle?.(rowId);
+                            }}
+                          >
+                            <ExpandChevron open={open} />
+                          </Button>
+                        </TableCell>
+                      )}
+                      {picks && (
+                        <TableCell className={styles.selectCell}>
+                          <Checkbox
+                            checked={picked}
+                            // A WHOLE SENTENCE WHEN THE NAME IS WORDS, and a
+                            // reference only when it is not. Two fragments
+                            // joined by `aria-labelledby` put the WORD ORDER in
+                            // the code — "«verb» «name»", which Japanese and
+                            // Turkish are not — and i18n.md forbids exactly
+                            // that, for exactly that reason. A string row name
+                            // is the overwhelmingly common case and it fills a
+                            // one-hole message the catalog can reorder. A node
+                            // (an icon, an `<abbr>`, a link) has no string to
+                            // put in a hole, so it is pointed at instead: worse
+                            // for word order, better than losing the name.
+                            aria-label={
+                              namedInWords !== ''
+                                ? t('selectRowNamed', { name: namedInWords })
+                                : rowName === undefined ||
+                                    !hasRenderableChildren(rowName)
+                                  ? t('selectRow')
+                                  : undefined
+                            }
+                            aria-labelledby={
+                              namedInWords === '' &&
+                              rowName !== undefined &&
+                              hasRenderableChildren(rowName)
+                                ? `${baseId}-select ${rowHeaderId}`
+                                : undefined
+                            }
+                            onChange={() => {
+                              // The region falls silent: a single box announces
+                              // its own state, and a count read over it doubles
+                              // what the reader was just told.
+                              setActed(null);
+                              onRowSelectToggle?.(rowId);
+                            }}
+                          />
+                        </TableCell>
+                      )}
+                      {columns.map((column) => {
+                        const content =
+                          column.key === rowHeaderKey
+                            ? rowName
+                            : column.cell
+                              ? column.cell(row)
+                              : ((row as Record<string, unknown>)[
+                                  column.key
+                                ] as ReactNode);
+
+                        return column.rowHeader ? (
+                          <TableHeaderCell
+                            key={column.key}
+                            align={column.align}
+                            // ONLY WHEN SOMETHING POINTS AT IT. A row named in
+                            // words fills the message instead, so an id here
+                            // would be an attribute referenced by nothing on
+                            // every row of every selectable table.
+                            id={
+                              picks &&
+                              column.key === rowHeaderKey &&
+                              namedInWords === ''
+                                ? rowHeaderId
+                                : undefined
+                            }
+                          >
+                            {content}
+                          </TableHeaderCell>
+                        ) : (
+                          <TableCell key={column.key} align={column.align}>
+                            {content}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                    {expands && (
+                      // RENDERED WHILE CLOSED, and `hidden` rather than absent —
+                      // so `aria-controls` above always names something, and so
+                      // the row is out of the accessibility tree and out of the
+                      // tab order while it is shut, which `hidden` does and a
+                      // class cannot.
+                      <TableRow id={detailId} hidden={!open} data-detail="">
+                        {/* COUNTED, not typed — the same rule the empty row
+                          follows, and it has to include the two control
+                          columns. Note what a spanning cell costs, stated
+                          rather than discovered: a cell across every column is
+                          associated with EVERY column header, so a reader hears
+                          them all before the detail. It is named instead, which
+                          is the one thing that makes that bearable. */}
+                        <TableCell
+                          colSpan={Math.max(
+                            columns.length + (picks ? 1 : 0) + 1,
+                            1,
+                          )}
+                          className={styles.detail}
                           aria-label={
                             namedInWords !== ''
-                              ? t('selectRowNamed', { name: namedInWords })
-                              : rowName === undefined ||
-                                  !hasRenderableChildren(rowName)
-                                ? t('selectRow')
-                                : undefined
-                          }
-                          aria-labelledby={
-                            namedInWords === '' &&
-                            rowName !== undefined &&
-                            hasRenderableChildren(rowName)
-                              ? `${baseId}-select ${rowHeaderId}`
-                              : undefined
-                          }
-                          onChange={() => {
-                            // The region falls silent: a single box announces
-                            // its own state, and a count read over it doubles
-                            // what the reader was just told.
-                            setActed(null);
-                            onRowSelectToggle?.(rowId);
-                          }}
-                        />
-                      </TableCell>
-                    )}
-                    {columns.map((column) => {
-                      const content =
-                        column.key === rowHeaderKey
-                          ? rowName
-                          : column.cell
-                            ? column.cell(row)
-                            : ((row as Record<string, unknown>)[
-                                column.key
-                              ] as ReactNode);
-
-                      return column.rowHeader ? (
-                        <TableHeaderCell
-                          key={column.key}
-                          align={column.align}
-                          // ONLY WHEN SOMETHING POINTS AT IT. A row named in
-                          // words fills the message instead, so an id here
-                          // would be an attribute referenced by nothing on
-                          // every row of every selectable table.
-                          id={
-                            picks &&
-                            column.key === rowHeaderKey &&
-                            namedInWords === ''
-                              ? rowHeaderId
-                              : undefined
+                              ? t('detail', { name: namedInWords })
+                              : t('detailRow')
                           }
                         >
-                          {content}
-                        </TableHeaderCell>
-                      ) : (
-                        <TableCell key={column.key} align={column.align}>
-                          {content}
+                          {/* ONLY WHEN IT IS OPEN. A consumer's `renderDetail` is
+                            a function, and calling it for every closed row of a
+                            long table is work nobody asked for — a nested table,
+                            a chart, a query. */}
+                          {open ? renderDetail?.(row) : null}
                         </TableCell>
-                      );
-                    })}
-                  </TableRow>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 );
               })
             )}
@@ -904,6 +1032,9 @@ function Table<T>(props: TableProps<T>) {
         `aria-labelledby` is document-wide, so moving it here costs nothing. */}
       {picks && rowHeaderColumn?.cell !== undefined && (
         <VisuallyHidden id={`${baseId}-select`}>{t('select')}</VisuallyHidden>
+      )}
+      {expands && rowHeaderColumn?.cell !== undefined && (
+        <VisuallyHidden id={`${baseId}-expand`}>{t('expand')}</VisuallyHidden>
       )}
 
       {(wired || picks) && (

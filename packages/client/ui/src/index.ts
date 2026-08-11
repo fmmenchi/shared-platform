@@ -341,6 +341,12 @@ export type {
   UseColumnWidthsOptions,
   UseColumnWidthsResult,
 } from './components/table/use-column-widths.types.js';
+export { useRowExpansion } from './components/table/use-row-expansion.js';
+export type {
+  ExpandedRows,
+  UseRowExpansionOptions,
+  UseRowExpansionResult,
+} from './components/table/use-row-expansion.types.js';
 export type {
   UseTableFiltersOptions,
   UseTableFiltersResult,
