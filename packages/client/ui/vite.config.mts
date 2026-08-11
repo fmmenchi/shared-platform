@@ -87,7 +87,7 @@ export default defineConfig(() => ({
         'table-cell': 'src/components/table-cell/index.ts',
         'table-row': 'src/components/table-row/index.ts',
         'table-foot': 'src/components/table-foot/index.ts',
-        'table-selection-bar': 'src/components/table-selection-bar/index.ts',
+        'table-toolbar': 'src/components/table-toolbar/index.ts',
         'table-body': 'src/components/table-body/index.ts',
         'table-head': 'src/components/table-head/index.ts',
         table: 'src/components/table/index.ts',

@@ -18,9 +18,10 @@ import { defineMessages } from '../../i18n/messages.js';
  * port interpolates and does not pluralize, and a participle would escape the
  * number only to trip over gender.
  */
-export const tableSelectionBarMessages = defineMessages('tableSelectionBar', {
+export const tableToolbarMessages = defineMessages('tableToolbar', {
   en: {
-    actions: 'Selection actions',
+    region: 'Table controls',
+    actions: 'Table actions',
     count: 'Selection: {count}',
     all: 'All rows selected.',
     allExcept: 'All rows selected except {count}.',
@@ -28,7 +29,8 @@ export const tableSelectionBarMessages = defineMessages('tableSelectionBar', {
     clear: 'Clear selection',
   },
   it: {
-    actions: 'Azioni sulla selezione',
+    region: 'Controlli tabella',
+    actions: 'Azioni tabella',
     count: 'Selezione: {count}',
     all: 'Tutte le righe selezionate.',
     allExcept: 'Tutte le righe selezionate tranne {count}.',
@@ -36,7 +38,8 @@ export const tableSelectionBarMessages = defineMessages('tableSelectionBar', {
     clear: 'Annulla selezione',
   },
   ar: {
-    actions: 'إجراءات التحديد',
+    region: 'أدوات الجدول',
+    actions: 'إجراءات الجدول',
     count: 'التحديد: {count}',
     all: 'تم تحديد كل الصفوف.',
     allExcept: 'تم تحديد كل الصفوف باستثناء {count}.',

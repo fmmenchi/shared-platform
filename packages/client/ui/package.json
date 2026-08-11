@@ -515,11 +515,11 @@
       "import": "./dist/table-foot.js",
       "default": "./dist/table-foot.js"
     },
-    "./table-selection-bar": {
-      "@fmmenchi/source": "./src/components/table-selection-bar/index.ts",
-      "types": "./dist/components/table-selection-bar/index.d.ts",
-      "import": "./dist/table-selection-bar.js",
-      "default": "./dist/table-selection-bar.js"
+    "./table-toolbar": {
+      "@fmmenchi/source": "./src/components/table-toolbar/index.ts",
+      "types": "./dist/components/table-toolbar/index.d.ts",
+      "import": "./dist/table-toolbar.js",
+      "default": "./dist/table-toolbar.js"
     },
     "./table-row": {
       "@fmmenchi/source": "./src/components/table-row/index.ts",

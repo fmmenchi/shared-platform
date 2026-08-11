@@ -34,7 +34,14 @@
     border-radius: var(--fm-radius-md);
   }
 
-  .count {
+  /* The summary area: whatever the view is showing, in words. A flex row of
+     its own so a filter summary and a selection count sit side by side rather
+     than running together. */
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--fm-space-inline-s);
     font-weight: var(--fm-font-weight-medium);
   }
 

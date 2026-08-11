@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Table } from '../table/table.component.js';
-import { TableSelectionBar } from './table-selection-bar.component.js';
+import { TableToolbar } from './table-toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
 import { useRowSelection } from '../table/use-row-selection.js';
@@ -47,7 +47,7 @@ function Bare(props: {
   onClear?: () => void;
 }) {
   return (
-    <TableSelectionBar
+    <TableToolbar
       selection={props.selection ?? include('1', '2')}
       total={props.total}
       onSelectEverything={props.onSelectEverything}
@@ -58,7 +58,7 @@ function Bare(props: {
           Elimina
         </Button>
       </ToolbarItem>
-    </TableSelectionBar>
+    </TableToolbar>
   );
 }
 
@@ -78,7 +78,7 @@ function Wired(props: { total?: number; bulk?: boolean }) {
         getRowId={(p) => p.id}
         {...selection.props}
       />
-      <TableSelectionBar {...selection.barProps}>
+      <TableToolbar {...selection.toolbarProps}>
         {props.bulk === true && (
           <ToolbarItem>
             <Button
@@ -90,34 +90,62 @@ function Wired(props: { total?: number; bulk?: boolean }) {
             </Button>
           </ToolbarItem>
         )}
-      </TableSelectionBar>
+      </TableToolbar>
     </>
   );
 }
 
-const said = () => document.querySelector('[role="region"] span');
+const said = () => document.querySelector('[role="region"] > div:first-child');
 
-describe('the selection bar', () => {
-  it('is not there when nothing is picked', async () => {
-    const { container } = render(<Bare selection={include()} />);
+describe('the table toolbar', () => {
+  it('is not there when it has nothing to say and nothing to do', async () => {
+    // A container that contains nothing is chrome the consumer pays for on
+    // every page. The whole thing, not just its toolbar: asserting only the
+    // toolbar's absence passes for one that still paints its surface.
+    const { container } = render(
+      <TableToolbar selection={include()} onClear={() => undefined} />,
+    );
 
-    // The whole bar, not just its toolbar: asserting only the toolbar's absence
-    // passes for a bar that still paints its surface and its count.
     expect(container.firstChild).toBeNull();
   });
 
-  it('is not there when an exclude rule has been emptied row by row', async () => {
+  it('is there whenever it has actions, selected or not', async () => {
+    // THE POINT OF GENERALISING IT. A permanent container whose contents change
+    // is one stable landmark; two that appear and disappear on unrelated
+    // schedules are two rotor entries coming and going for reasons the reader
+    // cannot correlate.
+    render(<Bare selection={include()} />);
+
+    expect(screen.getByRole('region')).toBeInTheDocument();
+    // Nothing picked, so nothing to clear — the action is not drawn.
+    expect(
+      screen.queryByRole('button', { name: 'Clear selection' }),
+    ).toBeNull();
+  });
+
+  it('is there for a summary alone, with no selection at all', async () => {
+    // The shape filters will use: a table that describes its view and does not
+    // select still has a toolbar.
+    render(<TableToolbar summary="12 di 240" />);
+
+    expect(screen.getByRole('region')).toHaveTextContent('12 di 240');
+  });
+
+  it('drops the selection sentence when an exclude rule has been emptied row by row', async () => {
     // Reachable: the header box clears an `exclude` rule whole, but unticking
-    // the last row individually leaves a rule covering nothing. The bar used to
-    // stay, reading "Selection: 0" over a live Clear button.
-    const { container } = render(
+    // the last row individually leaves a rule covering nothing. It used to read
+    // "Selection: 0" over a live Clear button.
+    render(
       <Bare
         selection={{ mode: 'exclude', ids: new Set(['1', '2', '3']) }}
         total={3}
       />,
     );
 
-    expect(container.firstChild).toBeNull();
+    expect(screen.queryByText(/Selection:/)).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: 'Clear selection' }),
+    ).toBeNull();
   });
 
   it('says the count on screen, where the announcement cannot be re-read', async () => {
@@ -125,20 +153,22 @@ describe('the selection bar', () => {
 
     expect(screen.getByText('Selection: 2')).toBeInTheDocument();
     // NOT a live region — `Table` announces the change through its own, and a
-    // second one over the same fact says it twice. A named REGION instead, so
-    // it is findable by a reader who never saw it arrive.
-    const bar = screen.getByRole('region');
-    expect(bar).toHaveAccessibleName('Selection: 2');
-    expect(bar.getAttribute('aria-live')).toBeNull();
+    // second one over the same fact says it twice.
+    expect(screen.getByRole('region').getAttribute('aria-live')).toBeNull();
   });
 
-  it('tells the toolbar what it is about', async () => {
+  it('is named stably and DESCRIBED by what it is showing', async () => {
+    // Its predecessor took its name from its own count, which made the landmark
+    // answer "how many?" — right for a bar that only existed while something
+    // was selected, wrong for a permanent one, whose name would then change
+    // under the reader every time the view did. The answer survives as a
+    // description, which is announced on entry.
     render(<Bare />);
 
-    // Without this a reader who tabs in hears "Selection actions, toolbar" and
-    // never the number the bar exists to state.
-    const toolbar = screen.getByRole('toolbar');
-    const describedBy = toolbar.getAttribute('aria-describedby');
+    const region = screen.getByRole('region');
+    expect(region).toHaveAccessibleName('Table controls');
+
+    const describedBy = region.getAttribute('aria-describedby');
     expect(describedBy).not.toBeNull();
     expect(document.getElementById(describedBy as string)).toHaveTextContent(
       'Selection: 2',
@@ -202,20 +232,24 @@ describe('the selection bar', () => {
     expect(document.activeElement).toBe(box);
   });
 
-  it('gives focus back when a CONSUMER’s action empties the selection', async () => {
-    // The ordinary shape — "delete, then clear" — and the one the first version
-    // dropped on `<body>`, because the restore lived in our Clear handler
-    // rather than in the disappearance.
+  it('keeps focus where it is when only the selection goes', async () => {
+    // WHAT PERMANENCE CHANGED. As a selection-only bar this case dropped focus
+    // on `<body>`: the container unmounted and took the control with it. With
+    // actions of its own the container stays, the consumer's button stays, and
+    // there is nothing to restore — the failure it was guarding against cannot
+    // happen. The guard is still there for the case that can (above).
     render(<Wired bulk />);
 
     const box = screen.getByRole('checkbox', { name: 'Select Àosta' });
     await browser.click(box);
     await waitFor(() => expect(said()).toHaveTextContent('Selection: 1'));
 
-    await browser.click(screen.getByRole('button', { name: 'Elimina' }));
-    await waitFor(() => expect(screen.queryByRole('region')).toBeNull());
+    const remove = screen.getByRole('button', { name: 'Elimina' });
+    await browser.click(remove);
+    await waitFor(() => expect(said()).not.toHaveTextContent('Selection:'));
 
-    expect(document.activeElement).toBe(box);
+    expect(screen.getByRole('region')).toBeInTheDocument();
+    expect(document.activeElement).toBe(remove);
     expect(document.activeElement).not.toBe(document.body);
   });
 

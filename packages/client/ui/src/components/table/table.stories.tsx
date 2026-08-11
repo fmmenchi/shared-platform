@@ -8,7 +8,7 @@ import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
 import { useTableSort } from './use-table-sort.js';
 import { useRowSelection } from './use-row-selection.js';
-import { TableSelectionBar } from '../table-selection-bar/table-selection-bar.component.js';
+import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
 import type { Column } from './table.types.js';
@@ -179,18 +179,12 @@ export const BulkActions: Story = {
 
     return (
       <div style={{ display: 'grid', gap: '0.75rem' }}>
-        <Table
-          caption="Persone"
-          rows={people}
-          getRowId={(p) => p.id}
-          columns={columns}
-          {...selection.props}
-        />
-        {/* AFTER the table, and that is not a layout preference. Placed before
-            it, forward Tab never reaches the actions the reader just summoned:
-            they would have to walk backwards past every row checkbox. Put it
-            visually on top with CSS if the design wants it there. */}
-        <TableSelectionBar {...selection.barProps}>
+        {/* ABOVE the table, and that is a reversal. As a bar that APPEARED
+            when you selected, it had to come after: forward Tab never reached
+            actions that materialised behind the reader. Permanent, it is not a
+            surprise — and the filters that will share it DESCRIBE what you are
+            about to read, which is worthless after the rows. */}
+        <TableToolbar {...selection.toolbarProps}>
           <ToolbarItem>
             <Button variant="ghost" size="sm">
               Esporta
@@ -201,7 +195,14 @@ export const BulkActions: Story = {
               Elimina
             </Button>
           </ToolbarItem>
-        </TableSelectionBar>
+        </TableToolbar>
+        <Table
+          caption="Persone"
+          rows={people}
+          getRowId={(p) => p.id}
+          columns={columns}
+          {...selection.props}
+        />
       </div>
     );
   },

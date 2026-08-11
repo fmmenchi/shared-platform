@@ -1,21 +1,21 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`the selection bar > matches its markup 1`] = `
+exports[`the table toolbar > matches its markup 1`] = `
 <div
-  aria-labelledby="«react-id»"
-  class="_bar_16thf_3"
+  aria-describedby="«react-id»"
+  aria-label="Table controls"
+  class="_bar_5wzf5_3"
   role="region"
 >
-  <span
-    class="_count_16thf_15"
+  <div
+    class="_summary_5wzf5_15"
     id="«react-id»"
   >
     Selection: 2
-  </span>
+  </div>
   <div
-    aria-describedby="«react-id»"
-    aria-label="Selection actions"
-    class="_toolbar_tdrgw_4 _actions_16thf_18"
+    aria-label="Table actions"
+    class="_toolbar_tdrgw_4 _actions_5wzf5_22"
     data-orientation="horizontal"
     role="toolbar"
     tabindex="-1"
