@@ -88,6 +88,7 @@ export default defineConfig(() => ({
         'table-row': 'src/components/table-row/index.ts',
         'table-foot': 'src/components/table-foot/index.ts',
         'table-toolbar': 'src/components/table-toolbar/index.ts',
+        'table-filter-trigger': 'src/components/table-filter-trigger/index.ts',
         'table-body': 'src/components/table-body/index.ts',
         'table-head': 'src/components/table-head/index.ts',
         table: 'src/components/table/index.ts',

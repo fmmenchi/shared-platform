@@ -69,7 +69,7 @@ export function useTableFilters<T>(
     toolbarProps: {
       filters: filters.state,
       rowCount: filtered.length,
-      onClearFilters: filters.props.onClearFilters,
+      onClearFilters: filters.clearFilters,
     },
   };
 }

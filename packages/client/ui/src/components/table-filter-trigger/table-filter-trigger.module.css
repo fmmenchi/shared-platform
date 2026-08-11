@@ -1,0 +1,62 @@
+/* One column's filter: the control in the header, and the editor it opens. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .trigger {
+    /* The same floor the sort trigger has, and for the same reason: a ghost
+       button whose only child is a 12px glyph collapses to a target smaller
+       than a finger. 24px is what WCAG 2.5.8 asks of a control inside a line of
+       text; the padding around it does the rest. */
+    min-inline-size: 24px;
+    gap: var(--fm-space-internal-xs);
+  }
+
+  .glyph {
+    inline-size: 0.75em;
+    block-size: 0.75em;
+    flex: none;
+    /* AT REST IT IS A HINT, not a state — and the resting value is measured
+       rather than picked, the way the sort arrow's was: below 3:1 against the
+       page, a glyph that is the column's only visible affordance leaves a
+       low-vision reader nothing at all. */
+    opacity: 0.55;
+  }
+
+  .glyph[data-active] {
+    opacity: 1;
+  }
+
+  /* The applied value, compactly. It TRUNCATES on purpose: a header is narrow,
+     and the whole value is in the control's accessible name, so shortening what
+     is drawn loses nothing. */
+  .value {
+    max-inline-size: 8ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--fm-font-weight-regular);
+  }
+
+  .surface {
+    min-inline-size: 14rem;
+  }
+
+  .heading {
+    /* A title over a two-control form, not a section heading — it names the
+       surface, it does not compete with the column heading behind it. */
+    font-size: var(--fm-text-sm);
+    margin-block-end: var(--fm-space-stack-s);
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fm-space-stack-s);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--fm-space-internal-xs);
+    justify-content: flex-end;
+  }
+}

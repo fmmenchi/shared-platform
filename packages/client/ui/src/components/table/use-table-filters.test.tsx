@@ -37,7 +37,7 @@ function Filtered(props: { options?: UseTableFiltersOptions<City> }) {
       >
         clear name
       </button>
-      <button type="button" onClick={() => filters.props.onClearFilters()}>
+      <button type="button" onClick={() => filters.clearFilters()}>
         clear all
       </button>
       <output data-rows="">{filters.rows.map((c) => c.name).join(',')}</output>

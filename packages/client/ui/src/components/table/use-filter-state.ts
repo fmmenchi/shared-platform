@@ -50,6 +50,7 @@ export function useFilterState(
     state,
     active: activeFilters(state),
     setFilters: (next) => setState(next),
+    clearFilters: () => setState(NO_FILTERS),
     props: {
       filters: state,
       onFilterApply: (key, value) =>
@@ -63,7 +64,6 @@ export function useFilterState(
           else next[key] = value;
           return next;
         }),
-      onClearFilters: () => setState(NO_FILTERS),
     },
   };
 }

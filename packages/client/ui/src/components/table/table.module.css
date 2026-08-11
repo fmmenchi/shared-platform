@@ -320,4 +320,17 @@
       transform: none;
     }
   }
+
+  /* The header's controls when there are two of them. It exists BECAUSE the
+     cell cannot do this itself: `display: flex` on a `<th>` drops its
+     `columnheader` role in Chromium and Firefox — for table elements the role
+     follows the display type — so the layout box has to be inside the cell. */
+  .headerControls {
+    display: flex;
+    align-items: center;
+    gap: var(--fm-space-internal-xs);
+    /* The filter trigger keeps to the far edge whichever way the column is
+       aligned, so a reader scanning a row of headers finds it in one place. */
+    justify-content: space-between;
+  }
 }

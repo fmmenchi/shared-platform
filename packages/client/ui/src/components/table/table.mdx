@@ -244,7 +244,15 @@ const filters = useTableFilters(people, { defaultFilters: { city: 'Milano' } });
   filterLabels={{ city: 'Città' }}
   total={people.length}
 />
-<Table rows={filters.rows} getRowId={(p) => p.id} columns={columns} />;
+<Table
+  rows={filters.rows}
+  getRowId={(p) => p.id}
+  columns={[
+    { key: 'name', header: 'Nome', rowHeader: true },
+    { key: 'city', header: 'Città', filterable: true },
+  ]}
+  {...filters.props}
+/>;
 ```
 
 **Filters are a projection parameter**, like the sort and unlike the selection: they decide which rows _exist_, so they belong in a query key and in a URL — a reader who filtered and reloaded expects the same twelve rows. That is why the state is a plain `Record<string, string>` and why there are two hooks: `useFilterState` holds it, `useTableFilters` is that plus the matching, so a consumer whose server filters never pulls the matcher into their bundle.
@@ -257,6 +265,18 @@ Two things it deliberately does **not** do:
 - **It honours Turkish casing**, so under `tr` a capital `I` folds to the dotless `ı` and "Istanbul" does not match "istanbul". Correct for Turkish words, surprising for loanwords, and the price of folding in the reader's language rather than the runtime's.
 
 **Apply, do not filter as you type.** `onFilterApply` is the moment a draft becomes the view. Filtering on every keystroke deletes rows under a reader continuously — the silent change sorting had, at a higher rate — and gives the live region nothing discrete to announce. The toolbar announces the new row count when it changes, because `Table`'s own region only exists when sorting or selection is wired and filtering happens outside the component.
+
+#### The control in the header
+
+`filterable` puts a **trigger** in the column's header — a small control that opens an editor — rather than an input sitting under the heading. The difference is what it costs when nobody is filtering: a permanent box is a tab stop on _every_ filterable column, always, plus a row of chrome above the data; the trigger is one stop, and what it opens exists for as long as the reader is editing. Compactness is a goal here, not a preference: a table is dense by definition and every row of chrome pushes the data further down.
+
+**Discriminated by region, not by menu.** Sorting is the heading; filtering is the control beside it; resizing (when it lands) is the boundary between two columns. Three distinct areas, three distinct affordances — which is why there is no single "column menu" absorbing all of them. The cost is stated: a column that both sorts and filters is **two tab stops**, and that is the price of a `<table>` rather than a `grid`, where the arrow keys would be ours to spend.
+
+**The state is in the name.** Applied, the trigger is called "Filter Città, currently Milano". The funnel — `FilterGlyph`, drawn here rather than borrowed, because an icon set is brand identity and lives app-side — is the second channel and not the only one, and the value drawn beside it is `aria-hidden` and free to truncate — a state carried by colour alone reaches nobody who cannot see it, and hearing the value twice is its own defect.
+
+**Every way out that is not Apply discards.** `Escape`, a click outside, closing — all of them leave the applied value alone, and the draft is reseeded from it on the next visit, so nothing abandoned waits around to be applied by a later Enter. Clearing is an **apply of nothing** rather than a second mode: same callback, same announcement, and the key leaves the state rather than sitting there empty, because `{ city: '' }` and `{}` are two cache entries for one view.
+
+For a layout the column model cannot express, `TableFilterTrigger` is exported on its own and takes `label`, `value` and `onApply` — drive it with `useFilterState` from your own `TableHeaderCell`.
 
 **Give the toolbar `filterLabels`.** The summary names the columns in force, and without a label it prints the key: `Filtrato per: created_at`, a developer identifier inside localized copy. It warns. Values are deliberately not shown — a value is whatever was typed, it belongs beside its own control where it is editable, and as a sentence it grows without bound.
 
@@ -346,7 +366,7 @@ Two catalogs, because they say different things about different facts. Override 
 - **The sort trigger is a real `Button`**, so the focus ring, the touch target, keyboard activation and the forced-colors handling arrive with it rather than being re-derived. `NavGroup` hand-rolled one once and shipped with no focus ring at all.
 - **All three stops are announced.** Reordering rows is invisible to anyone not looking, so a live region reports each change — including the **clear**, which used to render an empty string. Emptying a live region announces nothing: `role="status"` implies `aria-relevant="additions text"`, so a removal is not in the relevant set, and the stop this component argues hardest for was the one nobody was told about.
 - **It is silent on arrival.** The region is rendered rather than pushed from an effect, and stays empty until the reader activates a header — so a table that mounts already sorted does not announce a sentence from nowhere.
-- **A header that is not words needs `sortLabel`.** `header` is a `ReactNode`, so it may be an icon or an `<abbr>`; without a label the announcement falls back to the column's `key` and reads a developer identifier aloud, untranslated, inside localized copy. It warns.
+- **A header that is not words needs `label`.** `header` is a `ReactNode`, so it may be an icon or an `<abbr>`; without a label the announcement falls back to the column's `key` and reads a developer identifier aloud, untranslated, inside localized copy. It warns.
 - **Every selection checkbox says which row it selects**, by pointing `aria-labelledby` at the row's own header cell rather than stringifying it — so an icon or an `<abbr>` in that cell still reads correctly. Without a `rowHeader` column there is no noun to point at, and the honest fallback ("Select row", identical on every row) warns rather than pretending a row number means something after a re-sort.
 - **A selected row is announced by its checkbox and nothing else**, because `aria-selected` is only meaningful inside a `grid` or `treegrid` and is not announced on a row in a table. Only the header box announces a count, and only because it changes many rows at once — repeating one over every individual tick doubles what the checkbox already says. Its sentence is captured when you click it, not derived from the current rows: derived, it re-announced on the next row tick and on a refetch that returned one row fewer, with nobody having touched anything.
 - **The verb lives outside the table.** A row whose name is an element rather than a string — a link, an icon, an `<abbr>` — has no string to put in a message, so its checkbox is labelled by a hidden "Select" plus the row's own header cell. That span used to sit in the header cell, which is where a `columnheader` takes its name from, so the column announced itself as "Select Select all rows" and every cell in it carried the extra word.

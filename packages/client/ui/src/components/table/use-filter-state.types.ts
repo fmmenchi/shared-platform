@@ -21,7 +21,15 @@ export interface UseFilterStateResult {
   active: string[];
   /** Set the whole set at once — a restore, or a preset. */
   setFilters: (next: FilterState) => void;
-  /** Spread onto the parts that report filter intents. */
+  /**
+   * Drop every filter. An ACTION beside `setFilters` rather than a member of
+   * `props`, because `props` is one component's bag and this is not that
+   * component's intent: spread onto `Table` it would reach the `<table>`
+   * element as an unknown attribute. The toolbar gets it through
+   * `toolbarProps`, and a consumer wiring their own button calls it directly.
+   */
+  clearFilters: () => void;
+  /** Spread onto `Table` — the props it takes to draw the triggers. */
   props: {
     filters: FilterState;
     /**
@@ -31,6 +39,5 @@ export interface UseFilterStateResult {
      * continuously, and that is the silent-reorder problem sorting already had.
      */
     onFilterApply: (key: string, value: string) => void;
-    onClearFilters: () => void;
   };
 }

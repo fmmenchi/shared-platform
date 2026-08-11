@@ -6,18 +6,18 @@ exports[`a sticky header > matches its markup 1`] = `
 >
   <div
     aria-labelledby="_r_9_-caption"
-    class="_scroll_q5weu_43"
+    class="_scroll_1vwph_43"
     data-table-scroll=""
     role="region"
     style="--table-head-block-size: 35px;"
     tabindex="0"
   >
     <table
-      class="_table_q5weu_4"
+      class="_table_1vwph_4"
       data-sticky-header=""
     >
       <caption
-        class="_caption_q5weu_12"
+        class="_caption_1vwph_12"
         id="_r_9_-caption"
       >
         Persone

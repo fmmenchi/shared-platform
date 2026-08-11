@@ -8,6 +8,7 @@ import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
 import { useTableSort } from './use-table-sort.js';
 import { useRowSelection } from './use-row-selection.js';
+import { useTableFilters } from './use-table-filters.js';
 import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
@@ -202,6 +203,49 @@ export const BulkActions: Story = {
           getRowId={(p) => p.id}
           columns={columns}
           {...selection.props}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * The filter lives IN the header — a trigger that opens an editor, not a box
+ * sitting under the column heading. A permanent input is a tab stop on every
+ * filterable column whether anybody is filtering or not; the trigger is one
+ * stop, and what it opens lasts as long as the reader is editing.
+ *
+ * It applies rather than filtering as you type: the draft is held until Apply —
+ * or until Enter, because it is a real form — since rows disappearing per
+ * keystroke is the silent change sorting had, at a higher rate.
+ *
+ * Two channels for one fact, and neither of them is colour: the trigger's
+ * accessible name becomes "Filtra Città, attualmente Milano", and the toolbar
+ * above states the whole rule and offers the one control that undoes it all.
+ */
+export const Filterable: Story = {
+  render: function Render() {
+    const filters = useTableFilters(people, {
+      defaultFilters: { city: 'Milano' },
+    });
+
+    return (
+      <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <TableToolbar
+          {...filters.toolbarProps}
+          filterLabels={{ city: 'Città' }}
+          total={people.length}
+        />
+        <Table
+          caption="Persone"
+          rows={filters.rows}
+          getRowId={(p) => p.id}
+          columns={[
+            { key: 'name', header: 'Nome', rowHeader: true, filterable: true },
+            { key: 'city', header: 'Città', filterable: true },
+            { key: 'age', header: 'Età', align: 'end' },
+          ]}
+          {...filters.props}
         />
       </div>
     );

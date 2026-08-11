@@ -521,6 +521,12 @@
       "import": "./dist/table-toolbar.js",
       "default": "./dist/table-toolbar.js"
     },
+    "./table-filter-trigger": {
+      "@fmmenchi/source": "./src/components/table-filter-trigger/index.ts",
+      "types": "./dist/components/table-filter-trigger/index.d.ts",
+      "import": "./dist/table-filter-trigger.js",
+      "default": "./dist/table-filter-trigger.js"
+    },
     "./table-row": {
       "@fmmenchi/source": "./src/components/table-row/index.ts",
       "types": "./dist/components/table-row/index.d.ts",

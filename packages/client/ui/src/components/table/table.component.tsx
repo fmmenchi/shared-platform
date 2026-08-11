@@ -11,6 +11,7 @@ import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
+import { TableFilterTrigger } from '../table-filter-trigger/table-filter-trigger.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { coverageOf, isRowSelected } from '../../selection/selection.js';
@@ -79,6 +80,8 @@ function Table<T>(props: TableProps<T>) {
     children,
     sort,
     onSortToggle,
+    filters,
+    onFilterApply,
     selection,
     onRowSelectToggle,
     onSelectAllToggle,
@@ -233,6 +236,31 @@ function Table<T>(props: TableProps<T>) {
     'Table: a column is marked `sortable` but nothing is wired to `onSortToggle`, so the mark is ignored and the header renders as plain text. Pass the props from `useTableSort` (or `useSortState`, if something else does the ordering).',
   );
 
+  // The same rule the sort trigger follows, and it is the rule rather than a
+  // copy of it: a control that reports an intent nobody handles is a dead
+  // control, so it is not drawn.
+  const filterable = columns?.some((column) => column.filterable) === true;
+  const filtersWired = filterable && Boolean(onFilterApply);
+
+  useDevWarning(
+    filterable && !onFilterApply,
+    'Table: a column is marked `filterable` but nothing is wired to `onFilterApply`, so no trigger is drawn. Pass the props from `useTableFilters` (or `useFilterState`, if the server does the narrowing).',
+  );
+
+  // The trigger's accessible name IS the column's name, so a column with an
+  // icon for a `header` produces "Filter first_name" — the same failure the
+  // sorted column warns about, in a control rather than an announcement.
+  const unnamed = columns?.find(
+    (column) =>
+      column.filterable === true &&
+      column.label === undefined &&
+      typeof column.header !== 'string',
+  );
+  useDevWarning(
+    filtersWired && unnamed !== undefined,
+    `Table: the filterable column \`${String(unnamed?.key)}\` has a \`header\` that is not a string, so its filter control is called after its \`key\` — a developer identifier, untranslated, inside localized copy. Give the column a \`label\`.`,
+  );
+
   const sortedColumn = columns?.find((column) => column.key === sort?.key);
 
   // A `sort` naming no column is the shape a persisted state arrives in after
@@ -246,9 +274,9 @@ function Table<T>(props: TableProps<T>) {
 
   useDevWarning(
     sortedColumn !== undefined &&
-      sortedColumn.sortLabel === undefined &&
+      sortedColumn.label === undefined &&
       typeof sortedColumn.header !== 'string',
-    'Table: the sorted column has a `header` that is not a string, so the announcement falls back to its `key` — a developer identifier, untranslated, read out inside localized copy. Give the column a `sortLabel`.',
+    'Table: the sorted column has a `header` that is not a string, so the announcement falls back to its `key` — a developer identifier, untranslated, read out inside localized copy. Give the column a `label`.',
   );
 
   // THE CHECKBOX COLUMN EXISTS ONLY WHEN SOMETHING LISTENS, the same rule the
@@ -341,7 +369,7 @@ function Table<T>(props: TableProps<T>) {
               sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending',
               {
                 column:
-                  sortedColumn.sortLabel ??
+                  sortedColumn.label ??
                   (typeof sortedColumn.header === 'string'
                     ? sortedColumn.header
                     : sortedColumn.key),
@@ -424,6 +452,42 @@ function Table<T>(props: TableProps<T>) {
               {columns.map((column) => {
                 const active = sort?.key === column.key;
                 const canSort = column.sortable === true && onSortToggle;
+                const canFilter = column.filterable === true && onFilterApply;
+
+                // THE COLUMN'S OWN CONTENT, control or not — built once
+                // because the filter trigger puts it inside a wrapper and the
+                // plain header does not, and a second copy of this JSX is a
+                // second place for the two to drift apart.
+                const heading = canSort ? (
+                  // OUR Button, not a hand-rolled `<button>`. `NavGroup`
+                  // wrote its own once — `border: 0; background: none`, the
+                  // first two lines of what `button.module.css` does — and
+                  // shipped with no focus ring at all, invisible to every
+                  // test because the test page has no Preflight.
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={styles.sortTrigger}
+                    onClick={() => {
+                      // The KEY, not the next state. The transition is
+                      // computed by whoever owns the state and can read
+                      // its latest value; computed here it came from the
+                      // `sort` prop of the render that drew this arrow,
+                      // which a consumer committing in a transition has
+                      // not refreshed — two clicks then landed on
+                      // ascending twice.
+                      setActed({ kind: 'sort' });
+                      onSortToggle(column.key);
+                    }}
+                  >
+                    {column.header}
+                    <SortArrow
+                      direction={active ? sort.direction : undefined}
+                    />
+                  </Button>
+                ) : (
+                  column.header
+                );
 
                 return (
                   <TableHeaderCell
@@ -458,35 +522,30 @@ function Table<T>(props: TableProps<T>) {
                           : undefined
                     }
                   >
-                    {canSort ? (
-                      // OUR Button, not a hand-rolled `<button>`. `NavGroup`
-                      // wrote its own once — `border: 0; background: none`, the
-                      // first two lines of what `button.module.css` does — and
-                      // shipped with no focus ring at all, invisible to every
-                      // test because the test page has no Preflight.
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.sortTrigger}
-                        onClick={() => {
-                          // The KEY, not the next state. The transition is
-                          // computed by whoever owns the state and can read
-                          // its latest value; computed here it came from the
-                          // `sort` prop of the render that drew this arrow,
-                          // which a consumer committing in a transition has
-                          // not refreshed — two clicks then landed on
-                          // ascending twice.
-                          setActed({ kind: 'sort' });
-                          onSortToggle(column.key);
-                        }}
-                      >
-                        {column.header}
-                        <SortArrow
-                          direction={active ? sort.direction : undefined}
+                    {/* TWO CONTROLS NEED A BOX, and it cannot be the cell:
+                        `display: flex` on a `<th>` is what removes its
+                        `columnheader` role in Chromium and Firefox — the role
+                        follows the display type for table elements. So the
+                        wrapper appears only when there is something to lay
+                        out, which is the one thing that earns it. */}
+                    {canFilter ? (
+                      <span className={styles.headerControls}>
+                        {heading}
+                        <TableFilterTrigger
+                          label={
+                            column.label ??
+                            (typeof column.header === 'string'
+                              ? column.header
+                              : column.key)
+                          }
+                          value={filters?.[column.key] ?? ''}
+                          onApply={(value) => {
+                            onFilterApply(column.key, value);
+                          }}
                         />
-                      </Button>
+                      </span>
                     ) : (
-                      column.header
+                      heading
                     )}
                   </TableHeaderCell>
                 );
