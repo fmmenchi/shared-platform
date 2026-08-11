@@ -62,6 +62,7 @@ interface Gesture {
  */
 function TableColumnResizer({
   label,
+  controls,
   min = 48,
   onResize,
   onReset,
@@ -389,6 +390,9 @@ function TableColumnResizer({
         role="separator"
         aria-orientation="vertical"
         tabIndex={0}
+        // WHAT IT DIVIDES, which the splitter pattern asks for: the head of the
+        // column, because that is the element on screen that IS the column.
+        aria-controls={controls}
         aria-label={t('name', { column: label })}
         // The two paths nobody can see. A criterion satisfied by a route the
         // reader cannot find is satisfied on paper only.

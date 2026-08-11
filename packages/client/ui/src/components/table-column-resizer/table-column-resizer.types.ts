@@ -20,6 +20,16 @@ export interface TableColumnResizerProps extends Omit<
    */
   min?: number;
   /**
+   * The id of the header cell this handle sizes.
+   *
+   * A window splitter is required to say WHAT it divides, and the objection to
+   * writing one here was that a table has no element meaning "the column" — but
+   * it has one meaning "the head of the column", which is the same column and
+   * is already on screen. Pointing at it is more honest than an omission with a
+   * paragraph explaining itself.
+   */
+  controls?: string;
+  /**
    * The reader chose a width, in CSS pixels — one call per gesture, not one per
    * pixel travelled. The handle paints the drag itself, because a width is what
    * the browser is already computing sixty times a second and routing it

@@ -55,3 +55,15 @@ export type {
   UseTableFiltersResult,
 } from './use-table-filters.types.js';
 export type { FilterState, RowFilter } from '../../filtering/filter.types.js';
+export { useColumnWidths } from './use-column-widths.js';
+export type {
+  ColumnWidths,
+  UseColumnWidthsOptions,
+  UseColumnWidthsResult,
+} from './use-column-widths.types.js';
+export { useRowExpansion } from './use-row-expansion.js';
+export type {
+  ExpandedRows,
+  UseRowExpansionOptions,
+  UseRowExpansionResult,
+} from './use-row-expansion.types.js';

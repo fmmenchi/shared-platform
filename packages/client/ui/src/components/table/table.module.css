@@ -381,4 +381,48 @@
   .table[data-resizable] > * > tr > :is(th, td) {
     padding-inline: var(--fm-space-inline-m);
   }
+
+  /* The control column: as narrow as the control plus the cell's own padding,
+     the same shape `.selectCell` has. */
+  .expandCell {
+    inline-size: 1%;
+    white-space: nowrap;
+  }
+
+  .expandTrigger {
+    /* WCAG 2.5.8 asks 24 × 24 of a control, and a ghost button around a 12px
+       glyph is smaller than that on its own. */
+    min-inline-size: 24px;
+    padding-inline: var(--fm-space-internal-xs);
+    color: inherit;
+    font-size: inherit;
+  }
+
+  .chevron {
+    inline-size: 0.75em;
+    block-size: 0.75em;
+    flex: none;
+    /* POINTING ALONG THE INLINE AXIS, so `rtl` mirrors it without a second
+       rule — and rotating a quarter turn is what "open" looks like. */
+    transition-property: transform;
+    transition-duration: var(--fm-duration-s);
+    transition-timing-function: var(--fm-ease-standard);
+  }
+
+  .chevron[data-open] {
+    transform: rotate(90deg);
+  }
+
+  /* The detail's own cell. It is a cell across every column, so it gets the
+     row's padding and nothing else: what goes in it is the consumer's, and a
+     design system that styled it would be styling their content. */
+  .detail {
+    background: var(--fm-color-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
 }

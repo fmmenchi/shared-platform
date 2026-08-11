@@ -65,6 +65,18 @@ describe('a column resize handle', () => {
     expect(grip).toHaveAttribute('aria-valuemin', '48');
   });
 
+  it('says which column it divides', async () => {
+    render(<Resizable />);
+
+    // A splitter is required to say what it divides, and the objection to
+    // leaving it out was that a table has no element meaning "the column" — it
+    // has one meaning the head of that column, which is the same column and is
+    // already on screen.
+    const target = handle().getAttribute('aria-controls');
+    expect(target).toBeTruthy();
+    expect(document.getElementById(target as string)).toBe(cell());
+  });
+
   it('is not on the last column, whose trailing edge is the table', async () => {
     render(<Resizable />);
 

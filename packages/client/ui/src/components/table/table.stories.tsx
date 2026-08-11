@@ -10,6 +10,7 @@ import { useTableSort } from './use-table-sort.js';
 import { useRowSelection } from './use-row-selection.js';
 import { useTableFilters } from './use-table-filters.js';
 import { useColumnWidths } from './use-column-widths.js';
+import { useRowExpansion } from './use-row-expansion.js';
 import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
@@ -358,6 +359,50 @@ export const Resizable: Story = {
         ]}
         resizableColumns
         {...widths.props}
+      />
+    );
+  },
+};
+
+/**
+ * A row that opens a panel under it — the first thing the column model cannot
+ * express, and the first place a `<table>`'s ARIA runs out.
+ *
+ * The state is on the BUTTON, not on the row: `aria-expanded` is listed for
+ * `row`, but only inside a `grid` or `treegrid`, so on a row in a table it is
+ * not announced. The button points at the detail row with `aria-controls`, and
+ * that row is rendered while it is shut and merely `hidden` — a reference to an
+ * element that is not in the document is a promise to nobody.
+ *
+ * Each control is named after its own row, for the reason the checkboxes are: a
+ * column of chevrons all called "Show details" is a column a screen reader
+ * cannot navigate.
+ */
+export const ExpandableRows: Story = {
+  render: function Render() {
+    const expansion = useRowExpansion();
+
+    return (
+      <Table
+        caption="Persone"
+        rows={people}
+        getRowId={(p) => p.id}
+        columns={columns}
+        renderDetail={(person) => (
+          <dl style={{ display: 'grid', gap: '0.25rem', margin: 0 }}>
+            <div>
+              <dt style={{ display: 'inline', fontWeight: 600 }}>
+                Citt\u00e0:{' '}
+              </dt>
+              <dd style={{ display: 'inline', margin: 0 }}>{person.city}</dd>
+            </div>
+            <div>
+              <dt style={{ display: 'inline', fontWeight: 600 }}>Et\u00e0: </dt>
+              <dd style={{ display: 'inline', margin: 0 }}>{person.age}</dd>
+            </div>
+          </dl>
+        )}
+        {...expansion.props}
       />
     );
   },
