@@ -335,6 +335,12 @@ export type {
   UseFilterStateResult,
 } from './components/table/use-filter-state.types.js';
 export { useTableFilters } from './components/table/use-table-filters.js';
+export { useColumnWidths } from './components/table/use-column-widths.js';
+export type {
+  ColumnWidths,
+  UseColumnWidthsOptions,
+  UseColumnWidthsResult,
+} from './components/table/use-column-widths.types.js';
 export type {
   UseTableFiltersOptions,
   UseTableFiltersResult,
@@ -347,6 +353,8 @@ export type {
 export { foldForSearch } from './filtering/filter.js';
 export type { FilterState, RowFilter } from './filtering/filter.types.js';
 export { TableFilterTrigger } from './components/table-filter-trigger/table-filter-trigger.component.js';
+export { TableColumnResizer } from './components/table-column-resizer/table-column-resizer.component.js';
+export type { TableColumnResizerProps } from './components/table-column-resizer/table-column-resizer.types.js';
 export type { TableFilterTriggerProps } from './components/table-filter-trigger/table-filter-trigger.types.js';
 export { TableToolbar } from './components/table-toolbar/table-toolbar.component.js';
 export type { TableToolbarProps } from './components/table-toolbar/table-toolbar.types.js';

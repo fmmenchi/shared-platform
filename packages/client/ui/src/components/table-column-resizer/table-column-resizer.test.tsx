@@ -1,0 +1,434 @@
+import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import { userEvent as browser } from '@vitest/browser/context';
+import { Table } from '../table/table.component.js';
+import { useColumnWidths } from '../table/use-column-widths.js';
+import type { Column } from '../table/table.types.js';
+import { renderUi } from '../../test/render.js';
+import { expectNoA11yViolations } from '../../test/axe.js';
+
+/**
+ * Three ways to move a border, and the reason there are three: a drag serves
+ * one group, arrows serve another, and WCAG 2.5.7 is about the third — people
+ * who use a pointer and cannot hold a button while moving it. Each is proved
+ * here, and so is the thing that makes the third real: that a click does not
+ * resize by zero.
+ */
+interface City {
+  id: string;
+  name: string;
+  region: string;
+}
+
+const cities: City[] = [
+  { id: '1', name: 'Milano', region: 'Lombardia' },
+  { id: '2', name: 'Torino', region: 'Piemonte' },
+];
+
+const columns: Column<City>[] = [
+  { key: 'name', header: 'Città', rowHeader: true, width: '200px' },
+  { key: 'region', header: 'Regione' },
+];
+
+function Resizable(props: { onWidths?: (w: Record<string, string>) => void }) {
+  const widths = useColumnWidths({ onWidthsChange: props.onWidths });
+  return (
+    <Table
+      caption="Città"
+      rows={cities}
+      columns={columns}
+      getRowId={(city) => city.id}
+      resizableColumns
+      {...widths.props}
+    />
+  );
+}
+
+const handle = () => screen.getByRole('separator', { name: 'Resize Città' });
+const cell = () => screen.getAllByRole('columnheader')[0];
+const measured = () => Math.round(cell().getBoundingClientRect().width);
+
+describe('a column resize handle', () => {
+  it('is a focusable separator carrying the width it moves', async () => {
+    render(<Resizable />);
+
+    // A window splitter is the nearest pattern ARIA has: the one role that
+    // means "a divider the user can move", and it takes a value while it is at
+    // it — so a screen reader can report the width without seeing the column.
+    const grip = handle();
+    expect(grip).toHaveAttribute('aria-orientation', 'vertical');
+    expect(grip).toHaveAttribute('tabindex', '0');
+    await waitFor(() =>
+      expect(grip).toHaveAttribute('aria-valuenow', String(measured())),
+    );
+    expect(grip).toHaveAttribute('aria-valuemin', '48');
+  });
+
+  it('is not on the last column, whose trailing edge is the table', async () => {
+    render(<Resizable />);
+
+    // A handle there would resize the TABLE, which is a different thing wearing
+    // the same grip.
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(
+      screen.queryByRole('separator', { name: /Regione/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('resizes from the keyboard, which is the whole reason it is a tab stop', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    handle().focus();
+    await browser.keyboard('{ArrowRight}');
+    await waitFor(() => expect(onWidths).toHaveBeenCalled());
+    expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '216px' });
+
+    await browser.keyboard('{Shift>}{ArrowRight}{/Shift}');
+    // A bigger step with Shift, because sixteen pixels at a time across a wide
+    // column is a key held down rather than a control used.
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '280px' }),
+    );
+
+    await browser.keyboard('{ArrowLeft}');
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '264px' }),
+    );
+  });
+
+  it('refuses to shrink a column into nothing', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    handle().focus();
+    await browser.keyboard('{Home}');
+
+    // Below some width a column shows nothing and the reader has no way back
+    // except finding a handle that is no longer where they left it.
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '48px' }),
+    );
+  });
+
+  it('puts the column back where it was declared', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    handle().focus();
+    await browser.keyboard('{ArrowRight}');
+    await waitFor(() => expect(onWidths).toHaveBeenCalled());
+
+    await browser.keyboard('{Enter}');
+    // EMPTY, not the declared value copied back: the column already holds
+    // `width: '200px'`, and a second copy is a second thing to keep in step.
+    await waitFor(() => expect(onWidths.mock.lastCall?.[0]).toEqual({}));
+  });
+
+  it('reports one width for a whole drag, not one per pixel', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: from.x,
+        clientY: from.y,
+      }),
+    );
+    for (const step of [20, 40, 60]) {
+      document.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          pointerId: 1,
+          clientX: from.x + step,
+          clientY: from.y,
+        }),
+      );
+    }
+    // Painted straight to the DOM while the gesture runs — a width is what the
+    // browser recomputes sixty times a second, and routing that through React
+    // re-renders every row to move one border.
+    expect(measured()).toBe(260);
+    expect(onWidths).not.toHaveBeenCalled();
+
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: from.x + 60,
+        clientY: from.y,
+      }),
+    );
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '260px' }),
+    );
+    expect(onWidths).toHaveBeenCalledTimes(1);
+  });
+
+  it('is operable by a pointer that never drags — the criterion the drag fails', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    // A CLICK, not a drag: press and release without travelling.
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointerup', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+
+    // It latched instead of resizing by zero, and it SAYS so: a mode nobody is
+    // told about is a mode nobody knows they are in.
+    await waitFor(() => expect(grip).toHaveAttribute('data-mode', 'adjust'));
+    expect(document.querySelector('[role="status"]')).toHaveTextContent(
+      /Adjusting Città/,
+    );
+
+    // The pointer now moves the border with nothing held down.
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 40,
+        clientY: at.y,
+      }),
+    );
+    expect(measured()).toBe(240);
+    expect(onWidths).not.toHaveBeenCalled();
+
+    // And the next press finishes it — `pointerdown` and not `click`, because
+    // the click that began the mode had not been dispatched yet and would have
+    // ended it on arrival.
+    document.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x + 40,
+        clientY: at.y,
+      }),
+    );
+    await waitFor(() =>
+      expect(onWidths.mock.lastCall?.[0]).toEqual({ name: '240px' }),
+    );
+    expect(grip).not.toHaveAttribute('data-mode');
+  });
+
+  it('gives the column back on Escape, mid-gesture', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    const box = grip.getBoundingClientRect();
+    const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    grip.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        button: 0,
+        pointerId: 1,
+        clientX: at.x,
+        clientY: at.y,
+      }),
+    );
+    document.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: at.x + 80,
+        clientY: at.y,
+      }),
+    );
+    expect(measured()).toBe(280);
+
+    await browser.keyboard('{Escape}');
+
+    // Back where it started, and nothing reported: an abandoned gesture is not
+    // a choice.
+    await waitFor(() => expect(measured()).toBe(200));
+    expect(onWidths).not.toHaveBeenCalled();
+  });
+
+  it('restores the declared width on a double click', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    handle().focus();
+    await browser.keyboard('{ArrowRight}');
+    await waitFor(() => expect(onWidths).toHaveBeenCalled());
+
+    // The gesture every table with draggable borders has taught people to
+    // expect — and the one a `preventDefault()` on `pointerdown` would silently
+    // remove, because that is what suppresses the compatibility mouse events a
+    // `dblclick` is built from.
+    await browser.dblClick(handle());
+    await waitFor(() => expect(onWidths.mock.lastCall?.[0]).toEqual({}));
+  });
+
+  it('speaks the reader’s language', async () => {
+    renderUi(<Resizable />, { locale: 'it' });
+
+    expect(
+      screen.getByRole('separator', { name: 'Ridimensiona Città' }),
+    ).toBeInTheDocument();
+  });
+
+  it('has no violations', async () => {
+    const { container } = render(<Resizable />);
+
+    await expectNoA11yViolations(container);
+  });
+});
+
+describe('a resizable table', () => {
+  it('names the header cell itself, so the handle does not join the column', async () => {
+    render(<Resizable />);
+
+    // Same rule the filter trigger established: a `columnheader` is named from
+    // its contents, and the handle's own "Resize Città" would otherwise be read
+    // before every cell in the column.
+    expect(cell()).toHaveAttribute('aria-label', 'Città');
+  });
+
+  it('is in a fixed layout before anything has been dragged', async () => {
+    render(<Resizable />);
+
+    // Under the automatic algorithm a width is a suggestion the browser
+    // overrides whenever the content is wider — so the first drag would move
+    // the border and the column would spring back, which reads as the handle
+    // being broken.
+    expect(screen.getByRole('table')).toHaveAttribute('data-layout', 'fixed');
+    expect(screen.getByRole('table')).toHaveAttribute('data-resizable', '');
+  });
+
+  it('lets one column opt out of a resizable table', async () => {
+    function Mixed() {
+      const widths = useColumnWidths();
+      return (
+        <Table
+          caption="Città"
+          rows={cities}
+          columns={[
+            { key: 'name', header: 'Città', rowHeader: true, resizable: false },
+            { key: 'region', header: 'Regione' },
+            { key: 'id', header: 'Id' },
+          ]}
+          getRowId={(city) => city.id}
+          resizableColumns
+          {...widths.props}
+        />
+      );
+    }
+    render(<Mixed />);
+
+    // One rule, `column.resizable ?? resizableColumns` — not two facts that can
+    // disagree. `name` opted out; `id` is last and never gets one.
+    expect(screen.getAllByRole('separator')).toHaveLength(1);
+    expect(
+      screen.getByRole('separator', { name: 'Resize Regione' }),
+    ).toBeInTheDocument();
+  });
+
+  it('draws nothing when the mark has nobody listening', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Table
+        caption="Città"
+        rows={cities}
+        columns={columns}
+        getRowId={(city) => city.id}
+        resizableColumns
+      />,
+    );
+
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('`onColumnResize`'),
+    );
+    warn.mockRestore();
+  });
+
+  it('warns about a relative width the handle cannot give back', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    function Relative() {
+      const widths = useColumnWidths();
+      return (
+        <Table
+          caption="Città"
+          rows={cities}
+          columns={[
+            { key: 'name', header: 'Città', rowHeader: true, width: '40%' },
+            { key: 'region', header: 'Regione' },
+          ]}
+          getRowId={(city) => city.id}
+          resizableColumns
+          {...widths.props}
+        />
+      );
+    }
+    render(<Relative />);
+
+    // The gesture measures the rendered column and reports pixels, so the first
+    // drag replaces `40%` with a fixed width and it stops following the
+    // container — which looks like the handle breaking the layout.
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('relative'));
+    warn.mockRestore();
+  });
+
+  it('overrides the declared width, and gives it back when reset', async () => {
+    function Controlled() {
+      const [widths, setWidths] = useState<Record<string, string>>({
+        name: '320px',
+      });
+      return (
+        <Table
+          caption="Città"
+          rows={cities}
+          columns={columns}
+          getRowId={(city) => city.id}
+          resizableColumns
+          columnWidths={widths}
+          onColumnResize={(key, width) =>
+            setWidths((previous) => {
+              const next = { ...previous };
+              if (width === '') delete next[key];
+              else next[key] = width;
+              return next;
+            })
+          }
+        />
+      );
+    }
+    render(<Controlled />);
+
+    expect(measured()).toBe(320);
+
+    handle().focus();
+    await browser.keyboard('{Enter}');
+    // Back to the column's own `200px`, which it never stopped holding.
+    await waitFor(() => expect(measured()).toBe(200));
+  });
+});

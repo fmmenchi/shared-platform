@@ -355,4 +355,22 @@
   [data-align='center'] .headerControls {
     justify-content: center;
   }
+
+  /* A CELL THE HANDLE CAN BE POSITIONED IN. Relative positioning on a
+     table-cell is well defined and widely supported; the alternative was a
+     wrapper element in every header cell, which is an element that exists for
+     one absolutely-positioned sibling. */
+  .table[data-resizable] > thead > tr > th {
+    position: relative;
+  }
+
+  /* THE PRICE OF THE AFFORDANCE, paid in horizontal space rather than hidden.
+     The handle is 24px and centred on the boundary, so it reaches 12px into
+     this cell and 12px into the next; the default `inline-s` padding is 8px,
+     which left the target sitting on the heading and on the filter control. On
+     EVERY cell rather than the header's, or the body's text would no longer
+     line up under its own column heading. */
+  .table[data-resizable] > * > tr > :is(th, td) {
+    padding-inline: var(--fm-space-inline-m);
+  }
 }

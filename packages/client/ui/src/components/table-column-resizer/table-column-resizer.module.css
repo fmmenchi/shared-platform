@@ -1,0 +1,87 @@
+/* The border between two columns, made draggable. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .resizer {
+    position: absolute;
+    inset-block: 0;
+    /* CENTRED ON THE BOUNDARY. Half of it is in this cell's trailing padding
+       and half in the next cell's leading padding, which is dead space on both
+       sides — so a 24px target costs no content width at all. `Table` widens
+       the cells' inline padding when a table is resizable, which is what keeps
+       those two halves clear of the heading and the filter control. */
+    inset-inline-end: -12px;
+    inline-size: 24px;
+    /* WCAG 2.5.8 asks 24 × 24, and the header cell is taller than that. The
+       LINE the reader sees is one pixel of it; the rest is target. */
+    cursor: col-resize;
+    touch-action: none;
+    /* Above the cell's own content, so the grip is grabbable where it overlaps
+       the padding — and below anything in the top layer. */
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* The visible line, drawn as a child box rather than a border on the control:
+     a 24px border would be a 24px line, and a 1px control would be a 1px
+     target. */
+  .resizer::before {
+    content: '';
+    inline-size: 2px;
+    border-radius: var(--fm-radius-sm);
+    background: var(--fm-color-border);
+    /* AT REST IT IS THE CELL BORDER ITSELF, which the table already draws — so
+       the handle adds nothing to a table nobody is resizing, and appears under
+       the pointer that goes looking for it. */
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-s);
+    transition-timing-function: var(--fm-ease-standard);
+  }
+
+  .resizer:hover::before,
+  .resizer[data-mode]::before {
+    opacity: 1;
+  }
+
+  /* WHILE IT IS FOCUSED IT IS VISIBLE, and not only ringed: a focus ring around
+     an invisible line tells a sighted keyboard user where the control is but
+     not what it does. */
+  .resizer:focus-visible::before {
+    opacity: 1;
+    background: var(--fm-color-ring);
+  }
+
+  .resizer:focus-visible {
+    outline: var(--fm-border-width-emphasis) solid var(--fm-color-ring);
+    outline-offset: calc(var(--fm-border-width-emphasis) * -1);
+    border-radius: var(--fm-radius-sm);
+  }
+
+  /* THE LATCHED MODE, which is a mode and therefore has to look like one — the
+     pointer is no longer holding anything, so nothing else says it is live. */
+  .resizer[data-mode='adjust']::before {
+    background: var(--fm-color-ring);
+    inline-size: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .resizer::before {
+      transition-duration: var(--fm-duration-none);
+    }
+  }
+
+  @media (forced-colors: active) {
+    /* `opacity` survives forced colors, but `--fm-color-border` does not paint
+       — the line has to come from a system colour or there is no line. */
+    .resizer::before {
+      background: CanvasText;
+    }
+
+    .resizer:focus-visible::before,
+    .resizer[data-mode]::before {
+      background: Highlight;
+    }
+  }
+}

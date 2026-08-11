@@ -30,6 +30,7 @@ Rows and columns, announced correctly.
 | `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express   |
 | `TableToolbar`                               | what is selected, on screen — and the bulk actions        |
 | `TableFilterTrigger`                         | one column's filter: the control, and the editor it opens |
+| `TableColumnResizer`                         | the border between two columns, made movable              |
 | the scroll region                            | added by `stickyHeader`: the box the header sticks in     |
 
 ## Props
@@ -233,7 +234,43 @@ columns={[
 
 What it costs, said rather than discovered: content no longer widens its column, so long text wraps and `white-space: nowrap` clips. Columns with no width share what is left, equally. And the width is the **outer** one — the cell's own padding is inside it, so `'10rem'` measures 10rem on screen rather than 10rem plus sixteen pixels you did not choose.
 
-**This is layout, not a resize affordance.** Nothing here is dragged and nothing needs a keyboard; it is the declarative half of the same fact, and the one that covers the common case of "that column is three times wider than it needs to be".
+**This is the declarative half.** It covers the common case — "that column is three times wider than it needs to be" — decided once by whoever built the table. The other half, where the reader decides, is below.
+
+### Resizing
+
+```tsx
+const widths = useColumnWidths();
+
+<Table
+  rows={people}
+  getRowId={(p) => p.id}
+  columns={columns}
+  resizableColumns
+  {...widths.props}
+/>;
+```
+
+`resizableColumns` is a **table-level** switch and `Column.resizable` overrides it one column at a time — `false` to keep an identifier column legible, `true` where the table says nothing. One rule, `column.resizable ?? resizableColumns`, rather than two facts that can disagree. The **last column never gets a handle**: its trailing edge is the edge of the table, so dragging it would resize the table rather than a column.
+
+`useColumnWidths` overrides `Column.width` key by key; a column with no entry keeps what it declared, which is why a reset **deletes** rather than storing the declared value back. Unlike the sort and the filters this is a **layout** parameter, not a projection one: it decides nothing about which rows exist, so it belongs in whatever remembers a reader's preferences and **not** in a query key — putting it there refetches the rows because somebody dragged a border.
+
+#### Three ways to move a border, and why there are three
+
+**There is no APG pattern for column resize.** The nearest is Window Splitter, which divides two panes; every accessible implementation in the wild is a `grid`, where the arrow keys belong to the component. This table is not a grid on purpose (ADR-0016), so the handle costs a **tab stop** — the price stated once rather than discovered.
+
+- **Drag it.** What everyone expects, and what serves nobody else.
+- **Arrow keys**, once it is focused: `←`/`→` by 16px, with `Shift` by 64, `Home` to the minimum, `End` to the table's width, `Enter` back to the declared width. It is a focusable `separator` carrying `aria-valuenow`, so its width is readable without seeing the column.
+- **Click, move, click.** WCAG **2.5.7 Dragging Movements** asks for a single-pointer path that is not a drag, and a keyboard does not satisfy it: the criterion exists for people who use a pointer and cannot hold a button down while moving it. So a click **latches** the handle — the pointer then moves the border with nothing held, and the next press finishes it. `Escape` cancels and puts the column back. The mode is drawn, and announced, because a mode nobody is told about is a mode nobody knows they are in.
+
+Double-clicking the handle restores the declared width, which is the gesture every table with draggable borders has taught people to expect.
+
+**It reports one width per gesture, never one per pixel.** A width is what the browser recomputes sixty times a second, and routing that through React re-renders every row to move one border — so the handle writes the cell's inline size itself and reports the intent when the gesture ends. The same shape the filter's Apply has.
+
+**Two costs, said rather than discovered.** A resizable table is in `table-layout: fixed` from the start, before anything is dragged — under the automatic algorithm a width is a suggestion the browser overrides whenever the content is wider, so the first drag would move the border and the column would spring back. And the cells take a **wider inline padding**, because the 24px handle straddles each boundary and half of it has to stay clear of the heading and of the filter control. That is the compactness bargain: the boundary earns its own region, and the sort and the filter keep theirs.
+
+A column declared in `%` or `vw` warns: the gesture measures the rendered column and reports pixels, so the first drag replaces the relative width with a fixed one. `Enter` puts it back.
+
+For a layout the column model cannot express, `TableColumnResizer` is exported on its own — it takes `label`, `onResize` and `onReset`, and reads the cell it sits in.
 
 ### Filtering
 
@@ -347,7 +384,7 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 
 ## i18n
 
-Three catalogs, because they say different things about different facts. Override a label through the `messages` port with `"<namespace>.<key>"`.
+Four catalogs, because they say different things about different facts. Override a label through the `messages` port with `"<namespace>.<key>"`.
 
 | namespace            | keys                                                                                                                                                                                    |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -380,6 +417,10 @@ Three catalogs, because they say different things about different facts. Overrid
 - **A sticky header takes a tab stop with it — but only when there is something to scroll.** The container is focusable and named by the `<caption>`, because a region that scrolls and cannot be focused is unreachable to anyone without a pointer; when nothing scrolls it withholds both, since a tab stop over content that does not move is a stop for nothing. The header itself is painted opaque, or the rows scroll straight through it.
 - **A focused control is never scrolled under the header.** Moving BACKWARD through a table — Shift+Tab up through the rows, the ordinary way to review a list — makes the browser scroll the target to the top of the scrollport, which is exactly where the header is: measured at 36px of a focused checkbox buried, against 18px of checkbox. The container is told how tall its own header is, so it stops there instead. Chromium already handles the programmatic `.focus()` case; sequential navigation is the one that needed it (WCAG 2.4.11).
 - **The arrow is drawn inline**, not taken from the icon port. A table that could not show its sort direction until the app injected an icon set would be a table that breaks on somebody else's configuration. Its resting state is set by measurement rather than by eye: at the opacity first chosen it read 1.89:1 against the page, where WCAG 1.4.11 asks 3:1 of anything identifying a state.
+- **A resize handle is operable three ways, and the third one is the criterion.** WCAG **2.5.7 Dragging Movements** asks that anything done by dragging be reachable by a single pointer without a drag, and a keyboard does not satisfy it — the criterion is written for people who use a pointer and cannot hold a button while moving it. So a click latches the handle, the pointer then moves the border with nothing held, and the next press finishes it; `Escape` puts the column back. The latched state is drawn AND announced, because a mode nobody is told about is a mode nobody knows they are in.
+- **The handle is a focusable `separator`** carrying `aria-valuenow`/`min`/`max` — the Window Splitter pattern, which is the nearest ARIA has: there is **no APG pattern for column resize**, and every accessible implementation in the wild is a `grid`, where the arrow keys belong to the component. In a `<table>` they do not, so the handle costs a tab stop per resizable column. That is the price of not being a grid, and it is paid rather than hidden.
+- **Its 24px target is bought with padding, not with a thick line.** The grip straddles the boundary, so half of it lies in each neighbouring cell's inline padding — dead space on both sides — and a resizable table widens that padding to make room. The line the reader sees is 2px of it; the rest is target (WCAG 2.5.8).
+- **A control in a header cell is named by the cell.** A `columnheader` takes its name from its contents and computes one for every descendant, so a filter trigger called "Filter Regione, currently Lombardia" or a handle called "Resize Regione" became part of the column's name and was read before every cell under it. Cells holding such a control carry an explicit `aria-label` instead — measured against Chromium's AX tree, since `dom-accessibility-api`, which this suite's matchers and axe use, does not reproduce the defect at all.
 - **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
 - **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.
 - **The "one card per row" recipe on mobile is forbidden.** Changing `display` on table elements removes the role, and with it the reading mode. The role and that prohibition are one decision, not two.

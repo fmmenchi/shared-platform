@@ -9,6 +9,7 @@ import { TableFoot } from '../table-foot/table-foot.component.js';
 import { useTableSort } from './use-table-sort.js';
 import { useRowSelection } from './use-row-selection.js';
 import { useTableFilters } from './use-table-filters.js';
+import { useColumnWidths } from './use-column-widths.js';
 import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
@@ -305,8 +306,8 @@ export const StickyHeader: Story = {
  * declaration would sometimes do nothing and never say so. What it costs is
  * stated too — content no longer widens its column, so long text wraps.
  *
- * This is layout, not a resize affordance: nothing here is dragged and nothing
- * needs a keyboard.
+ * This is the declarative half — decided once by whoever built the table. The
+ * half where the reader decides is `Resizable`.
  */
 export const DeclaredWidths: Story = {
   args: {
@@ -318,6 +319,47 @@ export const DeclaredWidths: Story = {
       { key: 'city', header: 'Città', width: '10ch' },
       { key: 'age', header: 'Età', align: 'end', width: '6ch' },
     ],
+  },
+};
+
+/**
+ * The border between two columns, made movable — and reachable three ways,
+ * because a draggable border serves exactly one group of people.
+ *
+ * Drag it, or focus it and use the arrows (`Shift` for a bigger step, `Home`
+ * for the minimum, `End` for the table's width, `Enter` to put it back). Or
+ * click it once: it LATCHES, the pointer then moves the border with nothing
+ * held down, and the next click finishes it. That third path is WCAG 2.5.7,
+ * which a keyboard does not satisfy — it exists for people who use a pointer
+ * and cannot hold a button while moving it.
+ *
+ * The last column has no handle: its trailing edge is the edge of the table.
+ * And `Citt\u00e0` opts out with `resizable: false`, which is how one column
+ * stays put in a table where the rest move.
+ *
+ * Two costs, drawn rather than hidden: the table is in `table-layout: fixed`
+ * before anything is dragged, and the cells take a wider inline padding so the
+ * 24px handle straddling each boundary stays clear of the heading and of the
+ * filter control.
+ */
+export const Resizable: Story = {
+  render: function Render() {
+    const widths = useColumnWidths();
+
+    return (
+      <Table
+        caption="Persone"
+        rows={people}
+        getRowId={(p) => p.id}
+        columns={[
+          { key: 'name', header: 'Nome', rowHeader: true, sortable: true },
+          { key: 'city', header: 'Citt\u00e0', resizable: false },
+          { key: 'age', header: 'Et\u00e0', align: 'end' },
+        ]}
+        resizableColumns
+        {...widths.props}
+      />
+    );
   },
 };
 
