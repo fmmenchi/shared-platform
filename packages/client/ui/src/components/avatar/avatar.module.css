@@ -1,0 +1,94 @@
+/*
+ * Avatar styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role tokens, motion ONLY through var(--fm-duration-*)/var(--fm-ease-*):
+ * the `lint-css` gate enforces both. `@reference` resolves `@apply` at THIS
+ * library's build; the output stays themable at runtime.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .avatar {
+    @apply relative inline-flex shrink-0 items-center justify-center;
+    @apply overflow-hidden rounded-full align-middle select-none;
+    /* Fixed-size box + a border in forced colors: without border-box the WHCM
+       border would grow the circle. dist ships no Preflight to set it. */
+    @apply box-border;
+    /* The one fallback surface: the neutral `muted` pair (declared AA in
+       CONTRAST_PAIRS) under the initials and the silhouette alike. */
+    @apply bg-muted text-muted-foreground;
+    /* Initials presentation lives here, not in JS: the derived string stays
+       faithful to the name ("ada" → "al"), uppercasing is only how it looks. */
+    @apply font-medium uppercase;
+  }
+
+  /* --- Size: the box in rem on the 0.25rem grid, the type one token step
+     behind it — initials stay two graphemes, so no scale friction. 32/40/48
+     is the avatar convention, DELIBERATELY off the control scale (h-8/h-9/
+     h-11 = 32/36/44): an md avatar beside an md input sits 4px taller by
+     choice, not by drift. --- */
+  .sm {
+    @apply size-8 text-xs;
+  }
+  .md {
+    @apply size-10 text-sm;
+  }
+  .lg {
+    @apply size-12 text-base;
+  }
+
+  .image {
+    /* CROP, never stretch, and `block` to kill the inline-layout gap under a
+       replaced element (the card-cover lesson). Radius inherited rather than
+       trusted to the root's clip alone: a consumer squaring the root via
+       `border-radius` gets the image following it for free. */
+    @apply block size-full object-cover;
+    border-radius: inherit;
+  }
+
+  /* Neutral silhouette when there is neither a picture nor a name to take
+     initials from. `:empty` reads the DOM fact directly — the render puts
+     nothing inside exactly in that case, so no flag class can drift from it.
+     Drawn in currentColor (the muted foreground) from two circles; the
+     shoulders circle overflows the box and the root's own clip crops it. */
+  .avatar:empty::before,
+  .avatar:empty::after {
+    content: '';
+    position: absolute;
+    /* Centered by auto margins, not a translateX — physical transforms don't
+       flip under RTL, logical insets + auto margins need no flipping at all. */
+    inset-inline: 0;
+    margin-inline: auto;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background-color: currentColor;
+  }
+  .avatar:empty::before {
+    inset-block-start: 20%;
+    inline-size: 35%;
+  }
+  .avatar:empty::after {
+    inset-block-start: 64%;
+    inline-size: 70%;
+  }
+
+  /* Forced colors (Windows High Contrast): the muted fill collapses to Canvas.
+     The fill itself is placeholder, not meaning — but it is also the avatar's
+     only boundary, and a photo-less avatar with no edge dissolves into the
+     page. A border restores the circle. Only the initials' TEXT colour is
+     genuinely re-painted to CanvasText for free; the silhouette's
+     `background-color: currentColor` is a forced property and would flatten
+     to Canvas (the classic WHCM custom-radio-dot failure), so it is re-drawn
+     in CanvasText explicitly. */
+  @media (forced-colors: active) {
+    .avatar {
+      border: 1px solid CanvasText;
+    }
+    .avatar:empty::before,
+    .avatar:empty::after {
+      background-color: CanvasText;
+    }
+  }
+}

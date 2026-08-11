@@ -562,6 +562,12 @@
       "types": "./dist/components/breadcrumb-link/index.d.ts",
       "import": "./dist/breadcrumb-link.js",
       "default": "./dist/breadcrumb-link.js"
+    },
+    "./avatar": {
+      "@fmmenchi/source": "./src/components/avatar/index.ts",
+      "types": "./dist/components/avatar/index.d.ts",
+      "import": "./dist/avatar.js",
+      "default": "./dist/avatar.js"
     }
   },
   "nx": {

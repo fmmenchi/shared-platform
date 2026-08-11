@@ -84,6 +84,7 @@ export default defineConfig(() => ({
       entry: {
         'breadcrumb-link': 'src/components/breadcrumb-link/index.ts',
         breadcrumb: 'src/components/breadcrumb/index.ts',
+        avatar: 'src/components/avatar/index.ts',
         progress: 'src/components/progress/index.ts',
         'table-header-cell': 'src/components/table-header-cell/index.ts',
         'table-cell': 'src/components/table-cell/index.ts',

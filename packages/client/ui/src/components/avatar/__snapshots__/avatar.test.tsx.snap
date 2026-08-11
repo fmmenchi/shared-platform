@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Avatar > matches the rendered snapshot 1`] = `
+<span
+  aria-label="Ada Lovelace"
+  class="_avatar_1k20r_4 _md_1k20r_28"
+  role="img"
+>
+  AL
+</span>
+`;

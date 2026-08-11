@@ -1,0 +1,76 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as AvatarStories from './avatar.stories.tsx';
+
+<Meta of={AvatarStories} />
+
+# Avatar
+
+Shows who someone is — their picture, or their initials when there is no picture to show. Built as
+one accessible node (`role="img"` named by `name`), so assistive tech hears the person, never the
+plumbing.
+
+## Props
+
+Flat API, no compound parts: `name` names the avatar and feeds the initials, `src` is the picture,
+`size` the scale. `crossOrigin`, `referrerPolicy` and `loading` pass through to the real `<img>`.
+
+<Controls of={AvatarStories.Default} />
+
+## Usage
+
+### With an image
+
+The `<img>` is always in the markup when `src` is given — SSR ships complete HTML and the browser
+starts fetching immediately (no client-side preloader deciding what to render). The image is
+cropped to the circle (`object-fit: cover`) and inherits the root's radius.
+
+<Canvas of={AvatarStories.Default} />
+
+### Initials
+
+No `src` (or a failed one): initials derived from `name` — first grapheme of the first and last
+words, first two graphemes of a single word. Grapheme-aware, so non-Latin scripts, astral-plane
+characters and emoji clusters never render as broken boxes.
+
+<Canvas of={AvatarStories.Initials} />
+
+### When the image fails
+
+A failed load swaps in the initials automatically. `onError` cannot see a failure that happened
+before hydration attached it (or one the browser resolves from cache without re-firing the event) —
+those are caught by a mount-time check of the image's own record, `complete` with no pixels,
+confirmed via `decode()` so a dimensionless SVG is not condemned. Changing `src` retries the image;
+a failure is remembered per URL, so re-setting the identical string does not (append a cache-buster
+to force a retry).
+
+<Canvas of={AvatarStories.BrokenSource} />
+
+### Decorative
+
+No `name` and no image yields a neutral silhouette, and the avatar is hidden from assistive tech —
+an avatar that names nobody is decoration. Next to visible text (a comment author, a menu entry),
+prefer this over repeating the name the text already carries.
+
+<Canvas of={AvatarStories.Decorative} />
+
+### Sizes
+
+<Canvas of={AvatarStories.Sizes} />
+
+## Accessibility
+
+- **One node.** The root is `<span role="img" aria-label={name}>`; the inner `<img>` carries
+  `alt=""` and the initials are presentational descendants of `role="img"` — a screen reader meets
+  exactly one thing, named for the person. Demonstrated by every named story.
+- **Unnamed = decorative.** Without a `name` (or with a whitespace-only one) the root has no role
+  and is `aria-hidden` — see the Decorative story. Pass `name` whenever the avatar is the only
+  thing identifying the person.
+- **Your ARIA wins.** A consumer's `aria-label`/`aria-labelledby` overrides the one we derive —
+  e.g. `aria-label="Your profile"` on the signed-in user's own avatar.
+- **Not interactive.** The avatar is presentation. A clickable avatar is a `Button`/link wrapping
+  it — the wrapper owns focus, name and activation. A NAMED avatar as the control's sole content
+  names the control (accname recurses into `role="img"`); a decorative one leaves it nameless, so
+  a control wrapping an unnamed avatar must bring its own `aria-label`.
+- **Forced colors:** a border restores the circle's boundary when the fill collapses to `Canvas`;
+  initials re-paint to `CanvasText` for free, and the silhouette is re-drawn in `CanvasText`
+  explicitly (its `currentColor` fill is a forced property and would vanish into `Canvas`).

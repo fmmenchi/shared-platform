@@ -374,3 +374,9 @@ export { Breadcrumb } from './components/breadcrumb/breadcrumb.component.js';
 export type { BreadcrumbProps } from './components/breadcrumb/breadcrumb.types.js';
 export { BreadcrumbLink } from './components/breadcrumb-link/breadcrumb-link.component.js';
 export type { BreadcrumbLinkProps } from './components/breadcrumb-link/breadcrumb-link.types.js';
+export { Avatar } from './components/avatar/avatar.component.js';
+export { avatarVariants } from './components/avatar/avatar.variants.js';
+export type {
+  AvatarProps,
+  AvatarVariants,
+} from './components/avatar/avatar.types.js';
