@@ -490,6 +490,7 @@
       "types": "./dist/components/progress/index.d.ts",
       "import": "./dist/progress.js",
       "default": "./dist/progress.js"
+    },
     "./table": {
       "@fmmenchi/source": "./src/components/table/index.ts",
       "types": "./dist/components/table/index.d.ts",
