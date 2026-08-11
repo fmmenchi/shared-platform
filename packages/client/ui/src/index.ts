@@ -370,3 +370,9 @@ export { TableCell } from './components/table-cell/table-cell.component.js';
 export type { TableCellProps } from './components/table-cell/table-cell.types.js';
 export { TableHeaderCell } from './components/table-header-cell/table-header-cell.component.js';
 export type { TableHeaderCellProps } from './components/table-header-cell/table-header-cell.types.js';
+export { Avatar } from './components/avatar/avatar.component.js';
+export { avatarVariants } from './components/avatar/avatar.variants.js';
+export type {
+  AvatarProps,
+  AvatarVariants,
+} from './components/avatar/avatar.types.js';
