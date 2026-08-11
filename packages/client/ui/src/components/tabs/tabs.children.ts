@@ -1,6 +1,7 @@
 import { Children, isValidElement } from 'react';
 import type { ReactElement, ReactNode } from 'react';
 import { Tab } from '../tab/tab.component.js';
+import { Tabs } from './tabs.component.js';
 import type { TabProps } from '../tab/tab.types.js';
 
 /** What a tab is, read from the element rather than from the DOM. */
@@ -44,6 +45,18 @@ export function readTabs(
 ): KnownTab[] {
   Children.forEach(children, (child) => {
     if (!isValidElement(child)) return;
+
+    // A nested `Tabs` OWNS its tabs, so the walk stops at its door. Descending
+    // used to pour the inner family's tabs into the outer `known` — the same
+    // question the runtime registry answers correctly by dropping what is not
+    // its own ("one fact, one owner", answered two ways). Measured
+    // consequence: an outer family with every tab disabled found its fallback
+    // in an INNER tab, so `tabStop` named a value no outer Tab carries and the
+    // whole outer list rendered `tabindex="-1"` — out of the page's tab order,
+    // the exact invariant this file exists to hold. The import is circular
+    // with `tabs.component` and safe: the binding is only read at call time,
+    // never during module initialisation.
+    if (child.type === Tabs) return;
 
     if (child.type === Tab) {
       const { value, disabled = false } = (child as ReactElement<TabProps>)

@@ -750,4 +750,83 @@ describe('Tabs, the contract with the caller', () => {
     expect(tab('Current')).toHaveAttribute('tabindex', '0');
     expect(screen.getByText('Here')).toBeVisible();
   });
+
+  describe('what the review found', () => {
+    it("keeps a nested family's tabs out of the outer tab stop", () => {
+      // `readTabs` used to descend into a nested <Tabs>: with every OUTER tab
+      // disabled, the outer fallback landed on an INNER value no outer Tab
+      // carries, so every outer tab rendered tabindex="-1" and the list left
+      // the page's tab order — the exact invariant the component exists for.
+      render(
+        <Tabs>
+          <TabList aria-label="Esterno">
+            <Tab value="a" disabled>
+              A
+            </Tab>
+            <Tab value="b" disabled>
+              B
+            </Tab>
+          </TabList>
+          <TabPanel value="a">
+            <Tabs defaultValue="alpha">
+              <TabList aria-label="Interno">
+                <Tab value="alpha">Alpha</Tab>
+              </TabList>
+              <TabPanel value="alpha">interno</TabPanel>
+            </Tabs>
+          </TabPanel>
+          <TabPanel value="b">bi</TabPanel>
+        </Tabs>,
+      );
+      const outer = screen.getAllByRole('tab', { name: /^(A|B)$/ });
+      // Something OUTER must hold the stop — disabled or not, reachable is
+      // how a reader learns the tabs exist.
+      expect(outer[0]).toHaveAttribute('tabindex', '0');
+    });
+
+    it('warns when two tabs share a value, which duplicates their ids', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Tabs defaultValue="x">
+          <TabList aria-label="Doppioni">
+            <Tab value="x">Uno</Tab>
+            <Tab value="x">Due</Tab>
+          </TabList>
+          <TabPanel value="x">panel</TabPanel>
+        </Tabs>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('share a `value`'),
+      );
+      warn.mockRestore();
+    });
+
+    it('is controlled by the KEY, so value={undefined} does not grow private state', async () => {
+      // The URL-sync shape: `value={searchParams.get('tab') ?? undefined}`.
+      // Read as a value this was uncontrolled — the click flipped the panel
+      // locally, state nobody asked for — and the mode flipped when the
+      // parameter appeared. With key presence it is controlled-empty: the
+      // intent is reported and nothing moves until the consumer says so.
+      const changes: unknown[] = [];
+      render(
+        <Tabs value={undefined} onValueChange={(v) => changes.push(v)}>
+          <TabList aria-label="Sync">
+            <Tab value="a">A</Tab>
+            <Tab value="b">B</Tab>
+          </TabList>
+          <TabPanel value="a">a</TabPanel>
+          <TabPanel value="b">b</TabPanel>
+        </Tabs>,
+      );
+      await browser.click(screen.getByRole('tab', { name: 'B' }));
+      expect(changes).toEqual(['b']);
+      // Nothing moved: the fallback (first usable) still shows.
+      expect(screen.getByRole('tab', { name: 'A' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+  });
 });
