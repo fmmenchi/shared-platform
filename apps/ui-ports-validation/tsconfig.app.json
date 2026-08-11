@@ -43,6 +43,9 @@
       "path": "../../packages/client/ui-form-ports/tsconfig.lib.json"
     },
     {
+      "path": "../../packages/client/ui/tsconfig.lib.json"
+    },
+    {
       "path": "../../packages/client/tokens/tsconfig.lib.json"
     }
   ]

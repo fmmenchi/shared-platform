@@ -13,5 +13,9 @@
     "types": ["node", "vite/client"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "references": []
+  "references": [
+    {
+      "path": "../ui/tsconfig.lib.json"
+    }
+  ]
 }
