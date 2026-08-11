@@ -86,6 +86,8 @@ Direction is `FieldsetContent`'s job, not the control's — the radio never posi
 
 ## Notes for maintainers
 
-The stylesheet resets the UA's asymmetric margin (`margin: 0`). That reset is **not** covered by a
-computed-style test: this page loads Tailwind Preflight, which zeroes the margin anyway, so such a
-test would pass with the line deleted. It is verified against the built `dist/radio.css` instead.
+The stylesheet resets the UA's asymmetric margin (`margin: 0`), and that reset **is** covered by a
+computed-style test: since ADR-0022 the test page loads no reset — the same page a consumer has —
+so deleting the line turns the suite red. (An older note here claimed a test could not see it,
+from the era when the page loaded Preflight; the `dist/radio.css` it pointed to no longer exists
+either — ADR-0023 ships one stylesheet.)
