@@ -53,7 +53,19 @@
      records being fixed once already. The bar is what hover does not have. */
   .link[aria-current] {
     @apply bg-accent-subtle text-accent-subtle-foreground font-medium;
+    /* `box-shadow` has no logical form, so the reading-edge bar needs the rtl
+       override below — the sibling indent in `nav-group.module.css` is
+       logical (`border-inline-start`) and this one could not be. */
     box-shadow: inset 0.125rem 0 0 var(--fm-color-accent);
+  }
+
+  /* The bar sits on the edge the text STARTS from. In rtl that is the right,
+     and a positive inset offset is always the left: the section marker
+     detached from its own indent — on exactly the locale every catalog in
+     this family ships. `:dir()` resolves the computed direction, per the
+     package's measured rule. */
+  .link[aria-current]:dir(rtl) {
+    box-shadow: inset -0.125rem 0 0 var(--fm-color-accent);
   }
 
   /* THE PAGE — the solid pair, and last, so it wins on equal specificity. */

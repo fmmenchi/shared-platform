@@ -831,4 +831,43 @@ describe('a link the app wrote itself', () => {
     expect(screen.getByText('just text')).toBeInTheDocument();
     warn.mockRestore();
   });
+
+  describe('what the second review found', () => {
+    it('keeps the section bar on the reading edge in rtl', () => {
+      // `box-shadow` has no logical form: the positive inset offset is always
+      // the LEFT edge, so in rtl the bar detached from its own indent — on
+      // exactly the locale every catalog in this family ships.
+      render(
+        <div dir="rtl">
+          <Nav label="Principale">
+            <NavLink href="/a" current="location">
+              قسم
+            </NavLink>
+          </Nav>
+        </div>,
+      );
+      const shadow = getComputedStyle(
+        screen.getByRole('link', { name: 'قسم' }),
+      ).boxShadow;
+      // A negative x-offset in the serialised shadow = the right edge, inset.
+      expect(shadow).toMatch(/-2px|-0\.125rem/);
+    });
+
+    it('warns when told twice who renders', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Nav label="Principale">
+          <NavLink asChild as="a">
+            <a href="/x">X</a>
+          </NavLink>
+        </Nav>,
+      );
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('both `asChild` and `as`'),
+      );
+      warn.mockRestore();
+    });
+  });
 });
