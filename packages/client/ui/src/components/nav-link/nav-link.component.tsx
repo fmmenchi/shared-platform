@@ -4,6 +4,7 @@ import { useUiAdapters } from '../../i18n/provider.js';
 import { useInjectedCurrent } from './nav-link.current.js';
 import { isExternalHref } from '../../primitives/is-external-href.js';
 import { Slot } from '../../primitives/slot.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';
 
@@ -36,6 +37,15 @@ function NavLink(props: NavLinkProps) {
   // a client-side router. It is the same call this component already makes —
   // which element renders — applied to the one case where the answer is in the
   // href itself.
+  // Two ways of saying who renders, given together: `asChild` wins by the
+  // precedence below and `as` does nothing — compiling, autocompleting, and
+  // deciding nothing. The same conflict `CardTitle` warns about by name for
+  // its `asChild`+`href` pair.
+  useDevWarning(
+    Boolean(asChild && as),
+    'NavLink: given both `asChild` and `as`. The child renders, so `as` is ignored — remove it.',
+  );
+
   const external = isExternalHref(rest.href);
   // THREE levels, most specific first. An explicit `current` wins, because it
   // is the only one that can know what matching cannot. Then the adapter, if
