@@ -1,0 +1,77 @@
+/* One column's filter: the control in the header, and the editor it opens. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .trigger {
+    /* BOTH INHERITED, and both were missing. The `sm` button size sets a
+       smaller type scale, which shrank an `em`-sized glyph to three quarters of
+       the sort arrow beside it; and `ghost` sets the PAGE's foreground, which on
+       a table painted with `--table-surface` left the funnel at 1.45:1 against
+       its own header while the sort label read 8.94:1. `.sortTrigger` ends with
+       the same two declarations and says why. Measured, both. */
+    font-size: inherit;
+    color: inherit;
+    /* Not a floor against collapse — the button's natural width is over 30px.
+       It is a floor against SHRINKING: this is a flex item, and without it the
+       control could be squeezed below the 24px WCAG 2.5.8 asks for. */
+    min-inline-size: 24px;
+    gap: var(--fm-space-internal-xs);
+  }
+
+  .glyph {
+    inline-size: 0.75em;
+    block-size: 0.75em;
+    flex: none;
+    /* AT REST IT IS A HINT, not a state — and the resting value is measured
+       rather than picked, the way the sort arrow's was: below 3:1 against the
+       page, a glyph that is the column's only visible affordance leaves a
+       low-vision reader nothing at all. */
+    opacity: 0.55;
+  }
+
+  .glyph[data-active] {
+    opacity: 1;
+  }
+
+  /* The applied value, compactly. It TRUNCATES on purpose: a header is narrow,
+     and the whole value is in the control's accessible name, so shortening what
+     is drawn loses nothing. */
+  .value {
+    /* A FLOOR AS WELL AS A CEILING. With only a maximum it is a flex item that
+       shrinks to nothing: measured at 0px in a narrow column, so the value was
+       not truncated but GONE, and the ellipsis has no width to paint in either.
+       What was left carrying "this column is filtered" was the funnel's opacity
+       — a state in colour alone, which is the one thing this design refuses. */
+    min-inline-size: 3ch;
+    max-inline-size: 8ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--fm-font-weight-regular);
+  }
+
+  .surface {
+    /* On the same scale as the `max-w-80` the surface already carries: two
+       constraints on one box, expressed two ways, is how they drift. */
+    @apply min-w-56;
+  }
+
+  .heading {
+    /* A title over a two-control form, not a section heading — it names the
+       surface, it does not compete with the column heading behind it. */
+    font-size: var(--fm-text-sm);
+    margin-block-end: var(--fm-space-stack-s);
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fm-space-stack-s);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--fm-space-internal-xs);
+    justify-content: flex-end;
+  }
+}

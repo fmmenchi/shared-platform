@@ -55,7 +55,10 @@ export function useControlled<T>({
 ] {
   const isControlled = value !== undefined;
   const [uncontrolled, setUncontrolled] = useState(defaultValue);
-  const pending = useRef<{ value: T } | null>(null);
+  // The last value THIS HOOK produced, and the rendered value it was computed
+  // from. Both, because "is my shadow still current?" is the only question that
+  // makes it safe in the controlled case.
+  const pending = useRef<{ from: T; value: T } | null>(null);
 
   const [initiallyControlled] = useState(isControlled);
   useDevWarning(
@@ -67,20 +70,27 @@ export function useControlled<T>({
   const current = (isControlled ? value : uncontrolled) as T;
 
   const setValue = (next: ControlledUpdater<T>) => {
-    // Uncontrolled, what we last produced beats what we last rendered. React
-    // has not necessarily re-rendered between two calls in the same tick, and
-    // `current` is a render value.
+    // WHAT WE LAST PRODUCED beats what we last rendered, in BOTH modes — and
+    // the first version restricted this to the uncontrolled one, which left the
+    // defect alive on the path most of these hooks call primary. Measured on
+    // `useFilterState`: two filters applied in one tick, controlled, and the
+    // first one silently vanished. The consumer cannot repair it from their
+    // side either, because the callback hands them a computed value rather than
+    // an updater.
+    //
+    // Safe in the controlled case because the shadow REMEMBERS WHAT IT CAME
+    // FROM: it is only trusted while the rendered value has not moved under it,
+    // so a parent that commits a different value invalidates it without any
+    // render-phase bookkeeping.
     const base =
-      !isControlled && pending.current !== null
+      pending.current !== null && Object.is(pending.current.from, current)
         ? pending.current.value
         : current;
     const resolved =
       typeof next === 'function' ? (next as (previous: T) => T)(base) : next;
 
-    if (!isControlled) {
-      pending.current = { value: resolved };
-      setUncontrolled(resolved);
-    }
+    pending.current = { from: current, value: resolved };
+    if (!isControlled) setUncontrolled(resolved);
     onChange?.(resolved);
   };
 

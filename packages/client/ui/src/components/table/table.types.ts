@@ -25,6 +25,28 @@ interface ColumnShape {
    */
   rowHeader?: boolean;
   /**
+   * How wide this column is — any CSS length: `'8rem'`, `'12ch'`, `'20%'`.
+   *
+   * DECLARING ONE PUTS THE WHOLE TABLE IN `table-layout: fixed`, and that is
+   * the part to understand before using it. Under the automatic algorithm a
+   * width is a SUGGESTION the browser overrides whenever the content is wider,
+   * so a declaration would sometimes do nothing and never say so — the class of
+   * defect this component spends its warnings on. Fixed makes it mean what it
+   * says.
+   *
+   * What that costs, stated rather than discovered: content no longer widens
+   * its column. Long text wraps, and `white-space: nowrap` clips instead.
+   * Columns with no width share what is left, equally.
+   *
+   * `ch` is usually the right unit for text — it is the width of a "0", so
+   * `'12ch'` is about twelve digits and stays right when the reader changes
+   * their font size, which a `rem` does not.
+   *
+   * This is a LAYOUT declaration, not a resize affordance: nothing here can be
+   * dragged, and nothing here needs a keyboard.
+   */
+  width?: string;
+  /**
    * Puts a real `<button>` in the header and lets `aria-sort` land on this
    * column when it is the one in force.
    *
@@ -36,15 +58,38 @@ interface ColumnShape {
    */
   sortable?: boolean;
   /**
-   * What the live region calls this column, when `header` is not a string.
+   * Puts a filter control in the header — a trigger that opens an editor, not
+   * a box sitting in the column.
+   *
+   * A permanent input is a tab stop on every filterable column whether anybody
+   * is filtering or not, plus a row of chrome above the data. The trigger is
+   * one stop, and what it opens exists only while the reader is editing.
+   *
+   * It declares the AFFORDANCE, not what the value means: "contains" is the
+   * default, and a column that means something else says so with a predicate
+   * in `useTableFilters`. Marked with nothing wired to `onFilterApply` it warns
+   * and renders nothing, like `sortable`.
+   */
+  filterable?: boolean;
+  /**
+   * The column's name IN WORDS, for the places a `header` cannot go.
    *
    * `header` is a `ReactNode` because a real header holds an icon, an `<abbr>`
-   * or a `<Badge>` — and the announcement needs WORDS. Without this the
-   * fallback is the column's `key`, so a reader hears "Sorted by first_name,
-   * ascending": a developer identifier, untranslated, inside DS-owned copy.
-   * A non-string header on a sortable column warns until this is supplied.
+   * or a `<Badge>` — and a live region needs words, and so does a filter
+   * control's name and the header cell's own. Without this the fallback is the
+   * column's `key`, so a reader hears "Sorted by first_name": a developer
+   * identifier, untranslated, inside localized copy.
+   *
+   * `TableToolbar` is NOT one of its readers, and cannot be: it never sees the
+   * column model, so it takes the same words again as `filterLabels`. Two homes
+   * for one fact, and the seam is where they meet rather than something either
+   * of them can fix — it is the price of a toolbar that works without a table.
+   *
+   * It was `sortLabel` and is not any more, because it was never about sorting:
+   * one fact with two names is how the second feature starts disagreeing with
+   * the first.
    */
-  sortLabel?: string;
+  label?: string;
 }
 
 /**
@@ -207,6 +252,29 @@ interface TableFromData<T> extends TableShared {
    */
   onSortToggle?: (key: string) => void;
   /**
+   * What is applied to each column right now — DISPLAYED, never acted on, the
+   * same bargain `sort` makes.
+   *
+   * `Table` does not filter. The rows arrive already narrowed by somebody else
+   * — `useTableFilters` in memory, or the server — and this only decides which
+   * trigger reads as active and what value it shows. One component then serves
+   * both cases with the same markup.
+   *
+   * A column absent from this map, or holding `''`, is unfiltered: the two are
+   * the same fact and are treated as one, because `{ city: '' }` and `{}`
+   * describe the same view.
+   */
+  filters?: Readonly<Record<string, string>>;
+  /**
+   * A column's filter was applied, or cleared. It receives the KEY and the
+   * whole VALUE — never a keystroke, and never the resulting map: the component
+   * reports the intent and whoever owns the state computes the transition, so a
+   * clear is an apply of `''` rather than a second callback.
+   *
+   * `useFilterState` and `useTableFilters` supply it through `props`.
+   */
+  onFilterApply?: (key: string, value: string) => void;
+  /**
    * Which rows are picked. With `onRowSelectToggle` it adds the checkbox
    * column — the column is OURS to draw rather than yours to write as a `cell`,
    * because the part nobody gets right is not the box, it is what the box is
@@ -250,6 +318,13 @@ interface TableComposed extends TableShared {
    */
   sort?: never;
   onSortToggle?: never;
+  /**
+   * Refused with `sort`, and for the same reason: the trigger is drawn from the
+   * column list, and there is none here. Put `TableFilterTrigger` in your own
+   * `TableHeaderCell` and drive it with `useFilterState`.
+   */
+  filters?: never;
+  onFilterApply?: never;
   /**
    * Refused for the same reason as `sort`: the checkbox column is generated
    * from the column list, and there is none here. Write the cells yourself and

@@ -82,7 +82,7 @@ export function useRowSelection(
     // label and its effect come from different numbers — measured, an offer
     // reading "Select all 7" that selected 2,450 — so the bar derives the one
     // from the other.
-    barProps: {
+    toolbarProps: {
       selection: state,
       total,
       onSelectEverything: () => setState(EVERYTHING_SELECTED),

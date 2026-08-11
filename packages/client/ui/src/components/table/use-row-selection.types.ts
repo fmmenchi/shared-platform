@@ -1,6 +1,6 @@
 import type { ControlledUpdater } from '../../primitives/use-controlled.js';
 import type { Selection } from '../../selection/selection.types.js';
-import type { TableSelectionBarProps } from '../table-selection-bar/table-selection-bar.types.js';
+import type { TableToolbarProps } from '../table-toolbar/table-toolbar.types.js';
 
 export interface UseRowSelectionOptions {
   /**
@@ -47,7 +47,7 @@ export interface UseRowSelectionResult {
    */
   setSelection: (next: ControlledUpdater<Selection>) => void;
   /**
-   * Spread onto `TableSelectionBar` — the persistent statement of the count,
+   * Spread onto `TableToolbar` — the persistent statement of the count,
    * and the only place `exclude` is reachable through our own code.
    *
    * Typed by PICKING the bar's own props rather than restating their shape: an
@@ -55,11 +55,15 @@ export interface UseRowSelectionResult {
    * gets no excess-property check, and the callback is silently dropped onto a
    * `<div>` as an unknown attribute.
    */
-  barProps: Pick<TableSelectionBarProps, 'selection' | 'total' | 'onClear'> &
-    // The hook ALWAYS supplies the escalation, even though the bar takes it as
-    // optional — whether the offer appears is `total`'s business, not this
-    // one's. Saying so here is what lets a consumer call it without a guard.
-    Required<Pick<TableSelectionBarProps, 'onSelectEverything'>>;
+  toolbarProps: Pick<TableToolbarProps, 'total'> &
+    // THE HOOK ALWAYS SUPPLIES THESE, even though the toolbar takes them as
+    // optional — it has to, because a table that filters and does not select
+    // has a toolbar too. Whether the escalation is OFFERED is `total`'s
+    // business, not this one's. Saying so here is what lets a consumer call
+    // them without a guard.
+    Required<
+      Pick<TableToolbarProps, 'selection' | 'onSelectEverything' | 'onClear'>
+    >;
   /** Spread onto `Table`. */
   props: {
     selection: Selection;

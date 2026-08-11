@@ -133,7 +133,7 @@ describe('useRowSelection and the count', () => {
 });
 
 describe('useRowSelection and the bar', () => {
-  // Tested here rather than through `TableSelectionBar`: `barProps` is hook
+  // Tested here rather than through `TableToolbar`: `toolbarProps` is hook
   // logic, and it shipped with its two escalations exercised by nothing.
   function BarHarness(props: UseRowSelectionOptions) {
     const selection = useRowSelection(props);
@@ -141,18 +141,18 @@ describe('useRowSelection and the bar', () => {
       <>
         <button
           type="button"
-          onClick={() => selection.barProps.onSelectEverything()}
+          onClick={() => selection.toolbarProps.onSelectEverything()}
         >
           everything
         </button>
-        <button type="button" onClick={() => selection.barProps.onClear()}>
+        <button type="button" onClick={() => selection.toolbarProps.onClear()}>
           clear
         </button>
-        <output data-mode="">{selection.barProps.selection.mode}</output>
+        <output data-mode="">{selection.toolbarProps.selection.mode}</output>
         <output data-ids="">
-          {[...selection.barProps.selection.ids].sort().join(',')}
+          {[...selection.toolbarProps.selection.ids].sort().join(',')}
         </output>
-        <output data-count="">{String(selection.barProps.total)}</output>
+        <output data-count="">{String(selection.toolbarProps.total)}</output>
       </>
     );
   }

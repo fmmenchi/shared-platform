@@ -1,7 +1,7 @@
 import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
 
 import * as TableStories from './table.stories.tsx';
-import { TableSelectionBar } from '../table-selection-bar/table-selection-bar.component.js';
+import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 
 <Meta of={TableStories} />
 
@@ -23,13 +23,14 @@ Rows and columns, announced correctly.
 
 ## Anatomy
 
-| part                                         | what it is                                              |
-| -------------------------------------------- | ------------------------------------------------------- |
-| `Table`                                      | the `<table>`, the caption, and the column model        |
-| `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable         |
-| `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express |
-| `TableSelectionBar`                          | what is selected, on screen — and the bulk actions      |
-| the scroll region                            | added by `stickyHeader`: the box the header sticks in   |
+| part                                         | what it is                                                |
+| -------------------------------------------- | --------------------------------------------------------- |
+| `Table`                                      | the `<table>`, the caption, and the column model          |
+| `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable           |
+| `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express   |
+| `TableToolbar`                               | what is selected, on screen — and the bulk actions        |
+| `TableFilterTrigger`                         | one column's filter: the control, and the editor it opens |
+| the scroll region                            | added by `stickyHeader`: the box the header sticks in     |
 
 ## Props
 
@@ -37,9 +38,9 @@ Rows and columns, announced correctly.
 
 <Controls of={TableStories.Default} />
 
-### TableSelectionBar
+### TableToolbar
 
-<ArgTypes of={TableSelectionBar} />
+<ArgTypes of={TableToolbar} />
 
 ## Usage
 
@@ -182,21 +183,23 @@ Three consequences worth knowing before you build on it:
 - **Unticking the header under an `exclude` rule clears the selection whole**, rather than narrowing it to "everything except the twenty you can see". Nobody means the second thing, and the first version did it: the box, the rows and the count all read zero while the rule still selected every row on the other 499 pages — a delete confirmed as "0 rows" that removes 9,997.
 - **`count` is `undefined` under an `exclude` rule** unless you pass `total`, and that is an answer rather than a gap. `total` is the **result set's** size, never the page's: handing over `rows.length` turns "everything except three of ten thousand" into "seventeen", which is how a confirmation dialog says "delete 3 records" and deletes ten thousand.
 
-#### The bar that says so, and reaches past the page
+#### The toolbar: what the view is showing, and what you can do to it
 
 <Canvas of={TableStories.BulkActions} />
 
 ```tsx
 const selection = useRowSelection({ total: data.total });
 
-<TableSelectionBar {...selection.barProps}>
+<TableToolbar {...selection.toolbarProps}>
   <ToolbarItem>
     <Button onClick={remove}>Elimina</Button>
   </ToolbarItem>
-</TableSelectionBar>;
+</TableToolbar>;
 ```
 
-`Table`'s live region announces a change **once** and falls silent, which is right for an announcement and useless as a state: nothing answers "how many are selected?" a minute later, or after tabbing back. `TableSelectionBar` is that answer, on screen, for everybody — and deliberately **not** a live region itself, since two of them over one fact say it twice. Both read the same catalog, so the screen and the announcement cannot drift apart.
+`Table`'s live region announces a change **once** and falls silent, which is right for an announcement and useless as a state: nothing answers "how many are selected?" a minute later, or after tabbing back. `TableToolbar` is that answer, on screen, for everybody — and deliberately **not** a live region itself, since two of them over one fact say it twice.
+
+**It is one container, not one per feature.** It began as a selection bar and filters were about to arrive as a second one — two landmarks appearing and disappearing on unrelated schedules, which is two rotor entries coming and going for reasons a reader cannot correlate. Permanent, with contents that change, it is a stable destination: `summary` is the slot for what the view is showing, the selection composes itself, and `children` are your bulk actions. Given nothing to say and nothing to do it renders nothing at all.
 
 It is also where `exclude` becomes reachable. Give the hook a `total` and, whenever fewer rows are selected than the query matched, the bar offers **"Select all 2,450"** — the escalation that produces "everything except these". Before it existed, a consumer had to assemble that from an exported constant, which is exactly the shape every review of this model called a trap.
 
@@ -204,13 +207,85 @@ The offer is keyed on `count < total`, not on the page being covered, and that i
 
 Three things it does that a hand-rolled bar does not:
 
-- **The actions are a `Toolbar`**, so six bulk actions cost one tab stop rather than six — in a bar that appears and disappears, which would otherwise grow and shrink the reader's keyboard under them.
+- **The actions are a `Toolbar`**, so six bulk actions cost one tab stop rather than six.
 - **Focus comes back when the bar goes** — from our Clear button or from a bulk action of yours. A conditional bar unmounts the control that was just used, and focus falls to `<body>`: the classic way a keyboard user loses their place.
 - **The count goes through `Intl`.** English groups four digits and Italian does not — `Select all 2,450` and `Seleziona tutte le 2450` — which is not something a template gets right.
 
 **Wiring it yourself?** `Table` reports intents here exactly as it does for sorting, so the transitions are exported too — `toggleRow`, `toggleRows`, `coverageOf`, `isRowSelected`. Use them rather than reading `mode` in your own code: the two readings of `ids` are the one place this model bites, and `useRowSelection` also gives you `setSelection` for the changes that are not a single toggle, like a shift-click range.
 
 **It is not a projection parameter.** Sorting and filtering derive the rows; selection is downstream of them and derives nothing, so it belongs in a request body rather than in a query key — which is also why it is a `Set` and not an array. Putting it in a query key is how ticking a box refetches the page.
+
+### Declaring widths
+
+<Canvas of={TableStories.DeclaredWidths} />
+
+```tsx
+columns={[
+  { key: 'name', header: 'Nome', rowHeader: true },
+  { key: 'city', header: 'Città', width: '10ch' },
+  { key: 'age', header: 'Età', align: 'end', width: '6ch' },
+]}
+```
+
+`width` takes any CSS length. **`ch` is usually the right unit for text** — it is the width of a "0", so `'10ch'` is about ten digits and stays right when the reader changes their font size, which a `rem` does not.
+
+**Declaring one puts the table in `table-layout: fixed`**, and that is the point rather than a side effect: under the automatic algorithm a width is a _suggestion_ the browser overrides whenever the content is wider, so the declaration would sometimes do nothing and never say so — the class of defect this component spends its warnings on. Deriving the layout from the columns is also why there is no `layout` prop: a second fact that has to agree with the first is a second fact that can disagree with it.
+
+What it costs, said rather than discovered: content no longer widens its column, so long text wraps and `white-space: nowrap` clips. Columns with no width share what is left, equally. And the width is the **outer** one — the cell's own padding is inside it, so `'10rem'` measures 10rem on screen rather than 10rem plus sixteen pixels you did not choose.
+
+**This is layout, not a resize affordance.** Nothing here is dragged and nothing needs a keyboard; it is the declarative half of the same fact, and the one that covers the common case of "that column is three times wider than it needs to be".
+
+### Filtering
+
+```tsx
+const filters = useTableFilters(people, { defaultFilters: { city: 'Milano' } });
+
+<TableToolbar
+  {...filters.toolbarProps}
+  filterLabels={{ city: 'Città' }}
+  total={people.length}
+/>
+<Table
+  rows={filters.rows}
+  getRowId={(p) => p.id}
+  columns={[
+    { key: 'name', header: 'Nome', rowHeader: true },
+    { key: 'city', header: 'Città', filterable: true },
+  ]}
+  {...filters.props}
+/>;
+```
+
+**Filters are a projection parameter**, like the sort and unlike the selection: they decide which rows _exist_, so they belong in a query key and in a URL — a reader who filtered and reloaded expects the same twelve rows. That is why the state is a plain `Record<string, string>` and why there are two hooks: `useFilterState` holds it, `useTableFilters` is that plus the matching, so a consumer whose server filters never pulls the matcher into their bundle.
+
+**The matcher is not `includes`.** Every app that writes its own filter writes `String(cell).includes(query)`, and that comparison says "Àosta" does not contain "aosta"; in Turkish it says "İzmir" does not contain "izmir", because the dotted capital lowercases to an `i` followed by a combining dot. The fold is case first **in the reader's language**, then ß→ss, then the Greek final sigma, then `NFKD` and the marks — which also folds the ligature `ﬀ` and full-width `ＡＢＣ`.
+
+Two things it deliberately does **not** do:
+
+- **It keeps the Japanese voiced marks.** They are `Diacritic=Yes` and `NFKD` splits them off, so stripping the class blindly folds バス (bus) to ハス (lotus). Those are different words, and a filter that conflates them is a false-positive engine rather than a forgiving one.
+- **It honours Turkish casing**, so under `tr` a capital `I` folds to the dotless `ı` and "Istanbul" does not match "istanbul". Correct for Turkish words, surprising for loanwords, and the price of folding in the reader's language rather than the runtime's.
+
+**Apply, do not filter as you type.** `onFilterApply` is the moment a draft becomes the view. Filtering on every keystroke deletes rows under a reader continuously — the silent change sorting had, at a higher rate — and gives the live region nothing discrete to announce. The toolbar announces the new row count when it changes, because `Table`'s own region only exists when sorting or selection is wired and filtering happens outside the component.
+
+#### The control in the header
+
+`filterable` puts a **trigger** in the column's header — a small control that opens an editor — rather than an input sitting under the heading. The difference is what it costs when nobody is filtering: a permanent box is a tab stop on _every_ filterable column, always, plus a row of chrome above the data; the trigger is one stop, and what it opens exists for as long as the reader is editing. Compactness is a goal here, not a preference: a table is dense by definition and every row of chrome pushes the data further down.
+
+**Discriminated by region, not by menu.** Sorting is the heading; filtering is the control beside it; resizing (when it lands) is the boundary between two columns. Three distinct areas, three distinct affordances — which is why there is no single "column menu" absorbing all of them. The cost is stated: a column that both sorts and filters is **two tab stops**, and that is the price of a `<table>` rather than a `grid`, where the arrow keys would be ours to spend.
+
+**The state is in the name.** Applied, the trigger is called "Filter Città, currently Milano". The funnel — `FilterGlyph`, drawn here rather than borrowed, because an icon set is brand identity and lives app-side — is the second channel and not the only one, and the value drawn beside it is `aria-hidden` and free to truncate — a state carried by colour alone reaches nobody who cannot see it, and hearing the value twice is its own defect.
+
+**Every way out that is not Apply discards.** `Escape`, a click outside, closing — all of them leave the applied value alone, and the draft is reseeded from it on the next visit, so nothing abandoned waits around to be applied by a later Enter. Clearing is an **apply of nothing** rather than a second mode: same callback, same announcement, and the key leaves the state rather than sitting there empty, because `{ city: '' }` and `{}` are two cache entries for one view.
+
+**The column's words live in two places, and that is the toolbar's price.** `Column.label` names the trigger and the header cell; `TableToolbar.filterLabels` names the same column in the summary, because the toolbar never sees the column model — which is what lets it work above a table it knows nothing about. Pass both, or the summary prints the key.
+
+For a layout the column model cannot express, `TableFilterTrigger` is exported on its own and takes `label`, `value` and `onApply` — drive it with `useFilterState` from your own `TableHeaderCell`.
+
+**Give the toolbar `filterLabels`.** The summary names the columns in force, and without a label it prints the key: `Filtrato per: created_at`, a developer identifier inside localized copy. It warns. Values are deliberately not shown — a value is whatever was typed, it belongs beside its own control where it is editable, and as a sentence it grows without bound.
+
+**A column whose value does not mean "contains" says so**, with a predicate per key — a number that means "at least", a date that means "since". A key matching neither a predicate nor a row property warns, because otherwise it empties the table and blames a column nobody can see.
+
+**While a filter is on, the "select all matching" offer is withheld.** It means everything the query matched, `total` is the unfiltered size, and the two cannot be reconciled from inside the toolbar — so the offer would have taken the rows the reader had just filtered away.
 
 ### A header that stays
 
@@ -270,6 +345,20 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 
 **What the column model cannot express yet**, so you know before you start: per-row attributes (a `className` or `data-*` on a `<tr>`) and column widths, which arrive with resizing. The first is the one most likely to push a consumer into composed mode, and it is worth telling us if it does.
 
+## i18n
+
+Three catalogs, because they say different things about different facts. Override a label through the `messages` port with `"<namespace>.<key>"`.
+
+| namespace            | keys                                                                                                                                                                                    |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `table`              | `empty` · `sortedAscending` · `sortedDescending` · `sortCleared` · `select` · `selectRow` · `selectRowNamed` · `selectAllRows` · `selectionCount` · `selectionAll` · `selectionCleared` |
+| `tableToolbar`       | `region` · `actions` · `count` · `all` · `allExcept` · `selectAllMatching` · `clear` · `filtered` · `filteredCount` · `unfiltered` · `unfilteredCount` · `filteredBy` · `clearFilters`  |
+| `tableFilterTrigger` | `name` · `activeName` · `heading` · `apply` · `clear`                                                                                                                                   |
+
+`table` announces what a click just did to the rows on **this page**; `tableToolbar` states what the rule and the filters cover, including rows nobody here has seen; `tableFilterTrigger` names one column's control and nothing else. What the trigger shares with the toolbar is the fact, not the sentence. They were one catalog briefly and it did not survive being checked — the shared keys rendered differently in the same instant while counting different things.
+
+**The `tableToolbar` namespace was `tableSelectionBar`.** An app overriding the old keys is overriding nothing.
+
 ## Accessibility
 
 - **`scope` is derived from position**, not configured — and there are **three** positions, not two: a `<th>` in a header or footer section heads a column, one in the body heads a row, and one with no section around it gets **no `scope` at all**. That last case matters: with the attribute absent the browser's own header-assignment algorithm works it out correctly, so guessing there would overwrite a right answer with a wrong one. It warns in development instead.
@@ -281,12 +370,12 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 - **The sort trigger is a real `Button`**, so the focus ring, the touch target, keyboard activation and the forced-colors handling arrive with it rather than being re-derived. `NavGroup` hand-rolled one once and shipped with no focus ring at all.
 - **All three stops are announced.** Reordering rows is invisible to anyone not looking, so a live region reports each change — including the **clear**, which used to render an empty string. Emptying a live region announces nothing: `role="status"` implies `aria-relevant="additions text"`, so a removal is not in the relevant set, and the stop this component argues hardest for was the one nobody was told about.
 - **It is silent on arrival.** The region is rendered rather than pushed from an effect, and stays empty until the reader activates a header — so a table that mounts already sorted does not announce a sentence from nowhere.
-- **A header that is not words needs `sortLabel`.** `header` is a `ReactNode`, so it may be an icon or an `<abbr>`; without a label the announcement falls back to the column's `key` and reads a developer identifier aloud, untranslated, inside localized copy. It warns.
+- **A header that is not words needs `label`.** `header` is a `ReactNode`, so it may be an icon or an `<abbr>`; without a label the announcement falls back to the column's `key` and reads a developer identifier aloud, untranslated, inside localized copy. It warns.
 - **Every selection checkbox says which row it selects**, by pointing `aria-labelledby` at the row's own header cell rather than stringifying it — so an icon or an `<abbr>` in that cell still reads correctly. Without a `rowHeader` column there is no noun to point at, and the honest fallback ("Select row", identical on every row) warns rather than pretending a row number means something after a re-sort.
 - **A selected row is announced by its checkbox and nothing else**, because `aria-selected` is only meaningful inside a `grid` or `treegrid` and is not announced on a row in a table. Only the header box announces a count, and only because it changes many rows at once — repeating one over every individual tick doubles what the checkbox already says. Its sentence is captured when you click it, not derived from the current rows: derived, it re-announced on the next row tick and on a refetch that returned one row fewer, with nobody having touched anything.
 - **The verb lives outside the table.** A row whose name is an element rather than a string — a link, an icon, an `<abbr>` — has no string to put in a message, so its checkbox is labelled by a hidden "Select" plus the row's own header cell. That span used to sit in the header cell, which is where a `columnheader` takes its name from, so the column announced itself as "Select Select all rows" and every cell in it carried the extra word.
-- **The selection bar is a named region**, whose accessible name is its own count — "Selection: 2, region". It is not announced when it appears, because the table's live region already carries the count and two of them over one fact say it twice; being a landmark is what makes it findable to a reader who never saw it arrive. Its toolbar is `aria-describedby` the count, so tabbing into the actions states the number rather than only "Selection actions, toolbar".
-- **Render the bar AFTER the table.** Before it, forward Tab never reaches the actions the reader just summoned — they would walk backwards past every row checkbox. Put it visually above with CSS if the design wants it there; the package's rule is that visual position is CSS's business.
+- **The toolbar is a named region with a STABLE name** — "Table controls" — and its summary is its description. The name used to be the count, which answered "how many?" through the landmark and was right for a bar that existed only while a selection did; permanent, a name that changed with the view would rename the landmark under the reader. Both the region and its `Toolbar` are `aria-describedby` the summary, so entering the landmark and tabbing straight into the actions both state it.
+- **Render the toolbar ABOVE the table**, and that is a reversal of what the selection bar shipped with. A bar that _appeared_ when you selected had to come after, because forward Tab never reached actions that materialised behind the reader. A permanent one is not a surprise: it is there before you act, it is a named landmark — one jump with a screen reader, a few Shift+Tabs otherwise — and the filters that share it **describe what you are about to read**, which is worthless after the rows. The residual cost is real and stated: acting on a selection means going back up.
 - **Focus comes back when the bar goes**, by whatever route: our Clear button, or a bulk action of yours that empties the selection. The element focused when the bar appeared is restored, which scrolls the page back to it — a focus you cannot see is not a focus. A bar that mounts already visible has no origin to return to, and says so by doing nothing.
 - **A sticky header takes a tab stop with it — but only when there is something to scroll.** The container is focusable and named by the `<caption>`, because a region that scrolls and cannot be focused is unreachable to anyone without a pointer; when nothing scrolls it withholds both, since a tab stop over content that does not move is a stop for nothing. The header itself is painted opaque, or the rows scroll straight through it.
 - **A focused control is never scrolled under the header.** Moving BACKWARD through a table — Shift+Tab up through the rows, the ordinary way to review a list — makes the browser scroll the target to the top of the scrollport, which is exactly where the header is: measured at 36px of a focused checkbox buried, against 18px of checkbox. The container is told how tall its own header is, so it stops there instead. Chromium already handles the programmatic `.focus()` case; sequential navigation is the one that needed it (WCAG 2.4.11).

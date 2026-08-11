@@ -44,3 +44,14 @@ export type {
   SortDirection,
   Comparator,
 } from '../../sorting/compare.types.js';
+export { useFilterState } from './use-filter-state.js';
+export type {
+  UseFilterStateOptions,
+  UseFilterStateResult,
+} from './use-filter-state.types.js';
+export { useTableFilters } from './use-table-filters.js';
+export type {
+  UseTableFiltersOptions,
+  UseTableFiltersResult,
+} from './use-table-filters.types.js';
+export type { FilterState, RowFilter } from '../../filtering/filter.types.js';

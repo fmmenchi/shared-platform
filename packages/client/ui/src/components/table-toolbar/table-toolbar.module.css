@@ -1,4 +1,4 @@
-/* The selection bar: what is picked, and what can be done with it. */
+/* The table's own controls: what the view is showing, and what can be done to it. */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 
 @layer fmmenchi {
@@ -34,8 +34,22 @@
     border-radius: var(--fm-radius-md);
   }
 
-  .count {
+  /* The summary area: whatever the view is showing, in words. A flex row of
+     its own so a filter summary and a selection count sit side by side rather
+     than running together. */
+  .summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--fm-space-inline-s);
     font-weight: var(--fm-font-weight-medium);
+  }
+
+  /* The columns a filter is on, said more quietly than the count: it is context
+     for the number beside it, not a second headline. */
+  .quiet {
+    font-weight: var(--fm-font-weight-regular);
+    color: var(--fm-color-muted-foreground);
   }
 
   /* The actions sit at the far end, and wrap under the count on a narrow

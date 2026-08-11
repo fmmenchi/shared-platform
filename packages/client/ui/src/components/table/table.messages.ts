@@ -33,7 +33,7 @@ import { defineMessages } from '../../i18n/messages.js';
  * gender; "Selezione: 3" / "التحديد: 3" names the thing instead, which is what
  * a counter beside a filter does in every language.
  *
- * `TableSelectionBar` HAS ITS OWN CATALOG, and briefly did not. Sharing this
+ * `TableToolbar` HAS ITS OWN CATALOG, and briefly did not. Sharing this
  * one was argued as earned — "the bar and the live region say the same two
  * sentences about the same fact" — and neither half survived being checked:
  * three of the five keys the bar read were referenced by nothing else, so they

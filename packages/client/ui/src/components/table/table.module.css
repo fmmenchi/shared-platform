@@ -48,6 +48,19 @@
      table look like a spreadsheet and read like a cage; the eye already groups
      a column by alignment. */
   .table :is(th, td) {
+    /* A DECLARED WIDTH HAS TO BE THE OUTER ONE. Without this `width: '10rem'`
+       renders 176px — the content box plus the cell's own 8px of inline
+       padding on each side — so the number a consumer wrote and the number on
+       screen differ by an amount they cannot see and did not choose. Measured
+       before it was here. No effect on a cell with no declared width, which is
+       every cell until somebody asks. */
+    box-sizing: border-box;
+    /* WHAT MAKES THE STATED COST TRUE. The `width` docs say long text wraps —
+       and a token with no break opportunity (a surname, an email, an id) does
+       not wrap, does not clip, and PAINTS OVER the next column: measured at
+       213px of overlap on a `6ch` column. Two strings on the same pixels are
+       unreadable to everyone. */
+    overflow-wrap: anywhere;
     padding-block: var(--fm-space-internal-s);
     padding-inline: var(--fm-space-inline-s);
     text-align: start;
@@ -155,14 +168,34 @@
     color: var(--table-surface-foreground);
   }
 
+  /* A DECLARED WIDTH ONLY MEANS SOMETHING UNDER `fixed`. The automatic
+     algorithm treats one as a suggestion and overrides it whenever the content
+     is wider, so the declaration would sometimes do nothing and never say so.
+     Set by the component when any column asks for a width — never by a prop of
+     its own, which would be a second fact able to disagree with the first. */
+  .table[data-layout='fixed'] {
+    table-layout: fixed;
+  }
+
   /* The checkbox column takes the width of a checkbox and no more: a column of
      boxes given an equal share of the table pushes the data around for nothing.
-     `1%` rather than a length — a table's layout algorithm reads a small
+     `1%` rather than a length — the AUTOMATIC layout algorithm reads a small
      percentage as "as narrow as the content allows", and the content is one
      control whose size the platform owns. */
   .selectCell {
     inline-size: 1%;
     white-space: nowrap;
+  }
+
+  /* AND THE FIXED ALGORITHM READS IT LITERALLY, which is the trap: `1%` of a
+     1000px table is 10px, and the checkbox is 18. Under `fixed` the column has
+     to be told a real width — the control plus the inline padding the cell
+     already has on both sides. */
+  /* The child chain, not a descendant selector — the leak this file already
+     diagnosed once for the row separators, 110 lines up. As a descendant it
+     forced the selection column of a table nested in a cell to 40px. */
+  .table[data-layout='fixed'] > * > tr > .selectCell {
+    inline-size: calc(1.5rem + 2 * var(--fm-space-inline-s));
   }
 
   /* BOTH HALVES OF THE PAIR, and that is the point rather than thoroughness.
@@ -206,6 +239,10 @@
      header's own weight, no padding of its own, and the cell's alignment. */
   .sortTrigger {
     inline-size: 100%;
+    /* A FLOOR, because a declared width can be narrower than a target. On a
+       `3ch` column the trigger measured 8×32 against the 24×24 WCAG 2.5.8 asks
+       — a target the width made small, not one the component chose. */
+    min-inline-size: 24px;
     /* STATED, not inherited. It was `inherit`, commented as taking the cell's
        alignment — `justify-content` is not an inherited property and the `<th>`
        is not a flex container, so it resolved to `normal`, which behaves as
@@ -282,5 +319,40 @@
     .sortArrow[data-direction='desc'] [data-arrow='desc'] {
       transform: none;
     }
+  }
+
+  /* The header's controls when there are two of them. It exists BECAUSE the
+     cell cannot do this itself: `display: flex` on a `<th>` takes it out of the
+     table box model, an anonymous cell is generated around it, and the declared
+     column widths stop deciding anything. The ROLE survives — measured — so the
+     reason is layout, not semantics. */
+  .headerControls {
+    display: flex;
+    align-items: center;
+    gap: var(--fm-space-internal-xs);
+    /* The filter trigger keeps to the far edge, so a reader scanning a row of
+       headers finds it in one place. */
+    justify-content: space-between;
+    /* CLIPPED AT THE CELL. Under `table-layout: fixed` a declared width is
+       authoritative, and this row of controls has a hard minimum that
+       `overflow-wrap` cannot reduce — so in a column narrower than the controls
+       the trigger PAINTED AND HIT-TESTED inside the next column's header
+       (measured: 11.8px past the cell, `elementFromPoint` over column 2 landing
+       on column 1's button). `clip` and not `hidden` because this must not
+       become a scroll container, and the margin keeps a focus ring that sits
+       just outside a control's box from being cut with it. */
+    overflow: clip;
+    overflow-clip-margin: 3px;
+  }
+
+  /* `text-align` cannot reach into a flex box, which is why `.sortTrigger` has
+     the same pair — and why an end-aligned filterable column put its heading at
+     the LEFT edge while every number under it sat at the right. */
+  [data-align='end'] .headerControls {
+    justify-content: flex-end;
+  }
+
+  [data-align='center'] .headerControls {
+    justify-content: center;
   }
 }

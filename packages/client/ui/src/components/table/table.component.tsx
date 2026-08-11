@@ -11,6 +11,7 @@ import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
+import { TableFilterTrigger } from '../table-filter-trigger/table-filter-trigger.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { coverageOf, isRowSelected } from '../../selection/selection.js';
@@ -79,6 +80,8 @@ function Table<T>(props: TableProps<T>) {
     children,
     sort,
     onSortToggle,
+    filters,
+    onFilterApply,
     selection,
     onRowSelectToggle,
     onSelectAllToggle,
@@ -119,6 +122,34 @@ function Table<T>(props: TableProps<T>) {
   // spreads in — leaving the header sticky with nothing to stick inside, which
   // is the exact combination this feature exists to make unreachable.
   const sticky = stickyHeader === true;
+
+  // DERIVED, NOT A SECOND PROP. A `layout` prop would be a fact that has to
+  // agree with `Column.width` and can be set to disagree with it — the shape
+  // this component has spent four milestones removing. One column asking for a
+  // width is the whole condition.
+  const sized = columns?.filter((column) => column.width !== undefined) ?? [];
+  const fixed = sized.length > 0;
+
+  // A WIDTH CSS CANNOT PARSE IS DROPPED BY THE CSSOM, silently — and it still
+  // switches the table's layout algorithm, so one typo re-lays-out every OTHER
+  // column into an equal share. Measured with `width: 'banana'`.
+  useDevWarning(
+    sized.some(
+      (column) =>
+        typeof CSS !== 'undefined' &&
+        !CSS.supports('inline-size', column.width as string),
+    ),
+    'Table: a column declares a `width` that is not a valid CSS length, so the browser drops it — and the table is in a fixed layout anyway, which re-sizes every other column. Check the value.',
+  );
+
+  // EVERY column sized is the one arrangement where declaring a width stops
+  // meaning what it says: the fixed algorithm redistributes the table's leftover
+  // width across the columns, so the declarations become ratios. Leave one
+  // column unsized and the rest hold exactly.
+  useDevWarning(
+    fixed && columns !== undefined && sized.length === columns.length,
+    'Table: every column declares a `width`, so the fixed layout has nothing to absorb the leftover and spreads it across all of them — the declared values become proportions rather than sizes. Leave at least one column unsized.',
+  );
 
   const scroller = useRef<HTMLDivElement>(null);
   // WHETHER IT ACTUALLY SCROLLS, and it decides the tab stop. A region that
@@ -205,6 +236,44 @@ function Table<T>(props: TableProps<T>) {
     'Table: a column is marked `sortable` but nothing is wired to `onSortToggle`, so the mark is ignored and the header renders as plain text. Pass the props from `useTableSort` (or `useSortState`, if something else does the ordering).',
   );
 
+  // The same rule the sort trigger follows, and it is the rule rather than a
+  // copy of it: a control that reports an intent nobody handles is a dead
+  // control, so it is not drawn.
+  const filterable =
+    columns?.some((column) => column.filterable === true) === true;
+  const filtersWired = filterable && Boolean(onFilterApply);
+
+  useDevWarning(
+    filterable && !onFilterApply,
+    'Table: a column is marked `filterable` but nothing is wired to `onFilterApply`, so no trigger is drawn. Pass the props from `useTableFilters` (or `useFilterState`, if the server does the narrowing).',
+  );
+
+  // The trigger's accessible name IS the column's name, so a column with an
+  // icon for a `header` produces "Filter first_name" — the same failure the
+  // sorted column warns about, in a control rather than an announcement.
+  const unnamed = columns?.find(
+    (column) =>
+      column.filterable === true &&
+      column.label === undefined &&
+      typeof column.header !== 'string',
+  );
+  useDevWarning(
+    filtersWired && unnamed !== undefined,
+    `Table: the filterable column \`${String(unnamed?.key)}\` has a \`header\` that is not a string, so its filter control is called after its \`key\` — a developer identifier, untranslated, inside localized copy. Give the column a \`label\`.`,
+  );
+
+  // THE PROP THIS RELEASE REMOVED, and the reason it gets a warning rather than
+  // a line in the changelog: `Column.sortLabel` shipped in 0.3.1, and a consumer
+  // building their columns from a mapped or spread source gets NO excess-
+  // property check — so the rename lands as silence, with the announcement
+  // falling back to the column's `key`. TypeScript catches the literal case;
+  // this catches the other one.
+  const renamed = columns?.some((column) => 'sortLabel' in (column as object));
+  useDevWarning(
+    renamed === true,
+    "Table: a column carries `sortLabel`, which is now `label` — it was never about sorting, and the filter control is named from it too. The old name is ignored, so the announcement falls back to the column's `key`.",
+  );
+
   const sortedColumn = columns?.find((column) => column.key === sort?.key);
 
   // A `sort` naming no column is the shape a persisted state arrives in after
@@ -218,9 +287,9 @@ function Table<T>(props: TableProps<T>) {
 
   useDevWarning(
     sortedColumn !== undefined &&
-      sortedColumn.sortLabel === undefined &&
+      sortedColumn.label === undefined &&
       typeof sortedColumn.header !== 'string',
-    'Table: the sorted column has a `header` that is not a string, so the announcement falls back to its `key` — a developer identifier, untranslated, read out inside localized copy. Give the column a `sortLabel`.',
+    'Table: the sorted column has a `header` that is not a string, so the announcement falls back to its `key` — a developer identifier, untranslated, read out inside localized copy. Give the column a `label`.',
   );
 
   // THE CHECKBOX COLUMN EXISTS ONLY WHEN SOMETHING LISTENS, the same rule the
@@ -313,7 +382,7 @@ function Table<T>(props: TableProps<T>) {
               sort.direction === 'asc' ? 'sortedAscending' : 'sortedDescending',
               {
                 column:
-                  sortedColumn.sortLabel ??
+                  sortedColumn.label ??
                   (typeof sortedColumn.header === 'string'
                     ? sortedColumn.header
                     : sortedColumn.key),
@@ -341,6 +410,7 @@ function Table<T>(props: TableProps<T>) {
       aria-busy={busy || undefined}
       data-density={density}
       data-sticky-header={sticky ? '' : undefined}
+      data-layout={fixed ? 'fixed' : undefined}
       className={cn(styles.table, className)}
     >
       {/* First child, as the parser requires — and a real `<caption>` rather
@@ -395,11 +465,79 @@ function Table<T>(props: TableProps<T>) {
               {columns.map((column) => {
                 const active = sort?.key === column.key;
                 const canSort = column.sortable === true && onSortToggle;
+                const canFilter = column.filterable === true && onFilterApply;
+                // THE COLUMN'S NAME IN WORDS, computed once: it names the
+                // trigger and it names the cell, and two copies of a fallback
+                // chain are two places for those to disagree.
+                const columnName =
+                  column.label ??
+                  (typeof column.header === 'string'
+                    ? column.header
+                    : column.key);
+
+                // THE COLUMN'S OWN CONTENT, control or not — built once
+                // because the filter trigger puts it inside a wrapper and the
+                // plain header does not, and a second copy of this JSX is a
+                // second place for the two to drift apart.
+                const heading = canSort ? (
+                  // OUR Button, not a hand-rolled `<button>`. `NavGroup`
+                  // wrote its own once — `border: 0; background: none`, the
+                  // first two lines of what `button.module.css` does — and
+                  // shipped with no focus ring at all, invisible to every
+                  // test because the test page has no Preflight.
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={styles.sortTrigger}
+                    onClick={() => {
+                      // The KEY, not the next state. The transition is
+                      // computed by whoever owns the state and can read
+                      // its latest value; computed here it came from the
+                      // `sort` prop of the render that drew this arrow,
+                      // which a consumer committing in a transition has
+                      // not refreshed — two clicks then landed on
+                      // ascending twice.
+                      setActed({ kind: 'sort' });
+                      onSortToggle(column.key);
+                    }}
+                  >
+                    {column.header}
+                    <SortArrow
+                      direction={active ? sort.direction : undefined}
+                    />
+                  </Button>
+                ) : (
+                  column.header
+                );
 
                 return (
                   <TableHeaderCell
                     key={column.key}
                     align={column.align}
+                    // AN EXPLICIT NAME, and only when a control that is not the
+                    // heading lives in the cell. A `columnheader` is named FROM
+                    // ITS CONTENTS, and a name is computed for each descendant
+                    // — so the trigger's own `aria-label` joined the column's
+                    // name and every cell under it was announced as "Regione
+                    // Filter Regione, currently Lombardia". Measured against
+                    // Chromium's AX tree, both closed and open; `dom-
+                    // accessibility-api`, which this suite's matchers and axe
+                    // use, does not reproduce it, so no assertion on the NAME
+                    // can guard this — the test asserts the attribute instead.
+                    //
+                    // It is the same defect the checkbox column already fixed
+                    // by moving its words out of the cell, and the sort trigger
+                    // never had, because that button's name IS the heading.
+                    aria-label={canFilter ? columnName : undefined}
+                    // ON THE HEADER CELL ONLY, because under `table-layout:
+                    // fixed` the first row is what decides every column — the
+                    // body cells inherit the answer and repeating it there
+                    // would be the same declaration written N times.
+                    style={
+                      column.width === undefined
+                        ? undefined
+                        : { inlineSize: column.width }
+                    }
                     // THE STATE OF THE DATA, and separately the invitation.
                     // `ascending`/`descending` is not gated on `sortable`:
                     // rows that arrive ordered ARE ordered, and a read-only
@@ -420,35 +558,29 @@ function Table<T>(props: TableProps<T>) {
                           : undefined
                     }
                   >
-                    {canSort ? (
-                      // OUR Button, not a hand-rolled `<button>`. `NavGroup`
-                      // wrote its own once — `border: 0; background: none`, the
-                      // first two lines of what `button.module.css` does — and
-                      // shipped with no focus ring at all, invisible to every
-                      // test because the test page has no Preflight.
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={styles.sortTrigger}
-                        onClick={() => {
-                          // The KEY, not the next state. The transition is
-                          // computed by whoever owns the state and can read
-                          // its latest value; computed here it came from the
-                          // `sort` prop of the render that drew this arrow,
-                          // which a consumer committing in a transition has
-                          // not refreshed — two clicks then landed on
-                          // ascending twice.
-                          setActed({ kind: 'sort' });
-                          onSortToggle(column.key);
-                        }}
-                      >
-                        {column.header}
-                        <SortArrow
-                          direction={active ? sort.direction : undefined}
+                    {/* TWO CONTROLS NEED A BOX, and it cannot be the cell:
+                        `display: flex` on a `<th>` takes it out of the table
+                        box model, so an anonymous cell is generated around it
+                        and the declared column widths stop meaning anything.
+                        (The role SURVIVES — measured against Chromium's AX
+                        tree, a flexed `<th scope="col">` is still a
+                        `columnheader`. An earlier version of this comment
+                        claimed otherwise.) So the wrapper appears only when
+                        there is something to lay out, which is what earns
+                        it. */}
+                    {canFilter ? (
+                      <span className={styles.headerControls}>
+                        {heading}
+                        <TableFilterTrigger
+                          label={columnName}
+                          value={filters?.[column.key] ?? ''}
+                          onApply={(value) => {
+                            onFilterApply(column.key, value);
+                          }}
                         />
-                      </Button>
+                      </span>
                     ) : (
-                      column.header
+                      heading
                     )}
                   </TableHeaderCell>
                 );

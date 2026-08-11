@@ -8,7 +8,8 @@ import { TableRow } from '../table-row/table-row.component.js';
 import { TableFoot } from '../table-foot/table-foot.component.js';
 import { useTableSort } from './use-table-sort.js';
 import { useRowSelection } from './use-row-selection.js';
-import { TableSelectionBar } from '../table-selection-bar/table-selection-bar.component.js';
+import { useTableFilters } from './use-table-filters.js';
+import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
 import type { Column } from './table.types.js';
@@ -179,18 +180,12 @@ export const BulkActions: Story = {
 
     return (
       <div style={{ display: 'grid', gap: '0.75rem' }}>
-        <Table
-          caption="Persone"
-          rows={people}
-          getRowId={(p) => p.id}
-          columns={columns}
-          {...selection.props}
-        />
-        {/* AFTER the table, and that is not a layout preference. Placed before
-            it, forward Tab never reaches the actions the reader just summoned:
-            they would have to walk backwards past every row checkbox. Put it
-            visually on top with CSS if the design wants it there. */}
-        <TableSelectionBar {...selection.barProps}>
+        {/* ABOVE the table, and that is a reversal. As a bar that APPEARED
+            when you selected, it had to come after: forward Tab never reached
+            actions that materialised behind the reader. Permanent, it is not a
+            surprise — and the filters that will share it DESCRIBE what you are
+            about to read, which is worthless after the rows. */}
+        <TableToolbar {...selection.toolbarProps}>
           <ToolbarItem>
             <Button variant="ghost" size="sm">
               Esporta
@@ -201,7 +196,57 @@ export const BulkActions: Story = {
               Elimina
             </Button>
           </ToolbarItem>
-        </TableSelectionBar>
+        </TableToolbar>
+        <Table
+          caption="Persone"
+          rows={people}
+          getRowId={(p) => p.id}
+          columns={columns}
+          {...selection.props}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * The filter lives IN the header — a trigger that opens an editor, not a box
+ * sitting under the column heading. A permanent input is a tab stop on every
+ * filterable column whether anybody is filtering or not; the trigger is one
+ * stop, and what it opens lasts as long as the reader is editing.
+ *
+ * It applies rather than filtering as you type: the draft is held until Apply —
+ * or until Enter, because it is a real form — since rows disappearing per
+ * keystroke is the silent change sorting had, at a higher rate.
+ *
+ * Two channels for one fact, and neither of them is colour: the trigger's
+ * accessible name becomes "Filtra Città, attualmente Milano", and the toolbar
+ * above states the whole rule and offers the one control that undoes it all.
+ */
+export const Filterable: Story = {
+  render: function Render() {
+    const filters = useTableFilters(people, {
+      defaultFilters: { city: 'Milano' },
+    });
+
+    return (
+      <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <TableToolbar
+          {...filters.toolbarProps}
+          filterLabels={{ name: 'Nome', city: 'Città' }}
+          total={people.length}
+        />
+        <Table
+          caption="Persone"
+          rows={filters.rows}
+          getRowId={(p) => p.id}
+          columns={[
+            { key: 'name', header: 'Nome', rowHeader: true, filterable: true },
+            { key: 'city', header: 'Città', filterable: true },
+            { key: 'age', header: 'Età', align: 'end' },
+          ]}
+          {...filters.props}
+        />
       </div>
     );
   },
@@ -246,6 +291,33 @@ export const StickyHeader: Story = {
         scrollProps={{ style: { blockSize: '16rem' } }}
       />
     );
+  },
+};
+
+/**
+ * Declared widths. `width` takes any CSS length — `ch` is usually the right
+ * unit for text, because it is the width of a "0" and stays right when the
+ * reader changes their font size, which a `rem` does not.
+ *
+ * Declaring one puts the table in `table-layout: fixed`, and that is the point
+ * rather than a side effect: under the automatic algorithm a width is a
+ * suggestion the browser overrides whenever the content is wider, so the
+ * declaration would sometimes do nothing and never say so. What it costs is
+ * stated too — content no longer widens its column, so long text wraps.
+ *
+ * This is layout, not a resize affordance: nothing here is dragged and nothing
+ * needs a keyboard.
+ */
+export const DeclaredWidths: Story = {
+  args: {
+    caption: 'Persone',
+    rows: people,
+    getRowId: (p: Person) => p.id,
+    columns: [
+      { key: 'name', header: 'Nome', rowHeader: true },
+      { key: 'city', header: 'Città', width: '10ch' },
+      { key: 'age', header: 'Età', align: 'end', width: '6ch' },
+    ],
   },
 };
 

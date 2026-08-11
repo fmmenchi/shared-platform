@@ -355,11 +355,11 @@ describe('what it refuses to do quietly', () => {
       />,
     );
 
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('`sortLabel`'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('`label`'));
     warn.mockRestore();
   });
 
-  it('announces `sortLabel` when the header is not words', async () => {
+  it('announces `label` when the header is not words', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     function Labelled() {
@@ -372,7 +372,7 @@ describe('what it refuses to do quietly', () => {
             {
               key: 'name',
               header: <em>Nome</em>,
-              sortLabel: 'Nome',
+              label: 'Nome',
               rowHeader: true,
               sortable: true,
             },
