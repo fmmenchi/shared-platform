@@ -39,6 +39,65 @@ describe('useControlled', () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
+  it('composes two updates in one tick instead of losing the first', async () => {
+    // The defect this form exists for. Written as `setValue(next(current))`,
+    // both calls compute from the render value and the FIRST one vanishes —
+    // measured on row selection, where toggling two rows from one handler left
+    // one selected. Uncontrolled we are the only writer, so the last value we
+    // produced is the base, whether or not React has re-rendered with it.
+    function Counter() {
+      const [n, setN] = useControlled({ defaultValue: 0, name: 'Counter' });
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            setN((previous) => previous + 1);
+            setN((previous) => previous + 1);
+          }}
+        >
+          {n}
+        </button>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<Counter />);
+    const btn = screen.getByRole('button');
+
+    await user.click(btn);
+    expect(btn).toHaveTextContent('2');
+  });
+
+  it('tells onChange the same value it puts in state', async () => {
+    const onChange = vi.fn();
+    function Counter() {
+      const [n, setN] = useControlled({
+        defaultValue: 0,
+        onChange,
+        name: 'Counter',
+      });
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            setN((previous) => previous + 1);
+            setN((previous) => previous + 1);
+          }}
+        >
+          {n}
+        </button>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(<Counter />);
+    await user.click(screen.getByRole('button'));
+
+    // Not two calls both reporting 1: the notification and the state cannot
+    // disagree, or a consumer mirroring it into their own store drifts.
+    expect(onChange.mock.calls).toEqual([[1], [2]]);
+  });
+
   it('warns when switching controlled/uncontrolled', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { rerender } = render(<Toggle defaultValue={false} />);

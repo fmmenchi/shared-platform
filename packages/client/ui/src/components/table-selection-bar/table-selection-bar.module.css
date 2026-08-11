@@ -1,0 +1,46 @@
+/* The selection bar: what is picked, and what can be done with it. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /* THE PAGE'S OWN SURFACE, and the token matters more than it looks.
+     It painted `--fm-color-muted` first, which is the exact token `ghost` uses
+     for its HOVER (`button.module.css`) — so every control in this bar,
+     including the destructive one the docs put here, had a hover measured at
+     1.00:1 in both themes. Invisible by construction, and axe cannot see it:
+     it does not evaluate `:hover`.
+
+     `background` leaves `ghost` exactly where it is everywhere else in the
+     package, and both pairings it creates are ones the token package already
+     declares and validates: `background` × `foreground` for the text, and
+     `background` × `ring` for the focus outline that lands on it. Painting
+     nothing at all was the other candidate and is worse — a component that
+     sets a foreground and no surface is the axe failure this file already
+     shipped once, in reverse.
+
+     `forced-colors` needs no block: the fill here is a SURFACE, not a meaning
+     — the border says "these belong together" and a border is the one thing
+     that mode keeps. Compare the selected table row, whose fill WAS the state
+     and had to be restated in `Highlight`. */
+  .bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--fm-space-inline-m);
+    padding-block: var(--fm-space-internal-s);
+    padding-inline: var(--fm-space-inline-s);
+    background: var(--fm-color-background);
+    color: var(--fm-color-foreground);
+    border: var(--fm-border-width-default) solid var(--fm-color-border);
+    border-radius: var(--fm-radius-md);
+  }
+
+  .count {
+    font-weight: var(--fm-font-weight-medium);
+  }
+
+  /* The actions sit at the far end, and wrap under the count on a narrow
+     screen rather than squeezing it. */
+  .actions {
+    margin-inline-start: auto;
+  }
+}

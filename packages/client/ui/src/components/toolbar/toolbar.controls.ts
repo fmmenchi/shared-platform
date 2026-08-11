@@ -142,6 +142,42 @@ const ARROW_ROLES = new Set([
  * the keys alone" — that was the first version, and it was a keyboard trap. The
  * control comes off the ring entirely and keeps a tab stop of its own.
  */
+/** Anything the browser will hand a tab stop to on its own. */
+const FOCUSABLE =
+  'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+/** Warned about already — `apply` runs on every mutation, and once is enough. */
+const reported = new WeakSet<Element>();
+
+/**
+ * Controls inside the bar that never joined the family.
+ *
+ * A `ToolbarItem` that is MISUSED already warns. A control with no
+ * `ToolbarItem` around it at all was the silent case, and it is the worse one:
+ * the element keeps its own natural tab stop, so the bar does not merely walk
+ * past it — it COSTS ONE MORE STOP than the bar was created to save, and the
+ * arrows can never reach it. Measured on a bar with one unwrapped `Button`:
+ * two tab stops, and ArrowRight would not move to it.
+ *
+ * Dev only, once per element, and it never mutates — `apply` feeds a
+ * `MutationObserver` that calls it back.
+ */
+export function reportOrphans(bar: Element, registered: Element[]): void {
+  if (process.env.NODE_ENV === 'production') return;
+
+  for (const element of bar.querySelectorAll(FOCUSABLE)) {
+    if (registered.includes(element) || reported.has(element)) continue;
+    // A focusable INSIDE a registered control is that control's business.
+    if (registered.some((item) => item !== element && item.contains(element))) {
+      continue;
+    }
+    reported.add(element);
+    console.warn(
+      `Toolbar: <${element.tagName.toLowerCase()}> is inside the bar but not wrapped in a \`ToolbarItem\`, so it keeps a tab stop of its own and the arrows never reach it — the bar then costs MORE stops than the controls would have on their own, which is the one thing it exists to prevent.`,
+    );
+  }
+}
+
 export function takesArrows(element: Element | null): boolean {
   if (!element) return false;
 

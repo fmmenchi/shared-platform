@@ -437,6 +437,12 @@
       "import": "./dist/toggle.js",
       "default": "./dist/toggle.js"
     },
+    "./alert": {
+      "@fmmenchi/source": "./src/components/alert/index.ts",
+      "types": "./dist/components/alert/index.d.ts",
+      "import": "./dist/alert.js",
+      "default": "./dist/alert.js"
+    },
     "./toast": {
       "@fmmenchi/source": "./src/components/toast/index.ts",
       "types": "./dist/components/toast/index.d.ts",
@@ -484,6 +490,53 @@
       "types": "./dist/components/progress/index.d.ts",
       "import": "./dist/progress.js",
       "default": "./dist/progress.js"
+    "./table": {
+      "@fmmenchi/source": "./src/components/table/index.ts",
+      "types": "./dist/components/table/index.d.ts",
+      "import": "./dist/table.js",
+      "default": "./dist/table.js"
+    },
+    "./table-head": {
+      "@fmmenchi/source": "./src/components/table-head/index.ts",
+      "types": "./dist/components/table-head/index.d.ts",
+      "import": "./dist/table-head.js",
+      "default": "./dist/table-head.js"
+    },
+    "./table-body": {
+      "@fmmenchi/source": "./src/components/table-body/index.ts",
+      "types": "./dist/components/table-body/index.d.ts",
+      "import": "./dist/table-body.js",
+      "default": "./dist/table-body.js"
+    },
+    "./table-foot": {
+      "@fmmenchi/source": "./src/components/table-foot/index.ts",
+      "types": "./dist/components/table-foot/index.d.ts",
+      "import": "./dist/table-foot.js",
+      "default": "./dist/table-foot.js"
+    },
+    "./table-selection-bar": {
+      "@fmmenchi/source": "./src/components/table-selection-bar/index.ts",
+      "types": "./dist/components/table-selection-bar/index.d.ts",
+      "import": "./dist/table-selection-bar.js",
+      "default": "./dist/table-selection-bar.js"
+    },
+    "./table-row": {
+      "@fmmenchi/source": "./src/components/table-row/index.ts",
+      "types": "./dist/components/table-row/index.d.ts",
+      "import": "./dist/table-row.js",
+      "default": "./dist/table-row.js"
+    },
+    "./table-cell": {
+      "@fmmenchi/source": "./src/components/table-cell/index.ts",
+      "types": "./dist/components/table-cell/index.d.ts",
+      "import": "./dist/table-cell.js",
+      "default": "./dist/table-cell.js"
+    },
+    "./table-header-cell": {
+      "@fmmenchi/source": "./src/components/table-header-cell/index.ts",
+      "types": "./dist/components/table-header-cell/index.d.ts",
+      "import": "./dist/table-header-cell.js",
+      "default": "./dist/table-header-cell.js"
     }
   },
   "nx": {

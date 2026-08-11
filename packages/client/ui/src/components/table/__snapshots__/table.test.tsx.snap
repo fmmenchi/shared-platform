@@ -1,0 +1,54 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Table > matches its markup 1`] = `
+<table
+  class="_table_1yu1t_4"
+>
+  <caption
+    class="_caption_1yu1t_12"
+  >
+    Persone
+  </caption>
+  <thead>
+    <tr>
+      <th
+        scope="col"
+      >
+        Nome
+      </th>
+      <th
+        data-align="end"
+        scope="col"
+      >
+        Età
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th
+        scope="row"
+      >
+        Àlice
+      </th>
+      <td
+        data-align="end"
+      >
+        34
+      </td>
+    </tr>
+    <tr>
+      <th
+        scope="row"
+      >
+        Bruno
+      </th>
+      <td
+        data-align="end"
+      >
+        9
+      </td>
+    </tr>
+  </tbody>
+</table>
+`;

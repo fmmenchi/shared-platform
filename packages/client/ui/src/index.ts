@@ -238,6 +238,17 @@ export { ToolbarItem } from './components/toolbar-item/toolbar-item.component.js
 export type { ToolbarItemProps } from './components/toolbar-item/toolbar-item.types.js';
 export { ToolbarSeparator } from './components/toolbar-separator/toolbar-separator.component.js';
 export type { ToolbarSeparatorProps } from './components/toolbar-separator/toolbar-separator.types.js';
+// `Alert` was SHIPPED AND UNREACHABLE: a full folder, a doc page, stories, a
+// test suite, a line in the roadmap's Shipped table — and no export here, no
+// vite entry, no `exports` subpath. Nothing could see it, because every gate
+// looked at the component and none looked at the way out. Found by
+// `src/test/subpath-exports.test.ts` on the day that check was written.
+export { Alert } from './components/alert/alert.component.js';
+export { alertVariants } from './components/alert/alert.variants.js';
+export type {
+  AlertProps,
+  AlertVariants,
+} from './components/alert/alert.types.js';
 export type {
   ToastOptions,
   ToastEntry,
@@ -251,3 +262,74 @@ export type {
 } from './components/toast-region/toast-region.types.js';
 export { Progress } from './components/progress/progress.component.js';
 export type { ProgressProps } from './components/progress/progress.types.js';
+export { Table } from './components/table/table.component.js';
+export type {
+  TableProps,
+  Column,
+  TableAlign,
+  TableDensity,
+} from './components/table/table.types.js';
+// The view state and the engine, as two hooks rather than one: a consumer whose
+// server does the ordering takes `useSortState` and never pulls the collation
+// engine into their bundle.
+export { useSortState, nextSort } from './components/table/use-sort-state.js';
+export type {
+  UseSortStateOptions,
+  UseSortStateResult,
+} from './components/table/use-sort-state.types.js';
+export { useTableSort } from './components/table/use-table-sort.js';
+export type {
+  UseTableSortOptions,
+  UseTableSortResult,
+} from './components/table/use-table-sort.types.js';
+// `Comparator` alongside them because the docs tell you to hoist your `compare`
+// map out of the render, and hoisting it is what forces you to name its type.
+export type {
+  SortState,
+  SortDirection,
+  Comparator,
+} from './sorting/compare.types.js';
+// Selection is not a projection parameter: it derives no rows, it ends in an
+// action. Which is why it is its own hook, and why the rule it produces —
+// "these" or "everything except these" — is what a bulk request body wants.
+export { useRowSelection } from './components/table/use-row-selection.js';
+export type {
+  UseRowSelectionOptions,
+  UseRowSelectionResult,
+} from './components/table/use-row-selection.types.js';
+// The algebra is public for the reason `nextSort` is: `Table` reports selection
+// intents, so a consumer holding the state writes the transition — and the
+// two-mode reading is the one thing the engine says nobody should redo by hand.
+export {
+  NOTHING_SELECTED,
+  EVERYTHING_SELECTED,
+  isRowSelected,
+  countSelected,
+  coverageOf,
+  toggleRow,
+  toggleRows,
+} from './selection/selection.js';
+export type {
+  Selection,
+  SelectionCoverage,
+} from './selection/selection.types.js';
+// The parts are the substrate `Table` is built on, exported for the layouts a
+// flat column list cannot express. Dropping to them is decomposition, not a
+// second product — the relationship `Field` has to `FormInput`.
+export { TableHead } from './components/table-head/table-head.component.js';
+export type { TableHeadProps } from './components/table-head/table-head.types.js';
+export { TableBody } from './components/table-body/table-body.component.js';
+export type { TableBodyProps } from './components/table-body/table-body.types.js';
+export { TableFoot } from './components/table-foot/table-foot.component.js';
+export type { TableFootProps } from './components/table-foot/table-foot.types.js';
+// What is selected, said on the screen and not only announced — and the one
+// affordance the table itself cannot offer, since only the bar knows there is
+// anything beyond the page.
+export { TableSelectionBar } from './components/table-selection-bar/table-selection-bar.component.js';
+export type { TableSelectionBarProps } from './components/table-selection-bar/table-selection-bar.types.js';
+export { TableRow } from './components/table-row/table-row.component.js';
+export type { TableRowProps } from './components/table-row/table-row.types.js';
+export { TableCell } from './components/table-cell/table-cell.component.js';
+export type { TableCellProps } from './components/table-cell/table-cell.types.js';
+export { TableHeaderCell } from './components/table-header-cell/table-header-cell.component.js';
+export type { TableHeaderCellProps } from './components/table-header-cell/table-header-cell.types.js';

@@ -12,6 +12,7 @@ import { Checkbox } from '../components/checkbox/checkbox.component.js';
 import { Radio } from '../components/radio/radio.component.js';
 import { Switch } from '../components/switch/switch.component.js';
 import { Toggle } from '../components/toggle/toggle.component.js';
+import { Table } from '../components/table/table.component.js';
 
 /**
  * THE TARGET-SIZE POLICY, in one place because it belongs to the family rather
@@ -29,6 +30,15 @@ import { Toggle } from '../components/toggle/toggle.component.js';
  * `appearance` off them (see `checkbox.module.css`) — so their target is the
  * platform's business, and their LABEL, which is what a finger actually hits,
  * is the consumer's box rather than ours.
+ *
+ * THAT SECOND HALF STOPPED BEING TRUE when `Table` grew a selection column: we
+ * draw that checkbox and the cell around it, and there is no consumer label to
+ * enlarge the target. It is still conformant — WCAG 2.5.8 is met through the
+ * 24px-circle SPACING exception, since a row is 36px tall and the neighbouring
+ * control is far enough away — but it is met by geometry rather than by size,
+ * so a denser theme or a control dropped into the next cell can take it away.
+ * Recorded here rather than in a component, because the exemption's stated
+ * reason is what changed.
  */
 const TAP = 44;
 
@@ -53,6 +63,17 @@ describe('every control this package draws, under a coarse pointer', () => {
             which is exactly why it is asserted here: the day someone gives
             Toggle its own box, this is what notices. */}
         <Toggle size="sm">Toggle</Toggle>
+        {/* And the one that DOES give the button its own box: the sort trigger
+            restates width, padding and font from another folder's stylesheet,
+            which is precisely the shape this file exists to catch. It leaves
+            `height` alone, and that is the claim being checked. */}
+        <Table
+          caption="Persone"
+          rows={[{ id: '1', name: 'Zurigo' }]}
+          getRowId={(p) => p.id}
+          columns={[{ key: 'name', header: 'Sortable', sortable: true }]}
+          onSortToggle={() => undefined}
+        />
       </>,
     );
 
@@ -64,6 +85,7 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('combobox', { name: 'Choice' }),
       screen.getByRole('textbox', { name: 'Notes' }),
       screen.getByRole('tab', { name: 'One' }),
+      screen.getByRole('button', { name: 'Sortable' }),
     ]) {
       expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(
         TAP,

@@ -1,0 +1,286 @@
+/* Rows and columns.
+
+   EVERY RULE LIVES HERE, addressed by ELEMENT rather than by class, and the
+   parts import nothing. The alternative — a class per part, in the part's own
+   module — either duplicates the cell padding in two sheets or makes one part
+   reach into another's, which ADR-0019 forbids. A table styling its own `th`
+   and `td` is not reaching anywhere: they are its descendants by definition,
+   and only a `<table>` can have them. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .table {
+    /* THE SURFACE THE STICKY HEADER PAINTS, declared here so it is a seam this
+       package can verify rather than a name that resolves to nothing. The
+       page's background is only right when the table is on the page; a
+       bounded-height table mostly lives inside a `Card`, a `Dialog` or a
+       `Popover`, and measured, the header arrived as a visibly darker band
+       across the top of a card. An inline `style` on `Table` overrides both. */
+    --table-surface: var(--fm-color-background);
+    --table-surface-foreground: var(--fm-color-foreground);
+    inline-size: 100%;
+    /* SEPARATE, with no spacing — which renders identically to `collapse` for
+       the borders this table draws, and is the one the sticky header needs. In
+       the collapsed model a cell's borders belong to the TABLE rather than to
+       the cell, so a `position: sticky` header scrolls away from its own rule
+       and arrives at the top with no line under it. That is why this and the
+       header were always going to be one change. */
+    border-collapse: separate;
+    border-spacing: 0;
+    /* Digits line up in a column, which is most of what makes a numeric column
+       readable at all. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  .caption {
+    /* Above the table and left-aligned: a caption centred over the data reads
+       as a title of the page rather than a name for the table.
+
+       FULL FOREGROUND, not muted. Muted was the first choice and axe caught it
+       in the dark theme: `background × muted-foreground` is a known-borderline
+       pair in this token set, and both of these are text somebody has to read —
+       the table's name, and the only words on screen when there are no rows. */
+    text-align: start;
+    padding-block-end: var(--fm-space-stack-s);
+  }
+
+  /* HORIZONTAL RULES ONLY. Vertical lines between every column are what makes a
+     table look like a spreadsheet and read like a cage; the eye already groups
+     a column by alignment. */
+  .table :is(th, td) {
+    padding-block: var(--fm-space-internal-s);
+    padding-inline: var(--fm-space-inline-s);
+    text-align: start;
+    vertical-align: baseline;
+  }
+
+  .table th {
+    font-weight: var(--fm-font-weight-semibold);
+  }
+
+  /* ON THE CELLS, not on the row. The separated model IGNORES a border set on
+     a `<tr>` — it is one of the few places CSS silently drops a declaration
+     rather than cascading it — so the row separator has to be drawn by the
+     cells that make up the row. Only `block-end`, so no two adjacent cells
+     ever draw the same line twice.
+
+     AND ON ITS OWN CELLS, by the child chain. As a descendant selector this
+     reached into a table nested inside a cell, which composed mode allows —
+     harmlessly while the rule sat on a `<tr>`, because an inner table defaults
+     to `separate` and ignores it there, and not harmlessly at all once it
+     moved to the cells: measured, an inner `<td>` drew a separator it never
+     had. The leak was free until the day it was not. */
+  .table > tbody > tr > :is(th, td) {
+    border-block-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  .table :is(thead, tfoot) th {
+    /* The header sits on the rule that separates it from the data. */
+    border-block-end: var(--fm-border-width-default) solid
+      var(--fm-color-border);
+  }
+
+  .table :is(th, td)[data-align='end'] {
+    text-align: end;
+  }
+
+  .table[data-density='compact'] :is(th, td) {
+    padding-block: var(--fm-space-internal-xs);
+  }
+
+  .empty {
+    text-align: center;
+    padding-block: var(--fm-space-stack-l);
+  }
+
+  /* THE THING A STICKY HEADER STICKS INSIDE OF, and the reason the header is
+     not a standalone prop: `position: sticky` with nothing scrolling around it
+     pins to the VIEWPORT, so the header of a table halfway down a page rides
+     over the content above it. Ours or nobody's.
+
+     `max-block-size: 100%` and nothing else: how tall the scroller is belongs
+     to the box the consumer puts it in — a DEFINITE height, since a percentage
+     against an indefinite box resolves to `none` — or to `scrollProps`. Given
+     no constraint the whole thing is inert: nothing scrolls, and the component
+     withholds the tab stop and the landmark rather than shipping dead ones. */
+  .scroll {
+    /* Written from the element by `Table` — declared here so the `var()` below
+       resolves in a consumer's page whether or not the script has run yet. */
+    --table-head-block-size: 0px;
+    overflow: auto;
+    max-block-size: 100%;
+    /* THE HEADER'S STACKING ORDER IS A LOCAL PROBLEM, so it is solved locally.
+       Without this the `th`'s `z-index` joins the nearest ancestor stacking
+       context — normally the page root — where a table header competes with,
+       and can tie, a consumer's own app-level sticky banner. It only ever
+       needs to beat the cells of its own table. */
+    isolation: isolate;
+    /* WHAT KEEPS A FOCUSED CONTROL OUT FROM UNDER THE HEADER (WCAG 2.4.11).
+       Chromium's scroll-into-view already dodges a sticky element for a
+       PROGRAMMATIC `.focus()` — measured, 14px of clearance — and does not for
+       SEQUENTIAL focus navigation: Shift+Tab back up through the rows buried
+       the focused checkbox by 36px. The height is written from the element by
+       `Table`, because unlike `AppLayout` — which records this same hazard and
+       cannot know a consumer's banner — this component draws the header and
+       can measure it. */
+    scroll-padding-block-start: var(--table-head-block-size);
+  }
+
+  /* THE ONLY FOCUSABLE THING IN THIS PACKAGE WITHOUT A RING OF ITS OWN, until
+     now. Chromium paints its UA outline and the tests are Chromium-only, so
+     the two engines nobody measures were the ones relying on it — which is the
+     shape of the `NavGroup` defect this file already records. */
+  .scroll:focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+
+  /* AN OPAQUE BACKGROUND IS NOT DECORATION HERE. A sticky header with a
+     transparent one has the rows scroll THROUGH it — the single most reported
+     bug of this pattern — so the surface is painted, and both halves of a
+     declared pairing are painted, which this file has now learned twice.
+
+     `--table-surface` is declared on `.table` above, and an inline `style` on
+     the component overrides it — which is the seam for a table sitting on a
+     surface that is not the page's.
+
+     `forced-colors` needs no block: the fill is substituted with `Canvas`,
+     which is opaque, so the rows still cannot scroll through — verified with a
+     hit test rather than assumed. */
+  .table[data-sticky-header] thead th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--fm-z-sticky);
+    background: var(--table-surface);
+    color: var(--table-surface-foreground);
+  }
+
+  /* The checkbox column takes the width of a checkbox and no more: a column of
+     boxes given an equal share of the table pushes the data around for nothing.
+     `1%` rather than a length — a table's layout algorithm reads a small
+     percentage as "as narrow as the content allows", and the content is one
+     control whose size the platform owns. */
+  .selectCell {
+    inline-size: 1%;
+    white-space: nowrap;
+  }
+
+  /* BOTH HALVES OF THE PAIR, and that is the point rather than thoroughness.
+     `primary-subtle` × `primary-subtle-foreground` is a contrast pairing the
+     token package DECLARES and validates at 4.5; `primary-subtle` under the
+     page's ordinary `foreground` is not, so tinting the row and leaving the
+     text alone would be a combination nothing checks. `Toast` reached the same
+     conclusion re-skinning `ghost`. */
+  .table tbody tr[data-selected] {
+    background: var(--fm-color-primary-subtle);
+    color: var(--fm-color-primary-subtle-foreground);
+  }
+
+  /* A MEANINGFUL FILL, so it is answered for. Forced colors flattens every
+     authored background to `Canvas`, and a selected row is the example the
+     package's own doctrine names. The state would survive — the checkbox is the
+     browser's own and keeps its mark — but a whole row's worth of meaning
+     hanging on one 16px control is not a design, so it is restated in the two
+     system colours that MEAN selected, which is also the only way to paint a
+     background in this mode without `forced-color-adjust: none`. */
+  @media (forced-colors: active) {
+    .table tbody tr[data-selected] {
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    /* AND THE RING HAS TO SURVIVE IT. `Checkbox` paints its focus outline
+       `Highlight` in this mode — correct on the page, invisible on a row that
+       is now `Highlight` itself, with `outline-offset` putting it squarely on
+       the fill. Neither stylesheet is wrong alone; the composition is, and no
+       gate can see it because each file answers for forced colors on its own.
+       The selected row owns the surface, so it owns the correction. */
+    .table tbody tr[data-selected] :focus-visible {
+      outline-color: HighlightText;
+    }
+  }
+
+  /* The trigger is our `Button`, so the focus ring, the target size and the
+     forced-colors handling all arrive with it. What is left here is only what
+     makes it read as a HEADER rather than as a control sitting in one: the
+     header's own weight, no padding of its own, and the cell's alignment. */
+  .sortTrigger {
+    inline-size: 100%;
+    /* STATED, not inherited. It was `inherit`, commented as taking the cell's
+       alignment — `justify-content` is not an inherited property and the `<th>`
+       is not a flex container, so it resolved to `normal`, which behaves as
+       `flex-start` in a flex box. The right result by accident, and a constant
+       written as if it depended on something. */
+    justify-content: flex-start;
+    gap: var(--fm-space-internal-xs);
+    padding: 0;
+    /* `font-size`, NOT the `font` shorthand. The shorthand resets
+       `font-variant-*` to its initial value, so it silently threw away the
+       `tabular-nums` set on `.table` — in the header of a numeric column,
+       which is the one place a table asks for lined-up digits. */
+    font-size: inherit;
+    font-weight: var(--fm-font-weight-semibold);
+    color: inherit;
+  }
+
+  [data-align='end'] .sortTrigger {
+    justify-content: flex-end;
+  }
+
+  .sortArrow {
+    inline-size: 0.75em;
+    block-size: 0.75em;
+    flex: none;
+  }
+
+  /* An ICON changing state, so `s` — the accordion's chevron, the same class of
+     direction glyph on the same class of change, uses it; `xs` is the token for
+     hover and press. Between two visible points, so `standard`. Both from the
+     tokens: raw durations and easings are lint-banned here.
+
+     THE THREE LONGHANDS, not the shorthand, so the reduced-motion block can
+     override ONE declaration instead of restating the whole transition and
+     leaving two copies to keep in sync. */
+  .sortArrow path {
+    /* AT REST, MEASURED. `0.3` was chosen by eye and fails WCAG 1.4.11: the
+       composite against the page reads 1.89:1 in light and 2.50:1 in dark,
+       where a state indicator owes 3:1 — and this glyph is the whole visual
+       affordance, so a low-vision reader had no channel at all. `0.55` gives
+       3.70:1 and 5.40:1, and stays visibly quieter than the one in force. */
+    opacity: 0.55;
+    transition-property: opacity, transform;
+    transition-duration: var(--fm-duration-s);
+    transition-timing-function: var(--fm-ease-standard);
+  }
+
+  /* A small lean in the direction being applied: the movement is what makes the
+     change legible without reading, and it is small because a header is a
+     micro-interaction, not a surface. Written literally — a `--fm-` custom
+     property is the TOKEN package's namespace, and inventing one there puts a
+     value in a consumer's devtools that looks like a theme token no theme can
+     set. Every component-local variable in this package is unprefixed, and this
+     one was read once where it was declared, so it bought nothing either. */
+  .sortArrow[data-direction='asc'] [data-arrow='asc'] {
+    opacity: 1;
+    transform: translateY(-8%);
+  }
+
+  .sortArrow[data-direction='desc'] [data-arrow='desc'] {
+    opacity: 1;
+    transform: translateY(8%);
+  }
+
+  /* KILL THE MOVEMENT, KEEP THE CHANGE. The transform is the vestibular
+     trigger; the opacity carries the meaning and stays, so a reader who has
+     asked for less motion still sees which column is in force. */
+  @media (prefers-reduced-motion: reduce) {
+    .sortArrow path {
+      transition-property: opacity;
+    }
+
+    .sortArrow[data-direction='asc'] [data-arrow='asc'],
+    .sortArrow[data-direction='desc'] [data-arrow='desc'] {
+      transform: none;
+    }
+  }
+}

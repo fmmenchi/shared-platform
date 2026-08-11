@@ -53,6 +53,24 @@ function resolveLocale(locale: string): UiLocale {
   return isSupportedLocale(base) ? base : UI_FALLBACK_LOCALE;
 }
 
+/**
+ * The locale THE COPY IS IN — for formatting a value that goes inside a
+ * sentence.
+ *
+ * There are two locale questions and they have different right answers.
+ * Collation asks about the READER (`useTableSort` reads the raw injected tag,
+ * because a German app whose copy fell back to English must still sort as
+ * German). A number embedded in a sentence asks about the SENTENCE: with
+ * `de-DE` injected and no German catalog, the copy resolves to English while
+ * `Intl.NumberFormat('de-DE')` writes "2.450" — and an English reader parses
+ * that as two-point-four-five. Same class of defect the formatting exists to
+ * prevent, one layer up.
+ */
+export function useCopyLocale(): UiLocale {
+  const ctx = useContext(UiContext);
+  return resolveLocale(ctx?.adapters.i18n.locale ?? UI_FALLBACK_LOCALE);
+}
+
 export interface UiProviderProps {
   /**
    * What this provider declares. Everything omitted is INHERITED from a

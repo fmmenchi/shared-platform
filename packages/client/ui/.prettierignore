@@ -1,0 +1,17 @@
+# Build output, gitignored, and prettier walks it anyway.
+#
+# IT HAS TO LIVE HERE, and the workspace root's file is not a substitute: `nx
+# format` runs prettier once per PROJECT with the project as the working
+# directory, and prettier resolves `.prettierignore` from the cwd. Measured —
+# `prettier --check dist/accordion-content.css` from this folder flags the file
+# while the identical pattern sits unread at the root.
+#
+# The symptom is worth naming because it is ordering-dependent and therefore
+# invisible in CI: green on a clean checkout, and after a local `build` or
+# `build-storybook` prettier EXITS 2 on emitted files it cannot parse, so `nx
+# format:write` — the command the definition of done tells you to run — fails
+# outright and writes nothing.
+dist
+out-tsc
+storybook-static
+.storybook/manager-theme.generated.ts

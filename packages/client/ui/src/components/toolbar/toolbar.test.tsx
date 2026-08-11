@@ -1173,3 +1173,35 @@ describe('Toolbar', () => {
     });
   });
 });
+
+describe('a control that never joined the family', () => {
+  it('says so, because it costs a stop instead of saving one', async () => {
+    // A MISUSED `ToolbarItem` already warned. A control with none around it was
+    // the silent case and the worse one: it keeps its own natural tab stop, so
+    // the bar does not merely walk past it — it costs one MORE stop than the
+    // controls would have alone, which is the single thing a toolbar exists to
+    // prevent, and the arrows can never reach it.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Toolbar label="Formattazione">
+        <ToolbarItem>
+          <Button>Grassetto</Button>
+        </ToolbarItem>
+        <Button>Nudo</Button>
+      </Toolbar>,
+    );
+
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('not wrapped in a `ToolbarItem`'),
+      ),
+    );
+
+    // And the measurement behind the sentence: the unwrapped control keeps a
+    // stop of its own rather than being given `-1`.
+    expect(screen.getByRole('button', { name: 'Nudo' })).not.toHaveAttribute(
+      'tabindex',
+    );
+    warn.mockRestore();
+  });
+});

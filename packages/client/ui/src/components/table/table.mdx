@@ -1,0 +1,297 @@
+import { Meta, Controls, Canvas, ArgTypes } from '@storybook/addon-docs/blocks';
+
+import * as TableStories from './table.stories.tsx';
+import { TableSelectionBar } from '../table-selection-bar/table-selection-bar.component.js';
+
+<Meta of={TableStories} />
+
+# Table
+
+Rows and columns, announced correctly.
+
+```tsx
+<Table
+  caption="Persone"
+  rows={people}
+  getRowId={(p) => p.id}
+  columns={[
+    { key: 'name', header: 'Nome', rowHeader: true },
+    { key: 'age', header: 'Età', align: 'end' },
+  ]}
+/>
+```
+
+## Anatomy
+
+| part                                         | what it is                                              |
+| -------------------------------------------- | ------------------------------------------------------- |
+| `Table`                                      | the `<table>`, the caption, and the column model        |
+| `TableHead` · `TableBody` · `TableFoot`      | the sections — and what makes `scope` derivable         |
+| `TableRow` · `TableCell` · `TableHeaderCell` | the parts, for a layout the column model cannot express |
+| `TableSelectionBar`                          | what is selected, on screen — and the bulk actions      |
+| the scroll region                            | added by `stickyHeader`: the box the header sticks in   |
+
+## Props
+
+### Table
+
+<Controls of={TableStories.Default} />
+
+### TableSelectionBar
+
+<ArgTypes of={TableSelectionBar} />
+
+## Usage
+
+<Canvas of={TableStories.Default} />
+
+### We are not adding accessibility to a table. We are preventing its removal.
+
+A `<table>` is already among the best-supported things in HTML: a screen reader announces its size on entry and, as the reader moves, the column header across and the row header down. All of that is free — and all of it depends on markup the average table gets wrong.
+
+So `scope`, the accessible name and the empty row's `colSpan` are **not opt-in**. Behind a prop they would be missing from most tables, and the component would be delivering less than raw HTML already offered.
+
+### The columns are data, and that is the whole design
+
+It is not a style preference: it is the only way to **guarantee** the invariants that run across a row rather than watch for them.
+
+- **Header and body cannot disagree.** Given markup, a caller can write four header cells and five body cells; every value is then attributed to the wrong column, and nothing on screen looks wrong.
+- **`colSpan` is counted, not typed.** A hand-written number is wrong the day a column is added, and a short one leaves the empty message under one column instead of across the table.
+- **A per-column decision is declared once.** In markup `align="end"` goes on the header _and_ on every row's cell — the same decision copied N times, which this package already forbids.
+
+`rowHeader` deserves its own line: it renders `<th scope="row">` so a reader hears **which** row a cell belongs to. It is the thing nobody writes by hand, and declaring it on the column gives it to every row at once.
+
+### The key is checked, and so is the value behind it
+
+```tsx
+{ key: 'name' }                               // ✓ a string property
+{ key: 'nmae' }                               // ✗ compile error
+{ key: 'placedAt' }                           // ✗ compile error — it is a Date
+{ key: 'placedAt', cell: (o) => fmt(o.date) } // ✓ you said how
+{ key: 'full', cell: (o) => `${o.a} ${o.b}` } // ✓ computed, so the key is free
+```
+
+Only **text and numbers** render on their own, nullable or not. A `Date`, an object, an array or a **boolean** must say how, and each for a measured reason: a `Date` or an object throws _"Objects are not valid as a React child"_ and takes the page down; an array renders `['a','b']` as `ab`, which looks deliberate; and a boolean renders **nothing at all**, so every `false` row shows a blank cell indistinguishable from missing data.
+
+They are not formatted for you because there is no canonical rendering of `false` (a dash? "No"? an icon?) or of a date (which format, whose timezone?). Guessing would be a design system making a product decision.
+
+**Two ergonomics notes the type does not tell you.** Annotate a hoisted column list — `const columns: Column<Person>[] = […]` — or TypeScript widens `key` to `string` and the error blames `cell`. And with a literal empty `rows={[]}` there is nothing to infer `T` from, so name it: `<Table<Person> rows={[]} …>`.
+
+### Sorting, in three rungs
+
+<Canvas of={TableStories.Sortable} />
+
+**It works out of the box.** The hook takes the rows and gives them back ordered; the table shows which column and which way.
+
+```tsx
+const sort = useTableSort(people, { defaultSortKey: 'name' });
+
+<Table
+  rows={sort.rows}
+  {...sort.props}
+  columns={[{ key: 'name', header: 'Nome', sortable: true }]}
+/>;
+```
+
+Free from that: "Àosta" before "Zurigo" — `<` puts every accented word after `z` — 9 before 10 rather than `"10"` before `"9"`, dates as dates, empty values at the bottom **in both directions**, `aria-sort` on the column in force and `none` on the ones offering, a real `Button` in the header, and every change announced in the reader's language.
+
+**Sorting reads the row, not the cell.** The value compared is `row[key]`, never what `cell` rendered. For dates and money that is the right default — you sort by the `Date`, not by "14 Mar 2026" — and for a translated enum it is not: a `status` column displayed as "In attesa" orders by the invisible `PENDING`. Say so with a comparator when the display order is the one you mean.
+
+**Override the column the default cannot know.** `priority` is not alphabetical, and no design system can guess that it runs low → medium → high. Write the ascending order only; the direction is applied for you.
+
+```tsx
+useTableSort(tickets, {
+  compare: { priority: (a, b) => RANK[a.priority] - RANK[b.priority] },
+});
+```
+
+Three things about `compare`, because none of them is visible from the type:
+
+- **A computed column needs an entry here.** `{ key: 'fullName', cell: … }` has a key no row carries, so the engine finds `undefined` on every row, reads it as empty on both sides and reports every pair equal: the header turns, the change is announced, and nothing moves. It warns in development.
+- **A typo is silent.** The key is a plain `string` — an index signature, so `prioriry` compiles, is never found, and the column falls through to alphabetical, which looks plausible enough to ship. Same warning catches it.
+- **"Empty last in both directions" is the engine's, not yours.** Your comparator is negated whole for descending, so whatever it does with blanks reverses with everything else. Answer emptiness before you compare, if you care where it lands.
+
+**Or take it over entirely.** When the server orders, use `useSortState` — the same hook without the engine, which then never enters your bundle — and put its state straight into the query key:
+
+```tsx
+const sort = useSortState({ defaultSortKey: 'name' });
+const q = useQuery({ queryKey: ['people', sort.state], queryFn: fetchPeople });
+
+<Table
+  rows={q.data ?? []}
+  busy={q.isFetching}
+  {...sort.props}
+  columns={columns}
+/>;
+```
+
+The markup is identical in all three, and that is not a coincidence: **`Table` never sorts anything.** Reordering belongs to the hook or to the server; the component only ever displays the state. There is no "sorts twice" case because it does not sort once — which is also what dissolves the usual controlled/uncontrolled knot, since no prop here changes behaviour.
+
+It does not compute the transition either. `onSortToggle` receives the **column key**, not the resulting state, so the cycle is applied by whoever owns the state and can read its latest value:
+
+```tsx
+<Table
+  sort={sort}
+  onSortToggle={(key) => setSort((prev) => nextSort(prev, key))}
+/>
+```
+
+That is what `nextSort` is exported for, and the functional form is the point: computed from the `sort` prop instead, a consumer committing in `startTransition` gets a deferred value, and a second click recomputes from the first click's input — two clicks landing on ascending twice. It is also the seam for **a different cycle**: descending first for dates and scores, or two stops rather than three, is your own function in that same position.
+
+The cycle we ship is **three stops, not two**: ascending, descending, and back to the order the data arrived in. A two-state toggle is more common and worse — once a reader has sorted a table there is no way back to the order the server chose, which in a ranking or a feed of events is the one that carries meaning.
+
+**One state, one column.** `SortState` holds a single key; ordering by city and then by name is a `SortState[]`, and widening the type after consumers have put it in a query key is a breaking change — so it is deferred deliberately rather than half-available. Stability in `sortRows` does not give it to you: the hook always sorts the rows you hand it, not the ones it produced last time.
+
+### Selecting rows
+
+<Canvas of={TableStories.Selectable} />
+
+```tsx
+const selection = useRowSelection();
+
+<Table
+  rows={people}
+  getRowId={(p) => p.id}
+  columns={columns}
+  {...selection.props}
+/>;
+```
+
+**The hook is not given the rows.** It used to be, to work out what "select all" meant — which put the rendered rows in two places with nothing tying them together, and the paginated consumer paid for it: hook over the whole result set, table over a slice, and one click on a header box showing three rows selected six. `Table` reports which ids its header box spoke for, so there is one source of that fact, and `getRowId` is asked for once by the component that renders the rows.
+
+**The checkbox column is ours to draw**, and that is not a convenience. The part that goes wrong is never the box, it is what the box is _called_: five controls all named "Select row" are five controls a screen reader cannot tell apart. Each one is named after its row — **"Select Zurigo"** — which is why a `rowHeader` column is required here, and why both leaving it out and rendering nothing in it warn.
+
+**`aria-selected` is not used**, and the reason is worth stating precisely: it is a _supported_ property of the `row` role, but it is only meaningful inside a `grid` or `treegrid`. In a table it is not announced, so writing it would be an attribute that reads as a promise and delivers nothing. The checkbox _is_ the state for everyone, the row tint is decoration, and the box is not optional. In forced colors the tint is restated with the system's own selection colours — and so is the focus ring landing on it, which would otherwise be `Highlight` drawn on `Highlight`.
+
+**The header box has three states**, and the mixed one is the reason it is our `Checkbox`: the DOM has no attribute for `indeterminate`, only a property, so a bare `<input>` with `checked={false}` says "none selected" when half of them are. Clicking a half-filled box **completes** it rather than emptying it, which is the convention everywhere and matches what mixed means.
+
+#### Selection is a rule, not a list
+
+This is the one place the model is not the obvious one, and paginated tables are why:
+
+```tsx
+{ mode: 'include', ids: new Set(['a', 'b']) }   // these two
+{ mode: 'exclude', ids: new Set(['c']) }        // everything except this one
+```
+
+A reader who ticks "select all" on ten thousand rows has selected rows the browser has never received. There is no honest list to write — inventing one means fetching every page — but there is an honest **rule**, and it is one object with an empty set. It survives page changes, and the bulk action you send is "everything matching the filter except these three", which is what they actually asked for.
+
+Three consequences worth knowing before you build on it:
+
+- **The header box speaks only for the rows on screen.** It receives their ids, and nothing else. "Select all 10,000 matching" is a second affordance — the banner that appears after the header box is ticked — and only you know whether there are more rows. Build it with the exported `EVERYTHING_SELECTED`.
+- **Unticking the header under an `exclude` rule clears the selection whole**, rather than narrowing it to "everything except the twenty you can see". Nobody means the second thing, and the first version did it: the box, the rows and the count all read zero while the rule still selected every row on the other 499 pages — a delete confirmed as "0 rows" that removes 9,997.
+- **`count` is `undefined` under an `exclude` rule** unless you pass `total`, and that is an answer rather than a gap. `total` is the **result set's** size, never the page's: handing over `rows.length` turns "everything except three of ten thousand" into "seventeen", which is how a confirmation dialog says "delete 3 records" and deletes ten thousand.
+
+#### The bar that says so, and reaches past the page
+
+<Canvas of={TableStories.BulkActions} />
+
+```tsx
+const selection = useRowSelection({ total: data.total });
+
+<TableSelectionBar {...selection.barProps}>
+  <ToolbarItem>
+    <Button onClick={remove}>Elimina</Button>
+  </ToolbarItem>
+</TableSelectionBar>;
+```
+
+`Table`'s live region announces a change **once** and falls silent, which is right for an announcement and useless as a state: nothing answers "how many are selected?" a minute later, or after tabbing back. `TableSelectionBar` is that answer, on screen, for everybody — and deliberately **not** a live region itself, since two of them over one fact say it twice. Both read the same catalog, so the screen and the announcement cannot drift apart.
+
+It is also where `exclude` becomes reachable. Give the hook a `total` and, whenever fewer rows are selected than the query matched, the bar offers **"Select all 2,450"** — the escalation that produces "everything except these". Before it existed, a consumer had to assemble that from an exported constant, which is exactly the shape every review of this model called a trap.
+
+The offer is keyed on `count < total`, not on the page being covered, and that is a deliberate narrowing of what the bar can know: it never learns how many rows the table rendered, and asking for that number a second time is precisely the duplication the hook was corrected to remove. It reads as a labelled button rather than as a leading question, so it is legible at any count.
+
+Three things it does that a hand-rolled bar does not:
+
+- **The actions are a `Toolbar`**, so six bulk actions cost one tab stop rather than six — in a bar that appears and disappears, which would otherwise grow and shrink the reader's keyboard under them.
+- **Focus comes back when the bar goes** — from our Clear button or from a bulk action of yours. A conditional bar unmounts the control that was just used, and focus falls to `<body>`: the classic way a keyboard user loses their place.
+- **The count goes through `Intl`.** English groups four digits and Italian does not — `Select all 2,450` and `Seleziona tutte le 2450` — which is not something a template gets right.
+
+**Wiring it yourself?** `Table` reports intents here exactly as it does for sorting, so the transitions are exported too — `toggleRow`, `toggleRows`, `coverageOf`, `isRowSelected`. Use them rather than reading `mode` in your own code: the two readings of `ids` are the one place this model bites, and `useRowSelection` also gives you `setSelection` for the changes that are not a single toggle, like a shift-click range.
+
+**It is not a projection parameter.** Sorting and filtering derive the rows; selection is downstream of them and derives nothing, so it belongs in a request body rather than in a query key — which is also why it is a `Set` and not an array. Putting it in a query key is how ticking a box refetches the page.
+
+### A header that stays
+
+<Canvas of={TableStories.StickyHeader} />
+
+```tsx
+<div style={{ blockSize: '16rem' }}>
+  <Table
+    caption="Persone"
+    rows={rows}
+    getRowId={(p) => p.id}
+    columns={columns}
+    stickyHeader
+  />
+</div>
+```
+
+**It brings its own scroller**, and that is the feature rather than a side effect. `position: sticky` with nothing scrolling around it pins to the **viewport** — so the header of a table halfway down a page rides over everything above it. The two are one thing, which is why one prop turns on both.
+
+**The scroller is where the obligation lives.** A region that scrolls has to be reachable by keyboard: somebody who cannot use a pointer has no other way to reach the rows below the fold, or the columns off to the right. So it takes a tab stop — and a tab stop with no name is an entry a screen reader announces as nothing, so it borrows the `<caption>`, which is already the table's name and cannot drift from it.
+
+**How tall it is belongs to you.** Constrain the box you put it in; given no constraint it does not scroll vertically and the header is a no-op rather than a bug.
+
+**Its height is yours, and it has to be definite** — `block-size: 20rem`, or a flex or grid track. A `max-block-size` on the parent does not work: the container's own percentage resolves to `none` against an indefinite box, so nothing scrolls, the header never sticks, and the table overflows the box you just constrained. `scrollProps` is the other way in, and the one to reach for when you also want a `ref` or a class on the box that is actually laid out — `className`, `style` and `ref` go to the `<table>`, which stops being the outermost node the moment a wrapper appears.
+
+Given no constraint at all, the whole thing is inert: nothing scrolls, and the container withholds its tab stop and its landmark rather than shipping dead ones.
+
+Two things it does not do. The `<tfoot>` does not stick — a totals footer scrolls away, and if you need one pinned it is composed markup and CSS of your own. And the container is an `overflow: auto` box, so anything absolutely positioned inside a cell is clipped by it; this package's own surfaces are safe, because `Popover`, `Menu`, `Dialog` and `Toast` all render in the top layer, but a hand-rolled dropdown in a cell is not.
+
+### It never sees where the rows came from
+
+They arrive as an array, and an array does not say whether a `.sort()` or an `ORDER BY` produced it. The agnosticism is not discipline, it is an absence of information — which is what lets the same markup serve an in-memory list and a paginated server query.
+
+`busy` follows from the same rule: it describes the **element's** state, not the data's provenance. A background refetch is busy while the old rows are still on screen, and so is a client-side re-sort. A `loading` prop would invite a spinner _instead_ of the data; this says "there is more coming" and keeps what is there.
+
+<Canvas of={TableStories.Empty} />
+
+### Not a grid
+
+Cells here are content: they may **contain** controls, but nothing moves focus between them. `role="grid"` takes the arrow keys away from the assistive technology — which already has its own commands for moving through a table — and promises a full two-dimensional keyboard in return.
+
+The practical test is **a matrix of inputs**: one column of inputs is still a table, because Tab's order (row by row) is the order you fill them in. A grid of them is not, and that is a different component with the whole APG keyboard or nothing.
+
+Declaring the role and implementing half the keyboard is worse than not declaring it: it removes a mechanism that worked and substitutes one that does not.
+
+### Composing instead
+
+<Canvas of={TableStories.Composed} />
+
+For a header group, a spanning row or a totals footer, drop to the parts. They are the substrate `Table` is built on, so this is decomposition rather than a second component — the relationship `Field` has to `FormInput`. The compiler keeps the two apart: `columns` and `children` cannot both be passed.
+
+**The border model changed under every table, and this is where it bites.** It is now `separate` with no spacing: in the collapsed model a cell's borders belong to the **table** rather than to the cell, so a sticky header scrolls away from its own rule and arrives with no line under it. Nothing this component renders looks different — measured, cell geometry identical and one sub-pixel blend on one scanline. But the separated model **ignores a border set on a `<tr>`**, silently, so `<TableRow style={{ borderBottom: … }}>` written before this stopped drawing anything. Put it on the cells.
+
+**What you give up, said plainly**, because it is the trade nobody documents: composing means the header/body agreement, the counted `colSpan` and the default empty state are yours to maintain. A header row composed outside a section also loses derived `scope` — it warns, and you pass `scope` yourself.
+
+**Neither sorting nor selection comes with you.** `sort`, `onSortToggle`, `selection` and the selection toggles are refused here rather than ignored: `aria-sort` needs a column list to land on, and accepting props that decide nothing is how a consumer spends an afternoon. Put the attribute on your own `TableHeaderCell` — it takes `aria-sort` like any `<th>` — and drive it with `useSortState`. Selection is the same trade with a sharper edge: both hooks still work here, and `useRowSelection` hands you `coverage` for the header box's three states — but the per-row labelling, which is the part that actually goes wrong, becomes yours.
+
+**What the column model cannot express yet**, so you know before you start: per-row attributes (a `className` or `data-*` on a `<tr>`) and column widths, which arrive with resizing. The first is the one most likely to push a consumer into composed mode, and it is worth telling us if it does.
+
+## Accessibility
+
+- **`scope` is derived from position**, not configured — and there are **three** positions, not two: a `<th>` in a header or footer section heads a column, one in the body heads a row, and one with no section around it gets **no `scope` at all**. That last case matters: with the attribute absent the browser's own header-assignment algorithm works it out correctly, so guessing there would overwrite a right answer with a wrong one. It warns in development instead.
+- **A spanning header is a group**: `colSpan` on a header cell produces `scope="colgroup"`, so a two-level header's label reaches every column under it rather than only the first.
+- **The caption is the accessible name**, and the warning fires whenever it renders no text — including `caption={cond && t('…')}` resolving to `false`, which is the shape a real call site writes. Wrap it in `VisuallyHidden` when the design has no room for it.
+- **The empty row spans the table** so the message is laid out across it rather than under the first column. Note what that does _not_ do: a cell spanning every column is associated with **every** column header, so a reader hears them all before the message. It is a layout fix, not an association one.
+- **The empty state has a default.** An empty `<tbody>` reads as "still loading" on screen and tells a screen reader nothing at all, so leaving `empty` out gives the design system's wording rather than silence.
+- **`aria-sort` says two different things, and both are needed.** `ascending`/`descending` on the column in force describes the **data** — so a server-ordered column that has no control still says it is ordered — and `none` on the others marks them as **orderable**. The first version left `none` out, arguing the button already said so; it does not. The button's accessible name is the column heading, and the only other mark was a glyph carrying `aria-hidden`, so a reader had no way to learn the column could be sorted at all.
+- **The sort trigger is a real `Button`**, so the focus ring, the touch target, keyboard activation and the forced-colors handling arrive with it rather than being re-derived. `NavGroup` hand-rolled one once and shipped with no focus ring at all.
+- **All three stops are announced.** Reordering rows is invisible to anyone not looking, so a live region reports each change — including the **clear**, which used to render an empty string. Emptying a live region announces nothing: `role="status"` implies `aria-relevant="additions text"`, so a removal is not in the relevant set, and the stop this component argues hardest for was the one nobody was told about.
+- **It is silent on arrival.** The region is rendered rather than pushed from an effect, and stays empty until the reader activates a header — so a table that mounts already sorted does not announce a sentence from nowhere.
+- **A header that is not words needs `sortLabel`.** `header` is a `ReactNode`, so it may be an icon or an `<abbr>`; without a label the announcement falls back to the column's `key` and reads a developer identifier aloud, untranslated, inside localized copy. It warns.
+- **Every selection checkbox says which row it selects**, by pointing `aria-labelledby` at the row's own header cell rather than stringifying it — so an icon or an `<abbr>` in that cell still reads correctly. Without a `rowHeader` column there is no noun to point at, and the honest fallback ("Select row", identical on every row) warns rather than pretending a row number means something after a re-sort.
+- **A selected row is announced by its checkbox and nothing else**, because `aria-selected` is only meaningful inside a `grid` or `treegrid` and is not announced on a row in a table. Only the header box announces a count, and only because it changes many rows at once — repeating one over every individual tick doubles what the checkbox already says. Its sentence is captured when you click it, not derived from the current rows: derived, it re-announced on the next row tick and on a refetch that returned one row fewer, with nobody having touched anything.
+- **The verb lives outside the table.** A row whose name is an element rather than a string — a link, an icon, an `<abbr>` — has no string to put in a message, so its checkbox is labelled by a hidden "Select" plus the row's own header cell. That span used to sit in the header cell, which is where a `columnheader` takes its name from, so the column announced itself as "Select Select all rows" and every cell in it carried the extra word.
+- **The selection bar is a named region**, whose accessible name is its own count — "Selection: 2, region". It is not announced when it appears, because the table's live region already carries the count and two of them over one fact say it twice; being a landmark is what makes it findable to a reader who never saw it arrive. Its toolbar is `aria-describedby` the count, so tabbing into the actions states the number rather than only "Selection actions, toolbar".
+- **Render the bar AFTER the table.** Before it, forward Tab never reaches the actions the reader just summoned — they would walk backwards past every row checkbox. Put it visually above with CSS if the design wants it there; the package's rule is that visual position is CSS's business.
+- **Focus comes back when the bar goes**, by whatever route: our Clear button, or a bulk action of yours that empties the selection. The element focused when the bar appeared is restored, which scrolls the page back to it — a focus you cannot see is not a focus. A bar that mounts already visible has no origin to return to, and says so by doing nothing.
+- **A sticky header takes a tab stop with it — but only when there is something to scroll.** The container is focusable and named by the `<caption>`, because a region that scrolls and cannot be focused is unreachable to anyone without a pointer; when nothing scrolls it withholds both, since a tab stop over content that does not move is a stop for nothing. The header itself is painted opaque, or the rows scroll straight through it.
+- **A focused control is never scrolled under the header.** Moving BACKWARD through a table — Shift+Tab up through the rows, the ordinary way to review a list — makes the browser scroll the target to the top of the scrollport, which is exactly where the header is: measured at 36px of a focused checkbox buried, against 18px of checkbox. The container is told how tall its own header is, so it stops there instead. Chromium already handles the programmatic `.focus()` case; sequential navigation is the one that needed it (WCAG 2.4.11).
+- **The arrow is drawn inline**, not taken from the icon port. A table that could not show its sort direction until the app injected an icon set would be a table that breaks on somebody else's configuration. Its resting state is set by measurement rather than by eye: at the opacity first chosen it read 1.89:1 against the page, where WCAG 1.4.11 asks 3:1 of anything identifying a state.
+- **Digits use `tabular-nums`** so a numeric column lines up, which is most of what makes one readable.
+- **No vertical rules.** Lines between every column make a table read like a cage; alignment already groups a column for the eye.
+- **The "one card per row" recipe on mobile is forbidden.** Changing `display` on table elements removes the role, and with it the reading mode. The role and that prohibition are one decision, not two.
+- A very wide table stays hard even with perfect markup. The remedy is content — fewer columns, a detail view, aggregates. `stickyHeader`'s container will scroll it horizontally with the keyboard access that requires, but that is a consequence of the header, not an answer to width: a table that is wide and short has no way to ask for the container on its own, and that gap is open on purpose until someone needs it.
