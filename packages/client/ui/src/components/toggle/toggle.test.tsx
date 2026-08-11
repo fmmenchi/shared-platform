@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Toggle } from './toggle.component.js';
 import { renderUi } from '../../test/render.js';
@@ -214,5 +214,24 @@ describe('Toggle', () => {
         });
       }
     }
+  });
+
+  it('survives two presses in one tick, each flipping once', () => {
+    // Two synchronous `.click()`s land in one React batch. Computed from the
+    // captured render value (`setOn(!on)`) both read `false`, both wrote
+    // `true`, and the button stayed pressed after an even number of presses —
+    // the exact shape `useControlled`'s doc names as the reason the updater
+    // exists. The updater resolves each against the last value produced.
+    const changes: boolean[] = [];
+    render(<Toggle onPressedChange={(next) => changes.push(next)}>B</Toggle>);
+    const button = screen.getByRole('button', { name: 'B' });
+
+    act(() => {
+      button.click();
+      button.click();
+    });
+
+    expect(button).toHaveAttribute('aria-pressed', 'false');
+    expect(changes).toEqual([true, false]);
   });
 });

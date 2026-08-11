@@ -65,7 +65,15 @@ function Toggle(props: ToggleProps) {
     // contract `DialogClose` offers, and the only way to veto a press without
     // making the state controlled just to refuse one.
     const result = onClick?.(event) as unknown;
-    if (!event.defaultPrevented) setOn(!on);
+    // THE UPDATER, not `!on` — the render value this closure captured.
+    // `useControlled`'s own doc records this exact shape as the defect the
+    // updater was introduced for: two calls in one tick both compute from the
+    // same base and the first one vanishes. Two presses in one tick are real —
+    // two synchronous `.click()`s under React's batching, or a consumer's key
+    // handler forwarding a click beside the native one — and left the button
+    // stuck after an even number of presses, with `onPressedChange` firing
+    // twice with the same value.
+    if (!event.defaultPrevented) setOn((prev) => !prev);
     // Handed back so a Toggle whose handler is `async` still gets Button's
     // self-managed pending state; swallowing it would quietly drop a feature
     // the props promise.
