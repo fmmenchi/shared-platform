@@ -580,6 +580,12 @@
       "types": "./dist/components/separator/index.d.ts",
       "import": "./dist/separator.js",
       "default": "./dist/separator.js"
+    },
+    "./table-columns-menu": {
+      "@fmmenchi/source": "./src/components/table-columns-menu/index.ts",
+      "types": "./dist/components/table-columns-menu/index.d.ts",
+      "import": "./dist/table-columns-menu.js",
+      "default": "./dist/table-columns-menu.js"
     }
   },
   "nx": {

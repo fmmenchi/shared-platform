@@ -137,6 +137,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'table-columns-menu': 'src/components/table-columns-menu/index.ts',
         'breadcrumb-link': 'src/components/breadcrumb-link/index.ts',
         breadcrumb: 'src/components/breadcrumb/index.ts',
         avatar: 'src/components/avatar/index.ts',

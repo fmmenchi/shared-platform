@@ -336,6 +336,12 @@ export type {
 } from './components/table/use-filter-state.types.js';
 export { useTableFilters } from './components/table/use-table-filters.js';
 export { useColumnWidths } from './components/table/use-column-widths.js';
+export { useColumnVisibility } from './components/table/use-column-visibility.js';
+export type {
+  HiddenColumns,
+  UseColumnVisibilityOptions,
+  UseColumnVisibilityResult,
+} from './components/table/use-column-visibility.types.js';
 export type {
   ColumnWidths,
   UseColumnWidthsOptions,
@@ -384,3 +390,8 @@ export { Slider } from './components/slider/slider.component.js';
 export type { SliderProps } from './components/slider/slider.types.js';
 export { Separator } from './components/separator/separator.component.js';
 export type { SeparatorProps } from './components/separator/separator.types.js';
+export { TableColumnsMenu } from './components/table-columns-menu/table-columns-menu.component.js';
+export type {
+  TableColumnsMenuProps,
+  ColumnListing,
+} from './components/table-columns-menu/table-columns-menu.types.js';

@@ -383,6 +383,31 @@ For a layout the column model cannot express, `TableFilterTrigger` is exported o
 
 **While a filter is on, the "select all matching" offer is withheld.** It means everything the query matched, `total` is the unfiltered size, and the two cannot be reconciled from inside the toolbar — so the offer would have taken the rows the reader had just filtered away.
 
+### Choosing which columns to show
+
+`useColumnVisibility` holds which columns the reader has put away; `TableColumnsMenu` draws the list. `Table` learns nothing about either — it is handed fewer columns and draws fewer columns, the same silence it keeps about where the rows came from.
+
+<Canvas of={TableStories.ColumnVisibility} />
+
+```tsx
+const visibility = useColumnVisibility({ columns });
+
+<TableToolbar label="Vista">
+  <ToolbarItem>
+    <TableColumnsMenu {...visibility.menuProps} />
+  </ToolbarItem>
+</TableToolbar>
+<Table columns={visibility.columns} rows={rows} getRowId={(r) => r.id} caption="…" />
+```
+
+**It belongs to the toolbar, not to a header cell.** A header cell's controls decide things about THAT column — how it sorts, what it filters by. Which columns exist is a decision about the whole view, and a control for it tucked inside one column's menu is a control nobody finds.
+
+**It is a layout parameter, like the widths and unlike the sort.** Sorting and filtering decide which rows exist, so they belong in a query key and in a URL; this decides nothing about the data. Put it wherever a reader's preferences live — a query key would refetch every row because somebody unticked a column.
+
+**Two columns refuse to go, and the menu says which reason applies.** The row header names each row: hide it and a screen reader announces every cell as "column 3, 47", while the table still renders and nothing on screen says anything went wrong. And the last one standing refuses too, because a caption over an empty grid reads as broken rather than chosen. Both are `aria-disabled` rather than `disabled` — inert, still reachable, still able to say what they are — and the reason is in the accessible name, because a disabled control whose reason is not announced is a dead end with no explanation.
+
+**The count is in the trigger's name** ("Columns, 2 of 4 shown"), so the state is legible before the menu is opened and does not depend on seeing a glyph. And the menu stays open while you work: putting three columns away is three decisions, not three visits.
+
 ### A header that stays
 
 <Canvas of={TableStories.StickyHeader} />
