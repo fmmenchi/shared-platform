@@ -116,6 +116,11 @@
   .content[data-side='block-start'] {
     inset-block: 0 auto;
     border-block-end: 1px solid var(--fm-color-border);
+    /* The one side that answered for no safe-area while every sibling did: a
+       top sheet on a phone with a notch put its content under the status bar.
+       Not assertable in the suite — `env()` is 0 there — so the symmetry with
+       the other three sides is the guard. */
+    padding-block-start: calc(1.5rem + env(safe-area-inset-top, 0px));
   }
 
   .content[data-side='block-end'] {

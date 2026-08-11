@@ -34,6 +34,11 @@
  */
 const DEPTH = 'fmScrollLock';
 
+/** Which side the first lock padded, so the last unlock clears the same one. */
+let paddedSide: 'padding-left' | 'padding-right' | null = null;
+/** The consumer's own INLINE value on that side, put back on unlock. */
+let previousInline: { value: string; priority: string } | null = null;
+
 /** Lock the page. Safe to call from anywhere; the count keeps nesting honest. */
 export function lockScroll(): void {
   const root = document.documentElement;
@@ -43,6 +48,23 @@ export function lockScroll(): void {
     // Read BEFORE hiding the overflow — afterwards the gutter is already gone
     // and the difference measures zero.
     const gutter = window.innerWidth - root.clientWidth;
+    // THE SCROLLBAR'S SIDE, from the computed direction. On an rtl page
+    // Chromium and Firefox draw the classic vertical scrollbar on the LEFT,
+    // so padding the right both leaves the jump and adds a spurious gutter on
+    // the reading side. The original only ever measured ltr. (WebKit's rtl
+    // placement is asserted by nothing here — the padding follows the
+    // direction, which matches the two engines it was measured in.)
+    const side =
+      getComputedStyle(root).direction === 'rtl'
+        ? 'padding-left'
+        : 'padding-right';
+    // SUMMED with the page's own padding, not written over it. The computed
+    // value is read before anything changes: `html { padding-right: 2rem }`
+    // overwritten with the bare gutter jumped the content LEFT by 2rem — the
+    // exact movement this function exists to prevent — and snapped back on
+    // close.
+    const computed =
+      Number.parseFloat(getComputedStyle(root).getPropertyValue(side)) || 0;
     // `important`, and only here. A plain inline style beats an ordinary page
     // rule but loses to `html { overflow-y: auto !important }` — measured — and
     // a modal that lets the page scroll behind it is a functional failure, not
@@ -50,7 +72,14 @@ export function lockScroll(): void {
     // off again, so it wins an argument it cannot leave behind.
     root.style.setProperty('overflow', 'hidden', 'important');
     if (gutter > 0) {
-      root.style.setProperty('padding-right', `${gutter}px`, 'important');
+      // A consumer's own inline padding is SAVED, not clobbered: removeProperty
+      // on unlock would delete a value this code did not write.
+      previousInline = {
+        value: root.style.getPropertyValue(side),
+        priority: root.style.getPropertyPriority(side),
+      };
+      paddedSide = side;
+      root.style.setProperty(side, `${computed + gutter}px`, 'important');
     }
   }
 
@@ -69,5 +98,17 @@ export function unlockScroll(): void {
 
   delete root.dataset[DEPTH];
   root.style.removeProperty('overflow');
-  root.style.removeProperty('padding-right');
+  if (paddedSide !== null) {
+    if (previousInline !== null && previousInline.value !== '') {
+      root.style.setProperty(
+        paddedSide,
+        previousInline.value,
+        previousInline.priority,
+      );
+    } else {
+      root.style.removeProperty(paddedSide);
+    }
+    paddedSide = null;
+    previousInline = null;
+  }
 }
