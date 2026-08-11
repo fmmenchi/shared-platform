@@ -365,6 +365,29 @@ describe('Field', () => {
       );
     });
 
+    it('adopts an id passed through getControlProps, and the label follows', async () => {
+      // The public twin of the adoption test the internal path already has.
+      // `getControlProps({ id })` put the id on the element while the field
+      // was never told, so the label kept pointing at the minted id and
+      // clicking it focused nothing — for exactly the audience this hook
+      // exists for (Conform mints its own ids).
+      function Picker() {
+        const { getControlProps } = useField();
+        return <input {...getControlProps({ id: 'conform-owned' })} />;
+      }
+      render(
+        <Field label="Nata il">
+          <Picker />
+        </Field>,
+      );
+      await waitFor(() => {
+        expect(screen.getByLabelText('Nata il')).toHaveAttribute(
+          'id',
+          'conform-owned',
+        );
+      });
+    });
+
     it('warns and wires nothing when called outside a Field', () => {
       const warn = vi
         .spyOn(console, 'warn')

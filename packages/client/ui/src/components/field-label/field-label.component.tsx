@@ -1,6 +1,5 @@
 import { cn } from '../../util/cn.js';
-import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useFieldContext } from '../field/field.context.js';
+import { useFieldPart } from '../field/field.context.js';
 import type { FieldLabelProps } from './field-label.types.js';
 import styles from './field-label.module.css';
 
@@ -10,11 +9,10 @@ import styles from './field-label.module.css';
  */
 function FieldLabel(props: FieldLabelProps) {
   const { className, ...rest } = props;
-  const field = useFieldContext();
-  useDevWarning(
-    field == null,
-    'FieldLabel: used outside a <Field>, so it is not associated with a control.',
-  );
+  // Through `useFieldPart` — the hook written for exactly this part, which sat
+  // unused while this file restated its guard in slightly different words: a
+  // phantom contract plus two phrasings of one warning.
+  const field = useFieldPart('FieldLabel');
   return (
     <label
       htmlFor={field?.controlId}

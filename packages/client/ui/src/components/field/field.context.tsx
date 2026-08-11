@@ -9,8 +9,11 @@ import { useDevWarning } from '../../primitives/use-dev-warning.js';
  * (ADR-0013).
  */
 export interface FieldContextValue {
-  /** id for the control; the label's `htmlFor` targets it. The FIELD owns it, so
-   * the label always associates — a control can't override it inside a Field. */
+  /** id for the control; the label's `htmlFor` targets it. A control that
+   * brings its OWN id is ADOPTED — the field re-points the label at it (see
+   * `registerControl`), so the two never disagree. An earlier version of this
+   * comment claimed the opposite while the code adopted, and the doc drifted
+   * into a promise the tests explicitly refute. */
   controlId: string;
   /** Error state — drives the control's `aria-invalid`. */
   invalid: boolean;
@@ -39,7 +42,7 @@ export function useFieldPart(part: string): FieldContextValue | null {
   const field = useFieldContext();
   useDevWarning(
     field == null,
-    `${part}: used outside a <Field>, so it is not wired to any control.`,
+    `${part}: used outside a <Field>, so it is not associated with a control.`,
   );
   return field;
 }
