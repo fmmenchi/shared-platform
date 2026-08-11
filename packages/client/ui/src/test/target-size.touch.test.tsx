@@ -10,6 +10,7 @@ import { Tab } from '../components/tab/tab.component.js';
 import { TabPanel } from '../components/tab-panel/tab-panel.component.js';
 import { Checkbox } from '../components/checkbox/checkbox.component.js';
 import { Radio } from '../components/radio/radio.component.js';
+import { Slider } from '../components/slider/slider.component.js';
 import { Switch } from '../components/switch/switch.component.js';
 import { Toggle } from '../components/toggle/toggle.component.js';
 import { Table } from '../components/table/table.component.js';
@@ -49,6 +50,11 @@ describe('every control this package draws, under a coarse pointer', () => {
         <Button size="sm">Small</Button>
         <Button size="md">Medium</Button>
         <Input aria-label="Text" size="md" />
+        {/* Drawn by us, labelled EXTERNALLY (htmlFor) — so unlike Switch there
+            is no wrapping label to lend the row its height, and the input box
+            itself must give the finger the 44px. The 6px track stays a line;
+            it is the box that grows. */}
+        <Slider aria-label="Volume" />
         <Select aria-label="Choice" size="md">
           <option>One</option>
         </Select>
@@ -82,6 +88,7 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('button', { name: 'Medium' }),
       screen.getByRole('button', { name: 'Toggle' }),
       screen.getByRole('textbox', { name: 'Text' }),
+      screen.getByRole('slider', { name: 'Volume' }),
       screen.getByRole('combobox', { name: 'Choice' }),
       screen.getByRole('textbox', { name: 'Notes' }),
       screen.getByRole('tab', { name: 'One' }),

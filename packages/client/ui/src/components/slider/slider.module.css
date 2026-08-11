@@ -1,0 +1,227 @@
+/*
+ * Slider styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role utilities / var(--fm-color-*), motion ONLY through
+ * var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate enforces both.
+ *
+ * A DRAWN control, like `Switch` and unlike `Checkbox`/`Radio` — but for the
+ * opposite reason the switch gives: there IS a native slider rendering, and we
+ * take it off anyway, because no engine lets the kept native track show the
+ * FILLED side in a theme colour (`::-moz-range-progress` exists in Gecko
+ * alone; Blink/WebKit have no equivalent at all). So the whole control is
+ * restated here — and handed straight back to the OS in forced colors below,
+ * which is where "keep native rendering" actually pays.
+ *
+ * THE FILL IS A GRADIENT STOPPED AT `--slider-fill`, a percentage the
+ * component writes on the element (at render from props; from a native
+ * `input` listener while the user drags). Custom properties inherit into the
+ * vendor pseudo-elements, so the one number is stated once and both engines'
+ * tracks read it.
+ *
+ * EVERY VENDOR PSEUDO GETS ITS OWN RULE. `::-webkit-slider-thumb` and
+ * `::-moz-range-thumb` (and the track pair) can never share a selector list:
+ * one unknown selector invalidates the whole rule in the OTHER engine, which
+ * is the classic way a slider ships styled in the browser it was written in
+ * and naked everywhere else.
+ *
+ * Colour pairs mirror `Progress`, the component this one is "grabbable"
+ * kin to: groove `muted`, fill `primary` — one vocabulary for "how far along".
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  .slider {
+    /* The UA baseline every control we draw needs — `box-sizing` and the font
+       family — lives once in `styles/utilities.css`. */
+    @apply control-base;
+    appearance: none;
+
+    /* The state of the paint, in three properties the rules below read.
+       `--slider-fill` is the render-time default only — the component keeps it
+       in step with the value; the colour pair is swapped once for :disabled
+       instead of restating four direction × engine gradients. */
+    --slider-fill: 50%;
+    --slider-track: var(--fm-color-muted);
+    --slider-progress: var(--fm-color-primary);
+
+    /* The HIT AREA is the input box, not the drawn track: full width like the
+       other form fields, 24px tall so the target clears WCAG 2.5.8's minimum
+       on its own while the track stays a 6px line. 44px under a coarse
+       pointer, below — the family's rule. */
+    inline-size: 100%;
+    block-size: 1.5rem;
+
+    /* The UA gives a range input its own margin (Chromium: 2px) — asymmetric
+       against its neighbours and invisible until a consumer lines controls up.
+       Reset here: our CSS ships to apps that run no Preflight (ADR-0002). */
+    margin: 0;
+    padding: 0;
+    /* With `appearance: none` the element's own box would otherwise paint the
+       UA's control tint behind our track. The track is drawn by the pseudos. */
+    background: none;
+
+    /* Sits with text in plain inline flow, and holds its size when a label
+       row is flex with text long enough to wrap. */
+    vertical-align: middle;
+    flex: none;
+
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+  }
+
+  /*
+   * THE TRACK, twice — Blink/WebKit then Gecko, separate rules on purpose (see
+   * the header). The gradient is the fill: `progress` up to `--slider-fill`,
+   * `track` from the same stop on — a hard edge, not a fade. The radius is
+   * `sm` on a 6px line: the corner overlap rule scales it down to half the
+   * height, which is what makes the ends round (the same pairing `Progress`
+   * records for its groove).
+   */
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the only track box Blink/WebKit expose */
+  .slider::-webkit-slider-runnable-track {
+    block-size: 0.375rem;
+    border-radius: var(--fm-radius-sm);
+    background-image: linear-gradient(
+      to right,
+      var(--slider-progress) var(--slider-fill),
+      var(--slider-track) var(--slider-fill)
+    );
+  }
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the track box in Gecko */
+  .slider::-moz-range-track {
+    block-size: 0.375rem;
+    border-radius: var(--fm-radius-sm);
+    background-image: linear-gradient(
+      to right,
+      var(--slider-progress) var(--slider-fill),
+      var(--slider-track) var(--slider-fill)
+    );
+  }
+
+  /*
+   * THE THUMB, twice. 16px circle in the fill colour, riding a 6px track.
+   * Blink/WebKit align the thumb's TOP with the track's top, so centring is
+   * arithmetic — half of (16 − 6) up; Gecko centres it natively and gets no
+   * margin. Gecko also draws a thumb border of its own, hence `border: 0`
+   * there and not a shared reset.
+   */
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the thumb in Blink/WebKit */
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    inline-size: 1rem;
+    block-size: 1rem;
+    border-radius: 9999px;
+    background-color: var(--slider-progress);
+    margin-block-start: -0.3125rem;
+  }
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the thumb in Gecko */
+  .slider::-moz-range-thumb {
+    inline-size: 1rem;
+    block-size: 1rem;
+    border: 0;
+    border-radius: 9999px;
+    background-color: var(--slider-progress);
+  }
+
+  /* Disabled is a colour swap, not a fifth gradient: the pair the gradients
+     and the thumb read is redefined once. Same roles as `Switch` disabled. */
+  .slider:disabled {
+    --slider-track: var(--fm-color-disabled);
+    --slider-progress: var(--fm-color-disabled-foreground);
+
+    @apply cursor-not-allowed;
+  }
+
+  /*
+   * RTL: the native control flips for free — thumb travel, keyboard, value —
+   * but a gradient direction is physical, so the fill is the ONE thing left
+   * pointing the wrong way. `:dir()`, not `[dir]` attribute selectors: the
+   * attribute matches an ancestor's ATTRIBUTE while `:dir()` resolves the
+   * COMPUTED direction, and the two diverge exactly where it matters
+   * (measured on Switch — an ltr island inside an rtl page, and rtl inherited
+   * from an ancestor with nothing on the control).
+   */
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+  .slider:dir(rtl)::-webkit-slider-runnable-track {
+    background-image: linear-gradient(
+      to left,
+      var(--slider-progress) var(--slider-fill),
+      var(--slider-track) var(--slider-fill)
+    );
+  }
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+  .slider:dir(rtl)::-moz-range-track {
+    background-image: linear-gradient(
+      to left,
+      var(--slider-progress) var(--slider-fill),
+      var(--slider-track) var(--slider-fill)
+    );
+  }
+
+  /* A FINGER GETS 44px — the same family rule Button and Input carry, grown on
+     the input box while the drawn track stays a line. The thumb needs nothing:
+     a native range accepts the press anywhere in the box. */
+  @media (pointer: coarse) {
+    .slider {
+      block-size: 2.75rem;
+    }
+  }
+
+  /*
+   * Forced colors: HAND THE CONTROL BACK. `Checkbox` and `Radio` keep the
+   * native rendering precisely so the OS's High Contrast treatment is the
+   * OS's; the slider only left it for the fill, and forced colors would strip
+   * a gradient fill anyway (background images that are not url() compute to
+   * none). `appearance: auto` restores the engine-drawn track and thumb in
+   * system colours — geometry, states, the lot — rather than restating them.
+   */
+  @media (forced-colors: active) {
+    .slider {
+      appearance: auto;
+    }
+    /* Belt over braces: if an engine ever honours the pseudo styling with
+       `appearance: auto`, an authored gradient must not shadow the OS paint —
+       and the belt has to beat EVERY rule above, so the rtl track selectors
+       are restated at their own (higher) specificity: source order settles the
+       base pair, nothing settles (0,1,0) against (0,2,0). */
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .slider::-webkit-slider-runnable-track {
+      background-image: none;
+    }
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .slider:dir(rtl)::-webkit-slider-runnable-track {
+      background-image: none;
+    }
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .slider::-moz-range-track {
+      background-image: none;
+    }
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .slider:dir(rtl)::-moz-range-track {
+      background-image: none;
+    }
+    /* The same belt for the THUMBS, which are just as authored as the tracks:
+       hand back the appearance, the fill and — the one that would actually
+       misplace an OS-drawn thumb — the WebKit centring margin. */
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .slider::-webkit-slider-thumb {
+      appearance: auto;
+      background-color: transparent;
+      margin-block-start: 0;
+    }
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .slider::-moz-range-thumb {
+      appearance: auto;
+      background-color: transparent;
+    }
+    /* Restore the OS focus convention, like every other DS control. */
+    .slider:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

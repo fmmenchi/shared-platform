@@ -550,6 +550,12 @@
       "types": "./dist/components/table-header-cell/index.d.ts",
       "import": "./dist/table-header-cell.js",
       "default": "./dist/table-header-cell.js"
+    },
+    "./slider": {
+      "@fmmenchi/source": "./src/components/slider/index.ts",
+      "types": "./dist/components/slider/index.d.ts",
+      "import": "./dist/slider.js",
+      "default": "./dist/slider.js"
     }
   },
   "nx": {
