@@ -46,9 +46,17 @@ function combinedCssPlugin() {
  * permanent, because no test imports the dist.
  */
 function assertNoLanguageSniffPlugin() {
+  let enabled = false;
   return {
     name: 'fm-no-language-sniff',
+    // Only the LIBRARY artifact ships. Storybook's preview build shares this
+    // config's plugins but overrides the `build` options, so its css can
+    // still be downleveled — dev-facing only, and not this guard's business.
+    configResolved(config: { build?: { lib?: unknown } }) {
+      enabled = Boolean(config.build?.lib);
+    },
     writeBundle(_options: { dir?: string }, bundle: Record<string, unknown>) {
+      if (!enabled) return;
       for (const chunk of Object.values(bundle)) {
         const asset = chunk as {
           type?: string;
