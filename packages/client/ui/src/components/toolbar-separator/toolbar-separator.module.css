@@ -4,38 +4,50 @@
 @layer fmmenchi {
   .separator {
     border: 0;
-    /* The UA gives `<hr>` an inline margin and a `block-size`; both show as a
-       gap at the ends of the line. Reset here rather than relying on a page
-       reset: this CSS ships to apps that run no Preflight (ADR-0002). */
+    /* The UA rules for `<hr>` are `margin-block: 0.5em; margin-inline: auto;
+       border: 1px inset` — the visible ~2px is the two inset borders, not a
+       height. Reset here rather than relying on a page reset: this CSS ships
+       to apps that run no Preflight (ADR-0002). */
     margin: 0;
     block-size: 0;
     inline-size: 0;
-    /* It is not a control, so the flex line must not stretch it to the height
-       of one and it must not shrink when the bar wraps. */
+    /* It must not shrink when the bar wraps. */
     flex: none;
     align-self: stretch;
   }
 
   /* ACROSS a bar that runs across the page: a line running down it. Inset a
      little at both ends so it reads as a divider between groups rather than a
-     border on the bar itself. */
+     border on the bar itself.
+
+     `block-size: auto`, un-doing the base reset, is what lets `align-self:
+     stretch` work at all: css-flexbox §9.4 resolves stretch only for an AUTO
+     cross size, so the definite `0` above disabled it and the line rendered
+     1px × 0 — a separator every toolbar showed as nothing but its margins,
+     which no ARIA-only test could see. */
   .separator[data-orientation='vertical'] {
     border-inline-start: var(--fm-border-width-default) solid
       var(--fm-color-border);
     margin-inline: var(--fm-space-inline-s);
     margin-block: var(--fm-space-internal-xs);
+    block-size: auto;
   }
 
+  /* The same §9.4 mechanism in the other axis: a definite `inline-size: 0`
+     disabled the stretch across a vertical bar identically. */
   .separator[data-orientation='horizontal'] {
     border-block-start: var(--fm-border-width-default) solid
       var(--fm-color-border);
     margin-block: var(--fm-space-inline-s);
     margin-inline: var(--fm-space-internal-xs);
     align-self: stretch;
+    inline-size: auto;
   }
 
-  /* The colour is discarded in forced colours, and a divider that disappears
-     takes the grouping with it. */
+  /* The engine repaints border colours with a system colour on its own in
+     forced colours — borders are not among what that mode takes away. Stating
+     `CanvasText` only pins WHICH colour, and guards a future move to a
+     background-drawn line, which forced colours WOULD strip. */
   @media (forced-colors: active) {
     .separator[data-orientation='vertical'] {
       border-inline-start-color: CanvasText;
