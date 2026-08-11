@@ -33,6 +33,46 @@ function combinedCssPlugin() {
   };
 }
 
+/**
+ * The dist artifact is the only place this defect could be seen: the dev
+ * transform the whole test suite runs under keeps `:dir()` as authored, while
+ * the build's CSS minifier — LightningCSS on Vite's LEGACY default targets —
+ * downlevels it into an RTL-LANGUAGE sniff (`:is(:lang(ar),:lang(he),…)`).
+ * Direction and language are independent, so the shipped selector was wrong in
+ * both directions: `<html dir="rtl" lang="en">` kept the LTR paint, and an LTR
+ * island inside a `lang="ar"` page flipped when it must not — the exact case
+ * `:dir()` was chosen over `[dir]` to solve, reintroduced by the pipeline in
+ * six components. `cssTarget` above is the fix; this guard is what makes it
+ * permanent, because no test imports the dist.
+ */
+function assertNoLanguageSniffPlugin() {
+  return {
+    name: 'fm-no-language-sniff',
+    writeBundle(_options: { dir?: string }, bundle: Record<string, unknown>) {
+      for (const chunk of Object.values(bundle)) {
+        const asset = chunk as {
+          type?: string;
+          fileName?: string;
+          source?: unknown;
+        };
+        if (
+          asset.type === 'asset' &&
+          asset.fileName?.endsWith('.css') === true &&
+          typeof asset.source === 'string' &&
+          asset.source.includes(':lang(')
+        ) {
+          throw new Error(
+            `${asset.fileName}: ':lang(' in the built CSS — nothing here is ` +
+              `authored with it, so the minifier has downleveled ':dir()' ` +
+              `into a language sniff again. Raise build.cssTarget instead of ` +
+              `shipping this.`,
+          );
+        }
+      }
+    },
+  };
+}
+
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/packages/client/ui',
@@ -64,6 +104,7 @@ export default defineConfig(() => ({
     }),
     tailwindcss(),
     combinedCssPlugin(),
+    assertNoLanguageSniffPlugin(),
     dts({
       entryRoot: 'src',
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
@@ -73,6 +114,12 @@ export default defineConfig(() => ({
     outDir: './dist',
     emptyOutDir: true,
     reportCompressedSize: true,
+    // The package's own browser floor (ADR-0017: Baseline Widely), stated,
+    // because Vite's DEFAULT css target predates `:dir()` and the minifier
+    // then "helpfully" rewrites it into a language sniff — see the guard
+    // plugin above. These are the engines of early 2024, ~30 months back,
+    // which is what Baseline Widely means.
+    cssTarget: ['chrome120', 'firefox121', 'safari17.2'],
     // Per-entry CSS so each component subpath ships only its own styles.
     cssCodeSplit: true,
     commonjsOptions: {
