@@ -23,7 +23,16 @@
      on a wrapping flex line it makes every command take a line of its own:
      measured, a horizontal bar came out as three stacked rows 350px wide,
      announced as horizontal and walked with the inline arrows. */
-  .menubar[data-orientation='horizontal'] > [role='menuitem'] {
+  /* The checkable rows' direct child is their <label>, role-less — the
+     :has() covers a row composed straight onto the bar, which the family
+     admits (`menu ?? bar`). Without it such a row kept `w-full` and stacked. */
+  .menubar[data-orientation='horizontal']
+    > :is(
+      [role='menuitem'],
+      [role='menuitemcheckbox'],
+      [role='menuitemradio'],
+      label:has(> input)
+    ) {
     width: auto;
   }
 

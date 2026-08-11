@@ -6,6 +6,7 @@ import { Menubar } from './menubar.component.js';
 import { Menu } from '../menu/menu.component.js';
 import { MenuContent } from '../menu-content/menu-content.component.js';
 import { MenuItem } from '../menu-item/menu-item.component.js';
+import { MenuItemCheckbox } from '../menu-item-checkbox/menu-item-checkbox.component.js';
 import { MenuItemTrigger } from '../menu-item-trigger/menu-item-trigger.component.js';
 import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
 import { renderUi } from '../../test/render.js';
@@ -670,5 +671,82 @@ describe('Menubar, when its commands come and go', () => {
     screen.getByRole('button', { name: 'Hide' }).focus();
     await browser.keyboard('{Tab}');
     expect(screen.getByRole('menubar').contains(active())).toBe(true);
+  });
+
+  it('does not strand the bar when a DIRECT command leaves either', async () => {
+    // The cleanup above lived in MenuItemTrigger alone; the three row types
+    // this hook serves — including a plain MenuItem straight on the bar, a
+    // first-class composition — had none. Reader on Help, a permission
+    // unmounts it, activeId points at nothing: the bar held tabIndex={-1} and
+    // left the page's tab order, silently.
+    function GatedDirect() {
+      const [show, setShow] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setShow(false)}>
+            Hide
+          </button>
+          <Menubar label="Editor">
+            <Menu>
+              <MenuItemTrigger>File</MenuItemTrigger>
+              <MenuContent>
+                <MenuItem>New</MenuItem>
+              </MenuContent>
+            </Menu>
+            {show && <MenuItem>Help</MenuItem>}
+          </Menubar>
+        </>
+      );
+    }
+    render(<GatedDirect />);
+    command('Help').focus();
+    await browser.click(screen.getByRole('button', { name: 'Hide' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('menuitem', { name: 'Help' })).toBeNull(),
+    );
+    screen.getByRole('button', { name: 'Hide' }).focus();
+    await browser.keyboard('{Tab}');
+    expect(screen.getByRole('menubar').contains(active())).toBe(true);
+  });
+
+  it('walks the bar from a CHECKABLE row too', async () => {
+    // menuitemcheckbox/radio are not `menuitem` to an exact attribute match:
+    // from "Show sidebar" the ArrowRight bubbled to the bar and the guard
+    // refused the walk — while the mdx promises "walking on from there still
+    // works". The canonical menubar content is exactly a View menu of
+    // checkable rows. Written in the house pattern: keyboard-open, then the
+    // walk lands INSIDE the next menu.
+    render(
+      <Menubar label="Editor">
+        <Menu>
+          <MenuItemTrigger>View</MenuItemTrigger>
+          <MenuContent>
+            <MenuItemCheckbox defaultChecked={false}>
+              Show sidebar
+            </MenuItemCheckbox>
+          </MenuContent>
+        </Menu>
+        <Menu>
+          <MenuItemTrigger>Help</MenuItemTrigger>
+          <MenuContent>
+            <MenuItem>About</MenuItem>
+          </MenuContent>
+        </Menu>
+      </Menubar>,
+    );
+    command('View').focus();
+    await browser.keyboard('{ArrowDown}');
+    const row = await screen.findByRole('menuitemcheckbox', {
+      name: 'Show sidebar',
+    });
+    await waitFor(() => expect(active()).toBe(row));
+
+    await browser.keyboard('{ArrowRight}');
+    await waitFor(() =>
+      expect(command('Help')).toHaveAttribute('aria-expanded', 'true'),
+    );
+    await waitFor(() =>
+      expect(active()).toBe(screen.getByRole('menuitem', { name: 'About' })),
+    );
   });
 });

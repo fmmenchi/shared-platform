@@ -1,4 +1,4 @@
-import { useCallback, useId } from 'react';
+import { useCallback, useEffect, useId } from 'react';
 import {
   pointerMoved,
   useWatchPointer,
@@ -57,6 +57,20 @@ export function useMenuCommand(
 
   const setActiveId = family?.setActiveId;
   const active = family?.activeId === id;
+
+  // GOING AWAY, and saying so — the cleanup `MenuItemTrigger` measured and
+  // wrote ("no command then carried tabindex=0 and the whole bar dropped out
+  // of the tab order") existed in that one row type and not in the three this
+  // hook serves. A plain `MenuItem` straight on a bar is a first-class,
+  // tested composition: the reader stands on it, a permission unmounts it,
+  // `activeId` points at nothing, the bar holds tabIndex={-1} — unreachable
+  // by Tab, silently. A menu recovers because its surface takes the focus; a
+  // bar has no surface to fall back on. One question, two answers, one
+  // already measured wrong.
+  useEffect(
+    () => () => setActiveId?.((current) => (current === id ? null : current)),
+    [setActiveId, id],
+  );
   // The whole stack, not this surface: a command chosen in a submenu leaves
   // nothing standing behind it. A command on a BAR closes nothing, because
   // nothing was opened to reach it.
