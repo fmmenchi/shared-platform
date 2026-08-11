@@ -216,7 +216,16 @@
   /* PAUSED WITH THE CLOCK. An indicator that kept draining while the timer was
      stopped would be a lie told sixty times a second. */
   .remaining[data-paused] {
-    animation-play-state: paused;
+    /* `animation: none`, not `paused` — because the CLOCK RESTARTS. The timer,
+       by tested decision, gives the whole duration back on resume; a bar
+       merely paused resumed from where it was, so after any pause the bar and
+       the timer promised two different moments — the exact drift three
+       comments and the mdx swear impossible. Removed, the bar shows FULL
+       during the pause (which is the truth: resume and you have it all), and
+       re-applying the animation restarts it from zero, in step with the clock.
+       The play-state longhand stays out: it belonged to the resumed-bar
+       model. */
+    animation: none;
   }
 
   @keyframes fm-toast-remaining {
