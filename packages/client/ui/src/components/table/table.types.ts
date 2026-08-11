@@ -229,6 +229,16 @@ interface TableShared extends Omit<
   busy?: boolean;
 }
 
+/**
+ * What a consumer may put on a row: a class and data attributes, and nothing
+ * that would make the row behave. See `getRowProps`.
+ */
+export type TableRowAttributes = {
+  className?: string;
+} & {
+  [key: `data-${string}`]: string | number | boolean | undefined;
+};
+
 interface TableFromData<T> extends TableShared {
   rows: readonly T[];
   columns: readonly Column<T>[];
@@ -242,6 +252,31 @@ interface TableFromData<T> extends TableShared {
    * that follow them look like our bug.
    */
   getRowId: (row: T) => string;
+  /**
+   * Attributes for the row this data produced — a `className` to mark it, a
+   * `data-*` to hang a style or a test hook on.
+   *
+   * THE GAP THIS CLOSES was named on the component's own page before it
+   * existed: "the one most likely to push a consumer into composed mode".
+   * Dropping to the parts to strike out one cancelled row costs the header/body
+   * agreement, the counted `colSpan` and the empty state — a large trade for a
+   * small mark.
+   *
+   * NARROW ON PURPOSE. It is not `ComponentProps<'tr'>`, and the two exclusions
+   * are the point:
+   *
+   * - **No handlers.** A `<tr>` is not focusable, so an `onClick` here is a
+   *   control a keyboard cannot reach — the trap the "Not a grid" section
+   *   exists to refuse. A row that acts puts a link or a button in a cell,
+   *   where the platform can announce and reach it.
+   * - **No `id`, no `hidden`, no `key`.** Those are the component's: `id` ties a
+   *   detail row to the button that controls it, `hidden` is what closes it.
+   *
+   * What the component sets wins. A `data-selected` returned from here is
+   * overwritten rather than honoured, because the checkbox and the attribute
+   * have to agree and only one of them can be the source.
+   */
+  getRowProps?: (row: T, index: number) => TableRowAttributes;
   /** Shown in place of the body when there are no rows. */
   empty?: ReactNode;
   /**
@@ -387,6 +422,11 @@ interface TableComposed extends TableShared {
   rows?: never;
   columns?: never;
   getRowId?: never;
+  /**
+   * Refused with the rest of the data props: it is handed the row that produced
+   * the `<tr>`, and here you write the `<tr>` yourself — put the class on it.
+   */
+  getRowProps?: never;
   /**
    * Refused rather than ignored. `aria-sort` needs a column list to land on,
    * so in composed mode these decided nothing while the prop doc claimed they

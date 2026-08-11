@@ -291,6 +291,21 @@ A column declared in `%` or `vw` warns: the gesture measures the rendered column
 
 For a layout the column model cannot express, `TableColumnResizer` is exported on its own — it takes `label`, `onResize` and `onReset`, and reads the cell it sits in.
 
+### Marking a row
+
+`getRowProps` puts a `className` or a `data-*` on the row a datum produced — the cancelled one struck through, the overdrawn one tinted, a `data-testid` for a test to find.
+
+```tsx
+getRowProps={(invoice) => ({
+  className: invoice.status === 'void' ? styles.void : undefined,
+  'data-overdue': invoice.dueAt < today ? '' : undefined,
+})}
+```
+
+**It takes no handlers, and that is the same refusal as [Not a grid](#not-a-grid).** A `<tr>` is not focusable, so an `onClick` here is a control no keyboard can reach. A row that acts puts a link or a button in a cell, where the platform announces it and Tab arrives at it.
+
+It also takes no `id` and no `hidden`: those tie a detail row to the button that controls it. And what the component sets wins — a `data-selected` returned from here is overwritten rather than honoured, because the checkbox and the attribute have to agree and only one of them can be the source.
+
 ### Expandable rows
 
 ```tsx
@@ -424,7 +439,7 @@ For a header group, a spanning row or a totals footer, drop to the parts. They a
 
 **Neither sorting nor selection comes with you.** `sort`, `onSortToggle`, `selection` and the selection toggles are refused here rather than ignored: `aria-sort` needs a column list to land on, and accepting props that decide nothing is how a consumer spends an afternoon. Put the attribute on your own `TableHeaderCell` — it takes `aria-sort` like any `<th>` — and drive it with `useSortState`. Selection is the same trade with a sharper edge: both hooks still work here, and `useRowSelection` hands you `coverage` for the header box's three states — but the per-row labelling, which is the part that actually goes wrong, becomes yours.
 
-**What the column model cannot express yet**, so you know before you start: per-row attributes (a `className` or `data-*` on a `<tr>`) and column widths, which arrive with resizing. The first is the one most likely to push a consumer into composed mode, and it is worth telling us if it does.
+**What the column model cannot express yet**, so you know before you start: nothing on this list any more. Column widths arrived with resizing, and per-row attributes — the one that was most likely to push a consumer into composed mode — arrived as `getRowProps`.
 
 ## i18n
 
