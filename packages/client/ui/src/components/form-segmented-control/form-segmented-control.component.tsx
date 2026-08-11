@@ -60,6 +60,13 @@ function FormSegmentedControl(props: FormSegmentedControlProps) {
           // a thing one of these options can be.
           value={typeof control.value === 'string' ? control.value : undefined}
           onChange={control.onChange}
+          // `onBlur` rides the same delegation as `onChange`: React's onBlur
+          // is `focusout`, which BUBBLES, so the group hears every segment's.
+          // Dropped, a touched-gated adapter never fired — Formik gates its
+          // errors on `meta.touched`, and `touched` is written by
+          // `field.onBlur` — so the group showed its error only after a
+          // submit, unlike every sibling bound control.
+          onBlur={control.onBlur}
           {...withoutBindingOwned(rest)}
         >
           {children}
