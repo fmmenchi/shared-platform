@@ -39,6 +39,24 @@ function PopoverContent(props: PopoverContentProps) {
   // DOM owns the state, which is why there is no `open` prop beside it.
   const controlled = popover?.controlled;
   usePopoverControlWarnings(controlled, popover?.hasOpenChange ?? false);
+  // DECLARED FIRST, because effects run in declaration order and the two
+  // effects below both call `showPopover()` in the same mount commit — the
+  // `defaultOpen` seed and the controlled sync. Declared last (as it was), the
+  // attribute arrived AFTER the show on those paths: the surface opened, the
+  // UA found no `autofocus`, and the focus stayed on <body> with the name
+  // unannounced — on exactly the openings a consumer does not click for. The
+  // file already uses declaration order as a tool and says so for
+  // `useAnchored`; this is the same tool, one effect earlier.
+  useEffect(() => {
+    // Written as an ATTRIBUTE, not React's `autoFocus` prop, which focuses at
+    // mount — this surface is mounted and closed for most of its life. The UA
+    // reads it when the popover is shown and moves the focus in; measured in
+    // Chromium, and the one piece of focus management the platform does not do
+    // on its own. Taking the focus OUT again on close is its business, and it
+    // does it (measured, from a control inside).
+    surface.current?.setAttribute('autofocus', '');
+  }, []);
+
   const seeded = useRef(false);
   const defaultOpen = popover?.defaultOpen ?? false;
   useEffect(() => {
@@ -84,16 +102,6 @@ function PopoverContent(props: PopoverContentProps) {
     [reportOpen],
   );
   useOpenMirror(surface, report);
-
-  useEffect(() => {
-    // Written as an ATTRIBUTE, not React's `autoFocus` prop, which focuses at
-    // mount — this surface is mounted and closed for most of its life. The UA
-    // reads it when the popover is shown and moves the focus in; measured in
-    // Chromium, and the one piece of focus management the platform does not do
-    // on its own. Taking the focus OUT again on close is its business, and it
-    // does it (measured, from a control inside).
-    surface.current?.setAttribute('autofocus', '');
-  }, []);
 
   return (
     <dialog
