@@ -527,6 +527,12 @@
       "import": "./dist/table-filter-trigger.js",
       "default": "./dist/table-filter-trigger.js"
     },
+    "./table-column-resizer": {
+      "@fmmenchi/source": "./src/components/table-column-resizer/index.ts",
+      "types": "./dist/components/table-column-resizer/index.d.ts",
+      "import": "./dist/table-column-resizer.js",
+      "default": "./dist/table-column-resizer.js"
+    },
     "./table-row": {
       "@fmmenchi/source": "./src/components/table-row/index.ts",
       "types": "./dist/components/table-row/index.d.ts",

@@ -237,6 +237,11 @@ describe('a column filter trigger', () => {
 
     await browser.click(trigger());
     await waitFor(() => expect(field()).toBeVisible());
+    // The surface fades in, and axe composites what it measures — so this used
+    // to report four contrast failures inside an editor that is perfectly
+    // legible once it has arrived. `expectNoA11yViolations` waits for the
+    // animations now, because every a11y assertion over a surface has the same
+    // shape.
     await expectNoA11yViolations(container);
   });
 });

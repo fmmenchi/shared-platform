@@ -12,6 +12,7 @@ import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { Button } from '../button/button.component.js';
 import { TableFilterTrigger } from '../table-filter-trigger/table-filter-trigger.component.js';
+import { TableColumnResizer } from '../table-column-resizer/table-column-resizer.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { coverageOf, isRowSelected } from '../../selection/selection.js';
@@ -22,7 +23,7 @@ import { TableHead } from '../table-head/table-head.component.js';
 import { TableHeaderCell } from '../table-header-cell/table-header-cell.component.js';
 import { TableRow } from '../table-row/table-row.component.js';
 import { tableMessages } from './table.messages.js';
-import type { TableProps } from './table.types.js';
+import type { Column, TableProps } from './table.types.js';
 import styles from './table.module.css';
 
 /**
@@ -82,6 +83,9 @@ function Table<T>(props: TableProps<T>) {
     onSortToggle,
     filters,
     onFilterApply,
+    resizableColumns,
+    columnWidths,
+    onColumnResize,
     selection,
     onRowSelectToggle,
     onSelectAllToggle,
@@ -123,12 +127,41 @@ function Table<T>(props: TableProps<T>) {
   // is the exact combination this feature exists to make unreachable.
   const sticky = stickyHeader === true;
 
+  // ONE RULE, not two facts. `Column.resizable` OVERRIDES the table's switch
+  // rather than standing beside it, so there is no arrangement in which the two
+  // disagree — the shape this file has removed twice.
+  const resizes = (column: Column<T>) =>
+    (column.resizable ?? resizableColumns) === true;
+  const resizable = columns?.some(resizes) === true;
+  // A HANDLE THAT WILL ACTUALLY BE DRAWN. The last column never gets one, so a
+  // single-column table — or one where only the last column is resizable — was
+  // paying the whole cost (a fixed layout, the wider cell padding) for nothing
+  // on screen.
+  const resizesWired =
+    Boolean(onColumnResize) &&
+    columns?.some(
+      (column, index) => resizes(column) && index < columns.length - 1,
+    ) === true;
+
+  // WHAT THE COLUMN IS ACTUALLY WIDE, and the order is the whole rule: a width
+  // the reader chose overrides the one the column declared, and a column with
+  // no entry keeps what it asked for.
+  const widthOf = (column: Column<T>) =>
+    columnWidths?.[column.key] ?? column.width;
+
   // DERIVED, NOT A SECOND PROP. A `layout` prop would be a fact that has to
   // agree with `Column.width` and can be set to disagree with it — the shape
   // this component has spent four milestones removing. One column asking for a
   // width is the whole condition.
-  const sized = columns?.filter((column) => column.width !== undefined) ?? [];
-  const fixed = sized.length > 0;
+  //
+  // A RESIZABLE TABLE IS FIXED FROM THE START, before anything has been
+  // dragged. Under the automatic algorithm a width is a suggestion the browser
+  // overrides whenever the content is wider — so the first drag would move the
+  // border and the column would spring back, which reads as the handle being
+  // broken rather than as the layout having been automatic all along.
+  const sized =
+    columns?.filter((column) => widthOf(column) !== undefined) ?? [];
+  const fixed = sized.length > 0 || resizesWired;
 
   // A WIDTH CSS CANNOT PARSE IS DROPPED BY THE CSSOM, silently — and it still
   // switches the table's layout algorithm, so one typo re-lays-out every OTHER
@@ -137,7 +170,7 @@ function Table<T>(props: TableProps<T>) {
     sized.some(
       (column) =>
         typeof CSS !== 'undefined' &&
-        !CSS.supports('inline-size', column.width as string),
+        !CSS.supports('inline-size', widthOf(column) as string),
     ),
     'Table: a column declares a `width` that is not a valid CSS length, so the browser drops it — and the table is in a fixed layout anyway, which re-sizes every other column. Check the value.',
   );
@@ -146,8 +179,16 @@ function Table<T>(props: TableProps<T>) {
   // meaning what it says: the fixed algorithm redistributes the table's leftover
   // width across the columns, so the declarations become ratios. Leave one
   // column unsized and the rest hold exactly.
+  // DECLARED widths, not the ones the reader chose. Derived from `widthOf` this
+  // scolded a developer, on every render and unfixably, for a reader having
+  // dragged every border — or for the restored layout the hook's own doc
+  // recommends storing.
+  const declared =
+    columns?.filter((column) => column.width !== undefined) ?? [];
   useDevWarning(
-    fixed && columns !== undefined && sized.length === columns.length,
+    declared.length > 0 &&
+      columns !== undefined &&
+      declared.length === columns.length,
     'Table: every column declares a `width`, so the fixed layout has nothing to absorb the leftover and spreads it across all of them — the declared values become proportions rather than sizes. Leave at least one column unsized.',
   );
 
@@ -272,6 +313,27 @@ function Table<T>(props: TableProps<T>) {
   useDevWarning(
     renamed === true,
     "Table: a column carries `sortLabel`, which is now `label` — it was never about sorting, and the filter control is named from it too. The old name is ignored, so the announcement falls back to the column's `key`.",
+  );
+
+  useDevWarning(
+    resizable && !onColumnResize,
+    'Table: columns are marked resizable but nothing is wired to `onColumnResize`, so no handle is drawn. Pass the props from `useColumnWidths`.',
+  );
+
+  // A WIDTH IN A UNIT THE HANDLE CANNOT RETURN TO. The gesture measures the
+  // rendered column and reports pixels, so a column declared in `%` jumps to a
+  // fixed width the first time it is touched and never goes back on its own —
+  // which looks like the handle breaking the layout rather than like the layout
+  // having been relative all along. `Enter` restores it, and this says so.
+  useDevWarning(
+    resizesWired &&
+      columns?.some(
+        (column) =>
+          resizes(column) &&
+          column.width !== undefined &&
+          /%|v[wh]/.test(column.width),
+      ) === true,
+    'Table: a resizable column declares a relative `width` (`%`, `vw`). Resizing reports pixels, so the first drag replaces the relative width with a fixed one and it stops responding to the container. `Enter` on the handle puts it back.',
   );
 
   const sortedColumn = columns?.find((column) => column.key === sort?.key);
@@ -423,6 +485,10 @@ function Table<T>(props: TableProps<T>) {
       data-density={density}
       data-sticky-header={sticky ? '' : undefined}
       data-layout={fixed ? 'fixed' : undefined}
+      // WIDER CELLS, and the cost is stated in the prop's doc. The handle
+      // straddles each boundary, so the padding on both sides of it has to be
+      // at least half its width or the target lands on the heading.
+      data-resizable={resizesWired ? '' : undefined}
       className={cn(styles.table, className)}
     >
       {/* First child, as the parser requires — and a real `<caption>` rather
@@ -474,10 +540,20 @@ function Table<T>(props: TableProps<T>) {
                   )}
                 </TableHeaderCell>
               )}
-              {columns.map((column) => {
+              {columns.map((column, index) => {
                 const active = sort?.key === column.key;
                 const canSort = column.sortable === true && onSortToggle;
                 const canFilter = column.filterable === true && onFilterApply;
+                // NEVER ON THE LAST COLUMN. Its trailing edge is the edge of
+                // the table, so a handle there would resize the table rather
+                // than a column — a different thing wearing the same grip.
+                // THE HANDLER ITSELF, not a boolean, so the closures below
+                // are typed without a second assertion — the shape `canFilter`
+                // already uses one line up.
+                const canResize =
+                  resizes(column) && index < columns.length - 1
+                    ? onColumnResize
+                    : undefined;
                 // THE COLUMN'S NAME IN WORDS, computed once: it names the
                 // trigger and it names the cell, and two copies of a fallback
                 // chain are two places for those to disagree.
@@ -540,15 +616,15 @@ function Table<T>(props: TableProps<T>) {
                     // It is the same defect the checkbox column already fixed
                     // by moving its words out of the cell, and the sort trigger
                     // never had, because that button's name IS the heading.
-                    aria-label={canFilter ? columnName : undefined}
+                    aria-label={canFilter || canResize ? columnName : undefined}
                     // ON THE HEADER CELL ONLY, because under `table-layout:
                     // fixed` the first row is what decides every column — the
                     // body cells inherit the answer and repeating it there
                     // would be the same declaration written N times.
                     style={
-                      column.width === undefined
+                      widthOf(column) === undefined
                         ? undefined
-                        : { inlineSize: column.width }
+                        : { inlineSize: widthOf(column) }
                     }
                     // THE STATE OF THE DATA, and separately the invitation.
                     // `ascending`/`descending` is not gated on `sortable`:
@@ -593,6 +669,26 @@ function Table<T>(props: TableProps<T>) {
                       </span>
                     ) : (
                       heading
+                    )}
+
+                    {/* AFTER the content, and positioned out of the flow: it
+                        straddles the boundary, so half of it sits in this
+                        cell's trailing padding and half in the next cell's
+                        leading one — dead space on both sides, which is how a
+                        24px target costs no content width. */}
+                    {canResize && (
+                      <TableColumnResizer
+                        label={columnName}
+                        onResize={(next) => {
+                          canResize(column.key, `${next}px`);
+                        }}
+                        onReset={() => {
+                          // EMPTY, not the declared value copied back: the
+                          // column already holds that, and a second copy is a
+                          // second thing to keep in step.
+                          canResize(column.key, '');
+                        }}
+                      />
                     )}
                   </TableHeaderCell>
                 );

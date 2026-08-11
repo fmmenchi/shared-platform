@@ -1,5 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import type { SortState } from '../../sorting/compare.types.js';
+import type { ColumnWidths } from './use-column-widths.types.js';
 import type { Selection } from '../../selection/selection.types.js';
 
 /** Which edge a column's content sits against. Numbers want `end`. */
@@ -71,6 +72,22 @@ interface ColumnShape {
    * and renders nothing, like `sortable`.
    */
   filterable?: boolean;
+  /**
+   * Whether this column's trailing border can be moved — an OVERRIDE of the
+   * table's `resizableColumns`, not a second switch beside it.
+   *
+   * The resolution is one rule, `column.resizable ?? resizableColumns`, and it
+   * is one rule on purpose: two independent facts about the same column is how
+   * they start disagreeing, and this file has removed that shape twice already.
+   * So `false` opts a column out of a resizable table — an identifier column
+   * that must stay legible — and `true` opts one in where the table says
+   * nothing.
+   *
+   * The LAST column never gets a handle whatever this says: its trailing edge
+   * is the edge of the table, so dragging it would resize the table rather than
+   * a column.
+   */
+  resizable?: boolean;
   /**
    * The column's name IN WORDS, for the places a `header` cannot go.
    *
@@ -275,6 +292,37 @@ interface TableFromData<T> extends TableShared {
    */
   onFilterApply?: (key: string, value: string) => void;
   /**
+   * Turns the resize handles on for every column, which `Column.resizable` can
+   * then override one at a time.
+   *
+   * It is a TABLE-level switch because resizing is a table-level affordance:
+   * a reader who can move one border expects to move them all, and a table with
+   * three draggable columns out of eight teaches nothing except that the rule
+   * is somewhere else.
+   *
+   * It also costs horizontal space, said here rather than discovered: the cells
+   * take a wider inline padding so the 24px handle straddling each boundary
+   * stays clear of the heading and of the filter control.
+   */
+  resizableColumns?: boolean;
+  /**
+   * How wide each column is — DISPLAYED, never measured, the same bargain
+   * `sort` and `filters` make. An entry overrides that column's own `width`;
+   * a column with no entry keeps what it declared.
+   */
+  columnWidths?: ColumnWidths;
+  /**
+   * The reader finished resizing a column. It receives the KEY and the whole
+   * WIDTH as a CSS length — one call per gesture, never one per pixel: the
+   * handle paints the drag itself, because a width is what the browser is
+   * already computing sixty times a second and routing it through React would
+   * re-render every row to move one border.
+   *
+   * An empty string is a RESET rather than a width of zero — the column goes
+   * back to what it declares. `useColumnWidths` supplies this through `props`.
+   */
+  onColumnResize?: (key: string, width: string) => void;
+  /**
    * Which rows are picked. With `onRowSelectToggle` it adds the checkbox
    * column — the column is OURS to draw rather than yours to write as a `cell`,
    * because the part nobody gets right is not the box, it is what the box is
@@ -325,6 +373,14 @@ interface TableComposed extends TableShared {
    */
   filters?: never;
   onFilterApply?: never;
+  /**
+   * Refused with the others, and for the same reason: the handle is placed from
+   * the column list, and there is none here. Put `TableColumnResizer` in your
+   * own `TableHeaderCell` and drive it with `useColumnWidths`.
+   */
+  resizableColumns?: never;
+  columnWidths?: never;
+  onColumnResize?: never;
   /**
    * Refused for the same reason as `sort`: the checkbox column is generated
    * from the column list, and there is none here. Write the cells yourself and
