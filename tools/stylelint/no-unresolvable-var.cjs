@@ -44,7 +44,8 @@ const TOKEN_SOURCES = [
 ];
 
 const DEFINED = /(?:^|[;{]|@property)\s*(--fm-[A-Za-z0-9_-]+)\s*[:{]/gm;
-const USED = /var\(\s*(--[A-Za-z0-9_-]+)/g;
+// The capture stops at the name; group 2 sniffs whether a fallback follows.
+const USED = /var\(\s*(--[A-Za-z0-9_-]+)\s*(,)?/g;
 const DECLARED_IN_FILE = /^--[A-Za-z0-9_-]+$/;
 
 /** Read the token contract once per process — the files do not change mid-run. */
@@ -85,6 +86,15 @@ module.exports = stylelint.createPlugin(ruleName, (primary) => {
       for (const match of decl.value.matchAll(USED)) {
         const name = match[1];
         if (locals.has(name)) continue;
+        // A var() WITH A FALLBACK cannot ship unresolved — the fallback IS the
+        // resolution, by construction. This is how a component declares a knob
+        // the CONSUMER may set (`var(--app-layout-header-offset, 0px)`)
+        // without a local default that would shadow a value inherited from
+        // :root — locality beats inheritance for custom properties, layers or
+        // not. The rule kept flagging exactly that shape, and what it exists
+        // for — a name that resolves to NOTHING — is the case with no
+        // fallback.
+        if (match[2] === ',') continue;
 
         let message;
         if (name.startsWith('--fm-')) {

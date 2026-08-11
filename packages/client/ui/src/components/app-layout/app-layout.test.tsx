@@ -183,4 +183,34 @@ describe('AppLayout', () => {
       await expectNoA11yViolations(container);
     });
   });
+
+  describe('orphaned parts', () => {
+    it('warns AppLayoutNav by name, whose orphanhood is the most expensive', () => {
+      // Outside the shell there is no container-typed ancestor: `@variant @xl`
+      // never matches, `--nav-form` stays 'drawer', and a 1920px desktop keeps
+      // its navigation behind a "Menu" button forever. It was the only part of
+      // the family outside the warn-by-name discipline.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<AppLayoutNav label="Principale">x</AppLayoutNav>);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('AppLayoutNav'),
+      );
+      warn.mockRestore();
+    });
+
+    it('lets an orphaned AppLayoutMain keep the id it was given', () => {
+      // Inside the shell the id is the skip link's wire and must not move;
+      // outside it `id={undefined}` after the spread was DELETING the
+      // consumer's own — their skip link went dark while the warning talked
+      // about wiring.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(<AppLayoutMain id="content">testo</AppLayoutMain>);
+      expect(screen.getByRole('main')).toHaveAttribute('id', 'content');
+      warn.mockRestore();
+    });
+  });
 });

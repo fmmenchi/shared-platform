@@ -136,7 +136,23 @@ const form = useAppLayoutNavForm(); // 'column' | 'drawer' | null
 
 ### A sticky header is the consumer's, and it covers things
 
-If your `<header>` is sticky, set `--app-layout-header-offset` to its height on the layout. The shell cannot know it, and without it the sticky column's first link — and anything the browser scrolls to — lands underneath the banner, which is WCAG 2.4.11. The skip link needs no such help: it takes the top of the layer stack.
+If your `<header>` is sticky, two lines — both yours, because both touch things the shell has no
+authority over (ADR-0022):
+
+```css
+:root {
+  --app-layout-header-offset: 64px; /* your banner's height */
+}
+html {
+  scroll-padding-block-start: var(--app-layout-header-offset);
+}
+```
+
+The variable offsets the sticky column; the `html` rule is what keeps **anything the browser scrolls
+to** — an anchor jump, a Shift+Tab to a control above the fold — from landing underneath the banner
+(WCAG 2.4.11). It has to live on `html` because the _document_ is what scrolls: an earlier version
+declared `scroll-padding` on the layout's own grid, where the property is inert by definition. The
+skip link needs no such help: it takes the top of the layer stack.
 
 ### Sizes are tokens, not props
 

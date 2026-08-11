@@ -29,11 +29,17 @@
     /* WHAT A STICKY HEADER TAKES. A consumer's sticky banner covers whatever
        the browser has just scrolled to — the rail's first link after a
        Shift+Tab, an anchor jumped to from the content (WCAG 2.4.11). The shell
-       cannot know the banner's height, so it is ONE property a consumer sets
-       and both the scroll and the sticky column respect. */
-    --app-layout-header-offset: 0px;
-
-    scroll-padding-block-start: var(--app-layout-header-offset);
+       cannot know the banner's height, so `--app-layout-header-offset` is the
+       consumer's to set — ON `:root`, and the mdx says why: the DOCUMENT is
+       what scrolls, so the scroll half of the fix is `html {
+       scroll-padding-block-start: var(--app-layout-header-offset) }`, a rule
+       only the consumer may write (ADR-0022 — the shell has no authority over
+       the page). A `scroll-padding` used to be declared HERE, on a grid that
+       is not a scroll container, where the property is inert by definition —
+       a promise the suite itself disproves (the root overflows, `main` does
+       not). And the 0px default used to live here too, which SHADOWED a value
+       the consumer set on :root — inheritance loses to a local declaration —
+       so the fallback moved into the var() below. */
     display: grid;
     min-block-size: 100dvh;
     /* MOBILE FIRST. One column, and the drawer's trigger shares the header's
@@ -88,7 +94,7 @@
   .layout > [data-region='nav'][data-form='column'] {
     grid-area: nav;
     position: sticky;
-    inset-block-start: var(--app-layout-header-offset);
+    inset-block-start: var(--app-layout-header-offset, 0px);
     /* `align-self` and the cap below are a PAIR, and neither alone does the
        job — measured: without `align-self` the cap still bounds the stretched
        item, and without the cap a long navigation grows past the viewport and
