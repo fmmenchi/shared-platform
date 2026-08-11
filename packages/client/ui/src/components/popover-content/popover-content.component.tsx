@@ -42,11 +42,15 @@ function PopoverContent(props: PopoverContentProps) {
   // DECLARED FIRST, because effects run in declaration order and the two
   // effects below both call `showPopover()` in the same mount commit — the
   // `defaultOpen` seed and the controlled sync. Declared last (as it was), the
-  // attribute arrived AFTER the show on those paths: the surface opened, the
-  // UA found no `autofocus`, and the focus stayed on <body> with the name
-  // unannounced — on exactly the openings a consumer does not click for. The
-  // file already uses declaration order as a tool and says so for
-  // `useAnchored`; this is the same tool, one effect earlier.
+  // attribute arrived AFTER the show on those paths, and MEASURED (distilled
+  // to a bare popover) that is an attribute that never acts: Chromium runs the
+  // popover focusing steps synchronously inside `showPopover()`, and setting
+  // `autofocus` afterwards focuses nothing, ever. What HID the defect at the
+  // component level — also measured — is that a `<dialog>` shown as a popover
+  // catches focus in Chromium even without the attribute, so the mount test
+  // alone cannot tell the two orders apart there; other engines get no such
+  // rescue, which is why the attribute must precede every show rather than
+  // ride behind the first one.
   useEffect(() => {
     // Written as an ATTRIBUTE, not React's `autoFocus` prop, which focuses at
     // mount — this surface is mounted and closed for most of its life. The UA
