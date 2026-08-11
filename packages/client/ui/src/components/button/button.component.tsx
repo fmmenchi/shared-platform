@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '../../util/cn.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useMessages } from '../../i18n/provider.js';
 import { buttonMessages } from './button.messages.js';
 import { buttonVariants } from './button.variants.js';
@@ -35,7 +36,15 @@ function Button<As extends React.ElementType = 'button'>(
   const Comp = (as ?? 'button') as React.ElementType;
   const isNativeButton = Comp === 'button';
   const t = useMessages(buttonMessages);
-  const isIconOnly = !!((icon || iconEnd) && !children);
+  // THROUGH `hasRenderableChildren`, and the bare `!children` it replaces was
+  // wrong in BOTH directions. `children={0}` — a counter at zero beside an
+  // icon — is falsy, so the zero was classified icon-only: squeezed into an
+  // `aspect-square p-0` box, its icon stripped of `aria-hidden`, and a warning
+  // demanding `aria-label` over a label anyone can read. Badge says it in one
+  // line: a zero is a real count. And `children={[]}` or whitespace are truthy,
+  // so a button with an icon and NO readable text was classified as labelled
+  // and never warned — the unnamed control this guard exists to catch.
+  const isIconOnly = !!((icon || iconEnd) && !hasRenderableChildren(children));
   const attrs = rest as Record<string, unknown>;
 
   // A DOM tag other than <button> (as="a") cannot take `disabled` (TS already
