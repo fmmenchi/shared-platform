@@ -2,6 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { <%= className %> } from './<%= fileName %>.component.js';
 
 const meta: Meta<typeof <%= className %>> = {
+  // TODO: file it under its GROUP — `Components/<Group>/<%= className %>`, where
+  // <Group> is the row of the Shipped table in `docs/roadmap.md` that names this
+  // component. The sidebar and that page are one taxonomy, and
+  // `src/test/roadmap.test.ts` fails until they agree: an ungrouped title like
+  // the one below is how `Breadcrumb`, `Progress` and `Separator` each ended up
+  // loose at the top of the sidebar.
   title: 'Components/<%= className %>',
   component: <%= className %>,
   args: { children: '<%= className %>' },

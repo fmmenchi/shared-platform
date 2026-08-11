@@ -54,7 +54,7 @@ function DemoSettings({ children }: { children: ReactNode }) {
 }
 
 const meta: Meta<typeof FormSwitch> = {
-  title: 'Components/Inputs/FormSwitch',
+  title: 'Components/Form adapters/FormSwitch',
   component: FormSwitch,
   argTypes: {
     name: {

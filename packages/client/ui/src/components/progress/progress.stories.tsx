@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Progress } from './progress.component.js';
 
 const meta: Meta<typeof Progress> = {
-  title: 'Components/Progress',
+  title: 'Components/Feedback/Progress',
   component: Progress,
   args: { label: 'Upload', value: 0.4 },
   // The Props table is CURATED here (react-docgen can't derive it) — every

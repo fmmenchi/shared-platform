@@ -44,7 +44,7 @@ function DemoForm({ children }: { children: ReactNode }) {
 }
 
 const meta: Meta<typeof FormTextarea> = {
-  title: 'Components/Inputs/FormTextarea',
+  title: 'Components/Form adapters/FormTextarea',
   component: FormTextarea,
   args: { name: 'notes', label: 'Notes', rows: 4 },
   argTypes: {

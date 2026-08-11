@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Separator } from './separator.component.js';
 
 const meta: Meta<typeof Separator> = {
-  title: 'Components/Separator',
+  title: 'Components/Utilities/Separator',
   component: Separator,
   // The Props table is CURATED here (react-docgen can't derive it) — every
   // public prop, with its type summary, default and description.
