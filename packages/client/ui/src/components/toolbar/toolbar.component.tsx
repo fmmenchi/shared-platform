@@ -289,7 +289,15 @@ function Toolbar(props: ToolbarProps) {
       // Cloning an `onFocus` onto the control would have REPLACED the one it
       // came with, the defect the Tooltip's trigger documents at length.
       const target = event.target as HTMLElement;
-      if (!items.items().some((item) => item.element === target)) return;
+      // RING MEMBERS ONLY. Fields are registered descendants too — `partition`
+      // separates them later — so a visit to the Font field overwrote the
+      // memory, and `apply()` finding a non-ring holder reset the stop to the
+      // FIRST control: arrow to Italic, click into the field to type, and the
+      // return Tab landed on Bold — textually the failure the "remembers where
+      // the user was" test claims to prevent, arriving through the one door it
+      // does not watch.
+      const { ring } = partition(items.items());
+      if (!ring.some((item) => item.element === target)) return;
       holder.current = target;
       apply();
     },

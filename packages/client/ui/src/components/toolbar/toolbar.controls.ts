@@ -144,7 +144,11 @@ const ARROW_ROLES = new Set([
  */
 /** Anything the browser will hand a tab stop to on its own. */
 const FOCUSABLE =
-  'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  // `:disabled` and `[type="hidden"]` excluded: a disabled bare <button> and a
+  // form's hidden <input> are never focusable, and the orphan warning built on
+  // this selector called each "a tab stop of its own" — false, and a false
+  // warning teaches people to ignore the true ones.
+  'a[href], button:not(:disabled), input:not(:disabled):not([type="hidden"]), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
 /** Warned about already — `apply` runs on every mutation, and once is enough. */
 const reported = new WeakSet<Element>();
