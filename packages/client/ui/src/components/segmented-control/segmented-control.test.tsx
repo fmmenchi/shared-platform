@@ -196,4 +196,20 @@ describe('SegmentedControl', () => {
       });
     }
   });
+
+  it('takes the native aria-label as the name, not as a casualty of the spread', () => {
+    // Muscle memory writes the attribute instead of the `label` prop. It used
+    // to ride in through the spread and be overwritten with `undefined` a line
+    // later — React removes the attribute, so the group lost its name AND the
+    // `radiogroup` role that travels with it, silently.
+    render(
+      <SegmentedControl name="align" defaultValue="l" aria-label="Allineamento">
+        <SegmentedControlItem value="l">Sinistra</SegmentedControlItem>
+        <SegmentedControlItem value="r">Destra</SegmentedControlItem>
+      </SegmentedControl>,
+    );
+    expect(
+      screen.getByRole('radiogroup', { name: 'Allineamento' }),
+    ).toBeInTheDocument();
+  });
 });
