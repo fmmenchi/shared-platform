@@ -5,10 +5,10 @@ exports[`Accordion > matches the rendered snapshot 1`] = `
   class="_accordion_1eo2b_3"
 >
   <details
-    class="_item_19vuf_4"
+    class="_item_2j66k_4"
   >
     <summary
-      class="_trigger_bsy5k_4"
+      class="_trigger_kxgjf_4"
     >
       Uno
     </summary>
@@ -20,10 +20,10 @@ exports[`Accordion > matches the rendered snapshot 1`] = `
     </div>
   </details>
   <details
-    class="_item_19vuf_4"
+    class="_item_2j66k_4"
   >
     <summary
-      class="_trigger_bsy5k_4"
+      class="_trigger_kxgjf_4"
     >
       Due
     </summary>
@@ -35,10 +35,10 @@ exports[`Accordion > matches the rendered snapshot 1`] = `
     </div>
   </details>
   <details
-    class="_item_19vuf_4"
+    class="_item_2j66k_4"
   >
     <summary
-      class="_trigger_bsy5k_4"
+      class="_trigger_kxgjf_4"
     >
       Tre
     </summary>

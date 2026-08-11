@@ -87,4 +87,18 @@ describe('AccordionTrigger', () => {
     );
     expect(ref.current?.tagName).toBe('SUMMARY');
   });
+
+  it('tweens BOTH motions of the chevron, not only the rotation', () => {
+    // Between closed and open the glyph rotates AND nudges (`translate`).
+    // Listed alone, `rotate` tweened while the nudge snapped on frame one —
+    // two motions of one glyph, one animated.
+    render(
+      <AccordionItem>
+        <AccordionTrigger>Voce</AccordionTrigger>
+      </AccordionItem>,
+    );
+    const style = getComputedStyle(screen.getByText('Voce'), '::after');
+    expect(style.transitionProperty).toContain('rotate');
+    expect(style.transitionProperty).toContain('translate');
+  });
 });
