@@ -12,7 +12,8 @@
   },
   "files": [
     "dist",
-    "src/styles"
+    "src/styles",
+    "src/dtcg"
   ],
   "sideEffects": [
     "**/*.css"
@@ -35,6 +36,8 @@
       "import": "./dist/validate.js",
       "default": "./dist/validate.js"
     },
+    "./dtcg/base.json": "./src/dtcg/base.json",
+    "./dtcg/dark.json": "./src/dtcg/dark.json",
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
     "./styles/baseline.css": "./src/styles/baseline.css",

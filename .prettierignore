@@ -14,6 +14,13 @@ coverage
 /apps/docusaurus/build
 /apps/docusaurus/.docusaurus
 
+# Generated and COMMITTED (kept honest by dtcg.test.ts's file snapshots), so
+# prettier must not restyle it: JSON.stringify writes one array element per
+# line where prettier collapses short arrays, and the two tools take turns
+# rewriting the file — format:write breaks the snapshot, `vitest -u` breaks
+# the format check, forever.
+/packages/client/tokens/src/dtcg
+
 # Generated at build time and gitignored, so `format:check --all` flags it locally
 # (where a build has produced it) but not in CI, where the check runs first — an
 # ordering-dependent red main waiting to happen.

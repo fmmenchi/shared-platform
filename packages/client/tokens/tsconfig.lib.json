@@ -13,7 +13,8 @@
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/generate.ts",
-    "src/registry.ts"
+    "src/registry.ts",
+    "src/dtcg.ts"
   ],
   "references": []
 }
