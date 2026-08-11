@@ -36,9 +36,17 @@ const stylesheets = import.meta.glob('../components/**/*.module.css', {
  * rather than a Tailwind class — so the one case the doctrine spells out was
  * the one the pattern could not see. Adding it failed nothing that already
  * shipped: all four stylesheets it newly matches were answering already.
+ *
+ * Then it missed the same shape AGAIN, one indirection later: `Slider` routes
+ * its token through a component property (`background-color:
+ * var(--slider-progress)`, itself set from `--fm-color-*`), which the
+ * token-prefixed pattern could not see either. The arm now matches any
+ * `var(--…)` background — a custom property that ISN'T carrying colour still
+ * deserves the question, because forced colors will flatten whatever it
+ * carries into the fill.
  */
 const LOSES =
-  /shadow-(?!none)|outline-ring|outline-color|\bbg-(?!none)[a-z]|background(-color)?:\s*var\(--fm-color-/;
+  /shadow-(?!none)|outline-ring|outline-color|\bbg-(?!none)[a-z]|background(-color)?:\s*var\(--/;
 
 describe('forced colors', () => {
   it('has stylesheets to check at all', () => {

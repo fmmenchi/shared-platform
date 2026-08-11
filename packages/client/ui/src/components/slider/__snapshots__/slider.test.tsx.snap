@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Slider > matches the rendered snapshot 1`] = `
+<div>
+  <label
+    for="volume"
+  >
+    Volume
+  </label>
+  <input
+    class="_slider_13h2r_4"
+    id="volume"
+    style="--slider-fill: 30%;"
+    type="range"
+    value="30"
+  />
+</div>
+`;

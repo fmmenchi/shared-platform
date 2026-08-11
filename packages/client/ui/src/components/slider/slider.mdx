@@ -1,0 +1,64 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as SliderStories from './slider.stories.tsx';
+
+<Meta of={SliderStories} />
+
+# Slider
+
+Pick one value from a range — volume, a price cap, a duration — by dragging or with the arrow keys, on the native `<input type="range">`. The keyboard, the form behaviour and the announced value are the platform's own; the design system only paints it, in both themes.
+
+## Props
+
+Every native `<input>` attribute is accepted except `type`, which is the component's identity. It is **transparent** ([ADR-0013](../../../../../apps/docusaurus/docs/adr/0013-form-controls-contract.md)): it forwards its ref, spreads every native prop and never touches `value`/`onChange` — your handler is attached to the element unchanged, so it works uncontrolled or controlled and drops into any form library. The one own prop is `getValueText`, which formats the announced value; there is no `variant` and no `size`.
+
+<Controls of={SliderStories.Default} />
+
+## Usage
+
+### A labelled slider
+
+Label it with an **external `<label htmlFor>`** — a range input holds no text of its own, so the visible name lives next to it. `aria-label` works where there is genuinely no room for one.
+
+<Canvas of={SliderStories.Default} />
+
+### States
+
+The filled side of the track follows the value; `disabled` swaps the pair for the family's disabled roles.
+
+<Canvas of={SliderStories.States} />
+
+### A custom range
+
+`min`, `max` and `step` go to the element untouched — the arrows move by one step, `Home`/`End` to the ends, `PageUp`/`PageDown` by a larger jump where the engine implements them.
+
+<Canvas of={SliderStories.CustomRange} />
+
+### Controlled
+
+`value` + `onChange`, like any native input. When the number has units, give the component a **`getValueText`** formatter so what is announced matches what is shown — it works uncontrolled too, because the component re-runs it as the user drags.
+
+<Canvas of={SliderStories.Controlled} />
+
+### In a form
+
+It has a `name`, it submits, and **Reset puts it back** — the value _and_ the painted fill. The DOM owns the value, which is exactly what makes `form.reset()` work; the component re-reads it after the reset to repaint.
+
+<Canvas of={SliderStories.InAForm} />
+
+### Right to left
+
+The native control flips travel, keyboard and value by itself; the painted fill follows the computed direction.
+
+<Canvas of={SliderStories.RightToLeft} />
+
+## Accessibility
+
+- **Announced as a slider**, with its value, minimum and maximum — all derived by the platform from the element's own attributes, never restated in ARIA.
+- **The keyboard is native**: arrows step, `Home`/`End` go to the bounds, `PageUp`/`PageDown` jump where the engine implements them. Nothing was added, so nothing can disagree with the platform.
+- **Name it with an external `<label htmlFor>`** (see [A labelled slider](#a-labelled-slider)) or `aria-label`. A slider with no name announces a percentage of nothing.
+- **`getValueText` gives the value its units** — "30 minutes", not "30" (see [Controlled](#controlled)) — and the component re-runs it as the user drags, so it cannot go stale. A **static `aria-valuetext` is for controlled usage only**: it overrides the correct `aria-valuenow`, so on an uncontrolled slider it announces an actively wrong value from the first drag.
+- **`aria-invalid` has deliberately no visual treatment here**, and that is recorded rather than forgotten: a range input cannot hold an out-of-range value, so the error a form library flags is about the FIELD, and `FieldError` carries the message next to it.
+- **The target is the input box, not the 6px track**: 24px tall — WCAG 2.5.8's minimum on its own — and 44px under a coarse pointer, the family's rule.
+- **Windows High Contrast is handed back to the OS**: `appearance: auto` restores the engine-drawn track and thumb in system colours, the same "keep native rendering" reasoning `Checkbox` and `Radio` record.
+- **The fill is never the only cue.** The thumb's position carries the value even where the fill collapses; colour contrast between fill and groove mirrors `Progress`.

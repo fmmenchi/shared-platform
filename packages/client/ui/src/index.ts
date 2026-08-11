@@ -380,3 +380,5 @@ export type {
   AvatarProps,
   AvatarVariants,
 } from './components/avatar/avatar.types.js';
+export { Slider } from './components/slider/slider.component.js';
+export type { SliderProps } from './components/slider/slider.types.js';

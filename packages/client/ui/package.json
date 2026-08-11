@@ -568,6 +568,12 @@
       "types": "./dist/components/avatar/index.d.ts",
       "import": "./dist/avatar.js",
       "default": "./dist/avatar.js"
+    },
+    "./slider": {
+      "@fmmenchi/source": "./src/components/slider/index.ts",
+      "types": "./dist/components/slider/index.d.ts",
+      "import": "./dist/slider.js",
+      "default": "./dist/slider.js"
     }
   },
   "nx": {

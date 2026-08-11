@@ -73,10 +73,12 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   // non-text state indicator and owes 3:1 against the page (WCAG 1.4.11) — the
   // fill/foreground pair above says nothing about how the control reads on it.
   ['background', 'primary', 3],
-  // A progress bar's fill against its groove. The fill is the ONLY thing
-  // telling how far along from how far to go, so it is a non-text indicator and
-  // owes 3:1 (WCAG 1.4.11) — and it is a pairing no other component makes, since
-  // `muted` is elsewhere a surface for text rather than a track under a fill.
+  // A fill against its groove — `Progress`'s bar, and `Slider`'s fill and
+  // thumb, which share the pairing on purpose ("how far along" is one
+  // vocabulary). The fill is the ONLY thing telling how far along from how far
+  // to go, so it is a non-text indicator and owes 3:1 (WCAG 1.4.11); no other
+  // component makes this pairing, since `muted` is elsewhere a surface for
+  // text rather than a track under a fill.
   ['muted', 'primary', 3],
   // And a SELECTED TABLE ROW repaints the surface under that mark. `Table`
   // tints the row `primary-subtle`, so the checked box — which the component
