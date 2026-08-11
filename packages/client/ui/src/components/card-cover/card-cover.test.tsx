@@ -4,7 +4,7 @@ import { CardCover } from './card-cover.component.js';
 import { Card } from '../card/card.component.js';
 
 const COVER =
-  "data:image/svg+xml,%%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%%3E%%3Crect width='16' height='9'/%%3E%%3C/svg%%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 9'%3E%3Crect width='16' height='9'/%3E%3C/svg%3E";
 
 describe('CardCover', () => {
   it('IS the media element, not a box around one', () => {
@@ -66,5 +66,17 @@ describe('CardCover', () => {
     // the stylesheet fills the image inside them.
     expect(container.firstElementChild?.tagName).toBe('PICTURE');
     expect(container.querySelector('picture > img')).not.toBeNull();
+  });
+
+  it('says so when the ratio is written with a colon', () => {
+    // The class of defect Table warns about for `width`: CSS drops what it
+    // cannot parse, silently — the media keeps its intrinsic proportions and
+    // the grid the prop exists to align stops aligning.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(<CardCover src={COVER} alt="" ratio="16:9" />);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('wants the slash'),
+    );
+    warn.mockRestore();
   });
 });
