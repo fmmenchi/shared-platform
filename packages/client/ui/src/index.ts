@@ -382,3 +382,5 @@ export type {
 } from './components/avatar/avatar.types.js';
 export { Slider } from './components/slider/slider.component.js';
 export type { SliderProps } from './components/slider/slider.types.js';
+export { Separator } from './components/separator/separator.component.js';
+export type { SeparatorProps } from './components/separator/separator.types.js';

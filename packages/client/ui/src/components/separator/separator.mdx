@@ -1,0 +1,74 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as SeparatorStories from './separator.stories.tsx';
+
+<Meta of={SeparatorStories} />
+
+# Separator
+
+A visible line between two regions of content, in either orientation. Built on the native `<hr>` —
+its implicit role is already `separator`, so what a screen reader announces comes from the platform,
+and the line keeps its meaning under forced colours.
+
+## Props
+
+Both props default to what an `<hr>` already is: horizontal, and semantic. They are also the
+**only** knobs for what they control: a raw `aria-hidden` or `aria-orientation` passed as a prop is
+intentionally overridden (the component writes both after the spread) — those attributes are the
+component's contract with assistive tech, and `decorative` / `orientation` are how you steer it.
+
+<Controls of={SeparatorStories.Horizontal} />
+
+## Usage
+
+It ships no margins: spacing around a region boundary belongs to the consuming layout (a `gap`, a
+stack), not to the line that marks it.
+
+### Horizontal
+
+The default — a rule between stacked regions.
+
+<Canvas of={SeparatorStories.Horizontal} />
+
+### Vertical
+
+`orientation="vertical"` turns the line down the page and announces it as such. In a flex or grid
+row the parent gives it its height (`align-self: stretch`); **standing alone there is no row to take
+a height from, and you must give it an explicit `block-size`** — a borderless zero-height line is
+what forgetting looks like. And forgetting is worse than invisible: the zero-size element stays in
+the accessibility tree, a boundary only screen-reader users are told about.
+
+<Canvas of={SeparatorStories.Vertical} />
+
+### Decorative
+
+`decorative` keeps the line and hides it from assistive tech, for a rule that only repeats a
+boundary the structure already states — under a heading, between `<section>`s. A reader hearing
+"separator" between a heading and its own content is being told about a boundary that is not there.
+
+<Canvas of={SeparatorStories.Decorative} />
+
+### When the family separator, when this
+
+Inside a `Menu` or a `Toolbar`, use `MenuSeparator` / `ToolbarSeparator`: they are parts of a
+family — the toolbar's derives its orientation from the bar instead of a prop, and both carry their
+family's own spacing between groups. This one is for everywhere else, where there is no family with
+an answer of its own to give.
+
+## Accessibility
+
+- **The element is the semantics.** `<hr>` carries `role="separator"` implicitly; no role is
+  written, and no div ever stands in for it.
+- **Horizontal says nothing.** `role="separator"` already means horizontal, and stating a default
+  is a second place for it to be wrong — the attribute is absent, not present saying `'horizontal'`.
+- **Vertical declares itself** with `aria-orientation="vertical"` — the one orientation that is
+  news (the `Vertical` story demonstrates it). What a given screen reader makes of it varies —
+  orientation is reliably voiced only for focusable window-splitters — but none is told the wrong
+  direction.
+- **Decorative removes it from the accessibility tree** (`aria-hidden="true"`) while keeping the
+  element — and stays silent about orientation, since there is nobody left to tell.
+- **Never focusable.** It joins no family and takes no tab stop: a separator is a thing to see, not
+  a thing to reach.
+- **Forced colours** repaints border colours with the system palette on its own — borders are not
+  among the things it takes away — so the shipped block only pins _which_ system colour the line
+  gets (`CanvasText`), and guards a future move to background-drawn lines, which would be flattened.

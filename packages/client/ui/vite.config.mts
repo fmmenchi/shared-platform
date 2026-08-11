@@ -86,6 +86,7 @@ export default defineConfig(() => ({
         breadcrumb: 'src/components/breadcrumb/index.ts',
         avatar: 'src/components/avatar/index.ts',
         slider: 'src/components/slider/index.ts',
+        separator: 'src/components/separator/index.ts',
         progress: 'src/components/progress/index.ts',
         'table-header-cell': 'src/components/table-header-cell/index.ts',
         'table-cell': 'src/components/table-cell/index.ts',

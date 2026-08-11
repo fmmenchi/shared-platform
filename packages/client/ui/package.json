@@ -574,6 +574,12 @@
       "types": "./dist/components/slider/index.d.ts",
       "import": "./dist/slider.js",
       "default": "./dist/slider.js"
+    },
+    "./separator": {
+      "@fmmenchi/source": "./src/components/separator/index.ts",
+      "types": "./dist/components/separator/index.d.ts",
+      "import": "./dist/separator.js",
+      "default": "./dist/separator.js"
     }
   },
   "nx": {

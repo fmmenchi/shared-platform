@@ -25,7 +25,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                        |
 | **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                 |
 | **Data display**  | `Badge` · `Avatar` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                         |
-| **Utilities**     | `VisuallyHidden`                                                                                                                                                          |
+| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                            |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
 complete at one. **No group is now thin enough for the third question below to pick the next item
@@ -77,12 +77,13 @@ So the next item is a decision, not a deduction — and this page will say which
   list is the browser's, because _"a themed list is what a combobox costs weeks for"_. Building one
   reverses that trade, so it needs an ADR before it needs code, and `appearance: base-select` may
   make part of it unnecessary.
-- **`Separator`, `Skeleton`, `Pagination`.** Each is small and
+- **`Skeleton`, `Pagination`.** Each is small and
   none is blocked — they are simply behind the items above, which either unblock a contract or fill
   an empty group. `Card` left this list ahead of its turn: the page shell made a grid of cards the
   obvious next thing to put in a layout, and the one piece of it that is not trivial — a link that
   is visually the whole card and semantically only its title — is worth owning once rather than
-  six times.
+  six times. `Separator` left it too, the general-purpose `<hr>` its family separators
+  (`MenuSeparator`, `ToolbarSeparator`) were already pointing at.
 - **Date and time pickers.** The native inputs are inconsistent across engines and the hand-rolled
   ones are a calendar widget with a locale problem. Not before there is a real consumer.
 
