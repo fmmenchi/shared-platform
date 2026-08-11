@@ -201,6 +201,60 @@ describe('Toolbar', () => {
     expect(document.activeElement).toBe(control('Underline'));
   });
 
+  it("does not let a visit to a field erase the ring's memory", async () => {
+    // The field is a registered descendant too, and `handleFocus` recorded it
+    // as the holder: `apply()` then found a non-ring holder and reset the
+    // stop to the FIRST control — arrow to Italic, click into the field to
+    // type, and the return Tab landed on Bold, textually the failure the
+    // "remembers" test above claims to prevent, through the one door it does
+    // not watch.
+    render(
+      <Toolbar label="Format">
+        <ToolbarItem>
+          <button type="button">Bold</button>
+        </ToolbarItem>
+        <ToolbarItem>
+          <input aria-label="Font" />
+        </ToolbarItem>
+        <ToolbarItem>
+          <button type="button">Italic</button>
+        </ToolbarItem>
+      </Toolbar>,
+    );
+    await waitFor(() => expect(stops()).toContain('Bold'));
+
+    control('Bold').focus();
+    await browser.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(control('Italic'));
+
+    screen.getByRole('textbox', { name: 'Font' }).focus();
+    // The ring's stop must still be Italic — the field keeps its own tab
+    // stop, it does not inherit the ring's.
+    await waitFor(() => expect(stops()).toEqual(['Font', 'Italic']));
+  });
+
+  it('does not accuse a hidden input or a disabled button of holding a stop', async () => {
+    // `input[type=hidden]` (a CSRF token in a form-shaped bar) and a bare
+    // disabled <button> are never focusable; the orphan probe's selector
+    // matched both and warned "keeps a tab stop of its own" — false, and a
+    // false warning teaches people to ignore the true ones.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <Toolbar label="Format">
+        <ToolbarItem>
+          <button type="button">Bold</button>
+        </ToolbarItem>
+        <input type="hidden" name="csrf" value="x" />
+        <button type="button" disabled>
+          Dead
+        </button>
+      </Toolbar>,
+    );
+    await waitFor(() => expect(stops()).toContain('Bold'));
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
   describe('the seam — what a control keeps when it joins the bar', () => {
     it('keeps its own handlers', async () => {
       const onClick = vi.fn();
