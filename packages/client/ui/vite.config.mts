@@ -82,6 +82,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        progress: 'src/components/progress/index.ts',
         'form-segmented-control':
           'src/components/form-segmented-control/index.ts',
         'segmented-control-item':

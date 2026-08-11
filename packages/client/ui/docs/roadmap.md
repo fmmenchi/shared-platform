@@ -23,7 +23,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                               |
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                           |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                        |
-| **Feedback**      | `Alert` · `Toast` (+ Region)                                                                                                                                              |
+| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                 |
 | **Data display**  | `Badge`                                                                                                                                                                   |
 | **Utilities**     | `VisuallyHidden`                                                                                                                                                          |
 
@@ -45,12 +45,7 @@ Not by popularity. Three questions, in this order:
 
 ## Next
 
-### 1. `Progress` — the Feedback group is one wide
-
-`<progress>`, determinate and indeterminate. Cheap, and it stops Alert from being the whole of
-Feedback.
-
-### 2. `Table` — the Data display group is one wide
+### 1. `Table` — the Data display group is one wide
 
 Semantic `<table>` with the parts (caption, header, body, sortable column headers). The largest of
 the "next" items and the one most often re-implemented per app.

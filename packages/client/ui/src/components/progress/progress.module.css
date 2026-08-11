@@ -1,0 +1,168 @@
+/* A progress bar: the groove, the fill, and the sweep when the end is unknown. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /*
+   * THE ELEMENT IS THE GROOVE. `<progress>` ships a UA appearance in every
+   * engine — a bevelled bar in one, a rounded capsule in another — so the first
+   * thing to do is take it off and draw the whole thing ourselves. `border: 0`
+   * because Gecko draws one that `appearance: none` leaves behind.
+   *
+   * The radius is HALF THE HEIGHT, which is what makes the ends round: `sm` is
+   * 0.25rem and the bar is 0.5rem. The two are a pair — override one and the
+   * other stops being a pill. There is no `radius-full` token to reach for, and
+   * inventing one for a single component would be a contract change to pay for
+   * a shape.
+   */
+  .progress {
+    appearance: none;
+    display: block;
+    inline-size: 100%;
+    block-size: 0.5rem;
+    border: 0;
+    border-radius: var(--fm-radius-sm);
+    /* The track, for Gecko — which paints the element itself and gives a pseudo
+       only to the fill — and the fallback anywhere the pseudo-elements below do
+       not apply. */
+    background-color: var(--fm-color-muted);
+    /* So a square-cornered fill cannot poke out of a rounded groove. */
+    overflow: hidden;
+  }
+
+  /*
+   * THE VENDOR PSEUDO-ELEMENTS, and there is no standard one to use instead.
+   * Blink and WebKit split the control into a bar and a value; Gecko gives a
+   * pseudo to the value only. Neither is Baseline and neither is optional: with
+   * `appearance: none` and no rule here the fill simply does not render, which
+   * is why this file styles all three rather than picking a side.
+   */
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the only way to paint a <progress> fill in Blink/WebKit */
+  .progress::-webkit-progress-bar {
+    background-color: var(--fm-color-muted);
+    border-radius: inherit;
+  }
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the fill in Blink/WebKit */
+  .progress::-webkit-progress-value {
+    background-color: var(--fm-color-primary);
+    border-radius: inherit;
+    /* The fill MOVES when the value changes, and by surface size: a bar is a
+       small panel, so `s`. Ease by direction — a value arriving decelerates. */
+    transition: inline-size var(--fm-duration-s) var(--fm-ease-enter);
+  }
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo: the fill in Gecko */
+  .progress::-moz-progress-bar {
+    background-color: var(--fm-color-primary);
+    border-radius: inherit;
+  }
+
+  /*
+   * INDETERMINATE — no `value`, so there is no fill to size and the engines
+   * draw nothing at all once `appearance: none` has removed their own
+   * animation. The bar becomes a band that travels the groove, painted on the
+   * ELEMENT rather than on a pseudo, because that is the one surface all three
+   * engines agree exists.
+   *
+   * `:indeterminate` is the platform's own answer to "is this one of those?",
+   * so nothing here has to be told which mode it is in.
+   */
+  .progress:indeterminate {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--fm-color-primary) 50%,
+      transparent 100%
+    );
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    /* `l` — the travel crosses the whole component, which is the large end of
+       the scale, and `linear` because a sweep that eased would read as
+       stopping. */
+    animation: fm-progress-sweep var(--fm-duration-l) var(--fm-ease-linear)
+      infinite;
+  }
+
+  /* The engines' own fills are transparent here, so they cannot sit on top of
+     the band with a flat colour. */
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+  .progress:indeterminate::-webkit-progress-bar {
+    background-color: transparent;
+  }
+
+  /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+  .progress:indeterminate::-moz-progress-bar {
+    background-color: transparent;
+  }
+
+  @keyframes fm-progress-sweep {
+    from {
+      background-position: -40% 0;
+    }
+    to {
+      background-position: 140% 0;
+    }
+  }
+
+  /*
+   * KILL THE MOVEMENT, KEEP THE INFORMATION. A band travelling a bar forever is
+   * exactly the movement the preference asks to be spared — and unlike most of
+   * our animations it is not decoration: it is the whole of what an
+   * indeterminate bar says to a sighted reader, so removing it and leaving a
+   * still stripe would say "finished" instead of "working".
+   *
+   * The doctrine's own exception is the answer: a pure OPACITY change carries no
+   * vestibular trigger, so the band stops travelling and breathes instead. The
+   * transition on the determinate fill goes too — a value that jumps is still a
+   * value.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .progress:indeterminate {
+      background-position: 30% 0;
+      animation-name: fm-progress-breathe;
+      animation-duration: var(--fm-duration-l);
+    }
+
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .progress::-webkit-progress-value {
+      transition: none;
+    }
+  }
+
+  @keyframes fm-progress-breathe {
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  /*
+   * FORCED COLOURS discards `background-color`, and the fill is the only thing
+   * telling full from empty — so the groove takes a border to exist at all and
+   * both fills take a system colour that is guaranteed to contrast with it.
+   */
+  @media (forced-colors: active) {
+    .progress {
+      border: 1px solid CanvasText;
+    }
+
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .progress::-webkit-progress-value {
+      background-color: Highlight;
+    }
+
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown -- vendor pseudo */
+    .progress::-moz-progress-bar {
+      background-color: Highlight;
+    }
+
+    .progress:indeterminate {
+      background-image: linear-gradient(
+        90deg,
+        transparent 0%,
+        Highlight 50%,
+        transparent 100%
+      );
+    }
+  }
+}
