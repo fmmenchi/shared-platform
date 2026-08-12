@@ -109,10 +109,23 @@ function TableColumnResizer({
     const table = cell.closest('table');
     if (table == null) return null;
     const others = Math.max((cell.parentElement?.children.length ?? 1) - 1, 0);
-    return Math.max(
-      min,
-      Math.round(table.getBoundingClientRect().width) - others * min,
-    );
+    // FROM A BOX THE RESIZE CANNOT GROW. Read off the table itself, the guard
+    // followed the thing it was guarding: an oversized column widens the
+    // table, so the ceiling rose with it — measured, `aria-valuemax` went from
+    // 366 to 1752 after one overshoot, and from then on even the paths that DO
+    // clamp conceded the inflated figure. A layout restored from storage with
+    // a huge width does the same. The scroll container is the honest bound
+    // when there is one (the table scrolls inside it, so it does not move);
+    // otherwise the table's containing block.
+    const box =
+      table.closest<HTMLElement>('[data-table-scroll]') ??
+      table.offsetParent ??
+      table.parentElement;
+    const available =
+      box instanceof HTMLElement
+        ? box.clientWidth
+        : Math.round(table.getBoundingClientRect().width);
+    return Math.max(min, Math.round(available) - others * min);
   };
 
   const measure = () => {
@@ -144,9 +157,16 @@ function TableColumnResizer({
   const step = (delta: number) => {
     const cell = handle.current?.closest('th');
     if (cell == null) return;
-    onResize(
-      Math.max(min, Math.round(cell.getBoundingClientRect().width) + delta),
-    );
+    // THE SAME CEILING THE GESTURE HAS. The arrows clamped only at the
+    // minimum, so the one path the ceiling exists to protect — the keyboard —
+    // was the one that walked through it: measured, 25×Shift+ArrowRight on a
+    // two-column table chose 1800 against an `aria-valuemax` of 366, left the
+    // other column at 0 rendering nothing, and announced a `valuenow` outside
+    // its own range, which `clamp` calls a lie in its own comment. `End`
+    // clamped, the pointer clamped, the arrows did not.
+    const max = ceiling(cell) ?? Number.POSITIVE_INFINITY;
+    const next = Math.round(cell.getBoundingClientRect().width) + delta;
+    onResize(Math.max(min, Math.min(max, next)));
   };
 
   const begin = (event: {
@@ -431,9 +451,9 @@ function TableColumnResizer({
           } else if (event.key === 'End' && limit !== null) {
             event.preventDefault();
             onResize(limit);
-          } else if (event.key === 'Enter') {
+          } else if (event.key === 'Enter' && onReset) {
             event.preventDefault();
-            onReset?.();
+            onReset();
           } else if (event.key === 'Escape' && phase.current !== 'idle') {
             // The gesture's own listener is on the document and only exists
             // while a gesture does; this is the same key reaching the same
@@ -444,7 +464,9 @@ function TableColumnResizer({
           }
         }}
       />
-      <VisuallyHidden id={hintId}>{t('hint')}</VisuallyHidden>
+      <VisuallyHidden id={hintId}>
+        {t(onReset ? 'hintWithReset' : 'hint')}
+      </VisuallyHidden>
       {/* The latched mode is a MODE, and a mode nobody is told about is the
           defect the toolbar's silent clear already was. Empty until it happens,
           because a region that arrives populated is not announced. */}
