@@ -401,6 +401,22 @@ interface TableFromData<T> extends TableShared {
    */
   renderDetail?: (row: T) => ReactNode;
   /**
+   * Which page is showing, counting from 1 — DISPLAYED, never applied. `Table`
+   * does not slice: the rows it is given are the page, whether a hook cut them
+   * or a server did.
+   *
+   * With `pageCount` and `onPageChange` it draws the pager BELOW the rows and
+   * names it after the `<caption>`. That placement is the table's opinion
+   * rather than the pager's: a reader tabbing forward reaches it after the
+   * rows, which is when "somewhere else" becomes the question — and it is the
+   * reverse of the toolbar, which describes what you are about to read.
+   */
+  page?: number;
+  /** How many pages there are. One page draws no pager: there is nowhere to go. */
+  pageCount?: number;
+  /** The reader asked for another page. Receives the page, not a delta. */
+  onPageChange?: (page: number) => void;
+  /**
    * Which rows are picked. With `onRowSelectToggle` it adds the checkbox
    * column — the column is OURS to draw rather than yours to write as a `cell`,
    * because the part nobody gets right is not the box, it is what the box is
@@ -473,6 +489,14 @@ interface TableComposed extends TableShared {
   expandedRows?: never;
   onRowExpandToggle?: never;
   renderDetail?: never;
+  /**
+   * Refused with the others. The pager is placed relative to the rows and named
+   * from the caption, and neither is knowable here — render `Pagination`
+   * yourself after your own markup.
+   */
+  page?: never;
+  pageCount?: never;
+  onPageChange?: never;
   /**
    * Refused for the same reason as `sort`: the checkbox column is generated
    * from the column list, and there is none here. Write the cells yourself and

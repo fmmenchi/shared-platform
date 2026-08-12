@@ -19,6 +19,7 @@ import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js'
 import { coverageOf, isRowSelected } from '../../selection/selection.js';
 import { SortArrow } from './sort-arrow.component.js';
 import { ExpandChevron } from './expand-chevron.component.js';
+import { Pagination } from '../pagination/pagination.component.js';
 import { TableBody } from '../table-body/table-body.component.js';
 import { TableCell } from '../table-cell/table-cell.component.js';
 import { TableHead } from '../table-head/table-head.component.js';
@@ -128,6 +129,9 @@ function Table<T>(props: TableProps<T>) {
     expandedRows,
     onRowExpandToggle,
     renderDetail,
+    page,
+    pageCount,
+    onPageChange,
     selection,
     onRowSelectToggle,
     onSelectAllToggle,
@@ -435,6 +439,18 @@ function Table<T>(props: TableProps<T>) {
     'Table: the rows are selectable but nothing is wired to `onSelectAllToggle`, so the header cell carries no box and there is no way to take a whole page. Pass the props from `useRowSelection`.',
   );
 
+  // THE PAGER NEEDS ALL THREE, and the same rule the rest of this file follows:
+  // a control that reports an intent nobody handles is a dead control.
+  // THE HANDLER ITSELF, not a boolean, so the pager below is typed without a
+  // second assertion — the shape `canFilter` and `canResize` already use.
+  const pages =
+    page !== undefined && pageCount !== undefined ? onPageChange : undefined;
+
+  useDevWarning(
+    (page !== undefined || pageCount !== undefined) && !onPageChange,
+    'Table: `page` or `pageCount` is passed but nothing is wired to `onPageChange`, so no pager is drawn. Pass the props from `usePagination` (or `usePaginationState`, if the server does the slicing).',
+  );
+
   // THE CONTROL COLUMN EXISTS ONLY WHEN ALL THREE ARE THERE, which is the same
   // rule the checkbox column follows with one more term: a chevron with nobody
   // listening is a dead control, and a chevron that opens an empty row is
@@ -636,7 +652,11 @@ function Table<T>(props: TableProps<T>) {
         ref={captionRef}
         // ONLY WHEN SOMETHING POINTS AT IT — the rule this file already applies
         // to the row-header ids forty lines down.
-        id={sticky ? `${baseId}-caption` : undefined}
+        id={
+          sticky || (pages && typeof caption !== 'string')
+            ? `${baseId}-caption`
+            : undefined
+        }
         className={styles.caption}
       >
         {caption}
@@ -1223,6 +1243,33 @@ function Table<T>(props: TableProps<T>) {
         <VisuallyHidden role="status" data-table-status="">
           {announcement}
         </VisuallyHidden>
+      )}
+
+      {/* BELOW THE ROWS, and that is the table's opinion rather than the
+        pager's. A reader tabbing forward reaches it after the data, which is
+        when "somewhere else" becomes the question — the reverse of the toolbar,
+        which describes what you are about to read and therefore comes first.
+
+        NAMED AFTER THE TABLE. A page can hold several pagers, and two
+        landmarks called "Pagination" are two identical entries in a screen
+        reader's list. A caption that is words fills a one-hole message the
+        catalog can reorder; one that is an element is pointed at instead —
+        worse for word order, better than losing the name, which is the same
+        split the row labels make. */}
+      {pages !== undefined && page !== undefined && pageCount !== undefined && (
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          onPageChange={pages}
+          label={
+            typeof caption === 'string'
+              ? t('pagerFor', { name: caption })
+              : undefined
+          }
+          aria-labelledby={
+            typeof caption === 'string' ? undefined : `${baseId}-caption`
+          }
+        />
       )}
     </>
   );

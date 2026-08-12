@@ -13,19 +13,19 @@ at the bottom.
 Grouped as Storybook groups them. A **part** (`FieldLabel`, `MenuItem`, `PopoverContent`) is a
 sibling folder of its family and is documented on the family's page, not its own.
 
-| Group             | Components                                                                                                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Typography**    | `Heading`                                                                                                                                                                            |
-| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                               |
-| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                    |
-| **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
-| **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                              |
-| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                          |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Breadcrumb` (+ Link)                                                                                              |
-| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                   |
-| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                            |
-| **Data display**  | `Badge` · `Avatar` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar, ColumnResizer, FilterTrigger, ColumnsMenu)                                                         |
-| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                       |
+| Group             | Components                                                                                                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Typography**    | `Heading`                                                                                                                                                                 |
+| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                    |
+| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                         |
+| **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
+| **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                   |
+| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                               |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination`                                                                                            |
+| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                        |
+| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                 |
+| **Data display**  | `Badge` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                    |
+| **Utilities**     | `VisuallyHidden`                                                                                                                                                          |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
 complete at one. **No group is now thin enough for the third question below to pick the next item
@@ -77,7 +77,9 @@ So the next item is a decision, not a deduction — and this page will say which
   list is the browser's, because _"a themed list is what a combobox costs weeks for"_. Building one
   reverses that trade, so it needs an ADR before it needs code, and `appearance: base-select` may
   make part of it unnecessary.
-- **`Skeleton`, `Pagination`.** Each is small and
+- **`Slider`.** `<input type="range">` is native but its track and thumb are still barely stylable
+  across engines. Revisit when that changes.
+- **`Avatar`, `Separator`, `Skeleton`, `Breadcrumb`.** Each is small and
   none is blocked — they are simply behind the items above, which either unblock a contract or fill
   an empty group. `Card` left this list ahead of its turn: the page shell made a grid of cards the
   obvious next thing to put in a layout, and the one piece of it that is not trivial — a link that

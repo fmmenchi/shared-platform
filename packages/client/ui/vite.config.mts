@@ -150,6 +150,7 @@ export default defineConfig(() => ({
         'table-foot': 'src/components/table-foot/index.ts',
         'table-toolbar': 'src/components/table-toolbar/index.ts',
         'table-filter-trigger': 'src/components/table-filter-trigger/index.ts',
+        pagination: 'src/components/pagination/index.ts',
         'table-column-resizer': 'src/components/table-column-resizer/index.ts',
         'table-body': 'src/components/table-body/index.ts',
         'table-head': 'src/components/table-head/index.ts',
