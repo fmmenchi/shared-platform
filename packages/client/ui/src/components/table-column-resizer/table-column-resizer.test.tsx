@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from '@vitest/browser/context';
 import { Table } from '../table/table.component.js';
+import { TableColumnResizer } from './table-column-resizer.component.js';
 import { useColumnWidths } from '../table/use-column-widths.js';
 import type { Column } from '../table/table.types.js';
 import { renderUi } from '../../test/render.js';
@@ -44,6 +45,9 @@ function Resizable(props: { onWidths?: (w: Record<string, string>) => void }) {
     />
   );
 }
+
+/** A width that goes nowhere: these renders are about what is announced. */
+const noop = () => undefined;
 
 const handle = () => screen.getByRole('separator', { name: 'Resize Città' });
 const cell = () => screen.getAllByRole('columnheader')[0];
@@ -565,6 +569,123 @@ describe('a column resize handle', () => {
     );
     expect(chosen).toBeLessThanOrEqual(Math.round(table) - 48);
     expect(grip.getAttribute('aria-valuemax')).toBe(String(chosen));
+  });
+
+  it('will not let the arrows walk through that ceiling', async () => {
+    const onWidths = vi.fn();
+    render(<Resizable onWidths={onWidths} />);
+
+    const grip = handle();
+    grip.focus();
+    // The one path the ceiling exists to protect was the one that ignored it:
+    // measured, twenty-five larger steps chose 1800 against an `aria-valuemax`
+    // of 366, left the other column rendering nothing, and announced a
+    // `valuenow` outside its own range.
+    for (let i = 0; i < 25; i += 1)
+      await browser.keyboard('{Shift>}{ArrowRight}{/Shift}');
+
+    await waitFor(() => expect(onWidths).toHaveBeenCalled());
+    const chosen = Number(
+      String(onWidths.mock.lastCall?.[0].name).replace('px', ''),
+    );
+    const ceiling = Number(grip.getAttribute('aria-valuemax'));
+    expect(chosen).toBeLessThanOrEqual(ceiling);
+    expect(measured()).toBeLessThanOrEqual(ceiling);
+    // Every other column still exists.
+    const others = screen.getAllByRole('columnheader').slice(1);
+    for (const other of others) {
+      expect(Math.round(other.getBoundingClientRect().width)).toBeGreaterThan(
+        0,
+      );
+    }
+  });
+
+  it('holds the ceiling still under a width that outgrew the table', async () => {
+    const { unmount } = render(<Resizable />);
+    const honest = Number(
+      await waitFor(() => {
+        const value = handle().getAttribute('aria-valuemax');
+        expect(value).toBeTruthy();
+        return value;
+      }),
+    );
+    unmount();
+
+    function Restored(props: { sticky?: boolean; width?: number }) {
+      return (
+        <Table
+          caption="Città"
+          rows={cities}
+          columns={columns}
+          getRowId={(city) => city.id}
+          resizableColumns
+          stickyHeader={props.sticky}
+          scrollProps={
+            props.width == null
+              ? undefined
+              : { style: { inlineSize: `${props.width}px` } }
+          }
+          columnWidths={{ name: '1800px' }}
+          onColumnResize={noop}
+        />
+      );
+    }
+    const bare = render(<Restored />);
+
+    // Read off the table, the guard followed the thing it was guarding:
+    // measured, a width of 1800px restored from storage grew the TABLE to 1800
+    // and the ceiling with it, from 366 to 1752 — so from then on even the
+    // paths that do clamp conceded the inflated figure, and `End` would have
+    // confirmed it.
+    expect(measured()).toBe(1800);
+    await waitFor(() =>
+      expect(Number(handle().getAttribute('aria-valuemax'))).toBe(honest),
+    );
+    bare.unmount();
+
+    // And through the other box. `stickyHeader` puts a scroll wrapper between
+    // the table and its container, and THAT is what holds the table — not the
+    // nearest positioned ancestor, which is a fact about positioning and can
+    // be the body. Constrained to 300px the two disagree, and the wrapper is
+    // the one the reader can see.
+    render(<Restored sticky width={300} />);
+    const scroll = document.querySelector('[data-table-scroll]');
+    expect(scroll).not.toBeNull();
+    expect((scroll as HTMLElement).clientWidth).toBe(300);
+    await waitFor(() =>
+      expect(Number(handle().getAttribute('aria-valuemax'))).toBe(300 - 48),
+    );
+  });
+
+  it('promises Enter only where Enter does something', async () => {
+    // `onReset` is optional and `Enter` is wired to it alone. `Table` always
+    // supplies one, so this is the hand-placed path — where the single hint
+    // promised a way back from `End` that did not exist, announced to precisely
+    // the reader who cannot check by looking.
+    const { unmount } = render(
+      <table>
+        <thead>
+          <tr>
+            <th id="c">
+              Città
+              <TableColumnResizer label="Città" controls="c" onResize={noop} />
+            </th>
+          </tr>
+        </thead>
+      </table>,
+    );
+    const bare = document.getElementById(
+      handle().getAttribute('aria-describedby') as string,
+    );
+    expect(bare?.textContent).toContain('End');
+    expect(bare?.textContent).not.toContain('Enter');
+    unmount();
+
+    render(<Resizable />);
+    const wired = document.getElementById(
+      handle().getAttribute('aria-describedby') as string,
+    );
+    expect(wired?.textContent).toContain('Enter');
   });
 
   it('gives the column back on Escape, mid-gesture', async () => {
