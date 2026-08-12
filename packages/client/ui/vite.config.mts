@@ -262,6 +262,32 @@ export default defineConfig(() => ({
     testTimeout: 20_000,
     hookTimeout: 20_000,
 
+    /*
+     * LEAVE HALF THE MACHINE ALONE. Uncapped, the four browser projects put one
+     * Chromium per core on the box — 17 of them on the 18-core machine these
+     * numbers come from — so the suite owns everything and anything else on the
+     * machine tips it into starvation. That is not a theory about the failure,
+     * it is its shape: the tests that fell did not fail, they ran out of the
+     * 20s above, and the budget above was itself the previous round of this
+     * same fight.
+     *
+     * Measured on `nx run-many -t test build-storybook`, the trigger AGENTS.md
+     * names, three runs each:
+     *
+     *   uncapped   12 files timed out / 1 file timed out  — 219s, 79s
+     *   capped     green, green, green                    — 61s, 31s, 32s
+     *
+     * The cost of the cap is NEGATIVE — it is faster alone too (29s against
+     * 44s), because the contention it removes was the suite's own. Per-file
+     * setup is where it showed: 238s of it on a quiet machine, 1849s under the
+     * gate, 360s capped. The tests were never the expensive part.
+     *
+     * A percentage rather than a number so a 4-core CI runner reads it as 2 and
+     * this machine reads it as 9 — the rule is "half", not a count that happens
+     * to suit one laptop.
+     */
+    maxWorkers: '50%',
+
     // TWO projects, not one. The first is the suite as it was — the hand-written
     // component and logic tests. The second runs every STORY as a test, which is
     // what `@storybook/addon-vitest` adds: one run backs both the test widget

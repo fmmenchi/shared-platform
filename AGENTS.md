@@ -58,6 +58,13 @@ each run — never one the commit touched — and in CI the suite died twice on 
 printing a vitest summary at all, because nx interleaves every project's output. Separated, both are
 green every time. The CI workflow runs them as two steps for the same reason.
 
+The **cause** of that has since been found and fixed at the source: uncapped, the suite's four browser
+projects put one Chromium per core on the machine, so it owned the box and anything beside it starved
+the tests into their own timeout. `maxWorkers: '50%'` in the UI's `vite.config.mts` gives the two
+commands room to coexist — measured, the combined run is now green three times over AND faster than
+it was uncapped, alone or not. Keep running them apart anyway: it costs nothing, and it keeps the
+vitest summary readable, which was always the other half of the reason.
+
 Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`. `lint-css`
 (Stylelint) enforces design-token values in the UI's CSS Modules — see [ui](./.agents/doc/ui.md).
 
