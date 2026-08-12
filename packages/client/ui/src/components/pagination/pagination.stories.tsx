@@ -114,7 +114,6 @@ export const AsLinks: Story = {
     page: 3,
     pageCount: 12,
     getHref: (page: number) => `?page=${page}`,
-    onPageChange: () => undefined,
   },
 };
 

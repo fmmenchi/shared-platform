@@ -71,6 +71,95 @@ describe('pageRange', () => {
     expect(show(pageRange(99, 40))).toBe('1 … 36 37 38 39 40');
   });
 
+  it('never spends a slot hiding one page', () => {
+    // `1 … 3 4 5 … 40` hides page 2 ALONE: the ellipsis costs the same slot the
+    // page would have, and page 2 costs an extra click. Measured before the
+    // fix: 106 of the first sixty page counts did this at the default sibling
+    // count, and no test could see it.
+    for (let siblingCount = 0; siblingCount <= 3; siblingCount += 1) {
+      for (let pageCount = 1; pageCount <= 60; pageCount += 1) {
+        for (let page = 1; page <= pageCount; page += 1) {
+          const items = pageRange(page, pageCount, { siblingCount });
+          items.forEach((item, index) => {
+            if (item.kind !== 'gap') return;
+            const before = items[index - 1];
+            const after = items[index + 1];
+            if (before?.kind !== 'page' || after?.kind !== 'page') return;
+            expect(
+              after.page - before.page,
+              `gap between ${before.page} and ${after.page} at page ${page} of ${pageCount} (siblingCount ${siblingCount})`,
+            ).toBeGreaterThan(2);
+          });
+        }
+      }
+    }
+  });
+
+  it('holds every promise it makes, at every page of every size', () => {
+    // A SWEEP, because the arithmetic is the product. Two mutations of the
+    // window survived the eleven cases written by hand — one drew an ellipsis
+    // for zero pages, the other changed the width — and neither is reachable
+    // without varying `pageCount` around the boundary.
+    for (const siblingCount of [0, 1, 2, 3, 5]) {
+      const widths = new Map<number, number>();
+      for (let pageCount = 1; pageCount <= 60; pageCount += 1) {
+        for (let page = -2; page <= pageCount + 2; page += 1) {
+          const items = pageRange(page, pageCount, { siblingCount });
+          const pages = items
+            .filter((item) => item.kind === 'page')
+            .map((item) => (item as { page: number }).page);
+          const where = `page ${page} of ${pageCount}, siblingCount ${siblingCount}`;
+
+          expect(new Set(pages).size, `duplicates at ${where}`).toBe(
+            pages.length,
+          );
+          expect(
+            pages.every((n, index) => index === 0 || n > pages[index - 1]!),
+            `out of order at ${where}`,
+          ).toBe(true);
+          expect(
+            pages.every((n) => Number.isInteger(n) && n >= 1 && n <= pageCount),
+            `out of range at ${where}`,
+          ).toBe(true);
+          expect(pages.at(0), `first missing at ${where}`).toBe(1);
+          expect(pages.at(-1), `last missing at ${where}`).toBe(pageCount);
+
+          const clamped = Math.min(Math.max(Math.round(page), 1), pageCount);
+          expect(
+            pages.includes(clamped),
+            `current page ${clamped} missing at ${where}`,
+          ).toBe(true);
+
+          const seen = widths.get(pageCount);
+          if (seen === undefined) widths.set(pageCount, items.length);
+          else expect(items.length, `width moved at ${where}`).toBe(seen);
+        }
+      }
+    }
+  });
+
+  it('is not broken by a number that is not one', () => {
+    // `defaultPage: parseInt(params.get('page') ?? '', 10)` is the shape the
+    // hook's own doc names, and it is `NaN` for a missing parameter. Unguarded,
+    // that produced a range with no current page at all — and a `NaN` sibling
+    // count produced one with no page 1, because `Array.from({length: NaN})` is
+    // empty.
+    expect(show(pageRange(Number.NaN, 40))).toBe('1 2 3 4 5 … 40');
+    expect(show(pageRange(5, Number.NaN))).toBe('');
+    // Falls back to the documented default of 1, which at page 5 is
+    // `1 … 4 5 6 … 40` — the start gap hides pages 2 and 3, so it earns its
+    // slot.
+    expect(show(pageRange(5, 40, { siblingCount: Number.NaN }))).toBe(
+      '1 … 4 5 6 … 40',
+    );
+    // A NUMBER THAT IS NOT A COUNT becomes the smallest one that is. Negative
+    // dropped the current page and drew two ellipses in a row; fractional
+    // produced a control called "Page 4.5". Both now floor to no siblings,
+    // which is the narrowest pager that still answers every question.
+    expect(show(pageRange(5, 10, { siblingCount: -1 }))).toBe('1 … 5 … 10');
+    expect(show(pageRange(5, 10, { siblingCount: 0.5 }))).toBe('1 … 5 … 10');
+  });
+
   it('has nothing to draw for no pages', () => {
     expect(pageRange(1, 0)).toEqual([]);
   });

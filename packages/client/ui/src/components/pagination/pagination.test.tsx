@@ -38,23 +38,25 @@ describe('a pager', () => {
     // A set of navigation entries IS a list, and a screen reader counts them —
     // which is most of what tells a reader how far they can go.
     const nav = screen.getByRole('navigation', { name: 'Pagination' });
-    expect(nav.querySelector('ul')).toBeInTheDocument();
+    // `role="list"` EXPLICITLY: `list-style: none` is what removes list
+    // semantics in WebKit, and the count of entries is the whole reason this
+    // markup is a list.
+    expect(nav.querySelector('ul')).toHaveAttribute('role', 'list');
     expect(screen.getAllByRole('listitem').length).toBeGreaterThan(3);
   });
 
-  it('says which page you are on twice — in the attribute and in words', async () => {
+  it('marks the current page once, in the attribute', async () => {
     render(<Pager />);
 
-    const current = screen.getByRole('button', {
-      name: 'Page 1, current page',
-    });
+    const current = screen.getByRole('button', { name: 'Page 1' });
     expect(current).toHaveAttribute('aria-current', 'page');
-    // The paint that marks it is colour, and `aria-current` is not announced by
-    // every combination of browser and screen reader. The name is the half that
-    // survives both.
     expect(screen.getByRole('button', { name: 'Page 2' })).not.toHaveAttribute(
       'aria-current',
     );
+    // NOT TWICE. The name used to say "current page" as well, and every screen
+    // reader that maps `aria-current` then said it twice — which is why
+    // GOV.UK, USWDS and Polaris all name the control plainly.
+    expect(current).toHaveAccessibleName('Page 1');
   });
 
   it('turns the page, and reports the page rather than a delta', async () => {
@@ -81,32 +83,77 @@ describe('a pager', () => {
   it('keeps the same number of controls on every page', async () => {
     render(<Pager />);
 
-    const count = () => screen.getAllByRole('listitem').length;
+    // THE SLOTS, not the announced entries. A gap is `aria-hidden`, so it is
+    // not a `listitem` — the number of STOPS changes by one when a gap opens,
+    // which is inherent to having gaps at all. What must not change is the
+    // geometry, or Next moves under the pointer between clicks.
+    const count = () => document.querySelectorAll('nav li').length;
     const first = count();
 
-    await browser.click(screen.getByRole('button', { name: 'Page 3' }));
+    // PAGE 20 AND PAGE 40, not page 3. The first version compared page 1 with
+    // page 3, and those two render the same range — it compared a render with
+    // an identical render and passed against every mutation of the arithmetic.
+    // Page 5 first, because page 20 is not on screen from page 1 — which is
+    // the whole point of the range.
+    await browser.click(screen.getByRole('button', { name: 'Page 5' }));
     await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: 'Page 3, current page' }),
-      ).toBeInTheDocument(),
+      expect(screen.getByRole('button', { name: 'Page 5' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      ),
     );
-    // A list that grows and shrinks moves Next under the pointer between
-    // clicks and changes a keyboard reader's tab count on every press.
     expect(count()).toBe(first);
-  });
-
-  it('stops at the ends rather than offering a page that is not there', async () => {
-    render(<Pager />);
-
-    expect(
-      screen.getByRole('button', { name: 'Previous page' }),
-    ).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Next page' })).toBeEnabled();
 
     await browser.click(screen.getByRole('button', { name: 'Page 40' }));
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled(),
+      expect(screen.getByRole('button', { name: 'Page 40' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      ),
     );
+    // A list that grows and shrinks moves Next under the pointer between clicks
+    // and changes a keyboard reader's tab count on every press.
+    expect(count()).toBe(first);
+  });
+
+  it('refuses at the ends without leaving the tab order', async () => {
+    const onPageChange = vi.fn();
+    render(<Pager onPageChange={onPageChange} />);
+
+    const previous = screen.getByRole('button', { name: 'Previous page' });
+    // `aria-disabled`, NEVER native `disabled` — this package's own rule for
+    // `Button`, and the reason for it: a control removed from the tab order
+    // takes the focus with it. It also means the boundary is ANNOUNCED, where
+    // a `disabled` control is simply absent from the reader's list.
+    expect(previous).toHaveAttribute('aria-disabled', 'true');
+    expect(previous).not.toBeDisabled();
+
+    // `.click()` rather than the driver's: `Button` stops pointer events on an
+    // `aria-disabled` control, so a real pointer never reaches it — which is
+    // the paint doing its job. What is under test is the guard behind it.
+    previous.click();
+    expect(onPageChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps the focus on the control that reached the end', async () => {
+    render(<Pager pageCount={3} />);
+
+    const next = screen.getByRole('button', { name: 'Next page' });
+    next.focus();
+    await browser.click(next);
+    await browser.click(next);
+
+    // MEASURED BEFORE THE FIX: the press that landed on the last page dropped
+    // focus to `<body>`, so the reader's next Tab restarted at the top of the
+    // document — WCAG 2.4.3, by the mechanism this package forbids by name.
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Page 3' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      ),
+    );
+    expect(next).toHaveFocus();
+    expect(document.body).not.toHaveFocus();
   });
 
   it('is not a pager when there is nowhere to go', async () => {
@@ -137,7 +184,6 @@ describe('a pager', () => {
       <Pagination
         page={2}
         pageCount={10}
-        onPageChange={() => undefined}
         getHref={(p) => `/people?page=${p}`}
       />,
     );
@@ -146,14 +192,35 @@ describe('a pager', () => {
     // reached with the browser's own back button.
     const link = screen.getByRole('link', { name: 'Page 3' });
     expect(link).toHaveAttribute('href', '/people?page=3');
-    expect(
-      screen.getByRole('link', { name: 'Page 2, current page' }),
-    ).toHaveAttribute('aria-current', 'page');
-    // And there is no address for the page before the first, so that one stays
-    // a control that says it cannot be used.
+    expect(screen.getByRole('link', { name: 'Page 2' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     expect(
       screen.getByRole('link', { name: 'Previous page' }),
     ).toBeInTheDocument();
+  });
+
+  it('does not change what a control IS between pages', async () => {
+    render(
+      <Pagination
+        page={1}
+        pageCount={10}
+        getHref={(p) => `/people?page=${p}`}
+      />,
+    );
+
+    // On page 1 there is no address for "the page before", and both other
+    // answers are worse: a link to nowhere lies, and a button there would make
+    // one affordance change ROLE between pages — "link, Previous page" on one
+    // and "button, unavailable" on the next. It holds the space instead.
+    expect(
+      screen.queryByRole('button', { name: 'Previous page' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Previous page' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Next page' })).toBeInTheDocument();
   });
 
   it('takes a name of its own, because a page can hold several', async () => {
@@ -171,6 +238,24 @@ describe('a pager', () => {
     ).toBeInTheDocument();
   });
 
+  it('lets a name of your own win over its default', async () => {
+    render(
+      <Pagination
+        page={1}
+        pageCount={5}
+        onPageChange={() => undefined}
+        aria-label="Results pager"
+      />,
+    );
+
+    // Written after the spread, the default overwrote this silently — and
+    // where `Table` passes an `aria-labelledby`, having both meant the
+    // labelledby won and the landmark lost the word "Pagination" entirely.
+    expect(
+      screen.getByRole('navigation', { name: 'Results pager' }),
+    ).toBeInTheDocument();
+  });
+
   it('speaks the reader’s language', async () => {
     renderUi(<Pager />, { locale: 'it' });
 
@@ -178,7 +263,7 @@ describe('a pager', () => {
       screen.getByRole('navigation', { name: 'Paginazione' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Pagina 1, pagina corrente' }),
+      screen.getByRole('button', { name: 'Pagina 1' }),
     ).toBeInTheDocument();
   });
 

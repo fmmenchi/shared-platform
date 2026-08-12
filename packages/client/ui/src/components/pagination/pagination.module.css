@@ -59,10 +59,28 @@
     color: var(--fm-color-secondary-foreground);
   }
 
+  /* NOT COLOUR ALONE, and not only for the criterion's sake: a heavier number
+     is the cue that survives a flattened palette, which is where the button
+     form was left indistinguishable. */
+  .currentPage {
+    font-weight: var(--fm-font-weight-semibold);
+  }
+
+  /* The end of the range in the link form: it holds the space so nothing else
+     moves, and it is not a control. */
+  .spacer {
+    visibility: hidden;
+  }
+
   .gap {
-    /* NOT A CONTROL, so it is not sized like one — and it is `aria-hidden`, so
-       what is left is the shape of the gap and nothing else. */
-    padding-inline: var(--fm-space-internal-xs);
+    /* AS WIDE AS THE PAGE IT STANDS IN FOR. Sized as the text it is, the row
+       changed width whenever a gap opened — so "Next stays where the pointer
+       left it", which is the whole reason the range keeps its length, was not
+       true. It is not a control (it is `aria-hidden`), but it is a slot. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 2.25rem;
     color: var(--fm-color-muted-foreground);
   }
 
@@ -75,10 +93,17 @@
      Only the LINK form needs it: the button form is a `Button`, which answers
      for its own forced colors one file over. */
   @media (forced-colors: active) {
-    a.currentPage {
+    /* BOTH FORMS, and the button one was the omission that mattered: it is the
+       DEFAULT, and `Button` deliberately flattens its variants here — "the
+       token fills are replaced by system colors, so the variants collapse into
+       the same flat surface" — so the current page was opaque white on a white
+       canvas beside transparent siblings. Measured: no perceptible difference,
+       on the one control a reader has to be able to find. */
+    .currentPage {
       background: Highlight;
       color: HighlightText;
       border: var(--fm-border-width-default) solid HighlightText;
+      forced-color-adjust: none;
     }
   }
 }

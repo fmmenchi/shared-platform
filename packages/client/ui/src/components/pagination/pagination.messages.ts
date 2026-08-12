@@ -3,12 +3,11 @@ import { defineMessages } from '../../i18n/messages.js';
 /**
  * The pager's copy.
  *
- * `page` AND `current` ARE TWO MESSAGES, not one with a suffix. A control
- * called "3" is a control announced as "three" with no hint of what it does,
- * which is why every number carries the word; and the one in force says so in
- * the same breath rather than relying on `aria-current` alone, because the
- * paint that marks it is colour and the attribute is not read by every
- * combination of browser and screen reader.
+ * `page` CARRIES THE WORD, because a control called "3" is announced as
+ * "three" with no hint of what it does. It does NOT carry the state: there was
+ * a second message saying "current page" in the name as well, and every screen
+ * reader that maps `aria-current` then said it twice. GOV.UK, USWDS and Polaris
+ * all name the control plainly and let the attribute do its job.
  *
  * `announcement` EXISTS BECAUSE THE ROWS CHANGE IN SILENCE. Pressing Next
  * replaces everything under the pager and moves nothing that a reader who
@@ -19,7 +18,6 @@ export const paginationMessages = defineMessages('pagination', {
   en: {
     label: 'Pagination',
     page: 'Page {page}',
-    current: 'Page {page}, current page',
     previous: 'Previous page',
     next: 'Next page',
     announcement: 'Page {page} of {pageCount}',
@@ -27,7 +25,6 @@ export const paginationMessages = defineMessages('pagination', {
   it: {
     label: 'Paginazione',
     page: 'Pagina {page}',
-    current: 'Pagina {page}, pagina corrente',
     previous: 'Pagina precedente',
     next: 'Pagina successiva',
     announcement: 'Pagina {page} di {pageCount}',
@@ -35,7 +32,6 @@ export const paginationMessages = defineMessages('pagination', {
   ar: {
     label: 'ترقيم الصفحات',
     page: 'الصفحة {page}',
-    current: 'الصفحة {page}، الصفحة الحالية',
     previous: 'الصفحة السابقة',
     next: 'الصفحة التالية',
     announcement: 'الصفحة {page} من {pageCount}',

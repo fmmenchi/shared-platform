@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { useCopyLocale, useMessages } from '../../i18n/provider.js';
 import { pageRange } from '../../pagination/range.js';
@@ -13,9 +13,9 @@ import styles from './pagination.module.css';
  *
  * A `<nav>` WITH A LIST IN IT, which is what the pattern is: a set of links or
  * controls that navigate, so assistive technology can list it as a landmark and
- * announce how many entries it has. `aria-current="page"` marks the one in
- * force — and the number also says so in words, because the paint that marks it
- * is colour and colour is not a channel.
+ * announce how many entries it has. `role="list"` is written explicitly,
+ * because `list-style: none` is what removes those semantics in WebKit and the
+ * count is the whole reason the markup is a list.
  *
  * LINKS WHEN THE PAGE IS AN ADDRESS, buttons when it is not, decided by
  * `getHref` rather than by a `variant`. A page that lives in the URL can be
@@ -23,10 +23,19 @@ import styles from './pagination.module.css';
  * button; a page that is client state can do none of those, and a link
  * pretending otherwise is a link that lies.
  *
- * IT ANNOUNCES ITS OWN CHANGE. Pressing Next replaces everything under it and
- * moves nothing a reader who cannot see it would notice — the silent change
- * sorting had, at a larger scale. Silent on arrival, like every region in this
- * package: a list that renders on page 3 is not news.
+ * THE ENDS REFUSE WITHOUT DROPPING THE FOCUS. `aria-disabled` and a click
+ * guard, never native `disabled` — which is this package's own rule for
+ * `Button` and was broken here first: measured, the press that reached the last
+ * page removed the control under the reader's finger from the tab order and
+ * focus fell to `<body>`, so the next Tab restarted at the top of the document.
+ * It also means the boundary is ANNOUNCED, where a `disabled` control is simply
+ * absent from the reader's list.
+ *
+ * IT ANNOUNCES WHAT THE READER DID, not what the data did. The sentence is
+ * captured when the control is used rather than derived from the props, so a
+ * background refetch that changes the total does not speak to somebody who
+ * touched nothing — the rule `Table`'s own region spends a paragraph on, and
+ * which the first version of this file reintroduced.
  *
  * ONE PAGE IS NOT A PAGER. With nowhere else to go it renders nothing at all,
  * and zero pages renders nothing rather than "page 1 of 1" over an empty list.
@@ -47,64 +56,87 @@ function Pagination({
   const locale = useCopyLocale();
   const numbers = useMemo(() => new Intl.NumberFormat(locale), [locale]);
 
-  // Silent on arrival and speaking on every change after — a fact of what the
-  // reader last did, which a ref cannot answer because it is needed during the
-  // render that draws it.
   const [announcement, setAnnouncement] = useState('');
-  const arrived = useRef(false);
-  useEffect(() => {
-    if (!arrived.current) {
-      arrived.current = true;
-      return;
-    }
-    setAnnouncement(
-      t('announcement', {
-        page: numbers.format(page),
-        pageCount: numbers.format(pageCount),
-      }),
-    );
-  }, [page, pageCount, t, numbers]);
 
   if (pageCount <= 1) return null;
 
   const items = pageRange(page, pageCount, { siblingCount });
-  const clamped = Math.min(Math.max(Math.round(page), 1), pageCount);
+  // THE SAME GUARD THE RANGE MAKES, because this decides which control is
+  // marked and where the ends are: a `NaN` page — `parseInt` of a missing query
+  // parameter — left both steps enabled on a forty-page list with no current
+  // page at all, and Next reporting `NaN` forever.
+  const wanted = Number.isFinite(page) ? Math.round(page) : 1;
+  const clamped = Math.min(Math.max(wanted, 1), pageCount);
 
-  const step = (target: number, name: string, disabled: boolean) => {
-    const content = (
-      <span aria-hidden="true">{name === t('previous') ? '‹' : '›'}</span>
+  const go = (target: number) => {
+    // CAPTURED HERE, AS A SENTENCE. Derived from the props it would be re-said
+    // whenever the data moved.
+    setAnnouncement(
+      t('announcement', {
+        page: numbers.format(target),
+        pageCount: numbers.format(pageCount),
+      }),
     );
-    // A DISABLED STEP IS A BUTTON, even where the pages are links: there is no
-    // address for "the page before the first", and a link to nowhere is worse
-    // than a control that says it cannot be used.
-    if (getHref !== undefined && !disabled) {
-      return (
+    onPageChange?.(target);
+  };
+
+  const step = (target: number, name: string, atEnd: boolean) => {
+    const glyph = (
+      <span aria-hidden="true">{target < clamped ? '‹' : '›'}</span>
+    );
+
+    if (getHref !== undefined) {
+      // A PLACEHOLDER, NOT A CONTROL. There is no address for the page before
+      // the first, and both alternatives are worse: a link to nowhere lies, and
+      // a `<button>` here would make one affordance change ROLE between pages —
+      // "link, Previous page" on one and "button, unavailable" on the next. It
+      // keeps the space, so nothing else moves.
+      return atEnd ? (
+        <span aria-hidden="true" className={cn(styles.step, styles.spacer)}>
+          {glyph}
+        </span>
+      ) : (
         <a href={getHref(target)} className={styles.step} aria-label={name}>
-          {content}
+          {glyph}
         </a>
       );
     }
+
     return (
       <Button
         variant="ghost"
         size="sm"
         className={styles.step}
         aria-label={name}
-        disabled={disabled}
-        onClick={() => onPageChange(target)}
+        // NOT `disabled`. See the note above the component.
+        aria-disabled={atEnd || undefined}
+        onClick={() => {
+          if (atEnd) return;
+          go(target);
+        }}
       >
-        {content}
+        {glyph}
       </Button>
     );
   };
 
+  // A NAME OF YOUR OWN WINS. Written after the spread, the default overwrote a
+  // consumer's `aria-label` silently — and where `Table` passes an
+  // `aria-labelledby` (a caption that is not words), having both meant the
+  // labelledby won and the landmark lost the word "Pagination" entirely, ending
+  // up with the same name as the table beside it.
+  const named =
+    rest['aria-labelledby'] !== undefined || rest['aria-label'] !== undefined;
+
   return (
     <nav
       {...rest}
-      aria-label={label ?? t('label')}
+      aria-label={named ? rest['aria-label'] : (label ?? t('label'))}
       className={cn(styles.pagination, className)}
     >
-      <ul className={styles.list}>
+      {/* EXPLICIT. `list-style: none` removes list semantics in WebKit, and the
+          count of entries is the whole reason this is a list. */}
+      <ul role="list" className={styles.list}>
         <li>{step(clamped - 1, t('previous'), clamped <= 1)}</li>
 
         {items.map((item) =>
@@ -128,12 +160,14 @@ function Pagination({
                     styles.page,
                     item.page === clamped && styles.currentPage,
                   )}
+                  // ONE CHANNEL, NOT TWO. `aria-current` is what marks it;
+                  // putting "current page" in the NAME as well made every
+                  // screen reader that maps the attribute say it twice, which
+                  // is why GOV.UK, USWDS and Polaris all name it plainly. The
+                  // sighted channel is the fill AND the weight, so it is not
+                  // colour alone either.
                   aria-current={item.page === clamped ? 'page' : undefined}
-                  aria-label={
-                    item.page === clamped
-                      ? t('current', { page: numbers.format(item.page) })
-                      : t('page', { page: numbers.format(item.page) })
-                  }
+                  aria-label={t('page', { page: numbers.format(item.page) })}
                 >
                   {numbers.format(item.page)}
                 </a>
@@ -141,17 +175,13 @@ function Pagination({
                 <Button
                   variant={item.page === clamped ? 'secondary' : 'ghost'}
                   size="sm"
-                  className={styles.page}
-                  // THE STATE, and then the same state IN WORDS. `aria-current`
-                  // is the machine-readable half; the name is the half that
-                  // survives a screen reader that does not announce it.
+                  className={cn(
+                    styles.page,
+                    item.page === clamped && styles.currentPage,
+                  )}
                   aria-current={item.page === clamped ? 'page' : undefined}
-                  aria-label={
-                    item.page === clamped
-                      ? t('current', { page: numbers.format(item.page) })
-                      : t('page', { page: numbers.format(item.page) })
-                  }
-                  onClick={() => onPageChange(item.page)}
+                  aria-label={t('page', { page: numbers.format(item.page) })}
+                  onClick={() => go(item.page)}
                 >
                   {numbers.format(item.page)}
                 </Button>

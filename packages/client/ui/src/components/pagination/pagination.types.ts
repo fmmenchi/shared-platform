@@ -1,8 +1,8 @@
 import type { ComponentPropsWithRef } from 'react';
 
-export interface PaginationProps extends Omit<
+interface PaginationBase extends Omit<
   ComponentPropsWithRef<'nav'>,
-  'children' | 'onChange'
+  'children' | 'onChange' | 'onPageChange'
 > {
   /** Which page is showing, counting from 1. */
   page: number;
@@ -13,15 +13,14 @@ export interface PaginationProps extends Omit<
    * to go.
    */
   pageCount: number;
-  /** The reader asked for another page. Receives the page, not a delta. */
-  onPageChange: (page: number) => void;
   /**
    * How many pages to draw on each side of the current one.
    *
    * The list's LENGTH does not change with it: the ends expand to fill in for
-   * the gap that is not needed there, so the Next control stays where the
-   * pointer left it and a keyboard reader's tab count is the same on every
-   * page.
+   * the gap that is not needed there, and a gap is drawn as wide as the page it
+   * stands in for — so Next is in the same place on every page and does not
+   * move under the pointer between clicks. The number of STOPS does change by
+   * one when a gap opens, which is inherent to having gaps at all.
    *
    * @default 1
    */
@@ -30,15 +29,42 @@ export interface PaginationProps extends Omit<
    * What this navigation is called. A page can have more than one — a list and
    * its comments — and two landmarks called "Pagination" are two identical
    * entries in a screen reader's list.
+   *
+   * An `aria-label` or `aria-labelledby` of your own wins over it and over the
+   * default, rather than being quietly overwritten.
    */
   label?: string;
-  /**
-   * Makes the pages LINKS instead of buttons, by saying where each one lives.
-   *
-   * Pass it when the page is part of the address: the reader can then open one
-   * in a new tab, bookmark it, and reach it with the browser's own back button
-   * — none of which a button offers. Leave it out when the page is client
-   * state and the URL does not move.
-   */
-  getHref?: (page: number) => string;
 }
+
+/**
+ * Either the pages are addresses or they are state, and the props say which.
+ *
+ * `onPageChange` is REFUSED alongside `getHref` rather than ignored: with links
+ * the browser navigates and nothing here would ever call it, so a required
+ * callback that can never fire is a promise the type should not let you make.
+ * Note what that means for a client router — see `getHref`.
+ */
+export type PaginationProps = PaginationBase &
+  (
+    | {
+        /**
+         * Makes the pages LINKS by saying where each one lives.
+         *
+         * Pass it when the page is part of the address: the reader can then
+         * open one in a new tab, bookmark it, and reach it with the browser's
+         * own back button — none of which a button offers.
+         *
+         * IT IS A REAL NAVIGATION. There is no render slot for a router's own
+         * `Link`, so in a single-page app these load the document: use the
+         * button form and let your router push the page, or wrap this
+         * component with one that renders your `Link`.
+         */
+        getHref: (page: number) => string;
+        onPageChange?: never;
+      }
+    | {
+        getHref?: never;
+        /** The reader asked for another page. Receives the page, not a delta. */
+        onPageChange: (page: number) => void;
+      }
+  );
