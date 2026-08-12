@@ -476,6 +476,15 @@ describe('Toast', () => {
     await waitFor(() => expect(screen.getByText('Saved')).toBeVisible());
 
     const panel = region().firstElementChild as HTMLElement;
+
+    // WIDEN THE WINDOW rather than hope to land inside it. What follows is only
+    // observable while the exit runs, and the exit is a third of a second — so
+    // on a loaded machine the poll can arrive after it, read an unmounted node,
+    // and fail on a component that is perfectly correct. `animateExit` takes its
+    // duration from the token ON THE ELEMENT, so overriding it makes "still
+    // there and running" a fact instead of a race.
+    panel.style.setProperty('--fm-duration-m', '4s');
+
     await browser.click(screen.getByRole('button', { name: /dismiss/i }));
 
     // THE EXIT IS OBSERVED BEFORE IT COMPLETES, which is the only moment it
@@ -663,21 +672,25 @@ describe('Toast', () => {
     await raise();
 
     const panel = document.querySelector('[data-toast]') as HTMLElement;
-    const entrance = panel.getAnimations();
+    const entrance = getComputedStyle(panel);
 
     // THE ENTRANCE WAS NEVER MEASURED, which is how it became imperceptible
     // without anything turning red: it ran, at the bottom of the scale — half a
     // rem of travel in 200ms — and a panel that is simply there on the next
     // frame reads as no animation at all.
-    expect(entrance).toHaveLength(1);
-    expect((entrance[0] as CSSAnimation).animationName).toMatch(
-      /fm-slide-up-in/,
-    );
+    //
+    // Read the DECLARATION, not the flight. `getAnimations()` returns what is
+    // still running, so the very same correct panel answers `[fm-slide-up-in]`
+    // or `[]` depending on nothing but how loaded the machine was when we
+    // looked — this test fell under the full gate and never alone. Computed
+    // style states both facts as properties of the element, and it is the
+    // duration, not the liveness, that the defect was hiding in.
+    expect(entrance.animationName).toMatch(/fm-slide-up-in/);
 
     // The BANNER tier, which is what the token's own annotation calls a toast —
     // `s` is "switch, colour, icons". This is the assertion that would have
     // caught the original pick.
-    expect(getComputedStyle(panel).animationDuration).toBe('0.35s');
+    expect(entrance.animationDuration).toBe('0.35s');
   });
 
   it('is dense, and the way out sits on the title', async () => {
