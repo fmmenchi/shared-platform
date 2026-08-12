@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { ChoiceField } from './choice-field.component.js';
 import { Field } from '../field/field.component.js';
 import { Checkbox } from '../checkbox/checkbox.component.js';
@@ -67,13 +67,12 @@ describe('ChoiceField', () => {
   });
 
   it('clicking the label toggles the control', async () => {
-    const user = userEvent.setup();
     render(
       <ChoiceField label="Accept the terms">
         <Checkbox />
       </ChoiceField>,
     );
-    await user.click(screen.getByText('Accept the terms'));
+    await browser.click(screen.getByText('Accept the terms'));
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
 

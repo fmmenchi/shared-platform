@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useColumnOrder, moveColumn } from './use-column-order.js';
 import type { Column } from './table.types.js';
 import type { ColumnOrder } from './use-column-order.types.js';
@@ -99,10 +99,9 @@ describe('useColumnOrder', () => {
   });
 
   it('moves a column and reports where it now sits', async () => {
-    const user = userEvent.setup();
     render(<Harness />);
 
-    await user.click(click('city<'));
+    await browser.click(click('city<'));
     expect(shown()).toBe('city,name,age');
     expect(screen.getByTestId('pos').textContent).toBe('1');
   });
@@ -113,18 +112,16 @@ describe('useColumnOrder', () => {
   });
 
   it('goes back to the declared order', async () => {
-    const user = userEvent.setup();
     render(<Harness defaultOrder={['age', 'city', 'name']} />);
 
     expect(shown()).toBe('age,city,name');
-    await user.click(click('reset'));
+    await browser.click(click('reset'));
     expect(shown()).toBe('name,city,age');
   });
 
   it('applies two moves in one tick, not just the last', async () => {
     // THE UPDATER. Both dispatches read the same closure otherwise, and a
     // reader holding the key down produces exactly that.
-    const user = userEvent.setup();
     function Double() {
       const order = useColumnOrder<Person>({ columns });
       return (
@@ -146,7 +143,7 @@ describe('useColumnOrder', () => {
     }
     render(<Double />);
 
-    await user.click(click('twice'));
+    await browser.click(click('twice'));
     expect(shown()).toBe('age,name,city');
   });
 
@@ -216,7 +213,6 @@ describe('useColumnOrder', () => {
 
   describe('controlled', () => {
     it('reports the intent and never moves on its own', async () => {
-      const user = userEvent.setup();
       const onOrderChange = vi.fn();
       render(
         <Harness
@@ -225,7 +221,7 @@ describe('useColumnOrder', () => {
         />,
       );
 
-      await user.click(click('age<'));
+      await browser.click(click('age<'));
       expect(onOrderChange).toHaveBeenCalledWith(['name', 'age', 'city']);
       expect(shown()).toBe('name,city,age');
     });
@@ -234,11 +230,10 @@ describe('useColumnOrder', () => {
       // The shape a round-trip through storage produces, and the correction
       // every hook in this family has needed: read as a VALUE it would mean
       // uncontrolled, and the hook would keep its own copy and stop reporting.
-      const user = userEvent.setup();
       const onOrderChange = vi.fn();
       render(<Harness order={undefined} onOrderChange={onOrderChange} />);
 
-      await user.click(click('age<'));
+      await browser.click(click('age<'));
       expect(onOrderChange).toHaveBeenCalledTimes(1);
       expect(shown()).toBe('name,city,age');
     });
@@ -252,10 +247,9 @@ describe('useColumnOrder', () => {
         ]);
         return <Harness order={order} onOrderChange={setOrder} />;
       }
-      const user = userEvent.setup();
       render(<Held />);
 
-      await user.click(click('age<'));
+      await browser.click(click('age<'));
       expect(shown()).toBe('name,age,city');
     });
 

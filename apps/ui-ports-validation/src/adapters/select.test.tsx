@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { UiProvider, FormSelect } from '@fmmenchi/ui';
 import { FormProvider, useForm, type Resolver } from 'react-hook-form';
 import { useRhfField } from '@fmmenchi/ui-form-ports/react-hook-form';
@@ -44,25 +44,23 @@ function CountryForm({ onSubmit }: { onSubmit: (v: Values) => void }) {
 
 describe('FormSelect over react-hook-form', () => {
   it('registers, collects the choice and submits it', async () => {
-    const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(<CountryForm onSubmit={onSubmit} />);
 
     const select = screen.getByRole('combobox', { name: 'Country' });
     expect(select.tagName).toBe('SELECT');
 
-    await user.selectOptions(select, 'fr');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await browser.selectOptions(select, 'fr');
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ country: 'fr' });
   });
 
   it('carries the library’s message to the eye and to assistive tech', async () => {
-    const user = userEvent.setup();
     render(<CountryForm onSubmit={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
 
     const select = screen.getByRole('combobox', { name: 'Country' });
     await waitFor(() => expect(select).toHaveAttribute('aria-invalid', 'true'));

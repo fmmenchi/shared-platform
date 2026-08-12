@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ComponentProps } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { SegmentedControl } from './segmented-control.component.js';
 import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { renderUi } from '../../test/render.js';
@@ -18,6 +18,24 @@ function Alignment(props: Partial<ComponentProps<typeof SegmentedControl>>) {
     </SegmentedControl>
   );
 }
+
+/**
+ * THE PART A POINTER CAN ACTUALLY REACH.
+ *
+ * The radio is `sr-only`: measured, one pixel at 158×18, clipped to nothing by
+ * `clip-path: inset(50%)`, and `elementFromPoint` at its own centre returns the
+ * LABEL. So no mouse and no finger can ever land on it — the label is the
+ * target, and the browser forwards the activation to the control. That is the
+ * whole point of the pattern.
+ *
+ * These tests used to click the input, and passed, because a synthesised event
+ * is dispatched at a node and never asks whether a pointer could get there. A
+ * browser-driven click asks, and refuses — which is the more honest answer, and
+ * the reason the suite moved to one event engine (ADR-0002 §6). The query stays
+ * semantic: role and name, then up to the thing you press.
+ */
+const segment = (name: string) =>
+  screen.getByRole('radio', { name }).closest('label') as HTMLElement;
 
 describe('SegmentedControl', () => {
   it('is a radio group, not a row of pressed buttons', () => {
@@ -35,26 +53,24 @@ describe('SegmentedControl', () => {
   });
 
   it('moves AND selects with the arrows, which is the platform’s own behaviour', async () => {
-    const user = userEvent.setup();
     render(<Alignment defaultValue="left" />);
 
     // The entire reason this is built on radios: nothing here implements a
     // keyboard. `Tab` reaches the set once, the arrows walk it, and walking
     // selects — the APG's radio-group contract, kept by the browser.
-    await user.tab();
+    await browser.tab();
     expect(screen.getByRole('radio', { name: 'Left' })).toHaveFocus();
 
-    await user.keyboard('{ArrowRight}');
+    await browser.keyboard('{ArrowRight}');
     expect(screen.getByRole('radio', { name: 'Center' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'Center' })).toHaveFocus();
 
     // And it wraps, again without a line of ours.
-    await user.keyboard('{ArrowRight}{ArrowRight}');
+    await browser.keyboard('{ArrowRight}{ArrowRight}');
     expect(screen.getByRole('radio', { name: 'Left' })).toBeChecked();
   });
 
   it('takes ONE tab stop for the whole set', async () => {
-    const user = userEvent.setup();
     render(
       <>
         <Alignment defaultValue="center" />
@@ -62,24 +78,22 @@ describe('SegmentedControl', () => {
       </>,
     );
 
-    await user.tab();
+    await browser.tab();
     expect(screen.getByRole('radio', { name: 'Center' })).toHaveFocus();
-    await user.tab();
+    await browser.tab();
     expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
   });
 
   it('reports the value the user picked', async () => {
-    const user = userEvent.setup();
     const onValueChange = vi.fn();
     render(<Alignment defaultValue="left" onValueChange={onValueChange} />);
 
-    await user.click(screen.getByRole('radio', { name: 'Right' }));
+    await browser.click(segment('Right'));
     expect(onValueChange).toHaveBeenCalledWith('right');
     expect(screen.getByRole('radio', { name: 'Right' })).toBeChecked();
   });
 
   it('lets the prop win when the group is controlled', async () => {
-    const user = userEvent.setup();
     function Driven() {
       const [value, setValue] = useState('left');
       return (
@@ -91,14 +105,13 @@ describe('SegmentedControl', () => {
     }
     render(<Driven />);
 
-    await user.click(screen.getByRole('radio', { name: 'Center' }));
+    await browser.click(segment('Center'));
     expect(screen.getByRole('radio', { name: 'Center' })).toBeChecked();
     expect(screen.getByRole('status')).toHaveTextContent('center');
   });
 
   describe('the form, because a radio group is a field', () => {
     it('submits the chosen value under the shared name', async () => {
-      const user = userEvent.setup();
       const { container } = render(
         <form>
           <Alignment defaultValue="left" />
@@ -107,12 +120,11 @@ describe('SegmentedControl', () => {
       const form = container.querySelector('form') as HTMLFormElement;
 
       expect(new FormData(form).get('align')).toBe('left');
-      await user.click(screen.getByRole('radio', { name: 'Right' }));
+      await browser.click(segment('Right'));
       expect(new FormData(form).get('align')).toBe('right');
     });
 
     it('IS RESTORED BY form.reset(), because the DOM holds the choice', async () => {
-      const user = userEvent.setup();
       const { container } = render(
         <form>
           <Alignment defaultValue="center" />
@@ -120,7 +132,7 @@ describe('SegmentedControl', () => {
       );
       const form = container.querySelector('form') as HTMLFormElement;
 
-      await user.click(screen.getByRole('radio', { name: 'Right' }));
+      await browser.click(segment('Right'));
       expect(screen.getByRole('radio', { name: 'Right' })).toBeChecked();
 
       // Uncontrolled, the item is handed `defaultChecked` and never `checked`.
@@ -133,7 +145,6 @@ describe('SegmentedControl', () => {
   });
 
   it('keeps an unavailable option in the set without selecting it', async () => {
-    const user = userEvent.setup();
     render(
       <SegmentedControl label="Export format" name="format" defaultValue="csv">
         <SegmentedControlItem value="csv">CSV</SegmentedControlItem>
@@ -145,7 +156,13 @@ describe('SegmentedControl', () => {
 
     const pdf = screen.getByRole('radio', { name: 'PDF' });
     expect(pdf).toBeDisabled();
-    await user.click(pdf);
+
+    // `force` because the point IS the refusal. Playwright will not click a
+    // control it can see is disabled — the check is a feature — but a person's
+    // mouse has no such manners: it lands on those pixels anyway, and the
+    // browser declines to activate. `force` skips the actionability wait and
+    // still sends real pointer events, which is exactly that user.
+    await browser.click(segment('PDF'), { force: true });
     expect(pdf).not.toBeChecked();
     expect(screen.getByRole('radio', { name: 'CSV' })).toBeChecked();
   });

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useColumnWidths } from './use-column-widths.js';
 import type {
   ColumnWidths,
@@ -43,7 +43,7 @@ function Harness(props: UseColumnWidthsOptions) {
 
 const state = () => document.querySelector('output')?.textContent;
 const press = (name: string) =>
-  userEvent.click(screen.getByRole('button', { name }));
+  browser.click(screen.getByRole('button', { name }));
 
 describe('useColumnWidths', () => {
   it('starts with nothing resized', async () => {

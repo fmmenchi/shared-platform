@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useColumnVisibility } from './use-column-visibility.js';
 import type { Column } from './table.types.js';
 import type {
@@ -62,25 +62,23 @@ describe('useColumnVisibility', () => {
   });
 
   it('puts a column away and brings it back', async () => {
-    const user = userEvent.setup();
     render(<Harness />);
 
-    await user.click(screen.getByRole('button', { name: 'città' }));
+    await browser.click(screen.getByRole('button', { name: 'città' }));
     // WHICH IS WHY `Table` NEEDS NO PROP: it is handed fewer columns and draws
     // fewer columns. It never learns that one was put away.
     expect(visible()).toBe('name,age');
 
-    await user.click(screen.getByRole('button', { name: 'città' }));
+    await browser.click(screen.getByRole('button', { name: 'città' }));
     expect(visible()).toBe('name,city,age');
   });
 
   it('refuses to hide the column that names the rows', async () => {
-    const user = userEvent.setup();
     render(<Harness />);
 
     expect(hideable()).toBe('city,age');
 
-    await user.click(screen.getByRole('button', { name: 'nome' }));
+    await browser.click(screen.getByRole('button', { name: 'nome' }));
     // THE TABLE WOULD STILL RENDER, which is what makes this worth refusing in
     // code rather than in a guideline: hide the row header and a screen reader
     // announces every cell as "column 3, 47", with nothing on screen to say
@@ -119,21 +117,19 @@ describe('useColumnVisibility', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<Plain />);
 
-    await user.click(screen.getByRole('button', { name: 'città' }));
+    await browser.click(screen.getByRole('button', { name: 'città' }));
     expect(visible()).toBe('age');
     // `age` is now the only thing to look at, and a caption over an empty grid
     // reads as broken rather than chosen.
     expect(hideable()).toBe('city');
 
-    await user.click(screen.getByRole('button', { name: 'età' }));
+    await browser.click(screen.getByRole('button', { name: 'età' }));
     expect(visible()).toBe('age');
   });
 
   it('refuses to hide the last one standing', async () => {
-    const user = userEvent.setup();
     render(<Harness defaultHidden={new Set(['city'])} />);
 
     expect(visible()).toBe('name,age');
@@ -141,7 +137,7 @@ describe('useColumnVisibility', () => {
     // go, and the floor is one.
     expect(hideable()).toBe('city,age');
 
-    await user.click(screen.getByRole('button', { name: 'età' }));
+    await browser.click(screen.getByRole('button', { name: 'età' }));
     expect(visible()).toBe('name');
     // BOTH ARE STILL TOGGLEABLE, and that is the floor working rather than
     // failing: they are hidden, so the question being asked of them is whether
@@ -152,11 +148,10 @@ describe('useColumnVisibility', () => {
   });
 
   it('shows everything again', async () => {
-    const user = userEvent.setup();
     render(<Harness defaultHidden={new Set(['city', 'age'])} />);
 
     expect(visible()).toBe('name');
-    await user.click(screen.getByRole('button', { name: 'mostra tutto' }));
+    await browser.click(screen.getByRole('button', { name: 'mostra tutto' }));
     expect(visible()).toBe('name,city,age');
   });
 
@@ -167,11 +162,10 @@ describe('useColumnVisibility', () => {
     }
 
     it('reports the intent and follows the value it is given back', async () => {
-      const user = userEvent.setup();
       render(<Controlled />);
 
       expect(visible()).toBe('name,city');
-      await user.click(screen.getByRole('button', { name: 'città' }));
+      await browser.click(screen.getByRole('button', { name: 'città' }));
       expect(visible()).toBe('name');
     });
 
@@ -182,17 +176,15 @@ describe('useColumnVisibility', () => {
       // green. `undefined` is the shape a round-trip through storage produces,
       // and reading it as UNCONTROLLED makes the hook keep its own copy and
       // stop reporting.
-      const user = userEvent.setup();
       const onHiddenChange = vi.fn();
       render(<Harness hidden={undefined} onHiddenChange={onHiddenChange} />);
 
-      await user.click(screen.getByRole('button', { name: 'città' }));
+      await browser.click(screen.getByRole('button', { name: 'città' }));
       expect(onHiddenChange).toHaveBeenCalledTimes(1);
       expect(visible()).toBe('name,city,age');
     });
 
     it('is controlled by PRESENCE, so an empty set is not uncontrolled', async () => {
-      const user = userEvent.setup();
       const onHiddenChange = vi.fn();
       // The correction the other four table hooks each needed: a consumer
       // round-tripping "nothing hidden" through storage hands back an empty
@@ -200,7 +192,7 @@ describe('useColumnVisibility', () => {
       // the hook would then keep its own copy and stop reporting.
       render(<Harness hidden={new Set()} onHiddenChange={onHiddenChange} />);
 
-      await user.click(screen.getByRole('button', { name: 'città' }));
+      await browser.click(screen.getByRole('button', { name: 'città' }));
       expect(onHiddenChange).toHaveBeenCalledTimes(1);
       // Nothing moved on its own: the value it was given still governs.
       expect(visible()).toBe('name,city,age');

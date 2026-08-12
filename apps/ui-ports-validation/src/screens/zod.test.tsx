@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { UiProvider } from '@fmmenchi/ui';
 import { ZodScreen } from './zod.screen.js';
 import {
@@ -22,9 +22,8 @@ const renderScreen = () =>
 
 describe('a real zod schema, through the port', () => {
   it('every schema message reaches its field AND the summary', async () => {
-    const user = userEvent.setup();
     renderScreen();
-    await user.click(screen.getByRole('button', { name: /Create account/ }));
+    await browser.click(screen.getByRole('button', { name: /Create account/ }));
 
     const summary = await screen.findByRole('region', {
       name: 'There is a problem',
@@ -51,16 +50,15 @@ describe('a real zod schema, through the port', () => {
     // NOTE every other field is filled in. zod's `.refine()` on an object runs
     // ONLY once the object itself parses, so with any base rule still failing
     // the cross-field rule never executes — a real gotcha, not a test detail.
-    const user = userEvent.setup();
     renderScreen();
-    await user.type(
+    await browser.type(
       screen.getByRole('textbox', { name: /Email/ }),
       'ada@example.com',
     );
-    await user.click(screen.getByRole('checkbox', { name: /I accept/ }));
-    await user.type(screen.getByLabelText('Password'), 'longenough1');
-    await user.type(screen.getByLabelText('Confirm password'), 'different1');
-    await user.click(screen.getByRole('button', { name: /Create account/ }));
+    await browser.click(screen.getByRole('checkbox', { name: /I accept/ }));
+    await browser.type(screen.getByLabelText('Password'), 'longenough1');
+    await browser.type(screen.getByLabelText('Confirm password'), 'different1');
+    await browser.click(screen.getByRole('button', { name: /Create account/ }));
 
     await waitFor(() =>
       expect(
@@ -73,16 +71,18 @@ describe('a real zod schema, through the port', () => {
   });
 
   it('submits when the schema is satisfied — and the summary never appears', async () => {
-    const user = userEvent.setup();
     renderScreen();
-    await user.type(
+    await browser.type(
       screen.getByRole('textbox', { name: /Email/ }),
       'ada@example.com',
     );
-    await user.type(screen.getByLabelText('Password'), 'longenough1');
-    await user.type(screen.getByLabelText('Confirm password'), 'longenough1');
-    await user.click(screen.getByRole('checkbox', { name: /I accept/ }));
-    await user.click(screen.getByRole('button', { name: /Create account/ }));
+    await browser.type(screen.getByLabelText('Password'), 'longenough1');
+    await browser.type(
+      screen.getByLabelText('Confirm password'),
+      'longenough1',
+    );
+    await browser.click(screen.getByRole('checkbox', { name: /I accept/ }));
+    await browser.click(screen.getByRole('button', { name: /Create account/ }));
 
     expect(
       screen.queryByRole('region', { name: 'There is a problem' }),

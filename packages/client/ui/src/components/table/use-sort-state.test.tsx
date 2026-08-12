@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useSortState, nextSort } from './use-sort-state.js';
 import type { SortBy } from '../../sorting/compare.types.js';
 import type { UseSortStateOptions } from './use-sort-state.types.js';
@@ -104,27 +104,25 @@ describe('nextSort', () => {
 
 describe('useSortState, holding the state itself', () => {
   it('seeds from defaultSortKey and walks the cycle', async () => {
-    const user = userEvent.setup();
     render(<Harness defaultSortKey="name" />);
 
     expect(state()).toBe('[{"key":"name","direction":"asc"}]');
-    await user.click(screen.getByRole('button', { name: 'name' }));
+    await browser.click(screen.getByRole('button', { name: 'name' }));
     expect(state()).toBe('[{"key":"name","direction":"desc"}]');
-    await user.click(screen.getByRole('button', { name: 'name' }));
+    await browser.click(screen.getByRole('button', { name: 'name' }));
     expect(state()).toBe('[]');
   });
 
   it('builds an order of two and takes one back out', async () => {
-    const user = userEvent.setup();
     render(<Harness defaultSortKey="name" keys={['name', 'age']} />);
 
-    await user.click(screen.getByRole('button', { name: '+age' }));
+    await browser.click(screen.getByRole('button', { name: '+age' }));
     expect(state()).toBe(
       '[{"key":"name","direction":"asc"},{"key":"age","direction":"asc"}]',
     );
 
-    await user.click(screen.getByRole('button', { name: '+age' }));
-    await user.click(screen.getByRole('button', { name: '+age' }));
+    await browser.click(screen.getByRole('button', { name: '+age' }));
+    await browser.click(screen.getByRole('button', { name: '+age' }));
     expect(state()).toBe('[{"key":"name","direction":"asc"}]');
   });
 
@@ -154,7 +152,6 @@ describe('useSortState, holding the state itself', () => {
     // 37 tests in this file and the sorting suite green. Two dispatches in one
     // batch both read the same closure, so the second overwrites the first and
     // the second click of a double-click does nothing.
-    const user = userEvent.setup();
     function Double() {
       const sort = useSortState({ defaultSortKey: 'name' });
       return (
@@ -174,7 +171,7 @@ describe('useSortState, holding the state itself', () => {
     }
     render(<Double />);
 
-    await user.click(screen.getByRole('button', { name: 'twice' }));
+    await browser.click(screen.getByRole('button', { name: 'twice' }));
     // asc → desc → off. Read from the closure both times it would be `desc`.
     expect(state()).toBe('[]');
   });
@@ -199,15 +196,14 @@ describe('useSortState, when the consumer holds it', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<UrlLike />);
     const toggle = screen.getByRole('button', { name: 'name' });
 
-    await user.click(toggle);
+    await browser.click(toggle);
     expect(state()).toBe('[{"key":"name","direction":"asc"}]');
-    await user.click(toggle);
+    await browser.click(toggle);
     expect(state()).toBe('[{"key":"name","direction":"desc"}]');
-    await user.click(toggle);
+    await browser.click(toggle);
     // The stop the reader asked for, and no fossil underneath it.
     expect(state()).toBe('[]');
   });
@@ -226,11 +222,10 @@ describe('useSortState, when the consumer holds it', () => {
   });
 
   it('reports the intent and never moves on its own', async () => {
-    const user = userEvent.setup();
     const onSortChange = vi.fn();
     render(<Harness sort={[]} onSortChange={onSortChange} />);
 
-    await user.click(screen.getByRole('button', { name: 'name' }));
+    await browser.click(screen.getByRole('button', { name: 'name' }));
     expect(onSortChange).toHaveBeenCalledWith([asc('name')]);
     // Nothing moved on its own: the value it was given still governs.
     expect(state()).toBe('[]');

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Table } from './table.component.js';
 import { useSortState, nextSort } from './use-sort-state.js';
 import { useTableSort } from './use-table-sort.js';

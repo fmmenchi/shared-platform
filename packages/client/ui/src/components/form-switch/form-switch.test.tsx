@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormSwitch } from './form-switch.component.js';
 import { UiProvider } from '../../i18n/provider.js';
 import { createBoundFields } from '../../form/bound-fields.js';
@@ -58,7 +58,6 @@ describe('FormSwitch', () => {
   });
 
   it('reports a flip through the binding', async () => {
-    const user = userEvent.setup();
     const onChange = vi.fn();
     render(
       <Bound onChange={onChange}>
@@ -66,12 +65,11 @@ describe('FormSwitch', () => {
       </Bound>,
     );
 
-    await user.click(screen.getByRole('switch'));
+    await browser.click(screen.getByRole('switch'));
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
   it('takes the state from the library, which is the point of binding it', async () => {
-    const user = userEvent.setup();
     function Persisting() {
       const [on, setOn] = useState(false);
       const useDemoField: UseFormField = (name) => ({
@@ -97,7 +95,7 @@ describe('FormSwitch', () => {
     // A settings surface persists on change — the switch applies immediately
     // and the library is where that lands. This is the shape the component is
     // for; a Save button beside it would mean `FormChoice` instead.
-    await user.click(screen.getByRole('switch'));
+    await browser.click(screen.getByRole('switch'));
     expect(screen.getByRole('switch')).toBeChecked();
     expect(screen.getByRole('status')).toHaveTextContent('saved on');
   });

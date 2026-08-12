@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef, useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormInput } from './form-input.component.js';
 import { FormChoice } from '../form-choice/form-choice.component.js';
 import { UiProvider } from '../../i18n/provider.js';
@@ -31,7 +31,6 @@ describe('the bound components, against the contract itself', () => {
   });
 
   it('collects what the user types, through the adapter’s own onChange', async () => {
-    const user = userEvent.setup();
     function Host() {
       const [values, setValues] = useState<Record<string, string | boolean>>({
         email: '',
@@ -62,8 +61,11 @@ describe('the bound components, against the contract itself', () => {
       );
     }
     render(<Host />);
-    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
-    await user.click(screen.getByRole('checkbox', { name: 'Accept' }));
+    await browser.type(
+      screen.getByRole('textbox', { name: 'Email' }),
+      'a@b.it',
+    );
+    await browser.click(screen.getByRole('checkbox', { name: 'Accept' }));
     expect(
       JSON.parse(screen.getByRole('status').textContent ?? '{}'),
     ).toMatchObject({ email: 'a@b.it', tos: true });
@@ -132,7 +134,6 @@ describe('the bound components, against the contract itself', () => {
       const warn = vi
         .spyOn(console, 'warn')
         .mockImplementation(() => undefined);
-      const user = userEvent.setup();
       const seen: string[] = [];
       const stolen = vi.fn();
       const props = { onChange: stolen, value: 'frozen' } as object;
@@ -150,7 +151,7 @@ describe('the bound components, against the contract itself', () => {
       const input = screen.getByRole('textbox', { name: 'Email' });
       expect(input).toHaveValue('');
 
-      await user.type(input, 'ab');
+      await browser.type(input, 'ab');
       expect(seen).toEqual(['email=a', 'email=ab']);
       expect(stolen).not.toHaveBeenCalled();
       await waitFor(() =>
@@ -168,7 +169,6 @@ describe('the bound components, against the contract itself', () => {
       const warn = vi
         .spyOn(console, 'warn')
         .mockImplementation(() => undefined);
-      const user = userEvent.setup();
       const seen: string[] = [];
       const props = { onChange: undefined } as object;
       render(
@@ -182,7 +182,7 @@ describe('the bound components, against the contract itself', () => {
         </UiProvider>,
       );
 
-      await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a');
+      await browser.type(screen.getByRole('textbox', { name: 'Email' }), 'a');
       expect(seen).toEqual(['email=a']);
       expect(warn).not.toHaveBeenCalled();
       warn.mockRestore();

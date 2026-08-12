@@ -5,7 +5,7 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react';
 // Real keys through the provider, not synthetic events: the slider's keyboard
 // IS the browser's default behaviour, and an untrusted `keydown` triggers none
 // of it — the same reason Tabs drives its roving focus this way.
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Slider } from './slider.component.js';
 import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';

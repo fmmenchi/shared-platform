@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import type { ReactNode } from 'react';
 import { FieldLabel } from './field-label.component.js';
 import { Field } from '../field/field.component.js';
@@ -27,9 +27,8 @@ describe('FieldLabel', () => {
   });
 
   it('focuses the control when clicked', async () => {
-    const user = userEvent.setup();
     renderInField(<FieldLabel>Email</FieldLabel>);
-    await user.click(screen.getByText('Email'));
+    await browser.click(screen.getByText('Email'));
     expect(screen.getByRole('textbox', { name: 'Email' })).toHaveFocus();
   });
 

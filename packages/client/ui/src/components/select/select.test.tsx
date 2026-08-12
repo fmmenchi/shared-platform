@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Select } from './select.component.js';
 import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';
@@ -181,7 +181,6 @@ describe('Select', () => {
     });
 
     it('works uncontrolled — does not hijack the value', async () => {
-      const user = userEvent.setup();
       render(
         <Select aria-label="q" defaultValue="">
           <Options />
@@ -190,12 +189,11 @@ describe('Select', () => {
       const select = screen.getByRole<HTMLSelectElement>('combobox', {
         name: 'q',
       });
-      await user.selectOptions(select, 'fr');
+      await browser.selectOptions(select, 'fr');
       expect(select.value).toBe('fr');
     });
 
     it('works controlled — forwards onChange and never owns the value itself', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
       render(
         <Select aria-label="q" value="" onChange={onChange}>
@@ -206,7 +204,7 @@ describe('Select', () => {
         name: 'q',
       });
 
-      await user.selectOptions(select, 'it');
+      await browser.selectOptions(select, 'it');
 
       expect(onChange).toHaveBeenCalledTimes(1);
       // The value stayed where the consumer put it: the component never wrote

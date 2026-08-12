@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { UiProvider, FormTextarea, FormInput } from '@fmmenchi/ui';
 import { FormProvider, useForm, type Resolver } from 'react-hook-form';
 import { useRhfField } from '@fmmenchi/ui-form-ports/react-hook-form';
@@ -57,16 +57,15 @@ function NoteForm({ onSubmit }: { onSubmit: (v: Values) => void }) {
 
 describe('FormTextarea over react-hook-form', () => {
   it('registers, collects and submits the multi-line value', async () => {
-    const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(<NoteForm onSubmit={onSubmit} />);
 
     const notes = screen.getByRole('textbox', { name: 'Notes' });
     expect(notes.tagName).toBe('TEXTAREA');
 
-    await user.type(screen.getByRole('textbox', { name: 'Title' }), 'A day');
-    await user.type(notes, 'Two lines{Enter}of it');
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await browser.type(screen.getByRole('textbox', { name: 'Title' }), 'A day');
+    await browser.type(notes, 'Two lines{Enter}of it');
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     // The newline is the whole reason this control exists: it must survive the
@@ -78,10 +77,9 @@ describe('FormTextarea over react-hook-form', () => {
   });
 
   it('carries the library’s message to the eye and to assistive tech', async () => {
-    const user = userEvent.setup();
     render(<NoteForm onSubmit={vi.fn()} />);
 
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
 
     const notes = screen.getByRole('textbox', { name: 'Notes' });
     await waitFor(() => expect(notes).toHaveAttribute('aria-invalid', 'true'));

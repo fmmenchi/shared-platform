@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useState, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Fieldset } from './fieldset.component.js';
 import { FieldsetLegend } from '../fieldset-legend/fieldset-legend.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
@@ -132,7 +132,6 @@ describe('Fieldset', () => {
   // aria-describedby order IS announcement order, and registration runs in effect
   // order — so a part that mounts LATE must still be announced where it sits.
   it('orders by DOM position even when a part mounts late', async () => {
-    const user = userEvent.setup();
     render(
       <Fieldset invalid>
         <FieldsetLegend>Colour</FieldsetLegend>
@@ -148,7 +147,7 @@ describe('Fieldset', () => {
     await waitFor(() =>
       expect(group.getAttribute('aria-describedby')).toBe(error.id),
     );
-    await user.click(screen.getByRole('button', { name: 'reveal' }));
+    await browser.click(screen.getByRole('button', { name: 'reveal' }));
     const hint = await screen.findByText('Hint, first in DOM.');
     await waitFor(() =>
       expect(group.getAttribute('aria-describedby')?.split(' ')).toEqual([
@@ -283,7 +282,6 @@ describe('Fieldset', () => {
     // never changes identity — the case a deps-based re-check cannot see, which
     // would leave a false accusation standing for the rest of the session.
     it('clears once a legend owned by a child arrives', async () => {
-      const user = userEvent.setup();
       const warn = vi
         .spyOn(console, 'warn')
         .mockImplementation(() => undefined);
@@ -299,7 +297,7 @@ describe('Fieldset', () => {
       );
 
       warn.mockClear();
-      await user.click(screen.getByRole('button', { name: 'reveal' }));
+      await browser.click(screen.getByRole('button', { name: 'reveal' }));
       await screen.findByRole('group', { name: 'Late name' });
       // The observer re-measured, so nothing keeps accusing a group that IS named.
       await waitFor(() => expect(warn).not.toHaveBeenCalled());

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Button } from './button.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -18,10 +18,9 @@ describe('Button', () => {
   });
 
   it('calls onClick when activated', async () => {
-    const user = userEvent.setup();
     const onClick = vi.fn();
     render(<Button onClick={onClick}>Save</Button>);
-    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
     expect(onClick).toHaveBeenCalledOnce();
   });
 
@@ -62,7 +61,6 @@ describe('Button', () => {
     });
 
     it('blocks activation on the native button (mouse and keyboard)', async () => {
-      const user = userEvent.setup();
       const onClick = vi.fn();
       render(
         <Button isLoading onClick={onClick}>
@@ -73,8 +71,8 @@ describe('Button', () => {
       // pointer-events is none; keyboard is the path that must be guarded
       // (Enter/Space on a focusable pending button still fires click).
       btn.focus();
-      await user.keyboard('{Enter}');
-      await user.keyboard(' ');
+      await browser.keyboard('{Enter}');
+      await browser.keyboard(' ');
       expect(onClick).not.toHaveBeenCalled();
     });
 
@@ -131,7 +129,6 @@ describe('Button', () => {
     });
 
     it('a non-loading polymorph still fires onClick', async () => {
-      const user = userEvent.setup();
       const onClick = vi.fn((e: { preventDefault(): void }) =>
         e.preventDefault(),
       );
@@ -140,7 +137,7 @@ describe('Button', () => {
           Go
         </Button>,
       );
-      await user.click(screen.getByRole('link', { name: 'Go' }));
+      await browser.click(screen.getByRole('link', { name: 'Go' }));
       expect(onClick).toHaveBeenCalledOnce();
     });
 

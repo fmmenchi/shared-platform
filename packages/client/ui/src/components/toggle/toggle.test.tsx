@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Toggle } from './toggle.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -20,16 +20,15 @@ describe('Toggle', () => {
   });
 
   it('flips on a press and back, uncontrolled', async () => {
-    const user = userEvent.setup();
     const onPressedChange = vi.fn();
     render(<Toggle onPressedChange={onPressedChange}>Bold</Toggle>);
     const toggle = screen.getByRole('button', { name: 'Bold' });
 
-    await user.click(toggle);
+    await browser.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
     expect(onPressedChange).toHaveBeenLastCalledWith(true);
 
-    await user.click(toggle);
+    await browser.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
     expect(onPressedChange).toHaveBeenLastCalledWith(false);
   });
@@ -43,22 +42,20 @@ describe('Toggle', () => {
   });
 
   it('answers to the keyboard, which is where a toggle is used', async () => {
-    const user = userEvent.setup();
     render(<Toggle>Bold</Toggle>);
     const toggle = screen.getByRole('button', { name: 'Bold' });
 
     // Both keys, because a `<button>` answers to both and a hand-rolled
     // toggle built on a div is the thing that only ever answers to one.
-    await user.tab();
+    await browser.tab();
     expect(toggle).toHaveFocus();
-    await user.keyboard(' ');
+    await browser.keyboard(' ');
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await user.keyboard('{Enter}');
+    await browser.keyboard('{Enter}');
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('lets the prop win when the state is controlled', async () => {
-    const user = userEvent.setup();
     const onPressedChange = vi.fn();
     const { rerender } = render(
       <Toggle pressed={false} onPressedChange={onPressedChange}>
@@ -69,7 +66,7 @@ describe('Toggle', () => {
 
     // Asked for, not taken: the press reports and the attribute stands still
     // until the consumer's own state comes back round.
-    await user.click(toggle);
+    await browser.click(toggle);
     expect(onPressedChange).toHaveBeenCalledWith(true);
     expect(toggle).toHaveAttribute('aria-pressed', 'false');
 
@@ -82,7 +79,6 @@ describe('Toggle', () => {
   });
 
   it('calls the press off when the click handler prevents it', async () => {
-    const user = userEvent.setup();
     const onPressedChange = vi.fn();
     render(
       <Toggle
@@ -95,7 +91,7 @@ describe('Toggle', () => {
       </Toggle>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Bold' }));
+    await browser.click(screen.getByRole('button', { name: 'Bold' }));
     expect(onPressedChange).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Bold' })).toHaveAttribute(
       'aria-pressed',
@@ -104,7 +100,6 @@ describe('Toggle', () => {
   });
 
   it('does not submit the form it sits in', async () => {
-    const user = userEvent.setup();
     const onSubmit = vi.fn((event: FormEvent) => {
       event.preventDefault();
     });
@@ -118,7 +113,7 @@ describe('Toggle', () => {
     // that a toggle has no form value: a control that submitted the page the
     // first time somebody put one in a toolbar inside a form would be found in
     // production, not here.
-    await user.click(screen.getByRole('button', { name: 'Bold' }));
+    await browser.click(screen.getByRole('button', { name: 'Bold' }));
     expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Bold' })).toHaveAttribute(
       'aria-pressed',

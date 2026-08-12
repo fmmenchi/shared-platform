@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useControlled } from './use-controlled.js';
 
 function Toggle(props: {
@@ -19,23 +19,21 @@ function Toggle(props: {
 
 describe('useControlled', () => {
   it('uncontrolled: starts from defaultValue and updates internally', async () => {
-    const user = userEvent.setup();
     render(<Toggle defaultValue={false} />);
     const btn = screen.getByRole('button');
 
     expect(btn).toHaveTextContent('off');
-    await user.click(btn);
+    await browser.click(btn);
     expect(btn).toHaveTextContent('on');
   });
 
   it('controlled: reflects the value, does not self-update, but calls onChange', async () => {
-    const user = userEvent.setup();
     const onChange = vi.fn();
     render(<Toggle value={false} onChange={onChange} />);
     const btn = screen.getByRole('button');
 
     expect(btn).toHaveTextContent('off');
-    await user.click(btn);
+    await browser.click(btn);
     expect(btn).toHaveTextContent('off'); // stays — the parent owns the value
     expect(onChange).toHaveBeenCalledWith(true);
   });
@@ -61,11 +59,10 @@ describe('useControlled', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<Counter />);
     const btn = screen.getByRole('button');
 
-    await user.click(btn);
+    await browser.click(btn);
     expect(btn).toHaveTextContent('2');
   });
 
@@ -90,9 +87,8 @@ describe('useControlled', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<Counter />);
-    await user.click(screen.getByRole('button'));
+    await browser.click(screen.getByRole('button'));
 
     // Not two calls both reporting 1: the notification and the state cannot
     // disagree, or a consumer mirroring it into their own store drifts.
@@ -125,11 +121,10 @@ describe('useControlled', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<Counter />);
     const btn = screen.getByRole('button');
 
-    await user.click(btn);
+    await browser.click(btn);
     expect(btn).toHaveTextContent('2');
   });
 
@@ -156,14 +151,13 @@ describe('useControlled', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<Counter />);
     const [inc, reset] = screen.getAllByRole('button');
 
-    await user.click(inc as HTMLElement);
+    await browser.click(inc as HTMLElement);
     expect(inc).toHaveTextContent('1');
-    await user.click(reset as HTMLElement);
-    await user.click(inc as HTMLElement);
+    await browser.click(reset as HTMLElement);
+    await browser.click(inc as HTMLElement);
     expect(screen.getAllByRole('button')[0]).toHaveTextContent('101');
   });
 

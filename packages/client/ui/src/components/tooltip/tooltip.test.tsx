@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef, forwardRef, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 // The REAL pointer and the REAL keyboard, driven through the browser rather than
 // dispatched at an element. Both are needed here: `user-event` sends a synthetic
 // `pointerenter` straight to the node, which reported "hoverable" for a tooltip
@@ -102,7 +101,6 @@ describe('Tooltip', () => {
   });
 
   it('opens on hover after the delay, and closes when the pointer leaves', async () => {
-    const user = userEvent.setup();
     render(
       <Tooltip content="Delete" openDelay={0} closeDelay={0}>
         <Button aria-label="Delete">D</Button>
@@ -111,15 +109,14 @@ describe('Tooltip', () => {
     const trigger = screen.getByRole('button', { name: 'Delete' });
 
     expect(isOpen()).toBe(false);
-    await user.hover(trigger);
+    await browser.hover(trigger);
     await waitFor(() => expect(isOpen()).toBe(true));
 
-    await user.unhover(trigger);
+    await browser.unhover(trigger);
     await waitFor(() => expect(isOpen()).toBe(false));
   });
 
   it('opens on keyboard focus, immediately', async () => {
-    const user = userEvent.setup();
     render(
       <Tooltip content="Save">
         <Button aria-label="Save">S</Button>
@@ -128,13 +125,12 @@ describe('Tooltip', () => {
 
     // No delay on focus — unlike a pointer sweeping a toolbar, focus arrives on
     // purpose. The default `openDelay` is 400ms, so a delayed path fails here.
-    await user.tab();
+    await browser.tab();
     await waitFor(() => expect(isOpen()).toBe(true));
   });
 
   describe('WCAG 1.4.13 — content on hover or focus', () => {
     it('is DISMISSIBLE: Escape closes it and the focus does not move', async () => {
-      const user = userEvent.setup();
       render(
         <Tooltip content="Delete">
           <Button aria-label="Delete">D</Button>
@@ -142,10 +138,10 @@ describe('Tooltip', () => {
       );
       const trigger = screen.getByRole('button', { name: 'Delete' });
 
-      await user.tab();
+      await browser.tab();
       await waitFor(() => expect(isOpen()).toBe(true));
 
-      await user.keyboard('{Escape}');
+      await browser.keyboard('{Escape}');
       await waitFor(() => expect(isOpen()).toBe(false));
       // The criterion is explicit: dismissing must not move the focus.
       expect(document.activeElement).toBe(trigger);
@@ -170,22 +166,20 @@ describe('Tooltip', () => {
     });
 
     it('is DISMISSIBLE before it even opens', async () => {
-      const user = userEvent.setup();
       render(
         <Tooltip content="Delete" openDelay={200}>
           <Button aria-label="Delete">D</Button>
         </Tooltip>,
       );
 
-      await user.hover(screen.getByRole('button', { name: 'Delete' }));
-      await user.keyboard('{Escape}');
+      await browser.hover(screen.getByRole('button', { name: 'Delete' }));
+      await browser.keyboard('{Escape}');
       // An open that has been asked for is a thing to dismiss: without this the
       // tooltip appeared 200ms later, having been told not to.
       await waitFor(() => expect(isOpen()).toBe(false));
     });
 
     it('is PERSISTENT while the trigger keeps focus, pointer or no pointer', async () => {
-      const user = userEvent.setup();
       render(
         <Tooltip content="Delete" closeDelay={0}>
           <Button aria-label="Delete">D</Button>
@@ -193,13 +187,13 @@ describe('Tooltip', () => {
       );
       const trigger = screen.getByRole('button', { name: 'Delete' });
 
-      await user.tab();
+      await browser.tab();
       await waitFor(() => expect(isOpen()).toBe(true));
 
       // The mouse brushes past a trigger the keyboard opened. Closing here
       // would dismiss something the user never asked to dismiss.
-      await user.hover(trigger);
-      await user.unhover(trigger);
+      await browser.hover(trigger);
+      await browser.unhover(trigger);
       await waitFor(() => expect(isOpen()).toBe(true));
       expect(document.activeElement).toBe(trigger);
     });
@@ -265,14 +259,13 @@ describe('Tooltip', () => {
     });
 
     it('is PERSISTENT: it does not time out on its own', async () => {
-      const user = userEvent.setup();
       render(
         <Tooltip content="Delete" openDelay={0}>
           <Button aria-label="Delete">D</Button>
         </Tooltip>,
       );
 
-      await user.hover(screen.getByRole('button', { name: 'Delete' }));
+      await browser.hover(screen.getByRole('button', { name: 'Delete' }));
       await waitFor(() => expect(isOpen()).toBe(true));
       await waitFor(() => expect(isOpen()).toBe(true));
     });
@@ -467,7 +460,6 @@ describe('Tooltip', () => {
   });
 
   it('closes on press, and the trigger’s own handler still runs', async () => {
-    const user = userEvent.setup();
     const onClick = vi.fn();
     render(
       <Tooltip content="Open menu" openDelay={0}>
@@ -478,10 +470,10 @@ describe('Tooltip', () => {
     );
 
     const trigger = screen.getByRole('button', { name: 'Open menu' });
-    await user.hover(trigger);
+    await browser.hover(trigger);
     await waitFor(() => expect(isOpen()).toBe(true));
 
-    await user.click(trigger);
+    await browser.click(trigger);
     await waitFor(() => expect(isOpen()).toBe(false));
     expect(onClick).toHaveBeenCalledTimes(1);
   });

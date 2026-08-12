@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useTableFilters } from './use-table-filters.js';
 import { renderUi } from '../../test/render.js';
 import type { UseTableFiltersOptions } from './use-table-filters.types.js';
@@ -61,10 +61,9 @@ describe('useTableFilters', () => {
   });
 
   it('matches without caring about accents', async () => {
-    const user = userEvent.setup();
     render(<Filtered />);
 
-    await user.click(screen.getByRole('button', { name: 'apply a' }));
+    await browser.click(screen.getByRole('button', { name: 'apply a' }));
     // "Àosta" and "Milano" both contain an unaccented "a"; `includes` would
     // have dropped the first, which is the whole reason the matching is ours.
     expect(read('rows')).toBe('Àosta,Milano');
@@ -88,20 +87,18 @@ describe('useTableFilters', () => {
   it('removes the key when a filter is cleared, rather than leaving it empty', async () => {
     // This object is a query key: `{ name: '' }` and `{}` are two cache
     // entries for one view.
-    const user = userEvent.setup();
     render(<Filtered />);
 
-    await user.click(screen.getByRole('button', { name: 'apply a' }));
+    await browser.click(screen.getByRole('button', { name: 'apply a' }));
     expect(read('keys')).toBe('name');
 
-    await user.click(screen.getByRole('button', { name: 'clear name' }));
+    await browser.click(screen.getByRole('button', { name: 'clear name' }));
     expect(read('keys')).toBe('');
     expect(read('active')).toBe('');
     expect(read('rows')).toBe('Àosta,Milano,İzmir');
   });
 
   it('lets a column say what its own value means', async () => {
-    const user = userEvent.setup();
     render(
       <Filtered
         options={{
@@ -110,7 +107,7 @@ describe('useTableFilters', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'apply a' }));
+    await browser.click(screen.getByRole('button', { name: 'apply a' }));
     // Every name is longer than one character, so the predicate keeps them all
     // — which "contains an a" would not have.
     expect(read('rows')).toBe('Àosta,Milano,İzmir');
@@ -163,11 +160,10 @@ describe('useTableFilters', () => {
   });
 
   it('clears everything at once', async () => {
-    const user = userEvent.setup();
     render(<Filtered options={{ defaultFilters: { name: 'a' } }} />);
 
     expect(read('rows')).toBe('Àosta,Milano');
-    await user.click(screen.getByRole('button', { name: 'clear all' }));
+    await browser.click(screen.getByRole('button', { name: 'clear all' }));
     expect(read('rows')).toBe('Àosta,Milano,İzmir');
     expect(read('keys')).toBe('');
   });

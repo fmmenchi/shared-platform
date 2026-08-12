@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import type { ComponentType } from 'react';
 import { RhfRecipeScreen } from './rhf.screen.js';
 import { FormikScreen } from './formik.screen.js';
@@ -31,8 +31,7 @@ const tos = () => screen.getByRole('checkbox', { name: /terms/i });
 const seats = () => screen.getByRole('spinbutton', { name: /Seats/ });
 
 async function submit() {
-  const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: /Create account/ }));
+  await browser.click(screen.getByRole('button', { name: /Create account/ }));
 }
 
 describe.each(SCREENS)('%s through the port', (_name, Screen) => {
@@ -90,17 +89,16 @@ describe.each(SCREENS)('%s through the port', (_name, Screen) => {
   });
 
   it('the library still owns the value — a valid form clears', async () => {
-    const user = userEvent.setup();
     render(<Screen />);
     await submit();
     await waitFor(() =>
       expect(email()).toHaveAttribute('aria-invalid', 'true'),
     );
 
-    await user.type(email(), 'someone@example.com');
-    await user.type(password(), 'a-long-enough-password');
-    await user.type(seats(), '3');
-    await user.click(tos());
+    await browser.type(email(), 'someone@example.com');
+    await browser.type(password(), 'a-long-enough-password');
+    await browser.type(seats(), '3');
+    await browser.click(tos());
     await submit();
 
     await waitFor(() =>
