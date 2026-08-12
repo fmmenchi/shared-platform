@@ -470,4 +470,35 @@ describe('Slider', () => {
       });
     }
   });
+
+  it('repaints after a value written straight onto the element', async () => {
+    // react-hook-form's `setValue`/`reset` assign `ref.value` and dispatch
+    // nothing; this package ships that binding and has no `FormSlider` to
+    // route around it. Keyed on props, the paint effect never ran for such a
+    // write and no later render repaired it: the thumb moved to 80 and the
+    // track stayed filled to 30, permanently — while a native `form.reset()`
+    // DID repaint, because a listener exists for that one. One gesture, two
+    // behaviours.
+    function Host() {
+      const [, bump] = useState(0);
+      return (
+        <>
+          <button type="button" onClick={() => bump((n) => n + 1)}>
+            rerender
+          </button>
+          <Slider aria-label="Volume" defaultValue={30} />
+        </>
+      );
+    }
+    render(<Host />);
+    const slider = screen.getByRole('slider') as HTMLInputElement;
+    expect(slider.style.getPropertyValue('--slider-fill')).toBe('30%');
+
+    slider.value = '80';
+    await browser.click(screen.getByRole('button', { name: 'rerender' }));
+
+    await waitFor(() => {
+      expect(slider.style.getPropertyValue('--slider-fill')).toBe('80%');
+    });
+  });
 });
