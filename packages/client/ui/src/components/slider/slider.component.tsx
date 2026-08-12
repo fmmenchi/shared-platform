@@ -112,10 +112,28 @@ function Slider(props: SliderProps) {
   // shrank (which fires no `input` event at all). Runs right after the
   // possibly-stale write, repaints from the element, and is a no-op when the
   // two agree — the controlled case.
+  //
+  // NO DEPENDENCY LIST, and that is the correction rather than a shortcut. The
+  // list held `fill` and `valueText`, both derived from PROPS — which for an
+  // uncontrolled slider never change when the value does, so a write that
+  // dispatched no event was never repainted by any later render either: the
+  // thumb sat at 80 and the track stayed filled to 30, permanently. Measured:
+  // `el.value = '80'` then an unrelated ancestor re-render → `--slider-fill`
+  // still `30%`; only an `input` event moved it.
+  //
+  // The write is first-party, not exotic: react-hook-form's `setValue` and
+  // `reset` assign `ref.value` without dispatching, and this package ships
+  // that binding with no `FormSlider` to route around it — while a NATIVE
+  // `form.reset()` did repaint, because a listener exists for it. One gesture,
+  // two behaviours.
+  //
+  // Running every commit costs one read and, when nothing moved, one identical
+  // string written onto an element this component already writes to per
+  // render.
   useEffect(() => {
     const node = el.current;
     if (node != null) paint(node, getValueText);
-  }, [fill, valueText, getValueText]);
+  });
 
   // Keeping the paint in step WITHOUT owning value state: a native `input`
   // listener re-reads the element and writes back onto it — on the element,
