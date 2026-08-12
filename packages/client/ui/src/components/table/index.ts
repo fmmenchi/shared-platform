@@ -79,3 +79,9 @@ export type {
   UseColumnVisibilityResult,
 } from './use-column-visibility.types.js';
 export type { TableRowAttributes } from './table.types.js';
+export { useColumnOrder, moveColumn } from './use-column-order.js';
+export type {
+  ColumnOrder,
+  UseColumnOrderOptions,
+  UseColumnOrderResult,
+} from './use-column-order.types.js';

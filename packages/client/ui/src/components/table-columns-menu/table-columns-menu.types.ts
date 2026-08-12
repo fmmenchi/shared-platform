@@ -39,6 +39,19 @@ export interface TableColumnsMenuProps {
   /** Put one away, or bring it back. */
   onToggle: (key: string) => void;
   /**
+   * Move a column earlier (`-1`) or later (`+1`). Given, each entry says where
+   * it sits and answers Alt with the arrow keys; left out, the menu only
+   * decides which columns are shown.
+   *
+   * Comes from `useColumnOrder`, which owns the clamping — spread its
+   * `menuProps` beside the visibility hook's.
+   */
+  onMove?: (key: string, delta: number) => void;
+  /** Whether that move would go anywhere. Required with `onMove`. */
+  canMove?: (key: string, delta: number) => boolean;
+  /** Where a column sits now, counting from 1. Required with `onMove`. */
+  positionOf?: (key: string) => number;
+  /**
    * What the trigger looks like. `ghost` by default, because this sits in a
    * toolbar beside other view controls and a filled button there would claim to
    * be the primary action of the page.

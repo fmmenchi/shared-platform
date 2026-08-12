@@ -14,6 +14,7 @@ import { useRowExpansion } from './use-row-expansion.js';
 import { TableToolbar } from '../table-toolbar/table-toolbar.component.js';
 import { TableColumnsMenu } from '../table-columns-menu/table-columns-menu.component.js';
 import { useColumnVisibility } from './use-column-visibility.js';
+import { useColumnOrder } from './use-column-order.js';
 import { ToolbarItem } from '../toolbar-item/toolbar-item.component.js';
 import { Button } from '../button/button.component.js';
 import type { Column } from './table.types.js';
@@ -171,6 +172,42 @@ export const ColumnVisibility: Story = {
         <TableToolbar label="Vista">
           <ToolbarItem>
             <TableColumnsMenu {...visibility.menuProps} />
+          </ToolbarItem>
+        </TableToolbar>
+        <Table
+          caption="Persone"
+          rows={people}
+          getRowId={(p) => p.id}
+          columns={visibility.columns}
+        />
+      </div>
+    );
+  },
+};
+
+/**
+ * Which columns, and in what order — one control for both, because they are the
+ * same kind of decision about the view.
+ *
+ * Each entry says where it sits, and Alt with the arrow keys moves it. The
+ * gesture is announced once, on the menu, rather than repeated in every entry:
+ * four identical clauses read on every arrow press is noise, not help.
+ *
+ * The two hooks compose and neither learns about the other — `useColumnOrder`
+ * hands its columns to `useColumnVisibility`, which hands what is left to the
+ * table. Drag will be a second way to call the same `move`, so nothing here has
+ * to change for it.
+ */
+export const ColumnOrder: Story = {
+  render: function Render() {
+    const order = useColumnOrder({ columns });
+    const visibility = useColumnVisibility({ columns: order.columns });
+
+    return (
+      <div style={{ display: 'grid', gap: '0.75rem' }}>
+        <TableToolbar label="Vista">
+          <ToolbarItem>
+            <TableColumnsMenu {...visibility.menuProps} {...order.menuProps} />
           </ToolbarItem>
         </TableToolbar>
         <Table

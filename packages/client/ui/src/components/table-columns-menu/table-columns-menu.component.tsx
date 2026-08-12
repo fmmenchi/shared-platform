@@ -1,4 +1,6 @@
+import { useId } from 'react';
 import { useMessages } from '../../i18n/provider.js';
+import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { Menu } from '../menu/menu.component.js';
 import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
 import { MenuContent } from '../menu-content/menu-content.component.js';
@@ -37,7 +39,18 @@ const textOf = (column: { header: unknown; label?: string }): string =>
  * from an ordinary command menu.
  */
 function TableColumnsMenu(props: TableColumnsMenuProps) {
-  const { columns, hidden, canHide, onToggle, variant = 'ghost' } = props;
+  const {
+    columns,
+    hidden,
+    canHide,
+    onToggle,
+    onMove,
+    canMove,
+    positionOf,
+    variant = 'ghost',
+  } = props;
+  const hintId = useId();
+  const reorderable = onMove !== undefined && positionOf !== undefined;
   const t = useMessages(tableColumnsMenuMessages);
 
   const shown = columns.filter((column) => !hidden.has(column.key)).length;
@@ -54,7 +67,13 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
         {t('name', { shown, total: columns.length })}
       </MenuTrigger>
 
-      <MenuContent>
+      <MenuContent aria-describedby={reorderable ? hintId : undefined}>
+        {reorderable && (
+          // ONCE, ON THE MENU. A hint repeated in every entry is four identical
+          // clauses read on every arrow press; here it is announced when the
+          // menu opens, which is when it is useful.
+          <VisuallyHidden id={hintId}>{t('moveHint')}</VisuallyHidden>
+        )}
         {columns.map((column) => {
           const isHidden = hidden.has(column.key);
           const locked = !canHide(column.key);
@@ -65,13 +84,36 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
           // one column names the rows, one is the last still shown — so a single
           // "unavailable" would teach nothing. Which applies is derivable here
           // because only a VISIBLE column can be the last one.
-          const label = locked
+          // WHY IT IS LOCKED, said rather than implied — a disabled control
+          // with no reason is a dead end. The two reasons are different facts,
+          // so a shared "unavailable" would teach neither; which applies is
+          // derivable here, because only a VISIBLE column can be the last one.
+          const reason = locked
             ? isHidden
-              ? name
+              ? undefined
               : shown === 1
-                ? t('lastOne', { column: name })
-                : t('required', { column: name })
+                ? t('lastOne')
+                : t('required')
+            : undefined;
+
+          // WHERE IT SITS, because that is what changes as the reader moves it
+          // and the list alone cannot say it — a screen reader announces one
+          // item, not the sequence around it.
+          //
+          // BUILT FROM PARTS, because a locked column can still be moved: the
+          // first version let the reason replace the position, so the one
+          // column that never moves was also the one that never said where it
+          // was. The gesture is NOT here — repeated per entry it is four
+          // identical clauses read on every arrow press, so it lives on the
+          // menu instead.
+          const base = reorderable
+            ? t('at', {
+                column: name,
+                position: positionOf(column.key),
+                total: columns.length,
+              })
             : name;
+          const label = reason === undefined ? base : `${base}, ${reason}`;
 
           return (
             <MenuItemCheckbox
@@ -84,7 +126,24 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
               // Typeahead and the accessible name both want a string; the
               // header may be a node, and then there is nothing to say.
               textValue={name || undefined}
-              aria-label={locked && label !== name ? label : undefined}
+              aria-label={label === name ? undefined : label}
+              onKeyDown={(event) => {
+                if (!reorderable || !event.altKey) return;
+                const delta =
+                  event.key === 'ArrowUp'
+                    ? -1
+                    : event.key === 'ArrowDown'
+                      ? 1
+                      : 0;
+                if (delta === 0) return;
+
+                // PREVENTED WHETHER OR NOT IT MOVES: the menu's own arrows walk
+                // the list, and letting a refused move fall through would send
+                // the focus away from the column the reader is holding — the
+                // opposite of what a clamp is for.
+                event.preventDefault();
+                if (canMove?.(column.key, delta)) onMove(column.key, delta);
+              }}
             >
               {column.header}
             </MenuItemCheckbox>

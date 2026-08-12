@@ -435,6 +435,30 @@ const visibility = useColumnVisibility({ columns });
 
 **The count is in the trigger's name** ("Columns, 2 of 4 shown"), so the state is legible before the menu is opened and does not depend on seeing a glyph. And the menu stays open while you work: putting three columns away is three decisions, not three visits.
 
+### Putting the columns in order
+
+`useColumnOrder` holds the order and `TableColumnsMenu` draws it — the same menu that decides which columns are shown, because which columns and in what order are the same kind of decision about the view.
+
+<Canvas of={TableStories.ColumnOrder} />
+
+```tsx
+const order = useColumnOrder({ columns });
+const visibility = useColumnVisibility({ columns: order.columns });
+
+<TableColumnsMenu {...visibility.menuProps} {...order.menuProps} />
+<Table columns={visibility.columns} … />
+```
+
+The two hooks compose and neither learns about the other: order hands its columns to visibility, visibility hands what is left to the table.
+
+**Alt with the arrow keys moves a column.** Plain arrows still walk the menu — the modifier is the whole distinction between reading the list and rearranging the view. The gesture is announced **once, on the menu**, and each entry says where it sits ("Città, 2 of 4"), because a screen reader announces one item and not the sequence around it. A locked column still says its position: it cannot be hidden, but it can be moved.
+
+**Moves are clamped, not wrapped.** A column already first, asked to go earlier, stays — wrapping would send it to the end, which is a different thing from what the reader asked and, on a held key, an endless ride. A refused move still swallows the key, so the focus stays on the column being held rather than wandering off down the menu.
+
+**The state is keys, not columns**, so it survives a trip through storage — a `cell` function does not. A stored order that has outlived the column list drops what has gone and puts anything new where it was **declared**, not at the end: a column added between two others belongs there, and appending would put it after the ones its author meant it to precede.
+
+**Dragging is not here yet**, deliberately. The keyboard path is the prerequisite, not the consolation: drag will be a second way to call the same `move`, and building it first would have meant two sources for one order and discovering late that they disagree.
+
 ### A header that stays
 
 <Canvas of={TableStories.StickyHeader} />

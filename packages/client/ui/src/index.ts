@@ -344,6 +344,15 @@ export type {
 export { useTableFilters } from './components/table/use-table-filters.js';
 export { useColumnWidths } from './components/table/use-column-widths.js';
 export { useColumnVisibility } from './components/table/use-column-visibility.js';
+export {
+  useColumnOrder,
+  moveColumn,
+} from './components/table/use-column-order.js';
+export type {
+  ColumnOrder,
+  UseColumnOrderOptions,
+  UseColumnOrderResult,
+} from './components/table/use-column-order.types.js';
 export type {
   HiddenColumns,
   UseColumnVisibilityOptions,

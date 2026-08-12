@@ -122,6 +122,116 @@ describe('TableColumnsMenu', () => {
     });
   });
 
+  describe('putting the columns in order', () => {
+    const reorderable = (onMove = vi.fn()) => {
+      const order = ['name', 'city', 'age'];
+      return (
+        <TableColumnsMenu
+          columns={columns}
+          hidden={new Set()}
+          canHide={canHideWith(new Set())}
+          onToggle={() => undefined}
+          onMove={onMove}
+          canMove={(key, delta) => {
+            const at = order.indexOf(key);
+            return at + delta >= 0 && at + delta < order.length;
+          }}
+          positionOf={(key) => order.indexOf(key) + 1}
+        />
+      );
+    };
+
+    it('says where each column sits, because the list cannot', async () => {
+      renderUi(reorderable());
+      await open();
+
+      // A screen reader announces ONE item, not the sequence around it — and
+      // the position is the thing that changes as the reader moves it.
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'Città, 2 of 3' }),
+      ).toBeInTheDocument();
+    });
+
+    it('moves a column with Alt and the arrow keys', async () => {
+      const onMove = vi.fn();
+      renderUi(reorderable(onMove));
+      await open();
+
+      const item = screen.getByRole('menuitemcheckbox', {
+        name: 'Città, 2 of 3',
+      });
+      item.focus();
+      await browser.keyboard('{Alt>}{ArrowUp}{/Alt}');
+
+      expect(onMove).toHaveBeenCalledWith('city', -1);
+    });
+
+    it('leaves the plain arrows to the menu', async () => {
+      // MUTATION-TESTED AS MISSING: dropping the `altKey` guard let a plain
+      // ArrowDown reorder the table instead of walking the list, and every
+      // test here stayed green. The modifier is the whole distinction between
+      // reading the menu and rearranging the view.
+      const onMove = vi.fn();
+      renderUi(reorderable(onMove));
+      await open();
+
+      const first = screen.getByRole('menuitemcheckbox', {
+        name: 'Nome, 1 of 3, always shown because it names the rows',
+      });
+      first.focus();
+      await browser.keyboard('{ArrowDown}');
+
+      expect(onMove).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(
+        screen.getByRole('menuitemcheckbox', { name: 'Città, 2 of 3' }),
+      );
+    });
+
+    it('keeps the focus on the column being moved when the move is refused', async () => {
+      const onMove = vi.fn();
+      renderUi(reorderable(onMove));
+      await open();
+
+      // Locked AND first: it carries both facts, which is the whole reason
+      // the label is built from parts rather than one replacing the other.
+      const first = screen.getByRole('menuitemcheckbox', {
+        name: 'Nome, 1 of 3, always shown because it names the rows',
+      });
+      first.focus();
+      await browser.keyboard('{Alt>}{ArrowUp}{/Alt}');
+
+      // The menu's own arrows walk the list. Letting a refused move fall
+      // through would send the focus away from the column the reader is
+      // holding — the opposite of what a clamp is for.
+      expect(onMove).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(first);
+    });
+
+    it('says the gesture once, on the menu, not in every entry', async () => {
+      renderUi(reorderable());
+      await open();
+
+      // Repeated per item it would be three identical clauses read on every
+      // arrow press.
+      expect(screen.getByRole('menu')).toHaveAccessibleDescription(
+        'Alt with the arrow keys moves a column.',
+      );
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'Città, 2 of 3' }),
+      ).toBeInTheDocument();
+    });
+
+    it('says nothing about position when it cannot reorder', async () => {
+      renderUi(menu(new Set()));
+      await open();
+
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'Città' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('menu')).not.toHaveAccessibleDescription();
+    });
+  });
+
   it('has no violations, open', async () => {
     const { container } = renderUi(menu(new Set(['city'])));
     await open();
