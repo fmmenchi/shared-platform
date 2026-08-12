@@ -36,7 +36,7 @@ import type {
  * the base can only be what the consumer last handed over — if they defer their
  * update they hold the stale value, not us — and reporting the key rather than
  * the next state is what leaves them somewhere to write `setSort((prev) =>
- * nextSort(prev, key))`.
+ * nextSort(prev, key, o))`.
  *
  * So a consumer whose server does the ordering takes this hook, puts
  * `state` straight into their query key, and never pulls the collation engine
@@ -122,12 +122,16 @@ export function nextSort(
     rung === undefined ? 'asc' : rung.direction === 'asc' ? 'desc' : null;
 
   if (!options.additive) {
-    // Plain activation REPLACES the order. Cycling in place only when this
-    // column is already the whole of it — otherwise "sort by city" on a table
-    // ordered by name and age is a fresh start, which is what the gesture with
-    // no modifier says.
-    const alone = current.length === 1 && at === 0;
-    if (!alone) return [{ key, direction: 'asc' }];
+    // Plain activation REPLACES the order — but activating the column that
+    // already LEADS it is not choosing a new order, it is reversing this one.
+    //
+    // The first version asked `current.length === 1`, so on a table ordered by
+    // name and then age a click on `name` dropped the tie-break and left the
+    // direction alone: the reader clicked the header they were already sorted
+    // by and nothing they could see changed. Three clicks to reach "off", two
+    // of them showing ascending. The question is whether this column LEADS,
+    // not whether it is alone.
+    if (at !== 0) return [{ key, direction: 'asc' }];
     return cycled === null ? [] : [{ key, direction: cycled }];
   }
 

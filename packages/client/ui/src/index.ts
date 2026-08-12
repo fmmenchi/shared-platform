@@ -264,6 +264,7 @@ export { Progress } from './components/progress/progress.component.js';
 export type { ProgressProps } from './components/progress/progress.types.js';
 export { Table } from './components/table/table.component.js';
 export type {
+  TableRowAttributes,
   TableProps,
   Column,
   TableAlign,
@@ -287,6 +288,12 @@ export type {
 export type {
   SortState,
   SortDirection,
+  // THE STATE TYPE, and the reason it is here: `sort` became a list, so
+  // `SortState` — which is still exported and still means one rung — stopped
+  // being the type a consumer holds. Without this the only way to name their
+  // own state was to re-derive `readonly SortState[]` by hand, and `readonly`
+  // bites at once (`useState<SortState[]>` does not accept it).
+  SortBy,
   Comparator,
 } from './sorting/compare.types.js';
 // Selection is not a projection parameter: it derives no rows, it ends in an

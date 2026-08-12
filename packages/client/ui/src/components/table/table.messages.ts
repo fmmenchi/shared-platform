@@ -52,7 +52,11 @@ export const tableMessages = defineMessages('table', {
     sortedAscending: 'Sorted by {column}, ascending.',
     sortedDescending: 'Sorted by {column}, descending.',
     sortCleared: 'Sorting removed, original order.',
+    sortChanged: 'Sorting changed.',
     sortThen: 'Then by {count} more.',
+    sortedAscendingAt: 'Sorted by {column}, ascending, sort {rank} of {total}.',
+    sortedDescendingAt:
+      'Sorted by {column}, descending, sort {rank} of {total}.',
     sortRank: 'sort {rank} of {total}',
     select: 'Select',
     selectRow: 'Select row',
@@ -77,7 +81,12 @@ export const tableMessages = defineMessages('table', {
     sortedAscending: 'Ordinato per {column}, crescente.',
     sortedDescending: 'Ordinato per {column}, decrescente.',
     sortCleared: 'Ordinamento rimosso, ordine originale.',
+    sortChanged: 'Ordinamento cambiato.',
     sortThen: 'Poi per altre {count}.',
+    sortedAscendingAt:
+      'Ordinato per {column}, crescente, ordinamento {rank} di {total}.',
+    sortedDescendingAt:
+      'Ordinato per {column}, decrescente, ordinamento {rank} di {total}.',
     sortRank: 'ordinamento {rank} di {total}',
     select: 'Seleziona',
     selectRow: 'Seleziona riga',
@@ -98,7 +107,12 @@ export const tableMessages = defineMessages('table', {
     sortedAscending: 'مُرتَّب حسب {column}، تصاعديًا.',
     sortedDescending: 'مُرتَّب حسب {column}، تنازليًا.',
     sortCleared: 'تمت إزالة الترتيب، الترتيب الأصلي.',
+    sortChanged: 'تغيّر الترتيب.',
     sortThen: 'ثم حسب {count} أخرى.',
+    sortedAscendingAt:
+      'مُرتَّب حسب {column}، تصاعديًا، الترتيب {rank} من {total}.',
+    sortedDescendingAt:
+      'مُرتَّب حسب {column}، تنازليًا، الترتيب {rank} من {total}.',
     sortRank: 'الترتيب {rank} من {total}',
     select: 'تحديد',
     selectRow: 'تحديد الصف',

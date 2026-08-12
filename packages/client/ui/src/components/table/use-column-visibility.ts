@@ -75,30 +75,72 @@ export function useColumnVisibility<T>(
 
   const isHidden = useCallback((key: string) => state.has(key), [state]);
 
+  /**
+   * The rule, asked of a GIVEN set — so the updater above and the menu below
+   * cannot disagree about it, and neither has to read the render's closure.
+   */
+  const canHideIn = useCallback(
+    (hiddenNow: HiddenColumns, key: string) => {
+      if (hiddenNow.has(key)) return true;
+      if (key === rowHeaderKey) return false;
+      return columns.filter((column) => !hiddenNow.has(column.key)).length > 1;
+    },
+    [columns, rowHeaderKey],
+  );
+
   const canHide = useCallback(
     (key: string) => {
-      if (key === rowHeaderKey) return false;
-      // Bringing one BACK is always allowed; only taking the last one away is
-      // refused, so the floor is asked about the direction being travelled.
-      if (state.has(key)) return true;
-      return visible.length > 1;
+      // BRINGING ONE BACK IS ALWAYS ALLOWED, and this line has to come first.
+      // Asked after the row-header rule, it left a row header put away by
+      // `defaultHidden` unable to return — permanently, silently, and with the
+      // comment beside it claiming the opposite. Every row then announces as
+      // "column 3, 47", which is the exact catastrophe the rule exists to
+      // prevent, reached through the hook's own option.
+      return canHideIn(state, key);
     },
-    [rowHeaderKey, state, visible.length],
+    [canHideIn, state],
   );
 
   const setHidden = useCallback(
-    (next: HiddenColumns) => setState(next),
-    [setState],
+    (next: HiddenColumns) => {
+      // A RESTORE IS THE HIGHEST-RISK CALLER, which is what this is for: a
+      // layout saved before a column was renamed or before `rowHeader` moved.
+      // Left unchecked it reaches exactly the two states the refusals exist to
+      // prevent — every row announced as "column 3, 47", or a caption over an
+      // empty grid — and `toggle` refusing them is no comfort when the restore
+      // path walks straight past it.
+      const keys = new Set(columns.map((column) => column.key));
+      const kept = new Set(
+        [...next].filter((key) => keys.has(key) && key !== rowHeaderKey),
+      );
+
+      // The floor, applied to the whole set at once: keep dropping the
+      // last-added exceptions until something is left to look at.
+      const order = columns.map((column) => column.key);
+      for (let i = order.length - 1; kept.size >= order.length && i >= 0; i--) {
+        kept.delete(order[i] as string);
+      }
+
+      setState(kept);
+    },
+    [columns, rowHeaderKey, setState],
   );
 
   const toggle = useCallback(
     (key: string) => {
-      if (!canHide(key)) return;
-      const next = new Set(state);
-      if (!next.delete(key)) next.add(key);
-      setState(next);
+      // THE UPDATER, like every sibling hook in this family — and for the
+      // reason each of them records: two toggles dispatched in one tick both
+      // read the same closure and the second overwrites the first. This menu
+      // stays open on purpose, so "hide these three" is the ordinary gesture
+      // rather than an exotic one.
+      setState((previous) => {
+        if (!canHideIn(previous, key)) return previous;
+        const next = new Set(previous);
+        if (!next.delete(key)) next.add(key);
+        return next;
+      });
     },
-    [canHide, state, setState],
+    [canHideIn, setState],
   );
 
   const showAll = useCallback(() => setState(NONE), [setState]);

@@ -68,6 +68,42 @@ import styles from './table.module.css';
  * assistive technology and promises a full two-dimensional keyboard in return;
  * a table with a matrix of inputs needs that, and it is a different component.
  */
+/** The keys `getRowProps` is allowed to set. Everything else is dropped. */
+const ROW_ATTRIBUTE = /^(className|data-.+)$/;
+
+/**
+ * THE GUARD THAT ACTUALLY RUNS, because the type's is not enforced where the
+ * prop is written — an object literal loses excess-property checking in a
+ * return position, so `getRowProps={() => ({ onClick })}` compiles.
+ *
+ * Left through, the two refused shapes are not cosmetic: `onClick` lands on a
+ * `<tr>`, which is not focusable, so it is a control no keyboard can reach; and
+ * `hidden` or `aria-hidden` takes the row out of the accessibility tree while
+ * its checkbox stays focusable — measured, axe reports `aria-hidden-focus`, and
+ * a keyboard user tabs into a control their screen reader says is not there.
+ */
+function safeRowProps(
+  given: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (given === undefined) return undefined;
+
+  const kept: Record<string, unknown> = {};
+  const dropped: string[] = [];
+  for (const [key, value] of Object.entries(given)) {
+    if (ROW_ATTRIBUTE.test(key)) kept[key] = value;
+    else dropped.push(key);
+  }
+
+  if (dropped.length > 0 && process.env['NODE_ENV'] !== 'production') {
+    // eslint-disable-next-line no-console -- the same channel every other dev warning here uses
+    console.warn(
+      `Table: \`getRowProps\` returned ${dropped.map((key) => `\`${key}\``).join(', ')}, which a row does not take — dropped. A \`<tr>\` is not focusable, so a handler here is a control no keyboard can reach; \`id\` and \`hidden\` are the component's, tying a detail row to the button that controls it. Put a link or a button in a cell instead.`,
+    );
+  }
+
+  return kept;
+}
+
 function Table<T>(props: TableProps<T>) {
   const {
     caption,
@@ -119,7 +155,7 @@ function Table<T>(props: TableProps<T>) {
   // to say — and the selection carries its SENTENCE rather than a tag, so no
   // later change to the data can rewrite it into a fresh announcement.
   const [acted, setActed] = useState<
-    { kind: 'sort' } | { kind: 'said'; text: string } | null
+    { kind: 'sort'; key: string } | { kind: 'said'; text: string } | null
   >(null);
 
   // Ours to generate: the checkbox in each row is labelled by the row's own
@@ -360,6 +396,20 @@ function Table<T>(props: TableProps<T>) {
     `Table: \`sort\` names the column \`${String(primarySort?.key)}\`, which is not in \`columns\` — so no header claims it and nothing is announced. A key that outlived the column list usually comes from a URL or storage.`,
   );
 
+  // THE SAME HOLE, ON THE OTHER AXIS. Hiding a filtered column leaves the rows
+  // narrowed with nothing on screen saying why and no control left to clear it
+  // — measured: two rows of three, zero filter triggers, no warning at all.
+  useDevWarning(
+    Boolean(
+      columns &&
+      filters &&
+      Object.keys(filters).some(
+        (key) => !columns.some((column) => column.key === key),
+      ),
+    ),
+    'Table: `filters` narrows by a column that is not in `columns`, so the rows are fewer with nothing on screen to say why and no trigger left to clear it. Hiding a filtered column is the usual way to reach this.',
+  );
+
   useDevWarning(
     sortedColumn !== undefined &&
       sortedColumn.label === undefined &&
@@ -468,37 +518,83 @@ function Table<T>(props: TableProps<T>) {
   // at all — a refetch that returned one row fewer. A region whose text is a
   // function of the data speaks when the DATA moves, and only an interaction is
   // news. The sort half stays derived because `sort` cannot change without one.
-  const announcement =
-    acted === null
-      ? ''
-      : acted.kind === 'said'
-        ? acted.text
-        : primarySort && sortedColumn
-          ? t(
-              primarySort.direction === 'asc'
-                ? 'sortedAscending'
-                : 'sortedDescending',
-              {
-                column:
-                  sortedColumn.label ??
-                  (typeof sortedColumn.header === 'string'
-                    ? sortedColumn.header
-                    : sortedColumn.key),
-              },
-            ) +
-            // AND HOW MANY MORE, when there are. Said as a count rather than as
-            // a list: the leading column is the fact that changes what the
-            // reader is looking at, and the rest are tie-breaks they can go and
-            // read one header at a time.
-            ((sort?.length ?? 0) > 1
-              ? ` ${t('sortThen', { count: (sort?.length ?? 0) - 1 })}`
-              : '')
-          : t('sortCleared');
+  /** A column's name in words, for a sentence that will be read aloud. */
+  const nameOf = (key: string): string | undefined => {
+    const found = columns?.find((column) => column.key === key);
+    if (!found) return undefined;
+    return (
+      found.label ??
+      (typeof found.header === 'string' ? found.header : found.key)
+    );
+  };
 
-  // What the header box is ABOUT to do, which is knowable: `toggleRows` clears
-  // when the page is already covered and selects otherwise. Under an `exclude`
-  // rule "Selected: 3" would understate a selection that reaches rows nobody
-  // here has seen, so it says so instead of counting.
+  /**
+   * WHAT THE READER JUST DID, not merely what the table is now ordered by.
+   *
+   * The first version described the leading column and counted the rest, and it
+   * was silent for the commonest multi-column gesture there is: reversing a
+   * SECONDARY column changes neither the leader nor the count, so the sentence
+   * came out byte-identical — and a live region whose text does not change
+   * announces nothing at all. Measured: every row moved and the reader was told
+   * nothing. That is the same failure `sortCleared` exists to prevent, walking
+   * back in through a different door.
+   *
+   * So the sentence is about the column that was ACTED ON. It changes whenever
+   * that column's direction or rank changes, which is exactly when something
+   * happened.
+   */
+  const actedSort = acted?.kind === 'sort' ? acted : null;
+  const actedRank = actedSort
+    ? (sort?.findIndex((rung) => rung.key === actedSort.key) ?? -1)
+    : -1;
+  const actedRung = actedRank === -1 ? undefined : sort?.[actedRank];
+  const total = sort?.length ?? 0;
+
+  const sortSaid = (): string => {
+    // Nothing orders the table any more: the stop that would otherwise be
+    // silence.
+    if (total === 0) return t('sortCleared');
+
+    // The column that was acted on has LEFT the order — so the sentence is
+    // about what still holds, and the count has changed, so it is a new one.
+    if (actedRung === undefined) {
+      const leader = nameOf(sort?.[0]?.key ?? '');
+      // NOT `sortCleared`, WHICH WOULD BE FALSE. A column can leave `columns`
+      // while `sort` still names it — hiding it is the ordinary way — and the
+      // table is then still ordered by something nobody can point at. Saying
+      // "sorting removed" there is the one answer that is certainly wrong.
+      if (leader === undefined) return t('sortChanged');
+      return (
+        t(
+          sort?.[0]?.direction === 'asc'
+            ? 'sortedAscending'
+            : 'sortedDescending',
+          {
+            column: leader,
+          },
+        ) + (total > 1 ? ` ${t('sortThen', { count: total - 1 })}` : '')
+      );
+    }
+
+    const name = nameOf(actedSort?.key ?? '');
+    if (name === undefined) return t('sortChanged');
+
+    const ascending = actedRung.direction === 'asc';
+    // One column is the plain sentence it always was; more than one names the
+    // rank, because "sorted by Età" says nothing about whether Età decides or
+    // merely breaks ties.
+    return total === 1
+      ? t(ascending ? 'sortedAscending' : 'sortedDescending', { column: name })
+      : t(ascending ? 'sortedAscendingAt' : 'sortedDescendingAt', {
+          column: name,
+          rank: actedRank + 1,
+          total,
+        });
+  };
+
+  const announcement =
+    acted === null ? '' : acted.kind === 'said' ? acted.text : sortSaid();
+
   const selectAllSaid = () => {
     if (coverage === 'all') return t('selectionCleared');
     if (selection?.mode === 'exclude') {
@@ -627,6 +723,19 @@ function Table<T>(props: TableProps<T>) {
                 // because the filter trigger puts it inside a wrapper and the
                 // plain header does not, and a second copy of this JSX is a
                 // second place for the two to drift apart.
+                // THE RANK IN WORDS, and only when there is more than one to
+                // rank: `aria-sort` marks a single column (ARIA asks for one at
+                // a time, because two "sorted ascending" say nothing about
+                // which decided), so everything below the leader would
+                // otherwise be a silent arrow.
+                const rankText =
+                  active && (sort?.length ?? 0) > 1
+                    ? t('sortRank', {
+                        rank: rank + 1,
+                        total: sort?.length ?? 0,
+                      })
+                    : undefined;
+
                 const heading = canSort ? (
                   // OUR Button, not a hand-rolled `<button>`. `NavGroup`
                   // wrote its own once — `border: 0; background: none`, the
@@ -645,7 +754,7 @@ function Table<T>(props: TableProps<T>) {
                       // which a consumer committing in a transition has
                       // not refreshed — two clicks then landed on
                       // ascending twice.
-                      setActed({ kind: 'sort' });
+                      setActed({ kind: 'sort', key: column.key });
                       // SHIFT IS THE WHOLE OF IT, and it arrives the same way
                       // from a pointer and from a keyboard: `Enter` and `Space`
                       // on a button produce a click event carrying the
@@ -656,22 +765,24 @@ function Table<T>(props: TableProps<T>) {
                   >
                     {column.header}
                     <SortArrow direction={rung?.direction} />
-                    {/* THE RANK IN WORDS, and only when there is more than one
-                        to rank. `aria-sort` can mark a single column (ARIA asks
-                        for one at a time, because two "sorted ascending" say
-                        nothing about which decided), so everything below the
-                        primary would otherwise be a silent arrow. */}
-                    {active && (sort?.length ?? 0) > 1 && (
-                      <VisuallyHidden>
-                        {t('sortRank', {
-                          rank: rank + 1,
-                          total: sort?.length ?? 0,
-                        })}
-                      </VisuallyHidden>
+                    {rankText !== undefined && (
+                      <VisuallyHidden>{rankText}</VisuallyHidden>
                     )}
                   </Button>
                 ) : (
-                  column.header
+                  <>
+                    {column.header}
+                    {/* NO CONTROL, SO THE CELL CARRIES IT. A column the server
+                        ordered has no button to put the words on, and the
+                        alternative is silence: before multi-column sorting it
+                        had `aria-sort`, and that attribute now belongs to the
+                        leader alone. The cost is that this column's name gains
+                        the rank — paid here and nowhere else, because every
+                        other sorted column has somewhere better to put it. */}
+                    {rankText !== undefined && (
+                      <VisuallyHidden>{rankText}</VisuallyHidden>
+                    )}
+                  </>
                 );
 
                 const headerId = `${baseId}-c-${column.key}`;
@@ -697,7 +808,19 @@ function Table<T>(props: TableProps<T>) {
                     // It is the same defect the checkbox column already fixed
                     // by moving its words out of the cell, and the sort trigger
                     // never had, because that button's name IS the heading.
-                    aria-label={canFilter || canResize ? columnName : undefined}
+                    // THE CELL'S NAME IS ANNOUNCED WITH EVERY DATA CELL under
+                    // it, so anything the controls add leaks into two hundred
+                    // rows — measured once already for the filter trigger
+                    // ("Regione Filter Regione, currently Lombardia"), and
+                    // again for the sort rank ("Età sort 2 of 2, 41"). The
+                    // shield is the same one, extended to the case that
+                    // reintroduced the leak. A column with NO control keeps its
+                    // rank in the name deliberately: it has nowhere else.
+                    aria-label={
+                      canFilter || canResize || (canSort && rankText)
+                        ? columnName
+                        : undefined
+                    }
                     // ON THE HEADER CELL ONLY, because under `table-layout:
                     // fixed` the first row is what decides every column — the
                     // body cells inherit the answer and repeating it there
@@ -728,9 +851,16 @@ function Table<T>(props: TableProps<T>) {
                         ? rung.direction === 'asc'
                           ? 'ascending'
                           : 'descending'
-                        : canSort
-                          ? 'none'
-                          : undefined
+                        : active
+                          ? // SORTED, BUT NOT THE LEADER. `none` is defined as
+                            // "no defined sort applied to the column", which is
+                            // false here — and it would sit in the same element
+                            // as the words "sort 2 of 2". Omitting says less and
+                            // contradicts nothing.
+                            undefined
+                          : canSort
+                            ? 'none'
+                            : undefined
                     }
                   >
                     {/* TWO CONTROLS NEED A BOX, and it cannot be the cell:
@@ -844,7 +974,7 @@ function Table<T>(props: TableProps<T>) {
                       // `data-selected` is the component's to set: the checkbox
                       // and the attribute have to agree, and two writers is how
                       // they stop agreeing.
-                      {...getRowProps?.(row, index)}
+                      {...safeRowProps(getRowProps?.(row, index))}
                       // A DATA ATTRIBUTE AND NOTHING ELSE. `aria-selected`
                       // belongs to `grid` and `treegrid`; on a row inside a
                       // `table` it is ignored, and writing it would be a
