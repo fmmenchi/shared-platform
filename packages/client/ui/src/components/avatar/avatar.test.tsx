@@ -211,4 +211,24 @@ describe('Avatar', () => {
       });
     }
   });
+
+  it('keeps the name when a consumer passes aria-label={undefined}', () => {
+    // `aria-label={cond ? 'Your profile' : undefined}` is the most ordinary
+    // React idiom there is. The file read that same prop twice and answered
+    // differently — `consumerLabeled` said "not labelled", the spread let the
+    // `undefined` overwrite ours — so the false branch shipped a `role="img"`
+    // with NO accessible name: axe's `role-img-alt`, and the person's name
+    // gone from the tree. Worse than the decorative branch, which hides.
+    render(<Avatar name="Ada Lovelace" aria-label={undefined} />);
+    expect(
+      screen.getByRole('img', { name: 'Ada Lovelace' }),
+    ).toBeInTheDocument();
+  });
+
+  it('still lets a real consumer label win', () => {
+    render(<Avatar name="Ada Lovelace" aria-label="Your profile" />);
+    expect(
+      screen.getByRole('img', { name: 'Your profile' }),
+    ).toBeInTheDocument();
+  });
 });

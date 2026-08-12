@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { avatarVariants } from './avatar.variants.js';
 import { initialsFromName } from './avatar.initials.js';
+import { isImageBroken } from './avatar.broken.js';
 import type { AvatarProps } from './avatar.types.js';
 import styles from './avatar.module.css';
 
@@ -28,20 +29,20 @@ function Avatar(props: AvatarProps) {
   const [failedSrc, setFailedSrc] = useState<string>();
   const showImage = !!src && src !== failedSrc;
 
-  // `onError` alone misses the failures React never sees: an error that fired
-  // before hydration attached the handler, and a cached failure the browser
-  // resolves without re-firing the event. A COMPLETE image with no pixels is
-  // the DOM's record of both — but only a SUSPICION: a loaded SVG with a bare
-  // viewBox also reports naturalWidth 0 (per spec; Firefox does exactly that),
-  // and condemning it would swap a healthy image for initials forever. So the
-  // suspicion is confirmed with `decode()`, which rejects only for a genuinely
-  // broken image. A post-unmount setState is a no-op in React 18+.
+  // The failures React never sees — an error that fired before hydration
+  // attached the handler, a cached failure the browser resolves without
+  // re-firing the event. WHY a complete-with-no-pixels image is only a
+  // SUSPICION, and what settles it, lives in `avatar.broken.ts`: asked of a
+  // shape rather than of an element, so all three answers are provable in a
+  // suite whose one engine cannot produce two of them. A post-unmount
+  // setState is a no-op in React 18+.
   const imgRef = useRef<HTMLImageElement>(null);
   useEffect(() => {
     const img = imgRef.current;
-    if (img && img.complete && img.naturalWidth === 0) {
-      void img.decode().catch(() => setFailedSrc(src));
-    }
+    if (!img) return;
+    void isImageBroken(img).then((broken) => {
+      if (broken) setFailedSrc(src);
+    });
   }, [src]);
 
   // Whitespace is not a name: it can neither label the avatar nor yield
@@ -54,13 +55,23 @@ function Avatar(props: AvatarProps) {
   // `name` alone would ship their label on an aria-hidden, role-less span —
   // a dead label the a11y tree never sees.
   const attrs = rest as Record<string, unknown>;
+  // ONE READING of the consumer's label, used for both decisions. The file
+  // asked the same prop twice and answered differently: `consumerLabeled`
+  // read `!= null` (an explicit `undefined` is NOT a label), while the spread
+  // let that same `undefined` overwrite ours — so `aria-label={cond ? 'Your
+  // profile' : undefined}`, the most ordinary React idiom there is, produced
+  // a `role="img"` with NO accessible name at all on the false branch:
+  // measured, `getByRole('img', { name })` throws, and axe's `role-img-alt`
+  // fires. Worse than the decorative branch, which at least hides itself.
+  // The third time this package pays for the same shape (`nav-link`'s
+  // aria-current, `segmented-control`'s aria-label).
+  const consumerLabel = attrs['aria-label'] as string | undefined;
   const consumerLabeled =
-    attrs['aria-label'] != null || attrs['aria-labelledby'] != null;
+    consumerLabel != null || attrs['aria-labelledby'] != null;
   const isNamed = !!label || consumerLabeled;
 
   return (
-    // Our ARIA sits BEFORE the spread so a consumer's own `aria-label`/
-    // `aria-labelledby` in `...rest` wins. `role="img"` makes the descendants
+    // `role="img"` makes the descendants
     // presentational — one node in the tree, named by `label` or by the
     // consumer's own labeling; with neither, the whole thing is decoration and
     // says so. When neither image nor initials render, the root is `:empty`
@@ -68,10 +79,14 @@ function Avatar(props: AvatarProps) {
     // class to drift.
     <span
       role={isNamed ? 'img' : undefined}
-      aria-label={label}
       aria-hidden={isNamed ? undefined : true}
       className={cn(avatarVariants({ size }), className)}
       {...rest}
+      // AFTER the spread, from the chain above: a real string still wins, and
+      // an explicit `undefined` no longer deletes the name it never replaced.
+      // `role` and `aria-hidden` stay before it — they are ours to decide and
+      // a consumer overriding them is the escape hatch that was already there.
+      aria-label={consumerLabel ?? label}
     >
       {showImage ? (
         // Always the real element, straight into the HTML: SSR-complete markup,
