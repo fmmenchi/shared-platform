@@ -47,7 +47,10 @@ describe('Breadcrumb', () => {
         <BreadcrumbLink href="#a">A</BreadcrumbLink>
       </Breadcrumb>,
     );
-    // Theirs lands after the spread's default, so there is exactly one name.
+    // Resolved BEFORE the spread — `aria-label` is destructured out of `rest`
+    // and defaulted with `??`, so there is exactly one name and an explicit
+    // `undefined` still falls back to ours. (An earlier comment here described
+    // the opposite implementation, which passes this test just as well.)
     expect(
       screen.getByRole('navigation', { name: 'Where you are' }),
     ).toBeInTheDocument();
@@ -292,5 +295,20 @@ describe('Breadcrumb', () => {
         await expectNoA11yViolations(container);
       });
     }
+  });
+
+  it('undoes the UA list, which this page can finally see', () => {
+    // The DS ships no reset, so an `<ol>` arrives indented, margined and
+    // NUMBERED. The comment in the stylesheet used to excuse the missing
+    // assertion with "invisible on the Preflight-carrying test page" — true
+    // once, false since ADR-0022: the suite renders on the same bare page a
+    // consumer has. Measured there, unreset: 40px, 16px, `decimal`.
+    render(trail);
+    const list = screen.getByRole('list');
+    const style = getComputedStyle(list);
+    expect(style.listStyleType).toBe('none');
+    expect(style.paddingInlineStart).toBe('0px');
+    expect(style.marginBlockStart).toBe('0px');
+    expect(style.marginBlockEnd).toBe('0px');
   });
 });
