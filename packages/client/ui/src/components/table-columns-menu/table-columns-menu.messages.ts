@@ -10,7 +10,9 @@ import { defineMessages } from '../../i18n/messages.js';
  * meets the name first. "Columns, 2 of 4 shown" is the whole state before the
  * menu is even opened.
  *
- * THE TWO REFUSALS SAY WHY, separately, because they are different facts and a
+ * THE REFUSALS ARE CLAUSES, not sentences, because a locked column may still be
+ * MOVED — so its entry has to carry both facts, and a reason that repeated the
+ * column's name would say it twice. They say why separately, because they are different facts and a
  * single "unavailable" would teach nothing: one column names the rows and one
  * is the only one left. A disabled control whose reason is not announced is a
  * dead end with no explanation.
@@ -18,17 +20,23 @@ import { defineMessages } from '../../i18n/messages.js';
 export const tableColumnsMenuMessages = defineMessages('tableColumnsMenu', {
   en: {
     name: 'Columns, {shown} of {total} shown',
-    required: '{column}, always shown because it names the rows',
-    lastOne: '{column}, the only column still shown',
+    required: 'always shown because it names the rows',
+    lastOne: 'the only column still shown',
+    at: '{column}, {position} of {total}',
+    moveHint: 'Alt with the arrow keys moves a column.',
   },
   it: {
     name: 'Colonne, {shown} di {total} mostrate',
-    required: '{column}, sempre mostrata perché dà il nome alle righe',
-    lastOne: '{column}, l’unica colonna ancora mostrata',
+    required: 'sempre mostrata perché dà il nome alle righe',
+    lastOne: 'l’unica colonna ancora mostrata',
+    at: '{column}, {position} di {total}',
+    moveHint: 'Alt con i tasti freccia sposta una colonna.',
   },
   ar: {
     name: 'الأعمدة، {shown} من {total} معروضة',
-    required: '{column}، معروض دائمًا لأنه يسمّي الصفوف',
-    lastOne: '{column}، العمود الوحيد المعروض',
+    required: 'معروض دائمًا لأنه يسمّي الصفوف',
+    lastOne: 'العمود الوحيد المعروض',
+    at: '{column}، {position} من {total}',
+    moveHint: 'Alt مع مفاتيح الأسهم ينقل عمودًا.',
   },
 });
