@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Radio } from './radio.component.js';
 import { Field } from '../field/field.component.js';
 import { FieldLabel } from '../field-label/field-label.component.js';
@@ -86,10 +86,9 @@ describe('Radio', () => {
   // choice in the component doc no longer pays for itself.
   describe('what the platform gives us for free', () => {
     it('makes options sharing a name mutually exclusive', async () => {
-      const user = userEvent.setup();
       renderGroup();
 
-      await user.click(screen.getByRole('radio', { name: 'Pro' }));
+      await browser.click(screen.getByRole('radio', { name: 'Pro' }));
       expect(screen.getByRole('radio', { name: 'Pro' })).toBeChecked();
       expect(screen.getByRole('radio', { name: 'Free' })).not.toBeChecked();
     });
@@ -97,7 +96,6 @@ describe('Radio', () => {
     it('does NOT pair options that carry different names', async () => {
       // Guards the assertion above from being about rendering rather than
       // grouping: same markup, one name per option, no exclusivity.
-      const user = userEvent.setup();
       render(
         <>
           <label>
@@ -108,24 +106,22 @@ describe('Radio', () => {
           </label>
         </>,
       );
-      await user.click(screen.getByRole('radio', { name: 'Second' }));
+      await browser.click(screen.getByRole('radio', { name: 'Second' }));
       expect(screen.getByRole('radio', { name: 'First' })).toBeChecked();
       expect(screen.getByRole('radio', { name: 'Second' })).toBeChecked();
     });
 
     it('moves the selection with the arrow keys', async () => {
-      const user = userEvent.setup();
       renderGroup();
 
-      await user.tab();
+      await browser.tab();
       expect(screen.getByRole('radio', { name: 'Free' })).toHaveFocus();
-      await user.keyboard('{ArrowDown}');
+      await browser.keyboard('{ArrowDown}');
       expect(screen.getByRole('radio', { name: 'Pro' })).toHaveFocus();
       expect(screen.getByRole('radio', { name: 'Pro' })).toBeChecked();
     });
 
     it('spends ONE tab stop on the whole group, not one per option', async () => {
-      const user = userEvent.setup();
       render(
         <>
           {renderGroupless()}
@@ -133,9 +129,9 @@ describe('Radio', () => {
         </>,
       );
 
-      await user.tab();
+      await browser.tab();
       expect(screen.getByRole('radio', { name: 'Free' })).toHaveFocus();
-      await user.tab();
+      await browser.tab();
       expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
     });
 
@@ -151,10 +147,9 @@ describe('Radio', () => {
     });
 
     it('extends the click target to the label text', async () => {
-      const user = userEvent.setup();
       renderGroup();
 
-      await user.click(screen.getByText('Pro'));
+      await browser.click(screen.getByText('Pro'));
       expect(screen.getByRole('radio', { name: 'Pro' })).toBeChecked();
     });
   });
@@ -169,24 +164,22 @@ describe('Radio', () => {
     });
 
     it('works uncontrolled — does not hijack checked', async () => {
-      const user = userEvent.setup();
       render(<Radio aria-label="free" defaultChecked={false} />);
       const radio = screen.getByRole<HTMLInputElement>('radio', {
         name: 'free',
       });
-      await user.click(radio);
+      await browser.click(radio);
       expect(radio.checked).toBe(true);
     });
 
     it('works controlled — forwards onChange and never owns the state', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<Radio aria-label="free" checked={false} onChange={onChange} />);
       const radio = screen.getByRole<HTMLInputElement>('radio', {
         name: 'free',
       });
 
-      await user.click(radio);
+      await browser.click(radio);
       expect(onChange).toHaveBeenCalledTimes(1);
       // Still unchecked: the consumer owns the value, we never wrote it.
       expect(radio.checked).toBe(false);

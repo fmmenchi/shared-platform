@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Table } from './table.component.js';
 import { useTableFilters } from './use-table-filters.js';
 import type { Column } from './table.types.js';

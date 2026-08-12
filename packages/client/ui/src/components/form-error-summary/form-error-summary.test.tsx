@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormErrorSummary } from './form-error-summary.component.js';
 import { FormInput } from '../form-input/form-input.component.js';
 import { UiProvider } from '../../i18n/provider.js';
@@ -75,9 +75,8 @@ describe('the form level of the adapter', () => {
   });
 
   it('lists every message from every field after a failed submit', async () => {
-    const user = userEvent.setup();
     render(<DemoForm />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
 
     const summary = await screen.findByRole('region', {
       name: 'There is a problem',
@@ -93,9 +92,8 @@ describe('the form level of the adapter', () => {
   });
 
   it('takes focus when it appears, so the failure is announced at once', async () => {
-    const user = userEvent.setup();
     render(<DemoForm />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     await waitFor(() =>
       expect(
         screen.getByRole('region', { name: 'There is a problem' }),
@@ -104,9 +102,8 @@ describe('the form level of the adapter', () => {
   });
 
   it('takes focus again on a second failed submit, so it is never silent', async () => {
-    const user = userEvent.setup();
     render(<DemoForm />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     const summary = await screen.findByRole('region', {
       name: 'There is a problem',
     });
@@ -114,20 +111,19 @@ describe('the form level of the adapter', () => {
 
     // Move away, as a user reading and then retrying would.
     const email = screen.getByRole('textbox', { name: 'Email' });
-    await user.click(email);
+    await browser.click(email);
     expect(email).toHaveFocus();
 
     // Submit again with the same errors: the COUNT does not change, so nothing
     // in the rendered output does either. Told nothing, a screen-reader user
     // cannot know the form was rejected a second time.
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     await waitFor(() => expect(summary).toHaveFocus());
   });
 
   it('does NOT take focus back while the user is typing a fix', async () => {
-    const user = userEvent.setup();
     render(<DemoForm />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     await screen.findByRole('region', { name: 'There is a problem' });
 
     // Fixing one field drops the error count — which is not the summary
@@ -135,29 +131,27 @@ describe('the form level of the adapter', () => {
     // with a library that revalidates as you type, the keystrokes after the
     // field became valid went nowhere and the value silently came up short.
     const email = screen.getByRole('textbox', { name: 'Email' });
-    await user.click(email);
-    await user.type(email, 'someone@example.com');
+    await browser.click(email);
+    await browser.type(email, 'someone@example.com');
 
     expect(email).toHaveFocus();
     expect(email).toHaveValue('someone@example.com');
   });
 
   it('each entry moves focus to its field — the whole point of the list', async () => {
-    const user = userEvent.setup();
     render(<DemoForm />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     await screen.findByRole('region');
 
-    await user.click(
+    await browser.click(
       screen.getByRole('link', { name: /Password: At least 8/ }),
     );
     expect(screen.getByRole('textbox', { name: 'Password' })).toHaveFocus();
   });
 
   it('uses labelFor, because a raw field name is a database column', async () => {
-    const user = userEvent.setup();
     render(<DemoForm />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     const summary = await screen.findByRole('region');
     expect(summary.textContent).toContain('Email:');
     expect(summary.textContent).not.toContain('email:');
@@ -186,7 +180,6 @@ describe('the form level of the adapter', () => {
       { name: 'dark', theme: 'dark' },
     ] as const) {
       it(`no violations — summary shown / ${name}`, async () => {
-        const user = userEvent.setup();
         const { container } = renderUi(
           <div
             style={{
@@ -199,7 +192,7 @@ describe('the form level of the adapter', () => {
           </div>,
           { theme },
         );
-        await user.click(
+        await browser.click(
           screen.getByRole('button', { name: 'Create account' }),
         );
         await screen.findByRole('region');

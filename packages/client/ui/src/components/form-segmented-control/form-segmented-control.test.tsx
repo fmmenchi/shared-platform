@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormSegmentedControl } from './form-segmented-control.component.js';
 import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { UiProvider } from '../../i18n/provider.js';
@@ -35,6 +35,15 @@ function Bound({
     </UiProvider>
   );
 }
+
+/**
+ * THE PART A POINTER CAN ACTUALLY REACH — see the same helper in
+ * `segmented-control.test.tsx` for the measurement. The radio is `sr-only`, so
+ * the label is the only target a person has; a browser-driven click refuses the
+ * input, and it is right to.
+ */
+const segment = (name: string) =>
+  screen.getByRole('radio', { name }).closest('label') as HTMLElement;
 
 const options = (
   <>
@@ -77,7 +86,6 @@ describe('FormSegmentedControl', () => {
   });
 
   it('reports the pick through the binding, by delegation', async () => {
-    const user = userEvent.setup();
     const onPick = vi.fn();
     render(
       <Bound onPick={onPick}>
@@ -91,12 +99,11 @@ describe('FormSegmentedControl', () => {
     // input to put it on — `change` bubbles from the radio the user picked and
     // `event.target.value` is the answer. A real event from a real radio, so an
     // adapter reads it the way it already does.
-    await user.click(screen.getByRole('radio', { name: 'Center' }));
+    await browser.click(segment('Center'));
     expect(onPick).toHaveBeenCalledWith('center');
   });
 
   it('still selects with the arrows once the set has focus', async () => {
-    const user = userEvent.setup();
     const onPick = vi.fn();
     render(
       <Bound onPick={onPick}>
@@ -106,14 +113,13 @@ describe('FormSegmentedControl', () => {
       </Bound>,
     );
 
-    await user.click(screen.getByRole('radio', { name: 'Left' }));
-    await user.keyboard('{ArrowRight}');
+    await browser.click(segment('Left'));
+    await browser.keyboard('{ArrowRight}');
     expect(screen.getByRole('radio', { name: 'Center' })).toBeChecked();
     expect(onPick).toHaveBeenLastCalledWith('center');
   });
 
   it('takes the value from the adapter when the adapter has one', async () => {
-    const user = userEvent.setup();
     function Persisting() {
       const [value, setValue] = useState('left');
       const useDemoField: UseFormField = (name) => ({
@@ -143,7 +149,7 @@ describe('FormSegmentedControl', () => {
     render(<Persisting />);
 
     expect(screen.getByRole('radio', { name: 'Left' })).toBeChecked();
-    await user.click(screen.getByRole('radio', { name: 'Right' }));
+    await browser.click(segment('Right'));
     expect(screen.getByRole('radio', { name: 'Right' })).toBeChecked();
     expect(screen.getByRole('status')).toHaveTextContent('right');
   });
@@ -240,8 +246,8 @@ describe('FormSegmentedControl', () => {
     );
     const [first] = screen.getAllByRole('radio');
     (first as HTMLElement).focus();
-    await userEvent.tab();
-    await userEvent.tab();
+    await browser.tab();
+    await browser.tab();
     expect(blurred).toHaveBeenCalled();
   });
 });

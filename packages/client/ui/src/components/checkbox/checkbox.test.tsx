@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Checkbox } from './checkbox.component.js';
 import { Field } from '../field/field.component.js';
 import { Fieldset } from '../fieldset/fieldset.component.js';
@@ -98,7 +98,6 @@ describe('Checkbox', () => {
     });
 
     it('clears when the prop goes false', async () => {
-      const user = userEvent.setup();
       function Host() {
         const [mixed, setMixed] = useState(true);
         return (
@@ -119,7 +118,7 @@ describe('Checkbox', () => {
         name: 'all',
       });
       expect(box.indeterminate).toBe(true);
-      await user.click(screen.getByRole('button', { name: 'settle' }));
+      await browser.click(screen.getByRole('button', { name: 'settle' }));
       expect(box.indeterminate).toBe(false);
     });
 
@@ -127,7 +126,6 @@ describe('Checkbox', () => {
       // Clicking a mixed box clears the property natively. A parent that still
       // considers itself mixed would otherwise disagree with the DOM for ever:
       // the prop never changed, so the keyed effect never runs again.
-      const user = userEvent.setup();
       function Host() {
         const [, force] = useState(0);
         return (
@@ -145,7 +143,7 @@ describe('Checkbox', () => {
 
       // The precondition, so this asserts RESTORATION and not "ends up true".
       expect(box.indeterminate).toBe(true);
-      await user.click(box);
+      await browser.click(box);
       expect(box.indeterminate).toBe(true);
     });
 
@@ -196,20 +194,18 @@ describe('Checkbox', () => {
       // Uncontrolled, nothing claims the box is still mixed after the user acts,
       // so the native clearing is the correct outcome. This is the case that
       // the old separate `indeterminate` prop turned into a lying control.
-      const user = userEvent.setup();
       render(<Checkbox aria-label="all" defaultChecked="indeterminate" />);
       const box = screen.getByRole<HTMLInputElement>('checkbox', {
         name: 'all',
       });
       expect(box.indeterminate).toBe(true);
 
-      await user.click(box);
+      await browser.click(box);
       expect(box.indeterminate).toBe(false);
       expect(box.checked).toBe(true);
     });
 
     it('a boolean checked clears a mixed state it replaces', async () => {
-      const user = userEvent.setup();
       function Host() {
         const [state, setState] = useState<'indeterminate' | boolean>(
           'indeterminate',
@@ -228,7 +224,7 @@ describe('Checkbox', () => {
         name: 'all',
       });
       expect(box.indeterminate).toBe(true);
-      await user.click(screen.getByRole('button', { name: 'settle' }));
+      await browser.click(screen.getByRole('button', { name: 'settle' }));
       expect(box.indeterminate).toBe(false);
       expect(box.checked).toBe(true);
     });
@@ -244,17 +240,15 @@ describe('Checkbox', () => {
     });
 
     it('works uncontrolled — does not hijack checked', async () => {
-      const user = userEvent.setup();
       render(<Checkbox aria-label="accept" defaultChecked />);
       const box = screen.getByRole<HTMLInputElement>('checkbox', {
         name: 'accept',
       });
-      await user.click(box);
+      await browser.click(box);
       expect(box.checked).toBe(false);
     });
 
     it('works controlled — the parent drives it, and nothing moves without the parent', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
       render(
         <Checkbox aria-label="accept" checked={false} onChange={onChange} />,
@@ -262,7 +256,7 @@ describe('Checkbox', () => {
       const box = screen.getByRole<HTMLInputElement>('checkbox', {
         name: 'accept',
       });
-      await user.click(box);
+      await browser.click(box);
       expect(onChange).toHaveBeenCalledTimes(1);
       expect(box.checked).toBe(false);
     });
@@ -271,7 +265,6 @@ describe('Checkbox', () => {
       // What "controlled" buys, end to end: the box follows the parent's state,
       // and the parent can set it from anywhere (here a second button), with no
       // internal state in the component to fall out of step.
-      const user = userEvent.setup();
       function Host() {
         const [on, setOn] = useState(false);
         return (
@@ -292,11 +285,11 @@ describe('Checkbox', () => {
         name: 'accept',
       });
 
-      await user.click(box);
+      await browser.click(box);
       expect(box.checked).toBe(true);
-      await user.click(box);
+      await browser.click(box);
       expect(box.checked).toBe(false);
-      await user.click(screen.getByRole('button', { name: 'force on' }));
+      await browser.click(screen.getByRole('button', { name: 'force on' }));
       expect(box.checked).toBe(true);
     });
 
@@ -335,7 +328,6 @@ describe('Checkbox', () => {
       // The documented ordering. Restoring BEFORE the handler would show it a
       // value the browser never produced, breaking any handler that recomputes
       // the mixed state from the event.
-      const user = userEvent.setup();
       const seen: Array<{ checked: boolean; indeterminate: boolean }> = [];
       render(
         <Checkbox
@@ -349,7 +341,7 @@ describe('Checkbox', () => {
           }
         />,
       );
-      await user.click(screen.getByRole('checkbox', { name: 'all' }));
+      await browser.click(screen.getByRole('checkbox', { name: 'all' }));
       expect(seen).toEqual([{ checked: true, indeterminate: false }]);
     });
 
@@ -372,7 +364,6 @@ describe('Checkbox', () => {
     it('does NOT pair boxes that share a name — unlike radios', async () => {
       // A misreading carried over from radios: `name` groups radios, but
       // checkboxes sharing one name are independent values of the same field.
-      const user = userEvent.setup();
       render(
         <>
           <label>
@@ -383,25 +374,23 @@ describe('Checkbox', () => {
           </label>
         </>,
       );
-      await user.click(screen.getByRole('checkbox', { name: 'A' }));
-      await user.click(screen.getByRole('checkbox', { name: 'B' }));
+      await browser.click(screen.getByRole('checkbox', { name: 'A' }));
+      await browser.click(screen.getByRole('checkbox', { name: 'B' }));
       expect(screen.getByRole('checkbox', { name: 'A' })).toBeChecked();
       expect(screen.getByRole('checkbox', { name: 'B' })).toBeChecked();
     });
 
     it('extends the click target to the label text', async () => {
-      const user = userEvent.setup();
       render(
         <label>
           <Checkbox /> Accept the terms
         </label>,
       );
-      await user.click(screen.getByText('Accept the terms'));
+      await browser.click(screen.getByText('Accept the terms'));
       expect(screen.getByRole('checkbox')).toBeChecked();
     });
 
     it('takes one tab stop per box — a group is not one stop, unlike radios', async () => {
-      const user = userEvent.setup();
       render(
         <>
           <label>
@@ -412,9 +401,9 @@ describe('Checkbox', () => {
           </label>
         </>,
       );
-      await user.tab();
+      await browser.tab();
       expect(screen.getByRole('checkbox', { name: 'A' })).toHaveFocus();
-      await user.tab();
+      await browser.tab();
       expect(screen.getByRole('checkbox', { name: 'B' })).toHaveFocus();
     });
   });

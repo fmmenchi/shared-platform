@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import {
   UiProvider,
   FormErrorSummary,
@@ -49,6 +49,19 @@ describe('the adapter over a real library — it reads, it does not replace', ()
   function App({ onValid = vi.fn() }: { onValid?: () => void }) {
     const form = useForm({
       defaultValues: { email: '', password: '' },
+      // OFF, BECAUSE THE SUMMARY OWNS THE FOCUS. react-hook-form defaults
+      // `shouldFocusError` to true and moves focus to the first errored field
+      // after a failed submit; `FormErrorSummary` moves it to itself. Two
+      // things reaching for the focus is a wiring bug, and the library wins —
+      // measured here: after a real click the active element was the email
+      // input, not the summary, so the one place a person is meant to be taken
+      // back to was never where they landed.
+      //
+      // This is a REAL defect that a green test was hiding. With simulated
+      // events the conflict never showed; the moment the click came from the
+      // browser it did. Any app pairing this summary with react-hook-form owes
+      // itself this line — see the recipes.
+      shouldFocusError: false,
       resolver: (values) => {
         const errors: Record<string, { type: string; message: string }> = {};
         if (!values.email)
@@ -87,9 +100,8 @@ describe('the adapter over a real library — it reads, it does not replace', ()
   }
 
   it('the library validates; the summary shows it and takes focus', async () => {
-    const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
 
     const summary = await screen.findByRole('region', {
       name: 'There is a problem',
@@ -104,9 +116,8 @@ describe('the adapter over a real library — it reads, it does not replace', ()
   });
 
   it('the same errors reach the FIELDS, without being computed twice', async () => {
-    const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     const email = screen.getByRole('textbox', { name: 'Email' });
     await waitFor(() =>
       expect(email).toHaveAccessibleDescription('Email is required.'),
@@ -115,27 +126,28 @@ describe('the adapter over a real library — it reads, it does not replace', ()
   });
 
   it('a summary entry moves focus to the library’s own registered control', async () => {
-    const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     await screen.findByRole('region');
-    await user.click(screen.getByRole('link', { name: /Password:/ }));
+    await browser.click(screen.getByRole('link', { name: /Password:/ }));
     expect(screen.getByRole('textbox', { name: 'Password' })).toHaveFocus();
   });
 
   it('the summary clears when the library says the form is valid', async () => {
-    const user = userEvent.setup();
     const onValid = vi.fn();
     render(<App onValid={onValid} />);
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
     await screen.findByRole('region');
 
-    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
-    await user.type(
+    await browser.type(
+      screen.getByRole('textbox', { name: 'Email' }),
+      'a@b.it',
+    );
+    await browser.type(
       screen.getByRole('textbox', { name: 'Password' }),
       'longenough1',
     );
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
 
     await waitFor(() => expect(onValid).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByRole('region')).toBeNull());

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Field } from '../components/field/field.component.js';
 import { Input } from '../components/input/input.component.js';
 import { Button } from '../components/button/button.component.js';
@@ -18,7 +18,6 @@ function Submit() {
 
 describe('React 19 form features', () => {
   it('useFormStatus dà pending con <form action>, senza adapter', async () => {
-    const user = userEvent.setup();
     let resolve: () => void = () => undefined;
     const action = async () => {
       await new Promise<void>((r) => {
@@ -36,7 +35,7 @@ describe('React 19 form features', () => {
     const button = screen.getByRole('button', { name: /Save/ });
     expect(button).not.toHaveAttribute('aria-busy', 'true');
 
-    await user.click(button);
+    await browser.click(button);
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Save/ })).toHaveAttribute(
         'aria-busy',
@@ -55,7 +54,6 @@ describe('React 19 form features', () => {
   });
 
   it('useActionState porta gli errori del server ai nostri campi', async () => {
-    const user = userEvent.setup();
     function App() {
       const [state, action] = useActionState(
         async (_prev: { email?: string }, data: FormData) => {
@@ -74,8 +72,8 @@ describe('React 19 form features', () => {
       );
     }
     render(<App />);
-    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'nope');
-    await user.click(screen.getByRole('button', { name: /Save/ }));
+    await browser.type(screen.getByRole('textbox', { name: 'Email' }), 'nope');
+    await browser.click(screen.getByRole('button', { name: /Save/ }));
 
     const input = screen.getByRole('textbox', { name: 'Email' });
     await waitFor(() =>

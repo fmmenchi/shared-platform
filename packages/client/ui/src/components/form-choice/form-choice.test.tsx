@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormChoice } from './form-choice.component.js';
 import { UiProvider } from '../../i18n/provider.js';
 import { createBoundFields } from '../../form/bound-fields.js';
@@ -52,7 +52,6 @@ describe('FormChoice', () => {
   });
 
   it('SURVIVES AN ADAPTER THAT EMITS `type`, which a real one does', async () => {
-    const user = userEvent.setup();
     const onChange = vi.fn();
     render(
       <Bound control={{ type: 'text' }} onChange={onChange}>
@@ -70,12 +69,11 @@ describe('FormChoice', () => {
     const box = screen.getByRole('checkbox', { name: 'Accept the terms' });
     expect(box).toHaveAttribute('type', 'checkbox');
 
-    await user.click(box);
+    await browser.click(box);
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
   it('reports a tick through the binding', async () => {
-    const user = userEvent.setup();
     const onChange = vi.fn();
     render(
       <Bound onChange={onChange}>
@@ -83,12 +81,11 @@ describe('FormChoice', () => {
       </Bound>,
     );
 
-    await user.click(screen.getByRole('checkbox'));
+    await browser.click(screen.getByRole('checkbox'));
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
   it('takes the state from the library when it drives one', async () => {
-    const user = userEvent.setup();
     function Persisting() {
       const [on, setOn] = useState(false);
       const useDemoField: UseFormField = (name) => ({
@@ -111,7 +108,7 @@ describe('FormChoice', () => {
     }
     render(<Persisting />);
 
-    await user.click(screen.getByRole('checkbox'));
+    await browser.click(screen.getByRole('checkbox'));
     expect(screen.getByRole('checkbox')).toBeChecked();
     expect(screen.getByRole('status')).toHaveTextContent('accepted');
   });

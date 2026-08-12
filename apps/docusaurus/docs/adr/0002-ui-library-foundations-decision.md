@@ -73,6 +73,32 @@ and never receives app text through the port.
 `ui` ([ADR-0006](./0006-absorb-ui-ports.md)): the port contracts had exactly one consumer, and a
 package boundary with one consumer buys nothing and costs a release cycle.
 
+### 6. Testing: browser mode, and exactly one event engine
+
+Vitest **browser mode** against a real Chromium, as 0001 proposed. What 0001 left under-specified is
+the half that matters here: it said "React Testing Library semantic queries", which settles the
+queries and says nothing about who produces the events. Two engines were in the suite for months
+because of that gap — 43 files driving the browser, 29 dispatching events from JavaScript.
+
+**Testing Library keeps everything it is good at**: `render`, the semantic queries, the `jest-dom`
+matchers. The one piece that does not survive browser mode is `@testing-library/user-event`, and not
+on quality — on redundancy. It **simulates** what a browser would do, and here a browser is already
+running. `userEvent` from `vitest/browser` delegates to the Playwright provider, so Chromium itself
+produces the input and the events are `isTrusted`.
+
+The two are not rivals: `@vitest/browser` **depends on** `@testing-library/user-event` and falls back
+to it when there is no browser to drive. The upgrade is the browser, not the API.
+
+This follows from decision 1 rather than standing beside it. If the accessibility floor is the
+platform's, the tests have to exercise the platform — and a synthesised event is invisible to every
+part of it that decides for itself: `:focus-visible`, `<dialog>` light-dismiss, `<label>` forwarding,
+`<select>`'s popup, the `hasTouch` pointer. **Measured, not predicted:** the tooltip suite records a
+synthetic `pointerenter` reporting a tooltip as hoverable that a real mouse could never reach, and an
+untrusted `Escape` that could not close a `<dialog>` — the very behaviour that test exists to deny.
+The file had already switched engines for that reason alone.
+
+Where `@testing-library/user-event` remains right: jsdom. No project here runs jsdom.
+
 ## The exit signal — when a behaviour library would become justified
 
 Native-first is a decision, not an identity. The components that would reopen it are **Combobox** and

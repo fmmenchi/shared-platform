@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { useState, type ComponentType } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { z } from 'zod';
 import { UiProvider, FormInput, createBoundFields } from '@fmmenchi/ui';
 import {
@@ -312,14 +312,13 @@ describe.each(SCREENS)(
   'repeated fields through the port — %s',
   (_n, Screen) => {
     it('binds every row by its indexed name, and submits them in order', async () => {
-      const user = userEvent.setup();
       render(<Screen />);
 
-      await user.click(add());
-      await user.click(add());
-      await user.type(guest(1), 'Ada');
-      await user.type(guest(2), 'Grace');
-      await user.click(save());
+      await browser.click(add());
+      await browser.click(add());
+      await browser.type(guest(1), 'Ada');
+      await browser.type(guest(2), 'Grace');
+      await browser.click(save());
 
       await waitFor(() =>
         expect(
@@ -332,19 +331,20 @@ describe.each(SCREENS)(
       // The trap this exists for: with no row key, React reuses the removed row's
       // input for the survivor and the wrong value stays on screen — and then
       // gets submitted.
-      const user = userEvent.setup();
       render(<Screen />);
 
-      await user.click(add());
-      await user.click(add());
-      await user.type(guest(1), 'Ada');
-      await user.type(guest(2), 'Grace');
-      await user.click(screen.getByRole('button', { name: 'Remove guest 1' }));
+      await browser.click(add());
+      await browser.click(add());
+      await browser.type(guest(1), 'Ada');
+      await browser.type(guest(2), 'Grace');
+      await browser.click(
+        screen.getByRole('button', { name: 'Remove guest 1' }),
+      );
 
       await waitFor(() => expect(guest(1)).toHaveValue('Grace'));
       expect(screen.queryByRole('textbox', { name: 'Guest 2' })).toBeNull();
 
-      await user.click(save());
+      await browser.click(save());
       await waitFor(() =>
         expect(
           JSON.parse(screen.getByRole('status').textContent ?? '{}'),
@@ -353,14 +353,13 @@ describe.each(SCREENS)(
     });
 
     it('a row’s error lands on THAT row’s field', async () => {
-      const user = userEvent.setup();
       render(<Screen />);
 
-      await user.click(add());
-      await user.click(add());
-      await user.type(guest(1), 'Ada');
+      await browser.click(add());
+      await browser.click(add());
+      await browser.type(guest(1), 'Ada');
       // guest 2 left empty
-      await user.click(save());
+      await browser.click(save());
 
       await waitFor(() =>
         expect(guest(2)).toHaveAccessibleDescription(GUEST_REQUIRED),

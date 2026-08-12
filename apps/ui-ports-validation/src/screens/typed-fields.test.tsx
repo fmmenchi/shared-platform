@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { UiProvider, FormInput as PlainInput } from '@fmmenchi/ui';
 import type { FieldName } from '@conform-to/react';
 import {
@@ -39,7 +39,6 @@ const { Form, FormInput, FormChoice, FormTextarea, FormSelect } =
 
 describe('createRhfForm', () => {
   it('binds and submits, with no library named at the call site', async () => {
-    const user = userEvent.setup();
     const onSubmit = vi.fn();
 
     render(
@@ -65,9 +64,12 @@ describe('createRhfForm', () => {
       </Form>,
     );
 
-    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
-    await user.click(screen.getByRole('checkbox', { name: 'Accept' }));
-    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await browser.type(
+      screen.getByRole('textbox', { name: 'Email' }),
+      'a@b.it',
+    );
+    await browser.click(screen.getByRole('checkbox', { name: 'Accept' }));
+    await browser.click(screen.getByRole('button', { name: 'Send' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({

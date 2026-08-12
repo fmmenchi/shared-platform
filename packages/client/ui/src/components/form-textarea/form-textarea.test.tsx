@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef, useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormTextarea } from './form-textarea.component.js';
 import { UiProvider } from '../../i18n/provider.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
@@ -32,7 +32,6 @@ describe('FormTextarea, against the contract itself', () => {
   });
 
   it('collects what the user types, through the adapter’s own onChange', async () => {
-    const user = userEvent.setup();
     function Host() {
       const [value, setValue] = useState('');
       const field: UseFormField = (name) => ({
@@ -53,7 +52,7 @@ describe('FormTextarea, against the contract itself', () => {
     }
     render(<Host />);
 
-    await user.type(screen.getByRole('textbox', { name: 'Notes' }), 'ab');
+    await browser.type(screen.getByRole('textbox', { name: 'Notes' }), 'ab');
     expect(screen.getByRole('status')).toHaveTextContent('ab');
   });
 
@@ -80,7 +79,6 @@ describe('FormTextarea, against the contract itself', () => {
 
   it('shares the ref, and drops what the binding owns', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const user = userEvent.setup();
     const seen: string[] = [];
     const bindingRef = createRef<HTMLTextAreaElement>();
     const callSiteRef = createRef<HTMLTextAreaElement>();
@@ -111,7 +109,7 @@ describe('FormTextarea, against the contract itself', () => {
     expect(bindingRef.current).toBe(control);
     expect(callSiteRef.current).toBe(control);
 
-    await user.type(control, 'a');
+    await browser.type(control, 'a');
     expect(seen).toEqual(['a']);
     expect(stolen).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(

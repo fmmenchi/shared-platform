@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Input } from './input.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -54,23 +54,21 @@ describe('Input', () => {
     });
 
     it('works uncontrolled — does not hijack the value', async () => {
-      const user = userEvent.setup();
       render(<Input aria-label="q" defaultValue="a" />);
       const input = screen.getByRole<HTMLInputElement>('textbox', {
         name: 'q',
       });
-      await user.type(input, 'bc');
+      await browser.type(input, 'bc');
       expect(input.value).toBe('abc');
     });
 
     it('works controlled — forwards onChange and never owns the value itself', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<Input aria-label="q" value="" onChange={onChange} />);
       const input = screen.getByRole<HTMLInputElement>('textbox', {
         name: 'q',
       });
-      await user.type(input, 'x');
+      await browser.type(input, 'x');
       expect(onChange).toHaveBeenCalled();
       // Pinned value + a no-op onChange: a transparent control reverts to '',
       // proving the DS holds no internal state (a regression that managed its

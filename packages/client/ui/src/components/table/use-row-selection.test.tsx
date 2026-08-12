@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useRowSelection } from './use-row-selection.js';
 import {
   EVERYTHING_SELECTED,
@@ -61,11 +61,10 @@ const read = (what: string) =>
 
 describe('useRowSelection, holding the selection itself', () => {
   it('starts empty and picks one row', async () => {
-    const user = userEvent.setup();
     render(<Harness />);
 
     expect(read('count')).toBe('0');
-    await user.click(screen.getByRole('button', { name: 'row a' }));
+    await browser.click(screen.getByRole('button', { name: 'row a' }));
     expect(read('ids')).toBe('a');
     expect(read('count')).toBe('1');
   });
@@ -75,31 +74,28 @@ describe('useRowSelection, holding the selection itself', () => {
     // same render value and the first one vanished — measured, one row selected
     // out of two. The updater form is what makes a range selection, or any
     // consumer loop, possible at all.
-    const user = userEvent.setup();
     render(<Harness />);
 
-    await user.click(screen.getByRole('button', { name: 'rows a and b' }));
+    await browser.click(screen.getByRole('button', { name: 'rows a and b' }));
     expect(read('ids')).toBe('a,b');
   });
 
   it('takes the page, then gives it back', async () => {
-    const user = userEvent.setup();
     render(<Harness />);
     const all = screen.getByRole('button', { name: 'all' });
 
-    await user.click(all);
+    await browser.click(all);
     expect(read('ids')).toBe('a,b,c');
-    await user.click(all);
+    await browser.click(all);
     expect(read('ids')).toBe('');
   });
 
   it('clears an everything-rule whole instead of narrowing it', async () => {
     // The data-loss path: narrowing left the UI showing nothing selected while
     // the rule still covered every row the client had never received.
-    const user = userEvent.setup();
     render(<Harness defaultSelection={EVERYTHING_SELECTED} />);
 
-    await user.click(screen.getByRole('button', { name: 'all' }));
+    await browser.click(screen.getByRole('button', { name: 'all' }));
     expect(read('mode')).toBe('include');
     expect(read('ids')).toBe('');
     expect(read('count')).toBe('0');
@@ -122,10 +118,9 @@ describe('useRowSelection and the count', () => {
   });
 
   it('sets the whole rule at once', async () => {
-    const user = userEvent.setup();
     render(<Harness />);
 
-    await user.click(screen.getByRole('button', { name: 'everything' }));
+    await browser.click(screen.getByRole('button', { name: 'everything' }));
     expect(read('mode')).toBe('exclude');
     // A range selection or a restore is ONE edit, not a loop of intents.
     expect(read('count')).toBe('undefined');
@@ -158,7 +153,6 @@ describe('useRowSelection and the bar', () => {
   }
 
   it('escalates to a rule covering rows nobody here has seen', async () => {
-    const user = userEvent.setup();
     render(
       <BarHarness
         defaultSelection={{ mode: 'include', ids: new Set(['a']) }}
@@ -166,22 +160,20 @@ describe('useRowSelection and the bar', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'everything' }));
+    await browser.click(screen.getByRole('button', { name: 'everything' }));
     expect(read('mode')).toBe('exclude');
     expect(read('ids')).toBe('');
   });
 
   it('clears back to nothing', async () => {
-    const user = userEvent.setup();
     render(<BarHarness defaultSelection={EVERYTHING_SELECTED} />);
 
-    await user.click(screen.getByRole('button', { name: 'clear' }));
+    await browser.click(screen.getByRole('button', { name: 'clear' }));
     expect(read('mode')).toBe('include');
     expect(read('ids')).toBe('');
   });
 
   it('reports both escalations to a consumer holding the state', async () => {
-    const user = userEvent.setup();
     const onSelectionChange = vi.fn();
     render(
       <BarHarness
@@ -190,9 +182,9 @@ describe('useRowSelection and the bar', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'everything' }));
+    await browser.click(screen.getByRole('button', { name: 'everything' }));
     expect(onSelectionChange).toHaveBeenLastCalledWith(EVERYTHING_SELECTED);
-    await user.click(screen.getByRole('button', { name: 'clear' }));
+    await browser.click(screen.getByRole('button', { name: 'clear' }));
     expect(onSelectionChange).toHaveBeenLastCalledWith(NOTHING_SELECTED);
   });
 
@@ -207,7 +199,6 @@ describe('useRowSelection and the bar', () => {
 
 describe('useRowSelection, when the consumer holds it', () => {
   it('reports the intent and never selects on its own', async () => {
-    const user = userEvent.setup();
     const onSelectionChange = vi.fn();
     render(
       <Harness
@@ -216,7 +207,7 @@ describe('useRowSelection, when the consumer holds it', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'row a' }));
+    await browser.click(screen.getByRole('button', { name: 'row a' }));
     expect(onSelectionChange).toHaveBeenCalledWith({
       mode: 'include',
       ids: new Set(['a']),
@@ -237,12 +228,11 @@ describe('useRowSelection, when the consumer holds it', () => {
       return <Harness selection={selection} onSelectionChange={setSelection} />;
     }
 
-    const user = userEvent.setup();
     render(<Store />);
 
-    await user.click(screen.getByRole('button', { name: 'row a' }));
+    await browser.click(screen.getByRole('button', { name: 'row a' }));
     expect(read('ids')).toBe('a');
-    await user.click(screen.getByRole('button', { name: 'row a' }));
+    await browser.click(screen.getByRole('button', { name: 'row a' }));
     expect(read('ids')).toBe('');
   });
 

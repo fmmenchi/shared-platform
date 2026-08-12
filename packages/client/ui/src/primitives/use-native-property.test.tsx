@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { useRef, useState } from 'react';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { useNativeProperty } from './use-native-property.js';
 
 /** A bare host so the hook is tested on its own, not through a component. */
@@ -19,7 +19,6 @@ describe('useNativeProperty', () => {
     screen.getByRole<HTMLInputElement>('textbox', { name: 't' });
 
   it('writes a driven value, and rewrites it when it changes', async () => {
-    const user = userEvent.setup();
     function Wrapper() {
       const [v, setV] = useState('a');
       return (
@@ -33,14 +32,13 @@ describe('useNativeProperty', () => {
     }
     render(<Wrapper />);
     expect(field().value).toBe('a');
-    await user.click(screen.getByRole('button', { name: 'next' }));
+    await browser.click(screen.getByRole('button', { name: 'next' }));
     expect(field().value).toBe('b');
   });
 
   it('writes an initial value once, then leaves the element alone', async () => {
-    const user = userEvent.setup();
     render(<Host initial="a" />);
-    await user.type(field(), 'b');
+    await browser.type(field(), 'b');
     expect(field().value).toBe('ab');
   });
 
@@ -50,14 +48,12 @@ describe('useNativeProperty', () => {
   });
 
   it('writes nothing at all when neither is given', async () => {
-    const user = userEvent.setup();
     render(<Host />);
-    await user.type(field(), 'typed');
+    await browser.type(field(), 'typed');
     expect(field().value).toBe('typed');
   });
 
   it('is a PUSH, not a mirror — an unchanged value does not overwrite an edit', async () => {
-    const user = userEvent.setup();
     function Wrapper() {
       const [, force] = useState(0);
       return (
@@ -70,8 +66,8 @@ describe('useNativeProperty', () => {
       );
     }
     render(<Wrapper />);
-    await user.type(field(), 'z');
-    await user.click(screen.getByRole('button', { name: 'rerender' }));
+    await browser.type(field(), 'z');
+    await browser.click(screen.getByRole('button', { name: 'rerender' }));
     expect(field().value).toBe('az');
   });
 });

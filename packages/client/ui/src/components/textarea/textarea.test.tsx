@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Textarea } from './textarea.component.js';
 import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';
@@ -113,24 +113,28 @@ describe('Textarea', () => {
     });
 
     it('works uncontrolled — does not hijack the value', async () => {
-      const user = userEvent.setup();
       render(<Textarea aria-label="q" defaultValue="a" />);
       const field = screen.getByRole<HTMLTextAreaElement>('textbox', {
         name: 'q',
       });
-      await user.type(field, 'bc');
+      // CLICK IN FIRST, because that is what puts the caret somewhere. A person
+      // clicks into the field and lands past the end of one short line, so what
+      // they type appends. Focus on its own leaves the caret at 0 — which is
+      // why this read `bca` the moment the events stopped being simulated, and
+      // `user-event` had been quietly moving the caret to the end for us.
+      await browser.click(field);
+      await browser.type(field, 'bc');
       expect(field.value).toBe('abc');
     });
 
     it('works controlled — forwards onChange and never owns the value itself', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<Textarea aria-label="q" value="" onChange={onChange} />);
       const field = screen.getByRole<HTMLTextAreaElement>('textbox', {
         name: 'q',
       });
 
-      await user.type(field, 'x');
+      await browser.type(field, 'x');
 
       expect(onChange).toHaveBeenCalledTimes(1);
       // The value stayed where the consumer put it: the component never wrote

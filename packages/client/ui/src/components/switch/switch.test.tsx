@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent, ComponentProps } from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { Switch } from './switch.component.js';
 import { Field } from '../field/field.component.js';
 import { ChoiceField } from '../choice-field/choice-field.component.js';
@@ -49,21 +49,19 @@ describe('Switch', () => {
   });
 
   it('answers to Space, the key a checkbox answers to', async () => {
-    const user = userEvent.setup();
     render(<Labelled />);
     const control = screen.getByRole('switch');
 
-    await user.tab();
+    await browser.tab();
     expect(control).toHaveFocus();
-    await user.keyboard(' ');
+    await browser.keyboard(' ');
     expect(control).toBeChecked();
   });
 
   it('extends the click target to the label text', async () => {
-    const user = userEvent.setup();
     render(<Labelled />);
 
-    await user.click(screen.getByText('Notifications'));
+    await browser.click(screen.getByText('Notifications'));
     expect(screen.getByRole('switch')).toBeChecked();
   });
 
@@ -102,7 +100,6 @@ describe('Switch', () => {
     });
 
     it('IS RESTORED BY form.reset(), which is the whole reason the DOM holds the state', async () => {
-      const user = userEvent.setup();
       const { container } = render(
         <form>
           <Labelled name="notify" defaultChecked />
@@ -111,7 +108,7 @@ describe('Switch', () => {
       const control = screen.getByRole('switch');
       const form = container.querySelector('form') as HTMLFormElement;
 
-      await user.click(control);
+      await browser.click(control);
       expect(control).not.toBeChecked();
 
       // The measured failure this pins: hold the state in React instead and
@@ -132,28 +129,25 @@ describe('Switch', () => {
     });
 
     it('works uncontrolled — it does not hijack checked', async () => {
-      const user = userEvent.setup();
       render(<Labelled defaultChecked />);
       const control = screen.getByRole('switch');
 
-      await user.click(control);
+      await browser.click(control);
       expect(control).not.toBeChecked();
-      await user.click(control);
+      await browser.click(control);
       expect(control).toBeChecked();
     });
 
     it('works controlled — nothing moves unless the parent moves it', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn();
       render(<Labelled checked={false} onChange={onChange} />);
 
-      await user.click(screen.getByRole('switch'));
+      await browser.click(screen.getByRole('switch'));
       expect(onChange).toHaveBeenCalledTimes(1);
       expect(screen.getByRole('switch')).not.toBeChecked();
     });
 
     it('is driven from outside — parent state is the single source of truth', async () => {
-      const user = userEvent.setup();
       function Driven() {
         const [on, setOn] = useState(false);
         return (
@@ -165,19 +159,18 @@ describe('Switch', () => {
       }
       render(<Driven />);
 
-      await user.click(screen.getByRole('switch'));
+      await browser.click(screen.getByRole('switch'));
       expect(screen.getByRole('switch')).toBeChecked();
       expect(screen.getByRole('status')).toHaveTextContent('on');
     });
 
     it('leaves onChange a plain passthrough, with the browser’s own post-click values', async () => {
-      const user = userEvent.setup();
       const onChange = vi.fn((event: ChangeEvent<HTMLInputElement>) => {
         expect(event.target.checked).toBe(true);
       });
       render(<Labelled onChange={onChange} />);
 
-      await user.click(screen.getByRole('switch'));
+      await browser.click(screen.getByRole('switch'));
       expect(onChange).toHaveBeenCalledTimes(1);
     });
 

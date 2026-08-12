@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef, useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import {
   UiProvider,
   FormChoice,
@@ -70,15 +70,17 @@ function Bound() {
 
 describe('FormInput / FormChoice through the adapter port', () => {
   it('binds and submits, with the call site naming no library', async () => {
-    const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(<RhfForm onSubmit={onSubmit} />);
 
-    await user.type(screen.getByRole('textbox', { name: /Email/ }), 'a@b.it');
-    await user.click(
+    await browser.type(
+      screen.getByRole('textbox', { name: /Email/ }),
+      'a@b.it',
+    );
+    await browser.click(
       screen.getByRole('checkbox', { name: 'Accept the terms' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await browser.click(screen.getByRole('button', { name: 'Send' }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
@@ -112,10 +114,9 @@ describe('FormInput / FormChoice through the adapter port', () => {
     }
     // The rule lives with the library — and, under this shape, with the ADAPTER
     // rather than the call site.
-    const user = userEvent.setup();
     render(<Validated />);
     const input = screen.getByRole('textbox', { name: 'Email' });
-    await user.click(screen.getByRole('button', { name: 'Go' }));
+    await browser.click(screen.getByRole('button', { name: 'Go' }));
     await waitFor(() => expect(input).toHaveAttribute('aria-invalid', 'true'));
     await waitFor(() =>
       expect(input).toHaveAccessibleDescription('Email is required.'),
@@ -125,7 +126,6 @@ describe('FormInput / FormChoice through the adapter port', () => {
   it('the SAME components work with no form library at all', async () => {
     // The port's whole claim: swapping the library is one line, and nothing
     // below the provider notices.
-    const user = userEvent.setup();
 
     function Plain() {
       const [v, setV] = useState<Record<string, string | boolean>>({
@@ -165,8 +165,8 @@ describe('FormInput / FormChoice through the adapter port', () => {
       expect(input).toHaveAccessibleDescription('Email is required.'),
     );
 
-    await user.type(input, 'a@b.it');
-    await user.click(
+    await browser.type(input, 'a@b.it');
+    await browser.click(
       screen.getByRole('checkbox', { name: 'Accept the terms' }),
     );
     expect(
@@ -206,7 +206,6 @@ describe('FormInput / FormChoice through the adapter port', () => {
   // them; here we prove the runtime does too, and that a ref is still shared.
   it('keeps register’s binding whatever the call site passes — and shares the ref', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const user = userEvent.setup();
     const onSubmit = vi.fn();
     const stolen = vi.fn();
     const own = createRef<HTMLInputElement>();
@@ -233,8 +232,11 @@ describe('FormInput / FormChoice through the adapter port', () => {
     }
 
     render(<App />);
-    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'a@b.it');
-    await user.click(screen.getByRole('button', { name: 'Send' }));
+    await browser.type(
+      screen.getByRole('textbox', { name: 'Email' }),
+      'a@b.it',
+    );
+    await browser.click(screen.getByRole('button', { name: 'Send' }));
 
     // the library still owns the value…
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
@@ -287,11 +289,16 @@ describe('FormInput / FormChoice through the adapter port', () => {
           </FormProvider>
         );
       }
-      const user = userEvent.setup();
       render(<Host />);
-      await user.type(screen.getByRole('textbox', { name: 'Password' }), 'abc');
-      await user.type(screen.getByRole('textbox', { name: 'Confirm' }), 'xyz');
-      await user.click(screen.getByRole('button', { name: 'Go' }));
+      await browser.type(
+        screen.getByRole('textbox', { name: 'Password' }),
+        'abc',
+      );
+      await browser.type(
+        screen.getByRole('textbox', { name: 'Confirm' }),
+        'xyz',
+      );
+      await browser.click(screen.getByRole('button', { name: 'Go' }));
 
       const confirm = screen.getByRole('textbox', { name: 'Confirm' });
       await waitFor(() =>
@@ -332,14 +339,13 @@ describe('FormInput / FormChoice through the adapter port', () => {
           </FormProvider>
         );
       }
-      const user = userEvent.setup();
       render(<Host />);
       const input = screen.getByRole('textbox', { name: 'Email' });
       // empty and invalid, but untouched: silent
       expect(input).not.toHaveAttribute('aria-invalid');
 
-      await user.click(input);
-      await user.tab();
+      await browser.click(input);
+      await browser.tab();
       await waitFor(() =>
         expect(input).toHaveAccessibleDescription('Email is required.'),
       );
@@ -399,7 +405,6 @@ describe('FormInput / FormChoice through the adapter port', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<App />);
     const email = screen.getByRole('textbox', { name: 'Email' });
     const password = screen.getByRole('textbox', { name: 'Password' });
@@ -408,9 +413,27 @@ describe('FormInput / FormChoice through the adapter port', () => {
     // nothing shouts before the user has done anything
     expect(email).not.toHaveAttribute('aria-invalid');
 
-    await user.type(password, 'short');
-    await user.type(confirm, 'different');
-    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await browser.type(password, 'short');
+    await browser.type(confirm, 'different');
+
+    // LET THE BLUR LAND FIRST, and this is not tidiness.
+    //
+    // `mode: 'onBlur'`, so leaving `confirm` is what produces the messages —
+    // and clicking the submit button is what leaves it. So the button's own
+    // mousedown inserts two error messages ABOVE the button, the page grows,
+    // the button moves out from under the pointer, and mouseup lands somewhere
+    // else: no click event, no submit. Measured — a second click passes, which
+    // is the signature of a first one that was lost.
+    //
+    // That is a real thing that happens to real people ("I pressed Send and
+    // nothing happened"), and no simulated event can ever show it, because a
+    // dispatched click has no position to miss with. Here we blur on purpose
+    // and wait for the layout to settle before aiming.
+    await browser.tab();
+    await waitFor(() =>
+      expect(confirm).toHaveAccessibleDescription('Passwords do not match.'),
+    );
+    await browser.click(screen.getByRole('button', { name: 'Create account' }));
 
     // a per-field rule, a cross-field rule and a required, all from one adapter
     await waitFor(() =>
@@ -479,9 +502,8 @@ describe('FormInput / FormChoice through the adapter port', () => {
       );
     }
 
-    const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole('button', { name: 'Go' }));
+    await browser.click(screen.getByRole('button', { name: 'Go' }));
 
     await waitFor(() =>
       expect(
@@ -611,10 +633,12 @@ describe('FormInput / FormChoice through the adapter port', () => {
           </FormProvider>
         );
       }
-      const user = userEvent.setup();
       const { container } = render(<App />);
-      await user.type(screen.getByRole('textbox', { name: 'Password' }), 'ab');
-      await user.click(screen.getByRole('button', { name: 'Go' }));
+      await browser.type(
+        screen.getByRole('textbox', { name: 'Password' }),
+        'ab',
+      );
+      await browser.click(screen.getByRole('button', { name: 'Go' }));
 
       await waitFor(() =>
         expect(

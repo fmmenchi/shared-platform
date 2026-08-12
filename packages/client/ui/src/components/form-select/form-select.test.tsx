@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef, useState, type ReactNode } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { userEvent as browser } from 'vitest/browser';
 import { FormSelect } from './form-select.component.js';
 import { UiProvider } from '../../i18n/provider.js';
 import type { UseFormField } from '../../form/form-adapter.types.js';
@@ -39,7 +39,6 @@ describe('FormSelect, against the contract itself', () => {
   });
 
   it('collects the choice through the adapter’s own onChange', async () => {
-    const user = userEvent.setup();
     function Host() {
       const [value, setValue] = useState('');
       const field: UseFormField = (name) => ({
@@ -59,7 +58,7 @@ describe('FormSelect, against the contract itself', () => {
     }
     render(<Host />);
 
-    await user.selectOptions(
+    await browser.selectOptions(
       screen.getByRole('combobox', { name: 'Country' }),
       'fr',
     );
@@ -93,7 +92,6 @@ describe('FormSelect, against the contract itself', () => {
 
   it('shares the ref, and drops what the binding owns', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const user = userEvent.setup();
     const seen: string[] = [];
     const bindingRef = createRef<HTMLSelectElement>();
     const callSiteRef = createRef<HTMLSelectElement>();
@@ -126,7 +124,7 @@ describe('FormSelect, against the contract itself', () => {
     expect(bindingRef.current).toBe(control);
     expect(callSiteRef.current).toBe(control);
 
-    await user.selectOptions(control, 'fr');
+    await browser.selectOptions(control, 'fr');
     expect(seen).toEqual(['fr']);
     expect(stolen).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
