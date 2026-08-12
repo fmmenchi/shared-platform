@@ -1,5 +1,5 @@
 import { cn } from '../../util/cn.js';
-import { useInjectedCurrent } from './nav-link.current.js';
+import { useInjectedCurrent } from '../../primitives/use-injected-current.js';
 import { useLinkElement } from '../../primitives/use-link-element.js';
 import type { NavLinkProps } from './nav-link.types.js';
 import styles from './nav-link.module.css';

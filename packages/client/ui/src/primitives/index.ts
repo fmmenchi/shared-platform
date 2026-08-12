@@ -7,6 +7,7 @@ export type { AnchoredOptions } from './use-anchored.types.js';
 export { useDescendants, useDescendant } from './use-descendants.js';
 export type { Descendant, Descendants } from './use-descendants.types.js';
 export { useControlled } from './use-controlled.js';
+export { useInjectedCurrent } from './use-injected-current.js';
 export { useDevWarning } from './use-dev-warning.js';
 export type { PolymorphicProps } from './polymorphic.js';
 export { useNativeProperty } from './use-native-property.js';

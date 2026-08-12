@@ -18,9 +18,14 @@
 
   .list {
     /* The DS ships no reset (ADR-0022): whatever the UA puts on an `<ol>` is
-       what a consumer's page sees, and that is a left indent, a top and
-       bottom margin, and decimal markers — all three of them wrong here and
-       all three invisible on the Preflight-carrying test page. */
+       what a consumer's page sees, and that is a left indent, a top and bottom
+       margin, and decimal markers — all three of them wrong here, and all
+       three VISIBLE to the suite, which since ADR-0022 renders on the same
+       bare page a consumer has. Measured there: 40px, 16px, `decimal`. The
+       test asserts all three, so deleting this line turns it red instead of
+       shipping a numbered, indented trail to every consumer without a reset.
+       (An earlier version of this comment said the opposite, from the era
+       when the test page carried Preflight.) */
     @apply m-0 list-none p-0;
     /* One row that WRAPS: a deep trail on a narrow screen breaks after a
        crumb, never inside one. */

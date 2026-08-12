@@ -1,9 +1,21 @@
-import { useUiAdapters } from '../../i18n/provider.js';
-import type { UseIsCurrent } from '../../i18n/ports.types.js';
-import type { NavLinkProps } from './nav-link.types.js';
+import { useUiAdapters } from '../i18n/provider.js';
+import type { UseIsCurrent } from '../i18n/ports.types.js';
 
 /**
- * The app's own answer, when it gave one.
+ * The app's own answer, when it gave one — for any link the design system
+ * draws.
+ *
+ * IT LIVES HERE because it has two consumers, which is this workspace's own
+ * threshold for a value moving: `NavLink` and `BreadcrumbLink` both ask it,
+ * and the second was importing the first's PRIVATE file — not a
+ * `*.context.js`, which is the one cross-folder import ADR-0019 documents as
+ * normal — and typing its own state as `NavLinkProps['current']`, so a
+ * breadcrumb described itself in another component's vocabulary. The sibling
+ * decision (which ELEMENT renders) had already moved for the same reason;
+ * this is the other half of the same change.
+ *
+ * The return type is the PORT's (`ReturnType<UseIsCurrent>`), because the port
+ * is what actually answers — a component's prop type merely mirrors it.
  *
  * `NONE` is what makes this legal rather than clever: the port member is
  * optional, so a naive `adapters?.useIsCurrent?.(href)` is a hook called
@@ -17,7 +29,7 @@ const NONE: UseIsCurrent = () => undefined;
 
 export function useInjectedCurrent(
   href: string | undefined,
-): NavLinkProps['current'] {
+): ReturnType<UseIsCurrent> {
   // The compiler rejects a hook chosen at runtime — "Hooks must be the same
   // function on every render" — and it is right in general: a hook read from
   // context CAN change identity. Here it does not, because the adapters are
