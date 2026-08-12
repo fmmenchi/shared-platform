@@ -61,9 +61,17 @@ export function moveColumn(
  * so the menu lists every column in the order in force, and the table is handed
  * the ones that are left. Neither hook learns about the other.
  *
- * A KEY THE COLUMNS NO LONGER HAVE IS DROPPED, and one they have gained is
- * appended in its declared place — a stored order outlives a release, and the
- * alternative is a column that exists and is never drawn.
+ * A KEY THE COLUMNS NO LONGER HAVE IS DROPPED, and one they have gained lands
+ * AFTER ITS NEAREST DECLARED PREDECESSOR — a stored order outlives a release,
+ * and the alternative is a column that exists and is never drawn.
+ *
+ * "After its predecessor" and "where it was declared" are the same thing until
+ * the reader has moved something, and then they are not: with `a, b, new`
+ * declared and the reader having put `b` before `a`, the new column follows `b`
+ * rather than landing at the end. Adjacency is what an author expresses by
+ * putting a column next to another, and it is the half worth keeping when the
+ * two disagree — a position index means nothing once the reader has rearranged
+ * the row it counted along.
  */
 export function useColumnOrder<T>(
   options: UseColumnOrderOptions<T>,
@@ -93,8 +101,14 @@ export function useColumnOrder<T>(
     if (state.length === 0) return declared;
 
     const known = new Set(declared);
-    const kept = state.filter((key) => known.has(key));
-    const seen = new Set(kept);
+    // DE-DUPLICATED, and not defensively: a stored order is a value that has
+    // been through storage, a URL or somebody's merge, and a key appearing
+    // twice renders the SAME column twice — with the same React key, which is
+    // its own kind of wrong. Measured: `['a','a','b']` drew `a, a, b`.
+    const seen = new Set<string>();
+    const kept = state.filter(
+      (key) => known.has(key) && !seen.has(key) && seen.add(key) !== undefined,
+    );
 
     // A column the stored order predates goes where it was DECLARED, not at the
     // end: one added between two others reads as belonging there, and appending

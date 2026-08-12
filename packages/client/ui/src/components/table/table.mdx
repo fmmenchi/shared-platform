@@ -455,7 +455,9 @@ The two hooks compose and neither learns about the other: order hands its column
 
 **Moves are clamped, not wrapped.** A column already first, asked to go earlier, stays — wrapping would send it to the end, which is a different thing from what the reader asked and, on a held key, an endless ride. A refused move still swallows the key, so the focus stays on the column being held rather than wandering off down the menu.
 
-**The state is keys, not columns**, so it survives a trip through storage — a `cell` function does not. A stored order that has outlived the column list drops what has gone and puts anything new where it was **declared**, not at the end: a column added between two others belongs there, and appending would put it after the ones its author meant it to precede.
+**The state is keys, not columns**, so it survives a trip through storage — a `cell` function does not. A stored order that has outlived the column list drops what has gone, ignores a key that appears twice, and lands anything new **after its nearest declared predecessor** rather than at the end: a column added between two others belongs there, and appending would put it after the ones its author meant it to precede.
+
+That rule and "where it was declared" are the same thing until the reader has moved something. With `name, city, note` declared and the reader having put `city` first, a new `note` follows `city` rather than going last — adjacency is what an author expresses by putting one column beside another, and a position index means nothing once the row it counted along has been rearranged.
 
 **Dragging is not here yet**, deliberately. The keyboard path is the prerequisite, not the consolation: drag will be a second way to call the same `move`, and building it first would have meant two sources for one order and discovering late that they disagree.
 

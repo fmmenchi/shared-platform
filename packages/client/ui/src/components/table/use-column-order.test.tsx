@@ -11,6 +11,10 @@ interface Person {
   name: string;
   city: string;
   age: number;
+  // Columns are keyed against the row, so a fixture that adds a column has to
+  // add the field it reads.
+  note?: string;
+  flag?: string;
 }
 
 const columns: Column<Person>[] = [
@@ -72,6 +76,13 @@ describe('moveColumn', () => {
     // thing from what the reader asked — and, on a held key, an endless ride.
     expect(moveColumn(order, 'name', -1)).toEqual(order);
     expect(moveColumn(order, 'age', 1)).toEqual(order);
+  });
+
+  it('does nothing on a delta of zero, and jumps on a bigger one', () => {
+    expect(moveColumn(order, 'city', 0)).toEqual(order);
+    expect(moveColumn(order, 'name', 2)).toEqual(['city', 'age', 'name']);
+    // Past the end is still refused, whatever the size of the step.
+    expect(moveColumn(order, 'city', 2)).toEqual(order);
   });
 
   it('leaves a key it does not know alone', () => {
@@ -159,6 +170,42 @@ describe('useColumnOrder', () => {
       );
       // `note` follows `name`, as declared — not tacked onto the end.
       expect(shown()).toBe('age,name,note,city');
+    });
+
+    it('ignores a key that appears twice', () => {
+      // FOUND BY PRESSING ON IT: a stored order is a value that has been
+      // through storage, a URL or somebody's merge, and `['name','name','city']`
+      // drew the same column TWICE — with the same React key, which is its own
+      // kind of wrong.
+      render(<Harness defaultOrder={['name', 'name', 'city']} />);
+      expect(shown()).toBe('name,city,age');
+    });
+
+    it('lands a new column after its declared predecessor, not at the end', () => {
+      // AND THE TWO ARE NOT THE SAME THING once the reader has moved something,
+      // which the documentation used to blur. Declared `name, city, note`, with
+      // the reader having put `city` first: `note` follows `city`. Adjacency is
+      // what an author expresses by putting one column beside another, and a
+      // position index means nothing once the row it counted along has been
+      // rearranged.
+      const withNote: Column<Person>[] = [
+        { key: 'name', header: 'Nome', rowHeader: true },
+        { key: 'city', header: 'Città' },
+        { key: 'note', header: 'Note' },
+      ];
+      render(<Harness columns={withNote} defaultOrder={['city', 'name']} />);
+      expect(shown()).toBe('city,note,name');
+    });
+
+    it('puts a new FIRST column first', () => {
+      const withId: Column<Person>[] = [
+        { key: 'flag', header: 'Flag' },
+        { key: 'name', header: 'Nome', rowHeader: true },
+        { key: 'city', header: 'Città' },
+      ];
+      render(<Harness columns={withId} defaultOrder={['city', 'name']} />);
+      // Nothing declared before it, so it goes to the front.
+      expect(shown()).toBe('flag,city,name');
     });
 
     it('keeps working when the stored order knows nothing at all', () => {
