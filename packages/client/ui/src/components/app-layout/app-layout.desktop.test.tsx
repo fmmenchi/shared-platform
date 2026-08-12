@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { UiProvider } from '../../i18n/provider.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { AppLayout } from './app-layout.component.js';
 import { AppLayoutNav } from '../app-layout-nav/app-layout-nav.component.js';
 import { useAppLayoutNavForm } from '../app-layout-nav/app-layout-nav.context.js';

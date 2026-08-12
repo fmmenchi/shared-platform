@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { useState } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Menu } from './menu.component.js';
 import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
 import { MenuContent } from '../menu-content/menu-content.component.js';

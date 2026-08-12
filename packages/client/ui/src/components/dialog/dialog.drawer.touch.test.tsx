@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { userEvent as browser } from '@vitest/browser/context';
+import { userEvent as browser } from 'vitest/browser';
 import { Dialog } from './dialog.component.js';
 import { DialogTrigger } from '../dialog-trigger/dialog-trigger.component.js';
 import { DialogContent } from '../dialog-content/dialog-content.component.js';
