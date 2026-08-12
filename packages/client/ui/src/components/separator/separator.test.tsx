@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { Separator } from './separator.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -169,5 +170,54 @@ describe('Separator', () => {
         await expectNoA11yViolations(container);
       });
     }
+  });
+
+  it('is a different tree on each side of a paragraph, and says so', async () => {
+    // AN `<hr>` IS FLOW CONTENT and a `<p>` takes phrasing content, so the
+    // parser closes the paragraph at the line and opens a second one. The
+    // server sends one paragraph containing the line; the browser builds two
+    // with the line hoisted out between them; the client render leaves it
+    // inside. Two trees from one component, which is a hydration mismatch by
+    // construction — and the reason the metadata row in the docs is a flex
+    // container rather than a paragraph.
+    const paragraph = (
+      <p>
+        12 comments
+        <Separator orientation="vertical" />3 likes
+      </p>
+    );
+
+    const host = document.createElement('div');
+    host.innerHTML = renderToStaticMarkup(paragraph);
+    expect(host.querySelectorAll('p')).toHaveLength(2);
+    expect(host.querySelector('hr')?.parentElement?.tagName).toBe('DIV');
+
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { container } = render(paragraph);
+    expect(container.querySelector('hr')?.parentElement?.tagName).toBe('P');
+
+    await waitFor(() =>
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('inside a `<p>`'),
+      ),
+    );
+    warn.mockRestore();
+  });
+
+  it('says nothing about a separator between paragraphs, which is where it belongs', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    render(
+      <div>
+        <p>An overview of the release.</p>
+        <Separator />
+        <p>The changelog that follows it.</p>
+      </div>,
+    );
+
+    // A guard that fires on correct code is worse than no guard: it teaches
+    // people to scroll past the true ones.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

@@ -40,6 +40,13 @@ the accessibility tree, a boundary only screen-reader users are told about.
 
 <Canvas of={SeparatorStories.Vertical} />
 
+That row is a flex container and not a paragraph, which is a requirement rather than a preference.
+An `<hr>` is flow content and a `<p>` takes phrasing content, so the parser closes the paragraph at
+the line: `<p>12 comments<Separator />3 likes</p>` is sent by the server as one paragraph containing
+the line and parsed by the browser into **two** paragraphs with the line hoisted out between them —
+while rendering the same JSX on the client leaves it inside. Two trees from one component, so it
+mismatches on hydration, and the flex row quietly stops being a row. A dev warning says so.
+
 ### Decorative
 
 `decorative` keeps the line and hides it from assistive tech, for a rule that only repeats a
