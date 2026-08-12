@@ -359,6 +359,20 @@ export type {
 export { foldForSearch } from './filtering/filter.js';
 export type { FilterState, RowFilter } from './filtering/filter.types.js';
 export { TableFilterTrigger } from './components/table-filter-trigger/table-filter-trigger.component.js';
+export { Pagination } from './components/pagination/pagination.component.js';
+export type { PaginationProps } from './components/pagination/pagination.types.js';
+export {
+  usePagination,
+  usePaginationState,
+} from './components/pagination/use-pagination.js';
+export type {
+  UsePaginationOptions,
+  UsePaginationResult,
+  UsePaginationStateOptions,
+  UsePaginationStateResult,
+} from './components/pagination/use-pagination.types.js';
+export { pageRange, pageCountOf } from './pagination/range.js';
+export type { PageItem, PageRangeOptions } from './pagination/range.types.js';
 export { TableColumnResizer } from './components/table-column-resizer/table-column-resizer.component.js';
 export type { TableColumnResizerProps } from './components/table-column-resizer/table-column-resizer.types.js';
 export type { TableFilterTriggerProps } from './components/table-filter-trigger/table-filter-trigger.types.js';

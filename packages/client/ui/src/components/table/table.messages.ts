@@ -64,6 +64,10 @@ export const tableMessages = defineMessages('table', {
     expandRowNamed: 'Show details for {name}',
     detail: 'Details for {name}',
     detailRow: 'Row details',
+    // THE PAGER'S NAME, said by the table rather than by the pager: a page can
+    // hold several, and two landmarks called "Pagination" are two identical
+    // entries in a screen reader's list.
+    pagerFor: 'Pagination for {name}',
     selectAllRows: 'Select all rows',
     selectionCount: 'Selection: {count}',
     selectionAll: 'All rows selected.',
@@ -83,6 +87,7 @@ export const tableMessages = defineMessages('table', {
     expandRowNamed: 'Mostra i dettagli di {name}',
     detail: 'Dettagli di {name}',
     detailRow: 'Dettagli della riga',
+    pagerFor: 'Paginazione di {name}',
     selectAllRows: 'Seleziona tutte le righe',
     selectionCount: 'Selezione: {count}',
     selectionAll: 'Tutte le righe selezionate.',
@@ -102,6 +107,7 @@ export const tableMessages = defineMessages('table', {
     expandRowNamed: 'عرض تفاصيل {name}',
     detail: 'تفاصيل {name}',
     detailRow: 'تفاصيل الصف',
+    pagerFor: 'ترقيم صفحات {name}',
     selectAllRows: 'تحديد كل الصفوف',
     selectionCount: 'التحديد: {count}',
     selectionAll: 'تم تحديد كل الصفوف.',

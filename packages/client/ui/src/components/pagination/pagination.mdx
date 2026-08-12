@@ -1,0 +1,89 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as PaginationStories from './pagination.stories.tsx';
+
+<Meta of={PaginationStories} />
+
+# Pagination
+
+Where you are in a list, and how to be somewhere else.
+
+```tsx
+const pages = usePagination(people, { defaultPageSize: 20 });
+
+<Table
+  rows={pages.rows}
+  getRowId={(p) => p.id}
+  columns={columns}
+  {...pages.props}
+/>;
+```
+
+## Props
+
+<Controls of={PaginationStories.Default} />
+
+## Usage
+
+<Canvas of={PaginationStories.Default} />
+
+### It is a landmark holding a list
+
+A set of controls that navigate is a `<nav>`, and the entries in it are a list — so a screen reader announces it as a landmark and says how many entries it has, which is most of what tells a reader how far they can go. `aria-current="page"` marks the one in force.
+
+**And the current page says so in words too.** The paint that marks it is colour, and `aria-current` is not announced by every combination of browser and screen reader — so the control is called "Page 3, current page" rather than "3". Every number carries the word for the same reason: a control called "3" is announced as "three", with no hint of what it does.
+
+### The list does not change length
+
+Page through the example above and count the controls. There are always the same number.
+
+This is the part the usual implementation gets wrong: it slices an array and produces five controls, then seven, then five. The Next button moves under the pointer between clicks, and a keyboard reader's tab count changes on every press. Here the ends **expand to fill in** for the gap that is not needed there — at page 1 there is no left-hand gap, so the pages it would have hidden are drawn instead.
+
+<Canvas of={PaginationStories.WiderRange} />
+
+The first and the last page are always within reach. "Back to the beginning" and "how many are there" are the two questions a pager answers that a Next button does not.
+
+### Links when the page is an address
+
+<Canvas of={PaginationStories.AsLinks} />
+
+`getHref` makes the pages `<a>`s. Pass it when the page is part of the URL: the reader can then open one in a new tab, bookmark it, and reach it with the browser's own back button — none of which a button offers. Leave it out when the page is client state and the address does not move, because a link that does not navigate is a link that lies.
+
+The steps at the ends stay controls either way. There is no address for the page before the first, and a link to nowhere is worse than a control that says it cannot be used.
+
+### It announces its own change
+
+Pressing Next replaces everything under the pager and moves nothing a reader who cannot see it would notice — the silent change sorting had, at a larger scale. So the pager owns a live region and reports "Page 3 of 40". Silent on arrival, like every region in this package: a list that renders on page 3 is not news.
+
+**Nothing else announces it**, and that is deliberate. `Table` has a live region of its own for sorting and selection, and two regions over one fact say it twice.
+
+### In a table
+
+<Canvas of={PaginationStories.InATable} />
+
+`Table` takes `page`, `pageCount` and `onPageChange` and draws the pager **below the rows**, named after the `<caption>` — "Pagination for Persone", because a page can hold several tables and two landmarks called "Pagination" are two identical entries in a screen reader's list.
+
+The placement is the table's opinion rather than the pager's: a reader tabbing forward reaches it after the data, which is when "somewhere else" becomes the question. That is the reverse of the toolbar, which describes what you are about to read and therefore comes first.
+
+**`Table` never slices.** The rows it is given are the page, whether `usePagination` cut them or a server did — the same bargain it makes with the sort and the filters, and what lets the same markup serve an in-memory list and a paged query.
+
+### The two hooks
+
+`usePagination(rows, options)` holds the state and slices; `usePaginationState({ total, … })` holds the state alone, for a consumer whose server does the slicing — the split `useTableSort`/`useSortState` and `useTableFilters`/`useFilterState` both have.
+
+**The page is a projection parameter.** It decides which rows exist for the reader, so it belongs in a query key and in a URL: somebody who paged to 3 and reloaded expects page 3. That is the opposite of the column widths, which decide nothing about the data and belong in preferences.
+
+Two things the state does that are worth knowing:
+
+- **The page is clamped when it is read, not when it is stored.** A page number arrives from a URL, a back button or a stale link, and the data behind it moves — a filter applied on page 8 of 40 leaves 2 pages, and a pager insisting the reader is on page 8 over an empty table is the ordinary way this goes wrong. Reading it clamped means the view always exists; the state is left alone, so removing the filter puts them back where they were rather than on page 1.
+- **Changing the page size keeps the row, not the page.** Twenty per page on page 8 is row 141; asked for fifty per page, that row is on page 3. Sending the reader to page 1 instead — which is what most tables do — throws away the place they had found.
+
+## Accessibility
+
+- **The landmark is named, and nameable.** It defaults to "Pagination"; pass `label` when the page holds more than one, or two identical entries appear in a screen reader's landmark list. `Table` passes one built from its caption.
+- **The current page is marked twice**, in `aria-current` and in the accessible name, because the visual mark is colour (WCAG 1.4.1) and the attribute is not universally announced.
+- **Every control is at least 24 × 24** (WCAG 2.5.8). A pager is a row of small controls sitting next to each other, which is the exact shape the criterion exists for.
+- **The gap is `aria-hidden`.** The last number already says how many pages there are; the ellipsis is a visual fact and nothing else, and a reader who heard "ellipsis" between two numbers would learn nothing from it.
+- **The page change is announced** through the pager's own live region, because the content it changes is somewhere else on the page and changes in silence.
+- **The ends refuse rather than lie.** Previous on page 1 is disabled, not hidden: a control that disappears at the boundary moves every other control under the reader's pointer.
+- **The current page keeps its mark in forced colors**, where the fill that carries it would otherwise be flattened away — it is the one control a reader has to be able to find.

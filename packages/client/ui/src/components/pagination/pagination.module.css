@@ -1,0 +1,84 @@
+/* Where you are in a list, and how to be somewhere else. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .pagination {
+    display: flex;
+    justify-content: center;
+  }
+
+  .list {
+    display: flex;
+    align-items: center;
+    gap: var(--fm-space-internal-xs);
+    /* A REAL LIST, with its bullets and its indent removed here rather than by
+       a reset the consumer may not load. The markup is a list because that is
+       what a set of navigation entries is, and a screen reader counts them. */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .page,
+  .step {
+    /* SQUARE, and at least the target size WCAG 2.5.8 asks for. A pager is a
+       row of small controls sitting next to each other, which is the exact
+       shape the criterion exists for. */
+    min-inline-size: 2.25rem;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The steps are drawn as links when the pages are links, so they need the
+     button's shape without being one. */
+  a.step,
+  a.page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    block-size: 2rem;
+    padding-inline: var(--fm-space-inline-s);
+    border-radius: var(--fm-radius-md);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a.step:hover,
+  a.page:hover {
+    background: var(--fm-color-muted);
+  }
+
+  a.step:focus-visible,
+  a.page:focus-visible {
+    outline: var(--fm-border-width-emphasis) solid var(--fm-color-ring);
+    outline-offset: var(--fm-border-width-default);
+  }
+
+  a.currentPage {
+    background: var(--fm-color-secondary);
+    color: var(--fm-color-secondary-foreground);
+  }
+
+  .gap {
+    /* NOT A CONTROL, so it is not sized like one — and it is `aria-hidden`, so
+       what is left is the shape of the gap and nothing else. */
+    padding-inline: var(--fm-space-internal-xs);
+    color: var(--fm-color-muted-foreground);
+  }
+
+  /* THE CURRENT PAGE IS THE ONLY THING THIS FILE PAINTS, and forced colors
+     flattens the fill it uses — so the one control a reader has to be able to
+     find would look like every other one. The system's own selected pair
+     survives, and the border carries it where a system chooses not to paint
+     backgrounds at all.
+
+     Only the LINK form needs it: the button form is a `Button`, which answers
+     for its own forced colors one file over. */
+  @media (forced-colors: active) {
+    a.currentPage {
+      background: Highlight;
+      color: HighlightText;
+      border: var(--fm-border-width-default) solid HighlightText;
+    }
+  }
+}

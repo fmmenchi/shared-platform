@@ -21,7 +21,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
 | **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                   |
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                               |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`)                                                                                                           |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination`                                                                                            |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                        |
 | **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                 |
 | **Data display**  | `Badge` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                    |
@@ -79,7 +79,7 @@ So the next item is a decision, not a deduction — and this page will say which
   make part of it unnecessary.
 - **`Slider`.** `<input type="range">` is native but its track and thumb are still barely stylable
   across engines. Revisit when that changes.
-- **`Avatar`, `Separator`, `Skeleton`, `Breadcrumb`, `Pagination`.** Each is small and
+- **`Avatar`, `Separator`, `Skeleton`, `Breadcrumb`.** Each is small and
   none is blocked — they are simply behind the items above, which either unblock a contract or fill
   an empty group. `Card` left this list ahead of its turn: the page shell made a grid of cards the
   obvious next thing to put in a layout, and the one piece of it that is not trivial — a link that
