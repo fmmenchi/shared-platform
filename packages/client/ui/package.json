@@ -592,6 +592,18 @@
       "types": "./dist/components/table-columns-menu/index.d.ts",
       "import": "./dist/table-columns-menu.js",
       "default": "./dist/table-columns-menu.js"
+    },
+    "./time": {
+      "@fmmenchi/source": "./src/components/time/index.ts",
+      "types": "./dist/components/time/index.d.ts",
+      "import": "./dist/time.js",
+      "default": "./dist/time.js"
+    },
+    "./numeric": {
+      "@fmmenchi/source": "./src/components/numeric/index.ts",
+      "types": "./dist/components/numeric/index.d.ts",
+      "import": "./dist/numeric.js",
+      "default": "./dist/numeric.js"
     }
   },
   "nx": {
@@ -628,6 +640,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.8.0",
+    "@fmmenchi/formatting": "workspace:*",
     "@fmmenchi/tokens": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

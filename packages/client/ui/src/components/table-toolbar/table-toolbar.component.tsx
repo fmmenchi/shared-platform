@@ -1,13 +1,7 @@
-import {
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { cn } from '../../util/cn.js';
-import { useCopyLocale, useMessages } from '../../i18n/provider.js';
+import { useMessages } from '../../i18n/provider.js';
+import { useCopyFormatter } from '../../formatting/use-formatter.js';
 import { countSelected } from '../../selection/selection.js';
 import { activeFilters } from '../../filtering/filter.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
@@ -83,8 +77,7 @@ function TableToolbar({
   // and gets a different answer (`useTableSort` reads the raw tag); a number
   // inside a sentence has to be written in the sentence's language, or `de-DE`
   // with an English fallback catalog renders "Select all 2.450".
-  const locale = useCopyLocale();
-  const numbers = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  const numbers = useCopyFormatter();
 
   const count =
     selection === undefined ? undefined : countSelected(selection, total);
@@ -120,10 +113,10 @@ function TableToolbar({
     : rowCount === undefined
       ? null
       : total === undefined
-        ? t('filteredCount', { shown: numbers.format(rowCount) })
+        ? t('filteredCount', { shown: numbers.integer(rowCount) })
         : t('filtered', {
-            shown: numbers.format(rowCount),
-            total: numbers.format(total),
+            shown: numbers.integer(rowCount),
+            total: numbers.integer(total),
           });
 
   // ANNOUNCED, because nothing else can. Applying a filter deletes rows, and
@@ -196,7 +189,7 @@ function TableToolbar({
       (wasFiltered.current
         ? total === undefined
           ? t('unfiltered')
-          : t('unfilteredCount', { total: numbers.format(total) })
+          : t('unfilteredCount', { total: numbers.integer(total) })
         : null);
     wasFiltered.current = filtered;
     if (next !== null) setAnnouncement(next);
@@ -226,8 +219,8 @@ function TableToolbar({
           ? t('all')
           : // "All rows selected." is a persistent statement, so it may not be
             // false three inches from a checkbox that is visibly unticked.
-            t('allExcept', { count: numbers.format(selection.ids.size) })
-        : t('count', { count: numbers.format(count) });
+            t('allExcept', { count: numbers.integer(selection.ids.size) })
+        : t('count', { count: numbers.integer(count) });
 
   // THE COLUMNS, NOT THE VALUES. A value can be anything the reader typed and
   // belongs beside its own column's control, where it is editable; here it
@@ -305,7 +298,7 @@ function TableToolbar({
                 // which TypeScript cannot see and a variadic consumer can.
                 onClick={() => onSelectEverything()}
               >
-                {t('selectAllMatching', { total: numbers.format(total) })}
+                {t('selectAllMatching', { total: numbers.integer(total) })}
               </Button>
             </ToolbarItem>
           )}

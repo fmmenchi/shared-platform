@@ -378,6 +378,12 @@ export type {
 // the same notion of "contains" the default uses — folding it themselves is how
 // one column starts disagreeing with the others — and that is the second
 // consumer the rule asks for. The rest are reachable through the hooks.
+// THE BINDING, not the engine. `@fmmenchi/formatting` is a package of its own
+// and a consumer imports it directly for anything outside React — an export
+// job, a loader, a server. What is re-exported here is the pair of hooks that
+// answer the locale question from the provider, which is the one thing that
+// package cannot do for itself (ADR-0026).
+export { useFormatter, useCopyFormatter } from './formatting/use-formatter.js';
 export { foldForSearch } from './filtering/filter.js';
 export type { FilterState, RowFilter } from './filtering/filter.types.js';
 export { TableFilterTrigger } from './components/table-filter-trigger/table-filter-trigger.component.js';
@@ -425,3 +431,7 @@ export type {
   TableColumnsMenuProps,
   ColumnListing,
 } from './components/table-columns-menu/table-columns-menu.types.js';
+export { Time } from './components/time/time.component.js';
+export type { TimeProps } from './components/time/time.types.js';
+export { Numeric } from './components/numeric/numeric.component.js';
+export type { NumericProps } from './components/numeric/numeric.types.js';

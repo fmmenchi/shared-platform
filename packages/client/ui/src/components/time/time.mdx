@@ -1,0 +1,105 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as TimeStories from './time.stories.tsx';
+
+<Meta of={TimeStories} />
+
+# Time
+
+A date the reader can read and a machine can parse — the same instant, twice. The text is written
+the way the reader's language writes it; `dateTime` states it in the one grammar everything else
+understands.
+
+That second half is the reason the component exists. `{order.placedAt.toLocaleDateString()}` renders
+the same pixels and leaves a `<span>` behind, and with it goes everything that reads the attribute
+rather than the pixels: an "add to calendar", a scraper, a translation tool, a test that would
+otherwise have to know which locale the suite happens to run in to assert a date.
+
+The formatting itself is not the design system's — it comes from
+[`@fmmenchi/formatting`](https://github.com/fmmenchi/shared-platform/tree/main/packages/shared/formatting),
+so a screen, an export and a PDF produce the same string ([ADR-0026](../../../../../apps/docusaurus/docs/adr/0026-formatting-is-a-shared-layer.md)).
+
+## Props
+
+<Controls of={TimeStories.Date_} />
+
+## Usage
+
+### The value, never a string
+
+There is no `children`. A component that formats one thing and displays another has two answers to
+one question, and the one on screen would be the one nobody checked. Pass the value; if you want a
+string you built yourself, you do not want this component — you want `<time>`.
+
+<Canvas of={TimeStories.Date_} />
+
+### Styles
+
+`Intl`'s own four, passed through rather than re-tabulated. A private table is how "short" comes to
+mean a date with no year in one codebase and a two-digit year in the next.
+
+<Canvas of={TimeStories.Styles} />
+
+### With a clock
+
+<Canvas of={TimeStories.WithTime} />
+
+### The zone is a question, not a detail
+
+A `Date` is a point in time and carries no zone. `2026-01-01T00:00:00Z` is the 1st of January in
+Rome and the 31st of December in Lima — both correct answers to different questions. Left unstated
+it is answered by the runtime, which in a browser is the reader's and on a server is whatever the
+container was started with.
+
+Inspect the DOM below: the attribute moves with the visible date, because one element may not make
+two claims.
+
+<Canvas of={TimeStories.Zones} />
+
+Most apps answer it once, in the provider, and never again:
+
+```tsx
+<UiProvider adapters={{ i18n }} formatting={{ timeZone: 'Europe/Rome' }}>
+```
+
+### Nothing to show
+
+A `<time>` with no date and no words states nothing, so nothing is rendered. What a missing value
+should LOOK like is a decision about the screen it is on — a dash in a table, "never" in a column of
+last-seen dates — and `fallback` is where that decision goes.
+
+<Canvas of={TimeStories.Missing} />
+
+### It draws nothing
+
+No class, no alignment, no tabular figures, and that is a decision: a value cannot know whether it
+stands in a column of dates or inside a sentence, and those want opposite treatment. In a `Table`
+the column's `format` settles both, because that is the layer that can see the column.
+
+```tsx
+<Table
+  caption="Orders"
+  rows={orders}
+  columns={[
+    { key: 'reference', header: 'Reference', rowHeader: true },
+    { key: 'placedAt', header: 'Placed', format: { kind: 'date' } },
+  ]}
+  getRowId={(order) => order.id}
+/>
+```
+
+## Accessibility
+
+- **The element is the semantics.** `<time>` is what states an instant; nothing here writes a role,
+  and no `<span>` ever stands in for it.
+- **The two halves may never disagree.** The text and `dateTime` are derived from one value in one
+  zone, so an element cannot make two claims about when something happened — which is what a
+  hand-written pair of a formatted string and a hard-coded attribute eventually does.
+- **A day is not an instant.** Showing a date writes `2026-01-01`, not a timestamp: claiming a
+  precision the reader was never shown is a statement to assistive tech that nothing on screen
+  supports.
+- **It is not announced twice.** `dateTime` is not part of the accessible name — screen readers read
+  the text — so the machine half costs a reader nothing.
+- **Nothing is rendered when there is nothing to state**, rather than an empty element that a screen
+  reader still walks into.
+- **Never focusable**: it is a value, not a control.

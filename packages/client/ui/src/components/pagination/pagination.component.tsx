@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '../../util/cn.js';
-import { useCopyLocale, useMessages } from '../../i18n/provider.js';
+import { useMessages } from '../../i18n/provider.js';
+import { useCopyFormatter } from '../../formatting/use-formatter.js';
 import { pageRange } from '../../pagination/range.js';
 import { Button } from '../button/button.component.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
@@ -51,10 +52,9 @@ function Pagination({
   ...rest
 }: PaginationProps) {
   const t = useMessages(paginationMessages);
-  // THE COPY'S LOCALE, not the reader's: a number inside a sentence has to be
-  // written in the language of that sentence.
-  const locale = useCopyLocale();
-  const numbers = useMemo(() => new Intl.NumberFormat(locale), [locale]);
+  // THE COPY'S FORMATTER, not the reader's: a number inside a sentence has to
+  // be written in the language of that sentence.
+  const numbers = useCopyFormatter();
 
   const [announcement, setAnnouncement] = useState('');
 
@@ -73,8 +73,8 @@ function Pagination({
     // whenever the data moved.
     setAnnouncement(
       t('announcement', {
-        page: numbers.format(target),
-        pageCount: numbers.format(pageCount),
+        page: numbers.integer(target),
+        pageCount: numbers.integer(pageCount),
       }),
     );
     onPageChange?.(target);
@@ -167,9 +167,9 @@ function Pagination({
                   // sighted channel is the fill AND the weight, so it is not
                   // colour alone either.
                   aria-current={item.page === clamped ? 'page' : undefined}
-                  aria-label={t('page', { page: numbers.format(item.page) })}
+                  aria-label={t('page', { page: numbers.integer(item.page) })}
                 >
-                  {numbers.format(item.page)}
+                  {numbers.integer(item.page)}
                 </a>
               ) : (
                 <Button
@@ -180,10 +180,10 @@ function Pagination({
                     item.page === clamped && styles.currentPage,
                   )}
                   aria-current={item.page === clamped ? 'page' : undefined}
-                  aria-label={t('page', { page: numbers.format(item.page) })}
+                  aria-label={t('page', { page: numbers.integer(item.page) })}
                   onClick={() => go(item.page)}
                 >
-                  {numbers.format(item.page)}
+                  {numbers.integer(item.page)}
                 </Button>
               )}
             </li>
