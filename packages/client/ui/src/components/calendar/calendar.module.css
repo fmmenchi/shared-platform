@@ -1,0 +1,109 @@
+/*
+ * Calendar styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  .calendar {
+    @apply inline-flex flex-col gap-2;
+  }
+
+  .header {
+    /* The month between its two buttons. `justify-between` rather than a grid,
+       because the month's width changes with the locale and the month — "maggio
+       2026" and "settembre 2026" are not the same length — and a fixed centre
+       column would make the buttons jump between months. */
+    @apply flex items-center justify-between gap-2;
+  }
+
+  .month {
+    @apply text-sm font-medium;
+  }
+
+  /* Announced, never drawn. The same technique the carrier uses next door. */
+  .announcement {
+    @apply sr-only;
+  }
+
+  .grid {
+    @apply border-separate;
+    border-spacing: 0.125rem;
+  }
+
+  .grid th {
+    @apply text-xs font-normal text-muted-foreground;
+  }
+
+  .day {
+    /* A day is a target before it is a number: 2.25rem square keeps a row of
+       seven inside a phone's width while staying comfortably clickable, and the
+       coarse-pointer rule below takes it to the 44px a finger needs. */
+    @apply flex size-9 items-center justify-center rounded-md text-sm;
+    @apply hover:bg-accent hover:text-accent-foreground;
+    @apply focus-visible:outline-ring focus-visible:outline-2;
+    @apply focus-visible:outline-offset-2;
+  }
+
+  /* The days either side of this month. Dimmed rather than hidden, because a
+     grid with holes in it is harder to read than one that is complete — and
+     they are still real days a consumer may want chosen. */
+  .day[data-outside] {
+    @apply text-muted-foreground;
+  }
+
+  .day[data-selected] {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* `aria-disabled`, not `disabled` — the attribute the APG asks for on a grid
+     cell that must stay reachable. It gets the look `:disabled` would. */
+  .day[aria-disabled='true'] {
+    @apply text-disabled-foreground cursor-not-allowed;
+  }
+
+  .day[aria-disabled='true']:hover {
+    @apply bg-transparent text-disabled-foreground;
+  }
+
+  /* A FINGER GETS 44px, the same rule the control family carries (WCAG 2.5.8). */
+  @media (pointer: coarse) {
+    .day {
+      @apply size-11;
+    }
+  }
+
+  /* Forced colors flattens every background to the system's own, so the two
+     states this grid says with a FILL — the selected day, and the day under the
+     pointer — would both vanish into the same surface as the other forty.
+     `Highlight`/`HighlightText` is the platform's own "this one is chosen", and
+     a border is what carries the hover once a background cannot.
+
+     The dimmed days either side of the month go the other way: `GrayText` is
+     the system's "not for you", and it is the only colour that survives to say
+     so. Same for a refused day, which is the whole point of the component and
+     must not become indistinguishable from an available one. */
+  @media (forced-colors: active) {
+    .day[data-selected] {
+      background-color: Highlight;
+      color: HighlightText;
+      forced-color-adjust: none;
+    }
+
+    .day:hover {
+      border: 1px solid Highlight;
+    }
+
+    .day[data-outside],
+    .day[aria-disabled='true'] {
+      color: GrayText;
+    }
+
+    .day:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}
