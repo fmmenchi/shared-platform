@@ -115,7 +115,7 @@ describe('DateInput', () => {
       });
     });
 
-    it('takes any separator a keyboard offers', async () => {
+    it('takes whatever separator a keyboard offers, and shows the locale one', async () => {
       const { container } = renderUi(
         <DateInput name="dob" aria-label="Date of birth" />,
         { locale: 'it' },
@@ -123,6 +123,9 @@ describe('DateInput', () => {
       for (const typed of ['12-08-2026', '12.08.2026', '12 08 2026']) {
         await browser.fill(screen.getByRole('textbox'), typed);
         expect(carrier(container).value).toBe('2026-08-12');
+        // Dropped rather than accepted as an alternative: the field shows the
+        // separator the locale writes, whatever was pressed to get there.
+        expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
       }
     });
 
@@ -137,6 +140,107 @@ describe('DateInput', () => {
         { locale: 'it' },
       );
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
+    });
+  });
+
+  describe('the mask lets only a date be typed', () => {
+    it('inserts the locale separator on its own', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      await browser.fill(screen.getByRole('textbox'), '12082026');
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+    });
+
+    it('inserts the separator the LOCALE writes, in its own places', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'ja-JP',
+      });
+      await browser.fill(screen.getByRole('textbox'), '20260812');
+      expect(screen.getByRole('textbox')).toHaveValue('2026/08/12');
+    });
+
+    it('refuses letters outright', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      await browser.fill(screen.getByRole('textbox'), 'ciao');
+      expect(screen.getByRole('textbox')).toHaveValue('');
+    });
+
+    it('keeps the digits out of a string that also has letters', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      await browser.fill(screen.getByRole('textbox'), '1a2b0c8d2026');
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+    });
+
+    it('waits while a part could still grow', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      // `4` is a fine month on its own — April — and might yet become `04`.
+      await browser.fill(screen.getByRole('textbox'), '124');
+      expect(screen.getByRole('textbox')).toHaveValue('12/4');
+    });
+
+    it('advances rather than eats when the next digit cannot fit', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      // `45` is no month, so `4` closes as April and the `5` starts the year.
+      // The alternative — dropping the `5` — is what destroyed a date on one
+      // Backspace, so this is the assertion that keeps it gone.
+      await browser.fill(screen.getByRole('textbox'), '1245');
+      expect(screen.getByRole('textbox')).toHaveValue('12/04/5');
+    });
+
+    it('survives a Backspace in the middle without losing the date', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox');
+      await browser.fill(field, '12082026');
+      expect(field).toHaveValue('12/08/2026');
+
+      // The most ordinary correction there is: put the caret after the day and
+      // rub out one digit. This once produced `10/8` — seven digits of eight
+      // gone, silently.
+      await browser.fill(field, '1/08/2026');
+      expect(field).toHaveValue('10/08/2026');
+      expect(carrier(container).value).toBe('2026-08-10');
+    });
+
+    it('never lets a day reach 32', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      // The `3` closes as the 3rd and the `2` opens the month, which is what
+      // someone typing `3` then `2` meant. What it must never be is `32`.
+      await browser.fill(screen.getByRole('textbox'), '32');
+      expect(screen.getByRole('textbox')).toHaveValue('03/2');
+    });
+
+    it('stops at a whole date, however much is pasted', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      await browser.fill(screen.getByRole('textbox'), '120820269999');
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+    });
+
+    it('keeps every digit of a long paste, which is why there is no maxLength', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      // What an API hands you. A `maxLength` sized for `gg/mm/aaaa` would cut
+      // this at ten characters and silently lose the day — measured.
+      await browser.fill(screen.getByRole('textbox'), '12/08/2026T00:00:00Z');
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+      expect(carrier(container).value).toBe('2026-08-12');
     });
   });
 

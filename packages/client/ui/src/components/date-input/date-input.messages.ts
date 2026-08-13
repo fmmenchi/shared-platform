@@ -29,6 +29,10 @@ export const dateInputMessages = defineMessages('dateInput', {
   ar: {
     day: 'يي',
     month: 'شش',
-    year: 'ssss',
+    // سسسس, not `ssss`. Four Latin letters shipped here for one afternoon, so
+    // an Arabic reader got two Arabic groups and one Latin one in the only
+    // instruction this field gives — and bidi reordered the boundary between
+    // them on top of that.
+    year: 'سسسس',
   },
 });
