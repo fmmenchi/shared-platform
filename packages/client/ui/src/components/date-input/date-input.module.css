@@ -27,4 +27,18 @@
   .carrier {
     @apply sr-only;
   }
+
+  /*
+   * The format, for assistive tech only.
+   *
+   * It is on screen already — as the placeholder — and that is not enough:
+   * a placeholder is the LAST source an accessible description falls back to,
+   * so the moment a `Field` supplies a hint or an error, `aria-describedby`
+   * takes over and the format stops being announced. It also disappears from
+   * the screen on the first keystroke, which is exactly when the mask starts
+   * inserting separators nobody typed.
+   */
+  .format {
+    @apply sr-only;
+  }
 }

@@ -2,6 +2,7 @@ import { Field } from '../field/field.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
 import { DateInput } from '../date-input/date-input.component.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useBoundField } from '../../form/form-adapter.context.js';
 import {
   useBindingOwnedWarning,
@@ -31,6 +32,12 @@ function FormDateInput(props: FormDateInputProps) {
   const { name, label, hint, ref, ...rest } = props;
   const { control, errors } = useBoundField(name, 'FormDateInput');
   useBindingOwnedWarning(rest, 'FormDateInput');
+  // The type refuses `defaultDate`; this is for the callers the type does not
+  // see, and for the same reason the shared guard exists at all.
+  useDevWarning(
+    'defaultDate' in rest,
+    "FormDateInput: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. Give the value to the library instead.",
+  );
   // A field rarely fails in one way. Each message is its OWN element, so a
   // screen reader announces them as separate statements and the eye sees a list.
   const messages = toMessages(errors);

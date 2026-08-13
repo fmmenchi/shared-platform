@@ -25,5 +25,15 @@ interface FormDateInputOwnProps {
 export type FormDateInputProps = FormDateInputOwnProps &
   Omit<
     ComponentProps<typeof DateInput>,
-    keyof FormDateInputOwnProps | keyof BindingOwned
+    | keyof FormDateInputOwnProps
+    | keyof BindingOwned
+    // `defaultDate` IS a `defaultValue` under another name, so it belongs with
+    // the props the binding owns — and `BindingOwned` cannot list it, because
+    // that list is shared with every other adapter and no other control has one.
+    // Left accepted, it seeded the DOM without ever telling the form library:
+    // the user saw `01/05/1990` and the library validated an empty field, then
+    // overwrote the seed on its first pass. Seed through the binding instead.
+    | 'defaultDate'
+    // The binding's ref goes to the carrier; a call site cannot redirect it.
+    | 'carrierRef'
   >;
