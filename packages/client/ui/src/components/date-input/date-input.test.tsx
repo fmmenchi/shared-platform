@@ -144,6 +144,48 @@ describe('DateInput', () => {
       }
     });
 
+    it('seeds from a day on its own', () => {
+      const { container } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultDate={{ year: 2000, month: 1, day: 5 }}
+        />,
+        { locale: 'it' },
+      );
+      // Every other `defaultDate` test passed a `defaultValue` too — which
+      // wins — so deleting the feature outright changed no assertion.
+      expect(screen.getByRole('textbox')).toHaveValue('05/01/2000');
+      expect(carrier(container).value).toBe('2000-01-05');
+    });
+
+    it('says so when the day it was seeded with does not exist', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultDate={{ year: 2026, month: 2, day: 30 }}
+        />,
+        { locale: 'it' },
+      );
+      expect(screen.getByRole('textbox')).toHaveValue('');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('does not name a day that exists'),
+      );
+      warn.mockRestore();
+    });
+
+    it('lets the call site replace the format hint', () => {
+      renderUi(
+        <DateInput name="dob" aria-label="Date of birth" placeholder="—" />,
+        { locale: 'it' },
+      );
+      expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '—');
+    });
+
     it('seeds from a day, and an explicit ISO string wins', () => {
       renderUi(
         <DateInput
@@ -274,15 +316,18 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveValue(arabicDate);
     });
 
-    it('stays Gregorian where the locale calendar is not', () => {
+    it('stays Gregorian where the locale carries another calendar', () => {
       renderUi(
         <DateInput name="dob" aria-label="Date" defaultValue="2026-08-12" />,
-        { locale: 'th-TH' },
+        { locale: 'ja-JP-u-ca-japanese' },
       );
-      // Thai is Buddhist by default: unpinned, the pattern was Buddhist and the
-      // numbers were ours, so `2569` on the page and `2569` typed into the
-      // field stored a Gregorian 2569 — 543 years out, in silence.
-      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+      // The locale a pin can actually be SEEN in. `th-TH` was the first choice
+      // and it could not fail: Buddhist and Gregorian differ there only in the
+      // year VALUE, which this component fills from its own parse — so the test
+      // passed with the pin removed. A `-u-ca-` locale differs in the PARTS:
+      // unpinned this yields an `era`, and the field showed `R2026/08/12`, a
+      // Gregorian year stamped with an era that contradicts it.
+      expect(screen.getByRole('textbox')).toHaveValue('2026/08/12');
     });
 
     it('writes the separator the locale writes, not a slash', async () => {
@@ -549,8 +594,10 @@ describe('DateInput', () => {
         { locale: 'en-GB' },
       );
       const field = screen.getByRole('textbox', { name: 'Date of birth' });
+      // The hint AND the format, in that order — this used to assert the hint
+      // alone, which is what the suppression bug looked like from the inside.
       expect(field).toHaveAccessibleDescription(
-        'As it appears on your passport.',
+        /As it appears on your passport\..*dd\/mm\/yyyy/,
       );
     });
 
@@ -567,6 +614,26 @@ describe('DateInput', () => {
         { locale: 'it' },
       );
       expect(node).toBe(screen.getByRole('textbox'));
+    });
+
+    it('announces the format even when a Field supplies a hint', () => {
+      renderUi(
+        <Field label="Date of birth" hint="As it appears on your passport.">
+          <DateInput name="dob" />
+        </Field>,
+        { locale: 'it' },
+      );
+      // The format used to live only in the `placeholder`, which is the LAST
+      // source an accessible description falls back to — so the moment a hint or
+      // an error existed, `aria-describedby` won and the format was announced
+      // nowhere. It is now a description of its own, and `Field` merges rather
+      // than replaces.
+      expect(
+        screen.getByRole('textbox', { name: 'Date of birth' }),
+      ).toHaveAccessibleDescription(/gg\/mm\/aaaa/);
+      expect(
+        screen.getByRole('textbox', { name: 'Date of birth' }),
+      ).toHaveAccessibleDescription(/As it appears on your passport\./);
     });
 
     it('has no accessibility violations', async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef } from 'react';
 import { Input } from '../input/input.component.js';
 import { useFormatter } from '../../formatting/use-formatter.js';
 import { useMessages } from '../../i18n/provider.js';
@@ -132,6 +132,7 @@ function DateInput(props: DateInputProps) {
     placeholder,
     carrierRef,
     ref,
+    'aria-describedby': describedBy,
     ...rest
   } = props;
 
@@ -141,6 +142,7 @@ function DateInput(props: DateInputProps) {
     formatter.locale,
   );
 
+  const formatId = useId();
   const carrier = useRef<HTMLInputElement>(null);
   const field = useRef<HTMLInputElement>(null);
   // The last text this component put on screen. A change event says what the
@@ -470,6 +472,19 @@ function DateInput(props: DateInputProps) {
    * caret jumps backwards on every third character.
    */
   const caretFor = (masked: string, typed: string, caret: number): number => {
+    // Walked as CODE POINTS with their unit offsets carried along, because
+    // `selectionStart` counts units while a digit is not always one unit wide:
+    // `ccp` writes its numerals above the BMP. Indexed by unit, every one of
+    // them read as half a surrogate, no digit was ever counted, and the caret
+    // went to the end on every keystroke — mid-string editing was impossible in
+    // that locale and nowhere else.
+    const points: { char: string; at: number }[] = [];
+    for (let at = 0; at < masked.length;) {
+      const char = String.fromCodePoint(masked.codePointAt(at) ?? 0);
+      points.push({ char, at });
+      at += char.length;
+    }
+
     // ANCHORED ON THE RIGHT, and this is the whole of the function.
     //
     // Counting the digits BEFORE the caret is the obvious way and it is wrong,
@@ -491,10 +506,11 @@ function DateInput(props: DateInputProps) {
     if (after === 0) return masked.length;
 
     let seen = 0;
-    for (let position = masked.length - 1; position >= 0; position -= 1) {
-      if (!isDigit(masked[position] ?? '')) continue;
+    for (let index = points.length - 1; index >= 0; index -= 1) {
+      const point = points[index];
+      if (point === undefined || !isDigit(point.char)) continue;
       seen += 1;
-      if (seen === after) return position;
+      if (seen === after) return point.at;
     }
     return 0;
   };
@@ -536,6 +552,67 @@ function DateInput(props: DateInputProps) {
     shown.current = element.value;
   }, [display]);
 
+  // FOLLOW THE CARRIER WHEN SOMETHING ELSE WRITES IT.
+  //
+  // A form library setting a value does not go through this component:
+  // react-hook-form's `setValue` and `reset` assign straight onto the element
+  // its `register()` ref was given, which is the carrier. That fires no event,
+  // records no mutation, and — measured — triggers no render either, since a
+  // binding that only calls `register()` subscribes to nothing. So no effect
+  // can catch it: the carrier held the new date while the user went on reading
+  // the old one, and the form submitted a date that was never on screen.
+  //
+  // The only thing that can see an assignment is the property being assigned to.
+  // React has already installed its own `value` descriptor here for its change
+  // tracker, so this WRAPS whatever is on the node rather than replacing it —
+  // the tracker keeps working, and the original goes back on unmount. Our own
+  // writes go through the prototype setter (`setNativeValue`), so they do not
+  // come back round through this.
+  useEffect(() => {
+    const element = carrier.current;
+    if (element === null) return;
+    const own = Object.getOwnPropertyDescriptor(element, 'value');
+    const proto = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      'value',
+    );
+    const set = own?.set ?? proto?.set;
+    const get = own?.get ?? proto?.get;
+    if (set === undefined || get === undefined) return;
+
+    Object.defineProperty(element, 'value', {
+      configurable: true,
+      enumerable: own?.enumerable ?? false,
+      // Bound to the element rather than to `this`: the descriptor is installed
+      // on this one node and nowhere else, and the React Compiler refuses a
+      // file containing a `this` it cannot follow.
+      get() {
+        return get.call(element) as string;
+      },
+      set(next: unknown) {
+        set.call(element, next);
+        const target = field.current;
+        if (target === null) return;
+        const iso = String(next);
+        // Only ever repaint from a WHOLE date. An empty carrier is what a
+        // half-typed field looks like, and a library clearing it mid-edit must
+        // not wipe the digits under the caret.
+        const text = iso === '' ? '' : display(iso);
+        if (text === '' || text === target.value) return;
+        target.value = text;
+        shown.current = text;
+      },
+    });
+
+    return () => {
+      if (own === undefined) {
+        Reflect.deleteProperty(element, 'value');
+      } else {
+        Object.defineProperty(element, 'value', own);
+      }
+    };
+  }, [display]);
+
   return (
     <>
       <Input
@@ -550,6 +627,16 @@ function DateInput(props: DateInputProps) {
         {...rest}
         className={className}
         placeholder={placeholder ?? hint}
+        // THE FORMAT IS DESCRIBED, not only placeheld. A placeholder is the last
+        // thing an accessible description falls back to, so as soon as a `Field`
+        // supplies a hint or an error, `aria-describedby` wins and the format
+        // stops being announced at all — and it leaves the screen on the first
+        // keystroke besides. `Field` MERGES what it is handed with its own
+        // registered ids, so a hint and this coexist rather than displace each
+        // other.
+        aria-describedby={
+          [describedBy, formatId].filter(Boolean).join(' ') || undefined
+        }
         defaultValue={display(seed)}
         ref={mergeRefs(field, ref)}
         onChange={(event) => {
@@ -581,6 +668,14 @@ function DateInput(props: DateInputProps) {
           onDateChange?.(parseIsoDate(iso));
         }}
       />
+      {/*
+        The format, for assistive tech. Rendered as a sibling rather than as the
+        field's `title`, because a `title` is also a tooltip on hover and this is
+        not something to hang under the pointer.
+      */}
+      <span id={formatId} className={styles.format}>
+        {hint}
+      </span>
       {/*
         The carrier: the field's `name`, holding ISO.
 

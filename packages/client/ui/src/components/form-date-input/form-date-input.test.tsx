@@ -143,8 +143,12 @@ describe('FormDateInput', () => {
         hint="Come sul passaporto."
       />,
     );
+    // The hint, the error, and the FORMAT — in that order. Asserting the first
+    // two exactly is what let the format go unannounced for as long as it did:
+    // a placeholder is the last thing an accessible description falls back to,
+    // so an error alone was enough to silence it.
     expect(screen.getByRole('textbox')).toHaveAccessibleDescription(
-      'Come sul passaporto. Serve una data.',
+      /Come sul passaporto\. Serve una data\..*gg\/mm\/aaaa/,
     );
   });
 });
