@@ -137,6 +137,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'date-input': 'src/components/date-input/index.ts',
         numeric: 'src/components/numeric/index.ts',
         time: 'src/components/time/index.ts',
         'table-columns-menu': 'src/components/table-columns-menu/index.ts',
@@ -159,6 +160,7 @@ export default defineConfig(() => ({
         table: 'src/components/table/index.ts',
         'form-segmented-control':
           'src/components/form-segmented-control/index.ts',
+        'form-date-input': 'src/components/form-date-input/index.ts',
         'segmented-control-item':
           'src/components/segmented-control-item/index.ts',
         'segmented-control': 'src/components/segmented-control/index.ts',

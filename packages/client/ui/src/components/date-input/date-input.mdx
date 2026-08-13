@@ -1,0 +1,133 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as Stories from './date-input.stories.tsx';
+
+<Meta of={Stories} />
+
+# DateInput
+
+One text field that shows a date **the way your locale writes it** and stores it
+as ISO. It is the design system's date field.
+
+It is **not** a wrapper around `<input type="date">`. That control is refused by
+`Input` (ADR-0027) for the one reason this component exists: its segment order
+comes from the browser, so on a page whose language your app declares it
+disagrees with the `Time`, the `Numeric` and the formatted `Table` cell beside
+it — silently, with no test going red.
+
+<Canvas of={Stories.Default} />
+
+## Props
+
+Every `Input` prop, plus `defaultDate` and `onDateChange`.
+
+<Controls of={Stories.Default} />
+
+## Usage
+
+### The same date, four locales
+
+<Canvas of={Stories.AcrossLocales} />
+
+One ISO value — `2026-08-12` — under four locales. The **order** moves, the
+**separator** moves, and what is stored never does. Both come from
+`Intl.DateTimeFormat(locale).formatToParts()` with the locale `UiProvider` was
+given: the same one `useFormatter()` hands `Time` and `Numeric`, which is what
+keeps a page agreeing with itself. The separator is read from that pattern
+rather than chosen, so `de` gets `12.08.2026` without a line of code about it.
+
+**To re-locale one part of a page**, nest a `UiProvider`. There is deliberately
+no `locale` prop: it would let this field say `it` while the `Time` beside it
+says `en`, and it could not carry direction — a nested provider re-derives `dir`,
+so an Arabic subtree lays out right-to-left.
+
+### The format hint
+
+<Canvas of={Stories.TheFormatHint} />
+
+The placeholder is assembled, not written down: the **letters** are design-system
+copy (`gg` in Italian, `dd` in English) and the **frame** is the locale's own
+pattern. Neither `gg/mm/aaaa` nor `mm/dd/yyyy` appears as a string anywhere,
+which is what makes the twenty-seventh locale an addition rather than a rewrite.
+
+### What it stores
+
+<Canvas of={Stories.ReadingTheValue} />
+
+Three things, kept apart on purpose:
+
+- **In the DOM**, one ISO `YYYY-MM-DD` string, under one `name`. A server never
+  receives `12/08/2026` and has to guess which number is the month.
+- **To you**, a `CivilDate`: `{ year, month, day }`, months **1–12** as a human
+  and ISO 8601 write them, through `onDateChange`.
+- **Never a `Date`.** A `Date` is an instant; a birthday has no timezone.
+  `new Date('2026-08-12')` is the 11th of August in every zone west of
+  Greenwich, and so is the browser's own `valueAsDate`.
+
+**Typing is forgiving; the order is not.** `12/08/2026`, `12-08-2026`,
+`12.08.2026` and `12 08 2026` are all read — a person uses whatever their
+keyboard puts under their thumb. What is not negotiable is which number is the
+day, because `03/04` means nothing without it.
+
+Three things hold nothing rather than guessing: a half-typed date, a date that
+does not exist (30 February stays empty instead of sliding to 2 March the way
+`new Date` does), and a **two-digit year** — `26` is the year 26 or it is
+nothing, because guessing a century is a guess that fails silently.
+
+### In a form
+
+<Canvas of={Stories.InAForm} />
+
+The value lives on a **carrier**: a text input beside the field, holding the ISO
+string under your `name`.
+
+It is a text input and never `type="hidden"` — measured, `form.reset()` restores
+the first and not the second, so a `type="hidden"` carrier would come back from a
+reset holding a stale value while the field beside it went back, and React
+declines to wire `onChange` on it at all. It is hidden by CSS rather than the
+`hidden` attribute, and taken out of the accessibility tree by `aria-hidden`,
+because it has to stay **focusable**: react-hook-form's `register()` reads the
+value off the element its ref was given, and `FormErrorSummary` finds a field by
+`name` and focuses it. Both land on the carrier, which hands focus straight on to
+the visible field — so it is never where the caret rests.
+
+`required` marks the visible field, never the carrier: a required carrier would
+be an invalid control the browser cannot focus, and a browser asked to report on
+one refuses the submit while showing the user nothing. `disabled` marks both,
+because a disabled control is not submitted and a carrier left enabled would
+keep posting for a field the user was told they cannot touch.
+
+An **invalid `defaultValue` is refused** rather than carried: the seed takes ISO
+`YYYY-MM-DD`, the shape it stores, and anything else leaves the field empty with
+a warning in development. Seeded raw, `defaultValue="12/08/2026"` showed an empty
+field and posted `12/08/2026`.
+
+### Sizes
+
+<Canvas of={Stories.Sizes} />
+
+## Accessibility
+
+- **Give it a label**, exactly as you would `Input`: a `Field`, a wrapping
+  `<label>`, or `aria-label`. This is one text field, so a `<label for>` names
+  it — there is no group here and no legend.
+- **The placeholder is a format hint, not a name.** It disappears on input, so
+  the field still needs a label of its own.
+- **`inputMode="numeric"`, not `type="number"`**: the numeric keypad on touch
+  without the spinners, the `1e4`, or the empty-when-invalid value that would
+  hide a defect rather than show it.
+- **`ref` reaches the visible input**, so focusing the field lands where typing
+  starts. A form binding's own ref goes to the carrier instead, since that is
+  where the value is — `FormDateInput` wires both.
+- **No `autoComplete` is set for you.** A token is a claim about what the field
+  holds, and most dates are not birthdays: `bday` on a booking or an expiry tells
+  the browser something false, and browsers act on it. Pass the one your field
+  deserves — it goes straight through.
+- **Digits are the locale's.** An `ar-EG` field reads and writes `١٢/٠٨/٢٠٢٦`,
+  because the `Time` and the `Table` cell beside it do. The stored value is ASCII
+  ISO either way.
+- **The calendar is Gregorian**, pinned. Unpinned, `th-TH` gave the field a
+  Buddhist frame with Gregorian numbers in it, so a user reading `2569` off the
+  page and typing it stored a date 543 years out, in silence. Non-Gregorian
+  calendars are out of scope (ADR-0027), and this is what that looks like in
+  code.

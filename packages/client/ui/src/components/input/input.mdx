@@ -35,11 +35,34 @@ the state, it doesn't compute it.
 ### Types
 
 It's a real `<input>`, so `type="email" | "password" | "number" | "date"` and `inputMode` all work.
-A calendar date-picker is a separate (future) component, not this. For **formatted numeric input**
-(thousands separators, currency, locale decimals), wrap Input with your own formatter (e.g.
-`react-number-format`'s `customInput={Input}`) — locale/formatting is a consumer concern (ADR-0013).
+For **formatted numeric input** (thousands separators, currency, locale decimals), wrap Input with
+your own formatter (e.g. `react-number-format`'s `customInput={Input}`) — locale/formatting is a
+consumer concern (ADR-0013).
 
 <Canvas of={InputStories.Types} />
+
+#### `type="date"` is refused — use `DateInput`
+
+This is **the one exception** to the transparency above, and the only `type` this component does not
+accept (ADR-0027). `type="checkbox"`, `type="range"` and `type="radio"` still pass straight through
+even though `Checkbox`, `Slider` and `Radio` exist, because those are merely duplicative.
+`type="date"` is different: it is wrong on the page.
+
+The native date control is right in almost every way — it lines up with a text field to the pixel,
+the tokens reach the closed field, `min`/`max` reach `ValidityState`, and on touch it opens the OS
+date sheet. What it will not do is **follow the locale you handed `UiProvider`**. Its segment order —
+`dd/mm/yyyy` against `mm/dd/yyyy` — comes from the browser, in practice the operating system's
+regional format, and nothing on the page can reach it: wrapping it in `lang="it-IT"` moves nothing,
+measured. So on a product whose language your app declares, a `Time` or a formatted `Table` cell
+reads `12/08/2026` while the field beside it reads the other way round — silently, with no test
+going red.
+
+Reach for **`DateInput`** (and `FormDateInput` when it is bound), whose three parts are ordered by the
+locale you declared. For per-date rules — "only these slots", "never on a Tuesday" — `min`/`max` are
+an interval and not a set; that is `Calendar`.
+
+`type="time"` is untouched: there is no time field to send you to yet, and refusing something with no
+replacement would be the same mistake in the other direction.
 
 ### Adornments (planned)
 
