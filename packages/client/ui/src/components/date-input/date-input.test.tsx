@@ -6,6 +6,21 @@ import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
+/**
+ * 12 August 2026 as `ar-EG` writes it — bidi marks and all.
+ *
+ * Taken from `Intl` rather than typed out, because that is the claim: the field
+ * must render what every other date on the page renders, and the two invisible
+ * U+200F marks in it are what put the three groups in the right visual order.
+ */
+const arabicDate = new Intl.DateTimeFormat('ar-EG', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'UTC',
+  calendar: 'gregory',
+}).format(new Date(Date.UTC(2026, 7, 12)));
+
 /** The carrier: hidden, so it is reachable only as a raw node. */
 function carrier(container: HTMLElement): HTMLInputElement {
   const node = container.querySelector('[data-carrier]');
@@ -196,23 +211,6 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveValue('12/04/5');
     });
 
-    it('survives a Backspace in the middle without losing the date', async () => {
-      const { container } = renderUi(
-        <DateInput name="dob" aria-label="Date of birth" />,
-        { locale: 'it' },
-      );
-      const field = screen.getByRole('textbox');
-      await browser.fill(field, '12082026');
-      expect(field).toHaveValue('12/08/2026');
-
-      // The most ordinary correction there is: put the caret after the day and
-      // rub out one digit. This once produced `10/8` — seven digits of eight
-      // gone, silently.
-      await browser.fill(field, '1/08/2026');
-      expect(field).toHaveValue('10/08/2026');
-      expect(carrier(container).value).toBe('2026-08-10');
-    });
-
     it('never lets a day reach 32', async () => {
       renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
         locale: 'it',
@@ -255,9 +253,13 @@ describe('DateInput', () => {
       // by character AS THE USER TYPED, leaving the field permanently empty.
       await browser.fill(field, '١٢٠٨٢٠٢٦');
       expect(carrier(container).value).toBe('2026-08-12');
-      // And it comes back in the same numerals the `Time` beside it uses, not
-      // in ASCII.
-      expect(field).toHaveValue('١٢/٠٨/٢٠٢٦');
+      // And it comes back as EXACTLY what `Intl` renders for that day — which is
+      // what `Time` and a formatted `Table` cell beside it render. Asserted as
+      // the relationship rather than as a literal, because the literal carries
+      // two invisible U+200F marks: stripping those (which an earlier version
+      // did) laid the field out in the OPPOSITE visual order from every date
+      // around it, and no string comparison written by hand would have shown it.
+      expect(field).toHaveValue(arabicDate);
     });
 
     it('shows a seeded date in the locale own numerals', () => {
@@ -269,7 +271,7 @@ describe('DateInput', () => {
         />,
         { locale: 'ar-EG' },
       );
-      expect(screen.getByRole('textbox')).toHaveValue('١٢/٠٨/٢٠٢٦');
+      expect(screen.getByRole('textbox')).toHaveValue(arabicDate);
     });
 
     it('stays Gregorian where the locale calendar is not', () => {
@@ -289,6 +291,102 @@ describe('DateInput', () => {
       });
       await browser.fill(screen.getByRole('textbox'), '12082026');
       expect(screen.getByRole('textbox')).toHaveValue('12.08.2026');
+    });
+  });
+
+  describe('typed one key at a time, which is the only way the caret is real', () => {
+    // Every other test in this file uses `fill`, which replaces the whole value
+    // in one operation — so the mask never runs on its own output and the caret
+    // is never anywhere but the end. That blind spot hid a defect that stored a
+    // WRONG BUT VALID date on more than half of all short-form entries.
+
+    it('stores what was meant when the parts are typed without leading zeros', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'en-US' },
+      );
+      // 12 August 2026, typed the way a person types it: `8`, `12`, `2026`.
+      // This came out as `08/22/0261` — carrier `0261-08-22` — because the
+      // caret sat in front of the zero the mask had just padded in.
+      await browser.type(screen.getByRole('textbox'), '8122026');
+      expect(screen.getByRole('textbox')).toHaveValue('08/12/2026');
+      expect(carrier(container).value).toBe('2026-08-12');
+    });
+
+    it('does the same where the year leads', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'ja-JP' },
+      );
+      // `2026`, `2`, `10` — 10 February. Both this and the date it used to
+      // store, 1 February, exist, which is what made it invisible.
+      await browser.type(screen.getByRole('textbox'), '2026210');
+      expect(carrier(container).value).toBe('2026-02-10');
+    });
+
+    it('deletes one digit from the part it was in, leaving the others alone', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+      expect(field).toHaveValue('12/08/2026');
+
+      // Caret after the day, one Backspace. Re-flowed, this produced
+      // `10/08/2026` — a different real day, submitted in silence.
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('takes the digit in front of a separator when the separator is deleted', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      // Backspace with the caret just past the `/`. A separator has no digits of
+      // its own, so re-emitting the mask left the text identical and the key did
+      // nothing — for ever, however many times it was pressed.
+      field.setSelectionRange(3, 3);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+    });
+
+    it('can be emptied from the keyboard', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(field.value.length, field.value.length);
+      // Ten presses for ten characters. Held down, this used to stop dead at
+      // `12/08/` — the field could not be cleared without select-all.
+      for (let press = 0; press < 10; press += 1) {
+        await browser.keyboard('{Backspace}');
+      }
+
+      expect(field.value).toBe('');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('keeps the caret behind the digit just typed, not in front of it', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.type(field, '12');
+      // Past the separator the mask inserted, so the next key starts the month
+      // rather than landing in front of the slash.
+      expect(field.value).toBe('12/');
+      expect(field.selectionStart).toBe(3);
     });
   });
 

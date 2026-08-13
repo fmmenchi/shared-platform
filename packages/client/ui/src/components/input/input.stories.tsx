@@ -67,14 +67,21 @@ export const States: Story = {
   ),
 };
 
-/** Native input types work — it's a transparent `<input>`. */
+/**
+ * Native input types work — it's a transparent `<input>`.
+ *
+ * All but one: `type="date"` is refused (ADR-0027), and this canvas used to
+ * render a live native date picker directly above the section explaining that
+ * it is not accepted. `type="time"` stands in for it, which is the same recipe
+ * with none of the locale problem.
+ */
 export const Types: Story = {
   render: () => (
     <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
       <Field label="Email" type="email" placeholder="you@example.com" />
       <Field label="Password" type="password" placeholder="••••••••" />
       <Field label="Amount" type="number" inputMode="numeric" placeholder="0" />
-      <Field label="Date" type="date" />
+      <Field label="Time" type="time" />
     </div>
   ),
 };
