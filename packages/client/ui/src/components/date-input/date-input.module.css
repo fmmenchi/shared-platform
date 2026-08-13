@@ -1,0 +1,30 @@
+/*
+ * DateInput styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both.
+ *
+ * One rule, and it is not about looks. The visible field is an `Input` and
+ * brings its whole appearance with it; nothing here restates any of that.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  /*
+   * The carrier: out of sight, out of the accessibility tree, out of the tab
+   * order — and STILL FOCUSABLE, which is the whole reason it is not the
+   * `hidden` attribute.
+   *
+   * `hidden` was measured to be right about `form.reset()` and about React
+   * wiring `onChange`, and it is still a text input, so both of those hold
+   * here. What `hidden` also did was make the node unfocusable, and two things
+   * need to focus it: react-hook-form's `register()` ref, which reads the value
+   * off the element it was given, and `FormErrorSummary`, which finds a field
+   * by its `name` — and the `name` is here. Focused, this node hands focus
+   * straight on to the visible field, so it is never where the caret rests.
+   */
+  .carrier {
+    @apply sr-only;
+  }
+}

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { FormInputProps } from '../components/form-input/form-input.types.js';
+import type { FormDateInputProps } from '../components/form-date-input/form-date-input.types.js';
 import type { FormChoiceProps } from '../components/form-choice/form-choice.types.js';
 import type { FormTextareaProps } from '../components/form-textarea/form-textarea.types.js';
 import type { FormSelectProps } from '../components/form-select/form-select.types.js';
@@ -27,6 +28,7 @@ export type WithFieldName<Props, Name extends string> = Omit<Props, 'name'> & {
  */
 export interface BoundFields<Name extends string> {
   FormInput: (props: WithFieldName<FormInputProps, Name>) => ReactNode;
+  FormDateInput: (props: WithFieldName<FormDateInputProps, Name>) => ReactNode;
   FormChoice: (props: WithFieldName<FormChoiceProps, Name>) => ReactNode;
   FormTextarea: (props: WithFieldName<FormTextareaProps, Name>) => ReactNode;
   FormSelect: (props: WithFieldName<FormSelectProps, Name>) => ReactNode;

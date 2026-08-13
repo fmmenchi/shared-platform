@@ -78,18 +78,29 @@ nothing, because guessing a century is a guess that fails silently.
 
 <Canvas of={Stories.InAForm} />
 
-The value lives on a carrier: a text input hidden beside the field. It is hidden
-with the **`hidden` attribute** and not `type="hidden"`, and that is the whole
-design — measured, `form.reset()` restores the first and not the second, so a
-`type="hidden"` carrier would come back from a reset holding a stale value while
-the field beside it went back. React also declines to wire `onChange` on
-`type="hidden"`, so a `register()`-style binding would hear nothing.
+The value lives on a **carrier**: a text input beside the field, holding the ISO
+string under your `name`.
+
+It is a text input and never `type="hidden"` — measured, `form.reset()` restores
+the first and not the second, so a `type="hidden"` carrier would come back from a
+reset holding a stale value while the field beside it went back, and React
+declines to wire `onChange` on it at all. It is hidden by CSS rather than the
+`hidden` attribute, and taken out of the accessibility tree by `aria-hidden`,
+because it has to stay **focusable**: react-hook-form's `register()` reads the
+value off the element its ref was given, and `FormErrorSummary` finds a field by
+`name` and focuses it. Both land on the carrier, which hands focus straight on to
+the visible field — so it is never where the caret rests.
 
 `required` marks the visible field, never the carrier: a required carrier would
 be an invalid control the browser cannot focus, and a browser asked to report on
 one refuses the submit while showing the user nothing. `disabled` marks both,
 because a disabled control is not submitted and a carrier left enabled would
 keep posting for a field the user was told they cannot touch.
+
+An **invalid `defaultValue` is refused** rather than carried: the seed takes ISO
+`YYYY-MM-DD`, the shape it stores, and anything else leaves the field empty with
+a warning in development. Seeded raw, `defaultValue="12/08/2026"` showed an empty
+field and posted `12/08/2026`.
 
 ### Sizes
 
@@ -105,6 +116,18 @@ keep posting for a field the user was told they cannot touch.
 - **`inputMode="numeric"`, not `type="number"`**: the numeric keypad on touch
   without the spinners, the `1e4`, or the empty-when-invalid value that would
   hide a defect rather than show it.
-- **`ref` reaches the visible input**, so an error summary can focus the field.
-- **`autoComplete="bday"`** is set, so a browser can fill a date of birth the
-  way it fills an address. Override it for any other kind of date.
+- **`ref` reaches the visible input**, so focusing the field lands where typing
+  starts. A form binding's own ref goes to the carrier instead, since that is
+  where the value is — `FormDateInput` wires both.
+- **No `autoComplete` is set for you.** A token is a claim about what the field
+  holds, and most dates are not birthdays: `bday` on a booking or an expiry tells
+  the browser something false, and browsers act on it. Pass the one your field
+  deserves — it goes straight through.
+- **Digits are the locale's.** An `ar-EG` field reads and writes `١٢/٠٨/٢٠٢٦`,
+  because the `Time` and the `Table` cell beside it do. The stored value is ASCII
+  ISO either way.
+- **The calendar is Gregorian**, pinned. Unpinned, `th-TH` gave the field a
+  Buddhist frame with Gregorian numbers in it, so a user reading `2569` off the
+  page and typing it stored a date 543 years out, in silence. Non-Gregorian
+  calendars are out of scope (ADR-0027), and this is what that looks like in
+  code.

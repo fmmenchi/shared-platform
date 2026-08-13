@@ -1,18 +1,21 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Input } from '../input/input.component.js';
 import { useFormatter } from '../../formatting/use-formatter.js';
 import { useMessages } from '../../i18n/provider.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { mergeRefs } from '../../primitives/merge-refs.js';
 import { setNativeValue } from '../../primitives/set-native-value.js';
 import { formatIsoDate, parseIsoDate } from '../../date/civil-date.js';
 import { dateInputMessages } from './date-input.messages.js';
 import type { DatePart, DateInputProps } from './date-input.types.js';
+import styles from './date-input.module.css';
 
 const PARTS: DatePart[] = ['day', 'month', 'year'];
 
-/** How many digits each part holds, and the largest it may ever say. */
+/** How many digits each part holds, and the range it may ever say. */
 const WIDTH: Record<DatePart, number> = { day: 2, month: 2, year: 4 };
 const CEILING: Record<DatePart, number> = { day: 31, month: 12, year: 9999 };
+const FLOOR: Record<DatePart, number> = { day: 1, month: 1, year: 1 };
 
 function isPart(type: string): type is DatePart {
   return (PARTS as string[]).includes(type);
@@ -20,12 +23,20 @@ function isPart(type: string): type is DatePart {
 
 /**
  * How this locale writes a date: which parts, in which order, with which
- * separators between them.
+ * separators — and in which digits.
  *
- * The separator is READ rather than chosen. `it` and `en` write `/`, `de`
- * writes `.`, `ja` writes `/` around parts it also suffixes — picking one
- * ourselves would be a fourth locale decision made in the wrong place, when
- * `formatToParts` already returns the literals in position.
+ * THE CALENDAR IS PINNED TO GREGORIAN, and that is a correctness fix rather
+ * than a simplification. `th-TH` is Buddhist by default and `fa-IR` Persian, so
+ * an unpinned pattern put OUR Gregorian numbers into THEIR frame: a Thai user
+ * read `2569` off the `Time` beside the field, typed `2569`, and the carrier
+ * stored `2569-08-12` — 543 years wrong, accepted in silence. ADR-0027 puts
+ * non-Gregorian calendars out of scope; this is what putting them out of scope
+ * has to look like in code. The era literal went with it, which is why nobody
+ * gets `AP 2026-08-12` any more either.
+ *
+ * THE DIGITS ARE NOT PINNED, deliberately. An `ar-EG` page renders `١٢` in
+ * every `Time` and `Table` cell, so a field beside them showing `12` would be
+ * the very mismatch this component exists to remove — one layer down.
  */
 function usePattern(locale: string | undefined) {
   return useMemo(() => {
@@ -37,21 +48,45 @@ function usePattern(locale: string | undefined) {
       month: '2-digit',
       day: '2-digit',
       timeZone: 'UTC',
-    }).formatToParts(sample);
+      calendar: 'gregory',
+    })
+      .formatToParts(sample)
+      // BIDI CONTROLS OUT OF THE LITERALS. Every `ar-*` pattern separates its
+      // parts with U+200F RIGHT-TO-LEFT MARK followed by `/`, so a date read
+      // back out of the field carried two invisible characters that travelled
+      // with any copy-paste and made the string unequal to the same date typed
+      // by hand. They also cost a Backspace at a separator its effect, since
+      // one press deletes the `/` and leaves the mark. A field inside a `dir`
+      // subtree — which the provider gives it — needs none of them.
+      .map((part) =>
+        part.type === 'literal'
+          ? { ...part, value: part.value.replace(/[‎‏؜]/g, '') }
+          : part,
+      );
     const order = parts.map((part) => part.type).filter(isPart);
-    // A pattern missing one of the three is not one we can lay out — fall back
-    // rather than render a field that can never hold a whole date.
+
+    // The locale's own numerals, 0-9 in order, so `١٢` can be read and written
+    // as readily as `12`.
+    const format = new Intl.NumberFormat(locale, { useGrouping: false });
+    const numerals = Array.from({ length: 10 }, (_, digit) =>
+      format.format(digit),
+    );
+
     return order.length === 3
-      ? { parts, order }
+      ? { parts, order, numerals }
       : {
+          // Unreachable for every locale that resolves to Gregorian, and kept
+          // for the one that does not: ISO order, for the same reason
+          // `toMachineDate` hard-codes `en-CA` rather than asking the reader.
           parts: [
-            { type: 'day', value: '12' },
-            { type: 'literal', value: '/' },
-            { type: 'month', value: '08' },
-            { type: 'literal', value: '/' },
             { type: 'year', value: '2026' },
+            { type: 'literal', value: '-' },
+            { type: 'month', value: '08' },
+            { type: 'literal', value: '-' },
+            { type: 'day', value: '12' },
           ] as Intl.DateTimeFormatPart[],
-          order: PARTS,
+          order: ['year', 'month', 'day'] as DatePart[],
+          numerals,
         };
   }, [locale]);
 }
@@ -65,59 +100,92 @@ function usePattern(locale: string | undefined) {
  * `Numeric` and the formatted `Table` cell beside it. This one follows
  * `useFormatter()`, which is the locale all of those read.
  *
- * WHAT IT STORES is an ISO `YYYY-MM-DD` string, on a carrier hidden beside the
- * field, under the field's `name`. What the user SEES is that date written the
- * way their locale writes it. A server never receives `12/08/2026` and has to
- * guess which number is the month.
+ * WHAT IT STORES is an ISO `YYYY-MM-DD` string, on a carrier beside the field,
+ * under the field's `name`. What the user SEES is that date written the way
+ * their locale writes it, in their locale's digits. A server never receives
+ * `12/08/2026` and has to guess which number is the month.
  *
  * It is one text field, so it composes like `Input`: name it with a `Field`, or
  * reach for `FormDateInput`, which does that for you.
  */
 function DateInput(props: DateInputProps) {
   const {
+    className,
     name,
     defaultValue,
     defaultDate,
     onDateChange,
     onChange,
     placeholder,
+    carrierRef,
+    ref,
     ...rest
   } = props;
 
   const formatter = useFormatter();
   const t = useMessages(dateInputMessages);
-  const { parts, order } = usePattern(formatter.locale);
+  const { parts, order, numerals } = usePattern(formatter.locale);
 
-  // Read only from the change handler, never during render.
   const carrier = useRef<HTMLInputElement>(null);
+  const field = useRef<HTMLInputElement>(null);
 
-  /** `12/08/2026` for `it`, `08/12/2026` for `en-US` — the ISO date, localised. */
-  const display = (iso: string): string => {
-    const date = parseIsoDate(iso);
-    if (date === null) return '';
-    const pad = (n: number, width: number) => String(n).padStart(width, '0');
-    return parts
-      .map((part) =>
-        part.type === 'day'
-          ? pad(date.day, 2)
-          : part.type === 'month'
-            ? pad(date.month, 2)
-            : part.type === 'year'
-              ? pad(date.year, 4)
-              : part.value,
-      )
-      .join('');
+  /** This locale's numeral for an ASCII digit, and back again. */
+  const toLocal = (ascii: string) =>
+    [...ascii].map((char) => numerals[Number(char)] ?? char).join('');
+  const toAscii = (char: string) => {
+    const index = numerals.indexOf(char);
+    if (index !== -1) return String(index);
+    return char >= '0' && char <= '9' ? char : '';
   };
+
+  /**
+   * `12/08/2026` for `it`, `١٢/٠٨/٢٠٢٦` for `ar-EG` — the ISO date, localised.
+   *
+   * Memoised on the pattern so the re-display effect below can depend on it
+   * honestly, rather than on a suppression comment. The React Compiler refuses
+   * to optimise a file that carries one, which is the right trade: a stale
+   * closure here would redraw a date in the wrong order.
+   */
+  const display = useMemo(() => {
+    const local = (ascii: string) =>
+      [...ascii].map((char) => numerals[Number(char)] ?? char).join('');
+    return (iso: string): string => {
+      const date = parseIsoDate(iso);
+      if (date === null) return '';
+      const pad = (value: number, width: number) =>
+        local(String(value).padStart(width, '0'));
+      return parts
+        .map((part) =>
+          part.type === 'day'
+            ? pad(date.day, 2)
+            : part.type === 'month'
+              ? pad(date.month, 2)
+              : part.type === 'year'
+                ? pad(date.year, 4)
+                : part.value,
+        )
+        .join('');
+    };
+  }, [parts, numerals]);
 
   // `defaultDate` is sugar over `defaultValue`, so an explicit `defaultValue`
   // still wins — the precedence every component here gives the call site.
   const seeded = defaultDate === undefined ? null : formatIsoDate(defaultDate);
-  const seed = defaultValue ?? seeded ?? '';
+  const asked = defaultValue ?? seeded ?? '';
+  // THE CARRIER IS SEEDED FROM THE VALIDATED PARSE, not from what was handed in.
+  // Seeded raw, `defaultValue="tomorrow"` left the field empty and posted
+  // `tomorrow` — from the component whose first promise is that a server never
+  // has to guess what it is holding.
+  const seed = asked !== '' && parseIsoDate(asked) !== null ? asked : '';
 
   // SAY SO rather than start empty and leave it to be debugged twice.
   useDevWarning(
     defaultDate !== undefined && seeded === null,
     `DateInput: \`defaultDate\` ${JSON.stringify(defaultDate)} does not name a day that exists, so the field starts empty. Months are 1-12 and the year is four digits.`,
+  );
+  useDevWarning(
+    asked !== '' && seed === '',
+    `DateInput: \`defaultValue\` ${JSON.stringify(asked)} is not an ISO date, so the field starts empty. It takes \`YYYY-MM-DD\` — the shape it stores — not the shape it shows.`,
   );
 
   /** `gg/mm/aaaa`, `mm/dd/yyyy` — the hint letters in the locale's own frame. */
@@ -128,49 +196,59 @@ function DateInput(props: DateInputProps) {
   /**
    * The mask: what was typed, reduced to what a date can contain.
    *
-   * ONLY DIGITS SURVIVE, and the separators are put back from the locale's own
-   * pattern — so a letter cannot be typed at all, a second separator cannot be
-   * typed, and `12082026` becomes `12/08/2026` on its own. Typing whatever the
-   * keyboard puts under the thumb still works, because `-`, `.` and a space are
-   * dropped along with everything else that is not a digit rather than being
-   * accepted as alternatives.
+   * ONLY DIGITS SURVIVE — this locale's or ASCII, so an Arabic keyboard and a
+   * numeric keypad both work — and the separators are put back from the
+   * locale's own pattern. A letter cannot be typed, a second separator cannot
+   * be typed, and `12082026` becomes `12/08/2026` on its own.
    *
-   * A DIGIT THAT MAKES A PART IMPOSSIBLE IS REFUSED, not corrected: a month
-   * cannot reach 45, a day cannot reach 32. It is refused per digit, on the
-   * number the part would then say — so `4` is still a fine start for a month
-   * (April) and only the `5` after it is dropped. Correcting instead of
-   * refusing would move a digit the user is still typing, which reads as the
-   * field fighting back.
+   * A DIGIT THAT MAKES A PART IMPOSSIBLE IS REFUSED AND NOT CONSUMED. Consuming
+   * it was the first version and it was catastrophic rather than merely wrong:
+   * a part holding one digit that no second digit could complete then swallowed
+   * every digit after it, so `8/12/2026` in `en-US` left `8` behind and no
+   * further keystroke could ever land. Left in place, the digit starts the next
+   * part instead — `5` then `9` is the 5th, then September.
    *
-   * What it does NOT do is decide whether the whole date exists: 30 February
-   * can be typed, and is then simply not stored. Blocking it mid-edit would
-   * mean refusing the `3` of a `30` that was on its way to March.
+   * BOTH ENDS ARE ENFORCED. A ceiling alone let `00/00/2026` be typed in full:
+   * complete-looking, and storing nothing, with nothing to tell the user why.
+   *
+   * What it does NOT decide is whether the whole date exists: 30 February can
+   * be typed, and is then simply not stored. Blocking it mid-edit would mean
+   * refusing the `3` of a `30` that was on its way to March.
    */
   const mask = (typed: string): { text: string; iso: string } => {
-    const digits = [...typed].filter((char) => char >= '0' && char <= '9');
+    const digits = [...typed].map(toAscii).filter((char) => char !== '');
     const held = new Map<DatePart, string>();
     let index = 0;
+
+    const admits = (part: DatePart, candidate: string) => {
+      const value = Number(candidate);
+      if (value > CEILING[part]) return false;
+      // A part is allowed to be `0` while it is still growing — `0` is on its
+      // way to `05` — but never once it is as wide as it will get.
+      return candidate.length < WIDTH[part] || value >= FLOOR[part];
+    };
+
     for (const part of order) {
       let value = '';
       while (index < digits.length && value.length < WIDTH[part]) {
         const candidate = value + digits[index];
-        // A digit that does not fit is NOT CONSUMED. Eating it was the first
-        // version and it was catastrophic rather than merely wrong: on
-        // `12/08/2026`, one Backspace over the day left `1/08/2026`, whose
-        // digits then re-flowed into a month of `8` that swallowed `2`, `0`,
-        // `2` and `6` one after another because each made it impossible. Seven
-        // of eight digits gone, on the most ordinary correction there is.
-        if (Number(candidate) > CEILING[part]) break;
+        if (!admits(part, candidate)) break;
         value = candidate;
         index += 1;
       }
       // A part closed early by a digit that did not fit is PADDED, so that digit
-      // starts the next part instead of being lost: `5` then `9` is the 5th,
-      // then September — which is what the person typing meant, and what every
-      // date mask does. Padding only when digits remain keeps it from firing
-      // while a part is still being typed: `12` `4` stays `12/4`, waiting.
-      if (value !== '' && value.length < WIDTH[part] && index < digits.length) {
-        value = value.padStart(WIDTH[part], '0');
+      // starts the next part rather than being lost. Only when digits remain, so
+      // it does not fire while a part is still being typed: `12` `4` waits at
+      // `12/4`. And never into a value the part may not hold, which is what
+      // keeps a lone `0` from becoming `00`.
+      const padded = value.padStart(WIDTH[part], '0');
+      if (
+        value !== '' &&
+        value.length < WIDTH[part] &&
+        index < digits.length &&
+        Number(padded) >= FLOOR[part]
+      ) {
+        value = padded;
       }
       held.set(part, value);
     }
@@ -182,24 +260,17 @@ function DateInput(props: DateInputProps) {
         continue;
       }
       const value = held.get(piece.type) ?? '';
-      text += value;
+      text += toLocal(value);
       // An incomplete part ends the string: everything after it would be a
-      // separator or a field with nothing in front of it.
+      // separator, or a field with nothing in front of it.
       if (value.length < WIDTH[piece.type]) return { text, iso: '' };
     }
-
-    const year = held.get('year') ?? '';
-    // A two-digit year is a guess about a century, and a wrong guess is silent:
-    // `26` is the year 26 or it is nothing (ADR-0027). Unreachable while the
-    // loop above stops on a short part, and kept because that is a property of
-    // this function rather than of its caller.
-    if (year.length !== 4) return { text, iso: '' };
 
     return {
       text,
       iso:
         formatIsoDate({
-          year: Number(year),
+          year: Number(held.get('year')),
           month: Number(held.get('month')),
           day: Number(held.get('day')),
         }) ?? '',
@@ -211,101 +282,114 @@ function DateInput(props: DateInputProps) {
    *
    * Counted in DIGITS, not in characters: the mask inserts and removes
    * separators, so a character index taken before it means nothing after. Put
-   * the caret after the same digit the user was behind, and typing in the
-   * middle of a date stays possible — which is the whole reason not to just
-   * send it to the end.
+   * the caret after the same digit the user was behind — and past the separator
+   * that follows it, or the next keystroke lands in front of the `/` and the
+   * caret jumps backwards on every third character.
    */
   const caretFor = (masked: string, typed: string, caret: number): number => {
-    const isDigit = (char: string) => char >= '0' && char <= '9';
-    const before = [...typed.slice(0, caret)].filter(isDigit).length;
+    const before = [...typed.slice(0, caret)].filter(
+      (char) => toAscii(char) !== '',
+    ).length;
     if (before === 0) return 0;
     let seen = 0;
     for (let position = 0; position < masked.length; position += 1) {
-      if (!isDigit(masked[position] ?? '')) continue;
+      if (toAscii(masked[position] ?? '') === '') continue;
       seen += 1;
       if (seen !== before) continue;
-      // PAST THE SEPARATOR, not in front of it. Landing between the last digit
-      // of a finished part and the `/` that follows means the next keystroke is
-      // inserted before it — the mask repairs that every time, but the caret
-      // then jumps backwards under the user's hand on every third character.
       let after = position + 1;
-      while (after < masked.length && !isDigit(masked[after] ?? '')) after += 1;
+      while (after < masked.length && toAscii(masked[after] ?? '') === '') {
+        after += 1;
+      }
       return after;
     }
     return masked.length;
   };
 
+  const write = (iso: string) => {
+    const element = carrier.current;
+    if (element === null || element.value === iso) return;
+    const wrote = setNativeValue(element, iso);
+    if (!wrote && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        'DateInput: this environment has no `value` setter on HTMLInputElement.prototype, so the field cannot tell a form library what was typed.',
+      );
+    }
+  };
+
+  // RE-DISPLAY WHEN THE LOCALE MOVES. React does not re-apply `defaultValue` to
+  // a field the user has touched, so a live language switch — which ADR-0027
+  // makes the supported way to re-locale a subtree — left `01/02/2000` on
+  // screen under a `mm/dd/yyyy` hint, meaning one day to the reader and another
+  // to the carrier, until the next keystroke silently swapped them.
+  useEffect(() => {
+    const element = field.current;
+    if (element === null) return;
+    const iso = carrier.current?.value ?? '';
+    if (iso === '') return;
+    element.value = display(iso);
+  }, [display]);
+
   return (
     <>
       <Input
         // BEFORE the spread, so a consumer can still say otherwise. After it,
-        // every one of these would be silently discarded while the type kept
-        // accepting them — a prop that compiles and does nothing.
+        // this would compile, typecheck and do nothing.
         inputMode="numeric"
+        // NO `autoComplete` of our own. A token is a CLAIM about what the field
+        // holds, and most dates are not birthdays — a booking, an expiry, a
+        // start date — so `bday` told the browser something false on every one
+        // of them, and browsers act on it. It passes through like any other
+        // native attribute; the consumer knows what their date is for.
         {...rest}
-        // NO `autoComplete` of our own. `bday` was hardcoded here for one
-        // afternoon, and a token is a CLAIM about what the field holds: most
-        // dates are not birthdays — a booking, an expiry, a start date — so on
-        // every one of those it tells the browser something false, and browsers
-        // act on it by offering to fill a saved date of birth. The consumer
-        // knows what their date is for; `autoComplete` passes straight through
-        // like every other native attribute.
+        className={className}
         placeholder={placeholder ?? hint}
-        // NO `maxLength`, deliberately. It looks like it says what the mask
-        // says and does not: it counts CHARACTERS where the mask counts DIGITS,
-        // so the browser truncates before the mask ever runs. Measured — with
-        // `maxLength={10}`, pasting `1a2b0c8d2026` arrived as `1a2b0c8d20` and
-        // produced `12/08/20`, losing the year. Anything longer than a bare
-        // date — `2026-08-12T00:00:00Z` out of an API — would lose digits the
-        // same way. The mask is the constraint, and one constraint is enough.
         defaultValue={display(seed)}
+        ref={mergeRefs(field, ref)}
         onChange={(event) => {
-          const field = event.currentTarget;
-          const typed = field.value;
-          const caret = field.selectionStart ?? typed.length;
+          const element = event.currentTarget;
+          const typed = element.value;
+          const caret = element.selectionStart ?? typed.length;
           const { text, iso } = mask(typed);
 
-          // Write the masked text straight onto the node. It is an uncontrolled
-          // input, so React is not going to re-render it back — and a plain
-          // assignment is right HERE, unlike on the carrier: this value came
-          // from a real keystroke, so React has already heard it and the
-          // `input` event `setNativeValue` dispatches would only arrive a
-          // second time.
+          // Written straight onto the node. It is uncontrolled, so React will
+          // not re-render it back — and a plain assignment is right HERE,
+          // unlike on the carrier: this value came from a real keystroke, so
+          // React has already heard it.
           if (text !== typed) {
-            field.value = text;
+            element.value = text;
             const position = caretFor(text, typed, caret);
-            field.setSelectionRange(position, position);
+            element.setSelectionRange(position, position);
           }
 
-          const element = carrier.current;
-          if (element !== null && element.value !== iso) {
-            setNativeValue(element, iso);
-          }
+          write(iso);
           onDateChange?.(parseIsoDate(iso));
         }}
       />
       {/*
-        The carrier. A text input hidden with the `hidden` ATTRIBUTE, never
-        `type="hidden"`, and the difference is the whole design: measured,
-        `form.reset()` restores a text input and does NOT restore a
-        `type="hidden"` one, so a hidden-typed carrier would come back from a
-        reset holding a stale value while the field beside it went back. React
-        also declines to wire `onChange` on `type="hidden"`, so a `register()`
-        binding would hear nothing from it.
+        The carrier: the field's `name`, holding ISO.
 
-        `tabIndex` and `aria-hidden` say what `hidden` already says. They are
-        here because `hidden` is one consumer stylesheet away from being
-        overridden, and a carrier that becomes visible must still not be
-        reachable or announced.
+        A text input, never `type="hidden"` — measured, `form.reset()` restores
+        the first and not the second, so a hidden-typed carrier would come back
+        from a reset holding a stale value while the field beside it went back.
+        React also declines to wire `onChange` on `type="hidden"`.
+
+        Hidden by CSS rather than the `hidden` ATTRIBUTE, and out of the tree by
+        `aria-hidden`, because it must stay FOCUSABLE: react-hook-form's
+        `register()` reads the value off the element its ref was given, and
+        `FormErrorSummary` finds a field by `name` and calls `focus()` on it.
+        Both land here, and `onFocus` hands focus on to the visible field, so it
+        is never where the caret rests.
       */}
       <input
-        ref={carrier}
+        ref={mergeRefs(carrier, carrierRef)}
         data-carrier=""
+        className={styles.carrier}
         type="text"
-        hidden
         name={name}
         defaultValue={seed}
         onChange={onChange}
+        onFocus={() => field.current?.focus()}
+        readOnly
         // Disabled together, because a disabled control is not submitted: left
         // enabled, the carrier would keep posting a value for a field the user
         // was told they cannot touch. `required` is the opposite and stays on

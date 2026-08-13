@@ -35,6 +35,18 @@ function FormDateInput(props: FormDateInputProps) {
   // screen reader announces them as separate statements and the eye sees a list.
   const messages = toMessages(errors);
 
+  // Everything the binding says EXCEPT the two the date field routes itself.
+  // Kept as a spread rather than a hand-picked list, because the hand-picked
+  // list is what dropped Conform's `required`, `id` and `form` — and a
+  // `FormDateInput` rendered outside its `<form>` posts nothing at all without
+  // that last one, while a `FormInput` beside it posts fine.
+  const { value, defaultValue, ref: bindingRef, ...binding } = control;
+  // Narrowed to a string because `control` is typed for an `<input>`, where a
+  // value may also be a number or a list; an ISO date is neither.
+  const asString = (candidate: unknown) =>
+    typeof candidate === 'string' ? candidate : undefined;
+  const seed = asString(defaultValue) ?? asString(value);
+
   return (
     <Field label={label} invalid={messages.length > 0}>
       {/* The adapter's props come FIRST so an explicit prop at the call site
@@ -42,31 +54,29 @@ function FormDateInput(props: FormDateInputProps) {
           or an `onChange` from the call site does not override the binding, it
           severs it. `ref` is the exception that can be shared. */}
       <DateInput
-        name={control.name ?? name}
-        onChange={control.onChange}
-        onBlur={control.onBlur}
-        // The adapter's value SEEDS an uncontrolled field — Conform's
-        // `getInputProps` supplies one, react-hook-form's `register` does not
-        // and leaves the DOM to keep it. It is NOT spread as `value`: that would
-        // control the visible field with an ISO string and show the user
-        // `2026-08-12` where their locale writes `12/08/2026`. Narrowed to a
-        // string because `control` is typed for an `<input>`, where `value` may
-        // also be a number or a list; an ISO date is neither.
-        defaultValue={
-          typeof control.value === 'string' ? control.value : undefined
-        }
+        {...binding}
+        // The adapter's starting value SEEDS an uncontrolled field, and it
+        // arrives under either name: Conform's `getInputProps` emits
+        // `defaultValue`, react-hook-form's `register` emits neither and leaves
+        // the DOM to keep it, Formik and TanStack emit `value` on every render.
+        // Reading only one of the two was a defect — under Conform the seed was
+        // silently dropped and the field rendered empty next to `FormInput`s
+        // that had filled themselves in.
+        //
+        // Neither is passed through as `value`: that would control the visible
+        // field with an ISO string and show `2026-08-12` where the locale writes
+        // `12/08/2026`.
+        defaultValue={seed}
+        value={undefined}
         {...withoutBindingOwned(rest)}
-        // THE BINDING'S `ref` IS NOT FORWARDED, and that is a limitation rather
-        // than an oversight. It has two jobs that want two different elements: a
-        // library reading an uncontrolled value wants the CARRIER, which holds
-        // the ISO string, and a library focusing a field from an error summary
-        // wants the VISIBLE input, since the carrier is hidden and cannot take
-        // focus. One ref cannot be both, and pointing it at the visible field
-        // would hand `12/08/2026` to a library expecting a value — wrong
-        // quietly, which is worse than absent loudly. Adapters that read the
-        // change EVENT are unaffected: it comes off the carrier, so
-        // `event.target.value` is the ISO date and `event.target.name` is the
-        // field. The call site's own `ref` still reaches the visible input.
+        // TWO REFS, because they have two jobs that want two different nodes.
+        // THE BINDING'S goes to the CARRIER: react-hook-form reads `.value` off
+        // the element its ref was given, and given the visible field it would
+        // store `12/08/2026` — or, as measured before this line existed, never
+        // receive the element at all and store `undefined` for every date field
+        // in the form, no matter what was typed. THE CALL SITE'S goes to the
+        // visible input, which is where focus belongs.
+        carrierRef={bindingRef}
         ref={ref}
       />
       {/* Composed rather than passed as props, so the hint keeps its place

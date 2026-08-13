@@ -244,6 +244,54 @@ describe('DateInput', () => {
     });
   });
 
+  describe('locales the ASCII assumption used to break', () => {
+    it('reads and writes the locale own numerals', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="تاريخ الميلاد" />,
+        { locale: 'ar-EG' },
+      );
+      const field = screen.getByRole('textbox');
+      // What an Arabic keyboard sends. This used to be filtered out character
+      // by character AS THE USER TYPED, leaving the field permanently empty.
+      await browser.fill(field, '١٢٠٨٢٠٢٦');
+      expect(carrier(container).value).toBe('2026-08-12');
+      // And it comes back in the same numerals the `Time` beside it uses, not
+      // in ASCII.
+      expect(field).toHaveValue('١٢/٠٨/٢٠٢٦');
+    });
+
+    it('shows a seeded date in the locale own numerals', () => {
+      renderUi(
+        <DateInput
+          name="dob"
+          aria-label="تاريخ الميلاد"
+          defaultValue="2026-08-12"
+        />,
+        { locale: 'ar-EG' },
+      );
+      expect(screen.getByRole('textbox')).toHaveValue('١٢/٠٨/٢٠٢٦');
+    });
+
+    it('stays Gregorian where the locale calendar is not', () => {
+      renderUi(
+        <DateInput name="dob" aria-label="Date" defaultValue="2026-08-12" />,
+        { locale: 'th-TH' },
+      );
+      // Thai is Buddhist by default: unpinned, the pattern was Buddhist and the
+      // numbers were ours, so `2569` on the page and `2569` typed into the
+      // field stored a Gregorian 2569 — 543 years out, in silence.
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+    });
+
+    it('writes the separator the locale writes, not a slash', async () => {
+      renderUi(<DateInput name="dob" aria-label="Geburtsdatum" />, {
+        locale: 'de-DE',
+      });
+      await browser.fill(screen.getByRole('textbox'), '12082026');
+      expect(screen.getByRole('textbox')).toHaveValue('12.08.2026');
+    });
+  });
+
   describe('the traps', () => {
     it('holds nothing for a date that does not exist, rather than sliding it', async () => {
       const onDateChange = vi.fn();
@@ -301,15 +349,33 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
     });
 
-    it('keeps the carrier out of the tab order and the accessibility tree', () => {
+    it('keeps the carrier out of the accessibility tree', () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      // One field, not two: the carrier is `aria-hidden`, so nothing announces
+      // a second textbox holding an ISO string nobody typed.
+      expect(screen.getAllByRole('textbox')).toHaveLength(1);
+    });
+
+    it('sends focus on to the visible field when something focuses the carrier', () => {
       const { container } = renderUi(
         <DateInput name="dob" aria-label="Date of birth" />,
         { locale: 'it' },
       );
-      const hidden = carrier(container);
-      expect(hidden).toHaveAttribute('hidden');
-      expect(hidden).toHaveAttribute('aria-hidden', 'true');
-      expect(hidden).toHaveAttribute('tabindex', '-1');
+      // This is what `FormErrorSummary` does: find the field by `name` — which
+      // is on the carrier — and focus it. Focused, the carrier hands focus
+      // straight on, so a keyboard user lands somewhere they can see and type.
+      carrier(container).focus();
+      expect(screen.getByRole('textbox')).toHaveFocus();
+    });
+
+    it('keeps the carrier out of the tab order', () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      expect(carrier(container)).toHaveAttribute('tabindex', '-1');
     });
 
     it('never marks the carrier required, which would refuse the submit invisibly', () => {
@@ -323,10 +389,56 @@ describe('DateInput', () => {
 
     it('disables the carrier with the field, so nothing is posted for it', () => {
       const { container } = renderUi(
-        <DateInput name="dob" aria-label="Date of birth" disabled />,
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="1985-03-12"
+            disabled
+          />
+        </form>,
         { locale: 'it' },
       );
       expect(carrier(container)).toBeDisabled();
+      // The claim in the title, asserted rather than implied: a disabled control
+      // is not submitted.
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(new FormData(form).getAll('dob')).toEqual([]);
+    });
+
+    it('refuses to carry a defaultValue that is not an ISO date', () => {
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="12/08/2026"
+          />
+        </form>,
+        { locale: 'it' },
+      );
+      // Seeded raw, the field showed empty and the form posted `12/08/2026` —
+      // out of the component whose first promise is that a server never has to
+      // guess which number is the month.
+      expect(screen.getByRole('textbox')).toHaveValue('');
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(new FormData(form).getAll('dob')).toEqual(['']);
+    });
+
+    it('never lets a part be all zeros, at either end', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox');
+      // `00/00/2026` used to be typeable in full: complete-looking, storing
+      // nothing, with nothing to say why.
+      await browser.fill(field, '00002026');
+      expect(field).not.toHaveValue('00/00/2026');
+      expect(carrier(container).value).toBe('');
+
+      await browser.fill(field, '12080000');
+      expect(carrier(container).value).toBe('');
     });
   });
 
