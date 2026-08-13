@@ -211,23 +211,6 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveValue('12/04/5');
     });
 
-    it('survives a Backspace in the middle without losing the date', async () => {
-      const { container } = renderUi(
-        <DateInput name="dob" aria-label="Date of birth" />,
-        { locale: 'it' },
-      );
-      const field = screen.getByRole('textbox');
-      await browser.fill(field, '12082026');
-      expect(field).toHaveValue('12/08/2026');
-
-      // The most ordinary correction there is: put the caret after the day and
-      // rub out one digit. This once produced `10/8` — seven digits of eight
-      // gone, silently.
-      await browser.fill(field, '1/08/2026');
-      expect(field).toHaveValue('10/08/2026');
-      expect(carrier(container).value).toBe('2026-08-10');
-    });
-
     it('never lets a day reach 32', async () => {
       renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
         locale: 'it',
@@ -339,6 +322,59 @@ describe('DateInput', () => {
       // store, 1 February, exist, which is what made it invisible.
       await browser.type(screen.getByRole('textbox'), '2026210');
       expect(carrier(container).value).toBe('2026-02-10');
+    });
+
+    it('deletes one digit from the part it was in, leaving the others alone', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+      expect(field).toHaveValue('12/08/2026');
+
+      // Caret after the day, one Backspace. Re-flowed, this produced
+      // `10/08/2026` — a different real day, submitted in silence.
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('takes the digit in front of a separator when the separator is deleted', async () => {
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      // Backspace with the caret just past the `/`. A separator has no digits of
+      // its own, so re-emitting the mask left the text identical and the key did
+      // nothing — for ever, however many times it was pressed.
+      field.setSelectionRange(3, 3);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+    });
+
+    it('can be emptied from the keyboard', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(field.value.length, field.value.length);
+      // Ten presses for ten characters. Held down, this used to stop dead at
+      // `12/08/` — the field could not be cleared without select-all.
+      for (let press = 0; press < 10; press += 1) {
+        await browser.keyboard('{Backspace}');
+      }
+
+      expect(field.value).toBe('');
+      expect(carrier(container).value).toBe('');
     });
 
     it('keeps the caret behind the digit just typed, not in front of it', async () => {

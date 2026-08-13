@@ -143,6 +143,11 @@ function DateInput(props: DateInputProps) {
 
   const carrier = useRef<HTMLInputElement>(null);
   const field = useRef<HTMLInputElement>(null);
+  // The last text this component put on screen. A change event says what the
+  // field holds NOW; telling a deletion from an insertion needs what it held
+  // before, and reading it back off the node is too late — the browser has
+  // already applied the edit.
+  const shown = useRef('');
 
   /** This locale's numeral for an ASCII digit, and back again. */
   const toLocal = (ascii: string) =>
@@ -241,6 +246,143 @@ function DateInput(props: DateInputProps) {
    * be typed, and is then simply not stored. Blocking it mid-edit would mean
    * refusing the `3` of a `30` that was on its way to March.
    */
+  /**
+   * Walk a masked string and say which part each digit belongs to, and where it
+   * sits.
+   *
+   * The mask lays parts out in fixed slots between fixed literals, so a string
+   * it produced can be read back positionally instead of being re-flowed. That
+   * is the whole difference between a deletion that touches one part and one
+   * that cascades through all three.
+   *
+   * Offsets are in CODE UNITS, because that is what `selectionStart` counts and
+   * what `slice` takes — one locale (`ccp`) writes its numerals above the BMP,
+   * so a digit is not always one unit wide.
+   */
+  const placeDigits = (text: string) => {
+    const digits: {
+      part: DatePart;
+      ascii: string;
+      at: number;
+      size: number;
+    }[] = [];
+    let at = 0;
+    for (const piece of parts) {
+      if (!isPart(piece.type)) {
+        if (text.startsWith(piece.value, at)) at += piece.value.length;
+        continue;
+      }
+      let held = 0;
+      while (at < text.length && held < WIDTH[piece.type]) {
+        const char = String.fromCodePoint(text.codePointAt(at) ?? 0);
+        const ascii = toAscii(char);
+        if (ascii === '') break;
+        digits.push({ part: piece.type, ascii, at, size: char.length });
+        at += char.length;
+        held += 1;
+      }
+    }
+    return digits;
+  };
+
+  /**
+   * A deletion, applied to the part it happened in.
+   *
+   * The flow mask below is right for TYPING and wrong for editing: it pours one
+   * stream of digits back into the slots, so removing a digit — or a separator —
+   * pulls every later digit one place forward. Measured on `12/08/2026`: one
+   * Backspace over the day left `10/08/2026`, a different real day, submitted in
+   * silence; deleting a separator left the digits unchanged, so the mask
+   * re-emitted the same text and the key did nothing at all, for ever.
+   *
+   * Here the previous text is read positionally, the removed range is mapped
+   * onto it, and only the digits inside that range go. Nothing after them moves.
+   * A separator has no digits of its own, so Backspace over one takes the digit
+   * in front of it instead, which is what every mask does and what the user
+   * meant.
+   */
+  const applyDeletion = (
+    before: string,
+    typed: string,
+    caret: number,
+  ): { text: string; iso: string } | null => {
+    const placed = placeDigits(before);
+    if (placed.length === 0) return null;
+
+    // What was cut: the span between the common prefix and the common suffix.
+    let head = 0;
+    while (
+      head < typed.length &&
+      head < before.length &&
+      typed[head] === before[head]
+    ) {
+      head += 1;
+    }
+    let tail = 0;
+    while (
+      tail < typed.length - head &&
+      tail < before.length - head &&
+      typed[typed.length - 1 - tail] === before[before.length - 1 - tail]
+    ) {
+      tail += 1;
+    }
+    const from = head;
+    const to = before.length - tail;
+    if (to <= from) return null;
+
+    const cut = placed.filter(
+      (digit) => digit.at < to && digit.at + digit.size > from,
+    );
+    // Only literals were removed — take the digit in front of the cut with them.
+    const removing =
+      cut.length > 0
+        ? cut
+        : placed.filter((digit) => digit.at + digit.size === from).slice(-1);
+    if (removing.length === 0) return null;
+
+    const held = new Map<DatePart, string>();
+    for (const part of order) held.set(part, '');
+    for (const digit of placed) {
+      if (removing.includes(digit)) continue;
+      held.set(digit.part, (held.get(digit.part) ?? '') + digit.ascii);
+    }
+
+    // NO TRUNCATION HERE, unlike the flow mask. A part left short by a deletion
+    // still has whole parts after it, and they are exactly what "leave the
+    // others alone" means: `1/08/2026`, not `1`. Only the literals with nothing
+    // left on one side of them come off, so an emptied field is empty rather
+    // than a row of separators.
+    const tokens = parts.map((piece) =>
+      isPart(piece.type)
+        ? { literal: false, value: toLocal(held.get(piece.type) ?? '') }
+        : { literal: true, value: piece.value },
+    );
+    const filled = tokens.map((token) => !token.literal && token.value !== '');
+    const first = filled.indexOf(true);
+    const last = filled.lastIndexOf(true);
+    const text =
+      first === -1
+        ? ''
+        : tokens
+            .slice(first, last + 1)
+            .map((token) => token.value)
+            .join('');
+
+    const whole = order.every(
+      (part) => (held.get(part) ?? '').length === WIDTH[part],
+    );
+    return {
+      text,
+      iso: whole
+        ? (formatIsoDate({
+            year: Number(held.get('year')),
+            month: Number(held.get('month')),
+            day: Number(held.get('day')),
+          }) ?? '')
+        : '',
+    };
+  };
+
   const mask = (typed: string): { text: string; iso: string } => {
     // AN ISO DATE PASTED IN IS AN ISO DATE, not eight digits to re-segment.
     // `2026-08-12` out of an API, a spreadsheet or this component's own carrier
@@ -377,8 +519,21 @@ function DateInput(props: DateInputProps) {
     const element = field.current;
     if (element === null) return;
     const iso = carrier.current?.value ?? '';
-    if (iso === '') return;
+    // A HALF-TYPED VALUE IS CLEARED rather than left behind. The carrier is
+    // empty until a date is whole, so an early return here left `١٢/٠٨/` on
+    // screen in the OLD locale's numerals — which the new locale's reader then
+    // scores as no digits at all, so the next keystroke wiped everything typed.
+    // There is no ISO to redraw it from, and text in a numbering system the
+    // field no longer speaks is worse than an empty field.
+    if (iso === '') {
+      if (element.value !== '' && shown.current !== '') {
+        element.value = '';
+        shown.current = '';
+      }
+      return;
+    }
     element.value = display(iso);
+    shown.current = element.value;
   }, [display]);
 
   return (
@@ -401,7 +556,15 @@ function DateInput(props: DateInputProps) {
           const element = event.currentTarget;
           const typed = element.value;
           const caret = element.selectionStart ?? typed.length;
-          const { text, iso } = mask(typed);
+          // A SHORTER STRING IS A DELETION, and a deletion is positional. Only
+          // when the previous text cannot be read back positionally — a paste
+          // over a selection, a value written from outside — does it fall
+          // through to the flow mask.
+          const deleted =
+            typed.length < shown.current.length
+              ? applyDeletion(shown.current, typed, caret)
+              : null;
+          const { text, iso } = deleted ?? mask(typed);
 
           // Written straight onto the node. It is uncontrolled, so React will
           // not re-render it back — and a plain assignment is right HERE,
@@ -412,6 +575,7 @@ function DateInput(props: DateInputProps) {
             const position = caretFor(text, typed, caret);
             element.setSelectionRange(position, position);
           }
+          shown.current = text;
 
           write(iso);
           onDateChange?.(parseIsoDate(iso));
