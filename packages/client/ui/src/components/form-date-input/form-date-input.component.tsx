@@ -35,12 +35,38 @@ function FormDateInput(props: FormDateInputProps) {
   // screen reader announces them as separate statements and the eye sees a list.
   const messages = toMessages(errors);
 
-  // Everything the binding says EXCEPT the two the date field routes itself.
-  // Kept as a spread rather than a hand-picked list, because the hand-picked
-  // list is what dropped Conform's `required`, `id` and `form` — and a
-  // `FormDateInput` rendered outside its `<form>` posts nothing at all without
-  // that last one, while a `FormInput` beside it posts fine.
-  const { value, defaultValue, ref: bindingRef, ...binding } = control;
+  // A ROUTING TABLE, not a blanket spread and not a hand-picked list — both of
+  // those were wrong, in opposite directions.
+  //
+  // The hand-picked list dropped Conform's `required`, `id` and `form`, and a
+  // field rendered outside its `<form>` posts nothing without the last of those.
+  // The blanket spread that replaced it forwarded `type`: declare
+  // `types: { dob: 'date' }`, which is the natural thing to declare for a date,
+  // and the visible field became a NATIVE date picker whose ISO value the mask
+  // then re-segmented into a different date. It also forwarded `pattern`,
+  // `min`, `max` and `step`, which a schema derives from the ISO value and which
+  // are then checked against `12/08/2026` — a `pattern` that can never match
+  // blocks the submit for good, and `min`/`max` are inert on a text input, so
+  // the range goes silently unenforced.
+  //
+  // So: what describes a NATIVE CONTROL THIS IS NOT never travels. Everything
+  // else does, and `DateInput` routes `name`, `form`, `onChange` and `onBlur` to
+  // the carrier itself, because that is the node with the name.
+  const {
+    value,
+    defaultValue,
+    ref: bindingRef,
+    type,
+    pattern,
+    min,
+    max,
+    step,
+    accept,
+    multiple,
+    checked,
+    defaultChecked,
+    ...binding
+  } = control;
   // Narrowed to a string because `control` is typed for an `<input>`, where a
   // value may also be a number or a list; an ISO date is neither.
   const asString = (candidate: unknown) =>
@@ -55,6 +81,11 @@ function FormDateInput(props: FormDateInputProps) {
           severs it. `ref` is the exception that can be shared. */}
       <DateInput
         {...binding}
+        // The fallback the spread quietly dropped. `name` is optional on the
+        // port's control, and without one the carrier is nameless: nothing is
+        // submitted, and `FormErrorSummary` — which finds a field by `name` —
+        // cannot reach it. Those are the two jobs the carrier exists for.
+        name={control.name ?? name}
         // The adapter's starting value SEEDS an uncontrolled field, and it
         // arrives under either name: Conform's `getInputProps` emits
         // `defaultValue`, react-hook-form's `register` emits neither and leaves

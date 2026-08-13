@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { Field } from '../field/field.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
@@ -43,6 +44,12 @@ function FormInput(props: FormInputProps) {
           binding, it severs it. `ref` is the exception that can be shared. */}
       <Input
         {...control}
+        // The port types `type` as the platform does — every native value. The
+        // design system accepts one fewer (`date` is refused, ADR-0027), so the
+        // two disagree by exactly that member and the narrowing has to be said
+        // out loud rather than left to a spread. A binding that really does
+        // declare `date` gets the same dev warning any other caller does.
+        type={control.type as ComponentProps<typeof Input>['type']}
         {...withoutBindingOwned(rest)}
         ref={mergeRefs(control.ref, ref)}
       />

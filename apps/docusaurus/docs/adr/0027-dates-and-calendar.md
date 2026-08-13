@@ -171,13 +171,24 @@ veneer over the platform's control, and the two points below say what each half 
    happens to have. So `it` writes `12/08/2026`, `en-US` `08/12/2026`, `de` `12.08.2026` and `ar-EG`
    `١٢/٠٨/٢٠٢٦`, and every one of them stores `2026-08-12`.
 
-   **The calendar is pinned to Gregorian**, and that is what the scope boundary below has to look
-   like in code rather than only in prose. Left unpinned it was not a missing feature but a silent
-   wrong answer: `th-TH` is Buddhist by default, so the field took a Buddhist frame and filled it with
-   our Gregorian numbers — a user read `2569` off the `Time` beside the field, typed `2569`, and the
-   carrier stored `2569-08-12`. The numerals are deliberately **not** pinned, for the same reason the
-   order is not: an `ar-EG` page renders `١٢` in every cell, and a field beside them showing `12`
-   would be this ceiling one layer down.
+   **The calendar is pinned to Gregorian, and that pin does less than it first appears** — which is
+   worth stating precisely, because an earlier draft of this paragraph claimed more. Measured: for
+   `th-TH` and `fa-IR` the pinned and unpinned patterns have the same parts, the same order and the
+   same literals, and differ only in the year VALUE — which this component discards, since it fills
+   the frame from its own ISO parse. What the pin actually removes is the **era**: unpinned,
+   `ja-JP-u-ca-japanese` yields an `era` part and `zh-TW-u-ca-roc` a `民國`, so the field would have
+   shown `R2026/08/12` — a Gregorian year stamped with an era that contradicts it.
+
+   What the pin cannot do is reconcile the YEAR, and that gap is the scope boundary showing through:
+   on a `th-TH` page a `Time` renders 2569 and this field renders 2026 for the same day, so a user who
+   types the year they just read stores a date 543 years out. There is no repair inside a Gregorian
+   component — the honest answer is to **say so**, and the component warns in development when the
+   locale in scope resolves to a calendar it does not implement.
+
+   The numerals are deliberately **not** pinned, for the same reason the order is not: an `ar-EG` page
+   renders `١٢` in every cell, and a field beside them showing `12` would be this ceiling one layer
+   down. The bidi marks in the separators are kept for the same reason — they are what put the three
+   groups in the right visual order, and `Time` has them.
 
    **A mask, because a date field should not accept what is not a date.** Only digits survive — the
    locale's or ASCII — and the separators are put back from the pattern, so `12082026` becomes

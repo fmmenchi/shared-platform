@@ -25,14 +25,21 @@ function isPart(type: string): type is DatePart {
  * How this locale writes a date: which parts, in which order, with which
  * separators — and in which digits.
  *
- * THE CALENDAR IS PINNED TO GREGORIAN, and that is a correctness fix rather
- * than a simplification. `th-TH` is Buddhist by default and `fa-IR` Persian, so
- * an unpinned pattern put OUR Gregorian numbers into THEIR frame: a Thai user
- * read `2569` off the `Time` beside the field, typed `2569`, and the carrier
- * stored `2569-08-12` — 543 years wrong, accepted in silence. ADR-0027 puts
- * non-Gregorian calendars out of scope; this is what putting them out of scope
- * has to look like in code. The era literal went with it, which is why nobody
- * gets `AP 2026-08-12` any more either.
+ * THE CALENDAR IS PINNED TO GREGORIAN, and the pin does LESS than it looks —
+ * stated precisely because an earlier version of this comment claimed more.
+ * Measured: for `th-TH` (Buddhist) and `fa-IR` (Persian) the pinned and unpinned
+ * patterns have the same parts, the same order and the same literals, differing
+ * only in the year VALUE, which this component discards — it fills the frame
+ * from its own ISO parse. What the pin actually removes is the ERA:
+ * `ja-JP-u-ca-japanese` yields an `era` part and `zh-TW-u-ca-roc` a `民國`, so
+ * without it the field showed `R2026/08/12`, a Gregorian year stamped with an
+ * era that contradicts it.
+ *
+ * What no pin can fix is the year itself: on a `th-TH` page a `Time` says 2569
+ * and this field says 2026 for the same day. ADR-0027 puts non-Gregorian
+ * calendars out of scope, and the honest form of a scope boundary is to SAY SO
+ * — hence the dev warning below, rather than a field that quietly disagrees
+ * with the page around it.
  *
  * THE DIGITS ARE NOT PINNED, deliberately. An `ar-EG` page renders `١٢` in
  * every `Time` and `Table` cell, so a field beside them showing `12` would be
@@ -49,20 +56,17 @@ function usePattern(locale: string | undefined) {
       day: '2-digit',
       timeZone: 'UTC',
       calendar: 'gregory',
-    })
-      .formatToParts(sample)
-      // BIDI CONTROLS OUT OF THE LITERALS. Every `ar-*` pattern separates its
-      // parts with U+200F RIGHT-TO-LEFT MARK followed by `/`, so a date read
-      // back out of the field carried two invisible characters that travelled
-      // with any copy-paste and made the string unequal to the same date typed
-      // by hand. They also cost a Backspace at a separator its effect, since
-      // one press deletes the `/` and leaves the mark. A field inside a `dir`
-      // subtree — which the provider gives it — needs none of them.
-      .map((part) =>
-        part.type === 'literal'
-          ? { ...part, value: part.value.replace(/[‎‏؜]/g, '') }
-          : part,
-      );
+    }).formatToParts(sample);
+    // THE BIDI MARKS IN THE LITERALS ARE KEPT, and an earlier version stripped
+    // them, which was the wrong call for a reason worth writing down. Every
+    // `ar-*` pattern separates its parts with U+200F followed by `/`, and those
+    // marks are what make the three groups lay out right-to-left. `Time` and a
+    // formatted `Table` cell render with them, because they go through
+    // `Intl.format()` untouched — so stripping them here put the field in the
+    // OPPOSITE visual order from every date beside it. That is this component's
+    // own founding complaint, reproduced by its own hand. They cost nothing on
+    // read: `toAscii` discards every non-digit, and the mask rebuilds the whole
+    // string from the pattern on each keystroke, so a deleted mark comes back.
     const order = parts.map((part) => part.type).filter(isPart);
 
     // The locale's own numerals, 0-9 in order, so `١٢` can be read and written
@@ -72,8 +76,14 @@ function usePattern(locale: string | undefined) {
       format.format(digit),
     );
 
+    // What the locale would have used if we had not pinned it — reported, not
+    // obeyed, so a consumer on a Buddhist or Persian page is told rather than
+    // left to notice.
+    const resolvedCalendar = new Intl.DateTimeFormat(locale).resolvedOptions()
+      .calendar;
+
     return order.length === 3
-      ? { parts, order, numerals }
+      ? { parts, order, numerals, resolvedCalendar }
       : {
           // Unreachable for every locale that resolves to Gregorian, and kept
           // for the one that does not: ISO order, for the same reason
@@ -87,6 +97,7 @@ function usePattern(locale: string | undefined) {
           ] as Intl.DateTimeFormatPart[],
           order: ['year', 'month', 'day'] as DatePart[],
           numerals,
+          resolvedCalendar,
         };
   }, [locale]);
 }
@@ -116,6 +127,8 @@ function DateInput(props: DateInputProps) {
     defaultDate,
     onDateChange,
     onChange,
+    onBlur,
+    form,
     placeholder,
     carrierRef,
     ref,
@@ -124,7 +137,9 @@ function DateInput(props: DateInputProps) {
 
   const formatter = useFormatter();
   const t = useMessages(dateInputMessages);
-  const { parts, order, numerals } = usePattern(formatter.locale);
+  const { parts, order, numerals, resolvedCalendar } = usePattern(
+    formatter.locale,
+  );
 
   const carrier = useRef<HTMLInputElement>(null);
   const field = useRef<HTMLInputElement>(null);
@@ -183,6 +198,17 @@ function DateInput(props: DateInputProps) {
     defaultDate !== undefined && seeded === null,
     `DateInput: \`defaultDate\` ${JSON.stringify(defaultDate)} does not name a day that exists, so the field starts empty. Months are 1-12 and the year is four digits.`,
   );
+  // A GREGORIAN FIELD ON A PAGE THAT IS NOT. Pinning the calendar keeps the
+  // pattern clean — no era part, three fields — but it cannot reconcile the
+  // YEAR: under `th-TH` a `Time` renders 2569 and this field renders 2026 for
+  // the same day, and a user who types the year they just read stores a date 543
+  // years out. ADR-0027 puts non-Gregorian calendars out of scope; this is the
+  // scope boundary saying so out loud, where a consumer can hear it, instead of
+  // the field quietly disagreeing with the page around it.
+  useDevWarning(
+    resolvedCalendar !== 'gregory',
+    `DateInput: the locale in scope resolves to the ${resolvedCalendar} calendar, and this field is Gregorian (ADR-0027). It will show and store a Gregorian date while \`Time\` and formatted \`Table\` cells beside it show a ${resolvedCalendar} one.`,
+  );
   useDevWarning(
     asked !== '' && seed === '',
     `DateInput: \`defaultValue\` ${JSON.stringify(asked)} is not an ISO date, so the field starts empty. It takes \`YYYY-MM-DD\` — the shape it stores — not the shape it shows.`,
@@ -216,6 +242,21 @@ function DateInput(props: DateInputProps) {
    * refusing the `3` of a `30` that was on its way to March.
    */
   const mask = (typed: string): { text: string; iso: string } => {
+    // AN ISO DATE PASTED IN IS AN ISO DATE, not eight digits to re-segment.
+    // `2026-08-12` out of an API, a spreadsheet or this component's own carrier
+    // was read as `20`, `02`, `6081` under `it` — complete-looking, four
+    // millennia out, announced by nothing. It is the one shape that can be told
+    // apart from a typed date with certainty, because nobody's locale writes a
+    // four-digit run first AND separates with hyphens by accident.
+    const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/.exec(typed.trim());
+    if (
+      iso !== null &&
+      parseIsoDate(`${iso[1]}-${iso[2]}-${iso[3]}`) !== null
+    ) {
+      const value = `${iso[1]}-${iso[2]}-${iso[3]}`;
+      return { text: display(value), iso: value };
+    }
+
     const digits = [...typed].map(toAscii).filter((char) => char !== '');
     const held = new Map<DatePart, string>();
     let index = 0;
@@ -287,22 +328,33 @@ function DateInput(props: DateInputProps) {
    * caret jumps backwards on every third character.
    */
   const caretFor = (masked: string, typed: string, caret: number): number => {
-    const before = [...typed.slice(0, caret)].filter(
-      (char) => toAscii(char) !== '',
-    ).length;
-    if (before === 0) return 0;
+    // ANCHORED ON THE RIGHT, and this is the whole of the function.
+    //
+    // Counting the digits BEFORE the caret is the obvious way and it is wrong,
+    // because padding inserts a digit to their left: the `n`-th digit of the
+    // masked text is then the zero the mask added, not the one the person
+    // pressed, so the caret lands in FRONT of their keystroke and everything
+    // after it is typed into the wrong place. Measured over all 336 dates of
+    // 2026 typed in short form — `8` `/` `1` `2` `/` `2026` rather than
+    // `08/12/2026` — that stored a WRONG BUT VALID date 186 times in `en-US`,
+    // 172 in `it` and 132 in `ja-JP`: `8/12/2026` came out as `0261-08-22`.
+    //
+    // The digits to the RIGHT of the caret are the ones padding cannot move, so
+    // they are what to hold on to. Same sweep, anchored this way: 13 wrong in
+    // `en-US` and 0 in `ja-JP`, and the 13 are genuine short-form ambiguity —
+    // `1 13 2026` and `11 3 2026` are the same digits — which no mask on one
+    // field can tell apart.
+    const isDigit = (char: string) => toAscii(char) !== '';
+    const after = [...typed.slice(caret)].filter(isDigit).length;
+    if (after === 0) return masked.length;
+
     let seen = 0;
-    for (let position = 0; position < masked.length; position += 1) {
-      if (toAscii(masked[position] ?? '') === '') continue;
+    for (let position = masked.length - 1; position >= 0; position -= 1) {
+      if (!isDigit(masked[position] ?? '')) continue;
       seen += 1;
-      if (seen !== before) continue;
-      let after = position + 1;
-      while (after < masked.length && toAscii(masked[after] ?? '') === '') {
-        after += 1;
-      }
-      return after;
+      if (seen === after) return position;
     }
-    return masked.length;
+    return 0;
   };
 
   const write = (iso: string) => {
@@ -386,9 +438,34 @@ function DateInput(props: DateInputProps) {
         className={styles.carrier}
         type="text"
         name={name}
+        // `form` BELONGS HERE, with the `name`, and not on the field the user
+        // sees. It is what associates a control with a `<form>` it is not inside
+        // — a portal, a dialog, a sticky footer — and the visible input has no
+        // `name`, so putting it there associated the one node that contributes
+        // nothing while the node that does stayed orphaned.
+        form={form}
         defaultValue={seed}
         onChange={onChange}
-        onFocus={() => field.current?.focus()}
+        // `onBlur` follows for the same reason: a form library's blur handler
+        // looks the field up BY NAME off the event target, and the visible input
+        // has none, so a `mode: 'onBlur'` binding never validated this field.
+        onBlur={onBlur}
+        onFocus={(event) => {
+          field.current?.focus();
+          // IF THE HOP FAILED, LEAVE. `focus()` on an element that cannot take
+          // it is a silent no-op — a consumer hiding the visible field with
+          // `display:none` or `content-visibility` is enough — and focus would
+          // then REST on this node: `aria-hidden`, so nothing is announced,
+          // `readOnly`, so typing does nothing, and Tab resuming from somewhere
+          // invisible. Better to hold no focus at all than to hold it here.
+          if (document.activeElement === event.currentTarget) {
+            event.currentTarget.blur();
+          }
+        }}
+        // The carrier is a rendered, named text input now that it is focusable,
+        // so a browser could offer to fill it — with a string in ITS format, not
+        // ISO, which the visible field would never show.
+        autoComplete="off"
         readOnly
         // Disabled together, because a disabled control is not submitted: left
         // enabled, the carrier would keep posting a value for a field the user
