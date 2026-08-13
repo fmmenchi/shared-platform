@@ -88,22 +88,24 @@ So the next item is a decision, not a deduction — and this page will say which
   stopped being a bet on engines: `::-webkit-slider-thumb` and `::-moz-range-thumb` still need
   writing twice, but they are writable, and the track is a background this package already paints
   from a token.
-- **Dates: `DateField`, then `Calendar`.** Still unbuilt, but no longer deferred on a hunch — this
-  line used to read _"the native inputs are inconsistent across engines and the hand-rolled ones are
-  a calendar widget with a locale problem"_, and ADR-0027 replaced that with measurement. The native
-  `input[type=date]` turns out to be ours to the pixel when closed, ISO in its value, and state the
-  browser keeps; what it will not do decides the rest. `min`/`max` are an interval, not a set, so
-  **per-date rules** are not expressible — that is what a `Calendar` is for. And its segment order is
-  the **browser's**, unreachable from the page, so on a product whose language the app declares it
-  contradicts the `Time`, `Numeric` and formatted `Table` cells beside it — that is what a
-  `DateField` is for: three labelled native fields in a `Fieldset`, ordered by the declared locale,
-  posting one ISO value.
+- **Dates: `DateInput` + `FormDateInput`, then `Calendar`.** Still unbuilt, but no longer deferred on
+  a hunch — this line used to read _"the native inputs are inconsistent across engines and the
+  hand-rolled ones are a calendar widget with a locale problem"_, and ADR-0027 replaced that with
+  measurement. The native `input[type=date]` turns out to be ours to the pixel when closed, ISO in
+  its value, and state the browser keeps; what it will **not** do decides the rest. `min`/`max` are
+  an interval, not a set, so **per-date rules** are not expressible — that is what a `Calendar` is
+  for. And its segment order is the **browser's**, unreachable from the page, so on a product whose
+  language the app declares it contradicts the `Time`, `Numeric` and formatted `Table` cells beside
+  it.
 
-  **There is deliberately no `DateInput` component.** `Input` is transparent, so
-  `<Input type="date" />` is one line away and its page states the trade; naming it would mean
-  recommending a field that is correct only while the browser's locale happens to be the user's, and
-  turns silently wrong the day a product adds a second language. A time field is the same
-  consideration on `type="time"` and waits for someone to ask.
+  So `DateInput` is **not** a wrapper around the platform's control: it is three labelled native
+  fields in the declared locale's order, posting one ISO value under one `name`, bare in the way
+  `SegmentedControl` is bare — with `FormDateInput` composing the legend, the hint and the errors
+  around it exactly as every other `Form*` adapter does. The platform's control is not blocked and
+  not wrapped: `<Input type="date" />` is one line away and its page states the trade, because a
+  component of ours around it would be one that is correct only while the browser's locale happens
+  to be the user's, and turns silently wrong the day a product adds a second language. A time field
+  is the same consideration on `type="time"` and waits for someone to ask.
 
 ## Keeping it true
 

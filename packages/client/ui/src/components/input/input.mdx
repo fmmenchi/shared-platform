@@ -43,12 +43,16 @@ consumer concern (ADR-0013).
 
 #### `type="date"`, and the one thing it will not do
 
-The date field is worth calling out, because this page is the only place it lives: **there is no
-`DateInput` component, deliberately** (ADR-0027). `<Input type="date" />` is measured to be right —
-it lines up with a text field to the pixel, the tokens reach the closed control, `color-scheme`
-reaches the parts the browser paints, it wires into `Field`, `min`/`max` reach `ValidityState`, and
-the browser keeps the value across `form.reset()`. On touch it opens the operating system's own date
-sheet, which beats anything a design system would draw.
+**`DateInput` is not this.** The design system's date field is three labelled parts in the order your
+declared locale gives (ADR-0027); the platform's own date control is what you get here, and this page
+is the only place it is documented — deliberately, because reaching for it should be a decision
+rather than a default.
+
+It is measured to be right in almost every way: `<Input type="date" />` lines up with a text field to
+the pixel, the tokens reach the closed control, `color-scheme` reaches the parts the browser paints,
+it wires into `Field`, `min`/`max` reach `ValidityState`, and the browser keeps the value across
+`form.reset()`. On touch it opens the operating system's own date sheet, which beats anything a
+design system would draw.
 
 What it will not do is **follow the locale you handed `UiProvider`**. The order of its segments —
 `dd/mm/yyyy` against `mm/dd/yyyy` — comes from the browser, in practice the operating system's
@@ -56,10 +60,9 @@ regional format, and nothing on the page can reach it. Wrapping it in `lang="it-
 that was measured. So on a product whose language your app declares, a `Time`, a `Numeric` or a
 formatted `Table` cell can read `12/08/2026` while this field beside it reads the other way round.
 
-Use it when the browser's locale **is** your user's locale, and know that the day your product adds
-a second language the assumption stops holding without anything breaking. That conditional is
-exactly why the design system does not put a component name on this field: `DateField`, which is
-decided but not yet built, is the one whose order follows the locale you declared.
+Reach for it when the browser's locale **is** your user's locale — and know that the day your product
+adds a second language, the assumption stops holding without anything breaking. When your app owns
+its language, use `DateInput` and `FormDateInput` instead (decided, not yet built).
 
 For per-date rules — "only these slots", "never on a Tuesday", "these three days are booked" —
 `min`/`max` are an interval and not a set; that is what `Calendar` (also decided, also unbuilt) is

@@ -12,14 +12,15 @@
 
 > **Amended 2026-08-13, while still `proposed`.** A third ceiling was found after the first version
 > was written: the native field cannot follow the locale the design system was **given**, which is
-> the locale every other formatted thing on the page follows. That ceiling **replaces** the date
-> field rather than adding to it. The first version's `DateInput` is withdrawn — not because the
-> native control is bad, but because naming it would have meant recommending a component that is
-> correct only while an external fact holds and silently wrong afterwards. In its place the design
-> system names one field, `DateField` — GOV.UK's "memorable date", promoted from a recipe to a
-> component. The `Calendar` is unchanged, the segmented box is still rejected though for a reason the
-> first version got wrong, and `<Input type="date" />` remains available to anyone who wants the
-> platform's control with its trade stated.
+> the locale every other formatted thing on the page follows. It does not add a component — it
+> **changes what `DateInput` is**. The first version made `DateInput` a veneer over
+> `<input type="date">`; this one gives the name to GOV.UK's "memorable date", three labelled native
+> fields in the declared locale's order, promoted from a documented recipe to a component with the
+> ordinary `FormDateInput` twin beside it. The platform's own control is neither wrapped nor blocked:
+> it stays one line away as `<Input type="date" />`, with its trade written on `Input`'s page, because
+> wrapping it would have meant recommending a field that is correct only while an external fact holds
+> and silently wrong afterwards. `Calendar` is unchanged, and the segmented box is still rejected
+> though for a reason the first version got wrong.
 
 ## Context and problem statement
 
@@ -145,42 +146,20 @@ are the two a grid needs, already exercised by Menubar, Tabs, Toolbar and Segmen
 
 ## Decision
 
-**Option 2, promoted from a recipe to a component, is the one date field the design system names.
-Option 3's `Calendar` is built. The native input of option 1 stays reachable and stays unnamed.
+**Option 2, promoted from a recipe to a component and its bound twin, is the design system's date
+entry. Option 3's `Calendar` is built. The native input of option 1 keeps no component of ours.
 Option 4 stays rejected — for a different reason than the first draft gave.** The third ceiling above
 is what changed, and the measurement below is what makes the promotion affordable.
 
-1. **No `DateInput` component — and the native field is not blocked either.** `Input` is transparent,
-   so `<Input type="date" />` already works, and it already looks right: measured, it lines up with a
-   text field to the pixel, the tokens reach the closed control, `color-scheme` inherits down to the
-   parts the browser paints, and it wires into `Field` like any other control. The question was never
-   whether a consumer **can** use the platform's date field. It is whether the design system gives it
-   a name, a page, a roadmap row and a recommendation.
+The pair is the ordinary one — `DateInput` and `FormDateInput`, the same shape as `Input`/`FormInput`
+and `SegmentedControl`/`FormSegmentedControl`. **The name `DateInput` belongs to ours**, not to a
+veneer over the platform's control, and the two points below say what each half holds.
 
-   It does not, and the third ceiling is the reason. A blessed `DateInput` would be a component this
-   package recommends **while knowing it contradicts the package's own locale contract**, guarded by
-   a rule no component can check: _use it where the browser's locale is the user's_. That is a
-   promise an app makes at one moment and stops keeping without anything breaking — a product ships
-   in one language, adds a second a year later, and every `DateInput` already written turns silently
-   wrong while every page keeps working. Nobody goes back to swap them, because nothing failed.
-   Shipping the trap together with the rule for avoiding it is worse than shipping neither: the rule
-   gets read by exactly the people who did not need it.
-
-   What the native control still does better is written on `Input`'s page rather than buried. It is
-   one tag where a `<fieldset>` of three does not fit; its indicator and its keyboard are the
-   platform's; `showPicker()` is there for a consumer who wants their own trigger; and on touch it
-   opens the operating system's own date sheet, which beats anything we would draw. A consumer whose
-   declared locale is the browser's writes `<Input type="date" />` and gets all of it, with the
-   caveat standing next to it. The design system simply does not put its name on the trade. The same
-   goes for `type="time"`.
-
-   **And no `FormDateInput`**, which an earlier draft promised: `FormInput` already forwards `type`
-   from the call site, so `<FormInput name="dob" type="date" />` is that field, bound, with nothing
-   of ours in between.
-
-2. **`DateField` — three labelled fields in a `Fieldset`, ordered by the design system's locale.**
-   **This is the date field, and the only one this package names.** It is GOV.UK's "memorable date",
-   and the earlier draft left it a documented recipe on the
+1. **`DateInput` — the primitive, and it is bare.** Three labelled numeric fields in the order the
+   declared locale gives, plus one carrier holding the ISO value. It owns **no legend**, exactly as
+   `SegmentedControl` owns none: naming a group is the composition's job, and this package already
+   draws that line for every group control it ships. It is GOV.UK's "memorable date", and the earlier
+   draft left it a documented recipe on the
    grounds that "which fields, which validation copy" is app content. That was right about the copy
    and wrong about the order: **the field order is not app content, it is a locale question**, and it
    is the one the design system has to answer for a page to be consistent with itself. It is also the
@@ -191,13 +170,24 @@ is what changed, and the measurement below is what makes the promotion affordabl
    this workspace by `toMachineDate` — so `it` gets day-month-year and `en-US` month-day-year, read
    from the locale the provider was **given** rather than the one the browser happens to have.
 
-   **The anatomy stays native the whole way down.** A `<fieldset>` named by its `<legend>`, and three
-   ordinary `<input inputmode="numeric">`, each with its own `<label>`, placed in the locale's order.
-   No roving focus, no `role="spinbutton"`, no keyboard of ours: Tab moves between them because they
-   are three real fields, `autocomplete="bday-day"` and its siblings reach them, each is announced
-   without being told how, and every one of them is a control the browser draws and owns. This is the
-   cheapest accessible date entry that exists, it composes `Fieldset`, `FieldsetContent` and `Input`
-   — all of which already ship — and that is what makes the promotion affordable at all.
+   **The anatomy stays native the whole way down.** Three ordinary `<input inputmode="numeric">`,
+   each with its own `<label>`, placed in the locale's order. No roving focus, no `role="spinbutton"`,
+   no keyboard of ours: Tab moves between them because they are three real fields,
+   `autocomplete="bday-day"` and its siblings reach them, each is announced without being told how,
+   and every one of them is a control the browser draws and owns. It composes `Input`, which already
+   ships, and that is what makes the promotion affordable at all.
+
+   The part labels — "Day", "Month", "Year" — belong to the primitive, because they are its anatomy
+   and their **order** is the locale's. The name of the whole thing does not: that is a `<legend>`,
+   and a legend belongs to whoever wraps the control, exactly as it does for a radio group or a
+   segmented control. Unwrapped, `DateInput` is a group with no name, which is what a bare
+   `SegmentedControl` is too.
+
+   **`ref` has a home here, and that is one place this beats its group-shaped siblings.**
+   `FormSegmentedControl` declines to forward `ref` on the grounds that "there is no 'the input' of a
+   radio group", so an error summary cannot focus it. This has three real fields, and the answer is
+   the **first visible part** — never the carrier, which is `hidden` and therefore not focusable, and
+   a `ref` pointed at an unfocusable element is the same failure wearing a prop.
 
    **What the component adds over the recipe is one `name`.** The recipe posts three fields and
    leaves the app to recombine them; the component posts one ISO value, and the way it does that was
@@ -223,19 +213,62 @@ is what changed, and the measurement below is what makes the promotion affordabl
    **Overriding the language is a nested `UiProvider`, not a prop.** The mechanism already exists: a
    nested provider merges its adapters over the inherited ones, so declaring `i18n` again re-locales
    the subtree, and it costs no DOM — the wrapper element is elided when neither direction nor theme
-   changes. A `locale` prop on `DateField` alone would be worse in two ways that matter. It would let
+   changes. A `locale` prop on `DateInput` alone would be worse in two ways that matter. It would let
    the field say `it` while the `Time` beside it says `en`, which is the exact mismatch this decision
    exists to remove; and it **cannot carry direction** — override to `ar` through a prop and the
    segments stay left-to-right, where the nested provider re-derives `dir` from the locale it was
    given. No component in this package takes a `locale` prop today, `Time` and `Numeric` included,
    and this is not the one to start with.
 
-3. **`Calendar` is built**, and the reason is the first ceiling rather than dissatisfaction with the
+2. **`FormDateInput` — the bound twin, and it composes everything**, which is what the `Form*` layer
+   is for in this package. `FormInput` wraps `Field` around `Input` with the description and the
+   errors; `FormSegmentedControl` wraps `Fieldset` + `FieldsetLegend` + `FieldsetContent` around a
+   bare `SegmentedControl` for the same reasons a group needs. This is the second shape, with nothing
+   invented for it:
+
+   ```tsx
+   <Fieldset invalid={hasErrors}>
+     <FieldsetLegend>{label}</FieldsetLegend>
+     <FieldsetContent>
+       <DateInput {...control} />
+     </FieldsetContent>
+     {hint}
+     {errors}
+   </Fieldset>
+   ```
+
+   The group is named **once**, by the legend, and `DateInput` is handed no label of its own — two
+   names are announced twice, and the visible legend is the one worth keeping. The port's assumption
+   of one control per field holds here rather than bending: the carrier gives `name` and `value` a
+   single real home, its `input` event bubbles like any other, and `ref` reaches the first visible
+   part. A consumer without a form library writes that same composition by hand, exactly as they do
+   today for a radio group.
+
+3. **The native `<input type="date">` keeps no component of ours.** `Input` is transparent, so it is
+   one line away and it already looks right — measured: it lines up with a text field to the pixel,
+   the tokens reach the closed control, `color-scheme` reaches the parts the browser paints, it wires
+   into `Field`, `min`/`max` reach `ValidityState`, and the browser keeps the value across
+   `form.reset()`. On touch it opens the operating system's date sheet, which beats anything we would
+   draw. None of that is in question.
+
+   What it cannot do is follow the declared locale, and a component of ours wrapping it would be one
+   this package **recommends while knowing it contradicts the package's own locale contract**,
+   guarded by a rule no component can check: _use it where the browser's locale is the user's_. That
+   is a promise an app makes at one moment and stops keeping without anything breaking — a product
+   ships in one language, adds a second a year later, and every such field already written turns
+   silently wrong while every page keeps working and every test stays green. Nobody goes back to swap
+   them, because nothing failed.
+
+   So the trade is documented on `Input`'s page instead, where reaching for it is an explicit
+   decision rather than a default the design system nudged a consumer into. The same goes for
+   `type="time"`.
+
+4. **`Calendar` is built**, and the reason is the first ceiling rather than dissatisfaction with the
    field: per-date disabling is the thing the platform does not offer and will not. It ships
    standalone (a booking UI wants a bare calendar), composes with `Popover` for the picker form, and
    **sets a field rather than replacing it** — the field remains the field. Its month and weekday
    names come from the same declared locale as everything else, through `useFormatter()`.
-4. **Option 4 — the segmented box — stays rejected, and the first draft's reason for rejecting it was
+5. **Option 4 — the segmented box — stays rejected, and the first draft's reason for rejecting it was
    wrong.** That reason was "a segments model re-homes the value into React by construction"; the
    carrier above measures it false, and it is withdrawn along with the Temporal gate. What stands is
    the cost, and it is a different cost than it looks. Option 4 is not "three inputs in one border":
@@ -250,11 +283,12 @@ is what changed, and the measurement below is what makes the promotion affordabl
    needs the compact look _and_ the declared locale in the same field, that is a new decision with a
    real name attached, and this is the paragraph it reopens.
 
-### Why one field and not two
+### Why the platform's control gets no component of ours
 
-An earlier version of this amendment shipped both — the native field and `DateField` — with a rule
-for choosing between them. The rule is what killed it, and it is worth recording why, because the
-shape recurs.
+An earlier version of this amendment shipped two date fields: a component wrapping
+`<input type="date">` and, beside it, the three-part one. Both were named, both were recommended, and
+a rule told a consumer which to reach for. The rule is what killed it, and the reason is worth
+recording, because the shape recurs.
 
 A design system may ship a component with a **stated trade** (the `Select` list is the browser's; the
 `Calendar` popup is ours). It may not ship a component with a **conditional defect**: correct while
@@ -283,10 +317,10 @@ Non-goals are as binding as goals, so they are written here rather than discover
 - **`isDateDisabled` is the point.** A predicate per date is the capability the native field lacks;
   without it this component has no reason to exist.
 
-### What `DateField` v1 is, and is not
+### What `DateInput` v1 is, and is not
 
 - **A civil date, same as `Calendar`.** `{ year, month, day }`, months 1–12 as a human and ISO 8601
-  write them rather than `Date`'s 0-based ones, through the **one** parse/format pair `DateField` and
+  write them rather than `Date`'s 0-based ones, through the **one** parse/format pair `DateInput` and
   `Calendar` share. Two components, one vocabulary for a day — and that pair is the first thing
   built, because a date read back as `new Date('2026-08-12')` is the 11th of August in every timezone
   west of Greenwich, which is the defect this whole family exists to stop repeating.
@@ -310,11 +344,11 @@ Non-goals are as binding as goals, so they are written here rather than discover
   learn, no page that has to warn a reader about the page next door. The expensive component stays
   scoped to the one thing the platform refuses, and range selection stays reachable later without
   being paid for now.
-- **Negative, and the sharp end of this amendment: there is no date answer until `DateField` ships.**
+- **Negative, and the sharp end of this amendment: there is no date answer until `DateInput` ships.**
   The native control is one line away and the docs point at it, but the design system's own answer is
-  now days of work rather than the afternoon a blessed `DateInput` would have cost. That is the price
-  of refusing a conditional defect, and it is paid up front.
-- **`DateField` is cheap but not free.** No keyboard of ours and no ARIA of ours, but there is real
+  now days of work rather than the afternoon a veneer over `<input type="date">` would have cost.
+  That is the price of refusing a conditional defect, and it is paid up front.
+- **`DateInput` is cheap but not free.** No keyboard of ours and no ARIA of ours, but there is real
   work in the carrier: writing it through the native value setter, keeping it empty when the parts do
   not name a day, and proving under test that `FormData`, `form.reset()` and a `register()`-style
   binding all still see exactly one field. Days rather than an afternoon, and most of it in tests.
@@ -325,7 +359,7 @@ Non-goals are as binding as goals, so they are written here rather than discover
 - **`Input`'s page takes on a caveat it did not have**: what `type="date"` gives, and what it costs
   on a page whose language the app declares. A component page that documents a trade is the honest
   place for it — a component that hides the trade behind a name is not.
-- The roadmap's date-picker line points here once this is accepted, and `DateField` and `Calendar`
+- The roadmap's date-picker line points here once this is accepted, and `DateInput` and `Calendar`
   move out of **Deferred** when they ship.
 
 ## What would change this
@@ -335,10 +369,10 @@ Non-goals are as binding as goals, so they are written here rather than discover
 Widely would simplify the arithmetic we are about to write, but it no longer gates it.
 
 A way for the page to tell the native field which locale to lay its segments out in would collapse
-the third ceiling, and with it both halves of this amendment: the reason `DateField` exists and the
-reason the native control is not named. It would make a blessed one-tag date field correct
-unconditionally, which is what it was always wanted for. That is the change to watch for, and there
-is no proposal for it.
+the third ceiling, and with it both halves of this amendment: the reason `DateInput` has three parts
+instead of one, and the reason the platform's control is documented rather than wrapped. It would
+make a one-tag date field correct unconditionally, which is what it was always wanted for. That is
+the change to watch for, and there is no proposal for it.
 
 A consumer who needs the compact single-box look **and** the declared locale in one field reopens the
 segmented box, on the cost argument rather than the withdrawn one. A consumer who needs one date in a
