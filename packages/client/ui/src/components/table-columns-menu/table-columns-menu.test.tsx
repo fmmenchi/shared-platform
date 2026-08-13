@@ -141,6 +141,63 @@ describe('TableColumnsMenu', () => {
       );
     };
 
+    it('promises no position it cannot honour', async () => {
+      // THE HALFWAY STATE, which the type now refuses and a JavaScript
+      // consumer can still reach. Measured before this: with `onMove` and
+      // `positionOf` and no `canMove`, every entry announced "Nome, 1 of 2" —
+      // telling the reader the column moves and where it sits — and
+      // Alt+ArrowDown called `onMove` ZERO times, because `canMove?.(…)` is
+      // `undefined` and `undefined` is not true. A promise made in the
+      // accessible name and refused in silence, to precisely the reader who
+      // cannot see that nothing moved.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const onMove = vi.fn();
+      renderUi(
+        // @ts-expect-error the point of the test: the type refuses this pair,
+        // and a JavaScript consumer can still reach it.
+        <TableColumnsMenu
+          columns={columns}
+          hidden={new Set()}
+          canHide={canHideWith(new Set())}
+          onToggle={() => undefined}
+          onMove={onMove}
+          positionOf={() => 1}
+        />,
+      );
+      await open();
+
+      // It says nothing about positions, which is the honest degradation —
+      // moving without the clamp would be guessing on the caller's behalf.
+      expect(
+        screen.getByRole('menuitemcheckbox', { name: 'Città' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('menuitemcheckbox', { name: /2 of 3/ }),
+      ).not.toBeInTheDocument();
+
+      // And it says so where a developer will see it.
+      await waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('`canMove`')),
+      );
+      warn.mockRestore();
+    });
+
+    it('says nothing when reordering was never wired at all', async () => {
+      // The silent case must stay silent: a warning that fires on correct code
+      // teaches people to scroll past the true ones.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      renderUi(menu(new Set()));
+      await open();
+
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
     it('says where each column sits, because the list cannot', async () => {
       renderUi(reorderable());
       await open();

@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { useMessages } from '../../i18n/provider.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 import { Menu } from '../menu/menu.component.js';
 import { MenuTrigger } from '../menu-trigger/menu-trigger.component.js';
@@ -50,7 +51,21 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
     variant = 'ghost',
   } = props;
   const hintId = useId();
-  const reorderable = onMove !== undefined && positionOf !== undefined;
+
+  // ALL THREE OR NONE, and the runtime asks the same question the type does —
+  // because a JavaScript consumer gets no type. Read from two of the three, it
+  // announced "Nome, 1 of 2" and then refused every move in silence: a promise
+  // made in the accessible name, broken for exactly the reader who cannot see
+  // that nothing moved. Announcing nothing is the honest degradation; moving
+  // without the clamp would be guessing on the caller's behalf.
+  const reorderable =
+    onMove !== undefined && positionOf !== undefined && canMove !== undefined;
+
+  useDevWarning(
+    (onMove !== undefined || positionOf !== undefined) && !reorderable,
+    'TableColumnsMenu: reordering needs `onMove`, `canMove` and `positionOf` together — with any of them missing the menu shows no positions and the Alt+arrow gesture does nothing. Spread `useColumnOrder`’s `menuProps`, which supplies all three.',
+  );
+
   const t = useMessages(tableColumnsMenuMessages);
 
   const shown = columns.filter((column) => !hidden.has(column.key)).length;
@@ -84,10 +99,6 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
           // one column names the rows, one is the last still shown — so a single
           // "unavailable" would teach nothing. Which applies is derivable here
           // because only a VISIBLE column can be the last one.
-          // WHY IT IS LOCKED, said rather than implied — a disabled control
-          // with no reason is a dead end. The two reasons are different facts,
-          // so a shared "unavailable" would teach neither; which applies is
-          // derivable here, because only a VISIBLE column can be the last one.
           const reason = locked
             ? isHidden
               ? undefined
@@ -142,7 +153,7 @@ function TableColumnsMenu(props: TableColumnsMenuProps) {
                 // the focus away from the column the reader is holding — the
                 // opposite of what a clamp is for.
                 event.preventDefault();
-                if (canMove?.(column.key, delta)) onMove(column.key, delta);
+                if (canMove(column.key, delta)) onMove(column.key, delta);
               }}
             >
               {column.header}
