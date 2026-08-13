@@ -101,11 +101,12 @@ So the next item is a decision, not a deduction — and this page will say which
   So `DateInput` is **not** a wrapper around the platform's control: it is three labelled native
   fields in the declared locale's order, posting one ISO value under one `name`, bare in the way
   `SegmentedControl` is bare — with `FormDateInput` composing the legend, the hint and the errors
-  around it exactly as every other `Form*` adapter does. The platform's control is not blocked and
-  not wrapped: `<Input type="date" />` is one line away and its page states the trade, because a
-  component of ours around it would be one that is correct only while the browser's locale happens
-  to be the user's, and turns silently wrong the day a product adds a second language. A time field
-  is the same consideration on `type="time"` and waits for someone to ask.
+  around it exactly as every other `Form*` adapter does. The platform's control is not wrapped and,
+  when these land, **not reachable either**: `Input` refuses `type="date"` — its one exception to
+  ADR-0013's transparency — because a field that is correct only while the browser's locale happens
+  to be the user's, and turns silently wrong the day a product adds a second language, is not
+  something to leave lying in reach. `type="time"` is untouched: there is no time field to send
+  anyone to, and it waits for someone to ask.
 
 ## Keeping it true
 

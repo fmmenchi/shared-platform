@@ -41,32 +41,28 @@ consumer concern (ADR-0013).
 
 <Canvas of={InputStories.Types} />
 
-#### `type="date"`, and the one thing it will not do
+#### `type="date"` is refused — use `DateInput`
 
-**`DateInput` is not this.** The design system's date field is three labelled parts in the order your
-declared locale gives (ADR-0027); the platform's own date control is what you get here, and this page
-is the only place it is documented — deliberately, because reaching for it should be a decision
-rather than a default.
+This is **the one exception** to the transparency above, and the only `type` this component does not
+accept (ADR-0027). `type="checkbox"`, `type="range"` and `type="radio"` still pass straight through
+even though `Checkbox`, `Slider` and `Radio` exist, because those are merely duplicative.
+`type="date"` is different: it is wrong on the page.
 
-It is measured to be right in almost every way: `<Input type="date" />` lines up with a text field to
-the pixel, the tokens reach the closed control, `color-scheme` reaches the parts the browser paints,
-it wires into `Field`, `min`/`max` reach `ValidityState`, and the browser keeps the value across
-`form.reset()`. On touch it opens the operating system's own date sheet, which beats anything a
-design system would draw.
-
-What it will not do is **follow the locale you handed `UiProvider`**. The order of its segments —
+The native date control is right in almost every way — it lines up with a text field to the pixel,
+the tokens reach the closed field, `min`/`max` reach `ValidityState`, and on touch it opens the OS
+date sheet. What it will not do is **follow the locale you handed `UiProvider`**. Its segment order —
 `dd/mm/yyyy` against `mm/dd/yyyy` — comes from the browser, in practice the operating system's
-regional format, and nothing on the page can reach it. Wrapping it in `lang="it-IT"` moves nothing;
-that was measured. So on a product whose language your app declares, a `Time`, a `Numeric` or a
-formatted `Table` cell can read `12/08/2026` while this field beside it reads the other way round.
+regional format, and nothing on the page can reach it: wrapping it in `lang="it-IT"` moves nothing,
+measured. So on a product whose language your app declares, a `Time` or a formatted `Table` cell
+reads `12/08/2026` while the field beside it reads the other way round — silently, with no test
+going red.
 
-Reach for it when the browser's locale **is** your user's locale — and know that the day your product
-adds a second language, the assumption stops holding without anything breaking. When your app owns
-its language, use `DateInput` and `FormDateInput` instead (decided, not yet built).
+Reach for **`DateInput`** (and `FormDateInput` when it is bound), whose three parts are ordered by the
+locale you declared. For per-date rules — "only these slots", "never on a Tuesday" — `min`/`max` are
+an interval and not a set; that is `Calendar`.
 
-For per-date rules — "only these slots", "never on a Tuesday", "these three days are booked" —
-`min`/`max` are an interval and not a set; that is what `Calendar` (also decided, also unbuilt) is
-for.
+`type="time"` is untouched: there is no time field to send you to yet, and refusing something with no
+replacement would be the same mistake in the other direction.
 
 ### Adornments (planned)
 

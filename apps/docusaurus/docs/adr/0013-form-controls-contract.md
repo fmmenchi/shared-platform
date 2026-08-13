@@ -48,6 +48,15 @@ Why this dissolves each fear:
   (grid + popover + keyboard) is a _different, much harder_ component, deferred, and when it lands it
   leans on the platform (Popover API + anchor positioning, ADR-0010). It is not "an input".
 
+  > **Amended by [ADR-0027](./0027-dates-and-calendar.md): `type="date"` is the one exception to
+  > transparency.** `Input` refuses it, and `FormInput` inherits the refusal. Measured there: the
+  > native field's segment order comes from the browser and cannot be told to follow the locale this
+  > design system was given, so on a page whose language the app declares it contradicts the `Time`,
+  > `Numeric` and formatted `Table` cells beside it — silently, and without any test going red.
+  > `DateInput` is the replacement, and the refusal ships with it. The exception is narrow and stays
+  > narrow: `type="checkbox"`, `type="range"` and `type="radio"` remain accepted though `Checkbox`,
+  > `Slider` and `Radio` exist, because those are duplicative rather than wrong.
+
 ## Consequences
 
 - The DS gains a full form-control cluster (Input, Textarea, Checkbox, Radio, Switch, Select) as

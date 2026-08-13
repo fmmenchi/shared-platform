@@ -16,11 +16,12 @@
 > **changes what `DateInput` is**. The first version made `DateInput` a veneer over
 > `<input type="date">`; this one gives the name to GOV.UK's "memorable date", three labelled native
 > fields in the declared locale's order, promoted from a documented recipe to a component with the
-> ordinary `FormDateInput` twin beside it. The platform's own control is neither wrapped nor blocked:
-> it stays one line away as `<Input type="date" />`, with its trade written on `Input`'s page, because
-> wrapping it would have meant recommending a field that is correct only while an external fact holds
-> and silently wrong afterwards. `Calendar` is unchanged, and the segmented box is still rejected
-> though for a reason the first version got wrong.
+> ordinary `FormDateInput` twin beside it. The platform's own control is not wrapped **and no longer
+> reachable through `Input`**: `type="date"` is refused, because a field that is correct only while an
+> external fact holds and silently wrong afterwards is not something to recommend _or_ to leave lying
+> in reach. That refusal is the first exception to [ADR-0013](./0013-form-controls-contract.md)'s
+> transparency, and it ships together with `DateInput` rather than before it. `Calendar` is unchanged,
+> and the segmented box is still rejected though for a reason the first version got wrong.
 
 ## Context and problem statement
 
@@ -259,9 +260,29 @@ veneer over the platform's control, and the two points below say what each half 
    silently wrong while every page keeps working and every test stays green. Nobody goes back to swap
    them, because nothing failed.
 
-   So the trade is documented on `Input`'s page instead, where reaching for it is an explicit
-   decision rather than a default the design system nudged a consumer into. The same goes for
-   `type="time"`.
+   **So `Input` refuses it.** Documenting the trade was the weaker half-measure: it leaves the
+   default reachable by anyone who did not read the page, which is everyone in a hurry. `type="date"`
+   is removed from `Input`'s surface, and `FormInput` inherits the refusal because its props derive
+   from `Input`'s.
+
+   The mechanism is two things, because one is not enough and that was checked rather than assumed.
+   React types `type` as `HTMLInputTypeAttribute`, whose union **ends in `(string & {})`** — so
+   `Exclude<HTMLInputTypeAttribute, 'date'>` removes nothing and `type="date"` stays assignable. An
+   `Omit` alone would be decoration. What refuses it is an **explicit allowlist** of the native types
+   `Input` accepts, plus a **`useDevWarning`** for what no type can see: a spread, a JavaScript
+   caller, a value widened to `string`. The warning names the replacement rather than only the
+   refusal.
+
+   This is an **exception to [ADR-0013](./0013-form-controls-contract.md)**, whose whole contract is
+   that these controls spread arbitrary props, and it is the first one. It is recorded there as well
+   as here, because a reader of that ADR must not learn about it from a type error. The exception is
+   narrow on purpose: `Input` still accepts `type="checkbox"`, `type="range"` and `type="radio"`
+   though `Checkbox`, `Slider` and `Radio` exist, because those are merely duplicative. `type="date"`
+   is the only one that is **wrong on the page** rather than redundant.
+
+   **It lands with `DateInput`, not before.** Refusing the platform's control while offering no
+   replacement would take date entry away and give nothing back. `type="time"` is untouched for the
+   same reason — there is no time field to send anyone to, and refusing it would be the same mistake.
 
 4. **`Calendar` is built**, and the reason is the first ceiling rather than dissatisfaction with the
    field: per-date disabling is the thing the platform does not offer and will not. It ships
@@ -297,9 +318,12 @@ either way. "Use it where the browser's locale is the user's" is that second thi
 lives outside the component, outside the page, and outside the test suite, and it fails by staying
 green.
 
-So there is one field, and it is right on every page it appears on. The compact native control is
-still there for anyone who wants it, under `Input`, where using it is an explicit decision instead of
-a default the design system nudged them into.
+So there is one field, and it is right on every page it appears on. The first version of this
+amendment stopped there and left the native control reachable under `Input` with the trade
+documented — which is the same answer one notch weaker: a caveat on a page only protects the people
+who read the page, and the default stays one keystroke away for everyone in a hurry. `Input` refuses
+`type="date"` instead, and the refusal ships with the replacement so that nothing is taken away
+empty-handed.
 
 `Calendar` is not a second field: it is the answer to per-date rules, and it sets whatever field it
 is composed with.
@@ -356,9 +380,11 @@ Non-goals are as binding as goals, so they are written here rather than discover
   announcements, and the tests to keep them honest. At this package's standard — a11y first, axe in
   both themes, an adversarial review before merge — this is days, and the review will find defects
   the way it did on `InputGroup` and `Table`.
-- **`Input`'s page takes on a caveat it did not have**: what `type="date"` gives, and what it costs
-  on a page whose language the app declares. A component page that documents a trade is the honest
-  place for it — a component that hides the trade behind a name is not.
+- **`Input` stops being fully transparent**, and that is a real cost paid to a real defect. One
+  `type` value is refused, `ADR-0013` carries the exception beside its own contract so nobody meets
+  it as a type error first, and the allowlist has to be extended by hand the day the platform adds an
+  input type. Narrow, stated, and the first of its kind — which is exactly why the next one must
+  argue for itself rather than cite this.
 - The roadmap's date-picker line points here once this is accepted, and `DateInput` and `Calendar`
   move out of **Deferred** when they ship.
 
