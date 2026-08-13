@@ -1,4 +1,5 @@
 import { Input } from '../input/input.component.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { formatIsoDate, parseIsoDate } from '../../date/civil-date.js';
 import type { DateInputProps } from './date-input.types.js';
 
@@ -27,11 +28,18 @@ function DateInput(props: DateInputProps) {
 
   // `defaultDate` is sugar over `defaultValue`, so an explicit `defaultValue`
   // still wins — the same precedence every component here gives the call site.
-  const seed =
-    defaultValue ??
-    (defaultDate === undefined
-      ? undefined
-      : (formatIsoDate(defaultDate) ?? undefined));
+  const seeded =
+    defaultDate === undefined ? undefined : formatIsoDate(defaultDate);
+  const seed = defaultValue ?? seeded ?? undefined;
+
+  // SAY SO rather than start empty. `formatIsoDate` refuses a day that does not
+  // exist — which is right, since inventing the 2nd of March out of the 30th of
+  // February is the defect next door — but a field that silently ignores the
+  // seed it was given is the kind of quiet failure that gets debugged twice.
+  useDevWarning(
+    defaultDate !== undefined && seeded === null,
+    `DateInput: \`defaultDate\` ${JSON.stringify(defaultDate)} does not name a day that exists, so the field starts empty. Months are 1-12 and the year is four digits.`,
+  );
 
   return (
     <Input

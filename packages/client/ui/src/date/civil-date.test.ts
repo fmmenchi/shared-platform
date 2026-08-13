@@ -18,14 +18,23 @@ describe('parseIsoDate', () => {
   });
 
   it('does not answer with an instant, so no timezone can move it', () => {
-    // THE defect this module exists to prevent, and it is not hypothetical:
-    // this suite runs in America/Lima (UTC-5), where the browser's own
-    // `valueAsDate` for this string reports 11 August to every local question.
     const parsed = parseIsoDate('2026-08-12');
     expect(parsed).toEqual({ year: 2026, month: 8, day: 12 });
-    // For contrast, the trap itself — proved rather than asserted, so this test
-    // fails if the environment ever stops being able to demonstrate it.
-    expect(new Date('2026-08-12').getDate()).not.toBe(12);
+
+    // THE DEFECT THIS MODULE EXISTS TO PREVENT, stated so that it holds in
+    // every timezone rather than in the one the machine happens to be in.
+    //
+    // `new Date(iso)` is UTC midnight, always. So the LOCAL day it reports is
+    // the ISO day only where the offset is not west of UTC: 11 in America/Lima,
+    // 12 on a UTC runner. THAT THE ANSWER DEPENDS ON WHERE YOU RUN IT is the
+    // defect — and the first version of this test asserted the Lima answer and
+    // went red in CI, which is the same mistake one layer up.
+    const naive = new Date('2026-08-12');
+    expect(naive.getUTCDate()).toBe(12);
+    expect(naive.getDate()).toBe(naive.getTimezoneOffset() > 0 ? 11 : 12);
+
+    // Ours is the 12th wherever it runs, because it never builds an instant.
+    expect(parsed?.day).toBe(12);
   });
 
   it('refuses a day that does not exist', () => {
@@ -77,6 +86,23 @@ describe('formatIsoDate', () => {
   it('refuses to invent a day, rather than rolling it forward', () => {
     expect(formatIsoDate({ year: 2026, month: 2, day: 30 })).toBeNull();
     expect(formatIsoDate({ year: 2026, month: 13, day: 1 })).toBeNull();
+  });
+
+  it('never returns a string its own parser would reject', () => {
+    // Found by attacking it: unbounded, these answered `'12345-01-01'` and
+    // `'00-1-01-01'` — from a function whose whole contract is to produce a
+    // string `parseIsoDate` accepts and the DOM understands. A four-digit year
+    // is the format, not a formality.
+    expect(formatIsoDate({ year: 12345, month: 1, day: 1 })).toBeNull();
+    expect(formatIsoDate({ year: -1, month: 1, day: 1 })).toBeNull();
+    expect(formatIsoDate({ year: 0, month: 1, day: 1 })).toBe('0000-01-01');
+  });
+
+  it('refuses anything that is not a whole number', () => {
+    expect(formatIsoDate({ year: 2026, month: 8.5, day: 12 })).toBeNull();
+    expect(formatIsoDate({ year: 2026, month: 8, day: 12.7 })).toBeNull();
+    expect(formatIsoDate({ year: NaN, month: 8, day: 12 })).toBeNull();
+    expect(formatIsoDate({ year: Infinity, month: 1, day: 1 })).toBeNull();
   });
 
   it('round-trips', () => {

@@ -95,10 +95,16 @@ describe('DateInput', () => {
           day: 12,
         }),
       );
-      // THE DEFECT THIS PREVENTS, proved rather than described: the obvious
-      // hand-rolled conversion answers the 11th here, because this suite runs
-      // west of Greenwich and a `Date` is an instant, not a day.
-      expect(new Date(field().value).getDate()).not.toBe(12);
+      // THE DEFECT THIS PREVENTS, stated so it holds in every timezone rather
+      // than in the one the machine happens to be in. The hand-rolled version
+      // builds an instant at UTC midnight, so its local day is the ISO day only
+      // where the offset is not west of UTC — 11 in America/Lima, 12 on a UTC
+      // runner. That the answer moves with the runner IS the defect; asserting
+      // one runner's answer is how the first version of this test went red in
+      // CI while being perfectly green here.
+      const naive = new Date(field().value);
+      expect(naive.getUTCDate()).toBe(12);
+      expect(naive.getDate()).toBe(naive.getTimezoneOffset() > 0 ? 11 : 12);
     });
 
     it('says null rather than guessing, when the field names no day', async () => {

@@ -11,6 +11,13 @@ const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
  * and a four-digit ISO string can legitimately say `0099`.
  */
 function exists({ year, month, day }: CivilDate): boolean {
+  // `YYYY` IS FOUR DIGITS, and that is a contract rather than a formality: a
+  // year outside this range cannot be written in the shape `formatIsoDate`
+  // promises, and the DOM would not take it either. Unbounded, `format` was
+  // answering `'12345-01-01'` and `'00-1-01-01'` — strings its own parser
+  // rejects, from a function whose whole job is to produce ones it accepts.
+  // (ISO 8601's expanded years need a sign prefix and are a different format.)
+  if (year < 0 || year > 9999) return false;
   if (month < 1 || month > 12 || day < 1 || day > 31) return false;
   const probe = new Date(0);
   probe.setUTCFullYear(year, month - 1, day);
