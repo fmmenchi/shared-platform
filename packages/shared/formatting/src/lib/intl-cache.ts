@@ -73,7 +73,21 @@ function keep<T>(store: Map<string, T>, key: string, value: T): T {
   return value;
 }
 
-/** A date formatter, reused. */
+/**
+ * A date formatter, reused.
+ *
+ * THE ZONE IS AS UNTRUSTED AS THE TAG. `canonicalLocale` has always caught a
+ * malformed locale; the zone arrives from the same places — an app config, a
+ * user profile, a request — and was passed straight through. Measured, it
+ * threw a `RangeError` from inside the render for `America/Sao_Paolo` (the
+ * standing typo for Sao_Paulo), for `GMT+2`, and for an empty string, which
+ * falsified this package's own "nothing throws" in three documents.
+ *
+ * Dropping the zone rather than the whole formatter is the smaller lie: the
+ * date is then in the runtime's zone, which is what leaving it out has always
+ * meant, and the warning says which zone was refused. Returning nothing would
+ * blank a column over one bad string in a config.
+ */
 export function getDateTimeFormat(
   locale: string | undefined,
   options: Intl.DateTimeFormatOptions,
@@ -82,7 +96,34 @@ export function getDateTimeFormat(
   const key = keyOf(tag, options as Record<string, unknown>);
   const cached = dateFormats.get(key);
   if (cached) return cached;
-  return keep(dateFormats, key, new Intl.DateTimeFormat(tag, options));
+
+  try {
+    return keep(dateFormats, key, new Intl.DateTimeFormat(tag, options));
+  } catch (error) {
+    // Only the zone is recovered from. A locale is already canonicalised, so
+    // anything else reaching here is a bad OPTION, and quietly dropping one of
+    // those would be answering a question nobody asked.
+    if (options.timeZone === undefined) throw error;
+    warnOnce(
+      `formatting: time zone ${JSON.stringify(options.timeZone)} is not one this runtime knows — dates are being written in the runtime's own zone instead.`,
+    );
+    const { timeZone: _refused, ...rest } = options;
+    return getDateTimeFormat(locale, rest);
+  }
+}
+
+/**
+ * Said once per distinct message, because this is reached from a render: a
+ * table of a thousand rows would otherwise print a thousand identical lines
+ * and bury whatever came before them.
+ */
+const warned = new Set<string>();
+
+function warnOnce(message: string): void {
+  if (process.env.NODE_ENV === 'production') return;
+  if (warned.has(message)) return;
+  warned.add(message);
+  console.warn(message);
 }
 
 /** A number formatter, reused. */
@@ -101,4 +142,5 @@ export function getNumberFormat(
 export function clearFormatCache(): void {
   dateFormats.clear();
   numberFormats.clear();
+  warned.clear();
 }

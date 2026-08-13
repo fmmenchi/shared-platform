@@ -138,6 +138,20 @@ export function UiProvider({
 }: UiProviderProps) {
   const inherited = useContext(UiContext);
 
+  // READ AS TWO SCALARS, not as an object, and that is what makes the
+  // documented `formatting={{ timeZone: 'Europe/Rome' }}` free. An inline
+  // literal is a new object every render: measured, a memoised consumer
+  // re-rendered three times out of three and got three different `Formatter`s,
+  // and a 300-row table with three formatted columns paid ~25% for it and
+  // discarded 900 formatter objects per render.
+  //
+  // Destructured HERE rather than listed in the dependency array, because the
+  // React Compiler refuses a manual list more specific than the one it infers
+  // — it reads `...formatting` and infers the object. Reading the fields is
+  // the same intent expressed where the compiler can see it.
+  const zone = formatting?.timeZone;
+  const currency = formatting?.currency;
+
   const value = useMemo<UiContextValue>(() => {
     const merged = { ...inherited?.adapters, ...adapters };
     if (merged.i18n == null) {
@@ -151,9 +165,16 @@ export function UiProvider({
         merged.i18n.locale,
         merged.i18n.directionOverride,
       ),
-      formatting: { ...inherited?.formatting, ...formatting },
+      // ASSIGNED RATHER THAN SPREAD, because a spread of `{ timeZone:
+      // undefined }` would overwrite an inherited zone with nothing — the
+      // opposite of "a nested provider states only what it changes".
+      formatting: {
+        ...inherited?.formatting,
+        ...(zone === undefined ? {} : { timeZone: zone }),
+        ...(currency === undefined ? {} : { currency }),
+      },
     };
-  }, [inherited, adapters, formatting]);
+  }, [inherited, adapters, zone, currency]);
 
   // The wrapper carries `dir` and `data-theme`, so a nested provider that
   // changes neither would add an element that says exactly what its ancestor

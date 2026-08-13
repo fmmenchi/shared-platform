@@ -39,9 +39,10 @@ pnpm nx test @fmmenchi/formatting
   `value ? … : ''` anywhere in this package is the one change that must not pass review.
 - **The zone is a stated parameter**, on every date function, and never a fallback dressed up as a
   decision.
-- **Nothing throws into a cell renderer.** `Intl` constructors throw a `RangeError` on `en_US` and
-  on an unknown currency code; both are caught, the first falling back to the runtime locale and the
-  second keeping the number.
+- **Nothing throws into a cell renderer.** `Intl` constructors throw a `RangeError` on `en_US`, on
+  a time zone the runtime does not know, on a MALFORMED currency code (not on one it merely does not
+  recognise — `ZZZ` formats fine), and on a fraction-digit option out of range or `NaN`. Each is
+  caught or coerced at the seam.
 - **Cached and capped.** New formatters go through `getDateTimeFormat`/`getNumberFormat` — never
   `new Intl.…` at a call site — because on a server the locale comes from the request.
 - **`Date` + `Intl`, not Temporal** (not Baseline). `DateInput` is the seam where a Temporal type

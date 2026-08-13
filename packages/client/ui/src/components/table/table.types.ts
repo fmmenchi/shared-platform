@@ -3,7 +3,12 @@ import type { SortBy } from '../../sorting/compare.types.js';
 import type { ColumnWidths } from './use-column-widths.types.js';
 import type { ExpandedRows } from './use-row-expansion.types.js';
 import type { Selection } from '../../selection/selection.types.js';
-import type { ColumnFormat, FormattableKey } from './column-format.types.js';
+import type {
+  ColumnDateKindFormat,
+  ColumnNumberKindFormat,
+  DateKey,
+  NumberKey,
+} from './column-format.types.js';
 
 /** Which edge a column's content sits against. Numbers want `end`. */
 export type TableAlign = 'start' | 'end';
@@ -172,10 +177,31 @@ interface ComputedColumn<T> extends ColumnShape {
  * follow from the kind rather than from a caller remembering them.
  */
 interface FormattedColumn<T> extends ColumnShape {
-  key: FormattableKey<T>;
-  format: ColumnFormat;
+  key: DateKey<T>;
+  format: ColumnDateKindFormat;
   /** Still available, and it wins: a cell that says how needs no help. */
   cell?: (row: T) => ReactNode;
+  /**
+   * REFUSED WITH A FORMAT. The row-header branch is read before `format` ever
+   * is, so the value came out raw — no `<data>`, no currency, no
+   * machine-readable half — while the alignment still followed the format.
+   * Measured: `{ key: 'amount', rowHeader: true, format: { kind: 'currency' }}`
+   * rendered `1234.5`, end-aligned as if it had been formatted.
+   *
+   * It is refused rather than made to work because the row header is the
+   * column that NAMES the row, and a name is words. A row identified by a
+   * formatted amount is a table whose rows have no names.
+   */
+  rowHeader?: never;
+}
+
+/** The same, for a kind that reads a number and nothing that looks like one. */
+interface NumericColumn<T> extends ColumnShape {
+  key: NumberKey<T>;
+  format: ColumnNumberKindFormat;
+  cell?: (row: T) => ReactNode;
+  /** Refused for the reason `FormattedColumn.rowHeader` gives. */
+  rowHeader?: never;
 }
 
 /**
@@ -194,7 +220,8 @@ interface FormattedColumn<T> extends ColumnShape {
  * `format`, which is the same promise made as data instead of as a function,
  * and is the only one of the two that can also settle the alignment.
  */
-export type Column<T> = KeyedColumn<T> | ComputedColumn<T> | FormattedColumn<T>;
+export type Column<T> =
+  KeyedColumn<T> | ComputedColumn<T> | FormattedColumn<T> | NumericColumn<T>;
 
 interface TableShared extends Omit<
   ComponentPropsWithRef<'table'>,

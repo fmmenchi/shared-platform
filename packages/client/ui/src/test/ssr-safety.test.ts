@@ -16,7 +16,7 @@ import { describe, it, expect } from 'vitest';
  * function that needs the answer, where it can be answered honestly.
  */
 const sources = import.meta.glob(
-  '../{components,primitives,form,i18n}/**/*.{ts,tsx}',
+  '../{components,primitives,form,i18n,formatting}/**/*.{ts,tsx}',
   {
     query: '?raw',
     import: 'default',

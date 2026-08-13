@@ -16,6 +16,7 @@ export type {
   FormatDateOptions,
   FormatDateTimeOptions,
   FormatTimeOptions,
+  ToMachineDateOptions,
 } from './lib/dates.types.js';
 
 export {
@@ -35,6 +36,9 @@ export type {
   NumericParts,
 } from './lib/numbers.types.js';
 
-export type { DateInput, DateStyle, Money } from './lib/values.types.js';
-
-export { clearFormatCache } from './lib/intl-cache.js';
+export type {
+  DateInput,
+  DateStyle,
+  Money,
+  TimeStyle,
+} from './lib/values.types.js';

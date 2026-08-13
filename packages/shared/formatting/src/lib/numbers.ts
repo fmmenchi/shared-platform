@@ -36,11 +36,71 @@ function grouping(
   return choice === 'never' ? false : choice === 'always' ? 'always' : 'auto';
 }
 
+/**
+ * A digit option `Intl` will accept, or nothing.
+ *
+ * NaN IS AS DANGEROUS IN THE OPTION AS IN THE VALUE, and only the value was
+ * guarded. Measured, each of these threw a `RangeError` from inside the
+ * render: `maximumFractionDigits: 101`, `minimumFractionDigits: -1`, and
+ * `maximumFractionDigits: NaN` — the last one arriving from exactly the place
+ * the guarded value does, a column config doing `Number(column.precision)` on
+ * something that was not a number.
+ *
+ * Out of range is CLAMPED rather than dropped, because a caller who asked for
+ * 101 digits wants as many as there are; not-a-number is dropped, because
+ * there is no number in it to honour.
+ */
+function digits(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value)) return undefined;
+  return Math.min(Math.max(Math.trunc(value), 0), 100);
+}
+
+/**
+ * The two, in the order `Intl` insists on.
+ *
+ * A maximum below a minimum is a `RangeError`, and the pair arrives from a
+ * config as often as from a call — so the maximum is raised to meet the
+ * minimum, which is what the caller asking for four decimals meant.
+ */
+function fractionDigits(
+  min: number | undefined,
+  max: number | undefined,
+  fallbackMax?: number,
+): { minimumFractionDigits?: number; maximumFractionDigits?: number } {
+  const low = digits(min);
+  const high = digits(max) ?? fallbackMax;
+  return {
+    minimumFractionDigits: low,
+    maximumFractionDigits:
+      high === undefined ? undefined : Math.max(high, low ?? 0),
+  };
+}
+
+/**
+ * MINUS ZERO IS NOT A NUMBER A READER MEANS.
+ *
+ * `Intl`'s default sign display writes `-0` for anything that rounds to zero
+ * from below: measured, `formatNumber(-0)` → `"-0"`, `formatInteger(-0.2)` →
+ * `"-0"`, `formatCurrency(-0.001, 'USD')` → `"-$0.00"`. A ledger delta reading
+ * minus nothing is the mirror of the empty-cell defect this file was written
+ * to kill — a value that says something the arithmetic does not.
+ *
+ * `signDisplay: 'negative'` shows the sign for negative numbers and not for
+ * negative zero, which is the distinction wanted and is the only one of the
+ * four modes that draws it.
+ */
+const SIGN = { signDisplay: 'negative' } as const;
+
 /** Is there a number here at all? */
 function isMissing(
   value: number | null | undefined,
 ): value is null | undefined {
-  return value === null || value === undefined || Number.isNaN(value);
+  // TYPE-CHECKED, not only NaN-checked. `Number.isNaN` does not coerce, so a
+  // STRING sailed straight through this guard and `Intl` wrote `€NaN` —
+  // measured, from a table column that typechecked. "NaN reaching the screen
+  // and looking like a value" is the thing this file's header says it exists
+  // to prevent, and a string is the commonest way to get there.
+  return typeof value !== 'number' || Number.isNaN(value);
 }
 
 /** A plain number: `1.234,568`. */
@@ -51,12 +111,13 @@ export function formatNumber(
 ): string {
   if (isMissing(value)) return '';
   return getNumberFormat(locale, {
+    ...SIGN,
     style: 'decimal',
     useGrouping: grouping(options.grouping),
-    minimumFractionDigits: options.minimumFractionDigits ?? 0,
-    maximumFractionDigits: Math.max(
-      options.maximumFractionDigits ?? 3,
+    ...fractionDigits(
       options.minimumFractionDigits ?? 0,
+      options.maximumFractionDigits,
+      3,
     ),
   }).format(value);
 }
@@ -75,6 +136,7 @@ export function formatInteger(
 ): string {
   if (isMissing(value)) return '';
   return getNumberFormat(locale, {
+    ...SIGN,
     style: 'decimal',
     useGrouping: grouping(options.grouping),
     maximumFractionDigits: 0,
@@ -91,18 +153,28 @@ export function formatCurrency(
   if (isMissing(value)) return '';
   try {
     return getNumberFormat(locale, {
+      ...SIGN,
       style: 'currency',
       currency,
       currencyDisplay: options.display ?? 'symbol',
-      minimumFractionDigits: options.minimumFractionDigits,
-      maximumFractionDigits: options.maximumFractionDigits,
+      // CLAMPED HERE TOO, and it was not: the contradictory pair threw inside
+      // the `try` and landed in the catch below, which then wrote a VALID
+      // currency as if its code were unknown — measured, `{min: 4, max: 2}`
+      // with `USD` produced `1.2346 USD` and no `$`. A guard that disguises
+      // one fault as another is worse than none.
+      ...fractionDigits(
+        options.minimumFractionDigits,
+        options.maximumFractionDigits,
+      ),
     }).format(value);
   } catch {
-    // THE CONSTRUCTOR THROWS ON A CODE IT DOES NOT KNOW — a `RangeError`, from
-    // inside a cell renderer, which is the page rather than the cell. The
-    // number is the part the reader needs, so it survives and the unknown code
-    // rides along visibly: hiding the row behind an empty string would turn a
-    // bad code in the DATA into a hole on the screen that nobody can trace.
+    // THE CONSTRUCTOR THROWS ON A MALFORMED CODE — one that is not three ASCII
+    // letters — with a `RangeError`, from inside a cell renderer, which is the
+    // page rather than the cell. It does NOT throw on a code it merely does
+    // not recognise: measured, `ZZZ` and `XBT` are accepted and printed as
+    // written, so an unknown-but-well-formed code needs no rescuing. The
+    // number is the part the reader needs, so it survives and the code rides
+    // along visibly.
     const amount = formatNumber(value, locale, {
       minimumFractionDigits: options.minimumFractionDigits ?? 2,
       maximumFractionDigits: options.maximumFractionDigits ?? 2,
@@ -137,11 +209,12 @@ export function formatPercent(
   if (isMissing(value)) return '';
   const ratio = (options.scale ?? 'ratio') === 'ratio' ? value : value / 100;
   return getNumberFormat(locale, {
+    ...SIGN,
     style: 'percent',
-    minimumFractionDigits: options.minimumFractionDigits ?? 0,
-    maximumFractionDigits: Math.max(
-      options.maximumFractionDigits ?? 0,
+    ...fractionDigits(
       options.minimumFractionDigits ?? 0,
+      options.maximumFractionDigits,
+      0,
     ),
   }).format(ratio);
 }
@@ -155,9 +228,14 @@ export function formatPercent(
  * separator arrives as the character the browser actually emits rather than as
  * the ordinary space somebody assumed.
  *
- * A NUMERIC INPUT NEEDS THIS. Parsing what a reader typed means knowing which
- * character they were shown, and the value with no group separator at all —
- * some locales have none — is an empty string rather than a guess.
+ * A NUMERIC INPUT NEEDS THIS, and needs MORE than this outside Latin digits —
+ * which is the honest scope of what it returns. Measured: `ar-EG` writes
+ * 1234567.5 as `١٬٢٣٤٬٥٦٧٫٥` and `en-IN` as `12,34,567.5`, so a parser built on
+ * the separators alone still meets digits it cannot read (`١٢٣`) and grouping
+ * positions it did not expect (lakh, not thousands). This answers "which
+ * separators was the reader shown", not "how do I parse their locale". The
+ * value with no group separator at all — some locales have none — is an empty
+ * string rather than a guess.
  */
 export function numericParts(locale?: string): NumericParts {
   // Big enough to force a group, fractional enough to force a decimal.
@@ -197,7 +275,7 @@ export function currencyParts(
       currencyDisplay: display,
     }).formatToParts(1);
   } catch {
-    // Same unknown code, same refusal to take the page down.
+    // Same malformed code, same refusal to take the page down.
     return { representation: currency, position: 'before' };
   }
 
