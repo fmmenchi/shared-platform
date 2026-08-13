@@ -3,6 +3,7 @@ import type { SortBy } from '../../sorting/compare.types.js';
 import type { ColumnWidths } from './use-column-widths.types.js';
 import type { ExpandedRows } from './use-row-expansion.types.js';
 import type { Selection } from '../../selection/selection.types.js';
+import type { ColumnFormat, FormattableKey } from './column-format.types.js';
 
 /** Which edge a column's content sits against. Numbers want `end`. */
 export type TableAlign = 'start' | 'end';
@@ -145,6 +146,7 @@ type RenderableKey<T> = Extract<
 interface KeyedColumn<T> extends ColumnShape {
   key: RenderableKey<T>;
   cell?: (row: T) => ReactNode;
+  format?: never;
 }
 
 /**
@@ -155,6 +157,25 @@ interface KeyedColumn<T> extends ColumnShape {
 interface ComputedColumn<T> extends ColumnShape {
   key: string;
   cell: (row: T) => ReactNode;
+  format?: never;
+}
+
+/**
+ * A column that says HOW its values are written, and is therefore allowed to
+ * point at a value React could not render on its own.
+ *
+ * This is the arm that admits the most common column there is. `RenderableKey`
+ * excludes dates and explains why — _"which format, whose timezone?"_ — and
+ * `format` is exactly those two answers, given once for the column instead of
+ * once per row. The cell then renders `Time` or `Numeric`, so the machine-
+ * readable half comes along for free, and the alignment and digit figures
+ * follow from the kind rather than from a caller remembering them.
+ */
+interface FormattedColumn<T> extends ColumnShape {
+  key: FormattableKey<T>;
+  format: ColumnFormat;
+  /** Still available, and it wins: a cell that says how needs no help. */
+  cell?: (row: T) => ReactNode;
 }
 
 /**
@@ -168,10 +189,12 @@ interface ComputedColumn<T> extends ColumnShape {
  * from one list, so they cannot disagree; the empty row's `colSpan` is counted
  * rather than typed; and per-column decisions are declared once.
  *
- * The two shapes are a union on purpose: a key that is not a property of the
- * row is a compile error unless you supply the `cell` that produces it.
+ * The three shapes are a union on purpose: a key that is not a property of the
+ * row is a compile error unless you supply the `cell` that produces it — or a
+ * `format`, which is the same promise made as data instead of as a function,
+ * and is the only one of the two that can also settle the alignment.
  */
-export type Column<T> = KeyedColumn<T> | ComputedColumn<T>;
+export type Column<T> = KeyedColumn<T> | ComputedColumn<T> | FormattedColumn<T>;
 
 interface TableShared extends Omit<
   ComponentPropsWithRef<'table'>,

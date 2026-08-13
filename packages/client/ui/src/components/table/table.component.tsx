@@ -2,7 +2,6 @@ import {
   Fragment,
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -10,7 +9,9 @@ import {
 import { cn } from '../../util/cn.js';
 import { hasRenderableChildren } from '../../util/renderable-children.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useCopyLocale, useMessages } from '../../i18n/provider.js';
+import { useMessages } from '../../i18n/provider.js';
+import { alignFor, formatCell } from './format-cell.js';
+import { useCopyFormatter } from '../../formatting/use-formatter.js';
 import { Button } from '../button/button.component.js';
 import { TableFilterTrigger } from '../table-filter-trigger/table-filter-trigger.component.js';
 import { TableColumnResizer } from '../table-column-resizer/table-column-resizer.component.js';
@@ -141,11 +142,7 @@ function Table<T>(props: TableProps<T>) {
   const t = useMessages(tableMessages);
   // The COPY's locale, not the reader's: a number inside a sentence has to be
   // written in the language of that sentence.
-  const copyLocale = useCopyLocale();
-  const numbers = useMemo(
-    () => new Intl.NumberFormat(copyLocale),
-    [copyLocale],
-  );
+  const numbers = useCopyFormatter();
 
   // WHAT THE READER LAST ASKED FOR, and the only reason `Table` holds any state
   // at all. The live region must be silent on mount — a table rendered with
@@ -625,12 +622,12 @@ function Table<T>(props: TableProps<T>) {
       for (const id of selection.ids) if (!visible.has(id)) remaining += 1;
       return remaining === 0
         ? t('selectionAll')
-        : t('selectionAllExcept', { count: numbers.format(remaining) });
+        : t('selectionAllExcept', { count: numbers.integer(remaining) });
     }
     // THROUGH `Intl`, like the bar's. The two say the same-looking sentence
     // about the same click, and rendering one as "1,500" while the other says
     // "1500" is a drift a reader hears.
-    return t('selectionCount', { count: numbers.format(visibleIds.length) });
+    return t('selectionCount', { count: numbers.integer(visibleIds.length) });
   };
 
   const table = (
@@ -813,7 +810,14 @@ function Table<T>(props: TableProps<T>) {
                     // ONLY WHERE SOMETHING POINTS AT IT. An id on every header
                     // cell of every table is markup nobody reads.
                     id={canResize !== undefined ? headerId : undefined}
-                    align={column.align}
+                    // THE HEADING FOLLOWS ITS COLUMN. A heading that starts
+                    // where the text starts over numbers that end where the
+                    // column ends is the ragged pair `align` was declared once
+                    // to avoid.
+                    align={
+                      column.align ??
+                      (column.format ? alignFor(column.format) : undefined)
+                    }
                     // AN EXPLICIT NAME, and only when a control that is not the
                     // heading lives in the cell. A `columnheader` is named FROM
                     // ITS CONTENTS, and a name is computed for each descendant
@@ -1091,19 +1095,36 @@ function Table<T>(props: TableProps<T>) {
                         </TableCell>
                       )}
                       {columns.map((column) => {
+                        const raw = (row as Record<string, unknown>)[
+                          column.key
+                        ];
                         const content =
                           column.key === rowHeaderKey
                             ? rowName
                             : column.cell
-                              ? column.cell(row)
-                              : ((row as Record<string, unknown>)[
-                                  column.key
-                                ] as ReactNode);
+                              ? // A STATED CELL WINS OVER A FORMAT, both here
+                                // and in the alignment below: a caller who
+                                // wrote the function has answered the same
+                                // question more specifically.
+                                column.cell(row)
+                              : column.format
+                                ? formatCell(column.format, raw)
+                                : (raw as ReactNode);
+
+                        // THE ALIGNMENT FOLLOWS FROM THE FORMAT, which is the
+                        // half of this that a formatter call cannot give you —
+                        // see `alignFor`. The digits are already tabular: the
+                        // table sets `font-variant-numeric` on itself, so
+                        // marking the cell as well would be a second owner for
+                        // a fact that already has one.
+                        const align =
+                          column.align ??
+                          (column.format ? alignFor(column.format) : undefined);
 
                         return column.rowHeader ? (
                           <TableHeaderCell
                             key={column.key}
-                            align={column.align}
+                            align={align}
                             // ONLY WHEN SOMETHING POINTS AT IT. A row named in
                             // words fills the message instead, so an id here
                             // would be an attribute referenced by nothing on
@@ -1119,7 +1140,7 @@ function Table<T>(props: TableProps<T>) {
                             {content}
                           </TableHeaderCell>
                         ) : (
-                          <TableCell key={column.key} align={column.align}>
+                          <TableCell key={column.key} align={align}>
                             {content}
                           </TableCell>
                         );

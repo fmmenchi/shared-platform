@@ -21,24 +21,6 @@
  * keyed on request input is unbounded growth keyed on request input.
  */
 
-/**
- * `Intl.NumberFormatOptions`, plus the `useGrouping` the runtime accepts.
- *
- * ES2023 widened `useGrouping` from a boolean to `'auto' | 'always' | 'min2' |
- * boolean`, and the distinction is load-bearing here — `true` means ALWAYS and
- * overrides the `minimumGroupingDigits` a language declares, which is a
- * separator an Italian reader is not supposed to see (see
- * `FormatNumberOptions.grouping`). The workspace compiles against `lib:
- * es2022`, so the type is stated here rather than by widening the lib for
- * every package to type one option in this one.
- */
-export type NumberFormatOptions = Omit<
-  Intl.NumberFormatOptions,
-  'useGrouping'
-> & {
-  useGrouping?: boolean | 'auto' | 'always' | 'min2';
-};
-
 /** How many of each kind to keep. */
 const MAX_CACHED_FORMATS = 50;
 
@@ -106,17 +88,13 @@ export function getDateTimeFormat(
 /** A number formatter, reused. */
 export function getNumberFormat(
   locale: string | undefined,
-  options: NumberFormatOptions,
+  options: Intl.NumberFormatOptions,
 ): Intl.NumberFormat {
   const tag = canonicalLocale(locale);
   const key = keyOf(tag, options as Record<string, unknown>);
   const cached = numberFormats.get(key);
   if (cached) return cached;
-  return keep(
-    numberFormats,
-    key,
-    new Intl.NumberFormat(tag, options as Intl.NumberFormatOptions),
-  );
+  return keep(numberFormats, key, new Intl.NumberFormat(tag, options));
 }
 
 /** Forget everything — so a test measures what it thinks it is measuring. */

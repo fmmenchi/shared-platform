@@ -1,0 +1,87 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as NumericStories from './numeric.stories.tsx';
+
+<Meta of={NumericStories} />
+
+# Numeric
+
+A number the reader can read and a machine can parse — the same value, twice. It is the exact
+counterpart of [`Time`](?path=/docs/components-data-display-time--docs): a native `<data>` whose
+`value` carries the machine-readable form while its text says it the way a language says it.
+
+`1.234,5` and `1,234.5` are the same number, and neither is parseable without knowing which locale
+wrote it. `value="1234.5"` always is — which matters the moment anything reads the DOM rather than
+looks at it: a copy-to-clipboard, a chart built from a table, an end-to-end test that would
+otherwise have to know the runtime's locale to assert an amount.
+
+The formatting comes from
+[`@fmmenchi/formatting`](https://github.com/fmmenchi/shared-platform/tree/main/packages/shared/formatting)
+([ADR-0026](../../../../../apps/docusaurus/docs/adr/0026-formatting-is-a-shared-layer.md)).
+
+## Props
+
+<Controls of={NumericStories.Number_} />
+
+## Usage
+
+### Four formats
+
+<Canvas of={NumericStories.Formats} />
+
+### Zero is a number
+
+Every hand-rolled formatter guards with `value ? format(value) : ''`, and that guard renders a
+balance of zero, a count of zero and a delta of zero as an empty cell — which a reader takes for
+missing data rather than for the answer. The guard here is on absence: `null`, `undefined`, and the
+`NaN` arithmetic produces (`Intl` prints that one as "NaN", a string that reaches the screen and
+looks like a value).
+
+<Canvas of={NumericStories.Zero} />
+
+### Grouping belongs to the language
+
+`useGrouping: true` does not mean "group the thousands"; it means **always**, overriding the
+`minimumGroupingDigits` a language declares. CLDR gives Italian 2, so Italian writes `1234` plain and
+`12.345` grouped — and a formatter written the obvious way puts a separator in front of an Italian
+reader that Italian does not use. Hence three named states rather than a boolean.
+
+<Canvas of={NumericStories.Grouping} />
+
+### Currency is never guessed
+
+An amount rendered in the wrong currency is not a formatting mistake, it is a different number. Name
+it on the call, or once for the app:
+
+```tsx
+<UiProvider adapters={{ i18n }} formatting={{ currency: 'EUR' }}>
+```
+
+With neither, nothing is rendered — `fallback` decides what stands in its place.
+
+For a row that carries its own currency, pass it per cell: a mixed-currency table has a currency
+that belongs to the row, not to the column.
+
+### It draws nothing
+
+No alignment and no tabular figures, for the reason `Time` gives: a value cannot know whether it
+stands in a column or in a sentence. In a `Table` the column's `format` settles both — numeric
+columns align to the end without anyone writing `align: 'end'` beside each one.
+
+```tsx
+{ key: 'total', header: 'Total', format: { kind: 'currency', currency: 'EUR' } }
+```
+
+## Accessibility
+
+- **The element is the semantics.** `<data>` is what pairs a machine-readable value with human text;
+  no role is written and no `<span>` stands in for it.
+- **The reader hears the formatted text**, not the attribute: `value` is not part of the accessible
+  name, so the machine half costs nothing to anyone using a screen reader.
+- **Zero is announced.** The absence guard is on `null`, `undefined` and `NaN` — a cell that fell
+  silent on zero would tell a screen-reader user there is no value where there is one, and unlike
+  the sighted case there is no empty space to notice.
+- **A refused currency renders nothing** rather than a number with the wrong symbol: a wrong amount
+  read aloud is worse than a missing one.
+- **Nothing is rendered when there is no number**, rather than an empty element to walk into.
+- **Never focusable**: it is a value, not a control.

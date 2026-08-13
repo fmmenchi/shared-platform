@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import type { FormatterDefaults } from '@fmmenchi/formatting';
 import type { Direction, UiAdapters } from './ports.types.js';
 import {
   interpolate,
@@ -11,6 +12,7 @@ import {
 interface UiContextValue {
   adapters: UiAdapters;
   direction: Direction;
+  formatting: FormatterDefaults;
 }
 
 const UiContext = createContext<UiContextValue | null>(null);
@@ -79,6 +81,24 @@ export interface UiProviderProps {
    * what is above a component.
    */
   adapters: Partial<UiAdapters>;
+  /**
+   * The two things about formatting an APP decides and a component cannot: the
+   * zone a date is read in, and the currency an amount falls back to.
+   *
+   * NOT AN ADAPTER, and the distinction is the point. `adapters` is where a
+   * choice of IMPLEMENTATION goes — React Hook Form or TanStack Form, one
+   * router or another — and of `Intl` there is exactly one, so a port there
+   * would be a seam with a single plug. This is configuration: nothing is being
+   * swapped, two questions are being answered.
+   *
+   * It INHERITS like the adapters do, per key: a nested provider that states a
+   * zone keeps the currency from above. Which is the difference from the
+   * adapter merge one field up, where a declared key replaces its object whole
+   * — there, a half-inherited binding is harder to reason about than a stated
+   * one; here, the two fields are unrelated answers and there is nothing to
+   * half-inherit.
+   */
+  formatting?: FormatterDefaults;
   /** Reference preset name, applied as `data-theme` on the root. */
   theme?: string;
   children: ReactNode;
@@ -110,7 +130,12 @@ export interface UiProviderProps {
  * that quietly picks a locale gets it wrong in a language nobody on the team
  * reads.
  */
-export function UiProvider({ adapters, theme, children }: UiProviderProps) {
+export function UiProvider({
+  adapters,
+  formatting,
+  theme,
+  children,
+}: UiProviderProps) {
   const inherited = useContext(UiContext);
 
   const value = useMemo<UiContextValue>(() => {
@@ -126,8 +151,9 @@ export function UiProvider({ adapters, theme, children }: UiProviderProps) {
         merged.i18n.locale,
         merged.i18n.directionOverride,
       ),
+      formatting: { ...inherited?.formatting, ...formatting },
     };
-  }, [inherited, adapters]);
+  }, [inherited, adapters, formatting]);
 
   // The wrapper carries `dir` and `data-theme`, so a nested provider that
   // changes neither would add an element that says exactly what its ancestor
@@ -169,6 +195,23 @@ export function useUiAdapters(): UiAdapters | undefined {
 export function useDirection(): Direction {
   return useContext(UiContext)?.direction ?? 'ltr';
 }
+
+/**
+ * The app's formatting answers, or none — the tolerant counterpart of
+ * `useUi().formatting`, and tolerant for the reason `useDirection` is: a
+ * component that merely asks whether an app stated a zone must not require the
+ * provider to exist. `Table` renders without one today, and a hook that threw
+ * here would have made a formatted column the one thing that needs a provider
+ * when nothing else in the table does.
+ *
+ * The empty object is a CONSTANT, so it is the same object every time and a
+ * `useMemo` keyed on it does not rebuild on every render.
+ */
+export function useFormattingDefaults(): FormatterDefaults {
+  return useContext(UiContext)?.formatting ?? NO_FORMATTING_DEFAULTS;
+}
+
+const NO_FORMATTING_DEFAULTS: FormatterDefaults = Object.freeze({});
 
 export function useUi(): UiContextValue {
   const ctx = useContext(UiContext);

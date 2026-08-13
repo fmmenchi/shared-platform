@@ -24,7 +24,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                               |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                   |
 | **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                            |
-| **Data display**  | `Avatar` · `Badge` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                    |
+| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                               |
 | **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                       |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is

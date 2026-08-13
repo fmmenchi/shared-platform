@@ -27,6 +27,9 @@ export interface FormatNumberOptions extends FractionOptions {
    * `never` is for a value that is an IDENTIFIER wearing a number's clothes —
    * a year, an order number, a postcode — where `2.026` is simply wrong.
    *
+   * The three states are `Intl`'s own, typed since ES2023 — which is why the
+   * workspace compiles against that lib rather than declaring the option here.
+   *
    * @default 'auto'
    */
   grouping?: 'auto' | 'always' | 'never';
