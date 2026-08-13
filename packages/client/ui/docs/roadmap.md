@@ -13,19 +13,19 @@ at the bottom.
 Grouped as Storybook groups them. A **part** (`FieldLabel`, `MenuItem`, `PopoverContent`) is a
 sibling folder of its family and is documented on the family's page, not its own.
 
-| Group             | Components                                                                                                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Typography**    | `Heading`                                                                                                                                                                            |
-| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                               |
-| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                    |
-| **Inputs**        | `Input` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
-| **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                              |
-| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                          |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                               |
-| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                   |
-| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                            |
-| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                               |
-| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                       |
+| Group             | Components                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Typography**    | `Heading`                                                                                                                                                                                          |
+| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                                             |
+| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                                  |
+| **Inputs**        | `Input` · `DateInput` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
+| **Form adapters** | `FormInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                                            |
+| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                                        |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                                             |
+| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                                 |
+| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                                          |
+| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                             |
+| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                     |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
 complete at one. **No group is now thin enough for the third question below to pick the next item
@@ -88,8 +88,12 @@ So the next item is a decision, not a deduction — and this page will say which
   stopped being a bet on engines: `::-webkit-slider-thumb` and `::-moz-range-thumb` still need
   writing twice, but they are writable, and the track is a background this package already paints
   from a token.
-- **Date and time pickers.** The native inputs are inconsistent across engines and the hand-rolled
-  ones are a calendar widget with a locale problem. Not before there is a real consumer.
+- **`Calendar`, and a time field.** The date half of this line has been decided and measured rather
+  than repeated: ADR-0027 records what `input[type=date]` actually does — the closed field is ours
+  to the pixel, the icon is ours, the value is ISO and the browser keeps it — and `DateInput` ships
+  on it. What the platform refuses is **per-date disabling**: `min`/`max` are an interval, not a
+  set, so "only these slots" is not expressible. That, and only that, is what a `Calendar` is for,
+  and it is next. A time field is the same recipe on `type="time"` and waits for someone to ask.
 
 ## Keeping it true
 

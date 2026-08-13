@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DateInput > matches the rendered snapshot 1`] = `
+<input
+  aria-label="Due"
+  class="_input_x4x2j_4 _md_x4x2j_46"
+  type="date"
+  value="2026-08-12"
+/>
+`;

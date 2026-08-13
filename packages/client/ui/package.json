@@ -604,6 +604,12 @@
       "types": "./dist/components/numeric/index.d.ts",
       "import": "./dist/numeric.js",
       "default": "./dist/numeric.js"
+    },
+    "./date-input": {
+      "@fmmenchi/source": "./src/components/date-input/index.ts",
+      "types": "./dist/components/date-input/index.d.ts",
+      "import": "./dist/date-input.js",
+      "default": "./dist/date-input.js"
     }
   },
   "nx": {

@@ -435,3 +435,12 @@ export { Time } from './components/time/time.component.js';
 export type { TimeProps } from './components/time/time.types.js';
 export { Numeric } from './components/numeric/numeric.component.js';
 export type { NumericProps } from './components/numeric/numeric.types.js';
+export { DateInput } from './components/date-input/date-input.component.js';
+export type { DateInputProps } from './components/date-input/date-input.types.js';
+// The civil-date pair is public for the reason `nextSort` and `foldForSearch`
+// are: `DateInput` hands a consumer a `CivilDate`, so reading one back out of
+// storage or a fetch response has to be possible without re-deriving the parse
+// — and the parse is exactly what nobody should re-derive, since the obvious
+// version (`new Date(iso)`) is wrong in every timezone west of Greenwich.
+export { parseIsoDate, formatIsoDate } from './date/civil-date.js';
+export type { CivilDate, IsoDate } from './date/civil-date.types.js';

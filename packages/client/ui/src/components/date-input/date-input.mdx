@@ -1,0 +1,105 @@
+import { Meta, Canvas, Controls } from '@storybook/addon-docs/blocks';
+import * as Stories from './date-input.stories';
+
+<Meta of={Stories} />
+
+# DateInput
+
+A date field on the platform's own date input, styled by the design system, that
+hands the value back as a **day** rather than as a string.
+
+The field needed no help. Measured before this component existed: `Input` already
+lines a date up with a text field to the pixel — 36px against 36px — carries the
+tokens, wires into `Field`, reports `rangeUnderflow` from `min`/`max`, and comes
+back from `form.reset()`. In the dark theme the parts the browser paints (the
+calendar icon, the `dd/mm/yyyy` text) follow the theme, because the preset
+declares `color-scheme` and it inherits down to the control.
+
+What `<Input type="date">` could not do is give you anything but a string — and
+the obvious way to convert one is a defect. This is the whole reason the
+component exists.
+
+## Props
+
+<Controls of={Stories.Basic} />
+
+## Usage
+
+<Canvas of={Stories.Basic} />
+
+### Reading the day
+
+The DOM keeps the ISO string, because **the browser holds control state** here as
+everywhere in this package — that is what makes `form.reset()`, uncontrolled use
+and every form library keep working. `onDateChange` runs _beside_ `onChange`,
+never instead of it, and hands back `{ year, month, day }`.
+
+<Canvas of={Stories.ReadingTheDay} />
+
+Months are **1–12**, as a human writes them and as ISO 8601 writes them — not
+`Date`'s 0-based month, which is the other classic defect.
+
+Doing it by hand is where this goes wrong, and not rarely:
+
+```ts
+// WRONG, everywhere west of Greenwich.
+const d = new Date(event.target.value); // '2026-08-12'
+d.getDate(); // → 11
+```
+
+A `Date` is an **instant**, not a day. `2026-08-12` parses as UTC midnight, and
+every local question you then ask it answers in your timezone. Measured in
+`America/Lima` (UTC-5), where the browser's own `valueAsDate` has the same bug.
+A birthday has no timezone; neither does this.
+
+`parseIsoDate` and `formatIsoDate` are exported for the same reason, so a value
+coming back out of storage or a fetch response takes the same safe path:
+
+```ts
+import { parseIsoDate, formatIsoDate } from '@fmmenchi/ui';
+
+parseIsoDate('2026-08-12'); // → { year: 2026, month: 8, day: 12 }
+parseIsoDate('2026-02-30'); // → null   (new Date() says 2 March)
+formatIsoDate({ year: 2026, month: 8, day: 12 }); // → '2026-08-12'
+```
+
+### Seeding it
+
+`defaultDate` takes a day; `defaultValue` takes the ISO string. Both are
+uncontrolled, and an explicit `defaultValue` wins if you pass both. There is
+deliberately **no controlled `date` prop**: holding the value in React is what
+breaks `form.reset()`, measured, and is why `Input` does not do it either.
+
+### In a field, and bounded
+
+<Canvas of={Stories.InAField} />
+
+<Canvas of={Stories.Bounded} />
+
+`min` and `max` are an **interval**, and that is the whole of what the platform
+offers. They reach `ValidityState` and `:user-invalid`, but they cannot express
+"not that Tuesday", "only these slots", "these three days are booked". Per-date
+rules are what `Calendar` is for — see ADR-0027.
+
+### Sizes
+
+<Canvas of={Stories.Sizes} />
+
+## Accessibility
+
+- **Give it a label.** A wrapping `<label>`, `aria-label`, `aria-labelledby`, or a
+  `Field` — which also wires the hint, the error and `aria-invalid`. The
+  `dd/mm/yyyy` the browser shows in an empty field is a format hint, not a name.
+- **The picker is the platform's**, and so is its keyboard: arrows and typing
+  move between the day, month and year segments in every engine, without a line
+  of ours. On touch it opens the OS sheet, which is better than anything we would
+  draw.
+- **The popup cannot be styled**, in any browser — it is not in the document and
+  there is no shadow access to it. Its appearance differs per engine, and that is
+  traded away deliberately (ADR-0027) for everything above it. A consumer who
+  needs one look everywhere composes `Calendar` inside a `Popover` instead.
+- **The invalid state is the native attribute**, `aria-invalid`, which every form
+  library already sets — signalled by colour _and_ a thicker border, so it does
+  not rest on colour alone (WCAG 1.4.1).
+- **44px on a coarse pointer** at the default size, the same rule the rest of the
+  control family carries (WCAG 2.5.8).
