@@ -485,6 +485,12 @@
       "import": "./dist/form-segmented-control.js",
       "default": "./dist/form-segmented-control.js"
     },
+    "./form-date-input": {
+      "@fmmenchi/source": "./src/components/form-date-input/index.ts",
+      "types": "./dist/components/form-date-input/index.d.ts",
+      "import": "./dist/form-date-input.js",
+      "default": "./dist/form-date-input.js"
+    },
     "./progress": {
       "@fmmenchi/source": "./src/components/progress/index.ts",
       "types": "./dist/components/progress/index.d.ts",
@@ -604,6 +610,12 @@
       "types": "./dist/components/numeric/index.d.ts",
       "import": "./dist/numeric.js",
       "default": "./dist/numeric.js"
+    },
+    "./date-input": {
+      "@fmmenchi/source": "./src/components/date-input/index.ts",
+      "types": "./dist/components/date-input/index.d.ts",
+      "import": "./dist/date-input.js",
+      "default": "./dist/date-input.js"
     }
   },
   "nx": {
