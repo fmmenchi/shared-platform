@@ -26,7 +26,7 @@ export interface ColumnListing {
   label?: string;
 }
 
-export interface TableColumnsMenuProps {
+interface TableColumnsMenuShared {
   /** Every column the table could show, in the order it would show them. */
   columns: readonly ColumnListing[];
   /** Which are currently put away. */
@@ -39,19 +39,6 @@ export interface TableColumnsMenuProps {
   /** Put one away, or bring it back. */
   onToggle: (key: string) => void;
   /**
-   * Move a column earlier (`-1`) or later (`+1`). Given, each entry says where
-   * it sits and answers Alt with the arrow keys; left out, the menu only
-   * decides which columns are shown.
-   *
-   * Comes from `useColumnOrder`, which owns the clamping — spread its
-   * `menuProps` beside the visibility hook's.
-   */
-  onMove?: (key: string, delta: number) => void;
-  /** Whether that move would go anywhere. Required with `onMove`. */
-  canMove?: (key: string, delta: number) => boolean;
-  /** Where a column sits now, counting from 1. Required with `onMove`. */
-  positionOf?: (key: string) => number;
-  /**
    * What the trigger looks like. `ghost` by default, because this sits in a
    * toolbar beside other view controls and a filled button there would claim to
    * be the primary action of the page.
@@ -59,3 +46,45 @@ export interface TableColumnsMenuProps {
   variant?: 'ghost' | 'secondary';
   children?: never;
 }
+
+/**
+ * Reordering, which is THREE PROPS OR NONE.
+ *
+ * They were three optional props and a comment that said "required with
+ * `onMove`" — which is a rule the type could not enforce and the component then
+ * could not rely on. Measured with `onMove` and `positionOf` and no `canMove`:
+ * every entry announced "Nome, 1 of 2", telling the reader the column moves and
+ * where it sits, and `Alt`+`ArrowDown` called `onMove` ZERO times, because
+ * `canMove?.(…)` is `undefined` and `undefined` is not true. A promise made in
+ * the accessible name and refused in silence — and refused to precisely the
+ * reader who cannot see that nothing moved.
+ *
+ * A union rather than three `required` flags, because the alternative — leaving
+ * `onMove` alone and only requiring the other two — would still admit the
+ * halfway state. `useColumnOrder`'s `menuProps` supplies all three, so the
+ * wired path is one spread and this shape is what it already had.
+ */
+interface TableColumnsMenuReorder {
+  /**
+   * Move a column earlier (`-1`) or later (`+1`). Each entry then says where it
+   * sits and answers Alt with the arrow keys.
+   *
+   * Comes from `useColumnOrder`, which owns the clamping — spread its
+   * `menuProps` beside the visibility hook's.
+   */
+  onMove: (key: string, delta: number) => void;
+  /** Whether that move would go anywhere — the clamp, at the ends of the list. */
+  canMove: (key: string, delta: number) => boolean;
+  /** Where a column sits now, counting from 1. */
+  positionOf: (key: string) => number;
+}
+
+/** No reordering: the menu only decides which columns are shown. */
+interface TableColumnsMenuStatic {
+  onMove?: never;
+  canMove?: never;
+  positionOf?: never;
+}
+
+export type TableColumnsMenuProps = TableColumnsMenuShared &
+  (TableColumnsMenuReorder | TableColumnsMenuStatic);
