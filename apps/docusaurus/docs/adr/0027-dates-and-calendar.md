@@ -14,9 +14,9 @@
 > was written: the native field cannot follow the locale the design system was **given**, which is
 > the locale every other formatted thing on the page follows. It does not add a component — it
 > **changes what `DateInput` is**. The first version made `DateInput` a veneer over
-> `<input type="date">`; this one gives the name to GOV.UK's "memorable date", three labelled native
-> fields in the declared locale's order, promoted from a documented recipe to a component with the
-> ordinary `FormDateInput` twin beside it. The platform's own control is not wrapped **and no longer
+> `<input type="date">`; this one gives the name to a field of ours — one masked text input that
+> shows a date in the declared locale's order and stores ISO — promoted from a documented recipe to a
+> component with the ordinary `FormDateInput` twin beside it. The platform's own control is not wrapped **and no longer
 > reachable through `Input`**: `type="date"` is refused, because a field that is correct only while an
 > external fact holds and silently wrong afterwards is not something to recommend _or_ to leave lying
 > in reach. That refusal is the first exception to [ADR-0013](./0013-form-controls-contract.md)'s
@@ -156,56 +156,59 @@ The pair is the ordinary one — `DateInput` and `FormDateInput`, the same shape
 and `SegmentedControl`/`FormSegmentedControl`. **The name `DateInput` belongs to ours**, not to a
 veneer over the platform's control, and the two points below say what each half holds.
 
-1. **`DateInput` — the primitive, and it is bare.** Three labelled numeric fields in the order the
-   declared locale gives, plus one carrier holding the ISO value. It owns **no legend**, exactly as
-   `SegmentedControl` owns none: naming a group is the composition's job, and this package already
-   draws that line for every group control it ships. It is GOV.UK's "memorable date", and the earlier
-   draft left it a documented recipe on the
-   grounds that "which fields, which validation copy" is app content. That was right about the copy
-   and wrong about the order: **the field order is not app content, it is a locale question**, and it
-   is the one the design system has to answer for a page to be consistent with itself. It is also the
-   only date entry that can agree with `Time`, `Numeric` and a formatted `Table` column standing
-   beside it.
+1. **`DateInput` — one text field, masked, in the order the declared locale writes a date.** Plus one
+   carrier holding the ISO value. GOV.UK's "memorable date" is where this started and it is not where
+   it landed: **three boxes became one**, on the plain ground that a date field should look like a
+   field. What survived the change is the part that mattered — the earlier draft left this a
+   documented recipe on the grounds that "which fields, which validation copy" is app content, and
+   that was right about the copy and wrong about the order. **The field order is not app content, it
+   is a locale question**, and it is the one the design system has to answer for a page to be
+   consistent with itself.
 
-   The order comes from `Intl.DateTimeFormat(locale).formatToParts()` — Baseline, and already used in
-   this workspace by `toMachineDate` — so `it` gets day-month-year and `en-US` month-day-year, read
-   from the locale the provider was **given** rather than the one the browser happens to have.
+   The order, the separator and the numerals all come from
+   `Intl.DateTimeFormat(locale).formatToParts()` — Baseline, and already used in this workspace by
+   `toMachineDate` — read from the locale the provider was **given** rather than the one the browser
+   happens to have. So `it` writes `12/08/2026`, `en-US` `08/12/2026`, `de` `12.08.2026` and `ar-EG`
+   `١٢/٠٨/٢٠٢٦`, and every one of them stores `2026-08-12`.
 
-   **The anatomy stays native the whole way down.** Three ordinary `<input inputmode="numeric">`,
-   each with its own `<label>`, placed in the locale's order. No roving focus, no `role="spinbutton"`,
-   no keyboard of ours: Tab moves between them because they are three real fields,
-   `autocomplete="bday-day"` and its siblings reach them, each is announced without being told how,
-   and every one of them is a control the browser draws and owns. It composes `Input`, which already
-   ships, and that is what makes the promotion affordable at all.
+   **The calendar is pinned to Gregorian**, and that is what the scope boundary below has to look
+   like in code rather than only in prose. Left unpinned it was not a missing feature but a silent
+   wrong answer: `th-TH` is Buddhist by default, so the field took a Buddhist frame and filled it with
+   our Gregorian numbers — a user read `2569` off the `Time` beside the field, typed `2569`, and the
+   carrier stored `2569-08-12`. The numerals are deliberately **not** pinned, for the same reason the
+   order is not: an `ar-EG` page renders `١٢` in every cell, and a field beside them showing `12`
+   would be this ceiling one layer down.
 
-   The part labels — "Day", "Month", "Year" — belong to the primitive, because they are its anatomy
-   and their **order** is the locale's. The name of the whole thing does not: that is a `<legend>`,
-   and a legend belongs to whoever wraps the control, exactly as it does for a radio group or a
-   segmented control. Unwrapped, `DateInput` is a group with no name, which is what a bare
-   `SegmentedControl` is too.
+   **A mask, because a date field should not accept what is not a date.** Only digits survive — the
+   locale's or ASCII — and the separators are put back from the pattern, so `12082026` becomes
+   `12/08/2026` on its own and a letter cannot be typed at all. A digit that would make a part
+   impossible is refused and **not consumed**, so it starts the next part instead: `5` then `9` is the
+   5th, then September. Both ends are enforced, because a ceiling alone let `00/00/2026` be typed in
+   full — complete-looking, storing nothing. What the mask does not decide is whether the whole date
+   exists: 30 February can be typed and is simply not stored, since blocking it mid-edit would mean
+   refusing the `3` of a `30` on its way to March.
 
-   **`ref` has a home here, and that is one place this beats its group-shaped siblings.**
-   `FormSegmentedControl` declines to forward `ref` on the grounds that "there is no 'the input' of a
-   radio group", so an error summary cannot focus it. This has three real fields, and the answer is
-   the **first visible part** — never the carrier, which is `hidden` and therefore not focusable, and
-   a `ref` pointed at an unfocusable element is the same failure wearing a prop.
+   **It is one field, so it composes like `Input`**: a `<label>` names it, a `Field` wires
+   `aria-describedby` and `aria-invalid`, and there is no `<fieldset>` and no legend — those belong to
+   controls that are a group, like a radio set or a `SegmentedControl`.
 
-   **What the component adds over the recipe is one `name`.** The recipe posts three fields and
-   leaves the app to recombine them; the component posts one ISO value, and the way it does that was
-   measured rather than assumed:
+   **What the user sees is never what the form posts, and the carrier is how.** The visible field
+   holds the localised text; one **carrier** beside it holds the ISO value under the field's `name`,
+   written with the native value setter and a dispatched `input` event. A server therefore never
+   receives `12/08/2026` and has to guess which number is the month.
 
-   - the three visible fields are ordinary uncontrolled `<input>`s, each holding its own digits;
-   - one **carrier** holds the ISO value under the field's `name`, written with the native value
-     setter and a dispatched `input` event.
+   The carrier is a text input and never `type="hidden"`, and that part was measured, in plain DOM as
+   well as through React: `form.reset()` restores a text input and does **not** restore a
+   `type="hidden"` one — so a `type="hidden"` carrier would survive a reset holding a stale value
+   while the field beside it went back. React also declines to wire `onChange` on `type="hidden"`, so
+   a `register()`-style binding would hear nothing from it.
 
-   The carrier is a text input hidden with the **`hidden` attribute**, not `type="hidden"`, and that
-   difference is the whole design. Measured, in plain DOM as well as through React: `form.reset()`
-   restores a text input and a date input and does **not** restore a `type="hidden"` one — so a
-   `type="hidden"` carrier would survive a reset holding a stale value while the fields beside it
-   went back, which is worse than either. React also declines to wire `onChange` on a `type="hidden"`
-   input, so a `register()`-style binding would hear nothing from it. With the `hidden` attribute
-   instead, all four properties hold: React hears the write, `FormData` carries one field under one
-   name, `form.reset()` restores it, and it is neither focusable nor in the accessibility tree.
+   It is hidden by **CSS** rather than by the `hidden` attribute, and taken out of the accessibility
+   tree by `aria-hidden`, because it has to stay **focusable**. An earlier version used `hidden` and
+   that cost it two things that only showed up under a real form library: react-hook-form's
+   `register()` reads the value off the element its ref was handed, and `FormErrorSummary` finds a
+   field by `name` — which is here — and calls `focus()` on it. Focused, the carrier hands focus
+   straight to the visible field, so it is never where the caret rests.
 
    So the browser still holds the value, `form.reset()` still works, and the form port still binds
    one name — the same contract [ADR-0013](./0013-form-controls-contract.md) draws for every other
@@ -222,28 +225,30 @@ veneer over the platform's control, and the two points below say what each half 
    and this is not the one to start with.
 
 2. **`FormDateInput` — the bound twin, and it composes everything**, which is what the `Form*` layer
-   is for in this package. `FormInput` wraps `Field` around `Input` with the description and the
-   errors; `FormSegmentedControl` wraps `Fieldset` + `FieldsetLegend` + `FieldsetContent` around a
-   bare `SegmentedControl` for the same reasons a group needs. This is the second shape, with nothing
-   invented for it:
+   is for in this package. It is `FormInput`'s shape with a different control inside, because
+   `DateInput` is one text field:
 
    ```tsx
-   <Fieldset invalid={hasErrors}>
-     <FieldsetLegend>{label}</FieldsetLegend>
-     <FieldsetContent>
-       <DateInput {...control} />
-     </FieldsetContent>
+   <Field label={label} invalid={hasErrors}>
+     <DateInput {...binding} />
      {hint}
      {errors}
-   </Fieldset>
+   </Field>
    ```
 
-   The group is named **once**, by the legend, and `DateInput` is handed no label of its own — two
-   names are announced twice, and the visible legend is the one worth keeping. The port's assumption
-   of one control per field holds here rather than bending: the carrier gives `name` and `value` a
-   single real home, its `input` event bubbles like any other, and `ref` reaches the first visible
-   part. A consumer without a form library writes that same composition by hand, exactly as they do
-   today for a radio group.
+   The port's assumption of one control per field holds here rather than bending, which is where the
+   group-shaped adapters have to give something up: the carrier gives `name` and `value` a single real
+   home and its `input` event bubbles like any other.
+
+   **`ref` is the one place this needs two of something**, and pretending otherwise cost a whole
+   afternoon. A binding's ref has to reach the element whose `value` IS the field's value, which is
+   the carrier — react-hook-form reads `.value` straight off the element it was handed, so the visible
+   field would give it `12/08/2026`. Focus wants the other node. Forwarding neither, which is what
+   `FormSegmentedControl` does for its own reasons, turned out to be the worst of the three: measured
+   against react-hook-form, `_formValues` held `undefined` for the field however much was typed, for
+   ever, while `FormData` looked perfectly correct. So there are two — `carrierRef` for the binding,
+   `ref` for the visible input — and the carrier is focusable precisely so `FormErrorSummary` can
+   still reach the field by `name`.
 
 3. **The native `<input type="date">` keeps no component of ours.** `Input` is transparent, so it is
    one line away and it already looks right — measured: it lines up with a text field to the pixel,
@@ -348,15 +353,23 @@ Non-goals are as binding as goals, so they are written here rather than discover
   `Calendar` share. Two components, one vocabulary for a day — and that pair is the first thing
   built, because a date read back as `new Date('2026-08-12')` is the 11th of August in every timezone
   west of Greenwich, which is the defect this whole family exists to stop repeating.
-- **Three numeric parts.** Day, month, year — the month as digits, not a name and not a `<select>`.
-  The locale decides their **order** and their labels; it does not decide how many boxes there are.
+- **One field, three parts inside it.** Day, month and year, the month as digits — not a name and
+  not a `<select>`. The locale decides their **order**, their **separator** and their **numerals**;
+  it does not decide how many boxes there are, and the answer is one.
+- **Gregorian, pinned.** The pattern is asked for with `calendar: 'gregory'` rather than taken as the
+  locale leaves it, because unpinned it is not a missing feature but a wrong answer: a Buddhist frame
+  filled with Gregorian numbers stores a date 543 years out and says nothing.
 - **Four-digit years.** No two-digit expansion: `26` is the year 26, or it is nothing. Guessing a
   century is app content, and a wrong guess is silent.
-- **Constraint validation stays on the visible parts, never on the carrier.** A carrier that is
+- **Constraint validation stays on the visible field, never on the carrier.** A carrier that is
   `required` and empty would be an invalid control that cannot be focused, and a browser asked to
   report on one refuses the submit without showing the user anything — a form that does nothing when
-  clicked. This is stated from the platform rather than measured here, and it is the first thing to
-  measure when the component is built.
+  clicked. The consequence is worth stating too: `required` therefore checks the TEXT and not the
+  value, so a half-typed date satisfies it. A field that looks filled and posts nothing is the app's
+  to catch, as ADR-0013 has every other validation question be.
+- **The seed is ISO or it is refused.** `defaultValue` takes `YYYY-MM-DD` — the shape it stores, not
+  the shape it shows — and anything else leaves the field empty with a warning in development, rather
+  than being carried to the server verbatim.
 - **An incomplete or impossible date empties the carrier.** The parse refuses `2026-02-30` rather
   than sliding it to 2 March the way `new Date` does; the field inherits that refusal instead of
   inventing a value to carry.
