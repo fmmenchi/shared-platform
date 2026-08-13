@@ -16,7 +16,7 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## In force
 
-Read these. Fifteen decisions, grouped as they are actually made.
+Read these. Sixteen decisions, grouped as they are actually made.
 
 | ADR                                                   | Title                                                                 |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
@@ -36,6 +36,14 @@ Read these. Fifteen decisions, grouped as they are actually made.
 | [0024](./0024-toggle-switch-checkbox-boundary.md)     | Toggle, Switch and Checkbox: where the boundary between them runs     |
 | [0025](./0025-one-of-many-is-a-radio-group.md)        | One of many, drawn as buttons, is a radio group                       |
 | [0026](./0026-formatting-is-a-shared-layer.md)        | Formatting values is a shared layer; the DS only binds it             |
+
+## Proposed
+
+Decided on paper, awaiting review — not yet in force.
+
+| ADR                                  | Title                                                       |
+| ------------------------------------ | ----------------------------------------------------------- |
+| [0027](./0027-dates-and-calendar.md) | Dates: a native field, and a Calendar for what it cannot do |
 
 ## Superseded
 
