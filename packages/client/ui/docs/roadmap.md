@@ -88,12 +88,21 @@ So the next item is a decision, not a deduction — and this page will say which
   stopped being a bet on engines: `::-webkit-slider-thumb` and `::-moz-range-thumb` still need
   writing twice, but they are writable, and the track is a background this package already paints
   from a token.
-- **`Calendar`, and a time field.** The date half of this line has been decided and measured rather
-  than repeated: ADR-0027 records what `input[type=date]` actually does — the closed field is ours
-  to the pixel, the icon is ours, the value is ISO and the browser keeps it — and `DateInput` ships
-  on it. What the platform refuses is **per-date disabling**: `min`/`max` are an interval, not a
-  set, so "only these slots" is not expressible. That, and only that, is what a `Calendar` is for,
-  and it is next. A time field is the same recipe on `type="time"` and waits for someone to ask.
+- **`DateField`, `Calendar`, and a time field.** The date half of this line has been decided and
+  measured rather than repeated: ADR-0027 records what `input[type=date]` actually does — the closed
+  field is ours to the pixel, the icon is ours, the value is ISO and the browser keeps it — and
+  `DateInput` ships on it. Two things the platform refuses are what remains.
+
+  **Per-date disabling**: `min`/`max` are an interval, not a set, so "only these slots" is not
+  expressible. That, and only that, is what a `Calendar` is for.
+
+  **The declared locale**: the field's segment order is the browser's and cannot be told otherwise,
+  so on a page whose language the app chose it disagrees with the `Time`, `Numeric` and formatted
+  `Table` cells beside it. `DateField` — three labelled fields in a `Fieldset`, ordered by the
+  locale the provider was given, posting one ISO value — is that answer, and it is the cheaper of
+  the two: no keyboard of ours, no ARIA of ours, native parts throughout.
+
+  A time field is the same recipe on `type="time"` and waits for someone to ask.
 
 ## Keeping it true
 

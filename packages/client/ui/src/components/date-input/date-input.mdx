@@ -81,6 +81,23 @@ offers. They reach `ValidityState` and `:user-invalid`, but they cannot express
 "not that Tuesday", "only these slots", "these three days are booked". Per-date
 rules are what `Calendar` is for — see ADR-0027.
 
+### The segment order is the browser's, not yours
+
+The value is always ISO, and that is ours. The **order the segments are shown
+in** — day-month-year, month-day-year — is the browser's, in practice the
+operating system's regional format, and nothing on the page reaches it. Wrapping
+the field in `lang="it-IT"` moves nothing; it was measured.
+
+That matters only if your app declares a locale that can differ from the
+browser's, which is the case whenever the user picks the language in-app. On
+those pages `Time`, `Numeric` and a formatted `Table` column all follow the
+locale you handed `UiProvider`, and this field quietly does not — so a cell can
+read `12/08/2026` while the field beside it reads the other way round.
+
+**Use `DateInput` when the browser's locale is your user's locale.** When your
+app owns its language, reach for `DateField`, whose order follows the locale you
+declared. ADR-0027 has the measurements and the rule.
+
 ### Sizes
 
 <Canvas of={Stories.Sizes} />
