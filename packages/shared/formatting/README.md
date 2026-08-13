@@ -22,8 +22,9 @@ Over calling `Intl` inline, it adds the four things a call site gets wrong on it
   which a reader takes for missing data.
 - **The zone is stated.** `2026-01-01T00:00:00Z` is the 1st of January in Rome and the 31st of
   December in Lima.
-- **Nothing throws.** `en_US` from a Java backend and an unknown currency code both make an `Intl`
-  constructor raise a `RangeError`.
+- **Nothing throws.** `en_US` from a Java backend, a mistyped time zone (`America/Sao_Paolo`), a
+  malformed currency code and a fraction-digit option out of range all make an `Intl` constructor
+  raise a `RangeError` — from inside a cell renderer that is the page, not the cell.
 
 ## Use
 
@@ -53,7 +54,7 @@ The free functions take a locale per call, for anywhere a bound formatter is awk
 ```ts
 import { formatDate, formatCurrency } from '@fmmenchi/formatting';
 
-formatDate(row.createdAt, locale, { style: 'short', timeZone: 'UTC' });
+formatDate(row.createdAt, locale, { dateStyle: 'short', timeZone: 'UTC' });
 formatCurrency(row.total, row.currency, locale);
 ```
 
@@ -68,6 +69,12 @@ formatNumber(1234, 'it-IT'); // '1234'   — the language's rule
 formatNumber(1234, 'it-IT', { grouping: 'always' }); // '1.234'  — overrides it
 formatNumber(1234, 'it-IT', { grouping: 'never' }); // '1234'   — for an identifier
 ```
+
+### A day is not an instant
+
+`1990-05-15` — no clock, no zone — is a **civil date**, read in UTC whatever zone was asked for.
+Measured before that rule: `new Date('1990-05-15')` is midnight UTC by specification, so reading its
+day back "in the reader's zone" rendered **May 14** in New York. An instant still belongs to a zone.
 
 ### Percentages
 

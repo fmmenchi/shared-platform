@@ -3,6 +3,7 @@ import type {
   FormatDateOptions,
   FormatDateTimeOptions,
   FormatTimeOptions,
+  ToMachineDateOptions,
 } from './dates.types.js';
 import type { DateInput } from './values.types.js';
 
@@ -31,6 +32,35 @@ import type { DateInput } from './values.types.js';
  * not a `Date` whose `getTime()` is `NaN`, because the latter formats as
  * "Invalid Date" — a string that reaches the screen and looks like data.
  */
+/**
+ * `2026-01-31` and nothing else — a date with no clock and no zone.
+ *
+ * A CIVIL DATE IS NOT AN INSTANT, and treating it as one is the most common
+ * date bug there is. `new Date('1990-05-15')` is midnight UTC by
+ * specification, so reading its day back "in the reader's zone" walks it
+ * backwards: measured, a birthdate of `1990-05-15` rendered as **May 14** in
+ * New York and Los Angeles, and as May 15 in Rome and Tokyo. The value is the
+ * shape every API returns for a birthdate, a due date, an invoice date.
+ *
+ * So a value of this shape is read in UTC whatever zone the caller asked for.
+ * The zone is not being ignored — it does not apply: nobody's birthday moves
+ * when they fly.
+ */
+const CIVIL_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Is this value a date with no clock? See `CIVIL_DATE`. */
+function isCivilDate(value: DateInput | null | undefined): value is string {
+  return typeof value === 'string' && CIVIL_DATE.test(value);
+}
+
+/** The zone this value is actually read in. */
+function zoneOf(
+  value: DateInput | null | undefined,
+  requested: string | undefined,
+): string | undefined {
+  return isCivilDate(value) ? 'UTC' : requested;
+}
+
 export function toDate(value: DateInput | null | undefined): Date | null {
   if (value === null || value === undefined || value === '') return null;
   const date = value instanceof Date ? value : new Date(value);
@@ -53,8 +83,8 @@ export function formatDate(
   const date = toDate(value);
   if (date === null) return '';
   return getDateTimeFormat(locale, {
-    dateStyle: options.style ?? 'medium',
-    timeZone: options.timeZone,
+    dateStyle: options.dateStyle ?? 'medium',
+    timeZone: zoneOf(value, options.timeZone),
   }).format(date);
 }
 
@@ -69,7 +99,7 @@ export function formatDateTime(
   return getDateTimeFormat(locale, {
     dateStyle: options.dateStyle ?? 'medium',
     timeStyle: options.timeStyle ?? 'short',
-    timeZone: options.timeZone,
+    timeZone: zoneOf(value, options.timeZone),
   }).format(date);
 }
 
@@ -82,8 +112,8 @@ export function formatTime(
   const date = toDate(value);
   if (date === null) return '';
   return getDateTimeFormat(locale, {
-    timeStyle: options.style ?? 'short',
-    timeZone: options.timeZone,
+    timeStyle: options.timeStyle ?? 'short',
+    timeZone: zoneOf(value, options.timeZone),
   }).format(date);
 }
 
@@ -96,26 +126,52 @@ export function formatTime(
  * only part of a date that must NOT be localised — the attribute has one
  * grammar, and it is ISO 8601.
  *
- * `dateOnly` gives `2026-01-31` for a value where the clock is noise. It is
- * derived in the requested ZONE rather than by slicing the UTC ISO string,
- * because slicing is where the day comes out wrong for every reader east or
- * west of the meridian the server happens to sit on.
+ * `dateOnly` gives `2026-01-31` for a value where the clock is noise. For an
+ * INSTANT it is derived in the requested zone, because slicing the UTC ISO
+ * string is where the day comes out wrong for a reader east or west of the
+ * meridian the server sits on. For a value that was ALREADY a civil date the
+ * string is returned untouched — see `CIVIL_DATE`: it has no zone to be read
+ * in, and deriving one is what moved a birthdate to the day before.
+ *
+ * THE YEAR IS PADDED AND SIGNED BY HAND, because the platform will not do it:
+ * `year: 'numeric'` is not zero-padded and carries no era, so measured, the
+ * year 500 came out as `500-06-15` — not a date any parser accepts — and a BCE
+ * year came out positive, stating the wrong year rather than an unparseable
+ * one. Rare in a product table, and both are invalid markup in an attribute
+ * whose only job is to be machine-readable.
  */
 export function toMachineDate(
   value: DateInput | null | undefined,
-  options: { dateOnly?: boolean; timeZone?: string } = {},
+  options: ToMachineDateOptions = {},
 ): string {
   const date = toDate(value);
   if (date === null) return '';
   if (options.dateOnly !== true) return date.toISOString();
+  if (isCivilDate(value)) return value;
 
+  // `en-CA` writes `YYYY-MM-DD`, and it is hard-coded rather than taken from
+  // the reader: a locale carrying `u-ca-islamic` or `u-nu-arab` would put a
+  // different calendar's year, or Arabic-Indic digits, into an attribute whose
+  // grammar is ASCII ISO 8601.
   const parts = getDateTimeFormat('en-CA', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    timeZone: options.timeZone,
-  }).format(date);
-  // `en-CA` writes `YYYY-MM-DD`, which is the grammar the attribute wants —
-  // asking the platform for it beats assembling it from parts by hand.
-  return parts;
+    era: 'short',
+    timeZone: zoneOf(value, options.timeZone),
+  }).formatToParts(date);
+
+  const at = (type: string) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+  const bc = /^b/i.test(at('era'));
+  // Astronomical numbering: 1 BC is year 0, 2 BC is year -1. The expanded form
+  // ISO 8601 gives a signed year is six digits.
+  const year = bc ? Number(at('year')) - 1 : Number(at('year'));
+  const digits = String(Math.abs(year)).padStart(
+    bc || year > 9999 ? 6 : 4,
+    '0',
+  );
+  const sign = bc ? '-' : year > 9999 ? '+' : '';
+
+  return `${sign}${digits}-${at('month')}-${at('day')}`;
 }

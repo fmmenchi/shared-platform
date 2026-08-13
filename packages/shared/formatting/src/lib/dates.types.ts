@@ -1,4 +1,4 @@
-import type { DateStyle } from './values.types.js';
+import type { DateStyle, TimeStyle } from './values.types.js';
 
 /** Shared by every date-shaped option bag. */
 interface ZonedOptions {
@@ -16,8 +16,17 @@ interface ZonedOptions {
 }
 
 export interface FormatDateOptions extends ZonedOptions {
-  /** @default 'medium' */
-  style?: DateStyle;
+  /**
+   * `Intl`'s own four.
+   *
+   * NAMED `dateStyle` AND NOT `style`, which is what it was: three sibling
+   * functions spelled one concept two ways, so a caller who learned
+   * `formatDate({ style })` wrote `formatDateTime({ style })` and silently got
+   * the default. One name, in the platform's spelling.
+   *
+   * @default 'medium'
+   */
+  dateStyle?: DateStyle;
 }
 
 export interface FormatDateTimeOptions extends ZonedOptions {
@@ -29,10 +38,28 @@ export interface FormatDateTimeOptions extends ZonedOptions {
    *
    * @default 'short'
    */
-  timeStyle?: 'full' | 'long' | 'medium' | 'short';
+  timeStyle?: TimeStyle;
 }
 
 export interface FormatTimeOptions extends ZonedOptions {
-  /** @default 'short' */
-  style?: 'full' | 'long' | 'medium' | 'short';
+  /** Named `timeStyle` for the reason `FormatDateOptions.dateStyle` gives.
+   *
+   * @default 'short'
+   */
+  timeStyle?: TimeStyle;
+}
+
+/**
+ * The machine form's options.
+ *
+ * A NAMED TYPE rather than an inline one, because it was written out twice —
+ * here and on the bound `Formatter` — and two copies of a shape is one copy
+ * away from disagreeing.
+ */
+export interface ToMachineDateOptions extends ZonedOptions {
+  /**
+   * `2026-01-31` instead of the full timestamp, for a value where the clock is
+   * noise — and the only honest form for a value that never had one.
+   */
+  dateOnly?: boolean;
 }

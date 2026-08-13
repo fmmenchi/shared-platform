@@ -50,9 +50,9 @@ function Time(props: TimeProps) {
 
   const text =
     format === 'date'
-      ? fmt.date(value, { style: dateStyle, timeZone })
+      ? fmt.date(value, { dateStyle, timeZone })
       : format === 'time'
-        ? fmt.time(value, { style: timeStyle, timeZone })
+        ? fmt.time(value, { timeStyle, timeZone })
         : fmt.dateTime(value, { dateStyle, timeStyle, timeZone });
 
   // Both are empty for exactly the same reason — there is no instant — so one

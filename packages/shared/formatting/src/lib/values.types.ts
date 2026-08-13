@@ -27,3 +27,14 @@ export interface Money {
  * one leaks.
  */
 export type DateStyle = 'full' | 'long' | 'medium' | 'short';
+
+/**
+ * How much of the clock to show — `Intl`'s `timeStyle`, which happens to have
+ * the same four names as `dateStyle`.
+ *
+ * NAMED SEPARATELY THOUGH IT IS AN ALIAS, because the two are different
+ * questions with a shared vocabulary: the day this package admits a fifth
+ * value on one of them, an alias is a one-line change and four hand-written
+ * copies are four places to find. Four is what there were.
+ */
+export type TimeStyle = DateStyle;

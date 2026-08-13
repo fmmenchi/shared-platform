@@ -148,3 +148,71 @@ describe('currencyParts', () => {
     );
   });
 });
+
+describe('what a number is NOT', () => {
+  it('refuses a value that is not a number, rather than writing NaN', () => {
+    // `Number.isNaN` does not coerce, so a STRING sailed through the guard and
+    // `Intl` wrote `€NaN` — measured, from a table column that typechecked.
+    // "NaN reaching the screen and looking like a value" is what this file
+    // says it exists to stop.
+    expect(formatNumber('Ada' as unknown as number, 'en-US')).toBe('');
+    expect(formatCurrency('Ada' as unknown as number, 'EUR', 'en-US')).toBe('');
+    expect(formatNumber(new Date() as unknown as number, 'en-US')).toBe('');
+  });
+
+  it('does not write minus nothing', () => {
+    // `Intl`'s default sign display shows the sign on a value that rounds to
+    // zero from below. A ledger delta reading `-$0.00` is the mirror of the
+    // empty-cell defect this file was written to kill.
+    expect(formatNumber(-0, 'en-US')).toBe('0');
+    expect(formatInteger(-0.2, 'en-US')).toBe('0');
+    expect(formatPercent(-0.0001, 'en-US')).toBe('0%');
+    expect(formatCurrency(-0.001, 'USD', 'en-US')).toBe('$0.00');
+    // A real negative still says so.
+    expect(formatCurrency(-1.5, 'USD', 'en-US')).toBe('-$1.50');
+  });
+});
+
+describe('digit options that are not digits', () => {
+  it('survives a precision that came from a config', () => {
+    // NaN is as dangerous in the OPTION as in the value, and only the value
+    // was guarded — each of these threw a RangeError from inside the render.
+    const bad = [
+      { maximumFractionDigits: 101 },
+      { minimumFractionDigits: -1 },
+      { maximumFractionDigits: Number.NaN },
+      { minimumFractionDigits: Number.POSITIVE_INFINITY },
+    ];
+    for (const options of bad) {
+      expect(() => formatNumber(1.5, 'en-US', options)).not.toThrow();
+      expect(() => formatPercent(0.5, 'en-US', options)).not.toThrow();
+      expect(() => formatCurrency(1.5, 'USD', 'en-US', options)).not.toThrow();
+    }
+  });
+
+  it('clamps the pair in an AMOUNT too, instead of disguising it', () => {
+    // Measured: the contradictory pair threw inside the try and landed in the
+    // unknown-code fallback, which wrote a VALID currency with no symbol —
+    // `1.2346 USD`. A guard that disguises one fault as another is worse than
+    // none.
+    expect(
+      formatCurrency(1.23456, 'USD', 'en-US', {
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 2,
+      }),
+    ).toBe('$1.2346');
+  });
+});
+
+describe('a currency code the runtime does not recognise', () => {
+  it('formats it, because Intl only refuses a MALFORMED one', () => {
+    // The claim everywhere was "the constructor throws on a code it does not
+    // know". Measured, it does not: `ZZZ` and `XBT` are accepted and printed
+    // as written. It throws only on a code that is not three ASCII letters —
+    // which is what the test proving the claim actually used.
+    expect(formatCurrency(1234.5, 'ZZZ', 'en-US')).toBe('ZZZ 1,234.50');
+    expect(formatCurrency(1234.5, 'XBT', 'en-US')).toBe('XBT 1,234.50');
+    // Malformed: the fallback, with the number kept.
+    expect(formatCurrency(1234.5, 'USDT', 'en-US')).toBe('1,234.50 USDT');
+  });
+});

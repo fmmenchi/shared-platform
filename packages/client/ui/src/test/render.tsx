@@ -24,12 +24,15 @@ export function renderUi(
 ): RenderResult {
   const { locale = 'en', theme, formatting } = opts;
 
+  // ONE ADAPTERS OBJECT PER RENDER CALL, not one per wrap. Rebuilt inside
+  // `wrap`, every re-render handed the provider a new object and therefore a
+  // new context value — so the churn a memoisation test wants to catch was the
+  // harness's own baseline, and a regression in the provider would have been
+  // invisible to every test in the package.
+  const adapters = { i18n: { locale } };
+
   const wrap = (node: ReactNode) => (
-    <UiProvider
-      adapters={{ i18n: { locale } }}
-      formatting={formatting}
-      theme={theme}
-    >
+    <UiProvider adapters={adapters} formatting={formatting} theme={theme}>
       {node}
     </UiProvider>
   );

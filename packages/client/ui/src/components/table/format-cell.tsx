@@ -7,9 +7,9 @@ import type { TableAlign } from './table.types.js';
 /**
  * A column's `format`, turned into a cell.
  *
- * ONE PLACE, because the same three answers are needed twice — the value, the
- * alignment, and whether the digits are tabular — and computed in three places
- * they would drift the first time one of them gained a kind.
+ * ONE PLACE, because the same two answers are needed twice — the value and the
+ * alignment — and computed in three places they would drift the first time one
+ * of them gained a kind. (Not three: the digits are the table's, see below.)
  */
 
 /**

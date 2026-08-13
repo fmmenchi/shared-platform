@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { UiProvider } from '../../i18n/provider.js';
 import { Time } from './time.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -86,5 +88,66 @@ describe('Time', () => {
     });
 
     await expectNoA11yViolations(container);
+  });
+});
+
+describe('a date with no clock and no zone', () => {
+  /** What every API returns for a birthdate, a due date, an invoice date. */
+  const BIRTHDAY = '1990-05-15';
+
+  it('is the same day wherever it is read, in both halves', () => {
+    // MEASURED BEFORE THIS: `new Date('1990-05-15')` is midnight UTC by
+    // specification, so reading the day back "in the reader's zone" walked it
+    // backwards — May 14 in New York, May 15 in Rome. Nobody's birthday moves
+    // when they fly.
+    for (const timeZone of [
+      'America/Los_Angeles',
+      'Europe/Rome',
+      'Asia/Tokyo',
+    ]) {
+      const { container, unmount } = renderUi(<Time value={BIRTHDAY} />, {
+        locale: 'en-GB',
+        formatting: { timeZone },
+      });
+      expect(container.textContent).toBe('15 May 1990');
+      expect(container.querySelector('time')).toHaveAttribute(
+        'datetime',
+        BIRTHDAY,
+      );
+      unmount();
+    }
+  });
+});
+
+describe('the same instant rendered on two machines', () => {
+  it('renders identically on the server and on the client when the app states a zone', () => {
+    // A ZONE IS THE ONE THING A SERVER AND A BROWSER DO NOT SHARE. Measured
+    // with `hydrateRoot`: an instant late in the UTC day rendered `Jan 31` on
+    // a UTC server and `Feb 1` in a Tokyo browser, and React reported a
+    // recoverable hydration error and regenerated the tree.
+    //
+    // Nothing in this component can fix that — only the app knows which zone
+    // it means — so what is proved here is the FIX: with a stated zone the two
+    // renderers produce the same string, both halves included. Which is why
+    // `UiProvider` has a `formatting` slice and why the docs tell a
+    // server-rendered app to set it.
+    const value = '2026-01-31T23:30:00Z';
+    const tree = (
+      <UiProvider
+        adapters={{ i18n: { locale: 'en-US' } }}
+        formatting={{ timeZone: 'Asia/Tokyo' }}
+      >
+        <Time value={value} />
+      </UiProvider>
+    );
+
+    const server = renderToStaticMarkup(tree);
+    const { container } = render(tree);
+    const client = container.querySelector('time') as HTMLElement;
+
+    expect(server).toContain('Feb 1, 2026');
+    expect(client.textContent).toBe('Feb 1, 2026');
+    expect(client.getAttribute('datetime')).toBe('2026-02-01');
+    expect(server).toContain('2026-02-01');
   });
 });

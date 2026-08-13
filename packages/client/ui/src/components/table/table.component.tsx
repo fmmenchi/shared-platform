@@ -1102,10 +1102,14 @@ function Table<T>(props: TableProps<T>) {
                           column.key === rowHeaderKey
                             ? rowName
                             : column.cell
-                              ? // A STATED CELL WINS OVER A FORMAT, both here
-                                // and in the alignment below: a caller who
-                                // wrote the function has answered the same
-                                // question more specifically.
+                              ? // A STATED CELL WINS OVER A FORMAT for the
+                                // CONTENT, and only for the content: a caller
+                                // who wrote the function has answered how the
+                                // value reads, not what the column holds — so
+                                // the alignment below still follows the format.
+                                // The first version of this comment claimed the
+                                // cell won both, which the line below has never
+                                // done.
                                 column.cell(row)
                               : column.format
                                 ? formatCell(column.format, raw)
@@ -1113,8 +1117,10 @@ function Table<T>(props: TableProps<T>) {
 
                         // THE ALIGNMENT FOLLOWS FROM THE FORMAT, which is the
                         // half of this that a formatter call cannot give you —
-                        // see `alignFor`. The digits are already tabular: the
-                        // table sets `font-variant-numeric` on itself, so
+                        // see `alignFor`. It follows from the format even when
+                        // a `cell` supplied the text, because what the column
+                        // HOLDS did not change. The digits are already tabular:
+                        // the table sets `font-variant-numeric` on itself, so
                         // marking the cell as well would be a second owner for
                         // a fact that already has one.
                         const align =

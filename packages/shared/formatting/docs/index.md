@@ -21,12 +21,12 @@ server cannot do if the function ships with React attached.
 
 Over calling `Intl` where you stand, it adds four things, each of them a defect somewhere today:
 
-|                                                        |                                                                                                                                                                                                                |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **The formatters are cached**, and the cache is capped | A thousand rows with three formatted columns construct three thousand formatters per render. On a server the locale comes from `Accept-Language` — an uncapped map is unbounded growth keyed on request input. |
-| **Zero is a number**                                   | `value ? format(value) : ''` renders a balance of zero, a count of zero and a delta of zero as an empty cell, which a reader takes for missing data.                                                           |
-| **The zone is stated**                                 | A `Date` carries none: `2026-01-01T00:00:00Z` is the 1st of January in Rome and the 31st of December in Lima.                                                                                                  |
-| **Nothing throws**                                     | `en_US` from a Java backend and an unknown currency code both make an `Intl` constructor raise a `RangeError` — from inside a cell renderer that is the page, not the cell.                                    |
+|                                                        |                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **The formatters are cached**, and the cache is capped | A thousand rows with three formatted columns construct three thousand formatters per render. On a server the locale comes from `Accept-Language` — an uncapped map is unbounded growth keyed on request input.                                                     |
+| **Zero is a number**                                   | `value ? format(value) : ''` renders a balance of zero, a count of zero and a delta of zero as an empty cell, which a reader takes for missing data.                                                                                                               |
+| **The zone is stated**                                 | A `Date` carries none: `2026-01-01T00:00:00Z` is the 1st of January in Rome and the 31st of December in Lima.                                                                                                                                                      |
+| **Nothing throws**                                     | `en_US` from a Java backend, a mistyped zone (`America/Sao_Paolo`), a malformed currency code and an out-of-range or `NaN` fraction-digit option all make an `Intl` constructor raise a `RangeError` — from inside a cell renderer that is the page, not the cell. |
 
 ## Use
 
@@ -50,7 +50,7 @@ The free functions take a locale per call, for anywhere a bound formatter is awk
 ```ts
 import { formatDate, formatCurrency } from '@fmmenchi/formatting';
 
-formatDate(row.createdAt, locale, { style: 'short', timeZone: 'UTC' });
+formatDate(row.createdAt, locale, { dateStyle: 'short', timeZone: 'UTC' });
 formatCurrency(row.total, row.currency, locale);
 ```
 
@@ -65,6 +65,26 @@ reader that Italian does not use.
 formatNumber(1234, 'it-IT'); // '1234'  — the language's rule
 formatNumber(1234, 'it-IT', { grouping: 'always' }); // '1.234' — overrides it
 formatNumber(1234, 'it-IT', { grouping: 'never' }); // '1234'  — for an identifier
+```
+
+## A day is not an instant
+
+A value of the shape `1990-05-15` — what an API returns for a birthdate, a due date, an invoice date
+— is a **civil date**: it has no clock and no zone, so it is read in UTC whatever zone was asked for.
+Nobody's birthday moves when they fly. Measured before that rule existed: `new Date('1990-05-15')` is
+midnight UTC by specification, so reading its day back "in the reader's zone" rendered **May 14** in
+New York and Los Angeles.
+
+An instant still belongs to a zone, and the zone still decides.
+
+## Server and browser must be told the zone
+
+They do not share one. Left unstated, each uses its own — so a server-rendered page can send
+`Jan 31` and the browser can build `Feb 1`, which React reports as a hydration mismatch and
+regenerates. Nothing in this package can fix that, because only the app knows which zone it means:
+
+```tsx
+<UiProvider adapters={{ i18n }} formatting={{ timeZone: 'Europe/Rome' }}>
 ```
 
 ## Missing values

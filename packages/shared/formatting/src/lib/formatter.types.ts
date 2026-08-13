@@ -2,6 +2,7 @@ import type {
   FormatDateOptions,
   FormatDateTimeOptions,
   FormatTimeOptions,
+  ToMachineDateOptions,
 } from './dates.types.js';
 import type {
   CurrencyParts,
@@ -30,7 +31,12 @@ export interface FormatterDefaults {
    */
   timeZone?: string;
   /**
-   * The currency `money()` falls back to when a value carries none.
+   * The currency `currency()` falls back to when a CALL names none.
+   *
+   * Not `money()`, which the first version of this line claimed: a `Money`
+   * carries a required currency, so there is nothing there to fall back from,
+   * and the code never read this for it. An app that set this expecting
+   * `money()` to use it was following the documentation into a no-op.
    *
    * There is no default default: an amount rendered in the wrong currency is
    * not a formatting mistake, it is a different number, so the fallback is
@@ -69,7 +75,7 @@ export interface Formatter {
   /** The ISO form for `<time dateTime>`. Never localised — see `toMachineDate`. */
   machine: (
     value: DateInput | null | undefined,
-    options?: { dateOnly?: boolean; timeZone?: string },
+    options?: ToMachineDateOptions,
   ) => string;
 
   number: (
