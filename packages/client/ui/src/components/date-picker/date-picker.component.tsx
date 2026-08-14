@@ -289,7 +289,10 @@ function DatePicker(props: DatePickerProps) {
             heading a calendar could carry is the month caption, which the grid
             already uses as its own name — a second one would announce the month
             twice and say nothing about why the surface is open. */}
-        <PopoverContent aria-label={triggerLabel ?? t('trigger')}>
+        <PopoverContent
+          aria-label={triggerLabel ?? t('trigger')}
+          className={styles.surface}
+        >
           <Calendar
             value={picked}
             month={month}
