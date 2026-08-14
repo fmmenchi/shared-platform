@@ -1,7 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
-import { UiProvider, FormDateInput, type UseFormField } from '@fmmenchi/ui';
+import {
+  UiProvider,
+  FormDateInput,
+  FormDatePicker,
+  type UseFormField,
+} from '@fmmenchi/ui';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 
 /**
@@ -153,6 +158,62 @@ describe('FormDateInput through react-hook-form', () => {
     await browser.click(screen.getByRole('button', { name: 'Azzera' }));
 
     expect(field).toHaveValue('12/03/1985');
+  });
+
+  it('the PICKER submits what the grid chose, and follows setValue back', async () => {
+    // The ref-based half of the picker's claim, which nothing here tested: the
+    // calendar reaches the binding with no library lever, because the component
+    // holds the carrier alongside `register()`'s ref and writes it the way a
+    // keystroke does.
+    function PickerForm() {
+      const form = useForm({ defaultValues: { dob: '2026-08-01' } });
+      return (
+        <FormProvider {...form}>
+          <form>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'it' },
+                form: { field: useRhfField },
+              }}
+            >
+              <FormDatePicker name="dob" label="Data di nascita" />
+            </UiProvider>
+            <button
+              type="button"
+              onClick={() => form.setValue('dob', '2000-01-05')}
+            >
+              Da fuori
+            </button>
+            <output data-testid="held">{form.watch('dob')}</output>
+          </form>
+        </FormProvider>
+      );
+    }
+    const { container } = render(<PickerForm />);
+
+    await browser.click(
+      screen.getByRole('button', {
+        name: 'Scegli Data di nascita dal calendario',
+      }),
+    );
+    await browser.click(
+      container.querySelector('[data-day="2026-08-20"]') as HTMLElement,
+    );
+
+    // What the form holds, and what it would post.
+    await waitFor(() =>
+      expect(screen.getByTestId('held')).toHaveTextContent('2026-08-20'),
+    );
+    const form = container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).getAll('dob')).toEqual(['2026-08-20']);
+
+    // …and the other direction: `setValue` assigns onto the node its ref was
+    // handed, with no event and no render, so only the wrapped `value`
+    // descriptor can see it.
+    await browser.click(screen.getByRole('button', { name: 'Da fuori' }));
+    expect(
+      screen.getByRole('textbox', { name: 'Data di nascita' }),
+    ).toHaveValue('05/01/2000');
   });
 
   it('submits nothing for a date that does not exist', async () => {
