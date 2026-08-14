@@ -604,7 +604,30 @@ function DateInput(props: DateInputProps) {
       },
     });
 
+    // AND THE OTHER DOOR: a write that arrives as an EVENT rather than as a
+    // bare assignment. That is how anything outside the component sets this
+    // field on purpose — `writeDateInput`, and therefore a `Calendar` in a
+    // `Popover` "setting the field" as ADR-0027 says it does. It cannot use the
+    // assignment path, because the only way to leave React's value tracker
+    // stale enough to hear the change is the prototype setter, which by
+    // definition steps over the property wrapped above.
+    //
+    // Guarded on the text actually differing, so the component's OWN writes —
+    // which dispatch the same event on every keystroke — do not redraw the
+    // field under the caret.
+    const follow = () => {
+      const target = field.current;
+      const iso = element.value;
+      if (target === null || iso === '') return;
+      const next = display(iso);
+      if (next === '' || next === target.value) return;
+      target.value = next;
+      shown.current = next;
+    };
+    element.addEventListener('input', follow);
+
     return () => {
+      element.removeEventListener('input', follow);
       if (own === undefined) {
         Reflect.deleteProperty(element, 'value');
       } else {
@@ -643,14 +666,22 @@ function DateInput(props: DateInputProps) {
           const element = event.currentTarget;
           const typed = element.value;
           const caret = element.selectionStart ?? typed.length;
-          // A SHORTER STRING IS A DELETION, and a deletion is positional. Only
-          // when the previous text cannot be read back positionally — a paste
-          // over a selection, a value written from outside — does it fall
-          // through to the flow mask.
-          const deleted =
-            typed.length < shown.current.length
-              ? applyDeletion(shown.current, typed, caret)
-              : null;
+          // IS THIS A DELETION? The browser says so outright, and asking it is
+          // the difference between reading a gesture and guessing at one:
+          // "shorter than before" was the first version, and it read SELECT-ALL
+          // AND RETYPE — eight digits replacing ten characters — as a deletion,
+          // then applied it positionally to a string the user had just wiped.
+          // `inputType` is on every `input` event a real edit produces; the
+          // length test stays as the fallback for anything that synthesises one
+          // without it.
+          const how = (event.nativeEvent as InputEvent).inputType;
+          const deleting =
+            how === undefined || how === ''
+              ? typed.length < shown.current.length
+              : how.startsWith('delete');
+          const deleted = deleting
+            ? applyDeletion(shown.current, typed, caret)
+            : null;
           const { text, iso } = deleted ?? mask(typed);
 
           // Written straight onto the node. It is uncontrolled, so React will
