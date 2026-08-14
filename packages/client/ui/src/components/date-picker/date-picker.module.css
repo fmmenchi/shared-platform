@@ -69,6 +69,45 @@
          `100dvw` rather than `100vw`: a phone's toolbars are part of the
          viewport the user actually has. */
       max-inline-size: min(100dvw - 1rem, 24rem);
+      /* AND ITS HEIGHT IS THE SCREEN'S, not the anchor's. `PopoverContent` caps
+         every surface at the room the geometry measured BELOW OR ABOVE THE
+         TRIGGER — right while the box hangs off it, wrong the moment it does
+         not. Measured before this line: a field 300px down a 664px screen gave
+         `--anchored-available-height: 304px`, so the card was 288px tall with
+         188px of empty viewport above AND below it, and the grid simply ended
+         at the 23rd — two week rows inside an `overflow: auto` with nothing to
+         say so. The same month rendered whole or clipped depending on where the
+         field sat, which is not something a reader can see or fix. */
+      max-block-size: calc(100dvh - 1rem);
+      /* Half the card's padding, which buys 16px of grid. Measured, that moves
+         the width at which the cells stop being 44px from 376px down to 360px
+         — exactly clearing the commonest Android CSS width, which is the
+         difference between "correct on most phones" and "correct on mine". */
+      padding: 0.5rem;
     }
   }
+
+  /*
+   * WHAT THIS SHAPE DOES NOT FIX, said here rather than found later.
+   *
+   * The surface still closes when the page scrolls far enough for the TRIGGER
+   * to leave the viewport — `use-anchored.ts` reports the anchor lost and the
+   * popover hides. Anchored that is right: the box pointed at a control that
+   * went away. Centred it is arbitrary, because nothing on screen relates the
+   * two any more, and a scroll gesture on a phone is easy to make by accident.
+   *
+   * It is left alone deliberately. Changing it means telling the JS which shape
+   * it is in, and the only honest way to ask is `matchMedia('(pointer:
+   * coarse)')` — a second source of truth beside this stylesheet, free to
+   * disagree with it. A surface that closes when it should not is a smaller
+   * fault than a component whose shape and whose behaviour are decided in two
+   * places. If it becomes a real complaint, the fix belongs in `Popover` as an
+   * option, not here as a device check.
+   *
+   * The 44px target also has a floor, and it is the screen: measured across the
+   * cap, 390→46.00, 374→46.00, 360→44.14, 356→43.52, 344→41.66, 320→37.95. So
+   * it holds from about 360px up. Below that the grid compresses rather than
+   * overflowing — still well above the 24px WCAG AA minimum, short of this
+   * package's own 44.
+   */
 }

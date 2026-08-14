@@ -500,6 +500,73 @@ run between the fields rather than within one. Which is the last argument for th
 `DatePicker` and `DateRangePicker` side by side is a coherent surface, while "a recipe" beside "a
 component" is not.
 
+## Amendment: the range, and what it costs the parts
+
+The previous amendment ended by saying `DateRangePicker` would be a sibling rather than a flag. That
+sentence named the conclusion and left the four decisions underneath it open. They are taken here,
+before any code, because two of them change contracts that are already written.
+
+### 1. `Calendar` learns a range. There is no second grid
+
+`value` becomes `CivilDate | CivilRange | null`, where a range is `{ start, end }` and either end may
+be `null` while a selection is half made.
+
+The alternative — a `RangeCalendar` beside it, sharing `civil-math` — reads cleaner on the surface
+and is the wrong trade. What a calendar costs is not the month arithmetic, it is the **APG grid
+contract**: arrows across and down, Home/End, PageUp/PageDown with their year variants, a roving
+focus that is a DATE rather than a cell so it survives the grid being replaced underneath it, the
+month announced when it changes, and a focus effect that has to put the tab stop back on a node that
+did not exist a render ago. That is the expensive part, and a second copy of it is a second thing to
+keep correct.
+
+**This is not a preference, it is the week we just had.** `DateInput` and `Calendar` were reviewed,
+then changed, then reviewed again — and the second round found that a rule moved out of one of them
+had left the other stealing the keyboard, and that three write paths reported to nobody. Two
+components that must agree drift the moment one is edited alone. Two grids would be that, permanently.
+
+The cost is stated rather than hidden: every prop whose meaning depends on the shape of the value —
+`onValueChange`, `isDateDisabled`, `aria-selected` per cell — grows a conditional, and the types have
+to make the wrong combination unrepresentable rather than merely unlikely.
+
+### 2. Two carriers, two names. A range is two values and posts as two
+
+`FormDateRangePicker` binds **two fields**, not one: `startName` and `endName`, each with its own
+carrier holding its own ISO string, each submitted as one ordinary entry.
+
+The alternative — one name carrying two values — breaks the promise the whole family is built on:
+one field, one name, one value a server never has to parse. A `FormData` with two entries under
+`stay` is a shape every backend reads differently.
+
+**And this needs nothing from the form port**, which was not obvious and is worth recording: the
+contract is `(name) => BoundField`, a hook called once per field, so two fields are two calls. An
+earlier draft of this amendment claimed the port would have to change. It does not.
+
+### 3. Which end is moving is said out loud
+
+After the first click the grid is choosing an END, and a reader who cannot see the highlight has no
+way to know that. So: the state is announced in the same polite region the month uses, the two ends
+carry `aria-selected` while the days between them do not (they are `data-in-range`, a fill and not a
+selection), and each cell's accessible name says which of the three it is.
+
+This is the half a range adds that costs real work, and the half that is easiest to skip because
+sighted testing never notices it missing.
+
+### 4. A click before the start REWINDS, it does not refuse
+
+Choosing a day earlier than the current start makes it the new start and clears the end, rather than
+being rejected. Refusing is defensible and worse: the user's intent is unambiguous — they want a
+range beginning there — and a control that answers a clear intent with nothing teaches people to
+distrust it. Rewinding is also what the travel products people arrive from already do.
+
+The end is then chosen by the next click. A single day chosen twice is a one-day range, not an error.
+
+### What stays out
+
+`min`/`max` nights, blackout ranges as opposed to blackout days, and two months side by side are all
+NOT part of this. Each is a real product requirement somewhere and none of them is cross-app enough
+to earn a place yet (ADR-0008). `isDateDisabled` already refuses days one at a time, which is the
+primitive the rest would be built on.
+
 ## What would change this
 
 `::picker()` gaining a spec for date inputs would make the native popup themable and shrink what
