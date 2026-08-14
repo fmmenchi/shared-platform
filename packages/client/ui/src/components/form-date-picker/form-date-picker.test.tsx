@@ -30,10 +30,55 @@ function carrier(container: HTMLElement): HTMLInputElement {
   return node as HTMLInputElement;
 }
 
-const open = () =>
-  browser.click(screen.getByRole('button', { name: 'Scegli dal calendario' }));
+// The trigger is named after its own field now, so the helper has to say which
+// one it means — which is the point of the change.
+const open = (field = 'Data di partenza') =>
+  browser.click(
+    screen.getByRole('button', { name: `Scegli ${field} dal calendario` }),
+  );
 
 describe('FormDatePicker', () => {
+  it('names each trigger after its own field, so two on a form differ', () => {
+    renderBound(
+      (name) => ({ control: { name }, errors: [] }),
+      <>
+        <FormDatePicker name="departure" label="Partenza" />
+        <FormDatePicker name="return" label="Ritorno" />
+      </>,
+    );
+
+    // The default names the button by what it DOES, which stops being a name
+    // the moment a form has two dates in it: a reader listing the buttons meets
+    // "Scegli dal calendario" twice, and neither `Field` nor `InputGroup` is a
+    // naming ancestor that could disambiguate them.
+    expect(
+      screen.getByRole('button', { name: 'Scegli Partenza dal calendario' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Scegli Ritorno dal calendario' }),
+    ).toBeInTheDocument();
+  });
+
+  it('leaves a non-string label to the call site rather than flattening it', () => {
+    renderBound(
+      (name) => ({ control: { name }, errors: [] }),
+      <FormDatePicker
+        name="departure"
+        label={
+          <>
+            Partenza <abbr title="obbligatorio">*</abbr>
+          </>
+        }
+      />,
+    );
+
+    // A `ReactNode` label may be markup, and flattening it into an attribute
+    // gives either "[object Object]" or a name that silently drops half of it.
+    expect(
+      screen.getByRole('button', { name: 'Scegli dal calendario' }),
+    ).toBeInTheDocument();
+  });
+
   it('names the field once, with a label rather than a legend', () => {
     renderBound(
       (name) => ({ control: { name }, errors: [] }),
@@ -130,7 +175,7 @@ describe('FormDatePicker', () => {
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
 
       // …and the calendar opens on it rather than on today.
-      await open();
+      await open('Data di nascita');
       expect(
         container.querySelector('[data-day="1985-03-12"]'),
       ).toHaveAttribute('aria-selected', 'true');

@@ -444,7 +444,14 @@ survive contact.
 
 Three of those were found in one afternoon **by the people who wrote the parts**, two of them by
 watching the thing misbehave on screen rather than by reading the code. A recipe whose authors get
-two steps out of five wrong on first assembly is not documentation, it is a trap with a nice page.
+three steps out of five wrong on first assembly is not documentation, it is a trap with a nice page.
+
+An adversarial review of the components that replaced it then found the SAME class of failure one
+storey up: the picker held the selected day in React state and never re-read the carrier, so a
+`setValue`, a `reset` or a `writeDateInput` left the grid on a date the field no longer held. The
+repair belonged in `DateInput` — an external write now reports through `onDateChange` like any
+other — which fixes the hand-composed recipe as well. That is the argument for the component
+restated by evidence: the failure recurs at every level where the knowledge is held by hand.
 
 **Step 3 is the one that settles it.** The obvious repair was to make `Calendar` follow its own
 `value` into the right month. It cannot: writing that state in an effect fights the navigation the
@@ -471,7 +478,8 @@ So: **`DatePicker`** and its bound twin **`FormDatePicker`**, symmetric with `In
 - **The bound case gets simpler, not harder.** `FormDatePicker` renders the field itself, so it holds
   the carrier alongside the binding's ref through `mergeRefs`, and writes with `writeDateInput` —
   a real `input` event the library hears. No `setValue`, no library-specific lever, which the
-  hand-composed version cannot avoid.
+  hand-composed version cannot avoid. So the components perform four of the five steps and
+  **abolish the fifth**, rather than performing all five.
 
 **`DateRangePicker` will be a sibling, not a flag on this one.** A range wants a different selection
 model inside `Calendar` (two ends, a hover preview between them), two carriers, and constraints that

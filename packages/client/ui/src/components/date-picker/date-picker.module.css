@@ -20,4 +20,11 @@
   .asTrigger {
     cursor: pointer;
   }
+
+  /* Announced, never drawn — the same technique the carrier and the calendar's
+     month announcement use. It sits inside the group, so it must also stay out
+     of the flex row: `sr-only` is absolutely positioned, so it adds no gap. */
+  .announcement {
+    @apply sr-only;
+  }
 }

@@ -301,6 +301,67 @@ describe('InputGroup', () => {
     );
   });
 
+  it('leaves a popover surface alone — it is not an affix', () => {
+    // `Popover` renders no element of its own, so a picker composed inside a
+    // group leaves its `<dialog popover>` a DIRECT CHILD of the group. The
+    // affix rule (0,1,1) then outranked the surface's own `.content` (0,1,0)
+    // from another module — same layer, so no protection — and repainted the
+    // whole calendar `input-placeholder`: every day took the exact colour that
+    // says "this one is from the neighbouring month".
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <dialog popover="auto" data-testid="surface">
+          <span data-testid="inside">contenuto</span>
+        </dialog>
+      </InputGroup>,
+    );
+    const surface = screen.getByTestId('surface');
+    const affixColour = getComputedStyle(
+      screen.getByRole('textbox', { name: 'Importo' }),
+    ).color;
+
+    expect(getComputedStyle(surface).color).not.toBe(
+      'var(--fm-color-input-placeholder)',
+    );
+    // It is the last element child, so it would also have taken the affix
+    // padding — 16px on one side of the card and 12px on the other.
+    expect(getComputedStyle(surface).paddingInlineEnd).toBe(
+      getComputedStyle(surface).paddingInlineStart,
+    );
+    expect(getComputedStyle(surface).flexShrink).not.toBe('0');
+    expect(affixColour).toBeTruthy();
+  });
+
+  it('draws a focused button’s inset ring in a colour its own fill cannot swallow', async () => {
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button
+          type="button"
+          aria-label="Invia"
+          style={{ color: 'rgb(1, 2, 3)' }}
+        >
+          →
+        </button>
+      </InputGroup>,
+    );
+    const button = screen.getByRole('button', { name: 'Invia' });
+
+    await browser.click(screen.getByRole('textbox', { name: 'Importo' }));
+    await browser.tab();
+    expect(button).toHaveFocus();
+
+    // Pulled inside the button's box, BOTH edges of the ring sit on the
+    // button's own fill rather than on the group's — and the ring token is
+    // contracted against the group's. Measured on the filled variants it
+    // landed at 1.33–1.46:1 against the 3:1 WCAG 1.4.11 asks for; only `ghost`,
+    // which is what `DatePicker` uses, stayed clear. `currentColor` is the
+    // colour the button's own label is drawn in, so it contrasts with that fill
+    // by construction.
+    expect(getComputedStyle(button).outlineColor).toBe('rgb(1, 2, 3)');
+  });
+
   it('keeps a focused button’s ring inside the group, which clips', async () => {
     render(
       <InputGroup>

@@ -9,6 +9,8 @@ import {
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
 import { toMessages } from '../../form/messages.js';
+import { useMessages } from '../../i18n/provider.js';
+import { datePickerMessages } from '../date-picker/date-picker.messages.js';
 import type { FormDatePickerProps } from './form-date-picker.types.js';
 
 /**
@@ -33,16 +35,39 @@ import type { FormDatePickerProps } from './form-date-picker.types.js';
  * is that the bound picker needs no library-specific code at all.
  */
 function FormDatePicker(props: FormDatePickerProps) {
-  const { name, label, hint, ref, ...rest } = props;
+  // `defaultDate` is DROPPED, not merely warned about. The warning below says
+  // it "would seed the DOM without telling your form library" — and it did:
+  // measured through the untyped route, the seed landed and the library never
+  // heard of it. A guard that describes a harm in the conditional while letting
+  // it happen is worse than none, because it reads as protection. This matches
+  // the shared `withoutBindingOwned` guard, which warns AND removes.
+  const { name, label, hint, ref, defaultDate, ...rest } =
+    props as FormDatePickerProps & { defaultDate?: unknown };
   const { control, errors } = useBoundField(name, 'FormDatePicker');
   useBindingOwnedWarning(rest, 'FormDatePicker');
   // The type refuses `defaultDate`; this is for the callers the type does not
   // see, and for the same reason the shared guard exists at all.
   useDevWarning(
-    'defaultDate' in rest,
-    "FormDatePicker: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. Give the value to the library instead.",
+    defaultDate !== undefined,
+    "FormDatePicker: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. It was ignored; give the value to the library instead.",
   );
   const messages = toMessages(errors);
+
+  // THE TRIGGER TAKES ITS NAME FROM THE FIELD'S LABEL. The default names the
+  // button by what it does — "Choose from a calendar" — which stops being a
+  // name the moment a form has two dates in it: a reader listing the buttons,
+  // or landing on one after a scroll, meets the same words twice with nothing
+  // to tell them apart, and neither `Field` nor `InputGroup` is a naming
+  // ancestor that could disambiguate them.
+  //
+  // Only when the label is a STRING. It is a `ReactNode`, so it may be markup
+  // with elements in it, and flattening that into an attribute would produce
+  // either "[object Object]" or a name that silently drops half the label.
+  // Those call sites pass `triggerLabel` themselves, and an explicit one always
+  // wins over this.
+  const t = useMessages(datePickerMessages);
+  const composed =
+    typeof label === 'string' ? t('triggerFor', { field: label }) : undefined;
 
   // THE SAME ROUTING TABLE `FormDateInput` uses, and it is not a shortcut for a
   // spread: what describes a NATIVE CONTROL THIS IS NOT must never travel. A
@@ -83,14 +108,18 @@ function FormDatePicker(props: FormDatePickerProps) {
         // under either name depending on the library. Never passed through as
         // `value`, which would control the visible field with an ISO string and
         // show `2026-08-12` where the locale writes `12/08/2026`.
+        // No `value={undefined}` any more: `DatePicker` refuses the prop
+        // outright now, so there is nothing left to neutralise.
         defaultValue={seed}
-        value={undefined}
         {...withoutBindingOwned(rest)}
         // TWO REFS, TWO JOBS. The binding's goes to the carrier, because a
         // library reads `.value` off the element its ref was given and the
         // visible field holds `12/08/2026`. The call site's goes to the visible
         // input, which is where focus belongs. `DatePicker` merges a third of
         // its own into the first, which is how the calendar writes the field.
+        triggerLabel={
+          (rest as { triggerLabel?: string }).triggerLabel ?? composed
+        }
         carrierRef={bindingRef}
         ref={ref}
       />
