@@ -32,11 +32,19 @@ interface CalendarOwnProps {
    *     <Calendar value={picked} month={month} onMonthChange={setMonth} />
    *
    * That is a decision, not an omission. Following the selection from inside
-   * would mean writing state in an effect on every value change — which fights
-   * the navigation the user just made, and which `useControlled` forbids
-   * outright: its setter runs in an event, never in a render or an effect. The
-   * one place that knows whether the value moved because of the grid or in spite
-   * of it is the thing holding both.
+   * means writing state in an effect on every value change, which fights the
+   * navigation the user just made — and the tab stop has to move with it, which
+   * is a plain `useState` setter and exactly what the `react-hooks` lint refuses
+   * in an effect body.
+   *
+   * (An earlier version of this comment said `useControlled` forbids it too.
+   * That was wrong and is withdrawn: `use-controlled.ts` documents only that its
+   * internal ref is never written during RENDER, there is no guard against an
+   * effect, and a probe measured zero lint errors for a `useControlled` setter
+   * called from one. The refusal was about the tab stop, not the month.)
+   *
+   * The one place that knows whether the value moved because of the grid or in
+   * spite of it is the thing holding both.
    */
   onMonthChange?: (month: CivilDate) => void;
   /**

@@ -9,6 +9,8 @@ import {
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
 import { toMessages } from '../../form/messages.js';
+import { useBoundCarrier } from '../../form/use-bound-carrier.js';
+import { mergeRefs } from '../../primitives/merge-refs.js';
 import { useMessages } from '../../i18n/provider.js';
 import { datePickerMessages } from '../date-picker/date-picker.messages.js';
 import type { FormDatePickerProps } from './form-date-picker.types.js';
@@ -95,6 +97,10 @@ function FormDatePicker(props: FormDatePickerProps) {
   const asString = (candidate: unknown) =>
     typeof candidate === 'string' ? candidate : undefined;
   const seed = asString(defaultValue) ?? asString(value);
+  // A CONTROLLED adapter hands over `value` and no ref, so nothing it does
+  // after the first render reaches the field — the seed above is a one-shot.
+  // This follows it onto the carrier, where the field is already watching.
+  const carrier = useBoundCarrier(asString(value));
 
   return (
     <Field label={label} invalid={messages.length > 0}>
@@ -120,7 +126,7 @@ function FormDatePicker(props: FormDatePickerProps) {
         triggerLabel={
           (rest as { triggerLabel?: string }).triggerLabel ?? composed
         }
-        carrierRef={bindingRef}
+        carrierRef={(node) => mergeRefs(carrier, bindingRef)(node)}
         ref={ref}
       />
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}

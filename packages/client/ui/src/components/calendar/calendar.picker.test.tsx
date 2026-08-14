@@ -68,6 +68,13 @@ function Picker({ onChange }: { onChange?: (value: string) => void }) {
   );
 }
 
+// THE CELLS EXIST WHEN THE POPOVER IS SHUT — the calendar lives inside a closed
+// `<dialog popover>`, not behind a mount — so asking for a `[data-day]` says
+// nothing about whether anything is on screen. Measured: the "opens on the month
+// of a date typed" test below passed with the trigger never clicked.
+const isOpen = (container: HTMLElement) =>
+  container.querySelector('dialog')?.matches(':popover-open') === true;
+
 describe('Calendar inside a Popover, setting a DateInput', () => {
   it('writes the picked day into the field, in the locale order', async () => {
     const { container } = renderUi(<Picker />, { locale: 'it' });
@@ -132,6 +139,7 @@ describe('Calendar inside a Popover, setting a DateInput', () => {
     );
     await browser.click(screen.getByRole('button', { name: 'Scegli' }));
 
+    expect(isOpen(container)).toBe(true);
     expect(container.querySelector('[data-day="2026-08-20"]')).toHaveAttribute(
       'aria-selected',
       'true',
@@ -152,9 +160,79 @@ describe('Calendar inside a Popover, setting a DateInput', () => {
     );
     await browser.click(screen.getByRole('button', { name: 'Scegli' }));
 
+    expect(isOpen(container)).toBe(true);
     const day = container.querySelector('[data-day="2027-12-20"]');
     expect(day).not.toBeNull();
     expect(day).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('never yanks the focus out of the field when the month follows', async () => {
+    // AN INLINE CALENDAR, not the popover one: a popover closes when a day is
+    // chosen, which hides the grid and hides the defect with it. Beside the
+    // field — the arrangement `Calendar`'s own type doc describes — the grid
+    // stays on screen while the field is typed into, and that is where it bites.
+    function Inline() {
+      const carrier = useRef<HTMLInputElement>(null);
+      const [picked, setPicked] = useState<CivilDate | null>(null);
+      const [month, setMonth] = useState<CivilDate>(AUGUST);
+      const take = (date: CivilDate | null) => {
+        setPicked(date);
+        if (date !== null) setMonth(date);
+      };
+      return (
+        <>
+          <DateInput
+            name="departure"
+            aria-label="Partenza"
+            carrierRef={carrier}
+            onDateChange={take}
+          />
+          <Calendar
+            value={picked}
+            month={month}
+            onMonthChange={setMonth}
+            onValueChange={(date) => {
+              setPicked(date);
+              setMonth(date);
+              writeDateInput(carrier.current, date);
+            }}
+          />
+        </>
+      );
+    }
+    const { container } = renderUi(<Inline />, { locale: 'it' });
+
+    // USE THE GRID FIRST — that is what arms it. Then go back to the field and
+    // type: the contract asks the composition to move `month` whenever `value`
+    // moves, every recipe does that with a fresh object, so the rebuilt grid
+    // re-ran the focus effect on a latch nobody ever put down. Measured, focus
+    // was yanked onto a cell mid-keystroke and the next Backspace never reached
+    // the field at all.
+    await browser.click(
+      container.querySelector('[data-day="2026-08-12"]') as HTMLElement,
+    );
+    const field = screen.getByRole('textbox', { name: 'Partenza' });
+    await browser.fill(field, '20122027');
+
+    expect(document.activeElement).toBe(field);
+    expect(field).toHaveValue('20/12/2027');
+  });
+
+  it('puts the tab stop on the chosen day after the month moved from outside', async () => {
+    const { container } = renderUi(<Picker />, { locale: 'it' });
+
+    await browser.fill(
+      screen.getByRole('textbox', { name: 'Partenza' }),
+      '20122027',
+    );
+    await browser.click(screen.getByRole('button', { name: 'Scegli' }));
+
+    // The removed month-follow effect kept `focused` with the selection; the
+    // composition that replaced it cannot, because there is no `focused` prop.
+    // Measured without the repair: Tab into the grid landed on 1 December while
+    // the 20th was drawn as chosen, so ArrowRight then Enter stored the 2nd.
+    const stop = container.querySelector('[data-day][tabindex="0"]');
+    expect(stop).toHaveAttribute('data-day', '2027-12-20');
   });
 
   it('stays where the user navigated, while the selection has not moved', async () => {
