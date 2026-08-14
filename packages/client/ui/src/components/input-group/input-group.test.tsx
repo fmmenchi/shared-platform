@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { userEvent as browser } from 'vitest/browser';
 import { InputGroup } from './input-group.component.js';
 import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
@@ -263,5 +264,145 @@ describe('InputGroup', () => {
     const affixColor = getComputedStyle(affix).color;
     expect(getComputedStyle(select).color).not.toBe(affixColor);
     expect(getComputedStyle(select).flexShrink).not.toBe('0');
+  });
+
+  it('does not dress a BUTTON up as an affix either', () => {
+    // The bucket said "not a form control", and a button is not one — so a
+    // picker's trigger, a reveal, a clear all fell in and were painted as
+    // decoration: a placeholder colour they should not wear, and `pe-3` on the
+    // last child, which pushed the glyph off the centre of a square button that
+    // had already set `p-0`. Measured on `DatePicker`, whose hover fill came out
+    // a wide pale block, square where the group is round.
+    render(
+      <>
+        <InputGroup>
+          <span>€</span>
+          <input aria-label="Importo" />
+          <button type="button" aria-label="Svuota">
+            ×
+          </button>
+        </InputGroup>
+        {/* The same button outside a group, so the assertion is "the group adds
+            nothing" rather than a guess at what a bare button's padding is. */}
+        <button type="button" aria-label="Svuota fuori">
+          ×
+        </button>
+      </>,
+    );
+    const affix = screen.getByText('€');
+    const inside = screen.getByRole('button', { name: 'Svuota' });
+    const outside = screen.getByRole('button', { name: 'Svuota fuori' });
+
+    expect(getComputedStyle(inside).color).not.toBe(
+      getComputedStyle(affix).color,
+    );
+    expect(getComputedStyle(inside).paddingInlineEnd).toBe(
+      getComputedStyle(outside).paddingInlineEnd,
+    );
+  });
+
+  it('leaves a popover surface alone — it is not an affix', () => {
+    // `Popover` renders no element of its own, so a picker composed inside a
+    // group leaves its `<dialog popover>` a DIRECT CHILD of the group. The
+    // affix rule (0,1,1) then outranked the surface's own `.content` (0,1,0)
+    // from another module — same layer, so no protection — and repainted the
+    // whole calendar `input-placeholder`: every day took the exact colour that
+    // says "this one is from the neighbouring month".
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <dialog popover="auto" data-testid="surface">
+          <span data-testid="inside">contenuto</span>
+        </dialog>
+      </InputGroup>,
+    );
+    const surface = screen.getByTestId('surface');
+    const affixColour = getComputedStyle(
+      screen.getByRole('textbox', { name: 'Importo' }),
+    ).color;
+
+    expect(getComputedStyle(surface).color).not.toBe(
+      'var(--fm-color-input-placeholder)',
+    );
+    // It is the last element child, so it would also have taken the affix
+    // padding — 16px on one side of the card and 12px on the other.
+    expect(getComputedStyle(surface).paddingInlineEnd).toBe(
+      getComputedStyle(surface).paddingInlineStart,
+    );
+    expect(getComputedStyle(surface).flexShrink).not.toBe('0');
+    expect(affixColour).toBeTruthy();
+  });
+
+  it('draws a focused button’s inset ring in a colour its own fill cannot swallow', async () => {
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button
+          type="button"
+          aria-label="Invia"
+          style={{ color: 'rgb(1, 2, 3)' }}
+        >
+          →
+        </button>
+      </InputGroup>,
+    );
+    const button = screen.getByRole('button', { name: 'Invia' });
+
+    await browser.click(screen.getByRole('textbox', { name: 'Importo' }));
+    await browser.tab();
+    expect(button).toHaveFocus();
+
+    // Pulled inside the button's box, BOTH edges of the ring sit on the
+    // button's own fill rather than on the group's — and the ring token is
+    // contracted against the group's. Measured on the filled variants it
+    // landed at 1.33–1.46:1 against the 3:1 WCAG 1.4.11 asks for; only `ghost`,
+    // which is what `DatePicker` uses, stayed clear. `currentColor` is the
+    // colour the button's own label is drawn in, so it contrasts with that fill
+    // by construction.
+    expect(getComputedStyle(button).outlineColor).toBe('rgb(1, 2, 3)');
+  });
+
+  it('keeps a focused button’s ring inside the group, which clips', async () => {
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button type="button" aria-label="Svuota">
+          ×
+        </button>
+      </InputGroup>,
+    );
+    const button = screen.getByRole('button', { name: 'Svuota' });
+
+    await browser.click(screen.getByRole('textbox', { name: 'Importo' }));
+    await browser.tab();
+    expect(button).toHaveFocus();
+
+    // `overflow: hidden` keeps a long affix off the rounded border, and an
+    // element's own outline escapes its own overflow — the group's does — but a
+    // CHILD's does not. Measured before this rule: three sides of a ring and the
+    // fourth cut at the group's edge, a keyboard user shown half an indicator.
+    const offset = getComputedStyle(button).outlineOffset;
+    expect(Number.parseFloat(offset)).toBeLessThan(0);
+  });
+
+  it('keeps a button clear of the border it would otherwise sit on', () => {
+    const { container } = render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button type="button" aria-label="Svuota">
+          ×
+        </button>
+      </InputGroup>,
+    );
+    const group = container.firstElementChild as HTMLElement;
+    const button = screen.getByRole('button', { name: 'Svuota' });
+
+    // Flush against the edge, a hover fill collides with the group's own border
+    // and its radius — the group drawing an edge around a shape that does not
+    // share it. Inline only: a vertical inset would make the group taller than
+    // the same field without one, which the height test above forbids.
+    expect(button.getBoundingClientRect().right).toBeLessThan(
+      group.getBoundingClientRect().right,
+    );
   });
 });

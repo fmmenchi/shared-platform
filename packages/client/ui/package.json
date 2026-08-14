@@ -622,6 +622,18 @@
       "types": "./dist/components/calendar/index.d.ts",
       "import": "./dist/calendar.js",
       "default": "./dist/calendar.js"
+    },
+    "./date-picker": {
+      "@fmmenchi/source": "./src/components/date-picker/index.ts",
+      "types": "./dist/components/date-picker/index.d.ts",
+      "import": "./dist/date-picker.js",
+      "default": "./dist/date-picker.js"
+    },
+    "./form-date-picker": {
+      "@fmmenchi/source": "./src/components/form-date-picker/index.ts",
+      "types": "./dist/components/form-date-picker/index.d.ts",
+      "import": "./dist/form-date-picker.js",
+      "default": "./dist/form-date-picker.js"
     }
   },
   "nx": {

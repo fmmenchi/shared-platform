@@ -1,0 +1,100 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormDatePickerStories from './form-date-picker.stories.tsx';
+
+<Meta of={FormDatePickerStories} />
+
+# FormDatePicker
+
+FormDatePicker is a labelled date field with a calendar behind it, already bound
+to the **form adapter in scope**. It stands to `DatePicker` exactly as
+`FormDateInput` stands to `DateInput`.
+
+```tsx
+<UiProvider adapters={{ form: { field: useMyFormField } }}>
+  <FormDatePicker name="departure" label="Departure" />
+</UiProvider>
+```
+
+<Canvas of={FormDatePickerStories.Default} />
+
+Everything in
+[FormInput](?path=/docs/components-form-adapters-forminput--docs) applies — the
+adapter is a hook, the binding owns `value`/`onChange`, names can be checked
+against the form's type — and everything in
+[FormDateInput](?path=/docs/components-form-adapters-formdateinput--docs) applies
+too: the binding sees ISO on the carrier, the user sees their locale's order, and
+a routing table keeps native-control props off a field that is not one.
+
+## The calendar needs no lever
+
+This is the one thing this component has that a hand-composed picker cannot.
+
+`FormDateInput` hands the binding's ref to the carrier, and a call site cannot
+redirect it — a library reading `.value` off the visible field would store
+`12/08/2026` where it wanted an ISO date. So a calendar beside it has **no way to
+reach the node**, and has to write through the form library's own lever instead:
+
+```tsx
+// hand-composed, and it names your library
+onValueChange={(date) => setValue('departure', formatIsoDate(date))}
+```
+
+Here the component renders the field itself, so it holds its own reference to the
+carrier **alongside** the binding's, and writes it the way a keystroke does: the
+prototype setter, then a bubbling `input` event the library hears as an ordinary
+change. Nothing at the call site names a form library, including the calendar.
+
+The story above proves it: the adapter reads `event.target.value` and knows
+nothing about a grid, and the value below the form updates identically whether
+the date was typed or picked.
+
+## Props
+
+<Controls of={FormDatePickerStories.Default} />
+
+Eight props `DatePicker` has are absent here, and they fall into three groups.
+
+**`carrierRef`** is the binding's, and here there is nothing left to ask for: the
+component already merges its own into it.
+
+**`defaultDate`** is a `defaultValue` under another name, so it belongs with the
+props the binding owns. Left accepted, it seeds the DOM without telling the form
+library, which then validates an empty field and overwrites the seed on its first
+pass. Seed through the binding.
+
+**The binding's own** — `value`, `defaultValue`, `onChange`, `onBlur`, `checked`,
+`defaultChecked` — are how the field reaches its library, so a call site that won
+them would not override the binding, it would sever it. Note `defaultValue` among
+them: the sibling page tells you to seed with it, and here the seed comes from the
+adapter instead. Passing any of them is a compile error; the error is TypeScript's
+own, naming the property, and the lever to use instead is documented on
+`BindingOwned` rather than in the message.
+
+## Usage
+
+### A hint and its errors
+
+<Canvas of={FormDatePickerStories.WithHintAndError} />
+
+The hint keeps its place **before** the errors however many of them arrive,
+because both are composed rather than passed as props. Each message is its own
+element: joined, a screen reader reads "Serve una data.Non può essere passata."
+as a single run-on statement.
+
+### Everything else
+
+The calendar's own props — `isDateDisabled`, `firstDayOfWeek`, `placement`,
+`icon`, `triggerLabel` — pass straight through to
+[DatePicker](?path=/docs/components-inputs-datepicker--docs), which documents
+them. Nothing about them changes when the field is bound.
+
+## Accessibility
+
+Identical to `DatePicker`'s, plus the bound anatomy: the label is associated by
+id, every message is its own element announced through `aria-describedby`, and
+`aria-invalid` follows them.
+
+A field with **no adapter in scope throws** rather than rendering — an unbound
+field types perfectly well and submits nothing, which is a failure you would meet
+in production data rather than in development.

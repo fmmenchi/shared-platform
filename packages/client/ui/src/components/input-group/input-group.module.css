@@ -17,6 +17,16 @@
      and a form row would not line up. A shadow paints in the same place and takes
      no space, which is what lets the height stay the control's. */
   .group {
+    /* DECLARED, not inherited. The shipped CSS carries no Preflight (ADR-0022),
+       so a consumer's page leaves this `content-box` — and the forced-colors
+       block below swaps the inset shadow for a REAL border, whose 1px (2px when
+       invalid) then lands outside `width: 100%`. Measured in a 300px container:
+       the group came out 302 wide and 38 tall, 304 × 40 invalid, while a bare
+       `Input` stayed 300 × 36 — it gets `border-box` from `control-base` and
+       already carries a border, so it gains nothing there. The comment below
+       claimed "every field gains it equally, so a row still lines up"; only
+       this makes that true. */
+    box-sizing: border-box;
     @apply flex w-full items-center gap-internal-s rounded-md;
     @apply bg-input text-input-foreground;
     @apply transition;
@@ -62,18 +72,88 @@
      control in an affix costume, silently. The group still styles only the
      <input> as ITS control (the reset rules below stay `> input`): another
      control is out of the group's contract, and the mdx now says so — but it
-     keeps its own face instead of borrowing the wrong one. */
-  .group > :not(input, select, textarea) {
+     keeps its own face instead of borrowing the wrong one.
+
+     `[popover]` IS EXCLUDED TOO, and that one was measured rather than
+     foreseen. `Popover` renders no element of its own, so a picker composed
+     inside a group leaves its `<dialog popover>` as a DIRECT CHILD of the
+     group — and this rule, at (0,1,1), outranks the surface's own `.content`
+     at (0,1,0) from another module, where the cascade layer gives no
+     protection. The whole calendar was then repainted
+     `input-placeholder`: every day in the grid took the exact colour that says
+     "this one belongs to the neighbouring month", so the two states became
+     indistinguishable — at 10:1 contrast, which is why no contrast test and no
+     axe rule saw it. It took the `:last-child` padding too, giving the popover
+     card 16px on one side and 12px on the other. An element in the top layer is
+     not content beside the control, and the bucket now says so. */
+  .group > :not(input, select, textarea, button, [popover]) {
     @apply text-input-placeholder shrink-0;
+  }
+
+  /* AN INTERACTIVE AFFIX IS A THIRD THING, and it was being painted as the
+     second. A `<button>` inset in the group — a picker's trigger, a reveal, a
+     clear — is neither the control the group owns nor decoration beside it, and
+     the affix bucket gave it both a placeholder colour it should not wear and
+     `pe-3`, which pushed the glyph off the centre of a square button that had
+     already set `p-0`. Measured on `DatePicker`: the hover fill came out as a
+     wide pale block, square where the group is round and stopping short of the
+     group's own border — the group drawing an edge around a shape that did not
+     share it.
+
+     So: it keeps its own colours, and it is inset from the border by the same
+     hair the radius needs to stay clean. `margin-inline` only — a vertical
+     margin would make the group taller than the same field without one, which
+     is the one thing this component promises and a test holds it to. A button
+     SHORTER than the control (`size="sm"` in a default field) is centred by the
+     row and inset top and bottom for free; one the same height fills it, and
+     that is the consumer's call rather than ours to override. */
+  .group > button {
+    @apply shrink-0;
+    margin-inline: 0.125rem;
+  }
+
+  /* AND ITS FOCUS RING IS PULLED INSIDE, because the group clips.
+     `overflow: hidden` is what keeps a long affix from painting outside the
+     rounded border, and an element's own outline escapes its own overflow — the
+     group's does — but a CHILD's does not. Measured: tabbing from the field to
+     the trigger drew three sides of a ring and cut the fourth at the group's
+     edge, a keyboard user shown half an indicator.
+
+     A negative offset draws it inside the button's own box, so it is closed in
+     every browser and needs nothing from `overflow-clip-margin`, which is not
+     Baseline Widely and would have made the fix conditional on the engine
+     (ADR-0017). Outside is not available at any margin: the button is only 2px
+     shorter than the group and the height contract forbids a vertical margin,
+     so a ring at the default `+2px` offset would be clipped top and bottom
+     however much room it were given on the sides.
+
+     AND INSIDE, THE RING COLOUR HAS TO CHANGE WITH IT. Drawn within the
+     button's own box, both of its edges sit on the button's FILL rather than on
+     the group's, and `--fm-color-ring` is contracted against the group's:
+     measured, it lands at 1.33:1 on `secondary` and 1.46:1 on `primary`,
+     `accent` and `destructive`, against the 3:1 WCAG 1.4.11 asks for. Only
+     `ghost` — which has no fill, and is what `DatePicker` uses — stayed at
+     4.68:1, so the defect was invisible from this package and waiting for the
+     first consumer to inset a filled button.
+
+     `currentColor` is contrasting BY CONSTRUCTION: it is the colour the
+     button's own label is drawn in, so it already clears 4.5:1 against that
+     fill or the label would be unreadable. The cost is real and stated: inside
+     a group the ring is the button's foreground rather than the brand ring
+     colour. That is what the group's clipping costs, and a ring nobody can see
+     is worse than a ring in the wrong hue. */
+  .group > button:focus-visible {
+    outline-offset: -2px;
+    outline-color: currentColor;
   }
   /* …and it is inset from the border by the same step the control's own padding
      gives its text. Without this the symbol sits flush against the edge while the
      value beside it does not — the group has no padding of its own, because the
      control's belongs to the control (a drag started in it still selects text). */
-  .group > :not(input, select, textarea):first-child {
+  .group > :not(input, select, textarea, button, [popover]):first-child {
     @apply ps-3;
   }
-  .group > :not(input, select, textarea):last-child {
+  .group > :not(input, select, textarea, button, [popover]):last-child {
     @apply pe-3;
   }
 

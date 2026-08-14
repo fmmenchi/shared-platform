@@ -1,0 +1,113 @@
+import type { ComponentProps, ReactNode } from 'react';
+import type { Placement } from '@floating-ui/dom';
+import type { DateInput } from '../date-input/date-input.component.js';
+import type { CivilDate } from '../../date/civil-date.types.js';
+
+/**
+ * A `DateInput` with a `Calendar` in a `Popover` behind it, wired.
+ *
+ * The props are `DateInput`'s, plus the few the calendar needs. Nothing here is
+ * a second way to say something the field already says: the value, the name and
+ * the disabled state stay where they were, and this component adds only what a
+ * grid needs to know.
+ */
+export type DatePickerProps = Omit<
+  ComponentProps<typeof DateInput>,
+  // The picker holds this one: it needs the carrier to write the field when a
+  // day is chosen. A consumer who wants the node as well can still have it —
+  // see `carrierRef` below, which is re-declared rather than dropped.
+  | 'carrierRef'
+  // WHAT DESCRIBES A NATIVE DATE CONTROL, WHICH THIS IS NOT. Each of these
+  // reached the masked TEXT input underneath and was measured doing harm:
+  //
+  // `value` controls the visible field with an ISO string — the box then reads
+  // `2026-08-12`, which no locale writes, typing never appears on screen, and
+  // the form posts a date the user never saw. It survived from `InputProps`
+  // because `DateInputProps` omits only `type` and `defaultValue`, while this
+  // component's own page said the prop did not exist.
+  //
+  // `min`, `max` and `step` are inert on a text input, so a declared range goes
+  // silently unenforced — worse than absent, because the call site believes it
+  // is enforced. `pattern` is checked against `12/08/2026` and can never match,
+  // which blocks the submit for good.
+  //
+  // `FormDateInput` and `FormDatePicker` already refuse all five on the bound
+  // path, through their routing table. This closes the unbound one.
+  | 'value'
+  | 'min'
+  | 'max'
+  | 'step'
+  | 'pattern'
+> & {
+  /**
+   * The node holding the ISO value, if you need it too.
+   *
+   * The picker keeps its own reference to it regardless; yours is merged in.
+   * You should rarely want this — it exists because the field it names is the
+   * one a form library binds to, and taking that away with no way back would be
+   * a door closed for no reason.
+   */
+  carrierRef?: ComponentProps<typeof DateInput>['carrierRef'];
+  /**
+   * WHICH DAYS CANNOT BE CHOSEN, and the reason the calendar exists at all.
+   *
+   * `min`/`max` on the platform's date input are an interval, not a set, so
+   * "never on a Tuesday" and "these three are booked" are not expressible there.
+   * A predicate is. It refuses days in the GRID only — a date typed into the
+   * field is not blocked by it, because a half-typed date passes through every
+   * intermediate value on its way to a valid one and refusing them as they are
+   * typed makes the field unusable. Validate on submit as you would anyway.
+   */
+  isDateDisabled?: (date: CivilDate) => boolean;
+  /** The month the calendar opens on. Defaults to the selected day's, or today's. */
+  defaultMonth?: CivilDate;
+  /**
+   * Which weekday a row starts on, 0 for Sunday through 6 for Saturday.
+   * Defaults to what the declared locale reports.
+   */
+  firstDayOfWeek?: number;
+  /** Preferred side of the field for the popover. Defaults to `bottom-end`. */
+  placement?: Placement;
+  /**
+   * What the trigger draws. Defaults to a calendar glyph drawn by this package.
+   *
+   * An icon set is brand identity and lives app-side, so the default is one
+   * shape in `currentColor` rather than a dependency — and a consumer with their
+   * own set passes it here.
+   */
+  icon?: ReactNode;
+  /**
+   * NOT TYPED INTO — the whole field becomes the calendar's trigger.
+   *
+   * Reach for it when the user does not already know the date: a booking, an
+   * appointment, a flight, where the answer is in the grid next to the days
+   * that are taken. Leave it off when they do — a birth date, an expiry, an
+   * invoice date — because typing eight digits beats navigating to them.
+   *
+   * It is a prop of ours rather than the platform's `readonly`, and the
+   * difference is not cosmetic. `readonly` means "the user cannot modify this
+   * value", and the trigger beside the field modifies it — so the state exposed
+   * to assistive technology would be false (WCAG 4.1.2). This refuses the typing
+   * at `beforeinput` instead, which stops every route into the value without
+   * claiming the value is fixed, and the field announces what it is: a textbox
+   * that opens a dialog, answering Enter, Space and ArrowDown.
+   *
+   * `readOnly` still works and now means what it says: a field the consumer has
+   * really frozen disables the trigger too, so nothing can change the value.
+   */
+  pickOnly?: boolean;
+  /**
+   * The trigger's accessible name. Defaults to the design system's own words in
+   * the declared locale.
+   *
+   * PASS ONE WHEN THERE ARE TWO PICKERS ON A PAGE. The default names the button
+   * by what it does, which stops being a name once it appears twice: neither
+   * `Field` nor `InputGroup` is a naming ancestor, so a reader listing the
+   * buttons meets the same words with nothing to tell them apart.
+   * `FormDatePicker` composes one from its label and needs no help.
+   *
+   * It is a NAME and not a tooltip: the button draws a glyph, so without one it
+   * would announce as "button" and nothing else.
+   */
+  triggerLabel?: string;
+};

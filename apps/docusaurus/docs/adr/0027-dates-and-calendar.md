@@ -305,6 +305,11 @@ veneer over the platform's control, and the two points below say what each half 
    standalone (a booking UI wants a bare calendar), composes with `Popover` for the picker form, and
    **sets a field rather than replacing it** — the field remains the field. Its month and weekday
    names come from the same declared locale as everything else, through `useFormatter()`.
+
+   > **Amended.** This point said the picker "is not a new component" and left the composition to the
+   > consumer. It is now `DatePicker` — see [the amendment below](#amendment-the-picker-is-a-component).
+   > `Calendar` itself is unchanged, and still ships standalone.
+
 5. **Option 4 — the segmented box — stays rejected, and the first draft's reason for rejecting it was
    wrong.** That reason was "a segments model re-homes the value into React by construction"; the
    carrier above measures it false, and it is withdrawn along with the Temporal gate. What stands is
@@ -411,6 +416,76 @@ Non-goals are as binding as goals, so they are written here rather than discover
   argue for itself rather than cite this.
 - The roadmap's date-picker line points here once this is accepted, and `DateInput` and `Calendar`
   move out of **Deferred** when they ship.
+- **Two more components in the catalogue** than this amendment first planned, and their cost is
+  ongoing rather than one-off: `DatePicker` and `FormDatePicker` have to keep up with every prop
+  `DateInput` and `Calendar` grow. The alternative was a five-step recipe that its own authors got
+  wrong twice, so the trade is a maintenance cost bought with a correctness one — but it is a real
+  cost, and a third preset would have to argue for itself rather than cite these.
+
+## Amendment: the picker IS a component
+
+Decision point 4 said the picker form was a composition and not a new component: `Popover` +
+`Calendar` + `DateInput`, wired by `carrierRef` and `writeDateInput`, both already exported. That was
+written before the three of them had ever been assembled. They have been now, and the claim did not
+survive contact.
+
+**The recipe has five steps, and each one fails silently when it is missed.**
+
+1. Write the field with `writeDateInput`, never `carrier.value = …` — a plain assignment updates the
+   DOM and tells nobody, because React's value tracker absorbs it.
+2. Pass `onDateChange` back, or a date TYPED into the field never reaches the grid and the popover
+   reopens highlighting a day the field no longer holds.
+3. Move `month` with the value, or that highlight lands on a day the grid does not draw and the
+   popover opens showing nothing selected at all.
+4. Do not nest a `Button` inside `PopoverTrigger`, which is one — two tab stops for one affordance,
+   and `nested-interactive` from axe.
+5. In a form, `carrierRef` is the binding's and cannot be redirected, so the write goes through the
+   library's own lever instead.
+
+Three of those were found in one afternoon **by the people who wrote the parts**, two of them by
+watching the thing misbehave on screen rather than by reading the code. A recipe whose authors get
+three steps out of five wrong on first assembly is not documentation, it is a trap with a nice page.
+
+An adversarial review of the components that replaced it then found the SAME class of failure one
+storey up: the picker held the selected day in React state and never re-read the carrier, so a
+`setValue`, a `reset` or a `writeDateInput` left the grid on a date the field no longer held. The
+repair belonged in `DateInput` — an external write now reports through `onDateChange` like any
+other — which fixes the hand-composed recipe as well. That is the argument for the component
+restated by evidence: the failure recurs at every level where the knowledge is held by hand.
+
+**Step 3 is the one that settles it.** The obvious repair was to make `Calendar` follow its own
+`value` into the right month. It cannot: writing that state in an effect fights the navigation the
+user just made, and `useControlled` — the primitive holding the month — forbids it by contract, its
+setter running in an event and never in a render or an effect. The knowledge has no home in any
+single part. It belongs to whatever holds the field and the grid together, and until now that was
+the consumer, every time, from scratch.
+
+So: **`DatePicker`** and its bound twin **`FormDatePicker`**, symmetric with `Input`/`FormInput` and
+`DateInput`/`FormDateInput`.
+
+- **A preset, not a variant.** This is the `DialogSimple` case rather than the `TabsSimple` one: it
+  exists because it wires behaviour a consumer gets wrong, not because it saves typing.
+- **Not a boolean on `DateInput`.** `<DateInput picker />` would make the primitive field import
+  `Popover` and `Calendar` — the field depending on the overlay layer, and everyone wanting a plain
+  masked input shipping a calendar they never render. A flag would also not stay one: `isDateDisabled`,
+  `placement`, the trigger's icon and `firstDayOfWeek` all have to arrive somehow, and that is a
+  second API growing inside the first.
+- **Named `DatePicker`.** It is what MUI, React Aria, Ant and shadcn all call it, so it is what a
+  consumer will search for. `DateInputPicker` names two of our implementation parts instead of the
+  thing itself.
+- **The parts stay exported and stay documented.** Anyone needing a shape the preset does not offer
+  composes it, exactly as before; the preset removes no door.
+- **The bound case gets simpler, not harder.** `FormDatePicker` renders the field itself, so it holds
+  the carrier alongside the binding's ref through `mergeRefs`, and writes with `writeDateInput` —
+  a real `input` event the library hears. No `setValue`, no library-specific lever, which the
+  hand-composed version cannot avoid. So the components perform four of the five steps and
+  **abolish the fifth**, rather than performing all five.
+
+**`DateRangePicker` will be a sibling, not a flag on this one.** A range wants a different selection
+model inside `Calendar` (two ends, a hover preview between them), two carriers, and constraints that
+run between the fields rather than within one. Which is the last argument for this amendment:
+`DatePicker` and `DateRangePicker` side by side is a coherent surface, while "a recipe" beside "a
+component" is not.
 
 ## What would change this
 

@@ -1,0 +1,208 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as DatePickerStories from './date-picker.stories.tsx';
+
+<Meta of={DatePickerStories} />
+
+# DatePicker
+
+A date field with a calendar behind it.
+
+```tsx
+<DatePicker name="departure" />
+```
+
+<Canvas of={DatePickerStories.Default} />
+
+## Why it exists
+
+Its three parts are all exported, and for a while the docs said to assemble them
+yourself. Then they were assembled, and the recipe turned out to have **five
+steps that each fail silently when missed**:
+
+1. write the field with `writeDateInput`, never `carrier.value = …` — a plain
+   assignment updates the DOM and tells nobody, because React's value tracker
+   absorbs it;
+2. pass `onDateChange` back, or a date TYPED into the field never reaches the
+   grid and the popover reopens on the day chosen three edits ago;
+3. move `month` with the value, or that day is one the grid does not draw and
+   the popover opens with nothing selected at all;
+4. do not nest a `Button` inside `PopoverTrigger`, which is one;
+5. in a form, `carrierRef` belongs to the binding, so a hand-written calendar has
+   to write through the library's own lever.
+
+Three of those were got wrong by the people who wrote the parts, on first
+assembly, in one afternoon (ADR-0027's amendment records it). This component
+performs the first four and **abolishes the fifth**: `FormDatePicker` renders the
+field itself, so it holds the carrier alongside the binding's ref and needs no
+lever at all.
+
+**It hides nothing.** `DateInput`, `Calendar` and `Popover` stay exported and
+stay documented. A shape this does not offer — a controlled open state, a second
+trigger, a calendar somewhere other than a popover — is still assembled by hand
+exactly as before.
+
+## Props
+
+<Controls of={DatePickerStories.Default} />
+
+Everything `DateInput` takes except what describes a native date control, plus
+what a grid needs.
+
+**`value` is refused**, and so are `min`, `max`, `step` and `pattern`. The browser
+owns the value (ADR-0013), so seed with `defaultValue` (ISO) or `defaultDate` and
+read through `onDateChange`; a `value` would control the visible field with an ISO
+string, showing `2026-08-12` where the locale writes `12/08/2026`. The other four
+describe a control this is not: `min`/`max`/`step` are inert on a text input, so a
+declared range goes silently unenforced, and `pattern` is checked against
+`12/08/2026` and can never match, which blocks the submit for good.
+
+**`open` is refused too**, for a smaller reason: an open state nobody but the
+trigger touches is state the component can keep. If you need to drive it, compose
+the parts by hand.
+
+<Canvas of={DatePickerStories.WithAValue} />
+
+## Usage
+
+### Typed, or chosen
+
+<Canvas of={DatePickerStories.PickOnly} />
+
+`pickOnly` flips which surface opens the calendar, and the reasoning behind it is
+this:
+
+- **a field that can be typed into has a caret to protect**, so the trigger is a
+  separate target;
+- **a field that cannot has nothing to protect**, so the whole field is the
+  target.
+
+Several widely used pickers appear to follow the same split — a separate trigger
+where the field is typeable, the field itself where it is not. That reading comes
+from experience rather than from anything this repository can check, so take it as
+the reasoning that shaped the decision, not as a citation.
+
+**Which one to pick is a question about the date, not about the design.** A date
+the user KNOWS — a birth date, an expiry, an invoice date — tends to be faster
+typed than navigated. A date the user CHOOSES from what is available — a booking,
+an appointment, a flight — is the opposite: typing means little, because the
+answer is in the grid next to the days that are taken.
+
+**It is a prop of ours, and the platform's `readonly` was the wrong tool.** The
+first version used it, and an adversarial review measured why that is a defect:
+`readonly` does not mean "you cannot type here", it means **the user cannot modify
+this value** — while the trigger beside the field modifies it. The state exposed
+to assistive technology was false (WCAG 4.1.2). `pickOnly` refuses the typing at
+`beforeinput` instead — the one event every route into a value passes through,
+keystroke, paste, drop and dictation alike — which says nothing about whether the
+value can change.
+
+The field then announces what it actually is: a textbox with `aria-haspopup`,
+answering **Enter, Space and ArrowDown** as well as a click. Not `aria-expanded`
+beside it, which belongs to `role="combobox"` and would promise a navigation
+contract this does not have; the open state lives on the trigger, where it is
+both allowed and true.
+
+Nothing else changes. The trigger stays, because it is what a keyboard and a
+screen reader reach; the value is still submitted; and the field stays focusable
+and selectable, so the date can be read and copied. The `gg/mm/aaaa` hint goes,
+from the placeholder and from the description together — it is an instruction,
+and this control refuses it.
+
+**`readOnly` still works and now means what it says.** A field the consumer has
+really frozen disables the trigger too, so nothing can change the value.
+
+**It is not styled as "disabled", deliberately.** A read-only field elsewhere
+might reasonably look inert; here the field is the thing to click, and dimming it
+would say "not available" where it means "open the calendar". It keeps full
+contrast and takes a pointer cursor.
+
+### Per-date rules
+
+<Canvas of={DatePickerStories.PerDateRules} />
+
+`isDateDisabled` is the reason the calendar exists at all. `min`/`max` on the
+platform's date input are an interval, not a set, so "never on a Sunday, and
+these three days are booked" cannot be said to it. A refused day keeps its place
+and stays reachable by the arrows — it is `aria-disabled`, not `disabled`, which
+is the APG's "focusable but not activatable".
+
+**It refuses days in the grid only.** A date typed into the field passes through
+every intermediate value on its way to a valid one, so refusing them as they are
+typed would make the field unusable. Validate on submit as you would anyway.
+
+### What it hands back
+
+<Canvas of={DatePickerStories.ReadingTheValue} />
+
+A `CivilDate` — `{ year, month, day }`, months **1–12** — and never a `Date`. A
+`Date` is an instant; a day on a calendar is not. `new Date('2026-08-12')` is the
+11th of August in every timezone west of Greenwich, which is the defect this
+whole family exists to stop repeating.
+
+`onDateChange` fires from **every** door: a day clicked in the grid, a date typed
+into the field, and a write that arrives from outside — a form library's
+`setValue`, a `form.reset()`, a `writeDateInput`. It fires on **each keystroke**
+of a date being typed, reporting `null` until the digits name a day, so read a
+call as "the value moved", not as "a date arrived".
+
+What the form posts is different and stays different: an ISO `YYYY-MM-DD` on the
+carrier, under the field's `name`, as one ordinary entry.
+
+### Locale
+
+<Canvas of={DatePickerStories.AcrossLocales} />
+
+The field's order and separator, the month and weekday names, the digits and the
+day a week starts on all come from the locale you gave `UiProvider`. Nothing
+here reads the browser's, which is the ceiling that made this family necessary:
+a native `<input type="date">` lays its segments out in the BROWSER's locale and
+offers no way to be told otherwise (ADR-0027).
+
+### Disabled
+
+<Canvas of={DatePickerStories.Disabled} />
+
+The trigger goes with the field. A calendar that still opened over a field
+nobody can type in would offer a way to change a value that is not changeable.
+
+## In a form
+
+Use [FormDatePicker](?path=/docs/components-form-adapters-formdatepicker--docs),
+which binds it to the form adapter in scope — and needs no library-specific code
+to get the calendar's choice into the form, because it holds the carrier itself.
+
+Unbound, this component is still a perfectly ordinary field: it posts under its
+`name`, comes back from `form.reset()`, and can be read with `FormData`.
+
+## Accessibility
+
+- **One tab stop for the field, one for the trigger**, and nothing nested inside
+  either. `PopoverTrigger` is itself a `Button`, so it takes the label directly.
+- **The trigger has a name in words** — the design system's own copy in the
+  declared locale, or your `triggerLabel`. A glyph is not a label: without one it
+  would announce as "button" and nothing else. **Pass `triggerLabel` when a page
+  has more than one picker**: the default names the button by what it does, which
+  stops being a name once it appears twice, and neither `Field` nor `InputGroup`
+  is a naming ancestor that could tell two apart. `FormDatePicker` composes one
+  from its own label and needs no help.
+- **The chosen day is announced.** Choosing one closes the popover and the
+  platform hands focus back to whatever opened it — a trigger, whose name never
+  changes — so the whole announcement was "Choose from a calendar, button,
+  collapsed", with the date said nowhere. A polite live region now says it. Only
+  for a day chosen from the GRID: a date being typed is already being read back
+  keystroke by keystroke.
+- **The surface has a name of its own**, and axe structurally cannot ask for one:
+  its `aria-dialog-name` rule selects `[role="dialog"]`, an attribute, so a
+  native `<dialog>` is never evaluated. Measured — zero violations as shipped,
+  one the moment the role is spelled out on the same element.
+- **The glyph is drawn here and `aria-hidden`**, in `currentColor`. An icon set
+  is brand identity and lives app-side; a picker whose trigger was blank until an
+  app injected one would break on somebody else's configuration. Pass `icon` to
+  use your own.
+- **The grid is the APG's date grid**: a month is one tab stop, the arrows move
+  by day and week, PageUp/PageDown by month, and the focused cell is a
+  `<td role="gridcell">` carrying the focus, the name and `aria-selected`
+  together.
+- **The field announces its format** through its description, so a screen-reader
+  user is told the order before typing rather than after the mask surprises them.
