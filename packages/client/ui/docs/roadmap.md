@@ -23,7 +23,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                                                                    |
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                                                                         |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                                                             |
-| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                                                                      |
+| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress` · `Skeleton`                                                                                                                                                                         |
 | **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                                         |
 | **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                                                 |
 
@@ -60,7 +60,24 @@ That leaves the first two questions to decide it, and neither has an obvious ans
 
 So the next item is a decision, not a deduction — and this page will say which, once it is one.
 
+The first one taken that way was `Skeleton`, and the reasoning is recorded below rather than here,
+because what decided it was a property of the deferral (nothing was blocking it) rather than a
+property of this section.
+
 ## Deferred, with the reason
+
+Names leave this section when something moves them, and those reasons are kept because they are the
+shape of what a deferral is actually worth. `Card` went first: the page shell made a grid of cards
+the obvious next thing to put in a layout, and the one piece of it that is not trivial — a link that
+is visually the whole card and semantically only its title — is worth owning once rather than six
+times. `Separator` followed, the general-purpose `<hr>` its family separators (`MenuSeparator`,
+`ToolbarSeparator`) were already pointing at. `Breadcrumb` and `Avatar` came with the page shell and
+the table around them. `Slider` stopped being a bet on engines: `::-webkit-slider-thumb` and
+`::-moz-range-thumb` still need writing twice, but they are writable, and the track is a background
+this package already paints from a token. And `Skeleton` — the one bullet here whose only reason was
+"behind the others" — went when **Next** ran out of deductions: with no group left thin and no
+contract waiting, the cheapest unblocked thing is the honest pick, and a reason that was never about
+the component itself expires the moment the queue in front of it does.
 
 - **`Text`.** Rejected rather than postponed. `Heading` states the admission test in its own source
   — _"splitting them is the only reason to wrap an element the platform already has"_ — and it earns
@@ -77,17 +94,6 @@ So the next item is a decision, not a deduction — and this page will say which
   list is the browser's, because _"a themed list is what a combobox costs weeks for"_. Building one
   reverses that trade, so it needs an ADR before it needs code, and `appearance: base-select` may
   make part of it unnecessary.
-- **`Skeleton`.** Small and not blocked — simply behind the items above, which either unblock a
-  contract or fill an empty group. Four names left this bullet ahead of their turn and the reasons
-  are worth keeping, because they are the shape of what moves a deferred item. `Card` went first:
-  the page shell made a grid of cards the obvious next thing to put in a layout, and the one piece
-  of it that is not trivial — a link that is visually the whole card and semantically only its
-  title — is worth owning once rather than six times. `Separator` followed, the general-purpose
-  `<hr>` its family separators (`MenuSeparator`, `ToolbarSeparator`) were already pointing at.
-  `Breadcrumb` and `Avatar` came with the page shell and the table around them. And `Slider`
-  stopped being a bet on engines: `::-webkit-slider-thumb` and `::-moz-range-thumb` still need
-  writing twice, but they are writable, and the track is a background this package already paints
-  from a token.
 - **A time field.** The date line is finished: `DateInput`, `FormDateInput`, `Calendar`, `DatePicker`
   and `FormDatePicker` are all in the table above, and ADR-0027 records why each of them looks the
   way it does — including why the picker, first written as a composition, became a component. A time field is the

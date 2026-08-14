@@ -471,3 +471,9 @@ export { DatePicker } from './components/date-picker/date-picker.component.js';
 export type { DatePickerProps } from './components/date-picker/date-picker.types.js';
 export { FormDatePicker } from './components/form-date-picker/form-date-picker.component.js';
 export type { FormDatePickerProps } from './components/form-date-picker/form-date-picker.types.js';
+export { Skeleton } from './components/skeleton/skeleton.component.js';
+export { skeletonVariants } from './components/skeleton/skeleton.variants.js';
+export type {
+  SkeletonProps,
+  SkeletonVariants,
+} from './components/skeleton/skeleton.types.js';

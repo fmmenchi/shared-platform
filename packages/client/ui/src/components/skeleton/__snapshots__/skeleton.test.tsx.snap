@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Skeleton > matches the rendered snapshot 1`] = `
+<div
+  aria-hidden="true"
+  class="_skeleton_1gd1r_3 _block_1gd1r_14"
+/>
+`;

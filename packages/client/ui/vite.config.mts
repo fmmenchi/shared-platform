@@ -137,6 +137,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        skeleton: 'src/components/skeleton/index.ts',
         'form-date-picker': 'src/components/form-date-picker/index.ts',
         'date-picker': 'src/components/date-picker/index.ts',
         calendar: 'src/components/calendar/index.ts',
