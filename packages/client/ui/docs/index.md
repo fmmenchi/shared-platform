@@ -48,6 +48,7 @@ import { Button } from '@fmmenchi/ui/button';
 
 ## Reference
 
+- What it costs to ship, per component and against the alternatives: [Bundle size](./bundle-size.md)
 - How and why it is styled this way: [Styling the design system](../../styling.md)
 - Consumer recipes (theming, granular imports): [Consuming packages](../../consuming-packages.md)
 - Source: `packages/client/ui` (Storybook: `pnpm nx storybook @fmmenchi/ui`)
