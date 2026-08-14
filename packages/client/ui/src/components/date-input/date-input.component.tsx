@@ -5,7 +5,11 @@ import { useMessages } from '../../i18n/provider.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { setNativeValue } from '../../primitives/set-native-value.js';
-import { formatIsoDate, parseIsoDate } from '../../date/civil-date.js';
+import {
+  formatIsoDate,
+  isoDayOf,
+  parseIsoDate,
+} from '../../date/civil-date.js';
 import { dateInputMessages } from './date-input.messages.js';
 import type { DatePart, DateInputProps } from './date-input.types.js';
 import styles from './date-input.module.css';
@@ -207,7 +211,13 @@ function DateInput(props: DateInputProps) {
   // Seeded raw, `defaultValue="tomorrow"` left the field empty and posted
   // `tomorrow` — from the component whose first promise is that a server never
   // has to guess what it is holding.
-  const seed = asked !== '' && parseIsoDate(asked) !== null ? asked : '';
+  // THROUGH THE SAME GRAMMAR AS EVERY OTHER DOOR. This one kept the strict
+  // parser after the others moved to `isoDayOf`, so the claim that there was
+  // one grammar was false where it mattered most: a `defaultValues` of
+  // `2026-08-12T00:00:00.000Z` — what a library holds when somebody stored a
+  // `Date` — left the field empty and posted the instant, which is the very
+  // sentence the datetime repair was written to retire.
+  const seed = isoDayOf(asked) ?? '';
 
   // SAY SO rather than start empty and leave it to be debugged twice.
   useDevWarning(
@@ -401,12 +411,9 @@ function DateInput(props: DateInputProps) {
     // millennia out, announced by nothing. It is the one shape that can be told
     // apart from a typed date with certainty, because nobody's locale writes a
     // four-digit run first AND separates with hyphens by accident.
-    const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/.exec(typed.trim());
-    if (
-      iso !== null &&
-      parseIsoDate(`${iso[1]}-${iso[2]}-${iso[3]}`) !== null
-    ) {
-      const value = `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const iso = isoDayOf(typed);
+    if (iso !== null) {
+      const value = iso;
       return { text: display(value), iso: value };
     }
 
@@ -650,13 +657,26 @@ function DateInput(props: DateInputProps) {
       announce('');
       return;
     }
-    const text = display(iso);
+    // THE SAME GRAMMAR THE MASK USES, which is the point of `isoDayOf`. An
+    // assignment of `2026-08-12T00:00:00.000Z` — what `toISOString()` gives,
+    // and what a consumer writes without thinking — used to fail the strict
+    // parser and leave the field empty while the carrier held the instant.
+    const day = isoDayOf(iso);
+    if (day === null) return;
+    // AND THE CARRIER IS BROUGHT WITH IT, through the component's own write, so
+    // the form posts the day the field is showing rather than the instant it
+    // was handed. A date field holding an instant is the `Date`-versus-day
+    // conflation this whole family exists to refuse — and `write` dispatches a
+    // real event, so the library that sent the instant is told what it became
+    // instead of being left disagreeing with the DOM.
+    if (day !== iso) write(day);
+    const text = display(day);
     if (text === '') return;
     if (text !== target.value) {
       target.value = text;
       shown.current = text;
     }
-    announce(iso);
+    announce(day);
   };
 
   useEffect(() => {
@@ -670,6 +690,14 @@ function DateInput(props: DateInputProps) {
     const set = own?.set ?? proto?.set;
     const get = own?.get ?? proto?.get;
     if (set === undefined || get === undefined) return;
+
+    // AND WHATEVER WAS WRITTEN BEFORE THIS RAN. `register()`'s ref callback
+    // fires in the COMMIT phase, so react-hook-form has already assigned the
+    // node by the time this passive effect installs the descriptor — measured,
+    // a `defaultValues` holding a datetime went straight past all three doors
+    // and the field started empty while the form held the instant. Reading the
+    // node once, here, is the only place that write can still be seen.
+    const arrived = element.value;
 
     Object.defineProperty(element, 'value', {
       configurable: true,
@@ -699,6 +727,7 @@ function DateInput(props: DateInputProps) {
     // field under the caret.
     const follow = () => arrive(element.value);
     element.addEventListener('input', follow);
+    if (arrived !== '') arrive(arrived);
 
     // AND THE THIRD DOOR, which takes neither of the first two: `form.reset()`.
     // The platform reverts a control to its default without going through the
@@ -731,6 +760,17 @@ function DateInput(props: DateInputProps) {
     const reset = (event: Event) => {
       if (event.target !== element.form) return;
       setTimeout(() => {
+        // A RESET CAN BE REFUSED, and this listener used to wipe the field
+        // anyway. `preventDefault()` on the event — a page asking "are you
+        // sure?" — cancels the revert, so the carrier still holds what it held
+        // and the box should too; measured, a half-typed `01/01/` was emptied
+        // by a reset the page had just called off.
+        //
+        // Read HERE rather than in the listener: this is capture phase on the
+        // document, so it runs BEFORE the handler that would refuse, and the
+        // flag is only true once the dispatch is over. The same task that makes
+        // the revert visible makes the refusal visible.
+        if (event.defaultPrevented) return;
         arrive(element.value, true);
       }, 0);
     };

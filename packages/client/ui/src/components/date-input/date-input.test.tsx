@@ -186,6 +186,28 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '—');
     });
 
+    it('seeds from a datetime by taking the day it names', () => {
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="2026-08-12T00:00:00.000Z"
+          />
+        </form>,
+        { locale: 'it' },
+      );
+
+      // The door consumers use most, and the one the "one grammar" repair
+      // missed: a form library's `defaultValues` holding what somebody stored
+      // as a `Date`. Measured before this: the box was empty, the carrier held
+      // the instant, and the form posted it.
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+      expect(carrier(container).value).toBe('2026-08-12');
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(new FormData(form).getAll('dob')).toEqual(['2026-08-12']);
+    });
+
     it('seeds from a day, and an explicit ISO string wins', () => {
       renderUi(
         <DateInput
@@ -490,6 +512,147 @@ describe('DateInput', () => {
 
       expect(carrier(container).value).toBe('1985-03-12');
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
+    });
+
+    it('reports the RESTORED date after a reset button, not the discarded one', async () => {
+      const onDateChange = vi.fn();
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="1985-03-12"
+            onDateChange={onDateChange}
+          />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '01012000');
+      onDateChange.mockClear();
+
+      // NOT `form.reset()`, and the values are not what this test is for: the
+      // visible field is inside the form, so the platform reverts it either
+      // way. What only OUR code can get wrong is WHEN it looks. The browser
+      // runs a button's reset from its activation behaviour with the JS stack
+      // empty, so a microtask checkpoint lands BEFORE the revert — measured,
+      // the first version read the typed date there and announced it as the
+      // new one, driving a picker's grid onto a date that had just been thrown
+      // away.
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      expect(onDateChange).toHaveBeenLastCalledWith({
+        year: 1985,
+        month: 3,
+        day: 12,
+      });
+      expect(carrier(container).value).toBe('1985-03-12');
+    });
+
+    it('repaints the field on a reset even when it is OUTSIDE its form', async () => {
+      const { container } = renderUi(
+        <>
+          <form id="altrove">
+            <button type="reset">Annulla</button>
+          </form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            form="altrove"
+            defaultValue="1985-03-12"
+          />
+        </>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '01012000');
+
+      // `form=` lives on the CARRIER only — it is the node with the name, and
+      // the one the form must own. So the visible field is not form-associated
+      // and the platform does not revert it: measured, the user was left
+      // reading `01/01/2000` while the form held `1985-03-12` and would have
+      // submitted it. That is the silent disagreement this whole family exists
+      // to prevent, in the one arrangement `form=` exists for — a portal, a
+      // dialog, a sticky footer.
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      expect(carrier(container).value).toBe('1985-03-12');
+      expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
+    });
+
+    it('leaves a half-typed field alone when the page REFUSES the reset', async () => {
+      renderUi(
+        <form onReset={(event) => event.preventDefault()}>
+          <DateInput name="dob" aria-label="Date of birth" />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '0101');
+      expect(screen.getByRole('textbox')).toHaveValue('01/01/');
+
+      // The page asked "are you sure?" and said no. The revert never happened,
+      // so there is nothing to follow — and the field was emptied anyway,
+      // because the reset door wipes a half-typed value on purpose (a reset to
+      // an empty default must clear it) and never asked whether the reset had
+      // been called off.
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      expect(screen.getByRole('textbox')).toHaveValue('01/01/');
+    });
+
+    it('clears a half-typed field when the reset DOES happen', async () => {
+      const { container } = renderUi(
+        <form>
+          <DateInput name="dob" aria-label="Date of birth" />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '0101');
+
+      // The other side of the same branch, which nothing covered: reverting to
+      // an empty default has to empty the box too, and a half-typed value is
+      // exactly the case the ordinary clear guard refuses to touch.
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      expect(screen.getByRole('textbox')).toHaveValue('');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('takes a datetime the same way whether it is pasted or assigned', async () => {
+      const onDateChange = vi.fn();
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            onDateChange={onDateChange}
+          />
+        </form>,
+        { locale: 'it' },
+      );
+
+      // What `Date.prototype.toISOString()` gives, and therefore what a
+      // consumer writes without thinking about it. The mask has always taken a
+      // PASTED one as the day it names; an ASSIGNED one went through the strict
+      // parser instead, failed, and left the field empty while the carrier held
+      // the instant — so `setValue('dob', d.toISOString())` posted a datetime
+      // the field had never shown. Two grammars, disagreeing.
+      carrier(container).value = '2026-08-12T00:00:00.000Z';
+
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+      // …and the carrier is brought with it, so what the form posts is the day
+      // on screen and not the instant. A date field holding an instant is the
+      // conflation this family exists to refuse: `2026-08-12T23:00:00Z` is two
+      // different days depending on where you stand.
+      expect(carrier(container).value).toBe('2026-08-12');
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(new FormData(form).getAll('dob')).toEqual(['2026-08-12']);
+      expect(onDateChange).toHaveBeenLastCalledWith({
+        year: 2026,
+        month: 8,
+        day: 12,
+      });
     });
 
     it('repaints when a form library ASSIGNS the carrier, which fires no event', async () => {
