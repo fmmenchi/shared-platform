@@ -327,6 +327,18 @@ function Calendar(props: CalendarProps) {
       PageUp: () => addMonths(from, event.shiftKey ? -12 : -1),
       PageDown: () => addMonths(from, event.shiftKey ? 12 : 1),
     };
+    // ENTER AND SPACE CHOOSE THE DAY. A `<td>` is not a button, so activation
+    // is ours now — it came free while a button sat inside the cell, and the
+    // cell is where the focus and the selected state have to live (the APG's
+    // shape). Space is prevented so the page does not scroll under it.
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (isDateDisabled?.(focusable) === true) return;
+      roving.current = true;
+      setSelected(focusable);
+      return;
+    }
+
     const move = step[event.key];
     if (move === undefined) return;
     event.preventDefault();
@@ -415,58 +427,65 @@ function Calendar(props: CalendarProps) {
                   selected !== null && isSameDay(day, selected);
                 const disabled = isDateDisabled?.(day) ?? false;
                 return (
-                  // `|| undefined`, so forty-one cells do not each carry
-                  // `aria-selected="false"`. Rendered, every cell claimed a
-                  // selection state and a reader announced "not selected" on
-                  // each one as the arrows walked the month. The twin data
-                  // attribute below already used this idiom.
+                  /*
+                   * THE CELL IS THE CONTROL. The APG's own date grid makes the
+                   * `<td>` focusable and puts no button inside it, and an
+                   * earlier version of this file did the opposite: a `<button>`
+                   * took the focus while `aria-selected` stayed on the cell
+                   * around it, so — measured in Chromium's accessibility tree —
+                   * the node the user actually landed on carried no selected
+                   * state at all. Whether that reached anyone depended on the
+                   * screen reader re-announcing cell context on every move,
+                   * which is a bet rather than a contract.
+                   *
+                   * Collapsing the two also removed a `<button>` that this
+                   * package ships without a reset: measured in a page with no
+                   * Preflight, every day arrived with Arial, a 2px outset border
+                   * and a `#efefef` fill (ADR-0022).
+                   *
+                   * `aria-selected` and `aria-current` are `|| undefined` so
+                   * forty-one cells do not each announce "not selected".
+                   */
                   <td
                     key={column}
                     role="gridcell"
+                    data-day={iso}
+                    data-outside={outside || undefined}
+                    data-selected={isSelected || undefined}
+                    data-today={isSameDay(day, now) || undefined}
+                    className={styles.day}
                     aria-selected={isSelected || undefined}
+                    // THE WHOLE DATE, because the visible text is a bare number
+                    // and the column header only adds a weekday. A reader
+                    // arrowing off the 31st heard "Tuesday, 1" and was never
+                    // told which month they had landed in.
+                    aria-label={longDate.format(utc(day))}
+                    // The platform's own "you are here". Without it a calendar
+                    // has no today at all: it was read to pick the opening month
+                    // and then never mentioned again.
+                    aria-current={isSameDay(day, now) ? 'date' : undefined}
+                    // `aria-disabled`, never `disabled`: the APG's "focusable
+                    // but not activatable". A day the arrows skipped is a day a
+                    // reader is never told exists.
+                    aria-disabled={disabled || undefined}
+                    // ONE STOP FOR THE WHOLE GRID. Tab reaches the calendar once
+                    // and the arrows do the rest — forty-two tab stops is not
+                    // navigation.
+                    tabIndex={isSameDay(day, focusable) ? 0 : -1}
+                    onClick={() => {
+                      if (disabled) return;
+                      roving.current = true;
+                      setFocused(day);
+                      setSelected(day);
+                    }}
+                    onFocus={() => setFocused(day)}
                   >
-                    <button
-                      type="button"
-                      data-day={iso}
-                      data-outside={outside || undefined}
-                      data-selected={isSelected || undefined}
-                      className={styles.day}
-                      // ONE STOP FOR THE WHOLE GRID. Tab reaches the calendar
-                      // once and the arrows do the rest, which is the grid
-                      // contract — forty-two tab stops is not navigation.
-                      tabIndex={isSameDay(day, focusable) ? 0 : -1}
-                      // `aria-disabled` rather than `disabled`: the APG's
-                      // "focusable but not activatable". A `disabled` button is
-                      // out of the accessibility tree, so the arrows would walk
-                      // over days a reader is never told exist.
-                      aria-disabled={disabled || undefined}
-                      onClick={() => {
-                        if (disabled) return;
-                        roving.current = true;
-                        setFocused(day);
-                        setSelected(day);
-                      }}
-                      onFocus={() => setFocused(day)}
-                      // THE WHOLE DATE, because the visible text is a bare
-                      // number and the column header only adds a weekday. A
-                      // reader arrowing off the 31st heard "Tuesday, 1" and was
-                      // never told which month they had landed in — the polite
-                      // status below says so eventually, and is skipped
-                      // entirely by anyone who keeps arrowing.
-                      aria-label={longDate.format(utc(day))}
-                      // The platform's own "you are here". Without it a calendar
-                      // has no today at all: it was used to pick the opening
-                      // month and then never mentioned again.
-                      aria-current={isSameDay(day, now) ? 'date' : undefined}
-                      data-today={isSameDay(day, now) || undefined}
-                    >
-                      {/* THROUGH `Intl`, not `String(n)`. Measured on `ar-EG`:
-                          the caption above read `أغسطس ٢٠٢٦` while every cell
-                          under it read `12` — the same component in two
-                          numbering systems, which is the mismatch this family
-                          exists to remove, one layer down. */}
-                      {digits.format(day.day)}
-                    </button>
+                    {/* THROUGH `Intl`, not `String(n)`. Measured on `ar-EG`: the
+                        caption above read `أغسطس ٢٠٢٦` while every cell under it
+                        read `12` — the same component in two numbering systems,
+                        which is the mismatch this family exists to remove, one
+                        layer down. */}
+                    {digits.format(day.day)}
                   </td>
                 );
               })}

@@ -68,7 +68,8 @@ The APG grid contract, and the whole of what makes a calendar hard.
 | <kbd>↑</kbd> <kbd>↓</kbd>             | one week                |
 | <kbd>Home</kbd> <kbd>End</kbd>        | to the ends of the week |
 | <kbd>PageUp</kbd> <kbd>PageDown</kbd> | one month               |
-| <kbd>Shift</kbd> + those              | one year                |
+| <kbd>Shift</kbd> + those Page keys    | one year                |
+| <kbd>Enter</kbd> <kbd>Space</kbd>     | chooses the day         |
 
 **The roving focus is a date, not a cell.** Any of those moves can cross into a
 month that is not on screen, which replaces every cell in the grid — so the
@@ -92,6 +93,13 @@ February entirely while a key was held.
   says `empty-table-header`, and it is right.
 - **A refused day is `aria-disabled`**, so it keeps its place in the grid and its
   place in the accessibility tree.
+- **The cell is the control.** Each day is a focusable `<td role="gridcell">`
+  with no button inside it, which is the shape the APG's own date grid uses. The
+  focus, the accessible name and `aria-selected` are then on the same element —
+  measured, a button inside the cell took the focus while the selected state
+  stayed on the cell around it, so the node a user actually landed on carried no
+  selection at all. `Enter` and `Space` choose the day, since a cell has no
+  native activation of its own.
 - **Forced colors**: the selected day keeps `Highlight`/`HighlightText`, the days
   outside the month and the refused ones keep `GrayText`. Those are the platform's
   own words for "chosen" and "not for you", and they are the only ones that

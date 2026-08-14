@@ -257,11 +257,13 @@ describe('Calendar', () => {
         { locale: 'it' },
       );
       const refused = cell(container, '2026-08-15');
-      // `aria-disabled`, never `disabled`: a disabled button leaves the
-      // accessibility tree, so the arrows would walk over a day nobody is told
-      // about.
+      // `aria-disabled`, never `disabled`: the APG's "focusable but not
+      // activatable". A day the arrows skipped is a day nobody is told about.
       expect(refused).toHaveAttribute('aria-disabled', 'true');
-      expect(refused).not.toBeDisabled();
+      // And it is still the grid cell it was — the state lives on the element
+      // that takes the focus, not on a wrapper around it.
+      expect(refused.tagName).toBe('TD');
+      expect(refused).toHaveAttribute('role', 'gridcell');
     });
 
     it('does not select one when it is clicked', async () => {
@@ -311,12 +313,57 @@ describe('Calendar', () => {
       });
     });
 
+    it('chooses with Enter, and with Space', async () => {
+      const onValueChange = vi.fn();
+      const { container } = renderUi(
+        <Calendar defaultMonth={AUGUST} onValueChange={onValueChange} />,
+        { locale: 'it' },
+      );
+      // A `<td>` is not a button, so activation is the component's own now —
+      // it came free while a button sat inside the cell, and the cell is where
+      // the focus and the selected state have to live.
+      cell(container, '2026-08-03').focus();
+      await browser.keyboard('{Enter}');
+      expect(onValueChange).toHaveBeenLastCalledWith({
+        year: 2026,
+        month: 8,
+        day: 3,
+      });
+
+      cell(container, '2026-08-04').focus();
+      await browser.keyboard(' ');
+      expect(onValueChange).toHaveBeenLastCalledWith({
+        year: 2026,
+        month: 8,
+        day: 4,
+      });
+    });
+
+    it('refuses Enter on a day the predicate refuses', async () => {
+      const onValueChange = vi.fn();
+      const { container } = renderUi(
+        <Calendar
+          defaultMonth={AUGUST}
+          isDateDisabled={(date) => date.day === 15}
+          onValueChange={onValueChange}
+        />,
+        { locale: 'it' },
+      );
+      cell(container, '2026-08-15').focus();
+      await browser.keyboard('{Enter}');
+      expect(onValueChange).not.toHaveBeenCalled();
+    });
+
     it('marks the selected cell for the eye and for assistive tech', async () => {
       const { container } = renderUi(<Calendar defaultMonth={AUGUST} />, {
         locale: 'it',
       });
       await browser.click(cell(container, '2026-08-12'));
-      expect(cell(container, '2026-08-12').closest('td')).toHaveAttribute(
+      // ON THE FOCUSED ELEMENT, which is the point of the shape: measured in
+      // Chromium's accessibility tree, a button inside the cell took the focus
+      // while the selected state stayed on the cell around it, so the node the
+      // user landed on carried no selection at all.
+      expect(cell(container, '2026-08-12')).toHaveAttribute(
         'aria-selected',
         'true',
       );

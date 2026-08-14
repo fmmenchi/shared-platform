@@ -39,21 +39,22 @@
     @apply text-xs font-normal text-muted-foreground;
   }
 
+  /*
+   * The day IS the cell — a focusable `<td>`, the shape the APG's date grid
+   * uses. A `<button>` inside it took the focus while the selected state stayed
+   * on the cell around it, and it also arrived with the UA's own border, fill
+   * and font in any page without Preflight (ADR-0022). Both went with it.
+   *
+   * A table cell centres with `text-align`/`vertical-align`; it must NOT be
+   * given `display: flex`, which would take it out of the table layout its row
+   * and its column headers depend on.
+   */
   .day {
-    /* The UA baseline every control we draw needs — `box-sizing` and the font
-       family. The design system ships precompiled CSS, so a consumer runs no
-       Preflight (ADR-0001) and no component may depend on one (ADR-0022):
-       measured in a page without one, every day arrived with Arial, a 2px
-       OUTSET border and a `#efefef` ButtonFace fill. The border also made the
-       forced-colors rule below a lie — it said a border would carry the hover
-       once a background could not, and there was already one on every cell. */
-    @apply control-base;
-    border: 0;
-    background-color: transparent;
     /* A day is a target before it is a number: 2.25rem square keeps a row of
        seven inside a phone's width while staying comfortably clickable, and the
        coarse-pointer rule below takes it to the 44px a finger needs. */
-    @apply flex size-9 items-center justify-center rounded-md text-sm;
+    @apply size-9 rounded-md text-center align-middle text-sm;
+    cursor: default;
     @apply hover:bg-accent hover:text-accent-foreground;
     @apply focus-visible:outline-ring focus-visible:outline-2;
     @apply focus-visible:outline-offset-2;
