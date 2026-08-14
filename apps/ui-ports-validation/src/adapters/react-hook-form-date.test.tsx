@@ -160,6 +160,26 @@ describe('FormDateInput through react-hook-form', () => {
     expect(field).toHaveValue('12/03/1985');
   });
 
+  it('takes defaultValues holding a DATETIME, which is what a stored Date becomes', async () => {
+    const onSubmit = vi.fn();
+    const { container } = render(
+      <DateForm
+        onSubmit={onSubmit}
+        defaultValues={{ dob: '2026-08-12T00:00:00.000Z' }}
+      />,
+    );
+
+    // `register()`'s ref callback writes the node in the COMMIT phase, before
+    // the effect that wraps the `value` descriptor has run — so this write goes
+    // past all three of the doors that watch for one. Measured: the box was
+    // empty, the carrier held the instant, and the form posted it.
+    expect(
+      screen.getByRole('textbox', { name: 'Data di nascita' }),
+    ).toHaveValue('12/08/2026');
+    const form = container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).getAll('dob')).toEqual(['2026-08-12']);
+  });
+
   it('the PICKER submits what the grid chose, and follows setValue back', async () => {
     // The ref-based half of the picker's claim, which nothing here tested: the
     // calendar reaches the binding with no library lever, because the component

@@ -186,6 +186,28 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveAttribute('placeholder', '—');
     });
 
+    it('seeds from a datetime by taking the day it names', () => {
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="2026-08-12T00:00:00.000Z"
+          />
+        </form>,
+        { locale: 'it' },
+      );
+
+      // The door consumers use most, and the one the "one grammar" repair
+      // missed: a form library's `defaultValues` holding what somebody stored
+      // as a `Date`. Measured before this: the box was empty, the carrier held
+      // the instant, and the form posted it.
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+      expect(carrier(container).value).toBe('2026-08-12');
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(new FormData(form).getAll('dob')).toEqual(['2026-08-12']);
+    });
+
     it('seeds from a day, and an explicit ISO string wins', () => {
       renderUi(
         <DateInput
@@ -555,6 +577,46 @@ describe('DateInput', () => {
 
       expect(carrier(container).value).toBe('1985-03-12');
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
+    });
+
+    it('leaves a half-typed field alone when the page REFUSES the reset', async () => {
+      renderUi(
+        <form onReset={(event) => event.preventDefault()}>
+          <DateInput name="dob" aria-label="Date of birth" />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '0101');
+      expect(screen.getByRole('textbox')).toHaveValue('01/01/');
+
+      // The page asked "are you sure?" and said no. The revert never happened,
+      // so there is nothing to follow — and the field was emptied anyway,
+      // because the reset door wipes a half-typed value on purpose (a reset to
+      // an empty default must clear it) and never asked whether the reset had
+      // been called off.
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      expect(screen.getByRole('textbox')).toHaveValue('01/01/');
+    });
+
+    it('clears a half-typed field when the reset DOES happen', async () => {
+      const { container } = renderUi(
+        <form>
+          <DateInput name="dob" aria-label="Date of birth" />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '0101');
+
+      // The other side of the same branch, which nothing covered: reverting to
+      // an empty default has to empty the box too, and a half-typed value is
+      // exactly the case the ordinary clear guard refuses to touch.
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      expect(screen.getByRole('textbox')).toHaveValue('');
+      expect(carrier(container).value).toBe('');
     });
 
     it('takes a datetime the same way whether it is pasted or assigned', async () => {

@@ -24,9 +24,16 @@ import { useEffect, useRef } from 'react';
  *
  * THE WRITE IS A BARE ASSIGNMENT, deliberately, and not `setNativeValue`. The
  * assignment path goes through the `value` descriptor `DateInput` wraps, which
- * repaints the box and reports `onDateChange`; it dispatches no event, so the
- * binding is not told about a value that CAME from the binding. An event would
- * hand `onChange` straight back to the library that just set it.
+ * repaints the box and reports `onDateChange`; it dispatches no event of its
+ * own, so the binding is not handed back a value that CAME from the binding.
+ *
+ * ONE CASE DOES ECHO, and it should. If what the library holds carries a TIME —
+ * `2026-08-12T00:00:00.000Z`, what a stored `Date` becomes — the field
+ * normalises the carrier to the day it names, and that normalising write DOES
+ * dispatch. Measured: the library ends up holding `2026-08-12`, converging in
+ * one render. Being told is the point: otherwise the library keeps an instant
+ * while the form posts a day, which is the disagreement this all exists to
+ * remove.
  */
 export function useBoundCarrier(
   iso: string | undefined,

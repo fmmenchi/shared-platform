@@ -211,7 +211,13 @@ function DateInput(props: DateInputProps) {
   // Seeded raw, `defaultValue="tomorrow"` left the field empty and posted
   // `tomorrow` — from the component whose first promise is that a server never
   // has to guess what it is holding.
-  const seed = asked !== '' && parseIsoDate(asked) !== null ? asked : '';
+  // THROUGH THE SAME GRAMMAR AS EVERY OTHER DOOR. This one kept the strict
+  // parser after the others moved to `isoDayOf`, so the claim that there was
+  // one grammar was false where it mattered most: a `defaultValues` of
+  // `2026-08-12T00:00:00.000Z` — what a library holds when somebody stored a
+  // `Date` — left the field empty and posted the instant, which is the very
+  // sentence the datetime repair was written to retire.
+  const seed = isoDayOf(asked) ?? '';
 
   // SAY SO rather than start empty and leave it to be debugged twice.
   useDevWarning(
@@ -685,6 +691,14 @@ function DateInput(props: DateInputProps) {
     const get = own?.get ?? proto?.get;
     if (set === undefined || get === undefined) return;
 
+    // AND WHATEVER WAS WRITTEN BEFORE THIS RAN. `register()`'s ref callback
+    // fires in the COMMIT phase, so react-hook-form has already assigned the
+    // node by the time this passive effect installs the descriptor — measured,
+    // a `defaultValues` holding a datetime went straight past all three doors
+    // and the field started empty while the form held the instant. Reading the
+    // node once, here, is the only place that write can still be seen.
+    const arrived = element.value;
+
     Object.defineProperty(element, 'value', {
       configurable: true,
       enumerable: own?.enumerable ?? false,
@@ -713,6 +727,7 @@ function DateInput(props: DateInputProps) {
     // field under the caret.
     const follow = () => arrive(element.value);
     element.addEventListener('input', follow);
+    if (arrived !== '') arrive(arrived);
 
     // AND THE THIRD DOOR, which takes neither of the first two: `form.reset()`.
     // The platform reverts a control to its default without going through the
@@ -745,6 +760,17 @@ function DateInput(props: DateInputProps) {
     const reset = (event: Event) => {
       if (event.target !== element.form) return;
       setTimeout(() => {
+        // A RESET CAN BE REFUSED, and this listener used to wipe the field
+        // anyway. `preventDefault()` on the event — a page asking "are you
+        // sure?" — cancels the revert, so the carrier still holds what it held
+        // and the box should too; measured, a half-typed `01/01/` was emptied
+        // by a reset the page had just called off.
+        //
+        // Read HERE rather than in the listener: this is capture phase on the
+        // document, so it runs BEFORE the handler that would refuse, and the
+        // flag is only true once the dispatch is over. The same task that makes
+        // the revert visible makes the refusal visible.
+        if (event.defaultPrevented) return;
         arrive(element.value, true);
       }, 0);
     };

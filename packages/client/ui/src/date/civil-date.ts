@@ -38,13 +38,6 @@ function exists({ year, month, day }: CivilDate): boolean {
 }
 
 /**
- * Read `YYYY-MM-DD` as the day it names, or `null` if it names none.
- *
- * Strict on purpose. `new Date(value)` accepts almost anything and answers with
- * an instant in the local timezone; this accepts one shape and answers with a
- * date, so `2026-02-30` is `null` here and 2 March there.
- */
-/**
  * THE DAY AN ISO STRING NAMES, whether or not it also names a time.
  *
  * One grammar, in one place, because there used to be two and they disagreed.
@@ -69,6 +62,14 @@ export function isoDayOf(value: string): IsoDate | null {
   return parseIsoDate(day) === null ? null : (day as IsoDate);
 }
 
+/**
+ * Read `YYYY-MM-DD` as the day it names, or `null` if it names none.
+ *
+ * Strict on purpose, and `isoDayOf` above is the permissive one built on it.
+ * `new Date(value)` accepts almost anything and answers with an instant in the
+ * local timezone; this accepts one shape and answers with a date, so
+ * `2026-02-30` is `null` here and 2 March there.
+ */
 export function parseIsoDate(value: string): CivilDate | null {
   const match = ISO.exec(value);
   if (match === null) return null;
