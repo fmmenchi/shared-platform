@@ -226,6 +226,149 @@ describe('DatePicker', () => {
     });
   });
 
+  describe('read-only, where the field itself is the trigger', () => {
+    const field = () => screen.getByRole('textbox', { name: 'Partenza' });
+    // THE CELLS ARE ALWAYS IN THE DOM — the calendar lives inside a closed
+    // `<dialog popover>`, not behind a mount. Asking for a `[data-day]` says
+    // nothing about whether the thing is on screen; `:popover-open` does.
+    const isOpen = (container: HTMLElement) =>
+      container.querySelector('dialog')?.matches(':popover-open') === true;
+
+    it('opens the calendar when the field is clicked', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          readOnly
+        />,
+        { locale: 'it' },
+      );
+      expect(isOpen(container)).toBe(false);
+
+      await browser.click(field());
+
+      expect(isOpen(container)).toBe(true);
+      // Nothing to protect: a field nobody can type in has no caret, so the
+      // whole field is the target. Typeable, the same click would take the
+      // caret away mid-edit, which is why it does nothing there.
+      expect(
+        container.querySelector('[data-day="2026-08-12"]'),
+      ).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('does NOT open when the field can be typed into', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+        />,
+        { locale: 'it' },
+      );
+
+      await browser.click(field());
+
+      expect(isOpen(container)).toBe(false);
+    });
+
+    it('closes on a second click rather than reopening under the user', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          readOnly
+        />,
+        { locale: 'it' },
+      );
+
+      await browser.click(field());
+      expect(isOpen(container)).toBe(true);
+      // The platform light-dismisses on the POINTERDOWN of this second click,
+      // and the click that follows would then re-open what was being closed —
+      // a calendar the field could open and never shut.
+      await browser.click(field());
+
+      expect(isOpen(container)).toBe(false);
+    });
+
+    it('stops telling a reader how to type into it', () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          readOnly
+        />,
+        { locale: 'it' },
+      );
+
+      // `gg/mm/aaaa` is an instruction, and this control refuses it. It goes
+      // from the placeholder and from the description together.
+      expect(field()).not.toHaveAttribute('placeholder');
+      const described = field().getAttribute('aria-describedby') ?? '';
+      const text = described
+        .split(' ')
+        .map((id) => document.getElementById(id)?.textContent)
+        .join('');
+      expect(text).not.toContain('gg');
+      expect(container.textContent).not.toContain('gg/mm/aaaa');
+    });
+
+    it('still posts its value, and still keeps the trigger for the keyboard', async () => {
+      const { container } = renderUi(
+        <form>
+          <DatePicker
+            name="departure"
+            aria-label="Partenza"
+            defaultValue="2026-08-12"
+            readOnly
+          />
+        </form>,
+        { locale: 'it' },
+      );
+
+      // A read-only control is submitted — unlike a disabled one — and the
+      // button stays, because the field's click is a pointer convenience and
+      // the trigger is what a keyboard and a screen reader reach.
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(new FormData(form).getAll('departure')).toEqual(['2026-08-12']);
+      expect(
+        screen.getByRole('button', { name: 'Scegli dal calendario' }),
+      ).toBeInTheDocument();
+    });
+
+    it('refuses typing, as the platform already does', async () => {
+      renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          readOnly
+        />,
+        { locale: 'it' },
+      );
+
+      await browser.fill(field(), '01012000').catch(() => undefined);
+
+      expect(field()).toHaveValue('12/08/2026');
+    });
+
+    it('has no accessibility violations', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          readOnly
+        />,
+        { locale: 'it' },
+      );
+      await expectNoA11yViolations(container);
+    });
+  });
+
   describe('what it passes through', () => {
     it('refuses days the consumer refuses, in the grid', async () => {
       const { container } = renderUi(

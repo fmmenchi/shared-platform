@@ -54,6 +54,41 @@ component can keep.
 
 ## Usage
 
+### Typed, or chosen
+
+<Canvas of={DatePickerStories.ReadOnly} />
+
+`readOnly` flips which surface opens the calendar, and the rule behind it is not
+a preference:
+
+- **a field that can be typed into has a caret to protect**, so the trigger is a
+  separate target — React Aria, MUI desktop and the APG's own date-picker example
+  all do this;
+- **a field that cannot has nothing to protect**, so the whole field is the
+  target — which is what Fluent does, and it does it precisely because its field
+  is `allowTextInput: false`.
+
+**Which one to pick is a question about the date, not about the design.** A date
+the user KNOWS — a birth date, an expiry, an invoice date — is faster typed than
+navigated; GOV.UK measured a calendar as actively worse there, and their
+"memorable date" pattern has no calendar at all. A date the user CHOOSES from
+what is available — a booking, an appointment, a flight — is the Airbnb case:
+typing means nothing, because the answer is in the grid next to the days that are
+taken.
+
+Nothing else changes. The trigger stays, because it is what a keyboard and a
+screen reader reach; the value is still submitted, unlike a disabled control's;
+and the field stays focusable and selectable, so the date can still be read and
+copied. `readOnly` is the platform's own attribute doing its own job — the
+browser refuses the typing, and this component only stops claiming otherwise: the
+`gg/mm/aaaa` hint is an instruction, so it goes from the placeholder and from the
+field's description together.
+
+**It is not styled as "disabled", deliberately.** A read-only field elsewhere
+might reasonably look inert; here the field is the thing to click, and dimming it
+would say "not available" where it means "open the calendar". It keeps full
+contrast and takes a pointer cursor.
+
 ### Per-date rules
 
 <Canvas of={DatePickerStories.PerDateRules} />

@@ -7,12 +7,14 @@ import { PopoverContent } from '../popover-content/popover-content.component.js'
 import { Calendar } from '../calendar/calendar.component.js';
 import { CalendarGlyph } from './calendar-glyph.component.js';
 import { useMessages } from '../../i18n/provider.js';
+import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
 import { parseIsoDate } from '../../date/civil-date.js';
 import { writeDateInput } from '../../date/write-date-input.js';
 import { startOfMonth } from '../../date/civil-math.js';
 import { datePickerMessages } from './date-picker.messages.js';
 import type { DatePickerProps } from './date-picker.types.js';
+import styles from './date-picker.module.css';
 import type { CivilDate } from '../../date/civil-date.types.js';
 
 /** Today, as a day rather than an instant. */
@@ -71,6 +73,19 @@ function DatePicker(props: DatePickerProps) {
   const carrier = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
 
+  // READ-ONLY FLIPS WHICH SURFACE OPENS IT, and the rule is not a preference:
+  // a field that can be typed into has a caret to protect, so the trigger is a
+  // separate target (React Aria, MUI desktop, and the APG's own date-picker
+  // example all do this). A field that cannot has nothing to protect, so the
+  // whole field is the target — which is what Fluent does, and it does it for
+  // exactly this reason: its field is `allowTextInput: false`.
+  //
+  // It rides on the PLATFORM's attribute rather than a prop of ours. The
+  // browser already refuses the typing, the value is still submitted, and the
+  // field stays focusable and selectable — all of which a read-only date should
+  // be, and none of which we would have to re-implement.
+  const readOnly = field.readOnly === true;
+
   // SEEDED FROM THE FIELD'S OWN SEED, so the calendar opens on the day already
   // in the box rather than on today. `defaultDate` is the parsed form and
   // `defaultValue` the ISO one; the field takes either, so this reads either.
@@ -114,6 +129,23 @@ function DatePicker(props: DatePickerProps) {
         // to attach time, every read and write lands where it belongs.
         carrierRef={(node) => mergeRefs(carrier, carrierRef)(node)}
         onDateChange={take}
+        className={cn(readOnly && styles.asTrigger, field.className)}
+        // CHAINED, not replaced: a consumer's own click on the field is theirs.
+        //
+        // AND NO GUARD AGAINST THE SECOND CLICK, which is worth a sentence
+        // because the obvious reading says it needs one. Clicking the field
+        // while the calendar is open light-dismisses it on the POINTERDOWN, and
+        // the `setOpen(true)` below then runs on a popover the platform has
+        // already closed — which looks like it would re-open what the user was
+        // closing. It does not: this handler runs before the surface reports
+        // its `toggle`, so the state it writes is the one already held, and the
+        // dismissal lands last. Measured with the guard removed — the calendar
+        // still closes — so the guard was machinery for a defect that is not
+        // there.
+        onClick={(event) => {
+          field.onClick?.(event);
+          if (readOnly) setOpen(true);
+        }}
       />
       <Popover open={open} onOpenChange={setOpen} placement={placement}>
         {/* `PopoverTrigger` IS a `Button`. Nesting one inside it would be two
