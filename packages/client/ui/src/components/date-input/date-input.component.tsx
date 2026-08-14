@@ -131,6 +131,7 @@ function DateInput(props: DateInputProps) {
     form,
     placeholder,
     carrierRef,
+    announceFormat = true,
     ref,
     'aria-describedby': describedBy,
     ...rest
@@ -140,6 +141,9 @@ function DateInput(props: DateInputProps) {
   // attribute and it still has to reach the input, where the browser enforces
   // it. What it changes HERE is only what the field says about itself.
   const readOnly = rest.readOnly === true;
+  // The hint is an instruction, so it goes wherever the field cannot be written
+  // into — whether that is the platform's `readonly` or a consumer saying so.
+  const saysFormat = announceFormat && !readOnly;
 
   const formatter = useFormatter();
   const t = useMessages(dateInputMessages);
@@ -704,7 +708,7 @@ function DateInput(props: DateInputProps) {
         // in, so it would be telling a reader to do something the control
         // refuses. It goes from the placeholder and from the description below
         // together, because it is one claim in two places.
-        placeholder={placeholder ?? (readOnly ? undefined : hint)}
+        placeholder={placeholder ?? (saysFormat ? hint : undefined)}
         // THE FORMAT IS DESCRIBED, not only placeheld. A placeholder is the last
         // thing an accessible description falls back to, so as soon as a `Field`
         // supplies a hint or an error, `aria-describedby` wins and the format
@@ -713,7 +717,7 @@ function DateInput(props: DateInputProps) {
         // registered ids, so a hint and this coexist rather than displace each
         // other.
         aria-describedby={
-          [describedBy, readOnly ? undefined : formatId]
+          [describedBy, saysFormat ? formatId : undefined]
             .filter(Boolean)
             .join(' ') || undefined
         }
@@ -761,11 +765,11 @@ function DateInput(props: DateInputProps) {
         field's `title`, because a `title` is also a tooltip on hover and this is
         not something to hang under the pointer.
       */}
-      {readOnly ? null : (
+      {saysFormat ? (
         <span id={formatId} className={styles.format}>
           {hint}
         </span>
-      )}
+      ) : null}
       {/*
         The carrier: the field's `name`, holding ISO.
 

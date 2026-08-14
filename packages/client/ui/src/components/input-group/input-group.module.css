@@ -17,6 +17,16 @@
      and a form row would not line up. A shadow paints in the same place and takes
      no space, which is what lets the height stay the control's. */
   .group {
+    /* DECLARED, not inherited. The shipped CSS carries no Preflight (ADR-0022),
+       so a consumer's page leaves this `content-box` — and the forced-colors
+       block below swaps the inset shadow for a REAL border, whose 1px (2px when
+       invalid) then lands outside `width: 100%`. Measured in a 300px container:
+       the group came out 302 wide and 38 tall, 304 × 40 invalid, while a bare
+       `Input` stayed 300 × 36 — it gets `border-box` from `control-base` and
+       already carries a border, so it gains nothing there. The comment below
+       claimed "every field gains it equally, so a row still lines up"; only
+       this makes that true. */
+    box-sizing: border-box;
     @apply flex w-full items-center gap-internal-s rounded-md;
     @apply bg-input text-input-foreground;
     @apply transition;

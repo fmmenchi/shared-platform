@@ -338,7 +338,7 @@ describe('DatePicker', () => {
     });
   });
 
-  describe('read-only, where the field itself is the trigger', () => {
+  describe('pick-only, where the field itself is the trigger', () => {
     const field = () => screen.getByRole('textbox', { name: 'Partenza' });
     // THE CELLS ARE ALWAYS IN THE DOM — the calendar lives inside a closed
     // `<dialog popover>`, not behind a mount. Asking for a `[data-day]` says
@@ -352,7 +352,7 @@ describe('DatePicker', () => {
           name="departure"
           aria-label="Partenza"
           defaultValue="2026-08-12"
-          readOnly
+          pickOnly
         />,
         { locale: 'it' },
       );
@@ -390,7 +390,7 @@ describe('DatePicker', () => {
           name="departure"
           aria-label="Partenza"
           defaultValue="2026-08-12"
-          readOnly
+          pickOnly
         />,
         { locale: 'it' },
       );
@@ -411,7 +411,7 @@ describe('DatePicker', () => {
           name="departure"
           aria-label="Partenza"
           defaultValue="2026-08-12"
-          readOnly
+          pickOnly
         />,
         { locale: 'it' },
       );
@@ -435,7 +435,7 @@ describe('DatePicker', () => {
             name="departure"
             aria-label="Partenza"
             defaultValue="2026-08-12"
-            readOnly
+            pickOnly
           />
         </form>,
         { locale: 'it' },
@@ -451,13 +451,13 @@ describe('DatePicker', () => {
       ).toBeInTheDocument();
     });
 
-    it('refuses typing, as the platform already does', async () => {
+    it('refuses typing without declaring the value immutable', async () => {
       renderUi(
         <DatePicker
           name="departure"
           aria-label="Partenza"
           defaultValue="2026-08-12"
-          readOnly
+          pickOnly
         />,
         { locale: 'it' },
       );
@@ -467,17 +467,145 @@ describe('DatePicker', () => {
       expect(field()).toHaveValue('12/08/2026');
     });
 
+    it('never says the value cannot be modified, because it can', () => {
+      renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          pickOnly
+        />,
+        { locale: 'it' },
+      );
+
+      // The first version rode on the platform's `readonly`, which does not
+      // mean "you cannot type here" — it means "the user cannot modify this
+      // value" — while the trigger beside it modified it. WCAG 4.1.2: the state
+      // exposed to assistive technology was false.
+      expect(field()).not.toHaveAttribute('readonly');
+      expect(field()).toHaveAttribute('aria-haspopup', 'dialog');
+    });
+
+    it('opens from the keyboard, not only from the pointer', async () => {
+      const { container } = renderUi(
+        <DatePicker name="departure" aria-label="Partenza" pickOnly />,
+        { locale: 'it' },
+      );
+
+      // A field that is styled and behaves as a button while answering no key
+      // is an affordance a keyboard user can see and cannot use.
+      field().focus();
+      await browser.keyboard('{Enter}');
+      expect(isOpen(container)).toBe(true);
+    });
+
+    it('really does refuse a paste, not only a keystroke', async () => {
+      renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+          pickOnly
+        />,
+        { locale: 'it' },
+      );
+
+      // `beforeinput` is the one event every route into a value passes through,
+      // which is why the refusal lives there rather than on `keydown`.
+      const target = field();
+      target.focus();
+      const blocked = !target.dispatchEvent(
+        new InputEvent('beforeinput', {
+          bubbles: true,
+          cancelable: true,
+          inputType: 'insertFromPaste',
+          data: '01/01/2000',
+        }),
+      );
+      expect(blocked).toBe(true);
+      expect(target).toHaveValue('12/08/2026');
+    });
+
     it('has no accessibility violations', async () => {
       const { container } = renderUi(
         <DatePicker
           name="departure"
           aria-label="Partenza"
           defaultValue="2026-08-12"
-          readOnly
+          pickOnly
         />,
         { locale: 'it' },
       );
       await expectNoA11yViolations(container);
+    });
+  });
+
+  describe('what a reader is told', () => {
+    it('announces the day chosen from the grid, which the trigger cannot', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-01"
+        />,
+        { locale: 'it' },
+      );
+
+      await open();
+      await browser.click(
+        container.querySelector('[data-day="2026-08-12"]') as HTMLElement,
+      );
+
+      // Closing hands focus back to the trigger, whose name never changes — so
+      // the whole announcement was "Scegli dal calendario, button, collapsed",
+      // with the chosen date said nowhere.
+      const live = container.querySelector('[aria-live="polite"]');
+      expect(live?.textContent).toContain('12 agosto 2026');
+    });
+
+    it('says nothing while a date is being typed', async () => {
+      const { container } = renderUi(
+        <DatePicker name="departure" aria-label="Partenza" />,
+        { locale: 'it' },
+      );
+
+      // A reader typing is already hearing their own keystrokes; announcing
+      // each intermediate value would talk over them.
+      await browser.fill(
+        screen.getByRole('textbox', { name: 'Partenza' }),
+        '12082026',
+      );
+
+      expect(container.querySelector('[aria-live="polite"]')?.textContent).toBe(
+        '',
+      );
+    });
+
+    it('gives two pickers on one form two different trigger names', () => {
+      renderUi(
+        <>
+          <DatePicker
+            name="from"
+            aria-label="Partenza"
+            triggerLabel="Scegli la partenza"
+          />
+          <DatePicker
+            name="to"
+            aria-label="Ritorno"
+            triggerLabel="Scegli il ritorno"
+          />
+        </>,
+        { locale: 'it' },
+      );
+
+      // Unnamed, both would answer to the same words — and neither `Field` nor
+      // `InputGroup` is a naming ancestor that could tell them apart.
+      expect(
+        screen.getByRole('button', { name: 'Scegli la partenza' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Scegli il ritorno' }),
+      ).toBeInTheDocument();
     });
   });
 

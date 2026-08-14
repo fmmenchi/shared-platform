@@ -89,8 +89,9 @@ export const PerDateRules: Story = {
 
 /**
  * THE OTHER SHAPE, and the one to reach for when the user does NOT already know
- * the date: `readOnly`. The field stops being typed into and becomes the target
- * itself — click anywhere on it and the calendar opens.
+ * the date: `pickOnly`. The field stops being typed into and becomes the target
+ * itself — click anywhere on it, or press Enter, Space or ArrowDown, and the
+ * calendar opens.
  *
  * The reasoning: a typeable field has a caret to protect, so the trigger is a
  * separate target; a field that cannot be typed into has nothing to protect, so
@@ -102,16 +103,20 @@ export const PerDateRules: Story = {
  * a booking, an appointment, a flight — is the opposite: typing means little,
  * because the answer is in the grid next to the days that are taken.
  *
- * Note what does NOT change: the trigger stays (it is what a keyboard and a
- * screen reader reach), the value is still submitted, and the field is still
- * focusable and selectable. `readOnly` is the platform's attribute doing its
- * own job.
+ * It is a prop of OURS rather than the platform's `readonly`, and the first
+ * version got that wrong: `readonly` means "the user cannot modify this value",
+ * and the trigger beside the field modifies it — a state exposed to assistive
+ * technology that was simply false. This refuses the typing at `beforeinput`
+ * instead, and the field says what it is: a textbox with a dialog behind it.
+ *
+ * `readOnly` still works and now means what it says — it disables the trigger
+ * too, so nothing can change the value.
  */
-export const ReadOnly: Story = {
+export const PickOnly: Story = {
   args: {
     name: 'checkin',
     defaultValue: '2026-08-12',
-    readOnly: true,
+    pickOnly: true,
     'aria-label': 'Check-in',
   },
   render: (args) => (

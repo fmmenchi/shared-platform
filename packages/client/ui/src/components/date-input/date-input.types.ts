@@ -45,6 +45,18 @@ interface DateInputOwnProps {
    * Plain `ref` still reaches the visible input, which is where focus belongs.
    */
   carrierRef?: Ref<HTMLInputElement>;
+  /**
+   * Whether to tell assistive technology the format to type in — `gg/mm/aaaa`,
+   * `mm/dd/yyyy` — as a placeholder and as part of the field's description.
+   *
+   * On by default, and forced OFF by `readOnly`, because the hint is an
+   * INSTRUCTION: telling a reader to write something into a control that
+   * refuses it is worse than saying nothing. It is a prop as well as a
+   * derivation because a field can be un-typeable without being read-only —
+   * `DatePicker`'s `pickOnly`, which refuses input at `beforeinput` rather than
+   * claiming the value is fixed.
+   */
+  announceFormat?: boolean;
 }
 
 /**

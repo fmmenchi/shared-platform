@@ -9,6 +9,8 @@ import {
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
 import { toMessages } from '../../form/messages.js';
+import { useMessages } from '../../i18n/provider.js';
+import { datePickerMessages } from '../date-picker/date-picker.messages.js';
 import type { FormDatePickerProps } from './form-date-picker.types.js';
 
 /**
@@ -50,6 +52,22 @@ function FormDatePicker(props: FormDatePickerProps) {
     "FormDatePicker: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. It was ignored; give the value to the library instead.",
   );
   const messages = toMessages(errors);
+
+  // THE TRIGGER TAKES ITS NAME FROM THE FIELD'S LABEL. The default names the
+  // button by what it does — "Choose from a calendar" — which stops being a
+  // name the moment a form has two dates in it: a reader listing the buttons,
+  // or landing on one after a scroll, meets the same words twice with nothing
+  // to tell them apart, and neither `Field` nor `InputGroup` is a naming
+  // ancestor that could disambiguate them.
+  //
+  // Only when the label is a STRING. It is a `ReactNode`, so it may be markup
+  // with elements in it, and flattening that into an attribute would produce
+  // either "[object Object]" or a name that silently drops half the label.
+  // Those call sites pass `triggerLabel` themselves, and an explicit one always
+  // wins over this.
+  const t = useMessages(datePickerMessages);
+  const composed =
+    typeof label === 'string' ? t('triggerFor', { field: label }) : undefined;
 
   // THE SAME ROUTING TABLE `FormDateInput` uses, and it is not a shortcut for a
   // spread: what describes a NATIVE CONTROL THIS IS NOT must never travel. A
@@ -99,6 +117,9 @@ function FormDatePicker(props: FormDatePickerProps) {
         // visible field holds `12/08/2026`. The call site's goes to the visible
         // input, which is where focus belongs. `DatePicker` merges a third of
         // its own into the first, which is how the calendar writes the field.
+        triggerLabel={
+          (rest as { triggerLabel?: string }).triggerLabel ?? composed
+        }
         carrierRef={bindingRef}
         ref={ref}
       />

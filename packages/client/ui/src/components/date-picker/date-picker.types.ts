@@ -77,8 +77,34 @@ export type DatePickerProps = Omit<
    */
   icon?: ReactNode;
   /**
+   * NOT TYPED INTO — the whole field becomes the calendar's trigger.
+   *
+   * Reach for it when the user does not already know the date: a booking, an
+   * appointment, a flight, where the answer is in the grid next to the days
+   * that are taken. Leave it off when they do — a birth date, an expiry, an
+   * invoice date — because typing eight digits beats navigating to them.
+   *
+   * It is a prop of ours rather than the platform's `readonly`, and the
+   * difference is not cosmetic. `readonly` means "the user cannot modify this
+   * value", and the trigger beside the field modifies it — so the state exposed
+   * to assistive technology would be false (WCAG 4.1.2). This refuses the typing
+   * at `beforeinput` instead, which stops every route into the value without
+   * claiming the value is fixed, and the field announces what it is: a textbox
+   * that opens a dialog, answering Enter, Space and ArrowDown.
+   *
+   * `readOnly` still works and now means what it says: a field the consumer has
+   * really frozen disables the trigger too, so nothing can change the value.
+   */
+  pickOnly?: boolean;
+  /**
    * The trigger's accessible name. Defaults to the design system's own words in
    * the declared locale.
+   *
+   * PASS ONE WHEN THERE ARE TWO PICKERS ON A PAGE. The default names the button
+   * by what it does, which stops being a name once it appears twice: neither
+   * `Field` nor `InputGroup` is a naming ancestor, so a reader listing the
+   * buttons meets the same words with nothing to tell them apart.
+   * `FormDatePicker` composes one from its label and needs no help.
    *
    * It is a NAME and not a tooltip: the button draws a glyph, so without one it
    * would announce as "button" and nothing else.
