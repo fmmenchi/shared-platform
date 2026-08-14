@@ -3,6 +3,6 @@
 exports[`Skeleton > matches the rendered snapshot 1`] = `
 <div
   aria-hidden="true"
-  class="_skeleton_1gd1r_3 _block_1gd1r_14"
+  class="_skeleton_xl7zp_3 _block_xl7zp_16"
 />
 `;

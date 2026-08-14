@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Skeleton } from './skeleton.component.js';
+import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
 
 const meta: Meta<typeof Skeleton> = {
   title: 'Components/Feedback/Skeleton',
@@ -11,7 +12,7 @@ const meta: Meta<typeof Skeleton> = {
       control: 'inline-radio',
       options: ['text', 'block', 'circle'],
       description:
-        'The outline of the thing that has not arrived. `text` is one line of type and takes its height from the current font size; `block` is a panel you give a height to; `circle` is an avatar, kept round by `aspect-ratio` when you change only its width.',
+        'The outline of the thing that has not arrived. `text` occupies one line box (`1lh`) of the current type; `block` is a panel you give a height to; `circle` is an avatar, kept round by `aspect-ratio` when you change only its width.',
       table: {
         type: { summary: "'text' | 'block' | 'circle'" },
         defaultValue: { summary: "'text'" },
@@ -34,9 +35,7 @@ export const Gallery: Story = {
       }}
     >
       <Skeleton shape="circle" />
-      <div style={{ flex: 1 }}>
-        <Skeleton shape="text" />
-      </div>
+      <Skeleton shape="text" style={{ flex: 1 }} />
       <Skeleton
         shape="block"
         style={{ inlineSize: '6rem', blockSize: '3rem' }}
@@ -49,8 +48,8 @@ export const Gallery: Story = {
 export const Text: Story = { args: { shape: 'text' } };
 
 /**
- * A panel: an image, a chart, a map. Give it a height — it spans the inline
- * axis on its own.
+ * A panel: an image, a chart, a map. Give it a height — the `1em` default is
+ * only there so it is never invisible.
  */
 export const Block: Story = {
   args: { shape: 'block' },
@@ -61,38 +60,34 @@ export const Block: Story = {
 export const Circle: Story = { args: { shape: 'circle' } };
 
 /**
- * `text` takes its height from the FONT, so the same component stands in for a
- * heading and for body copy with nothing passed. The short last line is the
- * consumer's, not a prop: a paragraph is a stack of lines and its rhythm
- * belongs to the layout around it.
+ * A paragraph, stacked with NO gap — because `text` occupies the whole line
+ * box, exactly as the copy it replaces does, so the lines space themselves.
+ * There is no `lines` prop and no wrapper element per line: the size goes on
+ * the placeholder itself, and `text` reads the font it sits in, so the heading
+ * is heading-sized with nothing passed.
  */
 export const Paragraph: Story = {
   render: () => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--fm-space-stack-s)',
-      }}
-    >
-      <div style={{ fontSize: 'var(--fm-text-2xl)' }}>
-        <Skeleton />
-      </div>
+    <div>
+      <Skeleton style={{ fontSize: 'var(--fm-text-2xl)' }} />
       <Skeleton />
       <Skeleton />
-      <div style={{ inlineSize: '60%' }}>
-        <Skeleton />
-      </div>
+      <Skeleton style={{ inlineSize: '60%' }} />
     </div>
   ),
 };
 
 /**
- * THE ACCESSIBILITY CONTRACT, shown rather than claimed. Every skeleton is
- * `aria-hidden`, so the region that is waiting carries the state: `aria-busy`
- * while the placeholders are up, and the real content — with its own
- * semantics — when it lands. A screen reader hears a busy region and then a
- * heading, never a grey box.
+ * THE ACCESSIBILITY CONTRACT, shown rather than claimed — and the half that is
+ * easy to get wrong is the announcement.
+ *
+ * Every skeleton is `aria-hidden`, so the placeholders say nothing. `aria-busy`
+ * marks the region's STATE but announces nothing on its own: screen readers use
+ * it to suppress updates, and none of them speak when it flips back to `false`.
+ * The reliable path is the one `Button` already ships — a PERSISTENT
+ * visually-hidden `role="status"` outside the placeholders, whose text changes
+ * when the wait starts and ends. Persistent, because a region that appears at
+ * the same moment as its text is not reliably announced.
  */
 export const LoadingRegion: Story = {
   render: () => (
@@ -101,28 +96,22 @@ export const LoadingRegion: Story = {
       aria-label="Recent activity"
       style={{
         display: 'flex',
+        alignItems: 'flex-start',
         gap: 'var(--fm-space-inline-m)',
         padding: 'var(--fm-space-inset-s)',
         border: 'var(--fm-border-width-divider) solid var(--fm-color-border)',
         borderRadius: 'var(--fm-radius-lg)',
       }}
     >
+      {/* The one thing a screen reader actually hears. In an app its text is
+          swapped for "Recent activity loaded" when the data lands; the element
+          itself is never unmounted. */}
+      <VisuallyHidden role="status">Loading recent activity</VisuallyHidden>
       <Skeleton shape="circle" />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--fm-space-stack-s)',
-          flex: 1,
-        }}
-      >
-        <div style={{ inlineSize: '40%' }}>
-          <Skeleton />
-        </div>
+      <div style={{ flex: 1 }}>
+        <Skeleton style={{ inlineSize: '40%' }} />
         <Skeleton />
-        <div style={{ inlineSize: '75%' }}>
-          <Skeleton />
-        </div>
+        <Skeleton style={{ inlineSize: '75%' }} />
       </div>
     </section>
   ),
