@@ -21,7 +21,23 @@ interface CalendarOwnProps {
   month?: CivilDate;
   /** The month to open on. Defaults to the selected day's, or to today's. */
   defaultMonth?: CivilDate;
-  /** Fires when the shown month changes, by button or by keyboard. */
+  /**
+   * Fires when the shown month changes, by button or by keyboard.
+   *
+   * **A selection that moves from outside does NOT move the month by itself.**
+   * A date typed into the field beside the grid, a `setValue`, a restored URL —
+   * each can land on a day this month does not draw, and the calendar would then
+   * show nothing selected. Whoever moves `value` moves `month` with it:
+   *
+   *     <Calendar value={picked} month={month} onMonthChange={setMonth} />
+   *
+   * That is a decision, not an omission. Following the selection from inside
+   * would mean writing state in an effect on every value change — which fights
+   * the navigation the user just made, and which `useControlled` forbids
+   * outright: its setter runs in an event, never in a render or an effect. The
+   * one place that knows whether the value moved because of the grid or in spite
+   * of it is the thing holding both.
+   */
   onMonthChange?: (month: CivilDate) => void;
   /**
    * WHICH DAYS CANNOT BE CHOSEN — and the reason this component exists at all.

@@ -1,0 +1,86 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as FormDateInputStories from './form-date-input.stories.tsx';
+
+<Meta of={FormDateInputStories} />
+
+# FormDateInput
+
+FormDateInput is a labelled date field, already bound to the **form adapter in scope**. It is `FormInput` with a different control inside, and deliberately so: a `DateInput` is one text field, so it takes a `Field` and a `<label>` exactly as `Input` does — there is no `Fieldset` and no legend, which belong to controls that are a group.
+
+```tsx
+<UiProvider adapters={{ form: { field: useMyFormField } }}>
+  <FormDateInput name="dob" label="Date of birth" />
+</UiProvider>
+```
+
+Everything in [FormInput](?path=/docs/components-form-adapters-forminput--docs) applies here — the adapter is a hook, the binding owns `value`/`onChange`, names can be checked against the form's type. This page covers only what a date adds.
+
+## What the binding sees, and what the user sees
+
+They are never the same string, and that is the whole point of the component.
+
+The binding sees an **ISO `YYYY-MM-DD`** on the carrier: one name, one value, one real `input` event. The user sees that date written the way their locale writes it — `12/08/2026` under `it`, `08/12/2026` under `en-US`, `٢٠٢٦/٠٨/١٢` with its bidi marks under `ar-EG`.
+
+So a schema validates `2026-08-12` while the field on screen says something else, and neither has to know about the other.
+
+## Props
+
+<Controls of={FormDateInputStories.Default} />
+
+Three props are absent here that `DateInput` has, and each for its own reason.
+
+**`carrierRef` is the binding's.** react-hook-form reads `.value` off the element its ref was given; given the visible field it would store `12/08/2026` where it wanted an ISO date — or, as measured before that line existed, never receive the element at all and store `undefined` for every date field in the form. A call site cannot redirect it. Your own `ref` still reaches the **visible** input, which is where focus belongs.
+
+**`defaultDate` is a `defaultValue` under another name**, so it belongs with the props the binding owns. Left accepted, it seeded the DOM without ever telling the form library: the user saw `01/05/1990` and the library validated an empty field, then overwrote the seed on its first pass. Seed through the binding instead.
+
+**`type` does not exist on `DateInput` at all** — the visible field is text with a mask, never a native date control (ADR-0027).
+
+That last one is not only a type. A binding is a bag of native props, and a schema that declares `types: { dob: 'date' }` — the natural thing to declare for a date — used to forward `type="date"` straight through, turning the visible field into a native picker whose ISO value the mask then re-segmented into a **different date**. `pattern`, `min`, `max` and `step` came the same way and were checked against `12/08/2026`: a `pattern` that can never match blocks the submit for good, and `min`/`max` are inert on a text input, so a declared range goes silently unenforced.
+
+So the adapter's props travel through a **routing table**: what describes a native control this is not never arrives, and everything else does.
+
+## Usage
+
+<Canvas of={FormDateInputStories.Default} />
+
+### With a calendar
+
+<Canvas of={FormDateInputStories.WithACalendar} />
+
+**The wiring is not the one `Calendar`'s own page shows, and the difference is the binding.**
+
+Unbound, the calendar reaches the carrier itself: `carrierRef` hands you the node, `writeDateInput` writes it. Bound, that ref is taken — so the calendar hands the ISO to the **form library**, which is the thing that owns the value, and the field repaints itself:
+
+```tsx
+<FormDateInput name="departure" label="Departure" onDateChange={setPicked} />
+<Popover open={open} onOpenChange={setOpen}>
+  <PopoverTrigger aria-label="Pick a date">📅</PopoverTrigger>
+  <PopoverContent>
+    <Calendar
+      value={picked}
+      onValueChange={(date) => {
+        setPicked(date);
+        setValue('departure', formatIsoDate(date));   // your library's lever
+        setOpen(false);
+      }}
+    />
+  </PopoverContent>
+</Popover>
+```
+
+That the field follows is not a courtesy of the library. `setValue` and `reset` **assign** onto the element they hold a ref to — no event, no mutation record, and for a binding that only calls `register()` no render either, so nothing in the component can observe it. `DateInput` wraps its carrier's `value` descriptor precisely so that an assignment nobody announces still redraws what the user is looking at.
+
+**`onDateChange` is the return path**, and the recipe is wrong without it: a date TYPED into the field has to reach the calendar too, or reopening the popover highlights the day chosen three edits ago. It is not binding-owned — it reports the parsed `CivilDate` where `onChange` reports a DOM event — so it is yours to pass.
+
+**And it has to move the month with it**, which the calendar deliberately will not do on its own: a date typed in December 2027 lands on a day an August 2026 grid does not draw, so the popover opens with nothing selected. `month` + `onMonthChange`, set from the same handler.
+
+### Reacting to the value
+
+Use your library's own lever — `watch`, `useField`, `subscribe` — as with any bound field. `onDateChange` is the exception worth knowing: it hands over `{ year, month, day }` already parsed, and fires only on a **whole** date, so a half-typed field reports nothing.
+
+## Accessibility
+
+Identical to `DateInput`'s: one textbox rather than three, the expected format announced as part of the field's description, and the carrier out of both the tab order and the accessibility tree. The errors are announced through `aria-describedby` and `aria-invalid` follows them, exactly as in `FormInput`.
+
+A field with **no adapter in scope throws** rather than rendering — an unbound field types perfectly well and submits nothing, which is a failure you would meet in production data rather than in development.

@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Calendar } from './calendar.component.js';
 import { DateInput } from '../date-input/date-input.component.js';
 import { Field } from '../field/field.component.js';
+import { InputGroup } from '../input-group/input-group.component.js';
 import { Popover } from '../popover/popover.component.js';
 import { PopoverTrigger } from '../popover-trigger/popover-trigger.component.js';
 import { PopoverContent } from '../popover-content/popover-content.component.js';
@@ -87,7 +88,14 @@ export const InsideAPopover: Story = {
   render: function PickerStory() {
     const carrier = useRef<HTMLInputElement>(null);
     const [open, setOpen] = useState(false);
-    const [picked, setPicked] = useState<CivilDate | null>(null);
+    const [picked, setPicked] = useState<CivilDate | null>(AUGUST);
+    const [month, setMonth] = useState<CivilDate>(AUGUST);
+    // BOTH, and this is the whole of what the composition owes. The selection
+    // for the highlight, the month so the highlight is on a day the grid draws.
+    const take = (date: CivilDate | null) => {
+      setPicked(date);
+      if (date !== null) setMonth(date);
+    };
     return (
       <Field label="Data di partenza">
         <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
@@ -95,12 +103,13 @@ export const InsideAPopover: Story = {
               calendar writes the field, and the field has to tell the calendar
               back. Typed into rather than picked from, the highlight would stay
               on the day chosen three edits ago — so reopening the popover would
-              show a selection the field no longer holds. */}
+              show a selection the field no longer holds, in a month it is not
+              even drawing. */}
           <DateInput
             name="departure"
             carrierRef={carrier}
             defaultDate={AUGUST}
-            onDateChange={setPicked}
+            onDateChange={take}
           />
           <Popover open={open} onOpenChange={setOpen} placement="bottom-end">
             {/* `PopoverTrigger` IS a `Button` — nesting one inside it makes two
@@ -116,7 +125,8 @@ export const InsideAPopover: Story = {
             <PopoverContent>
               <Calendar
                 value={picked}
-                defaultMonth={AUGUST}
+                month={month}
+                onMonthChange={setMonth}
                 onValueChange={(date) => {
                   setPicked(date);
                   // The field is SET, not replaced.
@@ -127,6 +137,59 @@ export const InsideAPopover: Story = {
             </PopoverContent>
           </Popover>
         </div>
+      </Field>
+    );
+  },
+};
+
+/**
+ * THE SAME PICKER WITH THE TRIGGER INSIDE THE FIELD, which is what most designs
+ * ask for — and it needs nothing new: `InputGroup` takes the border, the fill
+ * and the radius, and whatever you inset sits inside them.
+ *
+ * `DateInput` is untouched by this. It renders three siblings — the visible
+ * field, the format hint and the carrier — and the last two are `sr-only`,
+ * therefore absolutely positioned, therefore out of the flex flow: they add no
+ * gap and no width. The group's reset matches `> input`, so it strips the
+ * chrome from the field AND from the carrier, which draws nothing anyway.
+ */
+export const IconInsideTheField: Story = {
+  args: { defaultMonth: AUGUST },
+  render: function InsetPickerStory() {
+    const carrier = useRef<HTMLInputElement>(null);
+    const [open, setOpen] = useState(false);
+    const [picked, setPicked] = useState<CivilDate | null>(null);
+    const [month, setMonth] = useState<CivilDate>(AUGUST);
+    const take = (date: CivilDate | null) => {
+      setPicked(date);
+      if (date !== null) setMonth(date);
+    };
+    return (
+      <Field label="Data di partenza">
+        <InputGroup>
+          <DateInput
+            name="departure"
+            carrierRef={carrier}
+            onDateChange={take}
+          />
+          <Popover open={open} onOpenChange={setOpen} placement="bottom-end">
+            <PopoverTrigger variant="ghost" aria-label="Scegli dal calendario">
+              📅
+            </PopoverTrigger>
+            <PopoverContent>
+              <Calendar
+                value={picked}
+                month={month}
+                onMonthChange={setMonth}
+                onValueChange={(date) => {
+                  setPicked(date);
+                  writeDateInput(carrier.current, date);
+                  setOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </InputGroup>
       </Field>
     );
   },
