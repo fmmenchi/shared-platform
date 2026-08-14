@@ -63,17 +63,39 @@
      <input> as ITS control (the reset rules below stay `> input`): another
      control is out of the group's contract, and the mdx now says so — but it
      keeps its own face instead of borrowing the wrong one. */
-  .group > :not(input, select, textarea) {
+  .group > :not(input, select, textarea, button) {
     @apply text-input-placeholder shrink-0;
+  }
+
+  /* AN INTERACTIVE AFFIX IS A THIRD THING, and it was being painted as the
+     second. A `<button>` inset in the group — a picker's trigger, a reveal, a
+     clear — is neither the control the group owns nor decoration beside it, and
+     the affix bucket gave it both a placeholder colour it should not wear and
+     `pe-3`, which pushed the glyph off the centre of a square button that had
+     already set `p-0`. Measured on `DatePicker`: the hover fill came out as a
+     wide pale block, square where the group is round and stopping short of the
+     group's own border — the group drawing an edge around a shape that did not
+     share it.
+
+     So: it keeps its own colours, and it is inset from the border by the same
+     hair the radius needs to stay clean. `margin-inline` only — a vertical
+     margin would make the group taller than the same field without one, which
+     is the one thing this component promises and a test holds it to. A button
+     SHORTER than the control (`size="sm"` in a default field) is centred by the
+     row and inset top and bottom for free; one the same height fills it, and
+     that is the consumer's call rather than ours to override. */
+  .group > button {
+    @apply shrink-0;
+    margin-inline: 0.125rem;
   }
   /* …and it is inset from the border by the same step the control's own padding
      gives its text. Without this the symbol sits flush against the edge while the
      value beside it does not — the group has no padding of its own, because the
      control's belongs to the control (a drag started in it still selects text). */
-  .group > :not(input, select, textarea):first-child {
+  .group > :not(input, select, textarea, button):first-child {
     @apply ps-3;
   }
-  .group > :not(input, select, textarea):last-child {
+  .group > :not(input, select, textarea, button):last-child {
     @apply pe-3;
   }
 

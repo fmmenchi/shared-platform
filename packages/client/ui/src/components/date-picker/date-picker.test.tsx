@@ -247,6 +247,29 @@ describe('DatePicker', () => {
       ).toHaveAttribute('aria-disabled', 'true');
     });
 
+    it('draws the trigger as a square, inside the field rather than across it', () => {
+      const { container } = renderUi(
+        <DatePicker name="departure" aria-label="Partenza" />,
+        { locale: 'it' },
+      );
+      const group = container.querySelector('div') as HTMLElement;
+      const trigger = screen.getByRole('button', {
+        name: 'Scegli dal calendario',
+      });
+      const box = trigger.getBoundingClientRect();
+
+      // SQUARE, which needs the glyph to travel as `icon` rather than as a
+      // child: `Button` derives `isIconOnly` from that, and only then drops its
+      // horizontal padding. Passed as a child it stayed a `px-4` rectangle, and
+      // its hover fill was a wide pale block inside the field's rounded border.
+      expect(Math.round(box.width)).toBe(Math.round(box.height));
+      // …and shorter than the field, so the row centres it and the group's own
+      // border stays clear of whatever the hover paints.
+      const groupBox = group.getBoundingClientRect();
+      expect(box.height).toBeLessThan(groupBox.height);
+      expect(box.right).toBeLessThan(groupBox.right);
+    });
+
     it('takes the trigger label the consumer gives it', () => {
       renderUi(
         <DatePicker

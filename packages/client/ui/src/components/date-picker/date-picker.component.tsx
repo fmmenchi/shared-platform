@@ -119,13 +119,21 @@ function DatePicker(props: DatePickerProps) {
         {/* `PopoverTrigger` IS a `Button`. Nesting one inside it would be two
             interactive controls in one place — `nested-interactive` to axe, and
             two tab stops for one affordance to everybody else. */}
+        {/* THE GLYPH GOES THROUGH `icon`, NOT THROUGH CHILDREN, and the
+            difference is visible rather than stylistic: `Button` derives
+            `isIconOnly` from an `icon` with no renderable children, and only
+            then squares itself and drops its horizontal padding. Passed as a
+            child, the same glyph left a `px-4` rectangle whose hover fill was a
+            wide pale block inside the field's rounded border — which is exactly
+            what it looked like. `sm` keeps it a hair shorter than the control,
+            so the row centres it and the group's border stays clear of it. */}
         <PopoverTrigger
           variant="ghost"
+          size="sm"
+          icon={icon ?? <CalendarGlyph />}
           disabled={field.disabled}
           aria-label={triggerLabel ?? t('trigger')}
-        >
-          {icon ?? <CalendarGlyph />}
-        </PopoverTrigger>
+        />
         <PopoverContent>
           <Calendar
             value={picked}
