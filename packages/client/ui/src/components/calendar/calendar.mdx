@@ -1,0 +1,106 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as Stories from './calendar.stories.tsx';
+
+<Meta of={Stories} />
+
+# Calendar
+
+A month of days, for picking one.
+
+It exists for **one** thing the platform does not offer and will not:
+**per-date disabling**. `min`/`max` on a native date input are an interval, not a
+set, so "only these slots", "never on a Tuesday", "these three days are booked"
+cannot be said to it at all (ADR-0027). `isDateDisabled` is a predicate.
+
+If you do not need that, you do not need this: `DateInput` is one tag and no
+keyboard of ours.
+
+<Canvas of={Stories.Default} />
+
+## Props
+
+<Controls of={Stories.Default} />
+
+## Usage
+
+### The reason it exists
+
+<Canvas of={Stories.PerDateRules} />
+
+`isDateDisabled` is asked about every day the grid draws. A refused day keeps its
+place and stays reachable by the arrows — it is `aria-disabled`, not `disabled`,
+which is the APG's "focusable but not activatable". A day the arrows skipped
+would be a day a screen-reader user is never told about.
+
+### What it hands back
+
+<Canvas of={Stories.ReadingTheValue} />
+
+A `CivilDate` — `{ year, month, day }`, months **1–12** — and never a `Date`. A
+`Date` is an instant; a day on a calendar is not. `new Date('2026-08-12')` is the
+11th of August in every timezone west of Greenwich, which is the defect this
+whole family exists to stop repeating.
+
+**The selection is controlled or uncontrolled, and here React holds it** — unlike
+every field in this package, and for the opposite reason: there is no `<input>`
+under a calendar for the browser to keep a value in.
+
+### Locale
+
+<Canvas of={Stories.AcrossLocales} />
+
+The month name, the weekday names and **the day a week starts on** all come from
+the locale you gave `UiProvider` — the same one `DateInput` and `Time` read.
+`firstDayOfWeek` overrides it when a consumer knows better; its default is what
+`Intl.Locale.prototype.getWeekInfo()` reports, and Monday where that is missing.
+That API is Baseline Newly and ships in two incompatible shapes, which is
+survivable precisely because it degrades: without it the grid still works and the
+week simply starts somewhere else.
+
+## Keyboard
+
+The APG grid contract, and the whole of what makes a calendar hard.
+
+| Key                                   | Moves                   |
+| ------------------------------------- | ----------------------- |
+| <kbd>←</kbd> <kbd>→</kbd>             | one day                 |
+| <kbd>↑</kbd> <kbd>↓</kbd>             | one week                |
+| <kbd>Home</kbd> <kbd>End</kbd>        | to the ends of the week |
+| <kbd>PageUp</kbd> <kbd>PageDown</kbd> | one month               |
+| <kbd>Shift</kbd> + those Page keys    | one year                |
+| <kbd>Enter</kbd> <kbd>Space</kbd>     | chooses the day         |
+
+**The roving focus is a date, not a cell.** Any of those moves can cross into a
+month that is not on screen, which replaces every cell in the grid — so the
+component holds the focused _day_ and puts focus on whichever cell then carries
+it. A cell index would name a different day after every such move.
+
+A month is **one tab stop**, not forty-two: Tab reaches the grid and the arrows
+do the rest.
+
+`PageDown` from the 31st **clamps** to the end of the month it lands in — 31
+January plus a month is 28 February, not 3 March. Rolling forward would skip
+February entirely while a key was held.
+
+## Accessibility
+
+- **The month is announced when it changes**, once, in a polite live region.
+  Everything under the header is replaced by a keystroke, and nothing about that
+  moves for a reader who cannot see it.
+- **Column headers carry the full weekday name** as text and the abbreviation for
+  the eye. `abbr` alone leaves the header with no accessible text at all — axe
+  says `empty-table-header`, and it is right.
+- **A refused day is `aria-disabled`**, so it keeps its place in the grid and its
+  place in the accessibility tree.
+- **The cell is the control.** Each day is a focusable `<td role="gridcell">`
+  with no button inside it, which is the shape the APG's own date grid uses. The
+  focus, the accessible name and `aria-selected` are then on the same element —
+  measured, a button inside the cell took the focus while the selected state
+  stayed on the cell around it, so the node a user actually landed on carried no
+  selection at all. `Enter` and `Space` choose the day, since a cell has no
+  native activation of its own.
+- **Forced colors**: the selected day keeps `Highlight`/`HighlightText`, the days
+  outside the month and the refused ones keep `GrayText`. Those are the platform's
+  own words for "chosen" and "not for you", and they are the only ones that
+  survive when every background is flattened.

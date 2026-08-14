@@ -16,6 +16,7 @@ import { Toggle } from '../components/toggle/toggle.component.js';
 import { Table } from '../components/table/table.component.js';
 import { Breadcrumb } from '../components/breadcrumb/breadcrumb.component.js';
 import { BreadcrumbLink } from '../components/breadcrumb-link/breadcrumb-link.component.js';
+import { Calendar } from '../components/calendar/calendar.component.js';
 
 /**
  * THE TARGET-SIZE POLICY, in one place because it belongs to the family rather
@@ -49,6 +50,7 @@ describe('every control this package draws, under a coarse pointer', () => {
   it('gives a finger 44px, whatever size it was asked for', () => {
     render(
       <>
+        <Calendar defaultMonth={{ year: 2026, month: 8, day: 1 }} />
         <Button size="sm">Small</Button>
         <Button size="md">Medium</Button>
         <Input aria-label="Text" size="md" />
@@ -103,6 +105,15 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('tab', { name: 'One' }),
       screen.getByRole('button', { name: 'Sortable' }),
       screen.getByRole('link', { name: 'Crumb' }),
+      // A day in the calendar grid. It restates the coarse-pointer rule in its
+      // own stylesheet, which is the drift this file exists to catch — 42 of
+      // them per month, and every one is a target.
+      //
+      // Reached by its attribute rather than by its accessible name, which is a
+      // whole date in the reader's locale: this file renders without a provider,
+      // so the name would be whatever locale the machine running the suite
+      // happens to have.
+      document.querySelector('[data-day="2026-08-12"]') as HTMLElement,
     ]) {
       expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(
         TAP,
