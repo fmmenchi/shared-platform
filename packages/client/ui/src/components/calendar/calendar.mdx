@@ -50,8 +50,10 @@ under a calendar for the browser to keep a value in.
 
 <Canvas of={Stories.InsideAPopover} />
 
-The shape most consumers actually want, and **not a new component**: `Popover` +
-`Calendar` + `DateInput`, wired by two things the package already exports.
+The shape most consumers actually want — and if it is what you want, reach for
+[DatePicker](?path=/docs/components-inputs-datepicker--docs), which is this
+composition done once and correctly. What follows is what it does inside, and
+what to write when you need a shape it does not offer.
 
 ```tsx
 const carrier = useRef<HTMLInputElement>(null);
@@ -94,18 +96,30 @@ lands on a day an August 2026 grid does not draw, so the popover opens with
 nothing selected in it.
 
 ```tsx
+const [picked, setPicked] = useState(null);
 const [month, setMonth] = useState(AUGUST);
 
-<DateInput onDateChange={take} … />                        // take() sets both
+// The piece consumers leave out, written out rather than glossed.
+const take = (date) => {
+  setPicked(date);
+  if (date !== null) setMonth(date);
+};
+
+<DateInput onDateChange={take} … />
 <Calendar value={picked} month={month} onMonthChange={setMonth} … />
 ```
 
 That the calendar does not follow its own `value` is a decision. Following it
-from inside means writing state in an effect on every value change — which then
-fights the navigation the user just made, and which `useControlled` forbids
-outright: its setter runs in an event, never in a render or an effect. Only the
-thing holding both knows whether the value moved BECAUSE of the grid or in spite
-of it.
+from inside means writing state in an effect on every value change, which then
+fights the navigation the user just made — and the tab stop has to move with it,
+which is a plain `useState` setter and exactly what the `react-hooks` lint
+refuses in an effect body. Only the thing holding both knows whether the value
+moved BECAUSE of the grid or in spite of it.
+
+The calendar does put the tab stop on the **selected** day when the month moves
+under it, so the arrows start where the eye does — that part it can derive
+without state, and it is the half a composition cannot supply, there being no
+`focused` prop to hand it.
 
 **The calendar sets the field; it does not replace it.** The field is still a
 field afterwards — it can be typed into, it still holds the value, and it is

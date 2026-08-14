@@ -157,9 +157,28 @@ function Calendar(props: CalendarProps) {
   const [focused, setFocused] = useState<CivilDate>(
     () => selected ?? startOfMonth(shown),
   );
-  // Whether the focus belongs in the grid at all. Moving to a cell that nobody
-  // asked for would steal focus on first paint, so it only ever follows a key.
+  // WHETHER THE FOCUS BELONGS IN THE GRID AT ALL. Moving to a cell nobody asked
+  // for would steal focus on first paint, so it only ever follows a key or a
+  // click in the grid.
+  //
+  // AND IT HAS TO BE PUT DOWN AGAIN, which the first version never did. It was
+  // a latch: set on the first interaction with the grid and true for the rest
+  // of the component's life. That was survivable while the month only moved
+  // from inside — but the contract now asks the consumer to move `month`
+  // whenever `value` moves, and every recipe does it with a fresh object, so
+  // `weeks` is rebuilt and the focus effect re-runs. Measured: click a day,
+  // click back into the field, type a date — and focus was yanked onto a cell
+  // mid-keystroke, with the next Backspace never reaching the field at all.
+  //
+  // Cleared on a focusout that names where the focus WENT. A cell being replaced
+  // under the focus — crossing a month with an arrow — reports no
+  // `relatedTarget`, which is exactly the case the effect exists for and the
+  // case this must not cancel.
   const roving = useRef(false);
+  const leaving = (event: React.FocusEvent<HTMLTableElement>) => {
+    const next = event.relatedTarget;
+    if (next !== null && !grid.current?.contains(next)) roving.current = false;
+  };
 
   /**
    * The month name for the SENTENCE, which is not the same locale as the month
@@ -247,12 +266,26 @@ function Calendar(props: CalendarProps) {
       week.some((day) => isSameDay(day, focused)),
     );
     if (inWindow) return focused;
+    // THE SELECTION FIRST, when the focused day has fallen out of the window and
+    // the selection has not. The removed month-follow effect used to keep the
+    // two together with a `setFocused`, and the composition that replaced it
+    // cannot: there is no `focused` prop to hand one. Measured without this —
+    // type 20/12/2027, open the calendar, Tab into the grid — the arrows started
+    // on 1 December while the 20th was the day drawn as chosen, so ArrowRight
+    // then Enter stored the 2nd. The APG's date grid puts the initial focus on
+    // the selected date, and derived is the only way to say so now.
+    if (
+      selected !== null &&
+      weeks.some((week) => week.some((day) => isSameDay(day, selected)))
+    ) {
+      return selected;
+    }
     return {
       year: shown.year,
       month: shown.month,
       day: Math.min(focused.day, daysInMonth(shown.year, shown.month)),
     };
-  }, [weeks, focused, shown]);
+  }, [weeks, focused, shown, selected]);
 
   // The month changed, so say so — but never on arrival, which is not news.
   useEffect(() => {
@@ -395,6 +428,7 @@ function Calendar(props: CalendarProps) {
         aria-labelledby={captionId}
         className={styles.grid}
         onKeyDown={onKeyDown}
+        onBlur={leaving}
       >
         <thead>
           <tr>

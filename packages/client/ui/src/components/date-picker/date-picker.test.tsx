@@ -213,6 +213,33 @@ describe('DatePicker', () => {
       );
     });
 
+    it('reports a TYPED date exactly once, like the grid does', async () => {
+      const onDateChange = vi.fn();
+      renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          onDateChange={onDateChange}
+        />,
+        { locale: 'it' },
+      );
+
+      await browser.fill(
+        screen.getByRole('textbox', { name: 'Partenza' }),
+        '12082026',
+      );
+
+      // Every keystroke pushes the ISO onto the carrier, which dispatches
+      // `input`, which reaches the external-write door — and the handler that
+      // did it has already told the consumer. Measured after the doors were
+      // widened: one typed date reported twice, so a grid pick and a typed date
+      // disagreed about the same event, and any consumer doing real work in the
+      // callback did it twice.
+      const whole = onDateChange.mock.calls.filter((call) => call[0] !== null);
+      expect(whole).toHaveLength(1);
+      expect(whole[0]?.[0]).toEqual({ year: 2026, month: 8, day: 12 });
+    });
+
     it('reports a choice from the grid exactly once', async () => {
       const onDateChange = vi.fn();
       const { container } = renderUi(

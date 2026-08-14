@@ -455,8 +455,11 @@ restated by evidence: the failure recurs at every level where the knowledge is h
 
 **Step 3 is the one that settles it.** The obvious repair was to make `Calendar` follow its own
 `value` into the right month. It cannot: writing that state in an effect fights the navigation the
-user just made, and `useControlled` — the primitive holding the month — forbids it by contract, its
-setter running in an event and never in a render or an effect. The knowledge has no home in any
+user just made, and the tab stop has to move with the month — a plain `useState` setter, which the
+`react-hooks` lint refuses in an effect body. (An earlier version of this paragraph also said
+`useControlled` forbids it by contract. That was wrong and is withdrawn: a later review measured a
+`useControlled` setter called from an effect producing zero lint errors, and the primitive documents
+only that its internal ref is never written during render.) The knowledge has no home in any
 single part. It belongs to whatever holds the field and the grid together, and until now that was
 the consumer, every time, from scratch.
 
@@ -480,6 +483,16 @@ So: **`DatePicker`** and its bound twin **`FormDatePicker`**, symmetric with `In
   a real `input` event the library hears. No `setValue`, no library-specific lever, which the
   hand-composed version cannot avoid. So the components perform four of the five steps and
   **abolish the fifth**, rather than performing all five.
+
+  That was written for REF-BASED libraries, and a later review measured what it missed. A
+  CONTROLLED one — Formik, TanStack Form — hands over `value` and no ref at all, because it expects
+  the value it holds to be rendered back; this family cannot render it back, since an ISO string in
+  the box reads `2026-08-12` in every locale. So the value was folded into a one-shot seed and
+  never followed: `setFieldValue` moved a `FormInput` beside it and left the date field and its
+  carrier on the old date, and `FormData` posted one date while the library's state held another.
+  `useBoundCarrier` now follows it onto the carrier, where the field is already watching, and
+  `apps/ui-ports-validation` covers the date family against Formik as well as react-hook-form —
+  the gap that let this ship, and the same gap the first date defect came through.
 
 **`DateRangePicker` will be a sibling, not a flag on this one.** A range wants a different selection
 model inside `Calendar` (two ends, a hover preview between them), two carriers, and constraints that

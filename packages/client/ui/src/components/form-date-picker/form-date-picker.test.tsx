@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { FormDatePicker } from './form-date-picker.component.js';
@@ -179,6 +180,50 @@ describe('FormDatePicker', () => {
       expect(
         container.querySelector('[data-day="1985-03-12"]'),
       ).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('FOLLOWS `value` when it moves, not only on the first render', async () => {
+      // A CONTROLLED adapter — Formik, TanStack Form — hands over `value` and
+      // `onChange` and NO ref, because it expects the value it holds to be
+      // rendered back. This family cannot render it back (an ISO string in the
+      // box would read `2026-08-12` in every locale), so it folded the value
+      // into a one-shot seed and never looked again.
+      //
+      // Measured through this repo's own Formik port: `setFieldValue` updated a
+      // `FormInput` beside it and left the date field on the old date, carrier
+      // included — so `FormData` posted one date while the library held another.
+      function Controlled() {
+        const [held, setHeld] = useState('2026-08-12');
+        const field: UseFormField = (name) => ({
+          control: { name, value: held },
+          errors: [],
+        });
+        return (
+          <UiProvider adapters={{ i18n: { locale: 'it' }, form: { field } }}>
+            <form>
+              <FormDatePicker name="departure" label="Data di partenza" />
+              <button type="button" onClick={() => setHeld('2000-01-05')}>
+                Da fuori
+              </button>
+              <button type="button" onClick={() => setHeld('')}>
+                Svuota
+              </button>
+            </form>
+          </UiProvider>
+        );
+      }
+      const { container } = render(<Controlled />);
+      const box = screen.getByRole('textbox', { name: 'Data di partenza' });
+      expect(box).toHaveValue('12/08/2026');
+
+      await browser.click(screen.getByRole('button', { name: 'Da fuori' }));
+      expect(box).toHaveValue('05/01/2000');
+      expect(carrier(container).value).toBe('2000-01-05');
+
+      // …and a clear is a move like any other.
+      await browser.click(screen.getByRole('button', { name: 'Svuota' }));
+      expect(box).toHaveValue('');
+      expect(carrier(container).value).toBe('');
     });
 
     it('takes `value`, which is what Formik and TanStack emit', () => {

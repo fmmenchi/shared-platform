@@ -9,6 +9,8 @@ import {
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
 import { toMessages } from '../../form/messages.js';
+import { useBoundCarrier } from '../../form/use-bound-carrier.js';
+import { mergeRefs } from '../../primitives/merge-refs.js';
 import type { FormDateInputProps } from './form-date-input.types.js';
 
 /**
@@ -79,6 +81,10 @@ function FormDateInput(props: FormDateInputProps) {
   const asString = (candidate: unknown) =>
     typeof candidate === 'string' ? candidate : undefined;
   const seed = asString(defaultValue) ?? asString(value);
+  // A CONTROLLED adapter hands over `value` and no ref, so nothing it does
+  // after the first render reaches the field — the seed above is a one-shot.
+  // This follows it onto the carrier, where the field is already watching.
+  const carrier = useBoundCarrier(asString(value));
 
   return (
     <Field label={label} invalid={messages.length > 0}>
@@ -114,7 +120,7 @@ function FormDateInput(props: FormDateInputProps) {
         // receive the element at all and store `undefined` for every date field
         // in the form, no matter what was typed. THE CALL SITE'S goes to the
         // visible input, which is where focus belongs.
-        carrierRef={bindingRef}
+        carrierRef={(node) => mergeRefs(carrier, bindingRef)(node)}
         ref={ref}
       />
       {/* Composed rather than passed as props, so the hint keeps its place

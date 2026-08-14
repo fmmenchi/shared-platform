@@ -524,10 +524,21 @@ function DateInput(props: DateInputProps) {
     return 0;
   };
 
+  // Raised while this component writes its OWN carrier, so the doors below can
+  // tell that write from an external one. They are indistinguishable at the
+  // event level — both go through the prototype setter and dispatch `input` —
+  // and the difference matters for exactly one case: an empty ISO. From outside
+  // it means the date was CLEARED and the box must follow; from here it means
+  // the digits under the caret do not name a day yet, and wiping them would
+  // delete what the user is in the middle of typing. Measured: without this,
+  // one Backspace emptied the whole field.
+  const writingOwn = useRef(false);
   const write = (iso: string) => {
     const element = carrier.current;
     if (element === null || element.value === iso) return;
+    writingOwn.current = true;
     const wrote = setNativeValue(element, iso);
+    writingOwn.current = false;
     if (!wrote && process.env.NODE_ENV !== 'production') {
       console.warn(
         'DateInput: this environment has no `value` setter on HTMLInputElement.prototype, so the field cannot tell a form library what was typed.',
@@ -578,8 +589,19 @@ function DateInput(props: DateInputProps) {
   // WHAT AN EXTERNAL WRITE OWES THE CONSUMER. The component's own keystroke
   // path reports for itself; these three doors did not report at all, so a
   // `DatePicker`'s grid — and any consumer holding the date in state — sat on a
-  // value the field no longer held. Measured on all three.
+  // value the field no longer held.
+  //
+  // AND ONLY WHEN IT ACTUALLY MOVED. A reset fires on every control in the form,
+  // touched or not, so an untouched field announced the value it already held —
+  // measured, an untouched seeded field reported `{1985,3,12}` on every click of
+  // a reset button, and a `DatePicker` turned each one into a `setPicked`, a
+  // `setMonth` and a call to the consumer. The keystroke path keeps its own
+  // per-keystroke reporting and records what it said here, so the two cannot
+  // disagree about what the consumer was last told.
+  const reported = useRef(seed);
   const announce = (iso: string) => {
+    if (iso === reported.current) return;
+    reported.current = iso;
     latest.current?.(parseIsoDate(iso));
   };
 
@@ -599,6 +621,44 @@ function DateInput(props: DateInputProps) {
   // the tracker keeps working, and the original goes back on unmount. Our own
   // writes go through the prototype setter (`setNativeValue`), so they do not
   // come back round through this.
+  // WHAT EVERY EXTERNAL WRITE DOES, in one place, because the three doors below
+  // differ only in how they are told.
+  //
+  // `cleared` separates the two things an empty carrier can mean, which the
+  // first version collapsed. Half-typed, it means "no whole date yet" and the
+  // digits under the caret must survive. CLEARED — `setValue(name, '')`,
+  // `writeDateInput(node, null)`, a reset to an empty default — it means the
+  // date is gone, and leaving it on screen was measured showing a date the form
+  // no longer held while the consumer still held the old one. A whole date on
+  // screen is what tells them apart: nobody is mid-edit on a complete date.
+  const arrive = (iso: string, fromReset = false) => {
+    const target = field.current;
+    if (target === null) return;
+    // OUR OWN WRITE IS NOT AN ARRIVAL. Every keystroke pushes the new ISO onto
+    // the carrier, which dispatches `input`, which lands here — and the field
+    // has already been drawn and the consumer already told by the handler that
+    // did it. Measured after the first version of this helper: one typed date
+    // reported TWICE, because the equality check that used to stop it had moved
+    // to guard only the repaint. A grid pick reported once and typing twice, so
+    // the two paths disagreed about the same event.
+    if (writingOwn.current && !fromReset) return;
+    if (iso === '') {
+      const wasWhole = mask(shown.current).iso !== '';
+      if (!wasWhole && !fromReset) return;
+      target.value = '';
+      shown.current = '';
+      announce('');
+      return;
+    }
+    const text = display(iso);
+    if (text === '') return;
+    if (text !== target.value) {
+      target.value = text;
+      shown.current = text;
+    }
+    announce(iso);
+  };
+
   useEffect(() => {
     const element = carrier.current;
     if (element === null) return;
@@ -622,17 +682,7 @@ function DateInput(props: DateInputProps) {
       },
       set(next: unknown) {
         set.call(element, next);
-        const target = field.current;
-        if (target === null) return;
-        const iso = String(next);
-        // Only ever repaint from a WHOLE date. An empty carrier is what a
-        // half-typed field looks like, and a library clearing it mid-edit must
-        // not wipe the digits under the caret.
-        const text = iso === '' ? '' : display(iso);
-        if (text === '' || text === target.value) return;
-        target.value = text;
-        shown.current = text;
-        announce(iso);
+        arrive(String(next));
       },
     });
 
@@ -647,41 +697,48 @@ function DateInput(props: DateInputProps) {
     // Guarded on the text actually differing, so the component's OWN writes —
     // which dispatch the same event on every keystroke — do not redraw the
     // field under the caret.
-    const follow = () => {
-      const target = field.current;
-      const iso = element.value;
-      if (target === null || iso === '') return;
-      const next = display(iso);
-      if (next === '' || next === target.value) return;
-      target.value = next;
-      shown.current = next;
-      announce(iso);
-    };
+    const follow = () => arrive(element.value);
     element.addEventListener('input', follow);
 
     // AND THE THIRD DOOR, which takes neither of the first two: `form.reset()`.
     // The platform reverts a control to its default without going through the
-    // `value` property and without an `input` event, so the field repaints
-    // itself — it has its own `defaultValue` — while nothing tells anyone the
-    // date changed. Measured: after a reset the carrier and the box agreed and
-    // a `Calendar` beside them was still on the date that had been typed.
+    // `value` property and without an `input` event, so nothing tells anyone the
+    // date changed.
     //
-    // Read AFTER the event, because during it the control still holds the old
-    // value: the revert is part of the default action this listener precedes.
-    const reset = () => {
-      queueMicrotask(() => {
-        const target = field.current;
-        if (target === null) return;
-        const iso = element.value;
-        shown.current = target.value;
-        announce(iso);
-      });
+    // READ ON A TASK, NOT A MICROTASK, and this is the correction that matters:
+    // a microtask checkpoint runs as soon as the listener returns and the JS
+    // stack is empty — which it IS when the browser runs the reset from a
+    // button's activation behaviour, i.e. the only reset a user can perform.
+    // Measured at the platform level, typing into a seeded field:
+    //
+    //     button click   listener: typed | microtask: typed | timeout: seed
+    //     form.reset()   listener: typed | microtask: seed  | timeout: seed
+    //
+    // So the microtask version reported the date that had just been DISCARDED,
+    // and drove a `DatePicker`'s grid to it. Only `form.reset()` from script
+    // keeps the stack long enough for the microtask to land after the revert,
+    // and that is the path the test happened to take.
+    //
+    // ON THE DOCUMENT, IN THE CAPTURE PHASE, rather than on `element.form`. A
+    // listener bound to the form is bound to the form the carrier had WHEN THE
+    // EFFECT RAN: the cleanup then reads `element.form` after React has detached
+    // the node, gets `null`, and removes nothing — measured, a `DateInput`
+    // unmounted from a surviving form leaked its listener and its whole closure
+    // every time. A changed `form=` prop never rebuilt it either, so resets went
+    // to the old form and not the new one, and a form rendered in a later commit
+    // got no listener at all. The document is always there, and the filter is
+    // the carrier's own membership, read at event time.
+    const reset = (event: Event) => {
+      if (event.target !== element.form) return;
+      setTimeout(() => {
+        arrive(element.value, true);
+      }, 0);
     };
-    element.form?.addEventListener('reset', reset);
+    document.addEventListener('reset', reset, true);
 
     return () => {
       element.removeEventListener('input', follow);
-      element.form?.removeEventListener('reset', reset);
+      document.removeEventListener('reset', reset, true);
       if (own === undefined) {
         Reflect.deleteProperty(element, 'value');
       } else {
@@ -757,6 +814,9 @@ function DateInput(props: DateInputProps) {
           shown.current = text;
 
           write(iso);
+          // Reported from here, and recorded, so the doors above can tell a
+          // value that moved from one they have already announced.
+          reported.current = iso;
           onDateChange?.(parseIsoDate(iso));
         }}
       />
