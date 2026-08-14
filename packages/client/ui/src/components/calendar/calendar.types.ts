@@ -21,7 +21,13 @@ interface CalendarOwnProps {
   month?: CivilDate;
   /** The month to open on. Defaults to the selected day's, or to today's. */
   defaultMonth?: CivilDate;
-  /** Fires when the shown month changes, by button or by keyboard. */
+  /**
+   * Fires when the shown month changes — by button, by keyboard, or because the
+   * SELECTION moved to a month the grid was not drawing (a date typed into the
+   * field beside it, a `setValue`, a restored URL). The grid follows it, so a
+   * selection is never off screen; browsing to another month is the user's own
+   * doing and is not undone.
+   */
   onMonthChange?: (month: CivilDate) => void;
   /**
    * WHICH DAYS CANNOT BE CHOSEN — and the reason this component exists at all.

@@ -86,6 +86,12 @@ popover's open state lives in React only so that picking a day can close it.
 the popover and it highlights the day chosen three edits ago, which the field no
 longer holds.
 
+**And the calendar follows the selection to its month.** `defaultMonth` decides
+where it opens the first time; after that, a `value` that changes to a day the
+grid does not draw moves the grid to it, so a date typed in December 2027 does
+not open on August 2026 with nothing selected. Only a CHANGE moves it: browsing
+to another month is something the user did on purpose, and stays.
+
 **The calendar sets the field; it does not replace it.** The field is still a
 field afterwards — it can be typed into, it still holds the value, and it is
 still what the form posts.

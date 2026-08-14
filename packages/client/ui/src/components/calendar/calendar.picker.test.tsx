@@ -125,6 +125,43 @@ describe('Calendar inside a Popover, setting a DateInput', () => {
     );
   });
 
+  it('opens on the month of a date typed into the field, not on the old one', async () => {
+    const { container } = renderUi(<Picker />, { locale: 'it' });
+
+    // A date in ANOTHER month than the one the calendar defaults to. Carrying
+    // the selection back is not enough on its own: the grid draws August 2026,
+    // so a December 2027 selection is a day it does not draw at all, and the
+    // calendar opens showing nothing selected.
+    await browser.fill(
+      screen.getByRole('textbox', { name: 'Partenza' }),
+      '20122027',
+    );
+    await browser.click(screen.getByRole('button', { name: 'Scegli' }));
+
+    const day = container.querySelector('[data-day="2027-12-20"]');
+    expect(day).not.toBeNull();
+    expect(day).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('stays where the user navigated, while the selection has not moved', async () => {
+    const { container } = renderUi(<Picker />, { locale: 'it' });
+
+    await browser.fill(
+      screen.getByRole('textbox', { name: 'Partenza' }),
+      '20082026',
+    );
+    await browser.click(screen.getByRole('button', { name: 'Scegli' }));
+    await browser.click(
+      screen.getByRole('button', { name: 'Mese successivo' }),
+    );
+
+    // The other half of the rule above, and the one an effect keyed on `shown`
+    // would break: browsing away from the selected month is a thing the user
+    // did on purpose, and only a CHANGE of selection may undo it.
+    expect(container.querySelector('[data-day="2026-09-15"]')).not.toBeNull();
+    expect(container.querySelector('[data-day="2026-08-20"]')).toBeNull();
+  });
+
   it('clears the field when the picker hands back nothing', async () => {
     function ClearablePicker() {
       const carrier = useRef<HTMLInputElement>(null);

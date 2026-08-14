@@ -492,6 +492,38 @@ describe('DateInput', () => {
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
     });
 
+    it('repaints when a form library ASSIGNS the carrier, which fires no event', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+
+      // Exactly what react-hook-form's `setValue` and `reset` do: assign onto
+      // the element `register()` was given a ref to. No event, no mutation
+      // record, and — for a binding that only calls `register()` — no render
+      // either, so nothing else in this component can see it happen. Only the
+      // property being assigned to can, which is why the carrier's `value`
+      // descriptor is wrapped.
+      carrier(container).value = '2026-08-12';
+
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/2026');
+    });
+
+    it('does not wipe a half-typed field when a library clears the carrier', async () => {
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '1208');
+
+      // A validation pass clearing the field mid-edit must not pull the digits
+      // out from under the caret: an empty carrier is ALSO what a half-typed
+      // field looks like, so the two cannot be told apart from here.
+      carrier(container).value = '';
+
+      expect(screen.getByRole('textbox')).toHaveValue('12/08/');
+    });
+
     it('keeps the carrier out of the accessibility tree', () => {
       renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
         locale: 'it',
