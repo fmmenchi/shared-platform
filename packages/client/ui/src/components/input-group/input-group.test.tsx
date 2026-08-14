@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { userEvent as browser } from 'vitest/browser';
 import { InputGroup } from './input-group.component.js';
 import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
@@ -298,6 +299,29 @@ describe('InputGroup', () => {
     expect(getComputedStyle(inside).paddingInlineEnd).toBe(
       getComputedStyle(outside).paddingInlineEnd,
     );
+  });
+
+  it('keeps a focused button’s ring inside the group, which clips', async () => {
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button type="button" aria-label="Svuota">
+          ×
+        </button>
+      </InputGroup>,
+    );
+    const button = screen.getByRole('button', { name: 'Svuota' });
+
+    await browser.click(screen.getByRole('textbox', { name: 'Importo' }));
+    await browser.tab();
+    expect(button).toHaveFocus();
+
+    // `overflow: hidden` keeps a long affix off the rounded border, and an
+    // element's own outline escapes its own overflow — the group's does — but a
+    // CHILD's does not. Measured before this rule: three sides of a ring and the
+    // fourth cut at the group's edge, a keyboard user shown half an indicator.
+    const offset = getComputedStyle(button).outlineOffset;
+    expect(Number.parseFloat(offset)).toBeLessThan(0);
   });
 
   it('keeps a button clear of the border it would otherwise sit on', () => {
