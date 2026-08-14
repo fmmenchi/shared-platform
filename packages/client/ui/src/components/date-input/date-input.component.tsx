@@ -136,6 +136,11 @@ function DateInput(props: DateInputProps) {
     ...rest
   } = props;
 
+  // Read from `rest` rather than pulled out of it: it is the platform's own
+  // attribute and it still has to reach the input, where the browser enforces
+  // it. What it changes HERE is only what the field says about itself.
+  const readOnly = rest.readOnly === true;
+
   const formatter = useFormatter();
   const t = useMessages(dateInputMessages);
   const { parts, order, numerals, resolvedCalendar } = usePattern(
@@ -649,7 +654,12 @@ function DateInput(props: DateInputProps) {
         // native attribute; the consumer knows what their date is for.
         {...rest}
         className={className}
-        placeholder={placeholder ?? hint}
+        // NOT WHEN IT CANNOT BE TYPED INTO. The hint is an instruction — "write
+        // it like gg/mm/aaaa" — and a read-only field is one nobody can write
+        // in, so it would be telling a reader to do something the control
+        // refuses. It goes from the placeholder and from the description below
+        // together, because it is one claim in two places.
+        placeholder={placeholder ?? (readOnly ? undefined : hint)}
         // THE FORMAT IS DESCRIBED, not only placeheld. A placeholder is the last
         // thing an accessible description falls back to, so as soon as a `Field`
         // supplies a hint or an error, `aria-describedby` wins and the format
@@ -658,7 +668,9 @@ function DateInput(props: DateInputProps) {
         // registered ids, so a hint and this coexist rather than displace each
         // other.
         aria-describedby={
-          [describedBy, formatId].filter(Boolean).join(' ') || undefined
+          [describedBy, readOnly ? undefined : formatId]
+            .filter(Boolean)
+            .join(' ') || undefined
         }
         defaultValue={display(seed)}
         ref={mergeRefs(field, ref)}
@@ -704,9 +716,11 @@ function DateInput(props: DateInputProps) {
         field's `title`, because a `title` is also a tooltip on hover and this is
         not something to hang under the pointer.
       */}
-      <span id={formatId} className={styles.format}>
-        {hint}
-      </span>
+      {readOnly ? null : (
+        <span id={formatId} className={styles.format}>
+          {hint}
+        </span>
+      )}
       {/*
         The carrier: the field's `name`, holding ISO.
 

@@ -467,3 +467,7 @@ export {
   startOfWeek,
   weekdayOf,
 } from './date/civil-math.js';
+export { DatePicker } from './components/date-picker/date-picker.component.js';
+export type { DatePickerProps } from './components/date-picker/date-picker.types.js';
+export { FormDatePicker } from './components/form-date-picker/form-date-picker.component.js';
+export type { FormDatePickerProps } from './components/form-date-picker/form-date-picker.types.js';

@@ -1,0 +1,23 @@
+/*
+ * DatePicker styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both.
+ *
+ * There is almost nothing here on purpose. The field draws itself, `InputGroup`
+ * draws the border around both, `Popover` draws the surface and `Calendar`
+ * draws the grid.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  /* A READ-ONLY FIELD IS THE TRIGGER, so it points like one.
+     Not the greyed-out treatment a read-only input would otherwise suggest:
+     here the field is the thing to click, and dimming it would say "not
+     available" where it means "open the calendar". The value keeps its full
+     contrast because it is the answer, not a disabled leftover. */
+  .asTrigger {
+    cursor: pointer;
+  }
+}

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { userEvent as browser } from 'vitest/browser';
 import { InputGroup } from './input-group.component.js';
 import { Input } from '../input/input.component.js';
 import { Field } from '../field/field.component.js';
@@ -263,5 +264,84 @@ describe('InputGroup', () => {
     const affixColor = getComputedStyle(affix).color;
     expect(getComputedStyle(select).color).not.toBe(affixColor);
     expect(getComputedStyle(select).flexShrink).not.toBe('0');
+  });
+
+  it('does not dress a BUTTON up as an affix either', () => {
+    // The bucket said "not a form control", and a button is not one — so a
+    // picker's trigger, a reveal, a clear all fell in and were painted as
+    // decoration: a placeholder colour they should not wear, and `pe-3` on the
+    // last child, which pushed the glyph off the centre of a square button that
+    // had already set `p-0`. Measured on `DatePicker`, whose hover fill came out
+    // a wide pale block, square where the group is round.
+    render(
+      <>
+        <InputGroup>
+          <span>€</span>
+          <input aria-label="Importo" />
+          <button type="button" aria-label="Svuota">
+            ×
+          </button>
+        </InputGroup>
+        {/* The same button outside a group, so the assertion is "the group adds
+            nothing" rather than a guess at what a bare button's padding is. */}
+        <button type="button" aria-label="Svuota fuori">
+          ×
+        </button>
+      </>,
+    );
+    const affix = screen.getByText('€');
+    const inside = screen.getByRole('button', { name: 'Svuota' });
+    const outside = screen.getByRole('button', { name: 'Svuota fuori' });
+
+    expect(getComputedStyle(inside).color).not.toBe(
+      getComputedStyle(affix).color,
+    );
+    expect(getComputedStyle(inside).paddingInlineEnd).toBe(
+      getComputedStyle(outside).paddingInlineEnd,
+    );
+  });
+
+  it('keeps a focused button’s ring inside the group, which clips', async () => {
+    render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button type="button" aria-label="Svuota">
+          ×
+        </button>
+      </InputGroup>,
+    );
+    const button = screen.getByRole('button', { name: 'Svuota' });
+
+    await browser.click(screen.getByRole('textbox', { name: 'Importo' }));
+    await browser.tab();
+    expect(button).toHaveFocus();
+
+    // `overflow: hidden` keeps a long affix off the rounded border, and an
+    // element's own outline escapes its own overflow — the group's does — but a
+    // CHILD's does not. Measured before this rule: three sides of a ring and the
+    // fourth cut at the group's edge, a keyboard user shown half an indicator.
+    const offset = getComputedStyle(button).outlineOffset;
+    expect(Number.parseFloat(offset)).toBeLessThan(0);
+  });
+
+  it('keeps a button clear of the border it would otherwise sit on', () => {
+    const { container } = render(
+      <InputGroup>
+        <input aria-label="Importo" />
+        <button type="button" aria-label="Svuota">
+          ×
+        </button>
+      </InputGroup>,
+    );
+    const group = container.firstElementChild as HTMLElement;
+    const button = screen.getByRole('button', { name: 'Svuota' });
+
+    // Flush against the edge, a hover fill collides with the group's own border
+    // and its radius — the group drawing an edge around a shape that does not
+    // share it. Inline only: a vertical inset would make the group taller than
+    // the same field without one, which the height test above forbids.
+    expect(button.getBoundingClientRect().right).toBeLessThan(
+      group.getBoundingClientRect().right,
+    );
   });
 });
