@@ -1,0 +1,25 @@
+/*
+ * DatePicker styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. `@reference` resolves
+ * `@apply` at THIS library's build; the output stays themable at runtime.
+ *
+ * There is almost nothing here on purpose. The field draws itself, `InputGroup`
+ * draws the border around both, `Popover` draws the surface and `Calendar`
+ * draws the grid. What is left is the size of one glyph.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* Sized in `em`, so it follows the type scale of the button it sits in rather
+     than pinning a pixel size the field's own height would then disagree with.
+     `flex: none` because a narrow field must shrink the value, never the icon. */
+  .glyph {
+    inline-size: 1em;
+    block-size: 1em;
+    flex: none;
+  }
+}

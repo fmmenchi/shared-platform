@@ -1,0 +1,129 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as DatePickerStories from './date-picker.stories.tsx';
+
+<Meta of={DatePickerStories} />
+
+# DatePicker
+
+A date field with a calendar behind it.
+
+```tsx
+<DatePicker name="departure" />
+```
+
+<Canvas of={DatePickerStories.Default} />
+
+## Why it exists
+
+Its three parts are all exported, and for a while the docs said to assemble them
+yourself. Then they were assembled, and the recipe turned out to have **five
+steps that each fail silently when missed**:
+
+1. write the field with `writeDateInput`, never `carrier.value = …` — a plain
+   assignment updates the DOM and tells nobody, because React's value tracker
+   absorbs it;
+2. pass `onDateChange` back, or a date TYPED into the field never reaches the
+   grid and the popover reopens on the day chosen three edits ago;
+3. move `month` with the value, or that day is one the grid does not draw and
+   the popover opens with nothing selected at all;
+4. do not nest a `Button` inside `PopoverTrigger`, which is one;
+5. in a form, `carrierRef` belongs to the binding, so the write goes through the
+   library's own lever.
+
+Three of those were got wrong by the people who wrote the parts, on first
+assembly, in one afternoon (ADR-0027's amendment records it). This component is
+those five steps, once.
+
+**It hides nothing.** `DateInput`, `Calendar` and `Popover` stay exported and
+stay documented. A shape this does not offer — a controlled open state, a second
+trigger, a calendar somewhere other than a popover — is still assembled by hand
+exactly as before.
+
+## Props
+
+<Controls of={DatePickerStories.Default} />
+
+Everything `DateInput` takes, plus what a grid needs. There is no `value` prop
+and no `open` prop, and both absences are deliberate: the browser owns the value
+(ADR-0013), so seed with `defaultValue` (ISO) or `defaultDate` and read through
+`onDateChange`; and an open state nobody but the trigger touches is state the
+component can keep.
+
+<Canvas of={DatePickerStories.WithAValue} />
+
+## Usage
+
+### Per-date rules
+
+<Canvas of={DatePickerStories.PerDateRules} />
+
+`isDateDisabled` is the reason the calendar exists at all. `min`/`max` on the
+platform's date input are an interval, not a set, so "never on a Sunday, and
+these three days are booked" cannot be said to it. A refused day keeps its place
+and stays reachable by the arrows — it is `aria-disabled`, not `disabled`, which
+is the APG's "focusable but not activatable".
+
+**It refuses days in the grid only.** A date typed into the field passes through
+every intermediate value on its way to a valid one, so refusing them as they are
+typed would make the field unusable. Validate on submit as you would anyway.
+
+### What it hands back
+
+<Canvas of={DatePickerStories.ReadingTheValue} />
+
+A `CivilDate` — `{ year, month, day }`, months **1–12** — and never a `Date`. A
+`Date` is an instant; a day on a calendar is not. `new Date('2026-08-12')` is the
+11th of August in every timezone west of Greenwich, which is the defect this
+whole family exists to stop repeating.
+
+`onDateChange` fires from **both** doors — a day clicked in the grid and a date
+typed into the field — and only ever on a whole date, so a half-typed field
+reports nothing.
+
+What the form posts is different and stays different: an ISO `YYYY-MM-DD` on the
+carrier, under the field's `name`, as one ordinary entry.
+
+### Locale
+
+<Canvas of={DatePickerStories.AcrossLocales} />
+
+The field's order and separator, the month and weekday names, the digits and the
+day a week starts on all come from the locale you gave `UiProvider`. Nothing
+here reads the browser's, which is the ceiling that made this family necessary:
+a native `<input type="date">` lays its segments out in the BROWSER's locale and
+offers no way to be told otherwise (ADR-0027).
+
+### Disabled
+
+<Canvas of={DatePickerStories.Disabled} />
+
+The trigger goes with the field. A calendar that still opened over a field
+nobody can type in would offer a way to change a value that is not changeable.
+
+## In a form
+
+Use [FormDatePicker](?path=/docs/components-form-adapters-formdatepicker--docs),
+which binds it to the form adapter in scope — and needs no library-specific code
+to get the calendar's choice into the form, because it holds the carrier itself.
+
+Unbound, this component is still a perfectly ordinary field: it posts under its
+`name`, comes back from `form.reset()`, and can be read with `FormData`.
+
+## Accessibility
+
+- **One tab stop for the field, one for the trigger**, and nothing nested inside
+  either. `PopoverTrigger` is itself a `Button`, so it takes the label directly.
+- **The trigger has a name in words** — the design system's own copy in the
+  declared locale, or your `triggerLabel`. A glyph is not a label: without one it
+  would announce as "button" and nothing else.
+- **The glyph is drawn here and `aria-hidden`**, in `currentColor`. An icon set
+  is brand identity and lives app-side; a picker whose trigger was blank until an
+  app injected one would break on somebody else's configuration. Pass `icon` to
+  use your own.
+- **The grid is the APG's date grid**: a month is one tab stop, the arrows move
+  by day and week, PageUp/PageDown by month, and the focused cell is a
+  `<td role="gridcell">` carrying the focus, the name and `aria-selected`
+  together.
+- **The field announces its format** through its description, so a screen-reader
+  user is told the order before typing rather than after the mask surprises them.

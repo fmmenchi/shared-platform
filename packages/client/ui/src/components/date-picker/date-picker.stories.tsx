@@ -1,0 +1,148 @@
+import { useState } from 'react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { DatePicker } from './date-picker.component.js';
+import { Field } from '../field/field.component.js';
+import { UiProvider } from '../../i18n/provider.js';
+import { weekdayOf } from '../../date/civil-math.js';
+import type { CivilDate } from '../../date/civil-date.types.js';
+
+const meta = {
+  title: 'Components/Inputs/DatePicker',
+  component: DatePicker,
+  parameters: {
+    docs: {
+      description: {
+        component:
+          'A date field with a calendar behind it — the five-step composition of `DateInput`, `Popover` and `Calendar`, done once and correctly.',
+      },
+    },
+  },
+} satisfies Meta<typeof DatePicker>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+/**
+ * One tag. The field is typed into as a field, the calendar is opened from the
+ * trigger inside the border, and the two never disagree about which day is
+ * chosen.
+ */
+export const Default: Story = {
+  args: { name: 'departure', 'aria-label': 'Data di partenza' },
+  render: (args) => (
+    <Field label="Data di partenza">
+      <DatePicker {...args} aria-label={undefined} />
+    </Field>
+  ),
+};
+
+/**
+ * SEEDED WITH A DATE, in ISO — the one format that means the same day
+ * everywhere. The field shows it the way the locale writes it, and the calendar
+ * opens on it rather than on today.
+ */
+export const WithAValue: Story = {
+  args: {
+    name: 'departure',
+    defaultValue: '2026-08-12',
+    'aria-label': 'Data di partenza',
+  },
+  render: (args) => (
+    <Field label="Data di partenza">
+      <DatePicker {...args} aria-label={undefined} />
+    </Field>
+  ),
+};
+
+/**
+ * THE REASON THE CALENDAR EXISTS. `min`/`max` on a native date input are an
+ * interval, not a set — "never on a Sunday, and these three days are booked"
+ * cannot be said to the platform at all. Here it is a predicate.
+ *
+ * It refuses days in the GRID only. A date typed into the field passes through
+ * every intermediate value on its way to a valid one, so refusing them as they
+ * are typed would make the field unusable; validate on submit as you would
+ * anyway.
+ */
+export const PerDateRules: Story = {
+  args: {
+    name: 'appointment',
+    defaultValue: '2026-08-12',
+    'aria-label': 'Appuntamento',
+  },
+  render: (args) => {
+    const booked = ['2026-08-18', '2026-08-19', '2026-08-27'];
+    return (
+      <Field label="Appuntamento">
+        <DatePicker
+          {...args}
+          aria-label={undefined}
+          isDateDisabled={(date) => {
+            const iso = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+            return weekdayOf(date) === 0 || booked.includes(iso);
+          }}
+        />
+      </Field>
+    );
+  },
+};
+
+/** What it hands back: a `CivilDate`, never a `Date`. */
+export const ReadingTheValue: Story = {
+  args: { name: 'departure', 'aria-label': 'Data di partenza' },
+  render: function ReadingTheValueStory(args) {
+    const [value, setValue] = useState<CivilDate | null>(null);
+    return (
+      <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
+        <Field label="Data di partenza">
+          <DatePicker
+            {...args}
+            aria-label={undefined}
+            onDateChange={setValue}
+          />
+        </Field>
+        <output
+          style={{ font: 'var(--fm-font-mono, monospace)', opacity: 0.7 }}
+        >
+          {value === null ? 'null' : JSON.stringify(value)}
+        </output>
+      </div>
+    );
+  },
+};
+
+/**
+ * The field's order and separator, the month and weekday names, the digits and
+ * the day a week starts on all come from the locale the provider was given.
+ */
+export const AcrossLocales: Story = {
+  args: { name: 'departure', defaultValue: '2026-08-12' },
+  render: (args) => (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem' }}>
+      {['it', 'en-US', 'ja-JP', 'ar-EG'].map((locale) => (
+        <UiProvider key={locale} adapters={{ i18n: { locale } }}>
+          <div style={{ inlineSize: '14rem' }}>
+            <Field label={locale}>
+              <DatePicker {...args} />
+            </Field>
+          </div>
+        </UiProvider>
+      ))}
+    </div>
+  ),
+};
+
+/** Disabled together: a field nobody can type in gets no trigger either. */
+export const Disabled: Story = {
+  args: {
+    name: 'departure',
+    defaultValue: '2026-08-12',
+    disabled: true,
+    'aria-label': 'Data di partenza',
+  },
+  render: (args) => (
+    <Field label="Data di partenza">
+      <DatePicker {...args} aria-label={undefined} />
+    </Field>
+  ),
+};
