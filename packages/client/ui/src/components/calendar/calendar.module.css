@@ -4,6 +4,7 @@
  * var(--fm-ease-*): the `lint-css` gate enforces both.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
 
 /* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
    consumer's unlayered css overrides them without a specificity war. */
@@ -39,6 +40,16 @@
   }
 
   .day {
+    /* The UA baseline every control we draw needs — `box-sizing` and the font
+       family. The design system ships precompiled CSS, so a consumer runs no
+       Preflight (ADR-0001) and no component may depend on one (ADR-0022):
+       measured in a page without one, every day arrived with Arial, a 2px
+       OUTSET border and a `#efefef` ButtonFace fill. The border also made the
+       forced-colors rule below a lie — it said a border would carry the hover
+       once a background could not, and there was already one on every cell. */
+    @apply control-base;
+    border: 0;
+    background-color: transparent;
     /* A day is a target before it is a number: 2.25rem square keeps a row of
        seven inside a phone's width while staying comfortably clickable, and the
        coarse-pointer rule below takes it to the 44px a finger needs. */
@@ -57,6 +68,13 @@
 
   .day[data-selected] {
     @apply bg-primary text-primary-foreground;
+  }
+
+  /* You are here. `today()` was read to pick the opening month and then never
+     mentioned again — a calendar with no today at all. Drawn as a ring rather
+     than a fill so it can coexist with the selection on the same cell. */
+  .day[data-today]:not([data-selected]) {
+    @apply outline-border outline-1 -outline-offset-1;
   }
 
   /* `aria-disabled`, not `disabled` — the attribute the APG asks for on a grid
@@ -87,23 +105,39 @@
      so. Same for a refused day, which is the whole point of the component and
      must not become indistinguishable from an available one. */
   @media (forced-colors: active) {
+    /* No `forced-color-adjust: none` — measured, the computed values are
+       byte-identical with and without it, and opting out of the user's palette
+       for nothing would leave this one cell painted from author values while
+       its forty-one neighbours came from the system's. */
     .day[data-selected] {
       background-color: Highlight;
       color: HighlightText;
-      forced-color-adjust: none;
-    }
-
-    .day:hover {
-      border: 1px solid Highlight;
-    }
-
-    .day[data-outside],
-    .day[aria-disabled='true'] {
-      color: GrayText;
     }
 
     .day:focus-visible {
       outline-color: Highlight;
+    }
+
+    /* NOT on a refused day. Normal mode cancels its hover deliberately; without
+       the same guard here, the one day the component exists to refuse got a
+       SELECTION-coloured border, in the mode with the fewest colour cues left.
+       Ordered after `:focus-visible` because Stylelint reads specificity in
+       source order, and `:not()` raises it. */
+    .day:hover:not([aria-disabled='true']) {
+      border: 1px solid Highlight;
+    }
+
+    /* Two different meanings, and forced colors is where they were flattened
+       into one: an outside day is available and a refused day is not, which is
+       this component's whole subject. `GrayText` is the system's "not for you",
+       so it goes to the refused; an outside day keeps the ordinary text colour
+       and says what it is through its accessible name, which carries the month. */
+    .day[aria-disabled='true'] {
+      color: GrayText;
+    }
+
+    .day[data-today] {
+      outline: 1px solid ButtonText;
     }
   }
 }

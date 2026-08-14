@@ -59,4 +59,7 @@ interface CalendarOwnProps {
  * `{ year, month, day }`, which is a day and not an instant.
  */
 export type CalendarProps = CalendarOwnProps &
-  Omit<ComponentPropsWithRef<'div'>, keyof CalendarOwnProps>;
+  // `children` comes off, as it does on eighteen siblings here: the grid is
+  // drawn from the month, so anything passed as content would typecheck and
+  // then be discarded by JSX without a word.
+  Omit<ComponentPropsWithRef<'div'>, keyof CalendarOwnProps | 'children'>;
