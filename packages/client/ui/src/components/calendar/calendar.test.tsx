@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { Calendar } from './calendar.component.js';
 import { renderUi } from '../../test/render.js';
@@ -13,6 +13,26 @@ function cell(container: HTMLElement, iso: string): HTMLButtonElement {
   const node = container.querySelector(`[data-day="${iso}"]`);
   if (node === null) throw new Error(`no cell for ${iso}`);
   return node as HTMLButtonElement;
+}
+
+/**
+ * Focus a cell AND WAIT FOR IT TO LAND, before any key is sent.
+ *
+ * `element.focus()` is synchronous but the key that follows is not: it is
+ * dispatched into the page and delivered to whatever holds the focus THEN.
+ * Firing one straight after the other assumes a race is already won, and under
+ * load it is not — measured, this file's arrow tests failed in a run shared
+ * with two other suites and passed alone and in their own, every time.
+ *
+ * Waiting instead of assuming also moves the failure to where the cause is: a
+ * focus that never landed now fails saying so, rather than an arrow key
+ * appearing to move the wrong day.
+ */
+async function focusCell(container: HTMLElement, iso: string) {
+  const node = cell(container, iso);
+  node.focus();
+  await waitFor(() => expect(node).toHaveFocus());
+  return node;
 }
 
 describe('Calendar', () => {
@@ -64,7 +84,7 @@ describe('Calendar', () => {
       const { container } = renderUi(<Calendar defaultValue={AUGUST} />, {
         locale: 'it',
       });
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
 
       await browser.keyboard('{ArrowRight}');
       expect(cell(container, '2026-08-13')).toHaveFocus();
@@ -78,7 +98,7 @@ describe('Calendar', () => {
         <Calendar defaultValue={{ year: 2026, month: 8, day: 31 }} />,
         { locale: 'it' },
       );
-      cell(container, '2026-08-31').focus();
+      await focusCell(container, '2026-08-31');
 
       // The cell for 1 September does not exist as a September cell until the
       // grid has re-rendered around it — which is the whole reason the focus is
@@ -93,7 +113,7 @@ describe('Calendar', () => {
       const { container } = renderUi(<Calendar defaultValue={AUGUST} />, {
         locale: 'it',
       });
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
 
       await browser.keyboard('{PageDown}');
       expect(cell(container, '2026-09-12')).toHaveFocus();
@@ -107,7 +127,7 @@ describe('Calendar', () => {
         <Calendar defaultValue={{ year: 2026, month: 1, day: 31 }} />,
         { locale: 'it' },
       );
-      cell(container, '2026-01-31').focus();
+      await focusCell(container, '2026-01-31');
 
       // 31 January plus a month is 28 February, not 3 March — otherwise holding
       // PageDown skips February altogether.
@@ -119,7 +139,7 @@ describe('Calendar', () => {
       const { container } = renderUi(<Calendar defaultValue={AUGUST} />, {
         locale: 'it',
       });
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
 
       await browser.keyboard('{Home}');
       expect(cell(container, '2026-08-10')).toHaveFocus();
@@ -166,7 +186,7 @@ describe('Calendar', () => {
         <Calendar month={{ year: 2026, month: 8, day: 1 }} />,
         { locale: 'it' },
       );
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
       await browser.keyboard('{PageDown}');
 
       const stops = [...container.querySelectorAll('[data-day]')].filter(
@@ -195,7 +215,7 @@ describe('Calendar', () => {
       const { container } = renderUi(<Calendar defaultValue={AUGUST} />, {
         locale: 'it',
       });
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
       await browser.keyboard('{ArrowDown}{ArrowDown}');
 
       const stops = [...container.querySelectorAll('[data-day]')].filter(
@@ -292,7 +312,7 @@ describe('Calendar', () => {
         />,
         { locale: 'it' },
       );
-      cell(container, '2026-08-14').focus();
+      await focusCell(container, '2026-08-14');
       await browser.keyboard('{ArrowRight}');
       expect(cell(container, '2026-08-15')).toHaveFocus();
     });
@@ -322,7 +342,7 @@ describe('Calendar', () => {
       // A `<td>` is not a button, so activation is the component's own now —
       // it came free while a button sat inside the cell, and the cell is where
       // the focus and the selected state have to live.
-      cell(container, '2026-08-03').focus();
+      await focusCell(container, '2026-08-03');
       await browser.keyboard('{Enter}');
       expect(onValueChange).toHaveBeenLastCalledWith({
         year: 2026,
@@ -330,7 +350,7 @@ describe('Calendar', () => {
         day: 3,
       });
 
-      cell(container, '2026-08-04').focus();
+      await focusCell(container, '2026-08-04');
       await browser.keyboard(' ');
       expect(onValueChange).toHaveBeenLastCalledWith({
         year: 2026,
@@ -349,7 +369,7 @@ describe('Calendar', () => {
         />,
         { locale: 'it' },
       );
-      cell(container, '2026-08-15').focus();
+      await focusCell(container, '2026-08-15');
       await browser.keyboard('{Enter}');
       expect(onValueChange).not.toHaveBeenCalled();
     });
@@ -380,7 +400,7 @@ describe('Calendar', () => {
       // region here starts empty.
       expect(screen.queryByText(/Stai vedendo/)).not.toBeInTheDocument();
 
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
       await browser.keyboard('{PageDown}');
 
       const status = screen.getByText('Stai vedendo settembre 2026');
@@ -463,7 +483,7 @@ describe('Calendar', () => {
       const { container } = renderUi(<Calendar defaultValue={AUGUST} />, {
         locale: 'ar-EG',
       });
-      cell(container, '2026-08-12').focus();
+      await focusCell(container, '2026-08-12');
 
       // A table under `dir="rtl"` reverses its columns, so yesterday is drawn to
       // the RIGHT. ArrowRight moving to tomorrow would move the ring visually
