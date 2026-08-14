@@ -36,7 +36,9 @@ function today(): CivilDate {
  * assembled by hand: because they were, and the assembly has five steps that
  * each fail silently when missed (ADR-0027's amendment lists them). Three of the
  * five were got wrong by the people who wrote the parts, on first assembly, in
- * one afternoon. This component is those five steps, once.
+ * one afternoon. This component performs the first four and ABOLISHES the
+ * fifth: `FormDatePicker` renders the field itself, so it holds the carrier
+ * alongside the binding's ref and needs no library lever at all.
  *
  * WHAT IT OWNS is three pieces of state with three different owners, and that
  * split is the design rather than an accident:
@@ -73,12 +75,12 @@ function DatePicker(props: DatePickerProps) {
   const carrier = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
 
-  // READ-ONLY FLIPS WHICH SURFACE OPENS IT, and the rule is not a preference:
-  // a field that can be typed into has a caret to protect, so the trigger is a
-  // separate target (React Aria, MUI desktop, and the APG's own date-picker
-  // example all do this). A field that cannot has nothing to protect, so the
-  // whole field is the target — which is what Fluent does, and it does it for
-  // exactly this reason: its field is `allowTextInput: false`.
+  // READ-ONLY FLIPS WHICH SURFACE OPENS IT, and the reasoning is: a field that
+  // can be typed into has a caret to protect, so the trigger is a separate
+  // target; a field that cannot has nothing to protect, so the whole field is
+  // the target. Several widely used pickers appear to split the same way, but
+  // that is recollection rather than anything this repository can check, so it
+  // is not cited as evidence.
   //
   // It rides on the PLATFORM's attribute rather than a prop of ours. The
   // browser already refuses the typing, the value is still submitted, and the
@@ -157,8 +159,18 @@ function DatePicker(props: DatePickerProps) {
             then squares itself and drops its horizontal padding. Passed as a
             child, the same glyph left a `px-4` rectangle whose hover fill was a
             wide pale block inside the field's rounded border — which is exactly
-            what it looked like. `sm` keeps it a hair shorter than the control,
-            so the row centres it and the group's border stays clear of it. */}
+            what it looked like.
+
+            `sm` IS PINNED, and the size the caller gives the FIELD does not
+            reach it. Measured, group height against trigger height: sm 32/32,
+            md 36/32, lg 44/32 — so the trigger is level with the field at `sm`
+            and 12px short at `lg`, and under a coarse pointer `Button` raises
+            `sm` to 44 while `Input` raises only `md`, making them level again.
+            Following the field's size would put a full-height button inside the
+            border at three of those combinations; a fixed small one is the only
+            choice that never draws a block the width of the field. What it
+            costs is stated rather than hidden: in a large field the trigger is
+            noticeably smaller than the box around it. */}
         <PopoverTrigger
           variant="ghost"
           size="sm"
@@ -166,7 +178,18 @@ function DatePicker(props: DatePickerProps) {
           disabled={field.disabled}
           aria-label={triggerLabel ?? t('trigger')}
         />
-        <PopoverContent>
+        {/* THE SURFACE NEEDS A NAME OF ITS OWN, and axe structurally cannot
+            say so: its `aria-dialog-name` rule selects `[role="dialog"]`, an
+            ATTRIBUTE, so a native `<dialog>` is never evaluated. Measured —
+            0 violations as shipped, 1 the moment the role is spelled out on the
+            same element. Without this a reader who opens the calendar hears
+            "dialog" and nothing else.
+
+            Named for what it is rather than with a heading, because the only
+            heading a calendar could carry is the month caption, which the grid
+            already uses as its own name — a second one would announce the month
+            twice and say nothing about why the surface is open. */}
+        <PopoverContent aria-label={triggerLabel ?? t('trigger')}>
           <Calendar
             value={picked}
             month={month}
@@ -182,14 +205,12 @@ function DatePicker(props: DatePickerProps) {
               // so the field redraws in the locale's order and a form binding
               // learns about it. A plain `.value =` would update the DOM and
               // tell nobody.
+              // AND NOT REPORTED FROM HERE. `DateInput` now raises
+              // `onDateChange` for a write that arrives on the carrier too, so
+              // this reaches the consumer through `take` — the same door a
+              // keystroke uses — and reporting again beside it would announce
+              // one choice twice.
               writeDateInput(carrier.current, date);
-              // REPORTED FROM HERE, and it has to be. `DateInput` raises
-              // `onDateChange` from the VISIBLE field's own change handler —
-              // the one that runs the mask — so a write that arrives on the
-              // carrier repaints the field and reaches a form binding, but
-              // never passes through it. Left to `take`, choosing a day from
-              // the grid would have told the consumer nothing at all.
-              onDateChange?.(date);
               setOpen(false);
             }}
           />

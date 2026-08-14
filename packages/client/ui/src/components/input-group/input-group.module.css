@@ -62,8 +62,21 @@
      control in an affix costume, silently. The group still styles only the
      <input> as ITS control (the reset rules below stay `> input`): another
      control is out of the group's contract, and the mdx now says so — but it
-     keeps its own face instead of borrowing the wrong one. */
-  .group > :not(input, select, textarea, button) {
+     keeps its own face instead of borrowing the wrong one.
+
+     `[popover]` IS EXCLUDED TOO, and that one was measured rather than
+     foreseen. `Popover` renders no element of its own, so a picker composed
+     inside a group leaves its `<dialog popover>` as a DIRECT CHILD of the
+     group — and this rule, at (0,1,1), outranks the surface's own `.content`
+     at (0,1,0) from another module, where the cascade layer gives no
+     protection. The whole calendar was then repainted
+     `input-placeholder`: every day in the grid took the exact colour that says
+     "this one belongs to the neighbouring month", so the two states became
+     indistinguishable — at 10:1 contrast, which is why no contrast test and no
+     axe rule saw it. It took the `:last-child` padding too, giving the popover
+     card 16px on one side and 12px on the other. An element in the top layer is
+     not content beside the control, and the bucket now says so. */
+  .group > :not(input, select, textarea, button, [popover]) {
     @apply text-input-placeholder shrink-0;
   }
 
@@ -99,19 +112,38 @@
      A negative offset draws it inside the button's own box, so it is closed in
      every browser and needs nothing from `overflow-clip-margin`, which is not
      Baseline Widely and would have made the fix conditional on the engine
-     (ADR-0017). The ring sits on the button's edge rather than around it; on a
-     square icon button inset in a field, that is where there is room for it. */
+     (ADR-0017). Outside is not available at any margin: the button is only 2px
+     shorter than the group and the height contract forbids a vertical margin,
+     so a ring at the default `+2px` offset would be clipped top and bottom
+     however much room it were given on the sides.
+
+     AND INSIDE, THE RING COLOUR HAS TO CHANGE WITH IT. Drawn within the
+     button's own box, both of its edges sit on the button's FILL rather than on
+     the group's, and `--fm-color-ring` is contracted against the group's:
+     measured, it lands at 1.33:1 on `secondary` and 1.46:1 on `primary`,
+     `accent` and `destructive`, against the 3:1 WCAG 1.4.11 asks for. Only
+     `ghost` — which has no fill, and is what `DatePicker` uses — stayed at
+     4.68:1, so the defect was invisible from this package and waiting for the
+     first consumer to inset a filled button.
+
+     `currentColor` is contrasting BY CONSTRUCTION: it is the colour the
+     button's own label is drawn in, so it already clears 4.5:1 against that
+     fill or the label would be unreadable. The cost is real and stated: inside
+     a group the ring is the button's foreground rather than the brand ring
+     colour. That is what the group's clipping costs, and a ring nobody can see
+     is worse than a ring in the wrong hue. */
   .group > button:focus-visible {
     outline-offset: -2px;
+    outline-color: currentColor;
   }
   /* …and it is inset from the border by the same step the control's own padding
      gives its text. Without this the symbol sits flush against the edge while the
      value beside it does not — the group has no padding of its own, because the
      control's belongs to the control (a drag started in it still selects text). */
-  .group > :not(input, select, textarea, button):first-child {
+  .group > :not(input, select, textarea, button, [popover]):first-child {
     @apply ps-3;
   }
-  .group > :not(input, select, textarea, button):last-child {
+  .group > :not(input, select, textarea, button, [popover]):last-child {
     @apply pe-3;
   }
 

@@ -28,12 +28,14 @@ steps that each fail silently when missed**:
 3. move `month` with the value, or that day is one the grid does not draw and
    the popover opens with nothing selected at all;
 4. do not nest a `Button` inside `PopoverTrigger`, which is one;
-5. in a form, `carrierRef` belongs to the binding, so the write goes through the
-   library's own lever.
+5. in a form, `carrierRef` belongs to the binding, so a hand-written calendar has
+   to write through the library's own lever.
 
 Three of those were got wrong by the people who wrote the parts, on first
-assembly, in one afternoon (ADR-0027's amendment records it). This component is
-those five steps, once.
+assembly, in one afternoon (ADR-0027's amendment records it). This component
+performs the first four and **abolishes the fifth**: `FormDatePicker` renders the
+field itself, so it holds the carrier alongside the binding's ref and needs no
+lever at all.
 
 **It hides nothing.** `DateInput`, `Calendar` and `Popover` stay exported and
 stay documented. A shape this does not offer — a controlled open state, a second
@@ -44,11 +46,20 @@ exactly as before.
 
 <Controls of={DatePickerStories.Default} />
 
-Everything `DateInput` takes, plus what a grid needs. There is no `value` prop
-and no `open` prop, and both absences are deliberate: the browser owns the value
-(ADR-0013), so seed with `defaultValue` (ISO) or `defaultDate` and read through
-`onDateChange`; and an open state nobody but the trigger touches is state the
-component can keep.
+Everything `DateInput` takes except what describes a native date control, plus
+what a grid needs.
+
+**`value` is refused**, and so are `min`, `max`, `step` and `pattern`. The browser
+owns the value (ADR-0013), so seed with `defaultValue` (ISO) or `defaultDate` and
+read through `onDateChange`; a `value` would control the visible field with an ISO
+string, showing `2026-08-12` where the locale writes `12/08/2026`. The other four
+describe a control this is not: `min`/`max`/`step` are inert on a text input, so a
+declared range goes silently unenforced, and `pattern` is checked against
+`12/08/2026` and can never match, which blocks the submit for good.
+
+**`open` is refused too**, for a smaller reason: an open state nobody but the
+trigger touches is state the component can keep. If you need to drive it, compose
+the parts by hand.
 
 <Canvas of={DatePickerStories.WithAValue} />
 
@@ -58,23 +69,24 @@ component can keep.
 
 <Canvas of={DatePickerStories.ReadOnly} />
 
-`readOnly` flips which surface opens the calendar, and the rule behind it is not
-a preference:
+`readOnly` flips which surface opens the calendar, and the reasoning behind it is
+this:
 
 - **a field that can be typed into has a caret to protect**, so the trigger is a
-  separate target — React Aria, MUI desktop and the APG's own date-picker example
-  all do this;
+  separate target;
 - **a field that cannot has nothing to protect**, so the whole field is the
-  target — which is what Fluent does, and it does it precisely because its field
-  is `allowTextInput: false`.
+  target.
+
+Several widely used pickers appear to follow the same split — a separate trigger
+where the field is typeable, the field itself where it is not. That reading comes
+from experience rather than from anything this repository can check, so take it as
+the reasoning that shaped the decision, not as a citation.
 
 **Which one to pick is a question about the date, not about the design.** A date
-the user KNOWS — a birth date, an expiry, an invoice date — is faster typed than
-navigated; GOV.UK measured a calendar as actively worse there, and their
-"memorable date" pattern has no calendar at all. A date the user CHOOSES from
-what is available — a booking, an appointment, a flight — is the Airbnb case:
-typing means nothing, because the answer is in the grid next to the days that are
-taken.
+the user KNOWS — a birth date, an expiry, an invoice date — tends to be faster
+typed than navigated. A date the user CHOOSES from what is available — a booking,
+an appointment, a flight — is the opposite: typing means little, because the
+answer is in the grid next to the days that are taken.
 
 Nothing else changes. The trigger stays, because it is what a keyboard and a
 screen reader reach; the value is still submitted, unlike a disabled control's;
@@ -112,9 +124,11 @@ A `CivilDate` — `{ year, month, day }`, months **1–12** — and never a `Dat
 11th of August in every timezone west of Greenwich, which is the defect this
 whole family exists to stop repeating.
 
-`onDateChange` fires from **both** doors — a day clicked in the grid and a date
-typed into the field — and only ever on a whole date, so a half-typed field
-reports nothing.
+`onDateChange` fires from **every** door: a day clicked in the grid, a date typed
+into the field, and a write that arrives from outside — a form library's
+`setValue`, a `form.reset()`, a `writeDateInput`. It fires on **each keystroke**
+of a date being typed, reporting `null` until the digits name a day, so read a
+call as "the value moved", not as "a date arrived".
 
 What the form posts is different and stays different: an ISO `YYYY-MM-DD` on the
 carrier, under the field's `name`, as one ordinary entry.

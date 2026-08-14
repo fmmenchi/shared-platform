@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { DatePicker } from './date-picker.component.js';
+import { writeDateInput } from '../../date/write-date-input.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
 
@@ -126,6 +127,117 @@ describe('DatePicker', () => {
       });
       expect(triggers).toHaveLength(1);
       expect(triggers[0]?.querySelector('button')).toBeNull();
+    });
+  });
+
+  describe('the grid follows a write it did not make', () => {
+    // THE DEFECT THIS COMPONENT EXISTS TO PREVENT, one storey up. `picked` and
+    // `month` are React state written by the picker's own two handlers; the
+    // carrier can be written by three other doors, and none of them used to
+    // report. So the field showed one date and the calendar highlighted
+    // another — measured on all three before this suite existed.
+    const grid = (container: HTMLElement, iso: string) =>
+      container.querySelector(`[data-day="${iso}"]`);
+
+    it('follows a bare assignment — what setValue and reset do', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+        />,
+        { locale: 'it' },
+      );
+
+      // react-hook-form assigns straight onto the element its `register()` ref
+      // was handed, which is the carrier. No event, no render.
+      carrier(container).value = '2027-06-15';
+      await open();
+
+      expect(screen.getByRole('textbox', { name: 'Partenza' })).toHaveValue(
+        '15/06/2027',
+      );
+      expect(grid(container, '2027-06-15')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+
+    it('follows writeDateInput — the documented way in from outside', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+        />,
+        { locale: 'it' },
+      );
+
+      writeDateInput(carrier(container), { year: 2027, month: 6, day: 15 });
+      await open();
+
+      expect(grid(container, '2027-06-15')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+
+    it('follows form.reset(), which takes neither of the other two doors', async () => {
+      const { container } = renderUi(
+        <form>
+          <DatePicker
+            name="departure"
+            aria-label="Partenza"
+            defaultValue="2026-08-12"
+          />
+        </form>,
+        { locale: 'it' },
+      );
+      await browser.fill(
+        screen.getByRole('textbox', { name: 'Partenza' }),
+        '20122027',
+      );
+
+      // The platform reverts a control without going through the `value`
+      // property and without an `input` event, so the box repaired itself while
+      // the grid stayed on the date that had been typed.
+      (container.querySelector('form') as HTMLFormElement).reset();
+      await open();
+
+      expect(screen.getByRole('textbox', { name: 'Partenza' })).toHaveValue(
+        '12/08/2026',
+      );
+      expect(grid(container, '2026-08-12')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+    });
+
+    it('reports a choice from the grid exactly once', async () => {
+      const onDateChange = vi.fn();
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-01"
+          onDateChange={onDateChange}
+        />,
+        { locale: 'it' },
+      );
+
+      await open();
+      await browser.click(
+        container.querySelector('[data-day="2026-08-12"]') as HTMLElement,
+      );
+
+      // Now that the carrier reports for itself, the grid must NOT report
+      // beside it — the write it makes travels the same door a keystroke does.
+      expect(onDateChange).toHaveBeenCalledTimes(1);
+      expect(onDateChange).toHaveBeenCalledWith({
+        year: 2026,
+        month: 8,
+        day: 12,
+      });
     });
   });
 
@@ -406,11 +518,44 @@ describe('DatePicker', () => {
       // horizontal padding. Passed as a child it stayed a `px-4` rectangle, and
       // its hover fill was a wide pale block inside the field's rounded border.
       expect(Math.round(box.width)).toBe(Math.round(box.height));
-      // …and shorter than the field, so the row centres it and the group's own
-      // border stays clear of whatever the hover paints.
+      // …and never wider than the field's own box, at ANY size the caller gives
+      // the field. Measured: group/trigger is 32/32 at `sm`, 36/32 at `md` and
+      // 44/32 at `lg`, so "shorter than the control" holds at two of the three
+      // and level is the worst case — never taller, and never the full width.
       const groupBox = group.getBoundingClientRect();
-      expect(box.height).toBeLessThan(groupBox.height);
+      expect(box.height).toBeLessThanOrEqual(groupBox.height);
       expect(box.right).toBeLessThan(groupBox.right);
+      expect(box.width).toBeLessThan(groupBox.width / 2);
+    });
+
+    it('still tells a day of this month from one of the next', async () => {
+      const { container } = renderUi(
+        <DatePicker
+          name="departure"
+          aria-label="Partenza"
+          defaultValue="2026-08-12"
+        />,
+        { locale: 'it' },
+      );
+      await open();
+
+      // `Popover` renders no element of its own, so the `<dialog popover>` is a
+      // DIRECT CHILD of the InputGroup — and the group's affix rule outranked
+      // the surface's own colour from another module, repainting every day in
+      // the grid with the exact colour that means "this one belongs to the
+      // neighbouring month". Measured: in-month and outside both came out
+      // `oklch(0.38 0.02 256)`, at 10:1 contrast, so no contrast test and no
+      // axe rule could see it.
+      const inMonth = container.querySelector(
+        '[data-day="2026-08-12"]',
+      ) as HTMLElement;
+      const outside = container.querySelector(
+        '[data-day="2026-09-01"]',
+      ) as HTMLElement;
+      expect(outside).not.toBeNull();
+      expect(getComputedStyle(inMonth).color).not.toBe(
+        getComputedStyle(outside).color,
+      );
     });
 
     it('takes the trigger label the consumer gives it', () => {

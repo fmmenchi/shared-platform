@@ -53,7 +53,7 @@ the date was typed or picked.
 
 <Controls of={FormDatePickerStories.Default} />
 
-Three props `DatePicker` has are absent, each for its own reason.
+Eight props `DatePicker` has are absent here, and they fall into three groups.
 
 **`carrierRef`** is the binding's, and here there is nothing left to ask for: the
 component already merges its own into it.
@@ -63,9 +63,13 @@ props the binding owns. Left accepted, it seeds the DOM without telling the form
 library, which then validates an empty field and overwrites the seed on its first
 pass. Seed through the binding.
 
-**`value` and `onChange`** are how the field reaches its library, so a call site
-that won them would not override the binding, it would sever it. Passing one is a
-compile error that names the lever to use instead.
+**The binding's own** — `value`, `defaultValue`, `onChange`, `onBlur`, `checked`,
+`defaultChecked` — are how the field reaches its library, so a call site that won
+them would not override the binding, it would sever it. Note `defaultValue` among
+them: the sibling page tells you to seed with it, and here the seed comes from the
+adapter instead. Passing any of them is a compile error; the error is TypeScript's
+own, naming the property, and the lever to use instead is documented on
+`BindingOwned` rather than in the message.
 
 ## Usage
 

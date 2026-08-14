@@ -557,6 +557,28 @@ function DateInput(props: DateInputProps) {
     shown.current = element.value;
   }, [display]);
 
+  // THE LATEST `onDateChange`, reachable from the listeners below.
+  //
+  // They are installed once and torn down on a locale change, so a handler
+  // captured when they were built would go stale the first time the consumer
+  // re-rendered — and the consumer here is usually a picker holding the
+  // selected day in state, which is exactly the thing that must not fall
+  // behind. Synced in an effect rather than in render, because writing a ref
+  // during render is what the compiler refuses and what tears under Strict
+  // Mode's double invocation.
+  const latest = useRef(onDateChange);
+  useEffect(() => {
+    latest.current = onDateChange;
+  });
+
+  // WHAT AN EXTERNAL WRITE OWES THE CONSUMER. The component's own keystroke
+  // path reports for itself; these three doors did not report at all, so a
+  // `DatePicker`'s grid — and any consumer holding the date in state — sat on a
+  // value the field no longer held. Measured on all three.
+  const announce = (iso: string) => {
+    latest.current?.(parseIsoDate(iso));
+  };
+
   // FOLLOW THE CARRIER WHEN SOMETHING ELSE WRITES IT.
   //
   // A form library setting a value does not go through this component:
@@ -606,6 +628,7 @@ function DateInput(props: DateInputProps) {
         if (text === '' || text === target.value) return;
         target.value = text;
         shown.current = text;
+        announce(iso);
       },
     });
 
@@ -628,11 +651,33 @@ function DateInput(props: DateInputProps) {
       if (next === '' || next === target.value) return;
       target.value = next;
       shown.current = next;
+      announce(iso);
     };
     element.addEventListener('input', follow);
 
+    // AND THE THIRD DOOR, which takes neither of the first two: `form.reset()`.
+    // The platform reverts a control to its default without going through the
+    // `value` property and without an `input` event, so the field repaints
+    // itself — it has its own `defaultValue` — while nothing tells anyone the
+    // date changed. Measured: after a reset the carrier and the box agreed and
+    // a `Calendar` beside them was still on the date that had been typed.
+    //
+    // Read AFTER the event, because during it the control still holds the old
+    // value: the revert is part of the default action this listener precedes.
+    const reset = () => {
+      queueMicrotask(() => {
+        const target = field.current;
+        if (target === null) return;
+        const iso = element.value;
+        shown.current = target.value;
+        announce(iso);
+      });
+    };
+    element.form?.addEventListener('reset', reset);
+
     return () => {
       element.removeEventListener('input', follow);
+      element.form?.removeEventListener('reset', reset);
       if (own === undefined) {
         Reflect.deleteProperty(element, 'value');
       } else {

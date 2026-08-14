@@ -33,14 +33,21 @@ import type { FormDatePickerProps } from './form-date-picker.types.js';
  * is that the bound picker needs no library-specific code at all.
  */
 function FormDatePicker(props: FormDatePickerProps) {
-  const { name, label, hint, ref, ...rest } = props;
+  // `defaultDate` is DROPPED, not merely warned about. The warning below says
+  // it "would seed the DOM without telling your form library" — and it did:
+  // measured through the untyped route, the seed landed and the library never
+  // heard of it. A guard that describes a harm in the conditional while letting
+  // it happen is worse than none, because it reads as protection. This matches
+  // the shared `withoutBindingOwned` guard, which warns AND removes.
+  const { name, label, hint, ref, defaultDate, ...rest } =
+    props as FormDatePickerProps & { defaultDate?: unknown };
   const { control, errors } = useBoundField(name, 'FormDatePicker');
   useBindingOwnedWarning(rest, 'FormDatePicker');
   // The type refuses `defaultDate`; this is for the callers the type does not
   // see, and for the same reason the shared guard exists at all.
   useDevWarning(
-    'defaultDate' in rest,
-    "FormDatePicker: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. Give the value to the library instead.",
+    defaultDate !== undefined,
+    "FormDatePicker: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. It was ignored; give the value to the library instead.",
   );
   const messages = toMessages(errors);
 
@@ -83,8 +90,9 @@ function FormDatePicker(props: FormDatePickerProps) {
         // under either name depending on the library. Never passed through as
         // `value`, which would control the visible field with an ISO string and
         // show `2026-08-12` where the locale writes `12/08/2026`.
+        // No `value={undefined}` any more: `DatePicker` refuses the prop
+        // outright now, so there is nothing left to neutralise.
         defaultValue={seed}
-        value={undefined}
         {...withoutBindingOwned(rest)}
         // TWO REFS, TWO JOBS. The binding's goes to the carrier, because a
         // library reads `.value` off the element its ref was given and the

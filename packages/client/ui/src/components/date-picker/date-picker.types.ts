@@ -16,7 +16,28 @@ export type DatePickerProps = Omit<
   // The picker holds this one: it needs the carrier to write the field when a
   // day is chosen. A consumer who wants the node as well can still have it —
   // see `carrierRef` below, which is re-declared rather than dropped.
-  'carrierRef'
+  | 'carrierRef'
+  // WHAT DESCRIBES A NATIVE DATE CONTROL, WHICH THIS IS NOT. Each of these
+  // reached the masked TEXT input underneath and was measured doing harm:
+  //
+  // `value` controls the visible field with an ISO string — the box then reads
+  // `2026-08-12`, which no locale writes, typing never appears on screen, and
+  // the form posts a date the user never saw. It survived from `InputProps`
+  // because `DateInputProps` omits only `type` and `defaultValue`, while this
+  // component's own page said the prop did not exist.
+  //
+  // `min`, `max` and `step` are inert on a text input, so a declared range goes
+  // silently unenforced — worse than absent, because the call site believes it
+  // is enforced. `pattern` is checked against `12/08/2026` and can never match,
+  // which blocks the submit for good.
+  //
+  // `FormDateInput` and `FormDatePicker` already refuse all five on the bound
+  // path, through their routing table. This closes the unbound one.
+  | 'value'
+  | 'min'
+  | 'max'
+  | 'step'
+  | 'pattern'
 > & {
   /**
    * The node holding the ISO value, if you need it too.
