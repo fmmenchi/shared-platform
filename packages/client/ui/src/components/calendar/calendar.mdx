@@ -56,7 +56,11 @@ The shape most consumers actually want, and **not a new component**: `Popover` +
 ```tsx
 const carrier = useRef<HTMLInputElement>(null);
 
-<DateInput name="departure" carrierRef={carrier} />
+<DateInput
+  name="departure"
+  carrierRef={carrier}
+  onDateChange={setPicked}        // ← the field tells the calendar
+/>
 <Popover open={open} onOpenChange={setOpen}>
   <PopoverTrigger aria-label="Pick a date">📅</PopoverTrigger>
   <PopoverContent>
@@ -64,13 +68,23 @@ const carrier = useRef<HTMLInputElement>(null);
       value={picked}
       onValueChange={(date) => {
         setPicked(date);
-        writeDateInput(carrier.current, date);   // sets the field
+        writeDateInput(carrier.current, date);   // ← the calendar sets the field
         setOpen(false);
       }}
     />
   </PopoverContent>
 </Popover>
 ```
+
+**Three pieces of state, three different owners, and that is the design.** The
+date lives in the DOM, on the carrier, as it does for every control here. The
+calendar's highlight lives in React, because a grid has no DOM home for it. The
+popover's open state lives in React only so that picking a day can close it.
+
+**Both directions are wired, and the second one is easy to forget.** Without
+`onDateChange`, a date TYPED into the field never reaches the calendar — reopen
+the popover and it highlights the day chosen three edits ago, which the field no
+longer holds.
 
 **The calendar sets the field; it does not replace it.** The field is still a
 field afterwards — it can be typed into, it still holds the value, and it is

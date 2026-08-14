@@ -91,7 +91,17 @@ export const InsideAPopover: Story = {
     return (
       <Field label="Data di partenza">
         <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-          <DateInput name="departure" carrierRef={carrier} />
+          {/* THE OTHER DIRECTION, and the recipe is wrong without it: the
+              calendar writes the field, and the field has to tell the calendar
+              back. Typed into rather than picked from, the highlight would stay
+              on the day chosen three edits ago — so reopening the popover would
+              show a selection the field no longer holds. */}
+          <DateInput
+            name="departure"
+            carrierRef={carrier}
+            defaultDate={AUGUST}
+            onDateChange={setPicked}
+          />
           <Popover open={open} onOpenChange={setOpen} placement="bottom-end">
             {/* `PopoverTrigger` IS a `Button` — nesting one inside it makes two
                 interactive controls in one place, which axe calls

@@ -30,6 +30,9 @@ function Picker({ onChange }: { onChange?: (value: string) => void }) {
         name="departure"
         aria-label="Partenza"
         carrierRef={carrier}
+        // The other direction: what is typed reaches the calendar, so the two
+        // never disagree about which day is chosen.
+        onDateChange={setPicked}
         onChange={(event) => onChange?.(event.currentTarget.value)}
       />
       <Popover open={open} onOpenChange={setOpen}>
@@ -102,6 +105,24 @@ describe('Calendar inside a Popover, setting a DateInput', () => {
     expect(field).toHaveValue('01/01/2000');
     const form = container.querySelector('form') as HTMLFormElement;
     expect(new FormData(form).getAll('departure')).toEqual(['2000-01-01']);
+  });
+
+  it('carries a typed date back to the calendar, so the two never disagree', async () => {
+    const { container } = renderUi(<Picker />, { locale: 'it' });
+
+    // Typed, not picked. Without the return path the highlight would stay on
+    // whatever was last chosen from the grid, so reopening the popover would
+    // show a selection the field no longer holds.
+    await browser.fill(
+      screen.getByRole('textbox', { name: 'Partenza' }),
+      '20082026',
+    );
+    await browser.click(screen.getByRole('button', { name: 'Scegli' }));
+
+    expect(container.querySelector('[data-day="2026-08-20"]')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 
   it('clears the field when the picker hands back nothing', async () => {
