@@ -20,10 +20,22 @@ import type { CivilDate } from '../../date/civil-date.types.js';
  * components and a claim about how they fit; nothing exercised the fit until
  * this file, and the fit is where the interesting failures live.
  */
+const AUGUST: CivilDate = { year: 2026, month: 8, day: 1 };
+
 function Picker({ onChange }: { onChange?: (value: string) => void }) {
   const carrier = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<CivilDate | null>(null);
+  // THE MONTH IS THE COMPOSITION'S, and this is the piece a consumer is most
+  // likely to leave out. The calendar does not follow the selection on its own:
+  // only the thing holding both knows whether the value moved BECAUSE of the
+  // grid or in spite of it, and following it from inside would undo the
+  // navigation the user just made.
+  const [month, setMonth] = useState<CivilDate>(AUGUST);
+  const take = (date: CivilDate | null) => {
+    setPicked(date);
+    if (date !== null) setMonth(date);
+  };
   return (
     <form>
       <DateInput
@@ -32,7 +44,7 @@ function Picker({ onChange }: { onChange?: (value: string) => void }) {
         carrierRef={carrier}
         // The other direction: what is typed reaches the calendar, so the two
         // never disagree about which day is chosen.
-        onDateChange={setPicked}
+        onDateChange={take}
         onChange={(event) => onChange?.(event.currentTarget.value)}
       />
       <Popover open={open} onOpenChange={setOpen}>
@@ -42,7 +54,8 @@ function Picker({ onChange }: { onChange?: (value: string) => void }) {
         <PopoverContent>
           <Calendar
             value={picked}
-            defaultMonth={{ year: 2026, month: 8, day: 1 }}
+            month={month}
+            onMonthChange={setMonth}
             onValueChange={(date) => {
               setPicked(date);
               writeDateInput(carrier.current, date);
@@ -128,10 +141,11 @@ describe('Calendar inside a Popover, setting a DateInput', () => {
   it('opens on the month of a date typed into the field, not on the old one', async () => {
     const { container } = renderUi(<Picker />, { locale: 'it' });
 
-    // A date in ANOTHER month than the one the calendar defaults to. Carrying
-    // the selection back is not enough on its own: the grid draws August 2026,
-    // so a December 2027 selection is a day it does not draw at all, and the
-    // calendar opens showing nothing selected.
+    // A date in ANOTHER month than the one the calendar opened on. Carrying the
+    // selection back is not enough on its own: the grid draws August 2026, so a
+    // December 2027 selection is a day it does not draw at all, and the calendar
+    // opens showing nothing selected. The month has to travel with the value,
+    // which is the composition's job and is why `Picker` above holds it.
     await browser.fill(
       screen.getByRole('textbox', { name: 'Partenza' }),
       '20122027',
@@ -155,9 +169,9 @@ describe('Calendar inside a Popover, setting a DateInput', () => {
       screen.getByRole('button', { name: 'Mese successivo' }),
     );
 
-    // The other half of the rule above, and the one an effect keyed on `shown`
-    // would break: browsing away from the selected month is a thing the user
-    // did on purpose, and only a CHANGE of selection may undo it.
+    // The other half of the rule above, and the half that a calendar following
+    // its own value would break: browsing away from the selected month is a
+    // thing the user did on purpose, and only a CHANGE of selection may undo it.
     expect(container.querySelector('[data-day="2026-09-15"]')).not.toBeNull();
     expect(container.querySelector('[data-day="2026-08-20"]')).toBeNull();
   });

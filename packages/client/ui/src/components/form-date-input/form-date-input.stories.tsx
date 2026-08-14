@@ -107,6 +107,16 @@ export const WithACalendar: Story = {
     const [stored, setStored] = useState('');
     const [open, setOpen] = useState(false);
     const [picked, setPicked] = useState<CivilDate | null>(null);
+    // The month is the composition's too, and for the same reason: a date typed
+    // in another month would otherwise open a grid that does not draw it.
+    const [month, setMonth] = useState<CivilDate>(() => {
+      const now = new Date();
+      return { year: now.getFullYear(), month: now.getMonth() + 1, day: 1 };
+    });
+    const take = (date: CivilDate | null) => {
+      setPicked(date);
+      if (date !== null) setMonth(date);
+    };
 
     const useDemoField: UseFormField = (name) => ({
       control: {
@@ -153,7 +163,7 @@ export const WithACalendar: Story = {
                   reopening the popover highlights the day chosen three edits
                   ago. `onDateChange` is not the binding's — it reports the
                   parsed day, where `onChange` reports the DOM event. */}
-              <FormDateInput {...args} onDateChange={setPicked} />
+              <FormDateInput {...args} onDateChange={take} />
             </div>
             <Popover open={open} onOpenChange={setOpen} placement="bottom-end">
               <PopoverTrigger
@@ -165,6 +175,8 @@ export const WithACalendar: Story = {
               <PopoverContent>
                 <Calendar
                   value={picked}
+                  month={month}
+                  onMonthChange={setMonth}
                   onValueChange={(date) => {
                     setPicked(date);
                     setValue(date);

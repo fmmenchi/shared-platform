@@ -59,13 +59,15 @@ const carrier = useRef<HTMLInputElement>(null);
 <DateInput
   name="departure"
   carrierRef={carrier}
-  onDateChange={setPicked}        // ← the field tells the calendar
+  onDateChange={take}             // ← the field tells the calendar
 />
 <Popover open={open} onOpenChange={setOpen}>
   <PopoverTrigger aria-label="Pick a date">📅</PopoverTrigger>
   <PopoverContent>
     <Calendar
       value={picked}
+      month={month}
+      onMonthChange={setMonth}
       onValueChange={(date) => {
         setPicked(date);
         writeDateInput(carrier.current, date);   // ← the calendar sets the field
@@ -86,11 +88,24 @@ popover's open state lives in React only so that picking a day can close it.
 the popover and it highlights the day chosen three edits ago, which the field no
 longer holds.
 
-**And the calendar follows the selection to its month.** `defaultMonth` decides
-where it opens the first time; after that, a `value` that changes to a day the
-grid does not draw moves the grid to it, so a date typed in December 2027 does
-not open on August 2026 with nothing selected. Only a CHANGE moves it: browsing
-to another month is something the user did on purpose, and stays.
+**And the month travels with the value.** This is the piece most likely to be
+left out, and the calendar will not do it for you: a date typed in December 2027
+lands on a day an August 2026 grid does not draw, so the popover opens with
+nothing selected in it.
+
+```tsx
+const [month, setMonth] = useState(AUGUST);
+
+<DateInput onDateChange={take} … />                        // take() sets both
+<Calendar value={picked} month={month} onMonthChange={setMonth} … />
+```
+
+That the calendar does not follow its own `value` is a decision. Following it
+from inside means writing state in an effect on every value change — which then
+fights the navigation the user just made, and which `useControlled` forbids
+outright: its setter runs in an event, never in a render or an effect. Only the
+thing holding both knows whether the value moved BECAUSE of the grid or in spite
+of it.
 
 **The calendar sets the field; it does not replace it.** The field is still a
 field afterwards — it can be typed into, it still holds the value, and it is

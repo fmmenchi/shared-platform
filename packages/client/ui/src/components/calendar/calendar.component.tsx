@@ -254,44 +254,6 @@ function Calendar(props: CalendarProps) {
     };
   }, [weeks, focused, shown]);
 
-  /**
-   * SHOW THE MONTH THE SELECTION IS IN, when the selection changes from outside.
-   *
-   * `shown` starts on the selection and then goes its own way, which is right
-   * while the calendar is the thing being used — arrowing into September must
-   * not be undone by the August selection still sitting there. It is wrong the
-   * moment the value moves without the grid: a date typed into the `DateInput`
-   * beside it, a `setValue` from a form library, a URL restored. The selection
-   * became a day the grid does not draw, so the calendar opened on the old
-   * month with nothing selected in it — measured in the picker story, typing
-   * `20/12/2027` and reopening showed August 2026.
-   *
-   * Only a CHANGE moves it, never the initial value: `defaultMonth` with a
-   * `defaultValue` in another month is a deliberate pair, and the first run here
-   * records rather than acts. A selection made IN the grid is already in the
-   * shown month, so it falls out on the guard below rather than on a special
-   * case.
-   *
-   * `setShown` reports through `onMonthChange` in both regimes, so a consumer
-   * holding `month` hears about this and stays the one who decides.
-   */
-  const seen = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
-    const iso = selected === null ? null : formatIsoDate(selected);
-    if (seen.current === undefined) {
-      seen.current = iso;
-      return;
-    }
-    if (iso === seen.current) return;
-    seen.current = iso;
-    if (selected === null) return;
-    if (selected.year === shown.year && selected.month === shown.month) return;
-    setShown(startOfMonth(selected));
-    // The tab stop goes with it. Left behind, it would be a day outside the
-    // window, and `focusable` would hand the grid an arbitrary substitute.
-    setFocused(selected);
-  }, [selected, shown, setShown]);
-
   // The month changed, so say so — but never on arrival, which is not news.
   useEffect(() => {
     if (!arrived.current) {

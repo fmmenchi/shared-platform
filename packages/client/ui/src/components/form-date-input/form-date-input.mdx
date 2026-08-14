@@ -73,6 +73,8 @@ That the field follows is not a courtesy of the library. `setValue` and `reset` 
 
 **`onDateChange` is the return path**, and the recipe is wrong without it: a date TYPED into the field has to reach the calendar too, or reopening the popover highlights the day chosen three edits ago. It is not binding-owned — it reports the parsed `CivilDate` where `onChange` reports a DOM event — so it is yours to pass.
 
+**And it has to move the month with it**, which the calendar deliberately will not do on its own: a date typed in December 2027 lands on a day an August 2026 grid does not draw, so the popover opens with nothing selected. `month` + `onMonthChange`, set from the same handler.
+
 ### Reacting to the value
 
 Use your library's own lever — `watch`, `useField`, `subscribe` — as with any bound field. `onDateChange` is the exception worth knowing: it hands over `{ year, month, day }` already parsed, and fires only on a **whole** date, so a half-typed field reports nothing.
