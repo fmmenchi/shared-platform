@@ -27,4 +27,48 @@
   .announcement {
     @apply sr-only;
   }
+
+  /*
+   * UNDER A FINGER, THE CALENDAR STOPS BEING ANCHORED AND CENTRES ITSELF.
+   *
+   * Not a taste about phones — a measurement. `PopoverContent` caps every
+   * surface at `max-w-80` (320px), which is right for the popovers it was
+   * written for and too narrow for this one: measured, a calendar under a
+   * coarse pointer wants 338px and its day cells are 46px, and inside the
+   * capped surface the grid came out 286px with cells of 38px. That is BELOW
+   * the 44px `Calendar`'s own stylesheet promises for WCAG 2.5.8, and below
+   * what every other control in this package guarantees under the same query.
+   * The anchored shape cannot hold a grid sized for a finger.
+   *
+   * KEYED ON `pointer: coarse`, and deliberately not on a viewport width. It is
+   * the same query that made the cells 44px in the first place, so the shape
+   * changes for exactly the reason the cells did — and this package does not
+   * guess at devices from how wide a window happens to be.
+   *
+   * CSS ONLY: no `matchMedia` read, no second component, no JavaScript branch
+   * that could disagree with the stylesheet. The surface stays the same
+   * `<dialog popover>` in the top layer, still light-dismissed by the platform,
+   * still not modal — what changes is where it sits and how wide it may be.
+   */
+  @media (pointer: coarse) {
+    /* `.surface.surface`, not `.surface`. The rule this overrides lives in
+       ANOTHER CSS module at the same specificity and in the same cascade layer,
+       and the relative order of two such rules is not defined — the repo has
+       been bitten by exactly that. Doubling the class buys a point and settles
+       it without an `!important`. */
+    .surface.surface {
+      /* All four sides, so `margin: auto` has two opposed anchors to centre
+         between. The anchored positioning sets `top`/`left` from the custom
+         properties the primitive writes; leaving either at `auto` here left the
+         box hanging off one edge — measured 18px out of centre. */
+      inset: 0;
+      margin: auto;
+      inline-size: fit-content;
+      block-size: fit-content;
+      /* Room for a 44px grid and its padding, and never wider than the screen.
+         `100dvw` rather than `100vw`: a phone's toolbars are part of the
+         viewport the user actually has. */
+      max-inline-size: min(100dvw - 1rem, 24rem);
+    }
+  }
 }
