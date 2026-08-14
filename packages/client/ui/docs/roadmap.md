@@ -13,19 +13,19 @@ at the bottom.
 Grouped as Storybook groups them. A **part** (`FieldLabel`, `MenuItem`, `PopoverContent`) is a
 sibling folder of its family and is documented on the family's page, not its own.
 
-| Group             | Components                                                                                                                                                                                         |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Typography**    | `Heading`                                                                                                                                                                                          |
-| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                                             |
-| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                                  |
-| **Inputs**        | `Input` · `DateInput` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
-| **Form adapters** | `FormInput` · `FormDateInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                          |
-| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                                        |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                                             |
-| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                                 |
-| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                                          |
-| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                             |
-| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                     |
+| Group             | Components                                                                                                                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Typography**    | `Heading`                                                                                                                                                                                                       |
+| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                                                          |
+| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                                               |
+| **Inputs**        | `Input` · `DateInput` · `Calendar` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
+| **Form adapters** | `FormInput` · `FormDateInput` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                                       |
+| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                                                     |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                                                          |
+| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                                              |
+| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress`                                                                                                                                                                       |
+| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                          |
+| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                                  |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
 complete at one. **No group is now thin enough for the third question below to pick the next item
@@ -88,16 +88,15 @@ So the next item is a decision, not a deduction — and this page will say which
   stopped being a bet on engines: `::-webkit-slider-thumb` and `::-moz-range-thumb` still need
   writing twice, but they are writable, and the track is a background this package already paints
   from a token.
-- **`Calendar`, and a time field.** The date half of this line has shipped: `DateInput` and
-  `FormDateInput` are in the table above, and ADR-0027 says why they look the way they do. What the
-  platform still refuses is **per-date rules** — `min`/`max` are an interval, not a set, so "only
-  these slots", "never on a Tuesday", "these three days are booked" are not expressible by any
-  native field. That, and only that, is what a `Calendar` is for, and it is next: an APG grid whose
-  roving focus is a date rather than a cell index, standalone and composable inside a `Popover`.
-
-  A time field is the same recipe on `type="time"` and waits for someone to ask. Note it is **not**
-  blocked the way `type="date"` is: that refusal exists because a date's segment ORDER contradicts
-  the declared locale, and there is a replacement to send people to. Neither is true of time yet.
+- **A time field.** The date line is finished: `DateInput`, `FormDateInput` and `Calendar` are all in
+  the table above, and ADR-0027 records why each of them looks the way it does. A time field is the
+  same consideration on `type="time"` and waits for someone to ask. Note it is **not** blocked the way
+  `type="date"` is: that refusal exists because a date's segment ORDER contradicts the declared
+  locale, and because there is a replacement to send people to. Neither is true of time yet.
+- **Date ranges.** `Calendar` picks one day, deliberately: a range is where the cost curve turns —
+  two ends, a hovered preview between them, and a keyboard contract that has to say which end is
+  moving — and it is the piece MUI charges for. It needs its own justification and its own ADR
+  amendment, not a prop.
 
 ## Keeping it true
 
