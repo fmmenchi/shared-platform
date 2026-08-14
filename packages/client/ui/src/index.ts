@@ -448,6 +448,9 @@ export type {
 // — and the parse is exactly what nobody should re-derive, since the obvious
 // version (`new Date(iso)`) is wrong in every timezone west of Greenwich.
 export { parseIsoDate, formatIsoDate } from './date/civil-date.js';
+// Setting a `DateInput` from outside it — what a `Calendar` in a `Popover` does
+// when ADR-0027 says it "sets the field rather than replacing it".
+export { writeDateInput } from './date/write-date-input.js';
 export type { CivilDate, IsoDate } from './date/civil-date.types.js';
 export { Calendar } from './components/calendar/calendar.component.js';
 export type { CalendarProps } from './components/calendar/calendar.types.js';
