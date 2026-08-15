@@ -50,6 +50,13 @@
    * and its column headers depend on.
    */
   .day {
+    /* DECLARED, not inherited. This package ships without Preflight (ADR-0022),
+       so a consumer's page leaves a `<td>` at `content-box` — and every border
+       this file draws then ADDS to the cell. Measured with the forced-colors
+       span border: a week row holding spanned days stood 40px against its
+       neighbours' 38px, and the pre-existing hover border did the same to one
+       cell at a time. */
+    box-sizing: border-box;
     /* A day is a target before it is a number: 2.25rem square keeps a row of
        seven inside a phone's width while staying comfortably clickable, and the
        coarse-pointer rule below takes it to the 44px a finger needs. */
@@ -69,6 +76,22 @@
 
   .day[data-selected] {
     @apply bg-primary text-primary-foreground;
+  }
+
+  /* BETWEEN the ends of a range, and never one of them — `isInRange` is strict,
+     so these two rules can never both match a cell.
+     A quieter fill than the ends, because it says something quieter: these days
+     are SPANNED, not chosen. The ends are the answer; the middle is what the
+     answer covers.
+
+     `muted` AND NOT `accent`, which is what it was: `accent` is the HOVER fill,
+     so measured they came out byte-identical — `oklch(0.4 0.068 195)` both — and
+     while a range was half made every day the pointer crossed looked exactly
+     like a day already inside it. The comment here used to argue the span was
+     told apart from the ENDS by hue, which was true and beside the point: the
+     state it collides with is the one under the cursor. */
+  .day[data-in-range] {
+    @apply bg-muted text-foreground;
   }
 
   /* You are here. `today()` was read to pick the opening month and then never
@@ -113,6 +136,14 @@
     .day[data-selected] {
       background-color: Highlight;
       color: HighlightText;
+    }
+
+    /* The span, in the mode where every background is the system's. `Highlight`
+       is taken by the ENDS, so the middle gets the border treatment instead:
+       flattened to the same fill it would be indistinguishable from the days
+       either side of it, which is the whole information a range carries. */
+    .day[data-in-range] {
+      border-block: 1px solid Highlight;
     }
 
     .day:focus-visible {

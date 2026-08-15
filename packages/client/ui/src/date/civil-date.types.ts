@@ -26,3 +26,22 @@ export interface CivilDate {
  * at the assignment.
  */
 export type IsoDate = string;
+
+/**
+ * TWO DAYS, OR ONE, OR NEITHER — a range as it exists while it is being chosen.
+ *
+ * Both ends are nullable and that is the shape rather than a convenience. A
+ * range is picked in two gestures, so between them there IS a start and there
+ * is no end, and a model that could not say so would have to invent one — an
+ * end equal to the start reads as a one-day stay, which is a different answer
+ * from "not finished".
+ *
+ * `end` is never before `start` once both are set: a click earlier than the
+ * start REWINDS, making it the new start and clearing the end (ADR-0027). So
+ * an inverted pair is not a state a consumer has to handle, and the type does
+ * not pretend it is.
+ */
+export interface CivilRange {
+  readonly start: CivilDate | null;
+  readonly end: CivilDate | null;
+}

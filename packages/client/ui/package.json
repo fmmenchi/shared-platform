@@ -640,6 +640,18 @@
       "types": "./dist/components/skeleton/index.d.ts",
       "import": "./dist/skeleton.js",
       "default": "./dist/skeleton.js"
+    },
+    "./date-range-picker": {
+      "@fmmenchi/source": "./src/components/date-range-picker/index.ts",
+      "types": "./dist/components/date-range-picker/index.d.ts",
+      "import": "./dist/date-range-picker.js",
+      "default": "./dist/date-range-picker.js"
+    },
+    "./form-date-range-picker": {
+      "@fmmenchi/source": "./src/components/form-date-range-picker/index.ts",
+      "types": "./dist/components/form-date-range-picker/index.d.ts",
+      "import": "./dist/form-date-range-picker.js",
+      "default": "./dist/form-date-range-picker.js"
     }
   },
   "nx": {

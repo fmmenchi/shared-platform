@@ -477,3 +477,7 @@ export type {
   SkeletonProps,
   SkeletonVariants,
 } from './components/skeleton/skeleton.types.js';
+export { DateRangePicker } from './components/date-range-picker/date-range-picker.component.js';
+export type { DateRangePickerProps } from './components/date-range-picker/date-range-picker.types.js';
+export { FormDateRangePicker } from './components/form-date-range-picker/form-date-range-picker.component.js';
+export type { FormDateRangePickerProps } from './components/form-date-range-picker/form-date-range-picker.types.js';

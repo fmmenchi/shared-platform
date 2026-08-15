@@ -1,0 +1,135 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as DateRangePickerStories from './date-range-picker.stories.tsx';
+
+<Meta of={DateRangePickerStories} />
+
+# DateRangePicker
+
+Two date fields and one calendar, for a stay rather than a day.
+
+```tsx
+<DateRangePicker
+  startName="checkIn"
+  endName="checkOut"
+  startLabel="Check-in"
+  endLabel="Check-out"
+/>
+```
+
+<Canvas of={DateRangePickerStories.Default} />
+
+**Wrap the pair in a `Fieldset`, not a `Field`.** `Field` gives its control an id
+and expects one control to take it: measured with two, both inputs carried the
+same id, the `<label for>` matched two elements, and the label named neither —
+the per-field `aria-label`s win. Two labelled controls are a group, which is what
+`Fieldset` + `FieldsetLegend` is for. axe sees none of this, its duplicate-id
+rules being deprecated.
+
+## Two of what the value touches, one of everything else
+
+Two fields, two carriers, two names, **two entries in the `FormData`** — and one
+grid, one popover, one trigger. That split is the whole shape of the component,
+and ADR-0027 draws it: a range is two **values**, so it posts as two; and it is
+one **choice**, so it is made in one place.
+
+One name carrying both would break the promise the family is built on — one
+field, one name, one value a server never has to parse — and a `FormData` with
+two entries under a single key is a shape every backend reads differently.
+
+## Props
+
+<Controls of={DateRangePickerStories.Default} />
+
+`disabled`, `required`, `readOnly`, `form` and `size` apply to **both** fields.
+Anything that names one value — a `name`, a `defaultValue`, an `onChange` —
+would have to be given twice, so it is declared twice here rather than inherited
+once and quietly applied to one of them.
+
+<Canvas of={DateRangePickerStories.WithAStay} />
+
+## Usage
+
+### The popover waits for the second click
+
+Choosing a start does not close the calendar. Closing there would ask the user to
+reopen it to finish the thing they had just started — so the surface stays, the
+start is written to its field immediately, and the second click closes it.
+
+A click **earlier than the start** rewinds: it becomes the new start and the end
+is cleared. Refusing it is the other option and is worse — the intent is
+unambiguous, and a control that answers a clear intent with nothing teaches
+people to distrust it.
+
+The same day twice is a **one-day range**, not an error.
+
+### Typing is not clicking
+
+A click walks a model that knows what the previous click meant. A keystroke names
+one end outright and leaves the other as it was — so it can make a pair a click
+never could: a start typed after the end.
+
+When that happens **the other end is dropped** — whichever one was typed, so an
+end typed before the start drops the start. It is the same instinct the rewind
+has: what was typed is what was meant, and the end nobody just touched is the one
+that no longer makes sense. The carrier goes with it, so the form never posts an
+inverted pair the consumer has been told does not exist.
+
+### Choosing rather than typing
+
+<Canvas of={DateRangePickerStories.PickOnly} />
+
+`pickOnly` makes both fields the calendar's trigger — the shape to reach for when
+the user does not already know the dates, which is most of what a booking is. It
+is a prop of ours rather than the platform's `readonly`, which means "the user
+cannot modify this value" and would be false while the calendar modifies it
+(WCAG 4.1.2).
+
+Both fields then refuse typing at the native `beforeinput` — every route into a
+value, keystroke and paste alike — and both answer **Enter, Space and ArrowDown**
+as well as a click, because a field styled as a trigger that answers no key is an
+affordance a keyboard user can see and cannot use.
+
+`readOnly` still works and still means what it says: it disables the trigger too,
+so nothing can change either end.
+
+### Per-date rules
+
+<Canvas of={DateRangePickerStories.PerDateRules} />
+
+`isDateDisabled` is asked about every day the grid draws — the thing `min`/`max`
+cannot express, because they are an interval and not a set.
+
+**It refuses days in the grid only.** A date typed into either field passes
+through every intermediate value on its way to a valid one, so refusing them as
+they are typed would make the fields unusable. Validate on submit as you would
+anyway.
+
+### What it hands back
+
+<Canvas of={DateRangePickerStories.ReadingTheValue} />
+
+A `CivilRange` — `{ start, end }`, each a `CivilDate` or `null` — and never a
+pair of `Date`s. It fires on **every** move, half-made included: the first click
+reports `{ start, end: null }`, so a consumer can draw that state rather than
+waiting in the dark for the second.
+
+Both ends nullable is the shape rather than a convenience. A range is picked in
+two gestures, so between them there is a start and there is no end, and an end
+equal to the start would read as a one-day stay — a different answer from "not
+finished".
+
+## Accessibility
+
+- **Each field is named, the trigger once for both.** Two fields, two names, one
+  calendar — so there is one control to open it and no ambiguity about which
+  field it belongs to.
+- **The ends are the selection; the span is not.** `aria-selected` on the two
+  ends and a fill on the days between, never both on one cell — a day that
+  claimed both would be announced as chosen when it is only spanned.
+- **Which end is being chosen is said out loud.** After the first click the grid
+  is choosing an end, and nothing on screen says so. The calendar announces it as
+  it goes, and the finished range is announced again **outside** the popover,
+  because that surface closes on the very click that completes it.
+- **The grid is the APG's date grid**, unchanged by the range: one tab stop for
+  the month, arrows by day and week, PageUp/PageDown by month.

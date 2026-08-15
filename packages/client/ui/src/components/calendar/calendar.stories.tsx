@@ -62,7 +62,19 @@ export const ReadingTheValue: Story = {
     const [value, setValue] = useState<CivilDate | null>(null);
     return (
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-        <Calendar {...args} value={value} onValueChange={setValue} />
+        {/* NAMED rather than spread — and the rule is narrower than an earlier
+            version of this comment claimed. A union spread on its own is fine;
+            what fails is spreading it beside props that are MEMBERS of the
+            union, `value` and `onValueChange` here, because TypeScript cannot
+            then tell which member the result is meant to be. That is the whole
+            ergonomic cost of discriminating on `selection`, and it is paid at
+            the few call sites that set the value explicitly. */}
+        <Calendar
+          defaultMonth={args.defaultMonth}
+          selection="day"
+          value={value}
+          onValueChange={setValue}
+        />
         <output
           style={{ font: 'var(--fm-font-mono, monospace)', opacity: 0.7 }}
         >

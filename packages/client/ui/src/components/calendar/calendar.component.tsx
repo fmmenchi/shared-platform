@@ -2,6 +2,14 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { cn } from '../../util/cn.js';
 import { Button } from '../button/button.component.js';
 import { useControlled } from '../../primitives/use-controlled.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import {
+  EMPTY_RANGE,
+  isInRange,
+  isRangeEnd,
+  isWholeRange,
+  takeDay,
+} from '../../date/civil-range.js';
 import {
   useCopyFormatter,
   useFormatter,
@@ -19,7 +27,7 @@ import {
 import { calendarMessages } from './calendar.messages.js';
 import { calendarVariants } from './calendar.variants.js';
 import type { CalendarProps } from './calendar.types.js';
-import type { CivilDate } from '../../date/civil-date.types.js';
+import type { CivilDate, CivilRange } from '../../date/civil-date.types.js';
 import styles from './calendar.module.css';
 
 /**
@@ -96,6 +104,7 @@ function Calendar(props: CalendarProps) {
     value,
     defaultValue,
     onValueChange,
+    selection = 'day',
     month,
     defaultMonth,
     onMonthChange,
@@ -118,6 +127,8 @@ function Calendar(props: CalendarProps) {
   // inside the effect: read during render it would be ref access in render,
   // which the React Compiler refuses outright.
   const [announcement, setAnnouncement] = useState('');
+  /** A sentence said during an event, waiting to survive the commit's effects. */
+  const pending = useRef<string | null>(null);
   const arrived = useRef(false);
   /** The locale's numerals, so a day is written the way its month is. */
   const digits = useMemo(
@@ -135,18 +146,92 @@ function Calendar(props: CalendarProps) {
     [formatter.locale],
   );
 
-  const [selected, setSelected] = useControlled<CivilDate | null>({
+  // ONE PIECE OF STATE FOR BOTH SHAPES, and the shape is the `selection` prop
+  // rather than something guessed from the value: uncontrolled and empty, a
+  // `null` says nothing about which kind of answer the consumer wants back.
+  const ranged = selection === 'range';
+  // SAY SO rather than crash later. The shape of the value follows this prop,
+  // and a consumer who moves it mid-life leaves the other shape in state.
+  const [initialSelection] = useState(selection);
+  useDevWarning(
+    initialSelection !== selection,
+    `Calendar: \`selection\` changed from "${initialSelection}" to "${selection}". The value's shape follows it, so the selection is dropped rather than reinterpreted — pick one for the component's lifetime, as \`useControlled\` asks of controlled and uncontrolled.`,
+  );
+  const [selected, setSelected] = useControlled<CivilDate | CivilRange | null>({
     value,
-    defaultValue: defaultValue ?? null,
+    defaultValue: defaultValue ?? (ranged ? EMPTY_RANGE : null),
     onChange: (next) => {
-      if (next !== null) onValueChange?.(next);
+      if (next !== null) onValueChange?.(next as never);
     },
     name: 'Calendar',
   });
 
+  // THE RANGE, READ SAFELY. `selected` is one of two shapes and every reader
+  // below wants the same three questions answered — is this day an end, is it
+  // in the middle, and which single day should the month and the tab stop
+  // follow. Asking them once here is what keeps the branching out of the grid.
+  // READ AS A RANGE ONLY IF IT IS ONE. The cast this replaced was unchecked, and
+  // `selection` is an ordinary prop a consumer can hold in state: flipping it
+  // from `day` to `range` left a `CivilDate` in the selection, so `start` came
+  // out `undefined` — which is not `null`, so the guards downstream let it
+  // through and `isSameDay` dereferenced it. Measured: an unhandled TypeError
+  // that unmounted the whole tree.
+  const range: CivilRange =
+    ranged && selected !== null && 'start' in selected ? selected : EMPTY_RANGE;
+  // THE START, not the end. A stored booking handed to a fresh calendar opens
+  // on the month it BEGINS in: measured with the end winning, a December-to-
+  // January range opened on January and the start was not on the grid at all —
+  // the user was shown the second half of their own answer. The shipped
+  // `DateRangePicker` already seeded its month from the start, so the two
+  // disagreed.
+  const anchorDay: CivilDate | null = ranged
+    ? (range.start ?? range.end)
+    : (selected as CivilDate | null);
+  const isChosen = (day: CivilDate) =>
+    ranged
+      ? isRangeEnd(range, day)
+      : selected !== null && isSameDay(day, selected as CivilDate);
+
+  /**
+   * WHAT A CLICK OR AN ENTER DOES, in one place for both shapes.
+   *
+   * A day replaces the selection. A range walks the model in `civil-range.ts`,
+   * which is where every branch of it is argued and tested away from the
+   * forty-two cells that would otherwise distract from it.
+   */
+  const choose = (day: CivilDate) => {
+    if (!ranged) {
+      setSelected(day);
+      return;
+    }
+    const next = takeDay(range, day);
+    setSelected(next);
+    // SAID OUT LOUD, because nothing on screen says it to a reader who cannot
+    // see the highlight move. After the first click the grid is choosing an
+    // END, and that is a state change with no visible announcement of its own.
+    // The sentence names the day too, so two clicks are told apart rather than
+    // both arriving as "selected".
+    // HELD, not set. The month effect below writes the same state AFTER the
+    // commit, so a sentence set here during the event loses to it — and the
+    // case where they collide is the one that matters most: completing a range
+    // that crosses into another month, with the consumer moving `month` with
+    // the value as ADR-0027's own recipe tells them to. Measured, `rangeWhole`
+    // never reached the DOM at all; the reader was told the month had changed
+    // and never that their range was finished.
+    pending.current = isWholeRange(next)
+      ? t('rangeWhole', {
+          start: longDate.format(utc(next.start)),
+          end: longDate.format(utc(next.end)),
+        })
+      : t('rangeStart', {
+          date: longDate.format(utc(next.start as CivilDate)),
+        });
+    setAnnouncement(pending.current);
+  };
+
   const [shown, setShown] = useControlled<CivilDate>({
     value: month,
-    defaultValue: startOfMonth(defaultMonth ?? selected ?? today()),
+    defaultValue: startOfMonth(defaultMonth ?? anchorDay ?? today()),
     onChange: onMonthChange,
     name: 'Calendar',
   });
@@ -155,7 +240,7 @@ function Calendar(props: CalendarProps) {
   // the month — never on "today" when today is elsewhere, since arrowing into a
   // grid should not begin by scrolling it somewhere else.
   const [focused, setFocused] = useState<CivilDate>(
-    () => selected ?? startOfMonth(shown),
+    () => anchorDay ?? startOfMonth(shown),
   );
   // WHETHER THE FOCUS BELONGS IN THE GRID AT ALL. Moving to a cell nobody asked
   // for would steal focus on first paint, so it only ever follows a key or a
@@ -275,17 +360,17 @@ function Calendar(props: CalendarProps) {
     // then Enter stored the 2nd. The APG's date grid puts the initial focus on
     // the selected date, and derived is the only way to say so now.
     if (
-      selected !== null &&
-      weeks.some((week) => week.some((day) => isSameDay(day, selected)))
+      anchorDay !== null &&
+      weeks.some((week) => week.some((day) => isSameDay(day, anchorDay)))
     ) {
-      return selected;
+      return anchorDay;
     }
     return {
       year: shown.year,
       month: shown.month,
       day: Math.min(focused.day, daysInMonth(shown.year, shown.month)),
     };
-  }, [weeks, focused, shown, selected]);
+  }, [weeks, focused, shown, anchorDay]);
 
   // The month changed, so say so — but never on arrival, which is not news.
   useEffect(() => {
@@ -293,7 +378,13 @@ function Calendar(props: CalendarProps) {
       arrived.current = true;
       return;
     }
-    setAnnouncement(t('month', { month: announcedMonth }));
+    // A SENTENCE FROM THIS COMMIT WINS. The month moved because a day was
+    // chosen, and "you have chosen these two days" is the news; "you are now
+    // looking at September" is the mechanism. Cleared either way, so the next
+    // month change — a button, a PageDown — speaks for itself again.
+    const held = pending.current;
+    pending.current = null;
+    setAnnouncement(held ?? t('month', { month: announcedMonth }));
   }, [announcedMonth, t]);
 
   // PUT FOCUS ON WHATEVER CELL NOW HOLDS THE FOCUSED DAY. This is the half that
@@ -368,7 +459,7 @@ function Calendar(props: CalendarProps) {
       event.preventDefault();
       if (isDateDisabled?.(focusable) === true) return;
       roving.current = true;
-      setSelected(focusable);
+      choose(focusable);
       return;
     }
 
@@ -425,6 +516,12 @@ function Calendar(props: CalendarProps) {
       <table
         ref={grid}
         role="grid"
+        // TWO CELLS CARRY `aria-selected` IN A RANGE, and a `grid` defaults to
+        // `aria-multiselectable="false"` — "only one item may be selected at a
+        // time". Declaring it is the difference between a grid that has two
+        // selected cells and one that contradicts itself. axe does not check
+        // this, so nothing but reading the spec finds it.
+        aria-multiselectable={ranged || undefined}
         aria-labelledby={captionId}
         className={styles.grid}
         onKeyDown={onKeyDown}
@@ -457,9 +554,37 @@ function Calendar(props: CalendarProps) {
               {week.map((day, column) => {
                 const iso = formatIsoDate(day);
                 const outside = day.month !== shown.month;
-                const isSelected =
-                  selected !== null && isSameDay(day, selected);
-                const disabled = isDateDisabled?.(day) ?? false;
+                const isSelected = isChosen(day);
+                // BETWEEN the ends, and never one of them. The middle of a
+                // range is a fill and not a selection: a day that claimed both
+                // would be announced as chosen when it is only spanned.
+                const refused = isDateDisabled?.(day) ?? false;
+                // A REFUSED DAY IS NOT PAINTED AS CHOSEN. `takeDay` does not
+                // consult `isDateDisabled` — a range across a blackout day is a
+                // decision ADR-0027 leaves open, and quietly forbidding it here
+                // would be taking it — but a cell saying "not for you" AND
+                // wearing the span was saying two opposite things at once.
+                // What the range covers is still what it covers; this is the
+                // one day in it the consumer has already refused.
+                const spanned = ranged && !refused && isInRange(range, day);
+                const disabled = refused;
+                // WHICH OF THE THREE THIS DAY IS, in words. `data-in-range` has
+                // no ARIA counterpart to lean on, so without this an end, a
+                // spanned day and a day outside the range were all announced as
+                // nothing but their date — measured, and the middle of a range
+                // is the information a range carries.
+                const named = longDate.format(utc(day));
+                const cellName = !ranged
+                  ? named
+                  : isSelected &&
+                      range.start !== null &&
+                      isSameDay(day, range.start)
+                    ? t('cellStart', { date: named })
+                    : isSelected
+                      ? t('cellEnd', { date: named })
+                      : spanned
+                        ? t('cellSpan', { date: named })
+                        : named;
                 return (
                   /*
                    * THE CELL IS THE CONTROL. The APG's own date grid makes the
@@ -486,6 +611,7 @@ function Calendar(props: CalendarProps) {
                     data-day={iso}
                     data-outside={outside || undefined}
                     data-selected={isSelected || undefined}
+                    data-in-range={spanned || undefined}
                     data-today={isSameDay(day, now) || undefined}
                     className={styles.day}
                     aria-selected={isSelected || undefined}
@@ -493,7 +619,7 @@ function Calendar(props: CalendarProps) {
                     // and the column header only adds a weekday. A reader
                     // arrowing off the 31st heard "Tuesday, 1" and was never
                     // told which month they had landed in.
-                    aria-label={longDate.format(utc(day))}
+                    aria-label={cellName}
                     // The platform's own "you are here". Without it a calendar
                     // has no today at all: it was read to pick the opening month
                     // and then never mentioned again.
@@ -510,7 +636,7 @@ function Calendar(props: CalendarProps) {
                       if (disabled) return;
                       roving.current = true;
                       setFocused(day);
-                      setSelected(day);
+                      choose(day);
                     }}
                     onFocus={() => setFocused(day)}
                   >
