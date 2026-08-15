@@ -730,6 +730,41 @@ the very strings it will accept, in the script it will accept them in.
 `onTimeChange` reports `null` — `02:30` with an unspoken AM is a wrong-but-valid value, and an
 unchosen period is exactly as incomplete as a half-typed minute.
 
+### And what four adversarial reviews found after that
+
+Twenty findings, on four separate fronts. Three are decisions rather than repairs and belong in this
+record:
+
+**An incomplete masked field is now an INVALID control, not an empty one.** `08/12/` reads as
+unfinished; `02:30 AM/PM` does not — and the platform could not tell them apart, because the visible
+input holds text while the carrier holds `''` and is deliberately not `required` (a required carrier
+is a control the browser cannot focus, so the submit is refused showing nothing). Measured:
+`<TimeInput required />`, four digits typed, `checkValidity()` **true** and the form posting an empty
+string with no signal of any kind. The visible field now carries `setCustomValidity` while its text
+names nothing, **which is what `input[type=date]` does with the same keystrokes** — a partially
+filled native date input reports `badInput` and the browser stops the submit. It applies to the date
+family too, and two `apps/ui-ports-validation` tests changed to match. A form whose library owns
+validation sets `noValidate` and is untouched, which is the right split: the platform speaks only
+where nothing else does.
+
+**The day period is typed by three rules, not one, and the third is a toggle.** Swept across all 3846
+locale tags `Intl` knows, a "characters one word has and the other has not" rule leaves the sets
+EMPTY for `ak` (`AN`/`ANW`) and near-empty for `cs`, `sl`, `hsb`, `sr-ME` (`dop.`/`odp.`) — an Akan
+user could not enter a morning time at all, and a Czech user no afternoon. So any other letter of
+either word toggles. Toggling is worse than naming and infinitely better than refusing, and it is the
+rule that makes the field complete rather than clever.
+
+**`resolvedOptions().hourCycle` is not enough to know there is a day period.** `fr-CM` resolves `h12`
+and draws none, which made `09:30` and `21:30` the same three characters. The cycle now follows the
+PATTERN as well as the engine's answer.
+
+The rest were defects, and the two worst were in the shared engine and therefore in `DateInput` since
+it shipped — neither reachable from a date frame, which is why three reviews of it never saw them.
+One inserted `0` in front of a part that already began with one discarded every part behind it (`09:00
+AM` became the single character `0`); and the caret correction added above was itself one place short
+wherever padding fires. Both are recorded where they live, with the measurement, and pinned by a
+mutant in each field.
+
 ## What would change this
 
 `::picker()` gaining a spec for date inputs would make the native popup themable and shrink what
