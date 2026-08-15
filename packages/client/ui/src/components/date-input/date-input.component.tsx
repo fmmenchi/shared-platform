@@ -12,6 +12,7 @@ import {
 } from '../../date/civil-date.js';
 import {
   applyDeletion,
+  caretAfterMask,
   caretFor,
   maskSegments,
   numeralsOf,
@@ -344,7 +345,8 @@ function DateInput(props: DateInputProps) {
           const deleted = deleting
             ? applyDeletion(frame, shown.current, typed, caret, compose)
             : null;
-          const { text, iso } = deleted ?? mask(typed);
+          const masked = deleted ?? mask(typed);
+          const { text, iso } = masked;
 
           // Written straight onto the node. It is uncontrolled, so React will
           // not re-render it back — and a plain assignment is right HERE,
@@ -352,7 +354,14 @@ function DateInput(props: DateInputProps) {
           // React has already heard it.
           if (text !== typed) {
             element.value = text;
-            const position = caretFor(frame, text, typed, caret);
+            // TWO RULES, because the two edits are not the same shape. A
+            // DELETION leaves the surviving digits where they were, and the
+            // right-anchored count is exact. An INSERT reflows the whole
+            // stream, and only the mask's own record of where each digit came
+            // from puts the caret back beside the keystroke.
+            const position = deleted
+              ? caretFor(frame, text, typed, caret)
+              : caretAfterMask(frame, typed, caret, masked);
             element.setSelectionRange(position, position);
           }
 

@@ -17,6 +17,7 @@ import {
 import type { HourCycle } from '../../date/civil-time.types.js';
 import {
   applyDeletion,
+  caretAfterMask,
   caretFor,
   maskSegments,
   numeralsOf,
@@ -648,7 +649,8 @@ function TimeInput(props: TimeInputProps) {
                 drawWith(period),
               )
             : null;
-          const { text, iso } = deleted ?? maskWith(typed, period, pasted);
+          const masked = deleted ?? maskWith(typed, period, pasted);
+          const { text, iso } = masked;
 
           // Written straight onto the node. It is uncontrolled, so React will
           // not re-render it back — and a plain assignment is right HERE,
@@ -656,7 +658,14 @@ function TimeInput(props: TimeInputProps) {
           // React has already heard it.
           if (text !== typed) {
             element.value = text;
-            const position = caretFor(frame, text, typed, caret);
+            // TWO RULES, because the two edits are not the same shape. A
+            // DELETION leaves the surviving digits where they were, and the
+            // right-anchored count is exact. An INSERT reflows the whole
+            // stream, and only the mask's own record of where each digit came
+            // from puts the caret back beside the keystroke.
+            const position = deleted
+              ? caretFor(frame, text, typed, caret)
+              : caretAfterMask(frame, typed, caret, masked);
             element.setSelectionRange(position, position);
           }
 

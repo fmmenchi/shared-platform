@@ -368,25 +368,64 @@ describe('TimeInput', () => {
       expect(carrier(container)).toHaveValue('14:35');
     });
 
-    it('advances the caret when the frame is already full', async () => {
-      // THE ANCHOR'S ONE BLIND SPOT, and it is not a twelve-hour one — the same
-      // hole is in every segmented field this engine drives. Inserting into a
-      // full value overflows the frame, the mask drops the surplus off the
-      // right, and the right-anchored caret slipped one place left with it:
-      // back to the start, every time, so each keystroke landed in front of the
-      // last and the field walked through `10:09`, `07:10`, `04:07` to `05:04`.
-      //
-      // The CARET is what is asserted. A reflow into a full fixed frame is
-      // lossy whatever it does; the defect was the loop, not the loss.
-      renderUi(
+    it('types a whole time in from the head of a full one', async () => {
+      // THE ANCHOR'S BLIND SPOT, and the story two repairs failed to fix.
+      // Inserting into a full value reflows the whole digit stream; the caret
+      // has to land beside the keystroke or every following digit goes in at
+      // the wrong place. Measured before the mask reported its own provenance:
+      // `0`,`1`,`0`,`5` typed at the head of `09:00` stored `00:10`, and the
+      // caret sat at 0 for ever under the version before that, walking the
+      // field through `10:09`, `07:10`, `04:07` to `05:04`.
+      const { container } = renderUi(
         <TimeInput name="opens" aria-label="Opens at" defaultValue="09:00" />,
         { locale: 'it' },
       );
       const field = screen.getByRole('textbox') as HTMLInputElement;
       await browser.click(field);
       field.setSelectionRange(0, 0);
-      await browser.keyboard('1');
-      expect(field.selectionStart).toBeGreaterThan(0);
+      await browser.keyboard('0105');
+
+      expect(field).toHaveValue('01:05');
+      expect(carrier(container)).toHaveValue('01:05');
+    });
+
+    it('does the same where the hour has a floor and a day period', async () => {
+      // The twelve-hour frame is the one where a part can be left one digit
+      // wide — `00` is below the hour's floor — so the intermediate states are
+      // the ugliest and the caret matters most. Measured: `0`,`1`,`0`,`0` at
+      // the head of `09:00 AM` used to settle at `10:00`; the user spelled one
+      // o'clock and stored ten.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" defaultValue="09:00" />,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('0100');
+
+      // The morning was already chosen — the seed drew it — and editing the
+      // digits does not unchoose it, so the time is whole straight away.
+      expect(field).toHaveValue('01:00 AM');
+      expect(carrier(container)).toHaveValue('01:00');
+    });
+
+    it('puts the caret past a part the mask has just completed', async () => {
+      // The other half of the same rule, and the half a capacity count gets
+      // wrong: `2` at the head of `09:00 AM` makes the hour `02` by supplying a
+      // zero nobody typed, and the caret belongs after that hour rather than in
+      // front of the digit just pressed.
+      renderUi(
+        <TimeInput name="opens" aria-label="Opens at" defaultValue="09:00" />,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('2');
+
+      expect(field).toHaveValue('02:09 AM');
+      expect(field.selectionStart).toBe(3);
     });
 
     it('edits one part without moving the others', async () => {

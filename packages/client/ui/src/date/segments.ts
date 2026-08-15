@@ -155,7 +155,10 @@ export function applyDeletion<Part extends string>(
   const whole = frame.order.every(
     (part) => (held.get(part) ?? '').length === frame.width[part],
   );
-  return { text, iso: whole ? compose(held) : '' };
+  // A deletion takes digits OUT of a string the frame already held, so the
+  // surviving ones keep their places and the right-anchored `caretFor` below
+  // is exact. There is no reflow to record.
+  return { text, iso: whole ? compose(held) : '', marks: [] };
 }
 
 /**
@@ -200,7 +203,7 @@ export function maskSegments<Part extends string>(
 
   if (recognise !== undefined && display !== undefined) {
     const known = recognise(typed);
-    if (known !== null) return { text: display(known), iso: known };
+    if (known !== null) return { text: display(known), iso: known, marks: [] };
   }
 
   const digits = [...typed].map(frame.toAscii).filter((char) => char !== '');
@@ -215,12 +218,26 @@ export function maskSegments<Part extends string>(
     return candidate.length < frame.width[part] || value >= frame.floor[part];
   };
 
+  // WHERE EACH DIGIT CAME FROM, recorded as the parts are filled.
+  //
+  // The caret cannot be derived from the finished string alone, and two
+  // attempts to derive it from a COUNT — how many digits the frame lost — were
+  // measured wrong in opposite directions: counting against the frame's
+  // capacity misplaces the keystroke after a padding insert, and counting
+  // against what the mask consumed misplaces a value typed in from the left.
+  // The two cases differ in WHERE the loss and the padding fell relative to the
+  // caret, which no single number carries. Kept per digit, they are the same
+  // question answered exactly.
+  const provenance = new Map<Part, (number | null)[]>();
+
   for (const part of frame.order) {
     let value = '';
+    const taken: number[] = [];
     while (index < digits.length && value.length < frame.width[part]) {
       const candidate = value + digits[index];
       if (!admits(part, candidate)) break;
       value = candidate;
+      taken.push(index);
       index += 1;
     }
     // A part closed early by a digit that did not fit is PADDED, so that digit
@@ -238,22 +255,98 @@ export function maskSegments<Part extends string>(
       value = padded;
     }
     held.set(part, value);
+    // `padStart` prepends, so the supplied zeros are the leading entries.
+    provenance.set(part, [
+      ...Array<number | null>(value.length - taken.length).fill(null),
+      ...taken,
+    ]);
   }
 
   let text = '';
+  const marks: { at: number; src: number | null }[] = [];
   for (const piece of frame.parts) {
     if (!frame.isPart(piece.type)) {
       text += draw(piece);
       continue;
     }
     const value = held.get(piece.type) ?? '';
-    text += frame.toLocal(value);
+    const local = frame.toLocal(value);
+    const from = provenance.get(piece.type) ?? [];
+    // Walked as CODE POINTS and paired with the sources as they are appended,
+    // rather than counted back out of the finished text. A locale can draw a
+    // day period that CONTAINS a digit — `blo` writes its periods `1ka`/`2ja` —
+    // and counting digits out of the result would silently pair the frame's
+    // parts with a literal's.
+    let taken = 0;
+    for (let offset = 0; offset < local.length;) {
+      const char = String.fromCodePoint(local.codePointAt(offset) ?? 0);
+      marks.push({ at: text.length + offset, src: from[taken] ?? null });
+      offset += char.length;
+      taken += 1;
+    }
+    text += local;
     // An incomplete part ends the string: everything after it would be a
     // separator, or a field with nothing in front of it.
-    if (value.length < frame.width[piece.type]) return { text, iso: '' };
+    if (value.length < frame.width[piece.type]) return { text, iso: '', marks };
   }
 
-  return { text, iso: compose(held) };
+  return { text, iso: compose(held), marks };
+}
+
+/**
+ * Where the caret goes after the mask has REFLOWED what was typed.
+ *
+ * Right where the browser would have put it, had the frame not moved anything:
+ * immediately after the digit the user just pressed — which means at the offset
+ * of the next digit along, past whatever separator sits between them.
+ *
+ * This replaces two versions that anchored on a COUNT of digits to the right of
+ * the caret, corrected by how many the frame had lost. Both shipped a
+ * regression, in opposite directions, because the correction depends on where
+ * the loss and the padding fell relative to the caret:
+ *
+ * | typed at the head of…            | by capacity   | by consumption | here      |
+ * | -------------------------------- | ------------- | -------------- | --------- |
+ * | `12/08/2026`, then `01011999`    | `01/01/1999`  | `01/10/1199`   | ✓ former |
+ * | `09:00 AM`, then `2`             | before the 2  | after the hour | ✓ latter |
+ * | `09:00`, then `0`,`1`,`0`,`5`    | `00:10`       | —              | `01:05`  |
+ *
+ * Reading it off the mask's own record answers both at once, because it is no
+ * longer inferring what happened to a digit — it is being told.
+ */
+export function caretAfterMask<Part extends string>(
+  frame: SegmentFrame<Part>,
+  typed: string,
+  caret: number,
+  masked: Masked,
+): number {
+  const { text, marks } = masked;
+  // Nothing was laid into the frame — a recognised paste, which replaces the
+  // whole value, so the caret belongs after it.
+  if (marks.length === 0) return text.length;
+
+  const isDigit = (char: string) => frame.toAscii(char) !== '';
+  // `selectionStart` is read AFTER the browser applied the edit, so the digit
+  // the user just pressed is the last one before the caret.
+  const before = [...typed.slice(0, caret)].filter(isDigit).length;
+
+  let mine = -1;
+  for (let at = 0; at < marks.length; at += 1) {
+    if (marks[at]?.src === before - 1) {
+      mine = at;
+      break;
+    }
+  }
+  // THEIR DIGIT DID NOT SURVIVE — the frame was full and the overflow came off
+  // — or there was none, which is what a letter typed into a twelve-hour field
+  // looks like. Leave the caret where it is rather than move it to a digit that
+  // is not theirs: an earlier version fell back to the last digit BEFORE theirs,
+  // which sent the caret to the end of the field whenever the keystroke landed
+  // past the last slot. Measured across 9160 inserts, that was the only
+  // disagreement with the oracle, and it accounted for all of it.
+  if (mine === -1) return Math.min(caret, text.length);
+
+  return marks[mine + 1]?.at ?? text.length;
 }
 
 /**

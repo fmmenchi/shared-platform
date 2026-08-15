@@ -65,4 +65,19 @@ export interface Masked {
   readonly text: string;
   /** The canonical value it names, or `''` while it names none yet. */
   readonly iso: string;
+  /**
+   * WHERE EACH DIGIT OF `text` CAME FROM — its offset, and its index in the
+   * typed digit stream, or `null` where the frame supplied it by padding.
+   *
+   * The caret needs this and cannot be given less. Two versions derived it from
+   * a count of what the frame had lost, and both were measured wrong in
+   * opposite directions: the loss and the padding fall on different sides of
+   * the caret in different edits, and a single number cannot say which. Empty
+   * where there was no reflow to record — a recognised paste, or a deletion,
+   * which leaves the surviving digits exactly where they were.
+   */
+  readonly marks: readonly {
+    readonly at: number;
+    readonly src: number | null;
+  }[];
 }
