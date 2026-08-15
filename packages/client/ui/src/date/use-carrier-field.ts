@@ -52,6 +52,8 @@ export function useCarrierField<Value>(
   // would delete what the user is in the middle of typing. Measured: without
   // this, one Backspace emptied the whole field.
   const writingOwn = useRef(false);
+  /** The last unshowable value complained about, so it is said once. */
+  const complained = useRef('');
   const write = (iso: string) => {
     const element = carrier.current;
     if (element === null || element.value === iso) return;
@@ -103,21 +105,6 @@ export function useCarrierField<Value>(
   // `setPicked`, a `setMonth` and a call to the consumer. The keystroke path
   // keeps its own per-keystroke reporting and records what it said here, so the
   // two cannot disagree about what the consumer was last told.
-  /**
-   * TEXT THAT NAMES NOTHING IS AN INVALID CONTROL, and the platform is told so
-   * rather than left to guess from an input that looks full.
-   *
-   * Cleared the moment the value is whole again, so a field is never left
-   * refusing a submit it should allow.
-   */
-  const saySo = (text: string, iso: string) => {
-    const target = field.current;
-    if (target === null) return;
-    target.setCustomValidity(
-      text !== '' && iso === '' ? latest.current.incomplete : '',
-    );
-  };
-
   const reported = useRef(seed);
   const announce = (iso: string) => {
     if (iso === reported.current) return;
@@ -151,7 +138,6 @@ export function useCarrierField<Value>(
       if (!wasWhole && !fromReset) return;
       target.value = '';
       shown.current = '';
-      saySo('', '');
       announce('');
       return;
     }
@@ -169,7 +155,10 @@ export function useCarrierField<Value>(
       // nobody — while the SEED path warns for that exact string. Reverting is
       // not this component's call: the write came from outside with intent, and
       // guessing at a repair for it would be worse than being loud.
-      if (process.env.NODE_ENV !== 'production') {
+      // ONCE PER VALUE, not once per write. A library that re-applies its state
+      // on every render would otherwise say the same thing on every render.
+      if (process.env.NODE_ENV !== 'production' && complained.current !== iso) {
+        complained.current = iso;
         console.warn(
           `${label}: the value ${JSON.stringify(iso)} was written to this field from outside and does not name anything it can show, so the box still holds what it held. The form will post it as it is.`,
         );
@@ -199,7 +188,6 @@ export function useCarrierField<Value>(
     // external clear was refused and the box went on showing a value the form no
     // longer held.
     shown.current = text;
-    saySo(text, canonical);
     announce(canonical);
   };
 
@@ -251,7 +239,15 @@ export function useCarrierField<Value>(
       },
       set(next: unknown) {
         set.call(element, next);
-        arrive(String(next));
+        // READ BACK OFF THE NODE, not from the argument. `value` is declared
+        // `[LegacyNullToEmptyString]`, so `node.value = null` — which is what a
+        // form library writes to clear a field — puts `''` in the DOM while the
+        // argument is still `null`. Stringified, that arrived here as the
+        // literal `'null'`, failed to parse, and was dropped: measured, the
+        // carrier went empty, the box went on showing the old date, and the
+        // consumer was told nothing. The node is the only thing that knows what
+        // was actually stored.
+        arrive(get.call(element) as string);
       },
     });
 
@@ -342,7 +338,6 @@ export function useCarrierField<Value>(
   const record = (text: string, iso: string) => {
     shown.current = text;
     reported.current = iso;
-    saySo(text, iso);
   };
 
   return { carrier, field, shown, write, record };

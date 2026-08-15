@@ -730,40 +730,68 @@ the very strings it will accept, in the script it will accept them in.
 `onTimeChange` reports `null` — `02:30` with an unspoken AM is a wrong-but-valid value, and an
 unchosen period is exactly as incomplete as a half-typed minute.
 
-### And what four adversarial reviews found after that
+### And what eight adversarial reviews found — including in the repairs
 
-Twenty findings, on four separate fronts. Three are decisions rather than repairs and belong in this
-record:
+Four reviewers went at the components, and four more at the repairs those first four produced. The
+second round is the one worth recording, because **most of what the first round's fix commit changed
+was wrong**, and it was wrong in a way this record should be able to warn the next person about.
 
-**An incomplete masked field is now an INVALID control, not an empty one.** `08/12/` reads as
-unfinished; `02:30 AM/PM` does not — and the platform could not tell them apart, because the visible
-input holds text while the carrier holds `''` and is deliberately not `required` (a required carrier
-is a control the browser cannot focus, so the submit is refused showing nothing). Measured:
-`<TimeInput required />`, four digits typed, `checkValidity()` **true** and the form posting an empty
-string with no signal of any kind. The visible field now carries `setCustomValidity` while its text
-names nothing, **which is what `input[type=date]` does with the same keystrokes** — a partially
-filled native date input reports `badInput` and the browser stops the submit. It applies to the date
-family too, and two `apps/ui-ports-validation` tests changed to match. A form whose library owns
-validation sets `noValidate` and is untouched, which is the right split: the platform speaks only
-where nothing else does.
+**One decision survives, and it is the one about `Intl`.** `resolvedOptions().hourCycle` is not
+enough to know a day period is drawn: `fr-CM` resolves `h12` and draws none, which made `09:30` and
+`21:30` the same three characters. The cycle now follows the PATTERN as well as the engine's answer.
+Swept across every locale tag `Intl` knows, that guard downgrades exactly two configurations, both
+`fr-CM`, and neither could have drawn a working period anyway — **0 regressions**.
 
-**The day period is typed by three rules, not one, and the third is a toggle.** Swept across all 3846
-locale tags `Intl` knows, a "characters one word has and the other has not" rule leaves the sets
-EMPTY for `ak` (`AN`/`ANW`) and near-empty for `cs`, `sl`, `hsb`, `sr-ME` (`dop.`/`odp.`) — an Akan
-user could not enter a morning time at all, and a Czech user no afternoon. So any other letter of
-either word toggles. Toggling is worse than naming and infinitely better than refusing, and it is the
-rule that makes the field complete rather than clever.
+**The day period is matched as a WORD, by prefix, and nothing toggles.** The first repair scored each
+character on its own and let any letter shared by both words flip the half, so that no locale would be
+left unable to reach one. It was a disaster in the locale it was least excusable in: `AM` typed into
+an `en-US` field read the `A` as morning and the `M` — shared — as "the other one", storing half past
+two in the afternoon, while the field's own placeholder instructed the user to type exactly that.
+Measured over 5408 word-typing cases across 2704 day-period configurations: **4 wrong halves before
+that rule, 4215 after it.** Matching the accumulated letters against the words as prefixes reaches
+both halves everywhere the toggle did — `午前`/`午後` are told apart on their second character, `ak`'s
+`AN`/`ANW` by an exact word beating a prefix, `cs`'s `dop.`/`odp.` by order rather than by content —
+and Latin `a`/`p` remain the fallback for a keyboard that cannot type the locale's script.
 
-**`resolvedOptions().hourCycle` is not enough to know there is a day period.** `fr-CM` resolves `h12`
-and draws none, which made `09:30` and `21:30` the same three characters. The cycle now follows the
-PATTERN as well as the engine's answer.
+**And the rest of that fix commit was withdrawn.** Three changes are now back where they were,
+because the measurements say the repairs cost more than the defects:
 
-The rest were defects, and the two worst were in the shared engine and therefore in `DateInput` since
-it shipped — neither reachable from a date frame, which is why three reviews of it never saw them.
-One inserted `0` in front of a part that already began with one discarded every part behind it (`09:00
-AM` became the single character `0`); and the caret correction added above was itself one place short
-wherever padding fires. Both are recorded where they live, with the measurement, and pinned by a
-mutant in each field.
+- **Refusing a reflow the frame cannot hold.** It looked right — one keystroke at the head of `09:00
+AM` used to leave the field holding the single character `0` — but it only moves the failure one
+  keystroke later: continuing to type still stores ten o'clock for the one o'clock the user spelled,
+  and in `it`, where no refusal fires at all, four keystrokes still store a different real time. It
+  also created three new failures of its own: eighteen dates in 365 where every digit key is dead at
+  one caret offset, a refused keystroke discarding the user's SELECTION, and a field that could never
+  be emptied once it had drawn a leading literal.
+- **Correcting the caret by what the mask CONSUMED** rather than by the frame's capacity. It fixes
+  the one keystroke that follows a padding insert and breaks typing a whole value in from the left:
+  `01011999` at the head of a full `12/08/2026` gives that date under the old rule and `01/10/1199`
+  under the new one. An adversarial oracle over ~35,000 inserts shows the right rule is
+  `consumed − pads landing right of the caret`, which a single number cannot carry — the mask has to
+  report where the padding went. That is a real fix and it is **not** made here, because it is a
+  third guess at caret arithmetic and the first two both shipped a regression.
+- **`setCustomValidity` on an incomplete field.** The direction is defensible — a partially filled
+  `input[type=date]` reports `badInput` and the browser stops the submit — but the implementation
+  pushed the invariant at three sites and violated it at four, so a locale change could leave a field
+  EMPTY, optional and permanently unsubmittable with the message stranded in the previous language.
+  It also takes the element's single `setCustomValidity` slot on a node handed to the consumer through
+  `ref`, silently erasing their own business-rule message. And the exemption it was justified by is
+  false: only Conform sets `noValidate` by default, while this repo's own `RhfForm` sets it too — so
+  the change reached the libraries that were fine and missed the recommended path entirely.
+
+**What is left open, deliberately.** A masked field can still hold text that names nothing and be
+submitted as an empty string with no signal: `required` is satisfied by the visible text, and the
+carrier that holds the value is deliberately not `required` itself. That is a real gap and it is
+recorded as one rather than closed by the third version of a repair. Closing it needs a decision this
+record cannot make on its own — whether a design system may refuse a submit at all, and how a consumer
+turns that off for one field rather than for a whole form.
+
+**The lesson that generalises**, and the reason this section is longer than the fix it describes: two
+of the three withdrawn changes were shipped with a test that had been WEAKENED in the same diff. The
+assertion `expect(field.value).toBe('01/01/1999')` was replaced by `expect(selectionStart)
+.toBeGreaterThan(0)` under a comment explaining why the weaker one was more honest — and the stronger
+one had not become unprovable, it had become FALSE. A test that is relaxed in the commit that breaks
+it cannot report the break. Prefer a mutant over a rationale.
 
 ## What would change this
 

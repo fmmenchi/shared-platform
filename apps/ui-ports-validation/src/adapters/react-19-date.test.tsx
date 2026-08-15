@@ -74,29 +74,18 @@ describe('the date family under React 19 actions', () => {
     expect(data.get('dob')).toBe('2026-08-12');
   });
 
-  it('refuses the submit for a half-typed date, as the native control does', async () => {
-    // CHANGED DELIBERATELY, and the reason is the control this one replaces: a
-    // partially filled `input[type=date]` reports `badInput` and the browser
-    // stops the submit. This field used to post an empty string instead, so a
-    // user looking at `12/08/` got whatever the server said about a missing
-    // value — with no way to know the field they had filled in was the problem.
-    //
-    // A form whose library owns validation sets `noValidate` and is unaffected,
-    // which is the right split: the platform speaks only where nothing else is.
+  it('hands it nothing for a half-typed date, rather than half a date', async () => {
     const action = vi.fn();
-    const { container } = render(<DateForm action={action} />);
+    render(<DateForm action={action} />);
 
-    const field = screen.getByRole('textbox', {
-      name: 'Data di nascita',
-    }) as HTMLInputElement;
-    await browser.fill(field, '1208');
+    await browser.fill(
+      screen.getByRole('textbox', { name: 'Data di nascita' }),
+      '1208',
+    );
     await browser.click(screen.getByRole('button', { name: 'Invia' }));
 
-    expect(field.validity.customError).toBe(true);
-    expect(
-      (container.querySelector('form') as HTMLFormElement).checkValidity(),
-    ).toBe(false);
-    expect(action).not.toHaveBeenCalled();
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect((action.mock.calls[0]?.[0] as FormData).get('dob')).toBe('');
   });
 
   it('comes back from a reset button, box and carrier together', async () => {

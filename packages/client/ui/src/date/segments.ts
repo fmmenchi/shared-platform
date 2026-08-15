@@ -78,6 +78,7 @@ export function applyDeletion<Part extends string>(
   frame: SegmentFrame<Part>,
   before: string,
   typed: string,
+  caret: number,
   compose: (held: ReadonlyMap<Part, string>) => string,
   draw: DrawLiteral = ownValue,
 ): Masked | null {
@@ -154,9 +155,7 @@ export function applyDeletion<Part extends string>(
   const whole = frame.order.every(
     (part) => (held.get(part) ?? '').length === frame.width[part],
   );
-  // A deletion never overflows the frame and never refuses: it takes digits out
-  // of a string the frame already held.
-  return { text, iso: whole ? compose(held) : '', dropped: 0, refused: false };
+  return { text, iso: whole ? compose(held) : '' };
 }
 
 /**
@@ -192,31 +191,16 @@ export function maskSegments<Part extends string>(
   typed: string,
   compose: (held: ReadonlyMap<Part, string>) => string,
   options: {
-    /**
-     * ONE OBJECT, because either half alone does nothing. Two optional
-     * callbacks let a caller pass the recogniser without the renderer and get
-     * silence — the passthrough simply never fires — which is the worst shape a
-     * mistake can take.
-     */
-    readonly passthrough?: {
-      readonly recognise: (typed: string) => string | null;
-      readonly display: (iso: string) => string;
-    };
+    readonly recognise?: (typed: string) => string | null;
+    readonly display?: (iso: string) => string;
     readonly draw?: DrawLiteral;
   } = {},
 ): Masked {
-  const { passthrough, draw = ownValue } = options;
+  const { recognise, display, draw = ownValue } = options;
 
-  if (passthrough !== undefined) {
-    const known = passthrough.recognise(typed);
-    if (known !== null) {
-      return {
-        text: passthrough.display(known),
-        iso: known,
-        dropped: 0,
-        refused: false,
-      };
-    }
+  if (recognise !== undefined && display !== undefined) {
+    const known = recognise(typed);
+    if (known !== null) return { text: display(known), iso: known };
   }
 
   const digits = [...typed].map(frame.toAscii).filter((char) => char !== '');
@@ -256,46 +240,6 @@ export function maskSegments<Part extends string>(
     held.set(part, value);
   }
 
-  // A REFLOW THE FRAME CANNOT HOLD IS REFUSED, NOT OBEYED — and this is the
-  // most expensive thing on this page.
-  //
-  // Typing forward fills the parts left to right, so an incomplete part is
-  // always the LAST one with anything in it. An insert in the middle of a full
-  // field re-pours the whole stream, and then a part can be left incomplete
-  // with full parts BEHIND it — at which point the text loop below, whose rule
-  // is "an incomplete part ends the string", threw every one of them away.
-  //
-  // Measured on an `en-US` twelve-hour field showing `09:00 AM`: press Home,
-  // type `0`. The hour cannot be `00` — below its floor — so the second `0`
-  // starts the minute, the hour is left one digit wide, and the field became
-  // the single character `0` with the carrier cleared. Typing on (`1`,`0`,`0`)
-  // settled at `10:00 AM`: the user spelled one o'clock and stored ten. 60 of
-  // the 1440 `en-US` times and 128 of the 336 `en-US` dates do this; `ja-JP`
-  // dates do it for all 336. It never shows in a locale whose first part has a
-  // floor of 0, which is why `it` — the locale most of these tests use — is
-  // clean, and why this survived three reviews of `DateInput`.
-  //
-  // Refusing is the honest answer rather than a repair: the keystroke names a
-  // value the frame cannot express, so the field keeps what it had.
-  const hole = frame.order.some((part, at) => {
-    if ((held.get(part) ?? '').length === frame.width[part]) return false;
-    return frame.order
-      .slice(at + 1)
-      .some((later) => (held.get(later) ?? '') !== '');
-  });
-  // WHAT THE FRAME DID NOT TAKE, counted from what it consumed rather than from
-  // its capacity. Padding puts in a zero the user never typed, so the frame can
-  // fill up having eaten fewer digits than it has slots — and a caret told only
-  // about the capacity then lands one place left of the keystroke.
-  const dropped = digits.length - index;
-  // ONLY THE HOLE, and not every overflow. Refusing whenever digits were lost
-  // was tried and it contradicts a decision this family already took and
-  // tested: a long paste STOPS AT A WHOLE VALUE rather than being turned away,
-  // which is why neither field carries a `maxLength`. Losing the tail of an
-  // over-long paste is the documented behaviour; losing the parts BEHIND an
-  // incomplete one is the defect.
-  const refused = hole;
-
   let text = '';
   for (const piece of frame.parts) {
     if (!frame.isPart(piece.type)) {
@@ -306,12 +250,10 @@ export function maskSegments<Part extends string>(
     text += frame.toLocal(value);
     // An incomplete part ends the string: everything after it would be a
     // separator, or a field with nothing in front of it.
-    if (value.length < frame.width[piece.type]) {
-      return { text, iso: '', dropped, refused };
-    }
+    if (value.length < frame.width[piece.type]) return { text, iso: '' };
   }
 
-  return { text, iso: compose(held), dropped, refused };
+  return { text, iso: compose(held) };
 }
 
 /**
@@ -328,7 +270,6 @@ export function caretFor<Part extends string>(
   masked: string,
   typed: string,
   caret: number,
-  dropped = 0,
 ): number {
   // Walked as CODE POINTS with their unit offsets carried along, because
   // `selectionStart` counts units while a digit is not always one unit wide:
@@ -367,20 +308,20 @@ export function caretFor<Part extends string>(
   // The anchor assumes the digits to the right of the caret are still there
   // afterwards. They are — unless the frame was already FULL, in which case the
   // mask drops the overflow off the right end and the anchor slips one place
-  // left with it. Measured: caret at the start of a full `09:00`, typing
-  // `1`,`7`,`4`,`5` put the caret back at 0 after every keystroke, so each digit
-  // was inserted in front of the last and the field walked through `10:09`,
-  // `07:10`, `04:07` to `05:04` — four wrong-but-valid times, submitted in
-  // silence, from four keystrokes that spelled a real one.
+  // left. Measured: caret at the start of a full `09:00`, typing `1`,`7`,`4`,`5`
+  // put the caret back at 0 after every keystroke, so each digit was inserted in
+  // front of the last and the field walked through `10:09`, `07:10`, `04:07` to
+  // `05:04` — four wrong-but-valid times, submitted in silence, from four
+  // keystrokes that spelled a real one.
   //
-  // `dropped` comes FROM THE MASK, which counted what it actually consumed. An
-  // earlier version derived it here from the frame's capacity, and that is
-  // wrong wherever padding fires: padding puts in a zero nobody typed, so the
-  // frame fills having eaten fewer digits than it has slots, more are lost than
-  // capacity implies, and the caret still lands one short. Measured on `09:00
-  // AM`: Home, `2` gave `02:09 AM` with the caret in front of the `0`, so the
-  // next keystroke went to the wrong side of the digit just typed. 8 of the 10
-  // digit keys did it in `en-US`, 6 of 10 on `it` dates.
+  // Counted against the frame's own capacity rather than against the masked
+  // text, so PADDING — which adds a digit rather than losing one, and is the
+  // whole reason the anchor is on the right — is untouched.
+  const capacity = frame.order.reduce(
+    (total, part) => total + frame.width[part],
+    0,
+  );
+  const dropped = Math.max(0, [...typed].filter(isDigit).length - capacity);
   const after = [...typed.slice(caret)].filter(isDigit).length - dropped;
   if (after <= 0) return masked.length;
 
