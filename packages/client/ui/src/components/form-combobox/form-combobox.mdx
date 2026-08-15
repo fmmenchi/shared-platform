@@ -1,0 +1,79 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as FormComboboxStories from './form-combobox.stories.tsx';
+
+<Meta of={FormComboboxStories} />
+
+# FormCombobox
+
+A labelled [`Combobox`](?path=/docs/components-inputs-combobox--docs) already
+bound to the form library in scope. It names nothing about that library, and it
+puts the binding on the node that carries the value rather than the one you type
+in.
+
+## Props
+
+<Controls of={FormComboboxStories.Default} />
+
+## Usage
+
+```tsx
+<UiProvider adapters={{ i18n, form: { field, errors } }}>
+  <FormCombobox
+    name="city"
+    label="City"
+    items={cities}
+    getKey={(c) => c.id}
+    getLabel={(c) => c.name}
+  />
+</UiProvider>
+```
+
+<Canvas of={FormComboboxStories.Default} />
+
+### With a hint
+
+The hint keeps its place before any error, however many errors there are.
+
+<Canvas of={FormComboboxStories.WithHint} />
+
+### Declare it in your field types
+
+```ts
+createConformField({ types: { city: 'combobox' } });
+```
+
+`'combobox'` is not an `<input>` type. It tells the binding that the field it
+sees is the component's **carrier** — a text input holding the chosen key — so
+Conform reaches for its `<input>` helper rather than the `<select>` or
+`<textarea>` one.
+
+It does **not** keep a schema-derived `pattern`, `multiple` or `maxLength` off
+that key: Conform emits those from the constraint whatever type it is handed.
+Dropping them is `FormCombobox`'s own routing table, which is why the binding is
+never spread blindly onto the control.
+
+## Accessibility
+
+- **The label is associated**, which the bare `Combobox` cannot do for itself:
+  the wrapper's `Field` supplies the id the label points at, the
+  `aria-describedby` the hint and error register into, and `aria-invalid`.
+- Everything else is the control's own — see
+  [`Combobox`](?path=/docs/components-inputs-combobox--docs) for the combobox
+  pattern, the live region and the coarse-pointer shape.
+
+## Guidelines
+
+### Two refs, two jobs, two nodes
+
+The binding's ref goes to the **carrier**; your `ref` goes to the visible field.
+That is not tidiness: a form library reads `.value` off the element its ref was
+given, and given the visible input it would read the **search text** rather than
+the chosen key. The same applies to `onChange` and `onBlur`, which the control
+routes to the carrier for the same reason — what the user types is reported by
+`onQueryChange`.
+
+### What the binding owns never comes from the call site
+
+`value`, `defaultValue`, `checked` and `onChange` are the binding's. Passing one
+here would not override the binding, it would sever it — so they are refused by
+the type and warned about at runtime.

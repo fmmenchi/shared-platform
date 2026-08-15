@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { Button } from '../components/button/button.component.js';
 import { Input } from '../components/input/input.component.js';
 import { Select } from '../components/select/select.component.js';
+import { Combobox } from '../components/combobox/combobox.component.js';
 import { Textarea } from '../components/textarea/textarea.component.js';
 import { Tabs } from '../components/tabs/tabs.component.js';
 import { TabList } from '../components/tab-list/tab-list.component.js';
@@ -62,6 +63,17 @@ describe('every control this package draws, under a coarse pointer', () => {
         <Select aria-label="Choice" size="md">
           <option>One</option>
         </Select>
+        {/* The control the package draws entirely itself, and therefore the one
+            with nothing native underneath to fall back on. Its rows get the
+            44px in its own touch file; this is the FIELD, which takes it from
+            the shared `control-md` utility like the three above. */}
+        <Combobox
+          aria-label="City"
+          size="md"
+          items={[{ id: '1', name: 'Milano' }]}
+          getKey={(city) => city.id}
+          getLabel={(city) => city.name}
+        />
         <Textarea aria-label="Notes" size="md" />
         <Tabs>
           <TabList aria-label="Sections">

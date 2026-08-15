@@ -45,12 +45,20 @@ export function createConformField(
      * and the tests state stopped holding. The design system now filters the
      * bag by tag as a net; this is the cure.
      */
+    // A `Combobox`'s field IS a text input — its carrier — so Conform is asked
+    // for that and not for a type it has no member for. That is ALL declaring
+    // it does: `getInputProps` emits `pattern`, `multiple` and the length
+    // constraints whatever type it is given, so this mapping does not keep them
+    // off the key — `FormCombobox`'s routing table does. Said otherwise here
+    // once, which is worth leaving in view: a comment claiming a guarantee the
+    // code cannot make is worse than no comment.
+    const shaped = type === 'combobox' ? 'text' : type;
     const control =
-      type === 'select'
+      shaped === 'select'
         ? getSelectProps(meta, { ariaAttributes: false })
-        : type === 'textarea'
+        : shaped === 'textarea'
           ? getTextareaProps(meta, { ariaAttributes: false })
-          : getInputProps(meta, { type, ariaAttributes: false });
+          : getInputProps(meta, { type: shaped, ariaAttributes: false });
 
     return {
       control,

@@ -1,0 +1,219 @@
+/*
+ * Combobox styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * the semantic `input-*` role utilities, motion ONLY through
+ * var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate enforces both.
+ *
+ * The FIELD is `Input`'s and `Select`'s box, from the shared `control-*`
+ * utilities — the extraction this component's ADR said it owed, so three
+ * controls on one row of one form cannot drift apart. The LIST is the same
+ * surface `Select` paints where `appearance: base-select` exists, so a consumer
+ * who has both open on one page sees one system rather than two.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /* THERE IS NO WRAPPER. It was a `display: contents` div, which is transparent
+     to layout and NOT to selectors — so inside an `InputGroup` the field was not
+     `.group > input` and none of the group's resets reached it: a second
+     bordered, filled box inside the group's own, over a group that never rang on
+     focus, never showed invalid and never showed disabled. The component renders
+     a fragment instead, which is transparent to both. */
+
+  /*
+   * The carrier: out of sight, out of the accessibility tree, out of the tab
+   * order — and STILL FOCUSABLE, which is the whole reason it is not the
+   * `hidden` attribute and not `type="hidden"`. `DateInput`'s, for the reasons
+   * written there: `form.reset()` restores a text input and not a hidden one,
+   * react-hook-form reads `.value` off the node its ref was given, and
+   * `FormErrorSummary` finds a field by `name` and focuses it.
+   */
+  .carrier {
+    @apply sr-only;
+  }
+
+  /* The live region, which is text for assistive tech and nothing on screen. */
+  .status {
+    @apply sr-only;
+  }
+
+  .combobox {
+    @apply control-box;
+    @apply control-forced-colors;
+  }
+
+  .combobox[aria-invalid='true'] {
+    @apply control-invalid;
+  }
+
+  .combobox:disabled {
+    @apply control-disabled;
+  }
+
+  .sm {
+    @apply control-sm;
+  }
+  .md {
+    @apply control-md;
+  }
+  .lg {
+    @apply control-lg;
+  }
+
+  /*
+   * THE LIST, in the top layer. `popover` puts it there, so it is clipped by
+   * nothing — no `overflow: hidden` ancestor, no stacking context — and the
+   * platform light-dismisses it. What the platform does NOT do is place it:
+   * that is `useAnchored`, which writes the coordinates this rule reads.
+   *
+   * The UA gives a popover `position: fixed`, `margin: auto` and a border; all
+   * three are taken off, because the geometry is the primitive's and the border
+   * is the design system's.
+   */
+  .surface {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    padding: 0;
+    /* The coordinates the primitive writes, and the same defaults
+       `PopoverContent` uses: off-screen until the first measurement, so a
+       surface never paints at the origin for a frame. */
+    --anchored-x: 0;
+    --anchored-y: -9999px;
+    --anchored-available-height: 100dvh;
+    top: var(--anchored-y);
+    left: var(--anchored-x);
+    /* Never taller than the room the primitive measured, and never so tall that
+       a list of forty rows becomes the page. */
+    max-block-size: min(18rem, calc(var(--anchored-available-height) - 1rem));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Same surface as `Select`'s picker: a raised list that says "above the
+       page", which the flat UA popup never had. */
+    @apply rounded-md border p-1 shadow-lg;
+    @apply bg-input text-input-foreground border-input-border;
+  }
+
+  /* The rows' own box, so the surface can also hold the empty message — which
+     may not live inside a `listbox` (ARIA 1.2 owns `option` and `group` there,
+     and nothing else). */
+  .list {
+    display: contents;
+  }
+
+  .surface:not(:popover-open) {
+    display: none;
+  }
+
+  /*
+   * A ROW, not a line of text — the padding and the radius are what stop the
+   * list reading as a native menu. Identical to what `Select` paints for an
+   * `option` under `base-select`.
+   */
+  .option {
+    @apply rounded-sm px-2 py-1.5;
+    cursor: default;
+  }
+
+  /*
+   * THE HIGHLIGHT IS AN ATTRIBUTE, NOT `:hover` AND NOT `:focus`. Neither is
+   * available: focus never leaves the field (the whole point of
+   * `aria-activedescendant`), and hover would leave arrow-key navigation with
+   * no feedback at all. `data-active` is written by the one piece of state that
+   * knows — and it is the same `input-hover` role `Select` uses for the
+   * keyboard row, measured at 14.20:1 light and 10.13:1 dark against
+   * `input-foreground`.
+   */
+  .option[data-active] {
+    @apply bg-input-hover;
+  }
+
+  /*
+   * HOVER PAINTS AND DOES NOT ARM. It was an `onMouseEnter` writing the same
+   * state the arrows write, and that quietly re-opened the hole manual selection
+   * exists to close: rest the pointer on a row while reading the list, press
+   * `Enter` to submit the form, and the hovered row was committed instead. Drawn
+   * in CSS the feedback survives and the keystroke stays the form's — and it is
+   * one fewer handler, which is the package's own rule about elements and events
+   * earning their place.
+   *
+   * ONLY WHILE THE KEYBOARD IS NOT DRIVING. With a row already highlighted, a
+   * second painted row under a cursor nobody is looking at would say two rows
+   * are live when `Enter` can only take one.
+   */
+  @media (hover: hover) {
+    .list:not(:has(.option[data-active])) .option:hover {
+      @apply bg-input-hover;
+    }
+  }
+
+  .option[aria-selected='true'] {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  /* Not an option and not selectable: it is what the list says when the query
+     matches nothing, so it takes the muted role rather than a row's. */
+  .empty {
+    @apply text-muted-foreground px-2 py-1.5;
+  }
+
+  /*
+   * UNDER A FINGER THE LIST CENTRES, which is the shape change `DatePicker`
+   * already makes and for the same reason: an anchored surface cannot hold rows
+   * sized for a finger, and 44px is not negotiable for a target (WCAG 2.5.8).
+   * CSS only — no `matchMedia`, no second component, no JavaScript branch that
+   * could disagree with the stylesheet. The surface stays the same popover in
+   * the top layer, still light-dismissed; what changes is where it sits.
+   */
+  @media (pointer: coarse) {
+    .surface {
+      /*
+       * ALL FOUR SIDES, and `top`/`left` are NOT set back to `auto` — which is
+       * the mistake `DatePicker`'s stylesheet already records ("leaving either
+       * at `auto` here left the box hanging off one edge"). Measured in
+       * Chromium at 600x600: with `top: auto; left: auto` the surface solves for
+       * the other two anchors and lands at 440,582 — the bottom-right CORNER,
+       * which on a phone is behind the software keyboard that is always up,
+       * since the list can be opened by typing. With all four, 220,291: centred.
+       *
+       * `fit-content` on both axes for the same reason `DatePicker` pins them:
+       * `margin: auto` centres a box, and a stretched box has nothing to centre.
+       */
+      inset: 0;
+      margin: auto;
+      inline-size: fit-content;
+      block-size: fit-content;
+      max-block-size: 60vh;
+      min-inline-size: min(22rem, 90vw);
+    }
+
+    .option {
+      min-block-size: 2.75rem;
+      @apply flex items-center;
+    }
+  }
+
+  /*
+   * FORCED COLOURS takes the fill that carries the highlight and the selected
+   * row, so both are restated with the system's own words for them. The field
+   * itself is answered by `control-forced-colors` above.
+   */
+  @media (forced-colors: active) {
+    .surface {
+      border: 1px solid CanvasText;
+    }
+
+    .option[data-active] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+
+    .option[aria-selected='true'] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+  }
+}

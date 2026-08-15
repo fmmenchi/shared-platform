@@ -1,0 +1,200 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as ComboboxStories from './combobox.stories.tsx';
+
+<Meta of={ComboboxStories} />
+
+# Combobox
+
+Choose one of many by typing: a text field with a listbox behind it, over
+options you supply in your own shape. The choice rides on a hidden native field,
+so a form collects it like any other — at the cost of being the one control here
+that needs JavaScript.
+
+## Props
+
+<Controls of={ComboboxStories.Default} />
+
+## Usage
+
+### Which control is this, and which is `Select`
+
+| The question                                                 | The answer                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------ |
+| one of a few, plain options                                  | [`Select`](?path=/docs/components-inputs-select--docs) |
+| a few, several of them                                       | `Fieldset` of `Checkbox`                               |
+| one of many, needing search                                  | **`Combobox`**                                         |
+| options that are rows, not strings                           | **`Combobox`**                                         |
+| one value out of many plain strings, typed, and nothing more | `<input list>` + `<datalist>`                          |
+
+That last row is not a joke at our own expense: the platform's own combobox does
+the simple case with no JavaScript at all, and where it is enough it is the
+better answer. This component exists for what it cannot do — rows, search you
+control, and (next) several-of-many with chips.
+
+<Canvas of={ComboboxStories.Default} />
+
+### The data is never ours
+
+You pass `items` in your shape, plus `getKey` and `getLabel`. Nothing here
+fetches, sorts or caches; the pipeline is yours and this is a control over it.
+
+<Canvas of={ComboboxStories.RichRows} />
+
+### Searching on a server
+
+Hold the query yourself, fetch on it, and pass **`filter={false}`**. That is not
+a convenience: the rows arriving from a server ARE the answer, and filtering
+them again applies the query twice — silently dropping every row whose match the
+server understood and the default here does not. The bug reads as "the server
+returns results and the list is empty".
+
+<Canvas of={ComboboxStories.Controlled} />
+
+### In a form
+
+<Canvas of={ComboboxStories.InAForm} />
+
+### Sizes
+
+<Canvas of={ComboboxStories.Sizes} />
+
+## Accessibility
+
+- **It is ARIA 1.2's combobox pattern.** The field keeps `role="combobox"`,
+  `aria-expanded` and `aria-controls`, and points at the highlighted row with
+  `aria-activedescendant` — so **focus never leaves the field**, and the caret
+  stays where the person is typing while the arrows move a highlight.
+- **The result count is announced.** Filtering is otherwise silent: the rows
+  change and a screen-reader user is told nothing. A live region beside the
+  field says how many are left.
+- **Keyboard:** `↓`/`↑` open and walk (wrapping), `Enter` chooses a row you moved
+  to, `Escape` closes — and `Escape` on a closed field clears, which is the only
+  way back to "nothing chosen" from the keyboard alone. `Home` and `End` are
+  deliberately **not** taken; see below.
+- **The pointer paints, it does not arm.** Hovering a row highlights it and does
+  nothing else: `Enter` still commits only what the arrows moved to, so reading
+  the list with the mouse and submitting with the keyboard cannot commit the row
+  the cursor happened to rest on.
+- **Every row carries `aria-setsize` and `aria-posinset`**, so a windowed list
+  still tells the truth about how many options there are. A virtualised listbox
+  without them announces "1 of 20" while the reader walks five thousand records.
+- **Under a coarse pointer the list centres** rather than anchoring, and its rows
+  grow to 44px — the same shape change `DatePicker` makes, for the same reason:
+  an anchored surface cannot hold rows sized for a finger.
+
+## Guidelines
+
+### What it costs, stated where you choose it
+
+The visible field holds the **query**, not the value: a person types "mil" and
+means Milan, whose key is `42`. So the choice rides on a hidden native carrier
+beside the field, which keeps `FormData`, `form.reset()` and every form binding
+working on an ordinary field.
+
+The carrier is a CSS-hidden **text** input, not a `type="hidden"` one, and that
+difference is `form.reset()`: a hidden input is in value mode "default", so a
+reset restores its current value onto itself and the field comes back still
+holding the old choice. It is also focusable, because `FormErrorSummary` finds a
+field by `name` and calls `focus()` on it.
+
+What the carrier does not buy back is the other half of
+[ADR-0013](?path=/docs/adr-0013-form-controls-contract--docs): with the bundle
+unloaded there is no list and no filtering, so **this is the first control in
+this library that does not work without JavaScript**. A form rendered by a server
+with a value already chosen still submits it; it simply cannot be changed. That
+exception is scoped to this component — `Input`, `Select`, `Textarea`,
+`Checkbox`, `Radio`, `Switch` and `Slider` are unchanged.
+
+### In a form, bound
+
+`FormCombobox` is this inside a `Field`, wired to the form library in scope —
+label associated, hint and error announced, and the binding's ref on the carrier
+rather than on the box you type in:
+
+```tsx
+<FormCombobox
+  name="city"
+  label="City"
+  items={cities}
+  getKey={(c) => c.id}
+  getLabel={(c) => c.name}
+/>
+```
+
+Declare it in your adapter's field types as `'combobox'`. It is not an `<input>`
+type: it tells the binding that the field it sees is the carrier, so Conform
+reaches for its `<input>` helper. Dropping the constraint attributes a schema
+derives for a key — `pattern`, `multiple`, `maxLength` — is `FormCombobox`'s
+routing table, not the field type.
+
+### Creating what is not there
+
+Give it `onCreate` and the list grows a last row — **an option, not a button
+beside the field**, so it inherits the arrows, the highlight and the
+announcement that already exist rather than needing its own of each.
+
+```tsx
+<Combobox {...wiring} onCreate={(query) => addCity(query).id} />
+```
+
+**Return the new key.** What creating _means_ is yours, but the control owes you
+that the field and the form agree afterwards — and returning nothing leaves them
+free not to: the box reads "Bologna" while the carrier submits an empty string.
+Returning the key adopts it in one line. When creating is asynchronous, return
+nothing, resolve, and set a controlled `value` yourself. With `freeText` on the
+typed string is already the value and there is nothing to adopt. Uncontrolled,
+synchronous and returning nothing is warned about in development.
+
+It appears when something has been typed and no option already _says_ it — the
+same case- and accent-insensitive fold the filter uses, trimmed, so typing
+`malaga` next to a `Málaga` row does not offer to duplicate it. `canCreate`
+narrows that further (a minimum length, a format, a permission); it never widens
+it, so a length rule cannot accidentally take over the duplicate check.
+
+<Canvas of={ComboboxStories.Creatable} />
+
+### Accepting what was typed
+
+**Off by default, and that default is the decision.** With free text off this is
+a _chooser_: what it submits is always a key from the list, so an unmatched
+query submits nothing. The failure mode of the other default is silent — a form
+that happily posts a typo as if it were a record.
+
+```tsx
+<Combobox {...wiring} freeText />
+```
+
+On, the typed string is itself the value and rides the carrier exactly as a key
+would. Neither mode turns on inline completion: writing into the field as you
+type fights an IME mid-composition, and fights a value that is allowed not to be
+in the list.
+
+**On, the value changes per keystroke** — that is what "the text is the value"
+means, and it is worth knowing before you turn it on. The carrier's `onChange`
+fires on every character, so react-hook-form in `mode: 'onChange'` validates the
+whole form that often, and the form genuinely holds `Bolog` while someone is
+typing `Bologna`. With free text off the carrier changes only when a choice does.
+
+In both modes, typing over a choice **drops it** — a field reading one thing
+while the form carries another is the defect this component is built around.
+Controlled, it can only _ask_: the component calls `onValueChange(null)` and a
+parent that only ever sets a valid key keeps the stale one. If you control
+`value`, honour the `null`.
+
+### Not here yet
+
+Decided in ADR-0028 and **not built**:
+
+- **several-of-many with chips** (the port shape it needs is merged);
+- **option groups**;
+- the **states of data arriving** — loading, empty-because-fetching, error.
+
+Virtualisation stays a seam: bring your own windowing, and the row attributes
+above keep the announcement honest.
+
+### Keyboard, precisely
+
+`Home` and `End` are **not** taken. They belong to the text field you are typing
+in, and moving a highlight instead of the caret is the one thing a text box must
+never do. `Enter` is only taken once you have moved to a row: with nothing
+highlighted it belongs to the form, so you can still submit with the keyboard.

@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Combobox > matches the rendered snapshot 1`] = `
+<input
+  aria-autocomplete="list"
+  aria-controls="«react-id»"
+  aria-expanded="false"
+  aria-label="City"
+  autocomplete="off"
+  class="_combobox_arnb1_26 _md_arnb1_77"
+  role="combobox"
+  type="text"
+  value=""
+/>
+`;

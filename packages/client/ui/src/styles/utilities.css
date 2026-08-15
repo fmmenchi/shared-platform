@@ -48,6 +48,128 @@
 }
 
 /*
+ * THE FIELD BOX — what an `Input`, a `Select` and a `Combobox` look like when
+ * they sit on the same row of the same form.
+ *
+ * Extracted because the third copy was about to be written, and this package's
+ * rule is that two consumers is when a policy moves. `Input` and `Select`
+ * restated all of this comment for comment: the radius, the three `input-*`
+ * roles, the transition, the focus ring, the invalid weight cue, the disabled
+ * treatment, the 32/36/44 heights, the coarse-pointer bump and the forced-colors
+ * block. Nine decisions in two places, and the failure mode of that is not
+ * drift in the abstract — `NavGroup` hand-rolled the first two lines of a button
+ * and shipped with no focus ring at all, invisible to every test because the
+ * test page has no Preflight.
+ *
+ * These are utilities and not a class, so nothing here reaches a consumer's
+ * markup: `@apply` inlines the declarations into the component's own hashed
+ * class, exactly as `control-base` already did.
+ *
+ * What is NOT here stays where its reason is: `appearance: none` and the arrow
+ * belong to `Select`, `placeholder:` to the controls that have one, `resize` to
+ * `Textarea`.
+ */
+@utility control-box {
+  @apply control-base;
+  @apply w-full rounded-md border px-3;
+  @apply bg-input text-input-foreground border-input-border;
+  @apply transition;
+  &:focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+}
+
+/*
+ * The three heights, which match `Button`'s so controls and buttons on one row
+ * align — measured 36/36/36 at `md` against the 36/40/38 they used to render
+ * before all three declared `border-box`.
+ *
+ * A FINGER GETS 44px, which is what `lg` already is, and the bump belongs to
+ * the control FAMILY or to none of it: `InputGroup` centres its children rather
+ * than stretching them, so a button that grew alone would sit taller than the
+ * field beside it. Measured, 44 against 36. Held together across the family by
+ * `src/test/target-size.touch.test.tsx` — this utility is what stops that test
+ * from being the only thing holding it.
+ */
+@utility control-sm {
+  @apply h-8 text-xs;
+}
+
+@utility control-md {
+  @apply h-9 text-sm;
+
+  @media (pointer: coarse) {
+    & {
+      @apply h-11;
+    }
+  }
+}
+
+@utility control-lg {
+  @apply h-11 text-base;
+}
+
+/*
+ * The invalid look, keyed off the native attribute a form library already sets
+ * (ADR-0013) — never a prop.
+ *
+ * BOTH colour AND weight, so it is not carried by colour alone (WCAG 1.4.1) —
+ * and the weight is what then survives forced colors, where the token border
+ * colour is replaced by the system's.
+ */
+@utility control-invalid {
+  /* `border-2`, not a bare `border-width: 2px`: this file is NOT a
+     `*.module.css`, so it gets the full CSS lint, and that parser rejects a
+     plain declaration sharing a `@utility` block with an `@apply` — in either
+     order, measured. The only difference in the built output is a
+     `border-style` the base rule already sets to the same value. */
+  @apply border-input-invalid border-2;
+}
+
+/*
+ * Disabled. The fill alone did not say it: the value stayed at full contrast,
+ * so a disabled field read as an editable one holding text.
+ * `disabled-foreground` is the generic role for a control not tied to a colour
+ * family — `Button`'s ghost treatment uses it — and is AA-exempt (WCAG 1.4.3).
+ */
+@utility control-disabled {
+  @apply bg-input-disabled text-disabled-foreground cursor-not-allowed;
+}
+
+/*
+ * Forced colors. The token fill and border are replaced by system colours, so
+ * the border is restated to keep the field bounded, and the focus ring is
+ * pinned to `Highlight` — otherwise it is forced to the same system colour as
+ * everything around it and a ring reads as no ring.
+ *
+ * `:focus` as well as `:focus-visible`, and that is `Select`'s lesson rather
+ * than belt-and-braces: Firefox does not match `:focus-visible` on a
+ * mouse-clicked select, so a block covering only `:focus-visible` missed the
+ * one engine the `:focus` rule exists for. A control that draws no `:focus`
+ * ring is unaffected by the extra selector.
+ */
+@utility control-forced-colors {
+  @media (forced-colors: active) {
+    & {
+      border: 1px solid ButtonText;
+    }
+
+    &:focus {
+      outline-color: Highlight;
+    }
+
+    &:focus-visible {
+      outline-color: Highlight;
+    }
+
+    &:disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+  }
+}
+
+/*
  * The arrow of an anchored surface — a tooltip's, a popover's, and whatever
  * else `useAnchored` positions. Here rather than in either component's file
  * because both need it identically and the geometry that feeds it is shared:

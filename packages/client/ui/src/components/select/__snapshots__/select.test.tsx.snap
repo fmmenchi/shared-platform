@@ -3,7 +3,7 @@
 exports[`Select > matches the rendered snapshot 1`] = `
 <select
   aria-label="q"
-  class="_select_iu2mv_4 _md_iu2mv_58"
+  class="_select_k7m9e_4 _md_k7m9e_70"
 >
   <option
     value=""

@@ -3,6 +3,11 @@
  * semantic `input-*` role utilities, motion ONLY through var(--fm-duration-*)/
  * var(--fm-ease-*): the `lint-css` gate enforces both. The invalid look keys off
  * the native `[aria-invalid="true"]` (ADR-0013) — no `invalid` prop.
+ *
+ * The BOX, the SIZES, the invalid weight, the disabled treatment and the
+ * forced-colors answer all live once in `styles/utilities.css` now, because
+ * `Select` restated every one of them and `Combobox` was about to be the third
+ * copy (ADR-0028). What stays here is what is true of a text input alone.
  */
 @reference '@fmmenchi/tokens/styles/tailwind.css';
 @reference '../../styles/utilities.css';
@@ -12,75 +17,39 @@
    and `@reference` stay above the layer; `:root` tokens stay unlayered. */
 @layer fmmenchi {
   .input {
-    /* The UA baseline every control we draw needs — `box-sizing` and the font
-       family, with the measurements — lives once in `styles/utilities.css`. */
-    @apply control-base;
+    @apply control-box;
     /* No `color-scheme` here ON PURPOSE — the parts the UA paints (the caret,
        the scrollbar) do follow it, but `light dark` means "either, per the
        USER'S preference", not "per the theme": measured, dark theme + a
        light-set OS still painted them light, and declaring it on the control
        BLOCKS the theme's own scheme from reaching it. It is declared once next
        to the theme instead — `@fmmenchi/tokens/styles/presets/dark.css`. */
-    @apply w-full rounded-md border px-3;
-    @apply bg-input text-input-foreground border-input-border;
+    /* The one thing the shared box cannot carry: only some controls have a
+       placeholder, and a `<select>` never does. */
     @apply placeholder:text-input-placeholder;
-    @apply transition;
-    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+    /* Windows High Contrast, shared with the family — the border restated so
+       the field stays bounded, the ring pinned to `Highlight`, disabled to
+       `GrayText`. */
+    @apply control-forced-colors;
   }
 
-  /* Error state is the native attribute the form library already sets. Signalled
-     by BOTH colour and weight (a thicker border) so it isn't carried by colour
-     alone (WCAG 1.4.1) — the same weight cue then works in forced colors too. */
   .input[aria-invalid='true'] {
-    @apply border-input-invalid;
-    border-width: 2px;
+    @apply control-invalid;
   }
 
-  /* The fill alone did not say "disabled": the value stayed at full contrast, so
-     a disabled field read as an editable one holding text. `disabled-foreground`
-     is the generic role for a control not tied to a colour family — Button's
-     ghost treatment already uses it — and is AA-exempt (WCAG 1.4.3). */
   .input:disabled {
-    @apply bg-input-disabled text-disabled-foreground cursor-not-allowed;
+    @apply control-disabled;
   }
 
-  /* Size — heights match Button (32/36/44) so controls and buttons align. */
+  /* Size — heights match Button (32/36/44) so controls and buttons align, and
+     the coarse-pointer bump rides with `md`. */
   .sm {
-    @apply h-8 text-xs;
+    @apply control-sm;
   }
   .md {
-    @apply h-9 text-sm;
+    @apply control-md;
   }
   .lg {
-    @apply h-11 text-base;
-  }
-  /* A FINGER GETS 44px, the height `lg` already is — the same rule `Button`
-     carries, and it has to be the same rule: `InputGroup` centres its children
-     rather than stretching them, so a button that grew alone would sit taller
-     than the field beside it. Measured: 44 against 36. A target-size policy
-     belongs to the control family or to none of it. */
-  @media (pointer: coarse) {
-    .md {
-      @apply h-11;
-    }
-  }
-
-  /* Forced colors: the token fill/border are replaced by system colours; the
-     border keeps the field bounded, and the invalid state — otherwise a colour
-     — is restored so it survives High Contrast. */
-  @media (forced-colors: active) {
-    .input {
-      border: 1px solid ButtonText;
-    }
-    /* Restore the OS focus convention, like every other DS control — otherwise
-       the ring is forced to the same system colour as the border and reads
-       inconsistently (the invalid 2px weight above already carries into HCM). */
-    .input:focus-visible {
-      outline-color: Highlight;
-    }
-    .input:disabled {
-      border-color: GrayText;
-      color: GrayText;
-    }
+    @apply control-lg;
   }
 }

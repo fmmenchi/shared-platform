@@ -62,6 +62,21 @@ export type FormFieldType =
   | 'select'
   | 'textarea'
   /**
+   * A `Combobox`. Not an `<input>` type either: the field a form sees is the
+   * component's hidden CARRIER, a text input holding the chosen key, while the
+   * visible box holds the query.
+   *
+   * What declaring it does is pick the INPUT helper — the same reason `select`
+   * and `textarea` are here, in reverse. What it does NOT do is stop the
+   * constraint attributes, and an earlier version of this comment said it did:
+   * `getInputProps` emits `pattern`, `multiple`, `minLength` and the rest
+   * unconditionally, whatever `type` it is handed, so mapping to `'text'` is
+   * byte-identical to leaving the field out of this map. Keeping them off a
+   * control that holds a key is `FormCombobox`'s routing table, and nothing
+   * else.
+   */
+  | 'combobox'
+  /**
    * The two that are not one control at all, but a FIELD DRAWN AS MANY — see
    * the note above. They are bound through `UseFormOptionField`, never through
    * `UseFormField`.

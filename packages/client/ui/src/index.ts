@@ -483,3 +483,11 @@ export { DateRangePicker } from './components/date-range-picker/date-range-picke
 export type { DateRangePickerProps } from './components/date-range-picker/date-range-picker.types.js';
 export { FormDateRangePicker } from './components/form-date-range-picker/form-date-range-picker.component.js';
 export type { FormDateRangePickerProps } from './components/form-date-range-picker/form-date-range-picker.types.js';
+export { Combobox } from './components/combobox/combobox.component.js';
+export { comboboxVariants } from './components/combobox/combobox.variants.js';
+export type {
+  ComboboxProps,
+  ComboboxVariants,
+} from './components/combobox/combobox.types.js';
+export { FormCombobox } from './components/form-combobox/form-combobox.component.js';
+export type { FormComboboxProps } from './components/form-combobox/form-combobox.types.js';
