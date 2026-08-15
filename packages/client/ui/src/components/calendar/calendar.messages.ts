@@ -26,6 +26,9 @@ export const calendarMessages = defineMessages('calendar', {
     month: 'Showing {month}',
     rangeStart: '{date} selected as the start. Now choose the end.',
     rangeWhole: '{start} to {end} selected.',
+    cellStart: '{date}, start of the range',
+    cellEnd: '{date}, end of the range',
+    cellSpan: '{date}, in the range',
   },
   it: {
     previous: 'Mese precedente',
@@ -33,6 +36,9 @@ export const calendarMessages = defineMessages('calendar', {
     month: 'Stai vedendo {month}',
     rangeStart: '{date} scelto come inizio. Ora scegli la fine.',
     rangeWhole: 'Selezionato da {start} a {end}.',
+    cellStart: '{date}, inizio dell’intervallo',
+    cellEnd: '{date}, fine dell’intervallo',
+    cellSpan: '{date}, nell’intervallo',
   },
   ar: {
     previous: 'الشهر السابق',
@@ -40,5 +46,8 @@ export const calendarMessages = defineMessages('calendar', {
     month: 'يعرض {month}',
     rangeStart: 'تم اختيار {date} كبداية. اختر النهاية الآن.',
     rangeWhole: 'تم اختيار من {start} إلى {end}.',
+    cellStart: '{date}، بداية النطاق',
+    cellEnd: '{date}، نهاية النطاق',
+    cellSpan: '{date}، ضمن النطاق',
   },
 });

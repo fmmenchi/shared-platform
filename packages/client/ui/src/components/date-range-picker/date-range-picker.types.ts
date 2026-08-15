@@ -28,7 +28,16 @@ export type DateRangePickerProps = SharedFieldProps & {
    */
   startName: string;
   endName: string;
-  /** The accessible name of each field. A `Field` around the pair names the pair. */
+  /**
+   * The accessible name of each field.
+   *
+   * NOT a `Field` around the pair. `Field` gives its control an id and expects
+   * one control to take it — measured with two, both inputs carried the SAME
+   * id, its `<label for>` matched two elements, the label named neither (the
+   * aria-labels win), and axe saw nothing because its duplicate-id rules are
+   * deprecated. Two labelled controls are a GROUP, so the shell is `Fieldset` +
+   * `FieldsetLegend`, which is what this package already has for one.
+   */
   startLabel: string;
   endLabel: string;
   /** The starting range, in ISO. Either end may be absent. */

@@ -64,20 +64,34 @@ describe('DateRangePicker', () => {
     });
 
     it('seeds both ends, and opens on the start', async () => {
+      // NO `defaultMonth`, and a seed in a month that is NOT this one. With a
+      // `defaultMonth` the seed proves nothing about the start; with a seed in
+      // the current month it proves nothing either, because the fallback to
+      // today lands on the same grid — measured, the rule could be deleted and
+      // every test stayed green.
       const { container } = renderUi(
-        picker({ defaultStart: '2026-08-12', defaultEnd: '2026-08-15' }),
+        <form>
+          <DateRangePicker
+            startName="checkIn"
+            endName="checkOut"
+            startLabel="Arrivo"
+            endLabel="Partenza"
+            defaultStart="2027-06-12"
+            defaultEnd="2027-06-15"
+          />
+        </form>,
         { locale: 'it' },
       );
       expect(screen.getByRole('textbox', { name: 'Arrivo' })).toHaveValue(
-        '12/08/2026',
+        '12/06/2027',
       );
 
       await open();
-      expect(day(container, '2026-08-12')).toHaveAttribute(
+      expect(day(container, '2027-06-12')).toHaveAttribute(
         'aria-selected',
         'true',
       );
-      expect(day(container, '2026-08-13')).toHaveAttribute('data-in-range');
+      expect(day(container, '2027-06-13')).toHaveAttribute('data-in-range');
     });
   });
 
@@ -147,15 +161,39 @@ describe('DateRangePicker', () => {
         '20082026',
       );
 
-      await open();
-      expect(day(container, '2026-08-20')).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
-      expect(container.querySelectorAll('[data-in-range]')).toHaveLength(0);
+      // THE FORM, not the grid. An inverted range renders identically — the
+      // span is empty either way — so a grid-only assertion passed with the
+      // rule deleted entirely, measured. What must not survive is a `FormData`
+      // holding the end the consumer was told had gone.
+      const form = container.querySelector('form') as HTMLFormElement;
+      const data = new FormData(form);
+      expect(data.get('checkIn')).toBe('2026-08-20');
+      expect(data.get('checkOut')).toBe('');
+      expect(screen.getByRole('textbox', { name: 'Partenza' })).toHaveValue('');
     });
 
-    it('reports the range as it stands, half made included', async () => {
+    it('drops the START when a typed end would come before it', async () => {
+      const { container } = renderUi(
+        picker({ defaultStart: '2026-08-12', defaultEnd: '2026-08-15' }),
+        { locale: 'it' },
+      );
+
+      // The other half of the same rule, and the half that was dead code: the
+      // branch returned the untouched pair, which is the same as having no rule
+      // — measured posting checkIn 2026-08-12 with checkOut 2026-08-05.
+      await browser.fill(
+        screen.getByRole('textbox', { name: 'Partenza' }),
+        '05082026',
+      );
+
+      const form = container.querySelector('form') as HTMLFormElement;
+      const data = new FormData(form);
+      expect(data.get('checkOut')).toBe('2026-08-05');
+      expect(data.get('checkIn')).toBe('');
+      expect(screen.getByRole('textbox', { name: 'Arrivo' })).toHaveValue('');
+    });
+
+    it('reports the range as it stands, half made included — ONCE', async () => {
       const onRangeChange = vi.fn();
       const { container } = renderUi(picker({ onRangeChange }), {
         locale: 'it',
@@ -164,10 +202,37 @@ describe('DateRangePicker', () => {
       await open();
       await browser.click(day(container, '2026-08-12'));
 
+      // The count is the assertion. `writeDateInput` dispatches a real `input`
+      // on each carrier, each field reports it back, and `typed()` used to run
+      // on both with the range from BEFORE the click — measured, one click
+      // emitted three calls and the last was rebuilt from a stale start.
+      expect(onRangeChange).toHaveBeenCalledTimes(1);
       expect(onRangeChange).toHaveBeenLastCalledWith({
         start: { year: 2026, month: 8, day: 12 },
         end: null,
       });
+    });
+
+    it('does not rewind the start when a third click starts a new range', async () => {
+      const { container } = renderUi(picker(), { locale: 'it' });
+
+      await open();
+      await browser.click(day(container, '2026-08-12'));
+      await browser.click(day(container, '2026-08-15'));
+      await open();
+      await browser.click(day(container, '2026-08-20'));
+      await browser.click(day(container, '2026-08-25'));
+
+      // Measured before the round-trip was stopped: the start field went back
+      // to 12/08 on the last click, and the form posted a range the user had
+      // replaced two gestures earlier.
+      const form = container.querySelector('form') as HTMLFormElement;
+      const data = new FormData(form);
+      expect(data.get('checkIn')).toBe('2026-08-20');
+      expect(data.get('checkOut')).toBe('2026-08-25');
+      expect(screen.getByRole('textbox', { name: 'Arrivo' })).toHaveValue(
+        '20/08/2026',
+      );
     });
   });
 
@@ -179,13 +244,22 @@ describe('DateRangePicker', () => {
       await browser.click(day(container, '2026-08-12'));
       await browser.click(day(container, '2026-08-15'));
 
-      // The calendar announces as it goes, but that region is INSIDE the
-      // popover, which closes on this very click — a sentence set on a surface
-      // going away is one a reader may never be given.
-      const regions = [...container.querySelectorAll('[role="status"]')];
-      const spoken = regions.map((n) => n.textContent ?? '').join(' | ');
-      expect(spoken).toContain('12 agosto 2026');
-      expect(spoken).toContain('15 agosto 2026');
+      // OUTSIDE THE DIALOG, which is the whole claim. The calendar has a region
+      // of its own with a byte-identical sentence in it, so reading every
+      // `role="status"` in the tree passed with this component's announcement
+      // replaced by a mutant — measured.
+      const outside = [...container.querySelectorAll('[role="status"]')]
+        .filter((node) => node.closest('dialog') === null)
+        .map((node) => node.textContent ?? '');
+      // The other regions outside the dialog belong to the test wrapper and are
+      // empty, so a mutant emptying this component's own sentence leaves
+      // nothing here to find.
+      expect(
+        outside.some(
+          (text) =>
+            text.includes('12 agosto 2026') && text.includes('15 agosto 2026'),
+        ),
+      ).toBe(true);
     });
 
     it('names each field, and the trigger once for both', () => {

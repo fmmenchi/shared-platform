@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DateRangePicker } from './date-range-picker.component.js';
-import { Field } from '../field/field.component.js';
+import { Fieldset } from '../fieldset/fieldset.component.js';
+import { FieldsetLegend } from '../fieldset-legend/fieldset-legend.component.js';
+import { FieldsetContent } from '../fieldset-content/fieldset-content.component.js';
 import { weekdayOf } from '../../date/civil-math.js';
 import type { CivilDate, CivilRange } from '../../date/civil-date.types.js';
 
@@ -39,9 +41,12 @@ const base = {
 export const Default: Story = {
   args: { ...base },
   render: (args) => (
-    <Field label="Il tuo soggiorno">
-      <DateRangePicker {...args} />
-    </Field>
+    <Fieldset>
+      <FieldsetLegend>Il tuo soggiorno</FieldsetLegend>
+      <FieldsetContent>
+        <DateRangePicker {...args} />
+      </FieldsetContent>
+    </Fieldset>
   ),
 };
 
@@ -49,9 +54,12 @@ export const Default: Story = {
 export const WithAStay: Story = {
   args: { ...base, defaultStart: '2026-08-12', defaultEnd: '2026-08-15' },
   render: (args) => (
-    <Field label="Il tuo soggiorno">
-      <DateRangePicker {...args} />
-    </Field>
+    <Fieldset>
+      <FieldsetLegend>Il tuo soggiorno</FieldsetLegend>
+      <FieldsetContent>
+        <DateRangePicker {...args} />
+      </FieldsetContent>
+    </Fieldset>
   ),
 };
 
@@ -63,9 +71,12 @@ export const WithAStay: Story = {
 export const PickOnly: Story = {
   args: { ...base, defaultStart: '2026-08-12', pickOnly: true },
   render: (args) => (
-    <Field label="Il tuo soggiorno">
-      <DateRangePicker {...args} />
-    </Field>
+    <Fieldset>
+      <FieldsetLegend>Il tuo soggiorno</FieldsetLegend>
+      <FieldsetContent>
+        <DateRangePicker {...args} />
+      </FieldsetContent>
+    </Fieldset>
   ),
 };
 
@@ -82,15 +93,18 @@ export const PerDateRules: Story = {
   render: (args) => {
     const booked = ['2026-08-18', '2026-08-19', '2026-08-27'];
     return (
-      <Field label="Il tuo soggiorno">
-        <DateRangePicker
-          {...args}
-          isDateDisabled={(date) => {
-            const iso = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
-            return weekdayOf(date) === 0 || booked.includes(iso);
-          }}
-        />
-      </Field>
+      <Fieldset>
+        <FieldsetLegend>Il tuo soggiorno</FieldsetLegend>
+        <FieldsetContent>
+          <DateRangePicker
+            {...args}
+            isDateDisabled={(date) => {
+              const iso = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+              return weekdayOf(date) === 0 || booked.includes(iso);
+            }}
+          />
+        </FieldsetContent>
+      </Fieldset>
     );
   },
 };
@@ -106,9 +120,12 @@ export const ReadingTheValue: Story = {
     const [range, setRange] = useState<CivilRange | null>(null);
     return (
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-        <Field label="Il tuo soggiorno">
-          <DateRangePicker {...args} onRangeChange={setRange} />
-        </Field>
+        <Fieldset>
+          <FieldsetLegend>Il tuo soggiorno</FieldsetLegend>
+          <FieldsetContent>
+            <DateRangePicker {...args} onRangeChange={setRange} />
+          </FieldsetContent>
+        </Fieldset>
         <output
           style={{ font: 'var(--fm-font-mono, monospace)', opacity: 0.7 }}
         >

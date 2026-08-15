@@ -4,7 +4,8 @@ import { userEvent as browser } from 'vitest/browser';
 import { Calendar } from './calendar.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
-import type { CivilDate } from '../../date/civil-date.types.js';
+import { useState } from 'react';
+import type { CivilDate, CivilRange } from '../../date/civil-date.types.js';
 
 const AUGUST: CivilDate = { year: 2026, month: 8, day: 12 };
 
@@ -639,6 +640,153 @@ describe('Calendar picking a RANGE', () => {
     expect(at(container, '2026-09-02')).toHaveAttribute(
       'aria-selected',
       'true',
+    );
+  });
+
+  it('names each cell by WHICH of the three it is', async () => {
+    const { container } = renderUi(
+      <Calendar
+        selection="range"
+        defaultMonth={AUG}
+        defaultValue={{
+          start: { year: 2026, month: 8, day: 12 },
+          end: { year: 2026, month: 8, day: 15 },
+        }}
+      />,
+      { locale: 'it' },
+    );
+
+    // `data-in-range` has no ARIA counterpart, so without a name an end, a
+    // spanned day and a day outside were all announced as nothing but their
+    // date — the entire middle of the range reaching assistive technology as a
+    // fill and nothing else.
+    expect(at(container, '2026-08-12')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('inizio'),
+    );
+    expect(at(container, '2026-08-15')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('fine'),
+    );
+    expect(at(container, '2026-08-13')).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('nell'),
+    );
+    expect(at(container, '2026-08-11')?.getAttribute('aria-label')).toBe(
+      '11 agosto 2026',
+    );
+  });
+
+  it('says a range is finished even when finishing it changed the month', async () => {
+    function Crossing() {
+      const [value, setValue] = useState<CivilRange>({
+        start: null,
+        end: null,
+      });
+      const [month, setMonth] = useState<CivilDate>(AUG);
+      return (
+        <Calendar
+          selection="range"
+          value={value}
+          month={month}
+          onMonthChange={setMonth}
+          onValueChange={(next) => {
+            setValue(next);
+            // ADR-0027's own recipe step 3: whoever moves the value moves the
+            // month with it.
+            if (next.start !== null) setMonth(next.end ?? next.start);
+          }}
+        />
+      );
+    }
+    const { container } = renderUi(<Crossing />, { locale: 'it' });
+
+    await browser.click(at(container, '2026-08-28'));
+    await browser.click(at(container, '2026-09-02'));
+
+    // The month effect writes the same state AFTER the commit, so a sentence
+    // set during the event used to lose to it — measured, `rangeWhole` never
+    // reached the DOM and the reader was told the month had changed instead.
+    const all = container.querySelectorAll('[role="status"]');
+    const live = all[all.length - 1]?.textContent ?? '';
+    expect(live).toContain('28 agosto 2026');
+    expect(live).toContain('2 settembre 2026');
+  });
+
+  it('opens a stored range on the month it BEGINS in', async () => {
+    const { container } = renderUi(
+      <Calendar
+        selection="range"
+        defaultValue={{
+          start: { year: 2026, month: 12, day: 20 },
+          end: { year: 2027, month: 1, day: 5 },
+        }}
+      />,
+      { locale: 'it' },
+    );
+
+    // Measured with the END winning: a December-to-January range opened on
+    // January, and the start was not drawn at all — the user was handed the
+    // second half of their own booking.
+    expect(at(container, '2026-12-20')).not.toBeNull();
+    expect(container.querySelector('[data-day][tabindex="0"]')).toHaveAttribute(
+      'data-day',
+      '2026-12-20',
+    );
+  });
+
+  it('does not paint a refused day as part of the span', async () => {
+    const { container } = renderUi(
+      <Calendar
+        selection="range"
+        defaultMonth={AUG}
+        isDateDisabled={(d) => d.day === 13}
+        defaultValue={{
+          start: { year: 2026, month: 8, day: 12 },
+          end: { year: 2026, month: 8, day: 15 },
+        }}
+      />,
+      { locale: 'it' },
+    );
+
+    // A cell saying "not for you" AND wearing the span was saying two opposite
+    // things at once. Whether a range may cross a blackout day at all is a
+    // decision ADR-0027 leaves open; painting it as chosen would take it.
+    expect(at(container, '2026-08-13')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
+    expect(at(container, '2026-08-13')).not.toHaveAttribute('data-in-range');
+    expect(at(container, '2026-08-14')).toHaveAttribute('data-in-range');
+  });
+
+  it('declares itself multi-selectable, because two cells are selected', () => {
+    const { container } = renderUi(
+      <Calendar
+        selection="range"
+        defaultMonth={AUG}
+        defaultValue={{
+          start: { year: 2026, month: 8, day: 12 },
+          end: { year: 2026, month: 8, day: 15 },
+        }}
+      />,
+      { locale: 'it' },
+    );
+
+    // A `grid` defaults to `aria-multiselectable="false"` — "only one item may
+    // be selected at a time" — while two cells carry `aria-selected`.
+    expect(container.querySelector('[role="grid"]')).toHaveAttribute(
+      'aria-multiselectable',
+      'true',
+    );
+  });
+
+  it('leaves a DAY calendar saying nothing about multi-selection', () => {
+    const { container } = renderUi(<Calendar defaultMonth={AUG} />, {
+      locale: 'it',
+    });
+    expect(container.querySelector('[role="grid"]')).not.toHaveAttribute(
+      'aria-multiselectable',
     );
   });
 

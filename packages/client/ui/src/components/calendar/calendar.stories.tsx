@@ -62,10 +62,13 @@ export const ReadingTheValue: Story = {
     const [value, setValue] = useState<CivilDate | null>(null);
     return (
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-        {/* NAMED rather than spread. `args` is typed from the props union, and
-            a union spread beside further props is not assignable — the
-            ergonomic cost of discriminating on `selection`, paid here so the
-            wrong pairing cannot compile anywhere else. */}
+        {/* NAMED rather than spread — and the rule is narrower than an earlier
+            version of this comment claimed. A union spread on its own is fine;
+            what fails is spreading it beside props that are MEMBERS of the
+            union, `value` and `onValueChange` here, because TypeScript cannot
+            then tell which member the result is meant to be. That is the whole
+            ergonomic cost of discriminating on `selection`, and it is paid at
+            the few call sites that set the value explicitly. */}
         <Calendar
           defaultMonth={args.defaultMonth}
           selection="day"
