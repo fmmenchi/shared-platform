@@ -1,0 +1,94 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as SkeletonStories from './skeleton.stories.tsx';
+
+<Meta of={SkeletonStories} />
+
+# Skeleton
+
+A grey stand-in for content that has not arrived, so a loading page keeps its
+shape instead of collapsing and jumping when the data lands. It is decorative
+by construction — hidden from assistive tech, with the wait announced by a live
+region you keep outside the placeholders.
+
+## Props
+
+<Controls of={SkeletonStories.Text} />
+
+## Usage
+
+### Shapes
+
+Three, and each one carries a decision you would otherwise re-derive: `text`
+occupies the line box of the type around it, `block` has a panel's corners, and
+`circle` stays round when you resize it.
+
+<Canvas of={SkeletonStories.Gallery} />
+
+### A paragraph
+
+There is no `lines` prop and no wrapper per line. `text` occupies `1lh` — the
+whole line box, not the font size — so a stack of them measures the same as the
+copy it replaces and needs **no gap between them**, exactly like real lines.
+The size goes on the placeholder itself; `text` reads the font it sits in, so
+the heading below is heading-sized with nothing passed.
+
+<Canvas of={SkeletonStories.Paragraph} />
+
+### Swapping, not wrapping
+
+`Skeleton` takes no children and has no `loading` prop: it is a box, not a
+wrapper. Branch at the call site, where the loading actually happens.
+
+```tsx
+{
+  isPending ? (
+    <Skeleton shape="circle" />
+  ) : (
+    <Avatar name={user.name} src={user.avatar} />
+  );
+}
+```
+
+What that costs is worth knowing: a wrapper could measure the real child and
+size the placeholder from it. Swapping puts that on you — the default `circle`
+matches `Avatar`'s `md`, but a placeholder for a `lg` one has to be sized by
+hand, and nothing will tell you when the two drift.
+
+### Size
+
+`text` and `block` span the inline axis; you give `block` a height and `circle`
+a width. Use `style` — consumers import precompiled CSS and are not required to
+run Tailwind, so a utility class is not a portable way to size one.
+
+<Canvas of={SkeletonStories.Block} />
+
+## Accessibility
+
+- **Every skeleton is `aria-hidden`, always.** Three grey boxes announced one by
+  one tell a screen-reader user nothing. The attribute is written after the
+  props spread so it cannot be turned off, and `children`,
+  `dangerouslySetInnerHTML` and `tabIndex` are dropped at runtime — content
+  inside a hidden box is unreachable, and focus landing in one is a WCAG 4.1.2
+  defect. Passing `role` or any `aria-*` warns in development, because they
+  would be annulled silently.
+- **`aria-busy` is a state, not an announcement.** Put it on the region that is
+  waiting, but do not expect it to say anything: screen readers use it to
+  _suppress_ updates while it is true, and none of them speak when it flips
+  back. On its own it leaves a page of skeletons completely silent.
+- **Announce from a persistent live region outside the placeholders** — the
+  same pattern [`Button`](?path=/docs/components-buttons-button--docs) ships for
+  its pending state. A `VisuallyHidden` with `role="status"` whose TEXT changes
+  when the wait starts and ends; persistent, because a region that appears
+  together with its text is not reliably announced. When the wait deserves to be
+  seen as well as heard, [`Progress`](?path=/docs/components-feedback-progress--docs)
+  with no `value` is the component that owns it.
+
+  <Canvas of={SkeletonStories.LoadingRegion} />
+
+- **Reduced motion stops the pulse entirely.** Unlike `Progress`, nothing is
+  lost: a grey slab where a sentence belongs reads as "not yet" whether it
+  breathes or not, and the announcement above is text, which does not move — so
+  the reader who turned motion off is not the reader left with no signal.
+- **Windows High Contrast** repaints the fill as `GrayText`, the system's own
+  colour for content that is not active yet. Without that block the box would
+  flatten to `Canvas` and the loading page would be blank.

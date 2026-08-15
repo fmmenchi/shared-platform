@@ -1,0 +1,168 @@
+/*
+ * Skeleton styles — CSS Modules authored with Tailwind. Colours ONLY
+ * through semantic role utilities, motion ONLY through var(--fm-duration-*)/
+ * var(--fm-ease-*): the `lint-css` gate enforces both. `@reference` resolves
+ * `@apply` at THIS library's build; the output stays themable at runtime.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. `@import`
+   and `@reference` stay above the layer; `:root` tokens stay unlayered. */
+@layer fmmenchi {
+  /*
+   * ONE BOX WITH NOTHING INSIDE. A skeleton holds no content — it stands where
+   * content will be — so the element is a plain block with a fill, and every
+   * rule here is about the two things a placeholder must never do: measure
+   * differently from what it replaces, and read as finished.
+   */
+  .skeleton {
+    display: block;
+    /* A placeholder spans the inline space its content will span; the other
+       axis comes from the shape below. `circle` reverses this — it sits later
+       in the file at the same specificity, which is how the cascade is asked
+       to prefer it. */
+    inline-size: 100%;
+    border-radius: var(--fm-radius-sm);
+    /* dist ships no Preflight (ADR-0022), so the UA's `content-box` is what a
+       consumer's page actually has. Without this, padding or a border they add
+       grows the box instead of fitting inside it — and the same markup would
+       measure differently on a page that DOES run a reset, which is the exact
+       divergence ADR-0022 warns about. `Avatar` sets it for the same reason. */
+    @apply box-border;
+    /* The neutral surface, one step off the background. Its `muted-foreground`
+       partner never appears: nothing is ever written on a skeleton. */
+    @apply bg-muted;
+    /*
+     * THE PULSE SAYS "WORKING"; the shape says "not content yet". Opacity
+     * alone — no transform, no travel — so the movement carries no vestibular
+     * trigger and the only thing it costs is a repaint.
+     *
+     * The duration is COMPOSED from the scale rather than picked: `l` (500ms)
+     * is the longest token there is, and a 500ms round trip is a 2Hz blink
+     * across a large area, which reads as flashing rather than breathing.
+     * Three times it is 1.5s (0.67Hz, an order of magnitude under WCAG 2.3.1's
+     * three-per-second). Inventing an `--fm-duration-xl` for one component
+     * would be a contract change to pay for a single animation (`Progress`
+     * refused the same trade for a radius), while multiplying the token keeps
+     * a theme that retunes motion in charge of this too.
+     */
+    animation: fm-skeleton-pulse calc(var(--fm-duration-l) * 3)
+      var(--fm-ease-standard) infinite;
+  }
+
+  /*
+   * A LINE OF TYPE, and the height here is the whole promise of the component.
+   *
+   * `1lh` is the LINE BOX — what the text actually occupies — not `1em`, which
+   * is only the type's size. The first version used `1em` and was 2/3 of the
+   * line it replaced: measured against real copy, a four-line paragraph came
+   * out 96px against the text's 112px, so the placeholder caused the very
+   * layout jump it exists to prevent, and the error grew with the type. A
+   * consumer's gap cannot repair that — spacing tokens are fixed lengths while
+   * leading is proportional.
+   *
+   * Then the bar is painted INSIDE that box rather than filling it, because
+   * text does not fill its line box either: stacked with no gap these read as
+   * lines of a paragraph, which is what they stand in for. `background-clip`
+   * is what separates the space occupied from the ink laid down, and it is why
+   * this needs no second element (ADR-0016).
+   *
+   * `lh` needs no fallback here, and the build proved it rather than a
+   * changelog: it is Baseline Widely (all three engines since Nov 2023), which
+   * puts it UNDER this package's declared floor — `cssTarget:
+   * ['chrome120','firefox121','safari17.2']` in `vite.config.mts`. A
+   * `block-size: 1em` written above this line was deleted from `dist` by
+   * LightningCSS as unreachable on every engine the package supports, which is
+   * the same target list ADR-0017 sets. Read the dist before adding one back.
+   */
+  .text {
+    block-size: 1lh;
+    padding-block: 0.125em;
+    background-clip: content-box;
+  }
+
+  /*
+   * A panel, an image, a chart — the shape you give a height to. The `1em`
+   * here is a DEFAULT, not a floor: it exists so `<Skeleton shape="block" />`
+   * is never an invisible zero-height box, and because it is the same property
+   * a consumer overrides, their height simply wins.
+   *
+   * It was `min-block-size` on the base rule, which was wrong three ways at
+   * once and measured so in all three engines: a `block` asked for 8px — the
+   * height of this library's own `Progress` — rendered at 16px; a `circle`
+   * narrower than 1em came out an ellipse; and the default circle turned oval
+   * inside any type larger than 40px, since `1em` inherits. A floor cannot be
+   * overridden by the property it constrains, so it beat every explicit size a
+   * consumer could write. Corners are rounder than a line of type because the
+   * thing it stands in for has a card's corners.
+   */
+  .block {
+    block-size: 1em;
+    border-radius: var(--fm-radius-md);
+  }
+
+  /*
+   * An avatar-shaped hole. `aspect-ratio` keeps it round when the consumer
+   * changes only the width — the failure a fixed size would produce the first
+   * time somebody needed a small one — and `inline-size` rather than `@apply
+   * w-10` keeps that promise in a vertical writing mode, where the physical
+   * `width` Tailwind emits stops being the axis the base rule sets. The length
+   * is written out because the utility cannot be: `--spacing(10)` is a Tailwind
+   * function Stylelint rejects outright, and `2.5rem` IS `size-10`, which is
+   * `Avatar`'s `md`. That coupling is not left to this comment — a test renders
+   * both and fails if either scale moves, because a placeholder that is 4px off
+   * the thing it replaces is the layout shift this component exists to stop.
+   *
+   * `align-self` is the other half of round. A flex item with an `auto` cross
+   * size takes a DEFINITE one from the line under the default `stretch`, and a
+   * definite size beats `aspect-ratio`: measured at 40x64 in Chromium, Firefox
+   * and WebKit inside an avatar-and-three-lines row — which is this component's
+   * own documented layout. `text` and `block` need no equivalent because their
+   * definite `block-size` already turns stretch off. A consumer's own
+   * alignment still wins: theirs is unlayered, ours is in `@layer fmmenchi`.
+   */
+  .circle {
+    inline-size: 2.5rem;
+    aspect-ratio: 1;
+    align-self: center;
+    @apply rounded-full;
+  }
+
+  /*
+   * KILL IT ENTIRELY — the opposite of what `Progress` does, and the reason is
+   * worth stating because the two look like the same case. There the sweep IS
+   * the message: a still band would say "finished", so the preference gets a
+   * breathe instead of nothing. Here the message is the SHAPE — a grey slab
+   * where a sentence belongs reads as "not yet" whether it breathes or not —
+   * so the animation is decoration, and decoration is precisely what the
+   * preference asks to be spared. The wait is still announced either way: the
+   * live region the docs require is text, and text does not move.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton {
+      animation: none;
+    }
+  }
+
+  /* Down to 0.6 and back: far enough to read as breathing, not so far that the
+     box looks like it left the page. */
+  @keyframes fm-skeleton-pulse {
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  /*
+   * FORCED COLOURS discards the fill, and here the fill is the entire
+   * component — flattened to `Canvas` a skeleton is a blank page, which is the
+   * one thing it exists to avoid. `GrayText` is the system's own colour for
+   * content that is not active yet, which is exactly what this is, and it is
+   * the mapping the styling doctrine names for pending states.
+   */
+  @media (forced-colors: active) {
+    .skeleton {
+      background-color: GrayText;
+    }
+  }
+}

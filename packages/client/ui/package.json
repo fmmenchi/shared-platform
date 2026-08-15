@@ -634,6 +634,12 @@
       "types": "./dist/components/form-date-picker/index.d.ts",
       "import": "./dist/form-date-picker.js",
       "default": "./dist/form-date-picker.js"
+    },
+    "./skeleton": {
+      "@fmmenchi/source": "./src/components/skeleton/index.ts",
+      "types": "./dist/components/skeleton/index.d.ts",
+      "import": "./dist/skeleton.js",
+      "default": "./dist/skeleton.js"
     }
   },
   "nx": {
