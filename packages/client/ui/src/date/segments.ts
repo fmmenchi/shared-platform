@@ -110,10 +110,18 @@ export function applyDeletion<Part extends string>(
     (digit) => digit.at < to && digit.at + digit.size > from,
   );
   // Only literals were removed — take the digit in front of the cut with them.
+  //
+  // IN FRONT OF, NOT TOUCHING. Requiring the digit to end exactly where the cut
+  // starts was enough while every literal was one character wide, which is what
+  // a date separator is. A twelve-hour time ends in a WORD — `02:30 AM/PM` —
+  // and a Backspace inside it starts five characters past the last digit, so
+  // the strict rule found nothing, removed nothing, and re-emitted the same
+  // text: the key did nothing at all, for ever, which is the exact defect this
+  // function was written to fix one frame earlier.
   const removing =
     cut.length > 0
       ? cut
-      : placed.filter((digit) => digit.at + digit.size === from).slice(-1);
+      : placed.filter((digit) => digit.at + digit.size <= from).slice(-1);
   if (removing.length === 0) return null;
 
   const held = new Map<Part, string>();
@@ -293,8 +301,29 @@ export function caretFor<Part extends string>(
   // `1 13 2026` and `11 3 2026` are the same digits — which no mask on one
   // field can tell apart.
   const isDigit = (char: string) => frame.toAscii(char) !== '';
-  const after = [...typed.slice(caret)].filter(isDigit).length;
-  if (after === 0) return masked.length;
+
+  // AND THE DIGITS THAT DID NOT SURVIVE, which is the one case right-anchoring
+  // gets wrong on its own.
+  //
+  // The anchor assumes the digits to the right of the caret are still there
+  // afterwards. They are — unless the frame was already FULL, in which case the
+  // mask drops the overflow off the right end and the anchor slips one place
+  // left. Measured: caret at the start of a full `09:00`, typing `1`,`7`,`4`,`5`
+  // put the caret back at 0 after every keystroke, so each digit was inserted in
+  // front of the last and the field walked through `10:09`, `07:10`, `04:07` to
+  // `05:04` — four wrong-but-valid times, submitted in silence, from four
+  // keystrokes that spelled a real one.
+  //
+  // Counted against the frame's own capacity rather than against the masked
+  // text, so PADDING — which adds a digit rather than losing one, and is the
+  // whole reason the anchor is on the right — is untouched.
+  const capacity = frame.order.reduce(
+    (total, part) => total + frame.width[part],
+    0,
+  );
+  const dropped = Math.max(0, [...typed].filter(isDigit).length - capacity);
+  const after = [...typed.slice(caret)].filter(isDigit).length - dropped;
+  if (after <= 0) return masked.length;
 
   let seen = 0;
   for (let index = points.length - 1; index >= 0; index -= 1) {

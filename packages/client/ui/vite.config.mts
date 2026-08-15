@@ -145,6 +145,7 @@ export default defineConfig(() => ({
         'date-picker': 'src/components/date-picker/index.ts',
         calendar: 'src/components/calendar/index.ts',
         'date-input': 'src/components/date-input/index.ts',
+        'time-input': 'src/components/time-input/index.ts',
         numeric: 'src/components/numeric/index.ts',
         time: 'src/components/time/index.ts',
         'table-columns-menu': 'src/components/table-columns-menu/index.ts',

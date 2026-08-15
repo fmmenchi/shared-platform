@@ -617,6 +617,12 @@
       "import": "./dist/date-input.js",
       "default": "./dist/date-input.js"
     },
+    "./time-input": {
+      "@fmmenchi/source": "./src/components/time-input/index.ts",
+      "types": "./dist/components/time-input/index.d.ts",
+      "import": "./dist/time-input.js",
+      "default": "./dist/time-input.js"
+    },
     "./calendar": {
       "@fmmenchi/source": "./src/components/calendar/index.ts",
       "types": "./dist/components/calendar/index.d.ts",
