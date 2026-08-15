@@ -13,7 +13,8 @@ export type InputVariants = VariantProps<typeof inputVariants>;
  * error styling.
  */
 /**
- * Every native input type except `date`, written out rather than derived.
+ * Every native input type except `date` and `time`, written out rather than
+ * derived.
  *
  * `Exclude<HTMLInputTypeAttribute, 'date'>` looks like the way to say this and
  * removes nothing: React closes that union with `(string & {})`, so `"date"`
@@ -22,10 +23,18 @@ export type InputVariants = VariantProps<typeof inputVariants>;
  *
  * The cost of an allowlist is that it must be extended by hand the day the
  * platform adds a type, and that is stated in ADR-0027 alongside the reason it
- * is worth paying: the native date control cannot be told which locale to lay
- * its segments out in, so on a page whose language the app declares it
- * contradicts every other date on it — silently, with no test going red.
- * `DateInput` is the replacement.
+ * is worth paying: neither native control can be told which locale to lay its
+ * segments out in, so on a page whose language the app declares each
+ * contradicts every other date or time on it — silently, with no test going
+ * red. `DateInput` and `TimeInput` are the replacements.
+ *
+ * TIME WAS ADDED SECOND, and on its own measurement rather than on the date's
+ * precedent, which is what the first exception asked of the next one. Measured:
+ * a native time field draws `14:30` under `en-US`, `it-IT`, `ja-JP` and `ar-EG`
+ * alike while `Intl` writes `02:30 PM` for the first and `٠٢:٣٠ م` for the last
+ * — and it does not follow even the locale the engine reports, but the
+ * operating system's regional format. That last part makes it worse than the
+ * date case: a developer whose machine matches their page sees nothing wrong.
  */
 export type InputType =
   | 'button'
@@ -46,14 +55,14 @@ export type InputType =
   | 'submit'
   | 'tel'
   | 'text'
-  | 'time'
   | 'url'
   | 'week';
 
 export type InputProps = InputVariants &
   Omit<ComponentPropsWithRef<'input'>, keyof InputVariants | 'type'> & {
     /**
-     * Every native type but `date` — reach for `DateInput` (ADR-0027).
+     * Every native type but `date` and `time` — reach for `DateInput` and
+     * `TimeInput` (ADR-0027).
      *
      * This is the one exception to the transparency the rest of this contract
      * is built on, and it stays narrow: `checkbox`, `range` and `radio` still

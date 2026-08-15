@@ -1,7 +1,7 @@
-# ADR 0027 — Dates: one field of ours, and a Calendar for what it cannot do
+# ADR 0027 — Dates and times: fields of ours, and a Calendar for what they cannot do
 
 - **Status:** proposed
-- **Date:** 2026-08-12 · amended 2026-08-13
+- **Date:** 2026-08-12 · amended 2026-08-13, 2026-08-15
 - **Deciders:** Fabio Menchicchi
 
 > **This replaces an earlier draft** (written 2026-08-11, never proposed, so never part of the
@@ -566,6 +566,125 @@ The end is then chosen by the next click. A single day chosen twice is a one-day
 NOT part of this. Each is a real product requirement somewhere and none of them is cross-app enough
 to earn a place yet (ADR-0008). `isDateDisabled` already refuses days one at a time, which is the
 primitive the rest would be built on.
+
+## Amendment: time has the same ceiling, and the roadmap said it did not
+
+This ADR left `type="time"` alone twice, and the roadmap wrote down why: _"it is **not** blocked the
+way `type="date"` is: that refusal exists because a date's segment ORDER contradicts the declared
+locale, and because there is a replacement to send people to. Neither is true of time yet."_
+
+**The first half of that is false, and it was never measured.** Both halves are now.
+
+### What the native time control does — measured
+
+The same question this ADR asked of `type="date"`, asked of `type="time"`, in the suite's real
+Chromium. Four `<input type="time" value="14:30">`, each wrapped in a `lang`, beside what `Intl`
+writes for that same declared locale:
+
+| declared locale | the native field draws | `Intl` writes |
+| --------------- | ---------------------- | ------------- |
+| `en-US`         | `14:30`                | `02:30 PM`    |
+| `it-IT`         | `14:30`                | `14:30`       |
+| `ja-JP`         | `14:30`                | `14:30`       |
+| `ar-EG`         | `14:30`                | `٠٢:٣٠ م`     |
+
+So on an `en-US` page a `Time` and a formatted `Table` cell say `02:30 PM` and the field beside them
+says `14:30`; on an `ar-EG` page everything else is in Arabic numerals and the field is in Latin.
+That is this ADR's founding complaint, reproduced for time.
+
+Three further measurements, because the shape of the ceiling matters more than the fact of it:
+
+- **`lang` moves nothing.** All four fields render identically and measure the same width — the same
+  result the date section recorded, by the same method.
+- **The hour cycle is not addressable.** There is no HTML attribute that asks for 12 or 24 hours,
+  and `shadowRoot` is `null`, so there is nothing to write CSS on and nothing to set.
+- **It does not even follow the locale the ENGINE reports.** `navigator.language` and
+  `Intl.DateTimeFormat().resolvedOptions()` both say `en-US`, whose resolved `hourCycle` is `h12` —
+  and the control still draws 24 hours. It follows the operating system's regional format.
+
+That last one makes it **worse than the date case**, not equal to it. A developer whose OS matches
+their page sees nothing wrong; the mismatch appears only for users whose settings differ from
+theirs, which is the definition of a defect that ships.
+
+### The decision, which is this ADR's own, applied again
+
+1. **`TimeInput` is built**, and it is the same shape as `DateInput`: one masked text field that
+   shows a time the way the declared locale writes it and stores `HH:mm` — the format the DOM, a
+   database and `Temporal.PlainTime.from()` all want. The carrier machinery, the mask, the caret
+   arithmetic and the external-write doors are the ones `DateInput` already has and paid for.
+2. **`FormTimeInput` is its bound twin**, symmetric with every other pair here.
+3. **`Input` refuses `type="time"`.** This is the SECOND exception to
+   [ADR-0013](./0013-form-controls-contract.md)'s transparency, and it is granted on the same two
+   conditions the first one was: the control is **wrong on the page** rather than merely duplicative,
+   and there is a replacement to send people to. The second condition is what was missing when this
+   ADR said _"there is no time field to send anyone to, and refusing it would be the same mistake"_.
+   It is not missing now.
+
+   The first exception's closing line stands and is honoured rather than cited: _"the next one must
+   argue for itself rather than cite this."_ The argument above is a measurement, not a precedent.
+
+### THE HOUR CYCLE comes from the locale, and can be overridden
+
+`Intl.DateTimeFormat(locale).resolvedOptions().hourCycle` is the answer, read the same way
+`DateInput` reads its segment order — so a page gets 12 or 24 hours because of what it declared, not
+because of what the reader's laptop is set to.
+
+A prop overrides it. An operations dashboard on an `en-US` page that wants 24 hours is a real
+consumer, the choice is a design decision rather than a locale one, and forcing them to change the
+page's locale to get it would be the tail wagging the dog.
+
+**AM/PM is COPY, not formatting**, and goes in the catalogues beside the date field's `gg`/`mm`/`aaaa`
+letters. `Intl` will tell you the day period for a locale, but what a 12-hour field shows in its
+third segment while it is being typed into is a word in a language.
+
+### SECONDS are opt-in, and precision is a prop rather than `step`
+
+`step` on the native control is doing two jobs at once — it sets the granularity of the spinner AND
+it decides whether a seconds segment exists — and it says both in seconds-as-a-number, so `step={1}`
+meaning "show seconds" is a fact you have to know rather than read. A `precision` of `'minute'` or
+`'second'` says the one thing this field needs to be told, and the stored value follows it: `HH:mm`
+or `HH:mm:ss`.
+
+### What is NOT built, and this is the part that differs from dates
+
+**There is no `Clock`, and no time equivalent of `Calendar`.** The whole reason `Calendar` exists is
+the first ceiling — `min`/`max` are an interval and not a set, so "these three days are booked"
+cannot be said to the platform at all. For time that argument does not hold in the same way:
+
+- the REGULAR case is expressible without a widget. "Every fifteen minutes from 09:00 to 17:00" is
+  an arithmetic progression, and a consumer who wants to offer exactly those slots renders them —
+  from their own data, which is where availability lives — as a `Select` or a list of buttons;
+- the IRREGULAR case is not a grid. A calendar is a fixed structure the design system must draw
+  because a month has a shape; a set of available times has no shape but its own list, and a list of
+  a consumer's data is a consumer's component.
+
+So a slot picker is composition, not a component here, and it stays that way until someone arrives
+with a case that is neither of those two. **`min`/`max`/`step` remain available on `TimeInput`** for
+validation, where they are honest, unlike on `DateInput` — a text field cannot enforce them, so the
+range check belongs to the consumer's schema either way, and the ADR says so rather than pretending.
+
+### `datetime-local`, `month` and `week` stay reachable, and that is a choice
+
+They present locale-dependent segments too, so the ceiling is theirs as much as it is `date`'s and
+`time`'s. They are not refused, and the reason is the condition this ADR set for the first
+exception and honoured for the second: **there has to be a replacement to send people to.** There is
+none for any of the three, and refusing a control while offering nothing takes the capability away.
+
+What that costs is stated rather than left implicit: a page can still put a `month` field beside a
+`Time` and get the same disagreement this amendment measured. If a consumer arrives with one, the
+answer is another field of ours or nothing — not a fourth exception on its own.
+
+### Consequences of this amendment
+
+- **A second `Input` exception**, and the allowlist grows by one more hand-maintained entry. Stated
+  again because it is the cost that compounds: the day the platform adds an input type, this list
+  has to be extended by hand or the type is silently unavailable.
+- **`Time` (the display component) and `TimeInput` must agree**, and now can — both read
+  `useFormatter()`. Before this they could not, which was the defect.
+- **The date family's machinery is reused rather than copied.** If the mask, the carrier or the
+  external-write doors turn out not to generalise, that is a finding to record here rather than a
+  reason to fork them — two copies of that code is the failure this repository has already measured
+  twice, on `DateInput` and `Calendar`.
 
 ## What would change this
 
