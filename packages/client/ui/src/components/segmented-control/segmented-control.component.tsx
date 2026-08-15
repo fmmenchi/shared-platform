@@ -60,8 +60,10 @@ function SegmentedControl(props: SegmentedControlProps) {
   // with nothing listening is a set that cannot move and says nothing about it.
   // A native `onChange` on the group counts as listening, and that is not a
   // loophole: `change` bubbles from the option the user picked, so a caller
-  // driving the set from `event.target.value` hears every pick. It is how the
-  // bound component listens, since a form adapter's bag is native props.
+  // driving the set from `event.target.value` hears every pick. (It used to be
+  // how the BOUND component listened too; it no longer is — `FormSegmentedControl`
+  // binds each option directly now, so nothing of the binding passes through
+  // here. The reasoning above stands on its own for a consumer-driven set.)
   useDevWarning(
     value !== undefined &&
       onValueChange === undefined &&

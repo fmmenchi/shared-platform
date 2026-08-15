@@ -99,9 +99,19 @@ export function assertSingleField(
  *
  * So the controlled adapters ask the same question the browser answers: at the
  * moment a change event runs, the box has ALREADY been toggled, so the group's
- * checked inputs in `form.elements` order are the new value. Declaration order
- * is also the only order all five CAN produce — the uncontrolled three never see
- * a click at all.
+ * checked inputs in `form.elements` order are the new value. The uncontrolled
+ * three never see a click at all, so document order is the only thing they can
+ * report.
+ *
+ * ONE OF THE FIVE STILL DIVERGES, and pretending otherwise would be worse than
+ * the divergence. react-hook-form reads its own `_f.refs` list, which is
+ * APPEND-ordered: an already-attached element returns early from the ref
+ * callback, so an option inserted at the TOP of a filtered list has its ref
+ * pushed to the tail. It answers `['old','new']` where the browser answers
+ * `['new','old']`. For a static option list — every list this package has
+ * shipped so far — the two coincide, which is what the shared suite proves.
+ * For a list that changes, they do not, and the fix is not ours to write: it is
+ * how that library reads a group.
  *
  * Falls back to the tick-order toggle when the control is outside a form, which
  * is the one case with no document to read.
@@ -120,7 +130,15 @@ export function checkedInGroup(
         element instanceof HTMLInputElement &&
         element.name === name &&
         element.type === 'checkbox' &&
-        element.checked,
+        element.checked &&
+        // DISABLED IS NOT SUBMITTED, and `form.elements` includes it — this
+        // collection is every listed control, not every successful one. Without
+        // this line a locked, pre-checked option was stored by Formik and
+        // TanStack and dropped by the other three, since `FormData` skips
+        // disabled controls and react-hook-form filters them out of its own
+        // group read (`getCheckboxValue`: `option.checked && !option.disabled`).
+        // One port, two answers, chosen by the library the consumer swapped.
+        !element.disabled,
     )
     .map((element) => element.value);
 }

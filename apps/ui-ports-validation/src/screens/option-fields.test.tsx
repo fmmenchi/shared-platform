@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { z } from 'zod';
 import {
+  FormInput,
   FormSegmentedControl,
   SegmentedControlItem,
   UiProvider,
@@ -16,7 +17,10 @@ import {
 } from 'react-hook-form';
 import { useRhfOptionField } from '@fmmenchi/ui-form-ports/react-hook-form';
 import { Formik, Form as FormikForm } from 'formik';
-import { createFormikOptionField } from '@fmmenchi/ui-form-ports/formik';
+import {
+  createFormikField,
+  createFormikOptionField,
+} from '@fmmenchi/ui-form-ports/formik';
 import { useForm as useTanstackForm } from '@tanstack/react-form';
 import { createTanstackOptionField } from '@fmmenchi/ui-form-ports/tanstack';
 import { FormProvider as ConformProvider, useForm } from '@conform-to/react';
@@ -347,6 +351,29 @@ describe.each(SCREENS)('one name, many controls — %s', (_name, Screen) => {
     });
   });
 
+  it('leaves a disabled option out, the way a submit would', async () => {
+    // `form.elements` is every LISTED control, not every successful one, so the
+    // first version of `checkedInGroup` counted a disabled box. `FormData`
+    // skips it and react-hook-form filters it out of its own group read, so a
+    // locked pre-checked option was stored by Formik and TanStack and dropped
+    // by the other three — one port, two answers.
+    render(<Screen />);
+
+    await browser.click(screen.getByRole('checkbox', { name: 'offers' }));
+    // Lock it AFTER it was ticked: that is the state the divergence needed —
+    // checked and disabled at once.
+    (
+      screen.getByRole('checkbox', { name: 'offers' }) as HTMLInputElement
+    ).disabled = true;
+    await browser.click(screen.getByRole('checkbox', { name: 'news' }));
+    await browser.click(screen.getByRole('radio', { name: 'red' }));
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(async () => {
+      expect((await saved()).tags).toEqual(['news']);
+    });
+  });
+
   it('shows the chosen option as checked', async () => {
     render(<Screen />);
 
@@ -357,5 +384,29 @@ describe.each(SCREENS)('one name, many controls — %s', (_name, Screen) => {
     // bindings and the uncontrolled ones.
     expect(screen.getByRole('radio', { name: 'blue' })).toBeChecked();
     expect(screen.getByRole('radio', { name: 'red' })).not.toBeChecked();
+  });
+});
+
+/* ── the boundary between the two shapes ─────────────────────────────────── */
+
+describe('a group is refused by the per-field binding', () => {
+  it('throws, naming the shape it needs, instead of binding one control', () => {
+    // `assertSingleField` was 27 lines of comment and no coverage: a no-op
+    // version survived the entire repo. Bound one-control-per-field a group
+    // renders a single control that can never report which option is checked,
+    // so the form submits nothing while looking complete — which is the silence
+    // this guard exists to break, and silence is what a test has to catch.
+    const field = createFormikField({ types: { tags: 'checkbox-group' } });
+    expect(() =>
+      render(
+        <Formik initialValues={{ tags: [] }} onSubmit={() => undefined}>
+          <FormikForm>
+            <UiProvider adapters={{ i18n: { locale: 'en' }, form: { field } }}>
+              <FormInput name="tags" label="Tags" />
+            </UiProvider>
+          </FormikForm>
+        </Formik>,
+      ),
+    ).toThrow(/drawn as MANY controls/);
   });
 });

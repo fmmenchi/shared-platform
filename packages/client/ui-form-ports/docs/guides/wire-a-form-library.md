@@ -17,32 +17,53 @@ below it names a library again.
 ## The binding
 
 Two members, both hooks: `field` binds one field by name, `errors` reports every field currently in
-error. Only `field` is required — `errors` exists because `FormErrorSummary` needs errors keyed by
-name and cannot get them from any single field.
+error. Every member is optional and each bound component asks for the one it needs, by name, when it
+is missing: `field` binds one control to one name, `optionField` binds one field drawn as MANY
+controls (a radio group, checkboxes sharing a name), and `errors` exists because `FormErrorSummary`
+needs errors keyed by name and cannot get them from any single field.
 
 ```tsx
 import { UiProvider } from '@fmmenchi/ui';
 import {
   useRhfField,
+  useRhfOptionField,
   useRhfErrors,
 } from '@fmmenchi/ui-form-ports/react-hook-form';
 
 <UiProvider
-  adapters={{ i18n, form: { field: useRhfField, errors: useRhfErrors } }}
+  adapters={{
+    i18n,
+    form: {
+      field: useRhfField,
+      optionField: useRhfOptionField,
+      errors: useRhfErrors,
+    },
+  }}
 >
   <App />
 </UiProvider>;
 ```
 
+**`optionField` is what `FormSegmentedControl` binds through**, so a form containing one needs it
+wired or the component throws and names it. A per-field binding cannot stand in: bound one control
+per name, a group renders a single control that can never report which option is checked, and the
+form submits nothing while looking complete.
+
 Four of the five subpaths export **factories** rather than ready hooks, because they take the field
 type map described in [Declare the fields that are not text](./declare-field-types.md):
 
 ```tsx
-import { createFormikField, useFormikErrors } from '@fmmenchi/ui-form-ports/formik';
+import {
+  createFormikField,
+  createFormikOptionField,
+  useFormikErrors,
+} from '@fmmenchi/ui-form-ports/formik';
 
-const field = createFormikField({ types: { tos: 'checkbox', seats: 'number' } });
+const types = { tos: 'checkbox', seats: 'number', colour: 'radio', tags: 'checkbox-group' } as const;
+const field = createFormikField({ types });
+const optionField = createFormikOptionField({ types });
 
-<UiProvider adapters={{ i18n, form: { field, errors: useFormikErrors } }}>
+<UiProvider adapters={{ i18n, form: { field, optionField, errors: useFormikErrors } }}>
 ```
 
 Call the factory **outside** the component that renders the provider. Its result is a hook, and a

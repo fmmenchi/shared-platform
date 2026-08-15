@@ -31,25 +31,51 @@ function SegmentedControlItem(props: SegmentedControlItemProps) {
   const group = useSegmentedControlPart('SegmentedControlItem');
   const bound = useOptionBinding()?.option(value);
 
+  // THE WHOLE BAG IS SPREAD, minus the few this item COMPOSES rather than
+  // takes. An earlier version of this file picked six properties off it, and
+  // what that dropped was invisible until it was named: through Conform the bag
+  // also carries `required` (so a bound group silently opted out of the native
+  // constraint validation `FormInput` keeps, since it spreads), `form` (a
+  // control rendered outside the `<form>` stopped submitting) and `id`. The
+  // port's own type says "spread onto it"; picking was a second, contradictory
+  // contract that no test could compare against the first.
+  //
+  // `value` and `type` come out too: the item states both itself, from the prop
+  // it was given and from what a segment IS, and an adapter can only ever agree
+  // with them.
+  const boundRest = { ...bound } as Record<string, unknown>;
+  for (const own of ['name', 'ref', 'onChange', 'onBlur', 'value', 'type']) {
+    delete boundRest[own];
+  }
+
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onChange?.(event);
-    // Their handler first, and `preventDefault` calls the report off — the same
-    // contract the rest of this package offers. The platform has already moved
-    // the selection either way; what is being vetoed is telling the consumer.
-    if (event.defaultPrevented) return;
-    // The BINDING hears it before the group does, because it is what stores the
-    // value: a consumer's `onValueChange` firing against a form state that has
-    // not moved yet is the disagreement all of this exists to prevent.
+    // THE BINDING HEARS EVERY PICK, VETO OR NOT — and the first version of this
+    // migration got it wrong by returning here on `defaultPrevented`.
+    //
+    // `preventDefault` is not `stopPropagation`, and React consults neither
+    // before running the rest of the path: bound through the GROUP, as this was
+    // before, the adapter's handler sat on the wrapper and heard the change
+    // regardless. Vetoing it here silently changed what the call site means. The
+    // platform has already moved the radio — the DOM shows the new option — so a
+    // form that did not hear it holds a value the page contradicts, and which of
+    // the two wins is then decided by whether the library is controlled. Same
+    // call site, three outcomes, chosen by a swap of library: the leak the
+    // shared suite exists to catch.
+    //
+    // What `preventDefault` vetoes is what it always vetoed: TELLING THE
+    // CONSUMER.
     bound?.onChange?.(event);
-    if (event.target.checked) group?.select(value);
+    if (!event.defaultPrevented && event.target.checked) group?.select(value);
   };
 
   const handleBlur = (event: FocusEvent<HTMLInputElement>) => {
     onBlur?.(event);
-    // Touched-gated adapters write `touched` from here — Formik's do — so a
-    // group that swallowed it showed its error only after a submit while every
-    // sibling control showed it on leaving.
-    if (!event.defaultPrevented) bound?.onBlur?.(event);
+    // Unconditional for the same reason, and `focusout` is not cancelable
+    // anyway. Touched-gated adapters write `touched` from here — Formik's do —
+    // so a group that swallowed it showed its error only after a submit while
+    // every sibling control showed it on leaving.
+    bound?.onBlur?.(event);
   };
 
   // CONTROLLED OR NOT, decided by the group and never guessed here. The wrong
@@ -57,13 +83,12 @@ function SegmentedControlItem(props: SegmentedControlItemProps) {
   // freezes the segment, and `defaultChecked` while it does drive it silently
   // stops following the prop.
   //
-  // Bound, the answer comes from the adapter instead, and the three shapes are
-  // all correct: a controlled library sends `checked`, Conform sends
-  // `defaultChecked`, and react-hook-form sends neither because it leaves the
-  // state in the DOM. Reading `group` there would be a second holder of one
-  // value — the defect this component's own context comment warns about.
+  // Bound, this is EMPTY and the adapter's own bag answers instead — see the
+  // spread below. The three shapes are all correct: a controlled library sends
+  // `checked`, Conform sends `defaultChecked`, and react-hook-form sends
+  // neither because it leaves the state in the DOM.
   const selection = bound
-    ? { checked: bound.checked, defaultChecked: bound.defaultChecked }
+    ? {}
     : group?.controlled
       ? { checked: group.value === value }
       : { defaultChecked: group?.defaultValue === value };
@@ -73,6 +98,7 @@ function SegmentedControlItem(props: SegmentedControlItemProps) {
       <input
         className={styles.input}
         {...rest}
+        {...boundRest}
         {...selection}
         type="radio"
         // The binding's name wins where there is one: it is the field's, and the

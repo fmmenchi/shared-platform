@@ -21,10 +21,18 @@ import type { FormFieldTypeOptions } from '../field-type.types.js';
  *
  * `field.onChange` is Formik's `handleChange`, and it already knows both shapes:
  * for a radio it stores `target.value`; for a checkbox whose stored value is an
- * array it adds and removes. The multiple branch below therefore only exists for
- * the case Formik cannot see — a group whose value is not an array YET, which is
- * every group before the first tick and after a `resetForm`. Left to Formik that
- * first click stores the boolean `true` in place of the list.
+ * array it adds and removes.
+ *
+ * WHY THE MULTIPLE BRANCH EXISTS ANYWAY — corrected, because the first version
+ * of this comment gave a reason that is not true. It claimed Formik would store
+ * the boolean `true` on the first click of an untouched group; it does not.
+ * `getValueForCheckbox` returns a boolean only when the current value already
+ * is one, or when the input carries no meaningful `value` — with `undefined`
+ * held and `'news'` on the box it falls through to `concat` and yields
+ * `['news']`, which is right. The real reason is ORDER: left to itself Formik
+ * appends in the order the reader ticks, and the three uncontrolled bindings
+ * answer in document order, so one port would give two answers. See
+ * `checkedInGroup`.
  */
 export function createFormikOptionField(
   options: FormFieldTypeOptions = {},

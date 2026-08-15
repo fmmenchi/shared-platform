@@ -20,7 +20,14 @@ import {
 } from '@fmmenchi/ui-form-ports/react-hook-form';
 
 <UiProvider
-  adapters={{ i18n, form: { field: useRhfField, errors: useRhfErrors } }}
+  adapters={{
+    i18n,
+    form: {
+      field: useRhfField,
+      optionField: useRhfOptionField,
+      errors: useRhfErrors,
+    },
+  }}
 >
   <App />
 </UiProvider>;

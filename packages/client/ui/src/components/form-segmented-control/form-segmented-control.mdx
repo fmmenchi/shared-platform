@@ -43,11 +43,21 @@ A control with **no adapter in scope throws** rather than rendering: an unbound 
 
 ## Guidelines
 
-### The port assumes one control per field, and a group is where that shows
+### One field, many controls — what the binding has to be
 
-`control` is a bag of native props for **one** element. A radio group is several, so two of its three keys behave differently here, and both are worth knowing:
+A radio group is one field drawn as several controls, which the per-field binding could not express: it hands over one bag of native props, and here every radio needs the same `name` with a different `value` and a `checked` only the current value can answer.
 
-- **`onChange` works by delegation.** It goes on the group rather than on an input, because there is no single input to put it on. `change` bubbles from whichever option the user picked and `event.target.value` is the answer — a real event from a real radio, so an adapter reads it the way it already does.
-- **`ref` is not forwarded.** There is no "the input" of a radio group, so there is no right target. A library that uses the ref to move focus to a field from an error summary **will not reach this one**. It was left out rather than pointed at whichever option happens to render first, which would be arbitrary and would move when the options are reordered.
+So this component binds through **`optionField`**, not `field`. It asks the port once for the field and each segment then asks for its own props, which is what puts the binding's `name`, `checked`, `onChange`, `onBlur` **and its `ref`** on every radio.
 
-If you need the ref — or a per-field validation rule, which binding by name alone cannot carry — compose `Fieldset` + `SegmentedControl` and bind them yourself. The bound component adds no markup, so nothing else changes.
+**Your adapter needs an `optionField`.** Every binding in `@fmmenchi/ui-form-ports` ships one — `createRhfOptionField`, `createFormikOptionField`, `createTanstackOptionField`, `createConformOptionField`, `useActionOptionField` — and a hand-written adapter must add it, or this component throws and says so by name.
+
+```tsx
+<UiProvider
+  adapters={{
+    i18n,
+    form: { field: useRhfField, optionField: useRhfOptionField, errors: useRhfErrors },
+  }}
+>
+```
+
+This is what an earlier version of this page called a limitation: the ref was not forwarded at all, so a library could not move focus here from an error summary and could not write a value back into the field. That is fixed, and the workaround this page used to recommend — composing `Fieldset` + `SegmentedControl` by hand — is no longer needed for the ref. It remains the answer for a per-field validation rule, which binding by name alone cannot carry.

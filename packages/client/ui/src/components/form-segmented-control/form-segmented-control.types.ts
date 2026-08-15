@@ -21,8 +21,12 @@ interface FormSegmentedControlOwnProps {
  * `SegmentedControl`'s own `label`, which is left unset so the set is named once
  * (ADR-0025).
  *
- * `ref` is absent, and that is a limitation rather than an omission: a radio
- * group has no single input for it to point at. See the component's own note.
+ * `ref` is absent from the GROUP because a radio group has no single input for
+ * it to point at — but it is no longer a limitation of the binding. Bound
+ * through `optionField`, the adapter's ref reaches every radio, which is what a
+ * library needs to focus this field from an error summary or write a value back
+ * into it. What is absent here is a ref to the wrapper, which never meant
+ * anything.
  */
 export type FormSegmentedControlProps = FormSegmentedControlOwnProps &
   Omit<

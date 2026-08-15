@@ -9,7 +9,11 @@ import { toFieldMessages } from './rhf-messages.js';
  *
  * Give it to the design system once and every bound component works:
  *
- *     <UiProvider adapters={{ i18n, form: { field: useRhfField, errors: useRhfErrors } }}>
+ *     <UiProvider adapters={{ i18n, form: {
+ *       field: useRhfField,
+ *       optionField: useRhfOptionField,  // radio groups, checkbox groups
+ *       errors: useRhfErrors,
+ *     } }}>
  *
  * It READS; it decides nothing. Validation, submission, values and form state
  * all stay with react-hook-form — this only presents them in the shape the

@@ -52,10 +52,22 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
   'use no memo';
 
   const binding = useFormBinding();
-  const useFormField = binding?.field;
-  if (useFormField == null) {
+  if (binding == null) {
     throw new Error(
       `${component}: no form binding in scope — give one to <UiProvider adapters={{ form }}>.`,
+    );
+  }
+  const useFormField = binding.field;
+  // TWO CASES, not one, since `field` became optional so a groups-only form
+  // need not invent one. Told "no form binding in scope" while a binding IS in
+  // scope, a developer opens the provider, finds the adapter wired, and has
+  // been sent to the wrong place — and nesting makes it reachable without
+  // anyone writing a partial binding on purpose, because a nested provider
+  // replaces the binding whole rather than merging it. Both siblings in this
+  // file already name what is missing; this one did not.
+  if (useFormField == null) {
+    throw new Error(
+      `${component}: the form binding provides no \`field\` — it binds one control to one name. Add it to the adapter, or use the component that matches the shape you have.`,
     );
   }
   /*
@@ -117,11 +129,25 @@ export function useBoundOptionField(
   // Called through a `use`-prefixed BINDING, never `binding.optionField()` — a
   // member call is not recognised as a hook by the tooling, and the React
   // Compiler then memoises around it.
-  // Returned as it came, with no `forTag` pass: every control this shape serves
-  // is an `<input>`, and `forTag('input', …)` is the identity — "nothing is
-  // input-only for an `<input>`". Wrapping it would be a filter that filters
-  // nothing, and a reader would have to open it to find that out.
-  return useOptionField(name);
+  const bound = useOptionField(name);
+
+  // NO `forTag` PASS — every control this shape serves is an `<input>`, and
+  // `forTag('input', …)` is the identity ("nothing is input-only for an
+  // `<input>`"). One thing IS taken out, though, and it is not a DOM prop at
+  // all: `key`. Conform's collection helper returns one per option as its
+  // remount token, and a bag carrying it is spread into JSX by every consumer
+  // of this port — which React 19 warns about, and which would silently make
+  // the option's React key the adapter's rather than the caller's. A list's
+  // keys belong to whoever writes the list.
+  return {
+    ...bound,
+    option: (value: string) => {
+      const { key: _key, ...props } = bound.option(value) as ReturnType<
+        BoundOptionField['option']
+      > & { key?: unknown };
+      return props;
+    },
+  };
 }
 
 /**
