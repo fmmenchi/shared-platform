@@ -64,10 +64,16 @@ export type FormFieldType =
   /**
    * A `Combobox`. Not an `<input>` type either: the field a form sees is the
    * component's hidden CARRIER, a text input holding the chosen key, while the
-   * visible box holds the query. Declaring it is what stops an adapter shaping
-   * the carrier from a schema — Conform derives `type`, `pattern`, `min` and
-   * `multiple` from the constraint, and a `pattern` checked against a key can
-   * never match, which blocks the submit for good.
+   * visible box holds the query.
+   *
+   * What declaring it does is pick the INPUT helper — the same reason `select`
+   * and `textarea` are here, in reverse. What it does NOT do is stop the
+   * constraint attributes, and an earlier version of this comment said it did:
+   * `getInputProps` emits `pattern`, `multiple`, `minLength` and the rest
+   * unconditionally, whatever `type` it is handed, so mapping to `'text'` is
+   * byte-identical to leaving the field out of this map. Keeping them off a
+   * control that holds a key is `FormCombobox`'s routing table, and nothing
+   * else.
    */
   | 'combobox'
   /**

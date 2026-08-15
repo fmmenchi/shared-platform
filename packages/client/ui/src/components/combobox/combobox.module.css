@@ -16,13 +16,12 @@
    consumer's unlayered css overrides them without a specificity war. `@import`
    and `@reference` stay above the layer; `:root` tokens stay unlayered. */
 @layer fmmenchi {
-  /* The field and its carrier, which has no box of its own. `contents` rather
-     than a block: this wrapper exists to hold two inputs and a live region
-     together, and a layout box here would break a `Field` or an `InputGroup`
-     that expects to lay out the control itself. */
-  .root {
-    display: contents;
-  }
+  /* THERE IS NO WRAPPER. It was a `display: contents` div, which is transparent
+     to layout and NOT to selectors — so inside an `InputGroup` the field was not
+     `.group > input` and none of the group's resets reached it: a second
+     bordered, filled box inside the group's own, over a group that never rang on
+     focus, never showed invalid and never showed disabled. The component renders
+     a fragment instead, which is transparent to both. */
 
   /*
    * The carrier: out of sight, out of the accessibility tree, out of the tab
@@ -130,6 +129,25 @@
    */
   .option[data-active] {
     @apply bg-input-hover;
+  }
+
+  /*
+   * HOVER PAINTS AND DOES NOT ARM. It was an `onMouseEnter` writing the same
+   * state the arrows write, and that quietly re-opened the hole manual selection
+   * exists to close: rest the pointer on a row while reading the list, press
+   * `Enter` to submit the form, and the hovered row was committed instead. Drawn
+   * in CSS the feedback survives and the keystroke stays the form's — and it is
+   * one fewer handler, which is the package's own rule about elements and events
+   * earning their place.
+   *
+   * ONLY WHILE THE KEYBOARD IS NOT DRIVING. With a row already highlighted, a
+   * second painted row under a cursor nobody is looking at would say two rows
+   * are live when `Enter` can only take one.
+   */
+  @media (hover: hover) {
+    .list:not(:has(.option[data-active])) .option:hover {
+      @apply bg-input-hover;
+    }
   }
 
   .option[aria-selected='true'] {

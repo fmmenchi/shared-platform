@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { Combobox } from './combobox.component.js';
 import { Field } from '../field/field.component.js';
+import { InputGroup } from '../input-group/input-group.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -675,5 +676,501 @@ describe('Combobox', () => {
       });
       expect(field()).toHaveValue('Milanox');
     });
+
+    it('adopts the key onCreate returns, so the field and the form agree', async () => {
+      // THE DEFECT THIS CLOSES, and it is the exact class the component exists
+      // around: the offer reported the intent and left `chosen` null, so the box
+      // read "Bologna" over a form submitting an empty string. Uncontrolled
+      // there was no repair available at all — `onCreate` was handed a string
+      // and could hand nothing back.
+      const { container } = render(
+        <Combobox
+          {...wiring}
+          name="city"
+          aria-label="City"
+          onCreate={(query) => (query === 'Bologna' ? '9' : null)}
+        />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('Bologna{ArrowDown}{Enter}');
+
+      await waitFor(() => {
+        expect(carrier(container)).toHaveValue('9');
+      });
+      // The row for it does not exist yet — the consumer adds it — so the query
+      // stays as the label until `items` catch up.
+      expect(field()).toHaveValue('Bologna');
+    });
+
+    it('warns when a create leaves the field and the form disagreeing', async () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Combobox
+          {...wiring}
+          name="city"
+          aria-label="City"
+          onCreate={vi.fn()}
+        />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('Bologna{ArrowDown}{Enter}');
+
+      await waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('`onCreate` returned nothing'),
+        );
+      });
+      warn.mockRestore();
+    });
+
+    it('does not offer to duplicate a row the accents hid', async () => {
+      // The filter folds accents and the offer's own check did not, so the two
+      // disagreed on this package's own fixture: `Málaga` stayed in the list and
+      // `Create “malaga”` appeared directly beneath it. The obvious action was
+      // to create a duplicate of a record visible on the same screen.
+      render(<Combobox {...wiring} aria-label="City" onCreate={vi.fn()} />);
+
+      await browser.click(field());
+      await browser.keyboard('malaga');
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+      });
+      expect(screen.getByRole('option')).toHaveTextContent('Málaga');
+    });
+
+    it('does not offer to duplicate a row a stray space hid', async () => {
+      // Worse than the accents, because the check passed TRIVIALLY: the filter
+      // dropped every row, so nothing said it, so the offer appeared alone —
+      // and `onCreate` was handed the untrimmed string.
+      render(<Combobox {...wiring} aria-label="City" onCreate={vi.fn()} />);
+
+      await browser.click(field());
+      await browser.keyboard('Milano ');
+
+      await waitFor(() => {
+        expect(field()).toHaveValue('Milano ');
+      });
+      expect(screen.queryAllByRole('option')).toHaveLength(0);
+    });
+
+    it('narrows with canCreate and never widens it', async () => {
+      // REPLACING the duplicate check rather than refining it, this package's
+      // own documented example offered to create a row that was selected two
+      // lines above it.
+      const onCreate = vi.fn();
+      render(
+        <Combobox
+          {...wiring}
+          aria-label="City"
+          onCreate={onCreate}
+          canCreate={(query) => query.length >= 5}
+        />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard(
+        '{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{Enter}',
+      );
+      expect(field()).toHaveValue('Torino');
+
+      // Reopened on the chosen label: six characters, so the consumer's rule
+      // passes — and the built-in check is what has to stop the offer.
+      await browser.keyboard('{ArrowDown}');
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(CITIES.length);
+      });
+      for (const option of screen.getAllByRole('option')) {
+        expect(option).not.toHaveTextContent('Create');
+      }
+    });
+
+    it('announces the creation, which nothing else would', async () => {
+      // Activating the offer selects no option and leaves the field reading the
+      // text it already held, so NOTHING changed for a screen-reader user to
+      // hear: they were returned to the field with no confirmation at all.
+      // Choosing an ordinary row needs no message — the field's value changes.
+      const { container } = render(
+        <Combobox {...wiring} aria-label="City" onCreate={() => '9'} />,
+      );
+      const status = container.querySelector('[role="status"]');
+
+      await browser.click(field());
+      await browser.keyboard('Bologna{ArrowDown}{Enter}');
+
+      await waitFor(() => {
+        expect(status).toHaveTextContent('Created “Bologna”');
+      });
+    });
+
+    it('counts the offer in the announcement, as the row metadata already did', async () => {
+      // The two counts of one list contradicted each other out loud: every row
+      // announced "1 of 1" while the region said "Results for “Bologna”: 0", so
+      // the one action available was described as nothing to do.
+      const { container } = render(
+        <Combobox {...wiring} aria-label="City" onCreate={vi.fn()} />,
+      );
+      const status = container.querySelector('[role="status"]');
+
+      await browser.click(field());
+      await browser.keyboard('Bologna');
+
+      await waitFor(() => {
+        expect(status).toHaveTextContent('Results for “Bologna”: 1');
+      });
+      expect(screen.getByRole('option')).toHaveAttribute('aria-setsize', '1');
+    });
+  });
+
+  describe('the pointer, which this suite had stopped testing', () => {
+    // RESTORED. The commit that answered an earlier review deleted the only
+    // test that clicked a row and replaced it with one about `readOnly`, so
+    // `onMouseDown`, its `preventDefault` — the pattern's central claim — and
+    // the whole pointer path were free to delete. The touch file measures that
+    // rows are 44px for a finger; nothing proved a finger did anything.
+    it('picks with the pointer without taking focus off the field', async () => {
+      const { container } = render(
+        <Combobox {...wiring} name="city" aria-label="City" />,
+      );
+
+      await browser.click(field());
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(CITIES.length);
+      });
+      await browser.click(screen.getByRole('option', { name: 'Manchester' }));
+
+      expect(carrier(container)).toHaveValue('3');
+      expect(field()).toHaveValue('Manchester');
+      // The whole reason for `preventDefault` on mousedown: focus never leaves,
+      // because `aria-activedescendant` on a field nobody is in points at
+      // nothing.
+      expect(field()).toHaveFocus();
+    });
+
+    it('activates the offer with the pointer too', async () => {
+      const onCreate = vi.fn();
+      render(<Combobox {...wiring} aria-label="City" onCreate={onCreate} />);
+
+      await browser.click(field());
+      await browser.keyboard('Bologna');
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+      });
+      await browser.click(screen.getByRole('option'));
+
+      expect(onCreate).toHaveBeenCalledWith('Bologna');
+      expect(field()).toHaveFocus();
+    });
+
+    it('paints a hovered row without arming Enter', async () => {
+      // Manual selection, defeated through the other input device: hover set
+      // the same state the arrows set, so resting the pointer on a row while
+      // reading the list and pressing Enter to SUBMIT committed the hovered row.
+      const submitted = vi.fn();
+      render(
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            submitted();
+          }}
+        >
+          <Combobox {...wiring} name="city" aria-label="City" />
+          <button type="submit">Save</button>
+        </form>,
+      );
+
+      await browser.click(field());
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(CITIES.length);
+      });
+      await browser.hover(screen.getByRole('option', { name: 'Torino' }));
+
+      expect(activeOption()).toBeNull();
+      await browser.keyboard('{Enter}');
+      expect(submitted).toHaveBeenCalledTimes(1);
+      expect(field()).toHaveValue('');
+    });
+  });
+
+  describe('the carrier’s other direction — writes that arrive from outside', () => {
+    it('keeps a value a binding assigned before the effects ran', async () => {
+      // `register()`'s ref callback fires in the COMMIT phase, so a
+      // `defaultValues: { city: '2' }` is already on the node when the
+      // component's first passive effect runs. Pushed blindly, that effect
+      // wrote an empty string over it and told the library the field was now
+      // empty — the default value destroyed on mount, measured on `DateInput`
+      // before it was measured here.
+      let seeded = false;
+      const { container } = render(
+        <Combobox
+          {...wiring}
+          name="city"
+          aria-label="City"
+          carrierRef={(node) => {
+            if (node && !seeded) {
+              seeded = true;
+              node.value = '2';
+            }
+          }}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(field()).toHaveValue('Málaga');
+      });
+      expect(carrier(container)).toHaveValue('2');
+    });
+
+    it('follows a bare assignment, which is how a controlled adapter writes', async () => {
+      // Formik and TanStack hand over a `value` and no ref, so `useBoundCarrier`
+      // assigns the node directly. Unheard, the box stayed empty and the next
+      // commit wrote the empty string back — `setFieldValue` wiping the
+      // library's own state through the control it was setting.
+      const held = { current: null as HTMLInputElement | null };
+      render(
+        <Combobox
+          {...wiring}
+          name="city"
+          aria-label="City"
+          carrierRef={held}
+        />,
+      );
+
+      await act(async () => {
+        if (held.current) held.current.value = '3';
+      });
+
+      expect(field()).toHaveValue('Manchester');
+      expect(held.current).toHaveValue('3');
+    });
+
+    it('follows form.reset() with its state and not only its DOM', async () => {
+      // The DOM half already worked — the seed is a one-shot, so the platform
+      // has somewhere to revert to. The STATE half did not exist: after a reset
+      // the field went on showing the discarded choice, and the first commit
+      // after it wrote that choice back onto the carrier and re-reported it to
+      // the binding.
+      const { container } = render(
+        <form>
+          <Combobox
+            {...wiring}
+            name="city"
+            defaultValue="1"
+            aria-label="City"
+          />
+          <button type="reset">Clear</button>
+        </form>,
+      );
+      expect(field()).toHaveValue('Milano');
+
+      await browser.click(field());
+      await browser.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Enter}');
+      expect(carrier(container)).toHaveValue('3');
+
+      await browser.click(screen.getByRole('button', { name: 'Clear' }));
+      await waitFor(() => {
+        expect(carrier(container)).toHaveValue('1');
+      });
+      expect(field()).toHaveValue('Milano');
+
+      // AND STAYS THERE. Any commit re-runs the push effect; keyed on the state
+      // alone it found the carrier disagreeing and undid the reset.
+      await browser.click(field());
+      expect(carrier(container)).toHaveValue('1');
+      expect(field()).toHaveValue('Milano');
+    });
+  });
+
+  describe('the list changing underneath the highlight', () => {
+    it('starts at the top when the list shrank under a stale highlight', async () => {
+      // The render clamped the highlight and `move()` did not: with `active` at
+      // 3 and the list down to 3 rows, `aria-activedescendant` correctly
+      // disappeared and the next `ArrowDown` computed `4 % 3` and landed on the
+      // SECOND row — a row the user never looked at, one keystroke from Enter.
+      const { rerender } = render(
+        <Combobox {...wiring} filter={false} aria-label="City" />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}');
+      expect(activeOption()).toHaveTextContent('Torino');
+
+      rerender(
+        <Combobox
+          {...wiring}
+          items={CITIES.slice(0, 3)}
+          filter={false}
+          aria-label="City"
+        />,
+      );
+      expect(activeOption()).toBeNull();
+
+      await browser.keyboard('{ArrowDown}');
+      expect(activeOption()).toHaveTextContent('Milano');
+    });
+
+    it('cannot commit a row that took the offer’s place', async () => {
+      // Identified as "the last position", the offer was whatever sat at
+      // `shown.length` WHEN THE KEY WAS PRESSED — so in the server-search flow
+      // the docs recommend, a response landing between the arrow and the Enter
+      // turned the offer into a real city the user had never seen.
+      const onCreate = vi.fn();
+      const { container, rerender } = render(
+        <Combobox
+          {...wiring}
+          items={[]}
+          filter={false}
+          name="city"
+          aria-label="City"
+          onCreate={onCreate}
+        />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('Bolo{ArrowDown}');
+      expect(activeOption()).toHaveTextContent('Create “Bolo”');
+
+      rerender(
+        <Combobox
+          {...wiring}
+          filter={false}
+          name="city"
+          aria-label="City"
+          onCreate={onCreate}
+        />,
+      );
+      await browser.keyboard('{Enter}');
+
+      expect(onCreate).toHaveBeenCalledWith('Bolo');
+      expect(carrier(container)).toHaveValue('');
+    });
+  });
+
+  it('closes when focus leaves for another control', async () => {
+    // Tabbing away, rather than clicking away: a click outside is light-dismissed
+    // by the platform, so it proves nothing about this handler.
+    render(
+      <>
+        <Combobox {...wiring} aria-label="City" />
+        <button type="button">After</button>
+      </>,
+    );
+
+    await browser.click(field());
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(CITIES.length);
+    });
+
+    await browser.tab();
+    await waitFor(() => {
+      expect(field()).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+  });
+
+  it('reports each open and each close once', async () => {
+    // The component both COMMANDS the popover and mirrors it, which
+    // `useOpenMirror`'s contract says nothing using it should do. The cost of
+    // breaking that contract is an echo: our own `hidePopover()` came back as a
+    // `toggle`, so a close was reported twice.
+    const onOpenChange = vi.fn();
+    render(
+      <Combobox {...wiring} aria-label="City" onOpenChange={onOpenChange} />,
+    );
+
+    await browser.click(field());
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(CITIES.length);
+    });
+    expect(onOpenChange.mock.calls).toEqual([[true]]);
+
+    await browser.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(field()).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(onOpenChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it('lets a consumer say what the field is for (WCAG 1.3.5)', () => {
+    // Hard-coded AFTER the spread, `autocomplete="country-name"` compiled,
+    // typechecked and did nothing — and Identify Input Purpose is unsatisfiable
+    // without it on exactly the fields a combobox is used for.
+    render(
+      <Combobox {...wiring} aria-label="City" autoComplete="address-level2" />,
+    );
+    expect(field()).toHaveAttribute('autocomplete', 'address-level2');
+  });
+
+  it('leaves Escape alone when there is nothing to clear', async () => {
+    // Stopped unconditionally, an untouched combobox with the focus swallowed
+    // every Escape — and a `Dialog` around it could not be dismissed at all.
+    const escaped = vi.fn();
+    render(
+      <div
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') escaped();
+        }}
+      >
+        <Combobox {...wiring} aria-label="City" />
+      </div>,
+    );
+
+    field().focus();
+    await browser.keyboard('{Escape}');
+    expect(escaped).toHaveBeenCalledTimes(1);
+
+    // And still stopped when there IS: the same keystroke must not both clear
+    // the field and dismiss what is around it.
+    await browser.keyboard('{ArrowDown}');
+    await waitFor(() => {
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+    });
+    await browser.keyboard('{Escape}');
+    expect(escaped).toHaveBeenCalledTimes(1);
+  });
+
+  it('marks the chosen row and the highlighted row differently', async () => {
+    render(<Combobox {...wiring} aria-label="City" />);
+
+    await browser.click(field());
+    await browser.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    expect(field()).toHaveValue('Málaga');
+
+    await browser.keyboard('{ArrowDown}');
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(CITIES.length);
+    });
+    const [first, second] = screen.getAllByRole('option');
+    // `aria-selected` is the CHOICE — only ever seen as `false` until now, so
+    // hard-coding it survived and took `.option[aria-selected='true']` with it.
+    expect(second).toHaveAttribute('aria-selected', 'true');
+    expect(first).toHaveAttribute('aria-selected', 'false');
+    // `data-active` is what PAINTS the highlight, and is a second mechanism
+    // beside `aria-activedescendant`: only the second was ever asserted, so the
+    // visible highlight could be deleted with nothing going red.
+    await browser.keyboard('{ArrowDown}');
+    expect(first).toHaveAttribute('data-active');
+    expect(second).not.toHaveAttribute('data-active');
+  });
+
+  it('is the group’s own input inside an InputGroup', () => {
+    // It was wrapped in a `display: contents` div, which is transparent to
+    // LAYOUT and not to SELECTORS — so none of `.group > input`'s resets
+    // reached it and the field drew a second bordered, filled box inside the
+    // group's own.
+    render(
+      <InputGroup>
+        <span aria-hidden="true">⌕</span>
+        <Combobox {...wiring} aria-label="City" />
+      </InputGroup>,
+    );
+
+    const style = getComputedStyle(field());
+    expect(style.borderTopWidth).toBe('0px');
+    expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
   });
 });

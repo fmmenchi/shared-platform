@@ -67,9 +67,14 @@ returns results and the list is empty".
 - **The result count is announced.** Filtering is otherwise silent: the rows
   change and a screen-reader user is told nothing. A live region beside the
   field says how many are left.
-- **Keyboard:** `↓`/`↑` open and walk (wrapping), `Home`/`End` jump, `Enter`
-  chooses, `Escape` closes — and `Escape` on a closed field clears, which is the
-  only way back to "nothing chosen" from the keyboard alone.
+- **Keyboard:** `↓`/`↑` open and walk (wrapping), `Enter` chooses a row you moved
+  to, `Escape` closes — and `Escape` on a closed field clears, which is the only
+  way back to "nothing chosen" from the keyboard alone. `Home` and `End` are
+  deliberately **not** taken; see below.
+- **The pointer paints, it does not arm.** Hovering a row highlights it and does
+  nothing else: `Enter` still commits only what the arrows moved to, so reading
+  the list with the mouse and submitting with the keyboard cannot commit the row
+  the cursor happened to rest on.
 - **Every row carries `aria-setsize` and `aria-posinset`**, so a windowed list
   still tells the truth about how many options there are. A virtualised listbox
   without them announces "1 of 20" while the reader walks five thousand records.
@@ -117,8 +122,10 @@ rather than on the box you type in:
 ```
 
 Declare it in your adapter's field types as `'combobox'`. It is not an `<input>`
-type: it tells the binding that the field it sees is the carrier, which is what
-keeps a schema-derived `pattern` off a control that holds a key.
+type: it tells the binding that the field it sees is the carrier, so Conform
+reaches for its `<input>` helper. Dropping the constraint attributes a schema
+derives for a key — `pattern`, `multiple`, `maxLength` — is `FormCombobox`'s
+routing table, not the field type.
 
 ### Creating what is not there
 
@@ -127,12 +134,22 @@ beside the field**, so it inherits the arrows, the highlight and the
 announcement that already exist rather than needing its own of each.
 
 ```tsx
-<Combobox {...wiring} onCreate={(query) => addCity(query)} />
+<Combobox {...wiring} onCreate={(query) => addCity(query).id} />
 ```
 
-It appears when something has been typed and no row already says it;
-`canCreate` decides otherwise (a minimum length, a format, a permission). The
-component reports the intent and nothing more — what creating _means_ is yours.
+**Return the new key.** What creating _means_ is yours, but the control owes you
+that the field and the form agree afterwards — and returning nothing leaves them
+free not to: the box reads "Bologna" while the carrier submits an empty string.
+Returning the key adopts it in one line. When creating is asynchronous, return
+nothing, resolve, and set a controlled `value` yourself. With `freeText` on the
+typed string is already the value and there is nothing to adopt. Uncontrolled,
+synchronous and returning nothing is warned about in development.
+
+It appears when something has been typed and no option already _says_ it — the
+same case- and accent-insensitive fold the filter uses, trimmed, so typing
+`malaga` next to a `Málaga` row does not offer to duplicate it. `canCreate`
+narrows that further (a minimum length, a format, a permission); it never widens
+it, so a length rule cannot accidentally take over the duplicate check.
 
 <Canvas of={ComboboxStories.Creatable} />
 
@@ -152,8 +169,17 @@ would. Neither mode turns on inline completion: writing into the field as you
 type fights an IME mid-composition, and fights a value that is allowed not to be
 in the list.
 
-In both modes, typing over a choice **drops it**. A field reading one thing
+**On, the value changes per keystroke** — that is what "the text is the value"
+means, and it is worth knowing before you turn it on. The carrier's `onChange`
+fires on every character, so react-hook-form in `mode: 'onChange'` validates the
+whole form that often, and the form genuinely holds `Bolog` while someone is
+typing `Bologna`. With free text off the carrier changes only when a choice does.
+
+In both modes, typing over a choice **drops it** — a field reading one thing
 while the form carries another is the defect this component is built around.
+Controlled, it can only _ask_: the component calls `onValueChange(null)` and a
+parent that only ever sets a valid key keeps the stale one. If you control
+`value`, honour the `null`.
 
 ### Not here yet
 

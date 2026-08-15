@@ -67,13 +67,38 @@ interface ComboboxOwnProps<T> {
    * second code path to keep in step.
    *
    * Given, the row appears whenever the query is non-empty and no option's
-   * label already equals it; `canCreate` decides otherwise. The component only
-   * reports the intent — what creating MEANS, and what it produces, is yours.
+   * label already says it (case- and accent-insensitively, trimmed — the same
+   * fold the filter uses); `canCreate` narrows it further. What creating MEANS,
+   * and what it produces, is yours.
+   *
+   * **RETURN THE NEW KEY TO ADOPT IT.** The control owes you that the field and
+   * the form agree afterwards, and returning nothing leaves them free not to:
+   * the box reads "Bologna" while the carrier holds an empty string, which is
+   * the exact divergence this component exists around. Three ways to close it,
+   * and returning the key is the one-liner:
+   *
+   *     onCreate={(query) => addCity(query).id}
+   *
+   * The other two are a controlled `value` you set yourself once the record
+   * exists (the answer when creating is asynchronous — return nothing, resolve
+   * later, set `value`), and `freeText`, where the typed string is already the
+   * value. Uncontrolled, synchronous, and returning nothing is warned about in
+   * development, because it cannot be repaired from anywhere.
    */
-  onCreate?: (query: string) => void;
+  onCreate?: (query: string) => string | null | void;
   /**
-   * When the offer appears, if the default is wrong for this list — a minimum
-   * length, a format, a permission. Only asked when `onCreate` is given.
+   * NARROW the offer further — a minimum length, a format, a permission. Only
+   * asked when `onCreate` is given, and only once the built-in checks have
+   * already passed: something was typed, and no row already says it.
+   *
+   * It REFINES and does not replace, which was a defect first: replacing, a
+   * consumer adding a length rule silently took over a duplicate check they
+   * were never told they owned, and this package's own documented example
+   * offered to create a row that was selected two lines above it.
+   *
+   * `shown` is the FILTERED list, which is the whole list when `filter` is
+   * `false` — so a rule written against it changes meaning with a prop set for
+   * an unrelated reason. Prefer rules about the query itself.
    */
   canCreate?: (query: string, shown: readonly T[]) => boolean;
   /** The chosen item's key — controlled. Pair with `onValueChange`. */
@@ -133,7 +158,16 @@ interface ComboboxOwnProps<T> {
  * those names and reads the field off the event target: on the visible input it
  * would hear a keystroke of the QUERY and find a node with no name, so the
  * library learned the search text and never learned the choice. What the user
- * types is reported by `onQueryChange`.
+ * types is reported by `onQueryChange`. Both need a `name`: the carrier is only
+ * rendered when there is one, and without it neither handler can ever fire —
+ * warned about in development.
+ *
+ * `required` lands on the VISIBLE field, which is `DateInput`'s policy and for
+ * its reason: required on a CSS-hidden carrier is an invalid control the browser
+ * cannot scroll to or focus, so it refuses the submit while showing nothing.
+ * The consequence is worth stating plainly — with `freeText` off, a query that
+ * matches no row still satisfies `required` while the carrier submits an empty
+ * string. A schema is what catches that; the attribute cannot.
  *
  * `type` and `role` are the control's identity. `list` is refused because
  * `<datalist>` is the OTHER answer to this problem (ADR-0028) and mixing the

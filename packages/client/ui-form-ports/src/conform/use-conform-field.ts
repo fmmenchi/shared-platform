@@ -46,10 +46,12 @@ export function createConformField(
      * bag by tag as a net; this is the cure.
      */
     // A `Combobox`'s field IS a text input — its carrier — so Conform is asked
-    // for that and not for a type it has no member for. Declaring the kind is
-    // still what matters: it is how the select/textarea helpers are avoided,
-    // and how the constraint-derived `pattern`/`multiple` stay off a control
-    // that holds a key rather than the text a schema describes.
+    // for that and not for a type it has no member for. That is ALL declaring
+    // it does: `getInputProps` emits `pattern`, `multiple` and the length
+    // constraints whatever type it is given, so this mapping does not keep them
+    // off the key — `FormCombobox`'s routing table does. Said otherwise here
+    // once, which is worth leaving in view: a comment claiming a guarantee the
+    // code cannot make is worse than no comment.
     const shaped = type === 'combobox' ? 'text' : type;
     const control =
       shaped === 'select'

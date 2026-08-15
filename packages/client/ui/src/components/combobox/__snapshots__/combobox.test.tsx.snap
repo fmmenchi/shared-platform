@@ -1,87 +1,15 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Combobox > matches the rendered snapshot 1`] = `
-<div
-  class="_root_bouy5_4"
->
-  <input
-    aria-autocomplete="list"
-    aria-controls="«react-id»"
-    aria-expanded="false"
-    aria-label="City"
-    autocomplete="off"
-    class="_combobox_bouy5_29 _md_bouy5_80"
-    role="combobox"
-    type="text"
-    value=""
-  />
-  <input
-    aria-hidden="true"
-    autocomplete="off"
-    class="_carrier_bouy5_7"
-    data-carrier=""
-    name="city"
-    readonly=""
-    tabindex="-1"
-    type="text"
-    value=""
-  />
-  <div
-    class="_surface_bouy5_95"
-    popover="auto"
-  >
-    <div
-      aria-label="Suggestions"
-      class="_list_bouy5_118"
-      id="«react-id»"
-      role="listbox"
-    >
-      <div
-        aria-posinset="1"
-        aria-selected="false"
-        aria-setsize="4"
-        class="_option_bouy5_124"
-        id="_r_s_-0"
-        role="option"
-      >
-        Milano
-      </div>
-      <div
-        aria-posinset="2"
-        aria-selected="false"
-        aria-setsize="4"
-        class="_option_bouy5_124"
-        id="_r_s_-1"
-        role="option"
-      >
-        Málaga
-      </div>
-      <div
-        aria-posinset="3"
-        aria-selected="false"
-        aria-setsize="4"
-        class="_option_bouy5_124"
-        id="_r_s_-2"
-        role="option"
-      >
-        Manchester
-      </div>
-      <div
-        aria-posinset="4"
-        aria-selected="false"
-        aria-setsize="4"
-        class="_option_bouy5_124"
-        id="_r_s_-3"
-        role="option"
-      >
-        Torino
-      </div>
-    </div>
-  </div>
-  <div
-    aria-live="polite"
-    class="_status_bouy5_18"
-    role="status"
-  />
-</div>
+<input
+  aria-autocomplete="list"
+  aria-controls="«react-id»"
+  aria-expanded="false"
+  aria-label="City"
+  autocomplete="off"
+  class="_combobox_arnb1_26 _md_arnb1_77"
+  role="combobox"
+  type="text"
+  value=""
+/>
 `;

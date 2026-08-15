@@ -20,6 +20,23 @@ export function matches(label: string, query: string): boolean {
   return fold(label).includes(fold(query));
 }
 
+/**
+ * Does this label ALREADY SAY what was typed? The question behind the offer to
+ * create, and it has to be asked with the same fold as the match above.
+ *
+ * Asked with a plain `toLocaleLowerCase()` — which is how it shipped — the two
+ * disagreed, and an adversarial review measured the disagreement on this
+ * package's own fixture: typing `malaga` left `Málaga` in the list AND offered
+ * `Create “malaga”` one row under it, so the obvious action was to create a
+ * duplicate of a record visible on the same screen. A trailing space was worse:
+ * the filter dropped every row, so nothing said it, so the offer appeared alone.
+ * Hence the trim as well — a query is text a person typed, and the space at the
+ * end of it is not part of what they meant.
+ */
+export function says(label: string, query: string): boolean {
+  return fold(label) === fold(query.trim());
+}
+
 function fold(value: string): string {
   return value
     .normalize('NFD')

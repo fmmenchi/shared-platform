@@ -51,6 +51,14 @@ function FormCombobox<T>(props: FormComboboxProps<T>) {
     multiple,
     checked,
     defaultChecked,
+    // THE TWO THE FIRST TABLE MISSED, and they are the sharpest of the set here.
+    // `getInputProps` emits them from the same constraint as the rest, so a key
+    // that is a UUID arrives as `maxLength={36}` — landing on the VISIBLE field,
+    // which holds the query. The search box then hard-truncates typing at the
+    // length of a value the user never sees, and a `minLength` blocks the submit
+    // with a native bubble pointing at a field whose contents are not the value.
+    minLength,
+    maxLength,
     ...binding
   } = control;
 
@@ -63,8 +71,12 @@ function FormCombobox<T>(props: FormComboboxProps<T>) {
   // it, Formik and TanStack emit `value` on every render.
   const seed = asString(defaultValue) ?? asString(value);
   // A CONTROLLED adapter hands over `value` and no ref, so nothing it does
-  // after the first render reaches the field. This follows it onto the carrier,
-  // which is where the component is already watching.
+  // after the first render reaches the field. This follows it onto the carrier
+  // with a BARE ASSIGNMENT — deliberately, and only sound because the carrier
+  // wraps its own `value` descriptor (`useCarrierSync`). It did not, at first:
+  // the write landed on the node, the component never heard it, the box stayed
+  // empty and the next commit wrote the empty string back — so `setFieldValue`
+  // wiped the library's own state through the control it was setting.
   const carrier = useBoundCarrier(asString(value));
 
   return (

@@ -43,9 +43,14 @@ createConformField({ types: { city: 'combobox' } });
 ```
 
 `'combobox'` is not an `<input>` type. It tells the binding that the field it
-sees is the component's **carrier** — a text input holding the chosen key —
-which is what keeps a schema-derived `pattern` or `multiple` off a control that
-holds a key rather than the text the schema describes.
+sees is the component's **carrier** — a text input holding the chosen key — so
+Conform reaches for its `<input>` helper rather than the `<select>` or
+`<textarea>` one.
+
+It does **not** keep a schema-derived `pattern`, `multiple` or `maxLength` off
+that key: Conform emits those from the constraint whatever type it is handed.
+Dropping them is `FormCombobox`'s own routing table, which is why the binding is
+never spread blindly onto the control.
 
 ## Accessibility
 

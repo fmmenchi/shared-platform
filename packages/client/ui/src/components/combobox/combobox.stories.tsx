@@ -134,12 +134,29 @@ export const Controlled: Story = {
 /**
  * A last row offering to create what was typed — an option, so the arrows reach
  * it and a screen reader announces it like any other.
+ *
+ * It ADDS THE CITY AND RETURNS ITS KEY, which is the whole contract and was the
+ * story's own defect: demonstrated with a `console.log`, the one implementation
+ * that returns nothing, it hid the divergence it was meant to show — the field
+ * read "Bologna" over a form submitting an empty string.
  */
+function CreatableDemo(args: ComponentProps<typeof Combobox<City>>) {
+  const [extra, setExtra] = useState<City[]>([]);
+  return (
+    <Combobox
+      {...args}
+      items={[...CITIES, ...extra]}
+      onCreate={(query) => {
+        const created = { id: `new-${query}`, name: query, country: '—' };
+        setExtra((current) => [...current, created]);
+        return created.id;
+      }}
+    />
+  );
+}
+
 export const Creatable: Story = {
-  args: {
-    // eslint-disable-next-line no-console -- a story showing what is reported
-    onCreate: (query: string) => console.log('create', query),
-  },
+  render: (args) => <CreatableDemo {...args} />,
 };
 
 /**

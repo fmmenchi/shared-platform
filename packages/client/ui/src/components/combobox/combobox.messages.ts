@@ -24,6 +24,15 @@ import { defineMessages } from '../../i18n/messages.js';
  * `list` names the listbox. On iOS VoiceOver `aria-activedescendant` is not
  * supported at all, so touch exploration is the only way through the rows, and
  * an unnamed "list box" is where they land.
+ *
+ * `created` IS THE COMPENSATION THE OFFER OWES. The create row wears
+ * `role="option"` inside a listbox that expresses selection, so JAWS reads it as
+ * "not selected" — an explicit promise that `Enter` will select it. `Enter`
+ * instead closes the list and selects no option, and the field still reads the
+ * text that was already there, so NOTHING changed for a screen-reader user to
+ * hear: they were returned to a field with no confirmation that anything had
+ * happened at all. Choosing an ordinary row needs no message because the field's
+ * value changes and is announced; this is the one path where it does not.
  */
 export const comboboxMessages = defineMessages('combobox', {
   en: {
@@ -31,17 +40,20 @@ export const comboboxMessages = defineMessages('combobox', {
     empty: 'No results',
     list: 'Suggestions',
     create: 'Create “{query}”',
+    created: 'Created “{query}”',
   },
   it: {
     results: 'Risultati per «{query}»: {count}',
     empty: 'Nessun risultato',
     list: 'Suggerimenti',
     create: 'Crea «{query}»',
+    created: 'Creato «{query}»',
   },
   ar: {
     results: 'نتائج «{query}»: {count}',
     empty: 'لا توجد نتائج',
     list: 'اقتراحات',
     create: 'إنشاء «{query}»',
+    created: 'تم إنشاء «{query}»',
   },
 });
