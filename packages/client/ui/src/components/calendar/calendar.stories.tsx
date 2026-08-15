@@ -62,7 +62,16 @@ export const ReadingTheValue: Story = {
     const [value, setValue] = useState<CivilDate | null>(null);
     return (
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-        <Calendar {...args} value={value} onValueChange={setValue} />
+        {/* NAMED rather than spread. `args` is typed from the props union, and
+            a union spread beside further props is not assignable — the
+            ergonomic cost of discriminating on `selection`, paid here so the
+            wrong pairing cannot compile anywhere else. */}
+        <Calendar
+          defaultMonth={args.defaultMonth}
+          selection="day"
+          value={value}
+          onValueChange={setValue}
+        />
         <output
           style={{ font: 'var(--fm-font-mono, monospace)', opacity: 0.7 }}
         >

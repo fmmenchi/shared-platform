@@ -505,3 +505,155 @@ describe('Calendar', () => {
     await expectNoA11yViolations(container);
   });
 });
+
+describe('Calendar picking a RANGE', () => {
+  const AUG: CivilDate = { year: 2026, month: 8, day: 1 };
+  const at = (container: HTMLElement, iso: string) =>
+    container.querySelector(`[data-day="${iso}"]`) as HTMLElement;
+
+  it('marks the two ends as selected and the days between as spanned', async () => {
+    const { container } = renderUi(
+      <Calendar selection="range" defaultMonth={AUG} />,
+      { locale: 'it' },
+    );
+
+    await browser.click(at(container, '2026-08-12'));
+    await browser.click(at(container, '2026-08-15'));
+
+    // The ENDS are the selection; the middle is what the selection covers.
+    // A day claiming both would be announced as chosen when it is only spanned.
+    expect(at(container, '2026-08-12')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(at(container, '2026-08-15')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    for (const iso of ['2026-08-13', '2026-08-14']) {
+      expect(at(container, iso)).toHaveAttribute('data-in-range');
+      expect(at(container, iso)).not.toHaveAttribute('aria-selected');
+    }
+    expect(at(container, '2026-08-12')).not.toHaveAttribute('data-in-range');
+  });
+
+  it('hands back a half-made range on the FIRST click', async () => {
+    const onValueChange = vi.fn();
+    const { container } = renderUi(
+      <Calendar
+        selection="range"
+        defaultMonth={AUG}
+        onValueChange={onValueChange}
+      />,
+      { locale: 'it' },
+    );
+
+    await browser.click(at(container, '2026-08-12'));
+
+    // Not silence until the second click: a consumer draws the half-made state
+    // — a field showing the start, a trigger label — and cannot if it is not
+    // told about it.
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange.mock.calls[0]?.[0]).toEqual({
+      start: { year: 2026, month: 8, day: 12 },
+      end: null,
+    });
+  });
+
+  it('rewinds when the second click is earlier, rather than refusing it', async () => {
+    const { container } = renderUi(
+      <Calendar selection="range" defaultMonth={AUG} />,
+      { locale: 'it' },
+    );
+
+    await browser.click(at(container, '2026-08-12'));
+    await browser.click(at(container, '2026-08-05'));
+
+    expect(at(container, '2026-08-05')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(at(container, '2026-08-12')).not.toHaveAttribute('aria-selected');
+    expect(container.querySelectorAll('[data-in-range]')).toHaveLength(0);
+  });
+
+  it('says which end is being chosen, which nothing on screen does', async () => {
+    const { container } = renderUi(
+      <Calendar selection="range" defaultMonth={AUG} />,
+      { locale: 'it' },
+    );
+    // THE LAST of them. The rendered tree carries three `role="status"`
+    // regions and the calendar's is not the first — a review measured a probe
+    // reading the wrong one and reporting silence from a component that was
+    // speaking.
+    const live = () => {
+      const all = container.querySelectorAll('[role="status"]');
+      return all[all.length - 1]?.textContent ?? '';
+    };
+
+    await browser.click(at(container, '2026-08-12'));
+    // The half a range adds, and the half sighted testing never notices
+    // missing: after the first click the grid is choosing an END.
+    expect(live()).toContain('inizio');
+    expect(live()).toContain('12 agosto 2026');
+
+    await browser.click(at(container, '2026-08-15'));
+    expect(live()).toContain('12 agosto 2026');
+    expect(live()).toContain('15 agosto 2026');
+  });
+
+  it('chooses with the keyboard through the same door as the pointer', async () => {
+    const { container } = renderUi(
+      <Calendar selection="range" defaultMonth={AUG} />,
+      { locale: 'it' },
+    );
+
+    await focusCell(container, '2026-08-12');
+    await browser.keyboard('{Enter}');
+    await browser.keyboard('{ArrowRight}{ArrowRight}');
+    await browser.keyboard('{Enter}');
+
+    expect(at(container, '2026-08-12')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(at(container, '2026-08-14')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(at(container, '2026-08-13')).toHaveAttribute('data-in-range');
+  });
+
+  it('spans a range that crosses into the next month', async () => {
+    const { container } = renderUi(
+      <Calendar selection="range" defaultMonth={AUG} />,
+      { locale: 'it' },
+    );
+
+    await browser.click(at(container, '2026-08-28'));
+    // The grid draws the first days of September in the same six rows.
+    await browser.click(at(container, '2026-09-02'));
+
+    expect(at(container, '2026-08-31')).toHaveAttribute('data-in-range');
+    expect(at(container, '2026-09-01')).toHaveAttribute('data-in-range');
+    expect(at(container, '2026-09-02')).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('has no accessibility violations with a range on screen', async () => {
+    const { container } = renderUi(
+      <Calendar
+        selection="range"
+        defaultMonth={AUG}
+        defaultValue={{
+          start: { year: 2026, month: 8, day: 12 },
+          end: { year: 2026, month: 8, day: 15 },
+        }}
+      />,
+      { locale: 'it' },
+    );
+    await expectNoA11yViolations(container);
+  });
+});

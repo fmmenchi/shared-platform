@@ -1,19 +1,7 @@
 import type { ComponentPropsWithRef } from 'react';
-import type { CivilDate } from '../../date/civil-date.types.js';
+import type { CivilDate, CivilRange } from '../../date/civil-date.types.js';
 
 interface CalendarOwnProps {
-  /**
-   * The selected day, if there is one. Controlled — unlike the fields in this
-   * package, and for the opposite reason: a calendar has no DOM home for its
-   * value. There is no `<input>` under it holding a day, so React is the only
-   * place the selection can live (ADR-0013 draws the line at "controls the
-   * browser draws"; this one is drawn by us).
-   */
-  value?: CivilDate | null;
-  /** The starting selection when the consumer does not hold it. */
-  defaultValue?: CivilDate | null;
-  /** Fires when a day is chosen. */
-  onValueChange?: (value: CivilDate) => void;
   /**
    * Which month is on screen. Controlled if given, so a consumer can drive the
    * calendar from their own navigation; otherwise the component keeps it.
@@ -82,8 +70,58 @@ interface CalendarOwnProps {
  * Gregorian, one date, no time and no timezone: the value is a `CivilDate`,
  * `{ year, month, day }`, which is a day and not an instant.
  */
-export type CalendarProps = CalendarOwnProps &
+/**
+ * WHAT A DAY-PICKING CALENDAR ANSWERS WITH.
+ *
+ * The value is controlled or uncontrolled — unlike the fields in this package,
+ * and for the opposite reason: a calendar has no DOM home for its value. There
+ * is no `<input>` under it holding a day, so React is the only place the
+ * selection can live (ADR-0013 draws the line at "controls the browser draws";
+ * this one is drawn by us).
+ */
+interface DaySelection {
+  selection?: 'day';
+  /** The selected day, if there is one. */
+  value?: CivilDate | null;
+  /** The starting selection when the consumer does not hold it. */
+  defaultValue?: CivilDate | null;
+  /** Fires when a day is chosen. */
+  onValueChange?: (value: CivilDate) => void;
+}
+
+/**
+ * WHAT A RANGE-PICKING CALENDAR ANSWERS WITH, and why this is a separate member
+ * of a union rather than a wider `value` type.
+ *
+ * A union alone would accept a range value beside a day callback, which is a
+ * combination that compiles and then hands the consumer the wrong shape at
+ * runtime. Discriminated on `selection`, the wrong pairing does not typecheck —
+ * which is what ADR-0027 asks for: unrepresentable rather than merely unlikely.
+ *
+ * The discriminant is a PROP and not inferred from the value, because an
+ * uncontrolled calendar with nothing chosen has no value to infer from, and it
+ * still has to know which shape of answer it owes.
+ *
+ * Both ends are nullable while the range is half made. `onValueChange` fires on
+ * every click — the first one hands back `{ start, end: null }` — so a consumer
+ * can draw the half-made state rather than waiting in the dark for the second.
+ */
+interface RangeSelection {
+  selection: 'range';
+  value?: CivilRange | null;
+  defaultValue?: CivilRange | null;
+  onValueChange?: (value: CivilRange) => void;
+}
+
+export type CalendarProps = (DaySelection | RangeSelection) &
+  CalendarOwnProps &
   // `children` comes off, as it does on eighteen siblings here: the grid is
   // drawn from the month, so anything passed as content would typecheck and
   // then be discarded by JSX without a word.
-  Omit<ComponentPropsWithRef<'div'>, keyof CalendarOwnProps | 'children'>;
+  Omit<
+    ComponentPropsWithRef<'div'>,
+    | keyof CalendarOwnProps
+    | keyof DaySelection
+    | keyof RangeSelection
+    | 'children'
+  >;

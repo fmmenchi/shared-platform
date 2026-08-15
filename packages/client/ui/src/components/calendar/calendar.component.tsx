@@ -3,6 +3,13 @@ import { cn } from '../../util/cn.js';
 import { Button } from '../button/button.component.js';
 import { useControlled } from '../../primitives/use-controlled.js';
 import {
+  EMPTY_RANGE,
+  isInRange,
+  isRangeEnd,
+  isWholeRange,
+  takeDay,
+} from '../../date/civil-range.js';
+import {
   useCopyFormatter,
   useFormatter,
 } from '../../formatting/use-formatter.js';
@@ -19,7 +26,7 @@ import {
 import { calendarMessages } from './calendar.messages.js';
 import { calendarVariants } from './calendar.variants.js';
 import type { CalendarProps } from './calendar.types.js';
-import type { CivilDate } from '../../date/civil-date.types.js';
+import type { CivilDate, CivilRange } from '../../date/civil-date.types.js';
 import styles from './calendar.module.css';
 
 /**
@@ -96,6 +103,7 @@ function Calendar(props: CalendarProps) {
     value,
     defaultValue,
     onValueChange,
+    selection = 'day',
     month,
     defaultMonth,
     onMonthChange,
@@ -135,18 +143,68 @@ function Calendar(props: CalendarProps) {
     [formatter.locale],
   );
 
-  const [selected, setSelected] = useControlled<CivilDate | null>({
+  // ONE PIECE OF STATE FOR BOTH SHAPES, and the shape is the `selection` prop
+  // rather than something guessed from the value: uncontrolled and empty, a
+  // `null` says nothing about which kind of answer the consumer wants back.
+  const ranged = selection === 'range';
+  const [selected, setSelected] = useControlled<CivilDate | CivilRange | null>({
     value,
-    defaultValue: defaultValue ?? null,
+    defaultValue: defaultValue ?? (ranged ? EMPTY_RANGE : null),
     onChange: (next) => {
-      if (next !== null) onValueChange?.(next);
+      if (next !== null) onValueChange?.(next as never);
     },
     name: 'Calendar',
   });
 
+  // THE RANGE, READ SAFELY. `selected` is one of two shapes and every reader
+  // below wants the same three questions answered — is this day an end, is it
+  // in the middle, and which single day should the month and the tab stop
+  // follow. Asking them once here is what keeps the branching out of the grid.
+  const range: CivilRange = ranged
+    ? ((selected as CivilRange | null) ?? EMPTY_RANGE)
+    : EMPTY_RANGE;
+  const anchorDay: CivilDate | null = ranged
+    ? (range.end ?? range.start)
+    : (selected as CivilDate | null);
+  const isChosen = (day: CivilDate) =>
+    ranged
+      ? isRangeEnd(range, day)
+      : selected !== null && isSameDay(day, selected as CivilDate);
+
+  /**
+   * WHAT A CLICK OR AN ENTER DOES, in one place for both shapes.
+   *
+   * A day replaces the selection. A range walks the model in `civil-range.ts`,
+   * which is where every branch of it is argued and tested away from the
+   * forty-two cells that would otherwise distract from it.
+   */
+  const choose = (day: CivilDate) => {
+    if (!ranged) {
+      setSelected(day);
+      return;
+    }
+    const next = takeDay(range, day);
+    setSelected(next);
+    // SAID OUT LOUD, because nothing on screen says it to a reader who cannot
+    // see the highlight move. After the first click the grid is choosing an
+    // END, and that is a state change with no visible announcement of its own.
+    // The sentence names the day too, so two clicks are told apart rather than
+    // both arriving as "selected".
+    setAnnouncement(
+      isWholeRange(next)
+        ? t('rangeWhole', {
+            start: longDate.format(utc(next.start)),
+            end: longDate.format(utc(next.end)),
+          })
+        : t('rangeStart', {
+            date: longDate.format(utc(next.start as CivilDate)),
+          }),
+    );
+  };
+
   const [shown, setShown] = useControlled<CivilDate>({
     value: month,
-    defaultValue: startOfMonth(defaultMonth ?? selected ?? today()),
+    defaultValue: startOfMonth(defaultMonth ?? anchorDay ?? today()),
     onChange: onMonthChange,
     name: 'Calendar',
   });
@@ -155,7 +213,7 @@ function Calendar(props: CalendarProps) {
   // the month — never on "today" when today is elsewhere, since arrowing into a
   // grid should not begin by scrolling it somewhere else.
   const [focused, setFocused] = useState<CivilDate>(
-    () => selected ?? startOfMonth(shown),
+    () => anchorDay ?? startOfMonth(shown),
   );
   // WHETHER THE FOCUS BELONGS IN THE GRID AT ALL. Moving to a cell nobody asked
   // for would steal focus on first paint, so it only ever follows a key or a
@@ -275,17 +333,17 @@ function Calendar(props: CalendarProps) {
     // then Enter stored the 2nd. The APG's date grid puts the initial focus on
     // the selected date, and derived is the only way to say so now.
     if (
-      selected !== null &&
-      weeks.some((week) => week.some((day) => isSameDay(day, selected)))
+      anchorDay !== null &&
+      weeks.some((week) => week.some((day) => isSameDay(day, anchorDay)))
     ) {
-      return selected;
+      return anchorDay;
     }
     return {
       year: shown.year,
       month: shown.month,
       day: Math.min(focused.day, daysInMonth(shown.year, shown.month)),
     };
-  }, [weeks, focused, shown, selected]);
+  }, [weeks, focused, shown, anchorDay]);
 
   // The month changed, so say so — but never on arrival, which is not news.
   useEffect(() => {
@@ -368,7 +426,7 @@ function Calendar(props: CalendarProps) {
       event.preventDefault();
       if (isDateDisabled?.(focusable) === true) return;
       roving.current = true;
-      setSelected(focusable);
+      choose(focusable);
       return;
     }
 
@@ -457,8 +515,11 @@ function Calendar(props: CalendarProps) {
               {week.map((day, column) => {
                 const iso = formatIsoDate(day);
                 const outside = day.month !== shown.month;
-                const isSelected =
-                  selected !== null && isSameDay(day, selected);
+                const isSelected = isChosen(day);
+                // BETWEEN the ends, and never one of them. The middle of a
+                // range is a fill and not a selection: a day that claimed both
+                // would be announced as chosen when it is only spanned.
+                const spanned = ranged && isInRange(range, day);
                 const disabled = isDateDisabled?.(day) ?? false;
                 return (
                   /*
@@ -486,6 +547,7 @@ function Calendar(props: CalendarProps) {
                     data-day={iso}
                     data-outside={outside || undefined}
                     data-selected={isSelected || undefined}
+                    data-in-range={spanned || undefined}
                     data-today={isSameDay(day, now) || undefined}
                     className={styles.day}
                     aria-selected={isSelected || undefined}
@@ -510,7 +572,7 @@ function Calendar(props: CalendarProps) {
                       if (disabled) return;
                       roving.current = true;
                       setFocused(day);
-                      setSelected(day);
+                      choose(day);
                     }}
                     onFocus={() => setFocused(day)}
                   >

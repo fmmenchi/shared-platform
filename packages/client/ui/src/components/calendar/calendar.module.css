@@ -71,6 +71,17 @@
     @apply bg-primary text-primary-foreground;
   }
 
+  /* BETWEEN the ends of a range, and never one of them — `isInRange` is strict,
+     so these two rules can never both match a cell.
+     A quieter fill than the ends, because it says something quieter: these days
+     are SPANNED, not chosen. The ends are the answer; the middle is what the
+     answer covers. Drawn with the accent surface rather than a tint of the
+     primary, so the two are told apart by hue and not by opacity — an opacity
+     ramp is the thing forced colors flattens first. */
+  .day[data-in-range] {
+    @apply bg-accent text-accent-foreground;
+  }
+
   /* You are here. `today()` was read to pick the opening month and then never
      mentioned again — a calendar with no today at all. Drawn as a ring rather
      than a fill so it can coexist with the selection on the same cell. */
@@ -113,6 +124,14 @@
     .day[data-selected] {
       background-color: Highlight;
       color: HighlightText;
+    }
+
+    /* The span, in the mode where every background is the system's. `Highlight`
+       is taken by the ENDS, so the middle gets the border treatment instead:
+       flattened to the same fill it would be indistinguishable from the days
+       either side of it, which is the whole information a range carries. */
+    .day[data-in-range] {
+      border-block: 1px solid Highlight;
     }
 
     .day:focus-visible {
