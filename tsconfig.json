@@ -50,6 +50,9 @@
     },
     {
       "path": "./packages/shared/formatting"
+    },
+    {
+      "path": "./packages/tools/figma-tokens"
     }
   ],
   "compilerOptions": {}

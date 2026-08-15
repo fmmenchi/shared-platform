@@ -1,0 +1,44 @@
+{
+  "name": "@fmmenchi/figma-tokens",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Turns a CSS custom-property token contract into a Figma variables payload — oklch resolved to sRGB, rem to px, and every property either mapped or explicitly skipped with a reason.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/tools/figma-tokens"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:tools",
+      "type:util",
+      "doc:tools"
+    ],
+    "targets": {
+      "nx-release-publish": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "echo \"skip npm publish — internal dev tool (versioned + tagged only)\""
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "culori": "^4.0.2",
+    "tslib": "^2.3.0"
+  }
+}
