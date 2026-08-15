@@ -154,6 +154,19 @@ function DateRangePicker(props: DateRangePickerProps) {
     [defaultStart, defaultEnd],
   );
   const [range, setRange] = useState<CivilRange>(seeded);
+  // THE CURRENT PAIR, readable from a handler that fires more than once in one
+  // commit. `applyTyped` used to compare against the render closure, and a
+  // controlled library moving BOTH ends in one update fires two carrier writes
+  // in that single commit — so the second half was judged against the first
+  // half's stale partner. Measured through this repo's own Formik port: moving
+  // 12–15 August to 1–8 June left the library holding `{checkIn: "2027-06-01",
+  // checkOut: ""}` and the end field empty. It failed in both directions, which
+  // is what proves the closure and not the rule.
+  const rangeRef = useRef<CivilRange>(seeded);
+  /** Which end a keystroke last named, so the settle below knows which to keep. */
+  const lastTyped = useRef<'start' | 'end'>('start');
+  /** Raised while a consistency check is already queued for this tick. */
+  const settling = useRef(false);
   const [month, setMonth] = useState<CivilDate>(() =>
     startOfMonth(defaultMonth ?? seeded.start ?? today()),
   );
@@ -170,6 +183,7 @@ function DateRangePicker(props: DateRangePickerProps) {
   );
 
   const report = (next: CivilRange) => {
+    rangeRef.current = next;
     setRange(next);
     if (next.start !== null) setMonth(startOfMonth(next.start));
     onRangeChange?.(next);
@@ -203,48 +217,75 @@ function DateRangePicker(props: DateRangePickerProps) {
   // while rendering to produce the callback, which puts its whole body in the
   // render phase as far as the compiler is concerned — and it touches a ref, so
   // "Cannot access refs during render" was correct rather than pedantic.
+  /**
+   * THE CONSISTENCY RULE, CHECKED ONCE THE TICK HAS SETTLED.
+   *
+   * Deferred rather than applied inline, and that is the whole repair. Two ends
+   * can move in ONE commit — a controlled library setting both — and judging
+   * the first against its old partner declares an inversion that is about to
+   * stop existing, then drops an end the library had just set. Measured: a
+   * carrier cleared, an `input` event dispatched, the library told the end was
+   * gone, and nothing ever told it otherwise.
+   *
+   * A microtask is enough: every write in one commit has landed by the time it
+   * runs, and a keystroke is alone in its own.
+   */
+  const settle = () => {
+    if (settling.current) return;
+    settling.current = true;
+    queueMicrotask(() => {
+      settling.current = false;
+      const now = rangeRef.current;
+      if (
+        now.start === null ||
+        now.end === null ||
+        compareDays(now.start, now.end) <= 0
+      ) {
+        return;
+      }
+      // THE OTHER END GOES, whichever one was typed last — what was typed is
+      // what was meant, and the end nobody just touched is the one that no
+      // longer makes sense.
+      const fixed =
+        lastTyped.current === 'start'
+          ? { start: now.start, end: null }
+          : { start: null, end: now.end };
+      // AND THE CARRIER GOES WITH IT. Dropped in React only, the DOM kept the
+      // other end and the form posted the inverted range the consumer had just
+      // been told did not exist.
+      writeBoth(fixed);
+      report(fixed);
+    });
+  };
+
   const applyTyped = (which: 'start' | 'end', date: CivilDate | null) => {
     // Our own write, coming back. Ignored here rather than guarded at the call
     // site, because it arrives through the field's ordinary report and is
     // indistinguishable from a keystroke by the time it gets here.
     if (writingBoth.current) return;
 
+    lastTyped.current = which;
+    const current = rangeRef.current;
     const next =
       which === 'start'
-        ? { start: date, end: range.end }
-        : { start: range.start, end: date };
-    if (
-      next.start !== null &&
-      next.end !== null &&
-      compareDays(next.start, next.end) > 0
-    ) {
-      // THE OTHER END GOES, whichever one was typed — symmetrical, because the
-      // reasoning is: what was typed is what was meant, and the end that no
-      // longer makes sense is the one nobody just touched. The first version
-      // wrote this branch for a typed START and returned the untouched pair for
-      // a typed END, which is the same as having no rule at all: a review
-      // measured `checkIn=2026-08-12, checkOut=2026-08-05` posted from it.
-      const fixed =
-        which === 'start'
-          ? { start: date, end: null }
-          : { start: null, end: date };
-      // AND THE CARRIER GOES WITH IT. Dropped in React only, the DOM kept the
-      // other end and the form posted the inverted range the consumer had just
-      // been told did not exist.
-      writeBoth(fixed);
-      report(fixed);
-      return;
-    }
+        ? { start: date, end: current.end }
+        : { start: current.start, end: date };
     report(next);
+    settle();
   };
   const startTyped = (date: CivilDate | null) => applyTyped('start', date);
   const endTyped = (date: CivilDate | null) => applyTyped('end', date);
 
   return (
     <InputGroup className={cn(asTrigger && styles.asTrigger, className)}>
+      {/* THE BINDING FIRST, THE CALL SITE AFTER — the rule `FormInput` states
+          for the whole family: "the adapter's props come FIRST so an explicit
+          prop at the call site still wins". Measured with the two spreads the
+          other way round, swapping the day picker for this one silently flipped
+          who won on `required` and `aria-describedby`. */}
       <DateInput
-        {...field}
         {...startFieldProps}
+        {...field}
         aria-label={startLabel}
         name={startName}
         defaultValue={defaultStart}
@@ -269,8 +310,8 @@ function DateRangePicker(props: DateRangePickerProps) {
         {separator}
       </span>
       <DateInput
-        {...field}
         {...endFieldProps}
+        {...field}
         aria-label={endLabel}
         name={endName}
         defaultValue={defaultEnd}

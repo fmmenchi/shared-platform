@@ -91,7 +91,11 @@ export type DateRangePickerProps = SharedFieldProps & {
    * attached it to both carriers, so the start's binding was told the end's
    * value and the two ends of the form held the same date.
    *
-   * Applied after the shared props, so a per-field prop wins.
+   * Applied BEFORE the shared props, so an explicit prop at the call site still
+   * wins — the precedence `FormInput` states for the whole family. The first
+   * version had it the other way round, and a review measured that swapping the
+   * day picker for this one then flipped who won on `required` and
+   * `aria-describedby`.
    */
   startFieldProps?: Partial<ComponentProps<typeof DateInput>>;
   endFieldProps?: Partial<ComponentProps<typeof DateInput>>;

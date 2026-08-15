@@ -39,4 +39,10 @@ export type FormDateRangePickerProps = FormDateRangePickerOwnProps &
     // where it wanted an ISO date.
     | 'startCarrierRef'
     | 'endCarrierRef'
+    // The per-field channels carry the BINDING, one end each. Left on the
+    // public type they compiled and were then eaten: this component's own
+    // spread lands after the call site's, so a `startFieldProps` from outside
+    // reached nothing — measured, zero elements carried it.
+    | 'startFieldProps'
+    | 'endFieldProps'
   >;

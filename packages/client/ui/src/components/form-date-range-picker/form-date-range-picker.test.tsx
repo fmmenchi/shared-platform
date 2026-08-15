@@ -193,6 +193,178 @@ describe('FormDateRangePicker', () => {
     expect(carrier(container, 'checkOut').value).toBe('2027-06-08');
   });
 
+  it('keeps BOTH ends when a library moves both in one update', async () => {
+    const log: string[] = [];
+    function Controlled() {
+      const [held, setHeld] = useState({
+        checkIn: '2026-08-12',
+        checkOut: '2026-08-15',
+      });
+      const field: UseFormField = (name) => ({
+        control: {
+          name,
+          value: held[name as keyof typeof held],
+          // THE HALF THE FIRST TEST OMITTED, and the half that made it pass on
+          // a defect: Formik and TanStack hand over `value` AND `onChange`, so
+          // they hear what the field does and record it. Without the handler a
+          // library losing an end is invisible.
+          onChange: (event) => {
+            const value = (event.target as HTMLInputElement).value;
+            log.push(`${name}=${value}`);
+            setHeld((h) => ({ ...h, [name]: value }));
+          },
+        },
+        errors: [],
+      });
+      return (
+        <UiProvider adapters={{ i18n: { locale: 'it' }, form: { field } }}>
+          <form>
+            {picker()}
+            <button
+              type="button"
+              onClick={() =>
+                setHeld({ checkIn: '2027-06-01', checkOut: '2027-06-08' })
+              }
+            >
+              Da fuori
+            </button>
+          </form>
+        </UiProvider>
+      );
+    }
+    const { container } = render(<Controlled />);
+
+    // Both ends move in ONE update, which fires two carrier writes in one
+    // commit. Judging the first against its old partner declared an inversion
+    // that was about to stop existing — measured through the real Formik port,
+    // the library ended holding `{checkIn: "2027-06-01", checkOut: ""}` and the
+    // end field was empty. It failed in both directions.
+    await browser.click(screen.getByRole('button', { name: 'Da fuori' }));
+
+    expect(screen.getByRole('textbox', { name: 'Arrivo' })).toHaveValue(
+      '01/06/2027',
+    );
+    expect(screen.getByRole('textbox', { name: 'Partenza' })).toHaveValue(
+      '08/06/2027',
+    );
+    expect(carrier(container, 'checkOut').value).toBe('2027-06-08');
+    // …and nothing was reported as cleared on the way.
+    expect(log.filter((entry) => entry.endsWith('='))).toEqual([]);
+  });
+
+  it('keeps both when the library moves them BACKWARDS in one update', async () => {
+    function Controlled() {
+      const [held, setHeld] = useState({
+        checkIn: '2026-08-12',
+        checkOut: '2026-08-15',
+      });
+      const field: UseFormField = (name) => ({
+        control: {
+          name,
+          value: held[name as keyof typeof held],
+          onChange: (event) =>
+            setHeld((h) => ({
+              ...h,
+              [name]: (event.target as HTMLInputElement).value,
+            })),
+        },
+        errors: [],
+      });
+      return (
+        <UiProvider adapters={{ i18n: { locale: 'it' }, form: { field } }}>
+          <form>
+            {picker()}
+            <button
+              type="button"
+              onClick={() =>
+                setHeld({ checkIn: '2025-01-05', checkOut: '2025-01-09' })
+              }
+            >
+              Indietro
+            </button>
+          </form>
+        </UiProvider>
+      );
+    }
+    const { container } = render(<Controlled />);
+
+    // The same bug with the roles swapped — the end's effect seeing the stale
+    // start — which is what proved it was the closure and not the rule.
+    await browser.click(screen.getByRole('button', { name: 'Indietro' }));
+
+    expect(carrier(container, 'checkIn').value).toBe('2025-01-05');
+    expect(carrier(container, 'checkOut').value).toBe('2025-01-09');
+  });
+
+  it('tells assistive tech which end is invalid', () => {
+    renderBound(
+      (name) => ({
+        control: { name },
+        errors: name === 'checkIn' ? ['Serve un arrivo.'] : [],
+      }),
+      picker(),
+    );
+
+    // `Fieldset` turns `invalid` into a styling hook and only sets
+    // `aria-invalid` for a radiogroup, and a control inside a group does not
+    // inherit its description — so swapping the day picker for this one used to
+    // drop the state from the accessibility tree entirely.
+    expect(screen.getByRole('textbox', { name: 'Arrivo' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'Partenza' }),
+    ).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('does not duplicate a React key when both ends say the same thing', () => {
+    const errors = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    renderBound(
+      (name) => ({ control: { name }, errors: ['Obbligatorio.'] }),
+      picker(),
+    );
+
+    // `toMessages` dedupes within one field and cannot across two, and this is
+    // the case the docs call out as expected — so it is reached on purpose.
+    expect(
+      errors.mock.calls.filter((call) => String(call[0]).includes('same key')),
+    ).toHaveLength(0);
+    errors.mockRestore();
+  });
+
+  it('lets the call site win over the binding, as the family does', () => {
+    renderBound(
+      (name) => ({
+        control: { name, required: true },
+        errors: [],
+      }),
+      picker({ required: false }),
+    );
+
+    // `FormInput` states the rule for the whole family: the adapter's props
+    // come first so an explicit prop at the call site still wins. Measured with
+    // the spreads the other way round, swapping the day picker for this one
+    // silently flipped who won.
+    expect(screen.getByRole('textbox', { name: 'Arrivo' })).not.toBeRequired();
+  });
+
+  it('says so when both ends are given the same name', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    renderBound(
+      (name) => ({ control: { name }, errors: [] }),
+      picker({ endName: 'checkIn' }),
+    );
+
+    // Both hooks bind one field, two carriers post under one key, and the
+    // binding's ref lands on whichever mounted last — measured, a ref-based
+    // library read the END and never saw the start.
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('startName'));
+    warn.mockRestore();
+  });
+
   it('never lets a native-control prop through to fields that are not one', () => {
     renderBound(
       (name) => ({
