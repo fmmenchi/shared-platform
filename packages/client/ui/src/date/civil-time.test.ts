@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
+  cycleHasPeriod,
+  cycleRange,
   formatIsoTime,
   fromTwelveHour,
+  hourFromCycle,
+  hourInCycle,
   isoTimeOf,
   parseIsoTime,
   toTwelveHour,
 } from './civil-time.js';
+import type { HourCycle } from './civil-time.js';
 
 describe('parseIsoTime', () => {
   it('reads a time to the minute, and leaves seconds absent', () => {
@@ -115,6 +120,54 @@ describe('the twelve-hour cycle, which is presentation and not the model', () =>
     for (let hour = 0; hour < 24; hour += 1) {
       const shown = toTwelveHour(hour);
       expect(fromTwelveHour(shown.hour, shown.pm)).toBe(hour);
+    }
+  });
+});
+
+describe('the four cycles Intl reports', () => {
+  it('writes midnight, noon and 23:00 the way each cycle does', () => {
+    // Measured against `Intl` with each cycle forced — the table in the source.
+    // `h11` is the one that surprises: midnight and noon are BOTH `00` there,
+    // told apart only by the day period.
+    expect(hourInCycle(0, 'h11')).toEqual({ hour: 0, pm: false });
+    expect(hourInCycle(12, 'h11')).toEqual({ hour: 0, pm: true });
+    expect(hourInCycle(0, 'h12')).toEqual({ hour: 12, pm: false });
+    expect(hourInCycle(12, 'h12')).toEqual({ hour: 12, pm: true });
+    expect(hourInCycle(0, 'h23')).toEqual({ hour: 0, pm: false });
+    expect(hourInCycle(0, 'h24')).toEqual({ hour: 24, pm: false });
+    expect(hourInCycle(23, 'h24')).toEqual({ hour: 23, pm: false });
+  });
+
+  it('round-trips every hour in every cycle', () => {
+    // The property that matters: whatever a field shows, reading it back gives
+    // the hour the model holds. It is what stops a locale being wrong by twelve.
+    for (const cycle of ['h11', 'h12', 'h23', 'h24'] as HourCycle[]) {
+      for (let hour = 0; hour < 24; hour += 1) {
+        const shown = hourInCycle(hour, cycle);
+        expect(hourFromCycle(shown.hour, cycle, shown.pm)).toBe(hour);
+      }
+    }
+  });
+
+  it('says which cycles need a day period, and what each may write', () => {
+    expect(cycleHasPeriod('h11')).toBe(true);
+    expect(cycleHasPeriod('h12')).toBe(true);
+    expect(cycleHasPeriod('h23')).toBe(false);
+    expect(cycleHasPeriod('h24')).toBe(false);
+    expect(cycleRange('h11')).toEqual({ floor: 0, ceiling: 11 });
+    expect(cycleRange('h12')).toEqual({ floor: 1, ceiling: 12 });
+    expect(cycleRange('h23')).toEqual({ floor: 0, ceiling: 23 });
+    expect(cycleRange('h24')).toEqual({ floor: 1, ceiling: 24 });
+  });
+
+  it('keeps every hour a cycle may write inside that cycles range', () => {
+    for (const cycle of ['h11', 'h12', 'h23', 'h24'] as HourCycle[]) {
+      const { floor, ceiling } = cycleRange(cycle);
+      for (let hour = 0; hour < 24; hour += 1) {
+        const shown = hourInCycle(hour, cycle).hour;
+        expect(shown).toBeGreaterThanOrEqual(floor);
+        expect(shown).toBeLessThanOrEqual(ceiling);
+      }
     }
   });
 });

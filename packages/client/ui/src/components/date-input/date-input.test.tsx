@@ -425,6 +425,26 @@ describe('DateInput', () => {
       expect(field.value).toBe('1/08/2026');
     });
 
+    it('advances the caret when the frame is already full', async () => {
+      // FOUND FROM THE TIME FIELD, AND IT WAS HERE ALL ALONG. Typing in front of
+      // a whole date overflows the frame; the mask drops the surplus off the
+      // right, and the right-anchored caret slipped one place left with it —
+      // back to the start after every keystroke, so each digit was inserted in
+      // front of the last. Measured: `01011999` typed at the head of a full
+      // `12/08/2026` walked through four different real dates and stored the
+      // last of them in silence.
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('01011999');
+
+      expect(field.value).toBe('01/01/1999');
+    });
+
     it('can be emptied from the keyboard', async () => {
       const { container } = renderUi(
         <DateInput name="dob" aria-label="Date of birth" />,
