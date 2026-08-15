@@ -38,6 +38,25 @@ export interface CarrierFieldOptions<Value> {
   readonly isWholeShown: (text: string) => boolean;
   /** Told whenever the value moves, from any of the doors or from a keystroke. */
   readonly onValueChange?: (value: Value | null) => void;
+  /**
+   * What the browser should say about text that names no value — and `''` when
+   * there is nothing to say.
+   *
+   * A masked field can look finished and store nothing: `02:30 AM/PM` reads as
+   * complete where `08/12/` does not, and the platform cannot tell, because the
+   * visible input holds text (so `required` is satisfied) while the CARRIER
+   * holds `''` and is deliberately not `required` itself — a required carrier
+   * is a control the browser cannot focus, so the submit is refused showing
+   * nothing. Measured before this existed: `validity.valueMissing` false,
+   * `checkValidity()` true, and the form posting an empty string with no signal
+   * of any kind.
+   *
+   * A FUNCTION rather than a string, because the two ways to name nothing want
+   * different words — half-typed, against complete-and-impossible — and only
+   * the component knows which it is looking at. Absent, the field says nothing
+   * and the platform is left as it was.
+   */
+  readonly problem?: (text: string, iso: string) => string;
 }
 
 /** The nodes and the two writes a segmented field drives them with. */

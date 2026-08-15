@@ -67,6 +67,42 @@ export function useCarrierField<Value>(
     }
   };
 
+  /**
+   * THE ONE PLACE THE VISIBLE FIELD IS WRITTEN — its text, what this component
+   * believes is on screen, and what the platform is told about it.
+   *
+   * DERIVED HERE RATHER THAN PUSHED FROM THE CALL SITES, and that distinction
+   * is the whole of why an earlier version of this was withdrawn. It set the
+   * validity at three of the places the box changes and missed four others, so
+   * a live language switch could leave a field EMPTY, optional and permanently
+   * unsubmittable with its message stranded in the previous language. A rule
+   * that has to be remembered at every write is a rule that will be forgotten
+   * at one of them.
+   */
+  const marked = useRef('');
+  const paint = (text: string, iso: string) => {
+    const target = field.current;
+    if (target === null) return;
+    if (target.value !== text) target.value = text;
+    shown.current = text;
+
+    const want = latest.current.problem?.(text, iso) ?? '';
+    if (want === marked.current) return;
+    // NEVER CLOBBER A MESSAGE SOMEBODY ELSE SET. `setCustomValidity` has one
+    // slot and no composition, and this node is handed to the consumer through
+    // `ref` — so a business rule of theirs ("the date cannot be in the past")
+    // was silently erased the moment the field became complete. Theirs wins,
+    // and ours simply goes unsaid rather than fighting for the slot.
+    if (
+      target.validationMessage !== '' &&
+      target.validationMessage !== marked.current
+    ) {
+      return;
+    }
+    target.setCustomValidity(want);
+    marked.current = want;
+  };
+
   // RE-DISPLAY WHEN THE LOCALE MOVES. React does not re-apply `defaultValue` to
   // a field the user has touched, so a live language switch — which ADR-0027
   // makes the supported way to re-locale a subtree — left `01/02/2000` on
@@ -83,14 +119,10 @@ export function useCarrierField<Value>(
     // There is nothing to redraw it from, and text in a numbering system the
     // field no longer speaks is worse than an empty field.
     if (iso === '') {
-      if (element.value !== '' && shown.current !== '') {
-        element.value = '';
-        shown.current = '';
-      }
+      if (element.value !== '' && shown.current !== '') paint('', '');
       return;
     }
-    element.value = display(iso);
-    shown.current = element.value;
+    paint(display(iso), iso);
   }, [display]);
 
   // WHAT AN EXTERNAL WRITE OWES THE CONSUMER. The component's own keystroke
@@ -136,8 +168,7 @@ export function useCarrierField<Value>(
     if (iso === '') {
       const wasWhole = latest.current.isWholeShown(shown.current);
       if (!wasWhole && !fromReset) return;
-      target.value = '';
-      shown.current = '';
+      paint('', '');
       announce('');
       return;
     }
@@ -163,6 +194,7 @@ export function useCarrierField<Value>(
           `${label}: the value ${JSON.stringify(iso)} was written to this field from outside and does not name anything it can show, so the box still holds what it held. The form will post it as it is.`,
         );
       }
+      paint(shown.current, '');
       return;
     }
     // AND THE CARRIER IS BROUGHT WITH IT, through the component's own write, so
@@ -174,20 +206,7 @@ export function useCarrierField<Value>(
     if (canonical !== iso) write(canonical);
     const text = latest.current.display(canonical);
     if (text === '') return;
-    if (text !== target.value) target.value = text;
-    // RECORDED WHETHER OR NOT THE REPAINT WAS NEEDED, and the difference is not
-    // cosmetic. `shown` is what the deletion path reads as "the text before this
-    // keystroke", and on a RESET the platform reverts the visible field on its
-    // own — so by the time this door runs the box already says `text` and the
-    // old code, which recorded only inside the repaint, left `shown` holding the
-    // text that had just been thrown away. Measured on a field seeded
-    // `1985-03-12`: type `01/01/2000`, reset — the box correctly returns to
-    // `12/03/1985` — then one Backspace emptied the whole field, because the
-    // deletion was mapped onto a string with nothing in common with it. The same
-    // staleness made `isWholeShown` above answer about the discarded text, so an
-    // external clear was refused and the box went on showing a value the form no
-    // longer held.
-    shown.current = text;
+    paint(text, canonical);
     announce(canonical);
   };
 
@@ -336,7 +355,7 @@ export function useCarrierField<Value>(
   }, [display]);
 
   const record = (text: string, iso: string) => {
-    shown.current = text;
+    paint(text, iso);
     reported.current = iso;
   };
 

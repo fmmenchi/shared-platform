@@ -20,11 +20,21 @@ export const dateInputMessages = defineMessages('dateInput', {
     day: 'dd',
     month: 'mm',
     year: 'yyyy',
+    /**
+     * What the browser says about text that names no date. Two states, two
+     * sentences: half-typed is unfinished, and `30/02/2026` is finished and
+     * impossible — telling the second one to "enter a complete date" would ask
+     * the reader to finish something that looks finished.
+     */
+    incomplete: 'Enter a complete date.',
+    impossible: 'That date does not exist.',
   },
   it: {
     day: 'gg',
     month: 'mm',
     year: 'aaaa',
+    incomplete: 'Inserisci una data completa.',
+    impossible: 'Questa data non esiste.',
   },
   ar: {
     day: 'يي',
@@ -34,5 +44,7 @@ export const dateInputMessages = defineMessages('dateInput', {
     // instruction this field gives — and bidi reordered the boundary between
     // them on top of that.
     year: 'سسسس',
+    incomplete: 'أدخل تاريخًا كاملاً.',
+    impossible: 'هذا التاريخ غير موجود.',
   },
 });

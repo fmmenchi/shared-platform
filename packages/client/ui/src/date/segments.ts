@@ -158,7 +158,7 @@ export function applyDeletion<Part extends string>(
   // A deletion takes digits OUT of a string the frame already held, so the
   // surviving ones keep their places and the right-anchored `caretFor` below
   // is exact. There is no reflow to record.
-  return { text, iso: whole ? compose(held) : '', marks: [] };
+  return { text, iso: whole ? compose(held) : '', marks: [], full: whole };
 }
 
 /**
@@ -203,7 +203,8 @@ export function maskSegments<Part extends string>(
 
   if (recognise !== undefined && display !== undefined) {
     const known = recognise(typed);
-    if (known !== null) return { text: display(known), iso: known, marks: [] };
+    if (known !== null)
+      return { text: display(known), iso: known, marks: [], full: true };
   }
 
   const digits = [...typed].map(frame.toAscii).filter((char) => char !== '');
@@ -287,10 +288,11 @@ export function maskSegments<Part extends string>(
     text += local;
     // An incomplete part ends the string: everything after it would be a
     // separator, or a field with nothing in front of it.
-    if (value.length < frame.width[piece.type]) return { text, iso: '', marks };
+    if (value.length < frame.width[piece.type])
+      return { text, iso: '', marks, full: false };
   }
 
-  return { text, iso: compose(held), marks };
+  return { text, iso: compose(held), marks, full: true };
 }
 
 /**

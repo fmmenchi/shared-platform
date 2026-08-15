@@ -803,12 +803,48 @@ digit at every offset of four whole values across seven date locales and eight t
 first time, the two disagreed on 18 of 88 frames — every one of them the same case, a keystroke that
 did not survive — and they disagree on none of the 9160 inserts now. Six mutants, each killing it.
 
-**What is left open, deliberately.** A masked field can still hold text that names nothing and be
-submitted as an empty string with no signal: `required` is satisfied by the visible text, and the
-carrier that holds the value is deliberately not `required` itself. That is a real gap and it is
-recorded as one rather than closed by the third version of a repair. Closing it needs a decision this
-record cannot make on its own — whether a design system may refuse a submit at all, and how a consumer
-turns that off for one field rather than for a whole form.
+### Text that names nothing is an INVALID control, and the field says which kind
+
+Left open once and closed here, after the version that tried it first was withdrawn. The gap: the
+visible input holds text, so `required` is satisfied, while the carrier that holds the value is
+deliberately not `required` itself — a required carrier is a control the browser cannot focus, so the
+submit is refused showing nothing. Measured: `<TimeInput required />` with four digits typed gave
+`valueMissing` false, `checkValidity()` **true**, and a form posting an empty string with no signal of
+any kind.
+
+**It is what the control this replaces does.** A partially filled `input[type=date]` reports
+`badInput` and the browser stops there. So the visible field now carries `setCustomValidity` while its
+text names nothing — and the date family gets it too, because the hole was never a twelve-hour one.
+
+Three things make this version different from the one that was withdrawn, and each was a defect
+found by review:
+
+- **It is DERIVED, not pushed.** One helper owns the visible field's text, what the component
+  believes is on screen, and what the platform is told — and every one of the five places the box
+  changes goes through it. The first version set the validity at three of them and missed four, so a
+  live language switch could leave a field EMPTY, optional and permanently unsubmittable with its
+  message stranded in the previous language.
+- **It never takes a slot that is not ours.** `setCustomValidity` has one slot and no composition,
+  and the visible node is handed to the consumer through `ref`. If a message is there that this
+  component did not set, the component says nothing rather than fighting for it — the first version
+  erased a consumer's own business rule the moment the field became complete.
+- **It names the state it is in.** `12/08/` is unfinished and `30/02/2026` is finished and
+  impossible, and a field that told both to "enter a complete date" would be asking the reader to
+  finish something that looks finished. A time cannot be complete-and-impossible — the frame's
+  ceilings refuse a 25th hour — so a full set of digits naming nothing is the twelve-hour case, and
+  it is named with the locale's own two words: _Say which half of the day: AM / PM._
+
+**And it can be turned off for ONE field.** `validateIncomplete={false}` excuses a field whose
+validation belongs entirely to a schema, so the reader gets that message and no other. The whole-form
+lever is `noValidate`, and it was the only one the first version offered — which also silences
+`required` on every plain `Input` beside it.
+
+**Who this reaches, stated precisely, because the first version claimed the opposite.** Only Conform
+sets `noValidate` by default; this repo's own `RhfForm` sets it too, so the recommended
+react-hook-form path is unchanged and its resolver keeps speaking alone. A bare `<form>` — a React 19
+action, a Formik or TanStack form that does not waive it — is where the platform now speaks, and that
+is exactly where nothing else was speaking. `apps/ui-ports-validation` asserts BOTH halves, because
+the difference between them is one attribute on the form.
 
 **The lesson that generalises**, and the reason this section is longer than the fix it describes: two
 of the three withdrawn changes were shipped with a test that had been WEAKENED in the same diff. The

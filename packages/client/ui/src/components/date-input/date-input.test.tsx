@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { DateInput } from './date-input.component.js';
+import { UiProvider } from '../../i18n/provider.js';
 import { Field } from '../field/field.component.js';
 import { renderUi } from '../../test/render.js';
 import { expectNoA11yViolations } from '../../test/axe.js';
@@ -778,6 +779,127 @@ describe('DateInput', () => {
       });
       expect(carrier(container).value).toBe('');
       expect(told).toHaveBeenLastCalledWith(null);
+    });
+
+    it('names the two ways of holding no date differently', async () => {
+      // `12/08/` is unfinished; `30/02/2026` is finished and impossible. Told
+      // the same thing, the second reader is asked to complete a field that
+      // looks complete, with no hint of what is actually wrong.
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+
+      await browser.fill(field, '1208');
+      expect(field.validationMessage).toBe('Inserisci una data completa.');
+
+      await browser.fill(field, '30022026');
+      expect(field.value).toBe('30/02/2026');
+      expect(field.validationMessage).toBe('Questa data non esiste.');
+
+      await browser.fill(field, '28022026');
+      expect(field.validity.customError).toBe(false);
+    });
+
+    it('clears what it said when the locale change empties the field', async () => {
+      // THE FAILURE THAT WITHDREW THE FIRST VERSION OF THIS. The re-display
+      // effect clears a half-typed value — there is nothing to redraw it from
+      // in the new numerals — and it did so without recomputing the validity,
+      // so the field was left EMPTY, optional and permanently unsubmittable,
+      // with its message stranded in the previous language. ADR-0027 makes the
+      // live language switch the supported way to re-locale a subtree, so this
+      // is the sanctioned path rather than an exotic one.
+      const { rerender } = render(
+        <UiProvider adapters={{ i18n: { locale: 'it' } }}>
+          <form>
+            <DateInput name="dob" aria-label="Date of birth" />
+          </form>
+        </UiProvider>,
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '1208');
+      expect(field.validity.customError).toBe(true);
+
+      rerender(
+        <UiProvider adapters={{ i18n: { locale: 'en-US' } }}>
+          <form>
+            <DateInput name="dob" aria-label="Date of birth" />
+          </form>
+        </UiProvider>,
+      );
+
+      await vi.waitFor(() => {
+        expect(screen.getByRole('textbox')).toHaveValue('');
+      });
+      expect(
+        (screen.getByRole('textbox') as HTMLInputElement).validity.customError,
+      ).toBe(false);
+    });
+
+    it('never clobbers a message the call site set itself', async () => {
+      // `setCustomValidity` has ONE slot and no composition, and this node is
+      // handed to the consumer through `ref`. Measured before this: a business
+      // rule of theirs — "the date cannot be in the past" — was silently erased
+      // the moment the field became complete.
+      const held: { node: HTMLInputElement | null } = { node: null };
+      renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          ref={(node) => {
+            held.node = node;
+          }}
+        />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+
+      held.node?.setCustomValidity('La data non può essere nel passato.');
+
+      // TYPED, not filled in one go: the field has to pass THROUGH the
+      // incomplete state, which is the only moment this component wants the
+      // slot at all. A test that jumps straight to a whole date never reaches
+      // the line it is meant to be pinning.
+      await browser.click(field);
+      await browser.keyboard('1208');
+      expect(field.validationMessage).toBe(
+        'La data non può essere nel passato.',
+      );
+
+      // And it is not cleared on the way out either — the slot was never ours
+      // to give back.
+      await browser.keyboard('2026');
+      expect(field.value).toBe('12/08/2026');
+      expect(field.validationMessage).toBe(
+        'La data non può essere nel passato.',
+      );
+    });
+
+    it('says a field is invalid when something writes it a value it cannot show', async () => {
+      // The setter commits the assignment before this component sees it, so the
+      // form posts whatever arrived. The box goes on showing the old date, and
+      // the field now says it holds nothing rather than reporting itself valid.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const { container } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue="1985-03-12"
+        />,
+        { locale: 'it' },
+      );
+
+      carrier(container).value = 'tomorrow';
+
+      await vi.waitFor(() => {
+        expect(
+          (screen.getByRole('textbox') as HTMLInputElement).validity
+            .customError,
+        ).toBe(true);
+      });
+      warn.mockRestore();
     });
 
     it('leaves a half-typed field alone when the page REFUSES the reset', async () => {

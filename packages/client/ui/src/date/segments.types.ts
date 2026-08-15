@@ -80,4 +80,14 @@ export interface Masked {
     readonly at: number;
     readonly src: number | null;
   }[];
+  /**
+   * Every part is as wide as it will get.
+   *
+   * Full and yet naming nothing is a DIFFERENT state from half-typed, and the
+   * two want different words: `30/02/2026` is a date that does not exist, and
+   * `02:30` in a twelve-hour field is a time nobody has said the half of the
+   * day for. A field that told both of them to "enter a complete date" would be
+   * asking the user to finish something that looks finished.
+   */
+  readonly full: boolean;
 }

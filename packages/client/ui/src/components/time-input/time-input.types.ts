@@ -73,6 +73,25 @@ interface TimeInputOwnProps {
    * refuses it is worse than saying nothing.
    */
   announceFormat?: boolean;
+  /**
+   * Whether the field tells the platform that text naming NO time makes it an
+   * invalid control — so the browser refuses the submit and says why.
+   *
+   * On by default, and it closes a real hole: the visible input holds text, so
+   * `required` is satisfied, while the carrier that holds the value is
+   * deliberately not `required` itself. Measured without it: a complete-looking `02:30 AM/PM` typed
+   * into a `required` field gave `validity.valueMissing` false,
+   * `checkValidity()` true, and a form posting an empty string with no signal of
+   * any kind. It is what the native control this replaces does with the same
+   * keystrokes — a partially filled one reports `badInput` and the browser stops
+   * there.
+   *
+   * Turn it OFF for a field whose validation belongs entirely to a schema, so
+   * the only message the reader gets is that one. A whole form can be excused at
+   * once with `noValidate`, but that also silences `required` on every plain
+   * `Input` beside it, which is why this exists per field.
+   */
+  validateIncomplete?: boolean;
 }
 
 /**

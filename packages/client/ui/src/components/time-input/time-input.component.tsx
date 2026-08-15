@@ -202,6 +202,7 @@ function TimeInput(props: TimeInputProps) {
     hourCycle,
     carrierRef,
     announceFormat = true,
+    validateIncomplete = true,
     ref,
     'aria-describedby': describedBy,
     ...rest
@@ -584,9 +585,24 @@ function TimeInput(props: TimeInputProps) {
       draw: drawWith(period),
     });
 
+  /**
+   * WHAT THE BROWSER SHOULD SAY about text that names no time. A time cannot be
+   * complete and impossible — the frame's ceilings refuse a 25th hour and a
+   * 60th minute — so a full set of digits naming nothing is the twelve-hour
+   * case, where the half of the day has not been said. It is named with the
+   * locale's own two words, which are the strings the field accepts.
+   */
+  const problem = (text: string, iso: string) => {
+    if (!validateIncomplete || text === '' || iso !== '') return '';
+    return maskWith(text, periodOf(text)).full
+      ? t('impossible', { periods: `${am} / ${pm}` })
+      : t('incomplete');
+  };
+
   const { carrier, field, shown, write, record } = useCarrierField({
     label: 'TimeInput',
     seed,
+    problem,
     display,
     normalise: (iso) => {
       const time = isoTimeOf(iso);

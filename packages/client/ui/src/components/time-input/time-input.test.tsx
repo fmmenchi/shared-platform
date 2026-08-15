@@ -582,6 +582,60 @@ describe('TimeInput', () => {
       );
     });
 
+    it('refuses to submit text that names no time, digits and all', async () => {
+      // THE STATE THAT LOOKS FINISHED. `08/12/` reads as unfinished; `02:30
+      // AM/PM` does not — and the platform could not tell, because the visible
+      // input holds text (so `required` is satisfied) while the carrier holds
+      // `''` and is deliberately not `required` itself. Measured before this:
+      // `valueMissing` false, `checkValidity()` true, and the form posting an
+      // empty string with no signal of any kind.
+      const { container } = renderUi(
+        <form>
+          <TimeInput name="opens" aria-label="Opens at" required />
+        </form>,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      await browser.keyboard('0230');
+      expect(field).toHaveValue('02:30 AM/PM');
+
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(field.validity.customError).toBe(true);
+      // NAMED FOR THE STATE IT IS IN. Every digit is there; what is missing is
+      // the half of the day, said with the locale's own two words.
+      expect(field.validationMessage).toBe(
+        'Say which half of the day: AM / PM.',
+      );
+      expect(form.checkValidity()).toBe(false);
+
+      await browser.keyboard('p');
+      expect(carrier(container)).toHaveValue('14:30');
+      expect(field.validity.customError).toBe(false);
+      expect(form.checkValidity()).toBe(true);
+    });
+
+    it('says nothing about a field the call site excused', async () => {
+      const { container } = renderUi(
+        <form>
+          <TimeInput
+            name="opens"
+            aria-label="Opens at"
+            validateIncomplete={false}
+          />
+        </form>,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      await browser.keyboard('0230');
+
+      expect(field.validity.customError).toBe(false);
+      expect(
+        (container.querySelector('form') as HTMLFormElement).checkValidity(),
+      ).toBe(true);
+    });
+
     it('drops an hour cycle Intl does not know, rather than throwing', () => {
       // `new Intl.DateTimeFormat(locale, { hourCycle })` raises a `RangeError`
       // for anything outside the four, and that call is in render — so a

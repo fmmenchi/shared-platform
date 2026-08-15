@@ -20,11 +20,22 @@ export const timeInputMessages = defineMessages('timeInput', {
     hour: 'hh',
     minute: 'mm',
     second: 'ss',
+    /**
+     * Two states, two sentences. A time cannot be complete and impossible — the
+     * mask's ceilings see to that — so the second one is the twelve-hour case:
+     * every digit typed and the half of the day still unsaid. `{periods}` is
+     * filled with the locale's own two words, which are the strings the field
+     * accepts.
+     */
+    incomplete: 'Enter a complete time.',
+    impossible: 'Say which half of the day: {periods}.',
   },
   it: {
     hour: 'hh',
     minute: 'mm',
     second: 'ss',
+    incomplete: 'Inserisci un orario completo.',
+    impossible: 'Indica la metà del giorno: {periods}.',
   },
   ar: {
     // سس for ساعة, دد for دقيقة, ثث for ثانية — Arabic groups for an Arabic
@@ -33,5 +44,7 @@ export const timeInputMessages = defineMessages('timeInput', {
     hour: 'سس',
     minute: 'دد',
     second: 'ثث',
+    incomplete: 'أدخل وقتًا كاملاً.',
+    impossible: 'حدد نصف اليوم: {periods}.',
   },
 });

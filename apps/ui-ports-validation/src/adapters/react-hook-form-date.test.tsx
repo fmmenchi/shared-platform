@@ -37,7 +37,16 @@ function DateForm({
   const form = useForm({ defaultValues });
   return (
     <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      {/*
+        `noValidate`, because that is what this repo's own `RhfForm` sets and
+        therefore what a consumer following the recommended path gets. The
+        library owns validation here — its resolver produces the messages and
+        `FieldError` renders them — so the platform is told to stay out of it
+        and the design system's own "this text names no date" is inert. Which is
+        why it is asserted: the recommended path must be UNCHANGED by that
+        feature, and the bare-form test at the end is where it speaks.
+      */}
+      <form noValidate onSubmit={form.handleSubmit(onSubmit)}>
         <UiProvider
           adapters={{ i18n: { locale }, form: { field: useRhfField } }}
         >
@@ -250,5 +259,42 @@ describe('FormDateInput through react-hook-form', () => {
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
     expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ dob: '' });
+  });
+
+  it('marks the field invalid, for a form that has NOT waived the platform', async () => {
+    // The other half, and the one the design system's own feature is for: a
+    // form with no `noValidate` gets the browser's refusal and its message,
+    // because there is no schema speaking instead. Both halves are asserted
+    // because the difference between them is one attribute on the form, and a
+    // consumer meets whichever their setup produces.
+    function Bare() {
+      const form = useForm({ defaultValues: { dob: '' } });
+      return (
+        <FormProvider {...form}>
+          <form onSubmit={form.handleSubmit(vi.fn())}>
+            <UiProvider
+              adapters={{
+                i18n: { locale: 'it' },
+                form: { field: useRhfField },
+              }}
+            >
+              <FormDateInput name="dob" label="Data di nascita" />
+            </UiProvider>
+          </form>
+        </FormProvider>
+      );
+    }
+    const { container } = render(<Bare />);
+    const field = screen.getByRole('textbox', {
+      name: 'Data di nascita',
+    }) as HTMLInputElement;
+
+    await browser.fill(field, '30022026');
+
+    expect(field.validity.customError).toBe(true);
+    expect(field.validationMessage).toBe('Questa data non esiste.');
+    expect(
+      (container.querySelector('form') as HTMLFormElement).checkValidity(),
+    ).toBe(false);
   });
 });

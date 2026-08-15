@@ -138,6 +138,7 @@ function DateInput(props: DateInputProps) {
     placeholder,
     carrierRef,
     announceFormat = true,
+    validateIncomplete = true,
     ref,
     'aria-describedby': describedBy,
     ...rest
@@ -282,9 +283,20 @@ function DateInput(props: DateInputProps) {
   // What is passed in is everything that is about DAYS rather than about the
   // machinery: how one is drawn, what any string a consumer assigns reduces to,
   // and what a whole one looks like on screen.
+  /**
+   * WHAT THE BROWSER SHOULD SAY about text that names no date, and nothing when
+   * the field is empty or whole. The two ways of naming nothing get different
+   * words: `12/08/` is unfinished, `30/02/2026` is finished and impossible.
+   */
+  const problem = (text: string, iso: string) => {
+    if (!validateIncomplete || text === '' || iso !== '') return '';
+    return mask(text).full ? t('impossible') : t('incomplete');
+  };
+
   const { carrier, field, shown, write, record } = useCarrierField({
     label: 'DateInput',
     seed,
+    problem,
     display,
     normalise: isoDayOf,
     parse: parseIsoDate,
