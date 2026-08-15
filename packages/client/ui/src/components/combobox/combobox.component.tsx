@@ -1,10 +1,19 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react';
 import { cn } from '../../util/cn.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
+import { setNativeValue } from '../../primitives/set-native-value.js';
 import { useAnchored } from '../../primitives/use-anchored.js';
 import { useControlled } from '../../primitives/use-controlled.js';
+import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
-import { VisuallyHidden } from '../visually-hidden/visually-hidden.component.js';
+import { useFieldControl } from '../field/field.context.js';
 import { useMessages } from '../../i18n/provider.js';
 import { comboboxVariants } from './combobox.variants.js';
 import { comboboxMessages } from './combobox.messages.js';
@@ -20,26 +29,32 @@ import styles from './combobox.module.css';
  * THE FIRST CONTROL THIS PACKAGE DRAWS ITSELF, and ADR-0028 is where the price
  * is argued. `Select` keeps the trade it was built for — the box is ours, the
  * list is the browser's — and stays the answer for a short list of plain
- * options. This exists for the four things a `<select>` cannot do at all:
- * search, several-of-many with chips, rows that are not strings, and a value
- * that is not in the list yet. `<input list>` + `<datalist>` is the platform's
- * own answer to the FIRST of those alone, and where that is all a consumer
- * needs it remains the better one; this component does not replace it.
+ * options. This exists for what a `<select>` cannot do: search, rows that are
+ * not strings, and (next) several-of-many with chips. `<input list>` +
+ * `<datalist>` is the platform's own answer to the first of those alone, and
+ * where that is enough it remains the better one.
  *
- * THE VISIBLE FIELD HOLDS THE QUERY, NOT THE VALUE. That is the whole shape of
- * the thing: a person types "mil" and means Milan, whose key is `42`. So the
- * choice rides on a hidden native carrier beside the field, which is what keeps
- * `FormData`, `form.reset()` and every form binding working on an ordinary
- * field. What it does not keep is ADR-0013's other guarantee: with the bundle
- * unloaded there is no list and no filtering, so this is the first control here
- * that needs JavaScript to work. Scoped to this component, authorised in the
- * ADR, and stated in the docs where a consumer chooses it.
+ * THE VISIBLE FIELD HOLDS THE QUERY, NOT THE VALUE. A person types "mil" and
+ * means Milan, whose key is `42`. So the choice rides on a CARRIER beside the
+ * field — and the carrier is `DateInput`'s, not a `type="hidden"` of its own,
+ * because that difference was measured in this repo before: a hidden input is
+ * in value mode "default", so `form.reset()` restores its current value onto
+ * itself and the field comes back from a reset still holding the old choice. It
+ * is a text input hidden by CSS, out of the accessibility tree and out of the
+ * tab order, and still FOCUSABLE — react-hook-form reads `.value` off the node
+ * its ref was given, and `FormErrorSummary` finds a field by `name` and focuses
+ * it. Both land there.
  *
- * FOCUS NEVER LEAVES THE FIELD. The list is a `role="listbox"` in the top layer
- * and the active row is pointed at with `aria-activedescendant` — not with
- * focus, and therefore not with the `roving` primitive that `Menu`, `Tabs` and
- * `Toolbar` use. That is ARIA 1.2's combobox pattern and it is why the arrows
- * can move a highlight while the caret stays where the person is typing.
+ * FOCUS NEVER LEAVES THE VISIBLE FIELD. The list is a `role="listbox"` in the
+ * top layer and the active row is pointed at with `aria-activedescendant` — not
+ * with focus, and therefore not with the `roving` primitive that `Menu`, `Tabs`
+ * and `Toolbar` use. That is ARIA 1.2's combobox pattern.
+ *
+ * MANUAL SELECTION, which is what `aria-autocomplete="list"` declares: opening
+ * the list highlights NOTHING, and `Enter` commits only a row the user moved
+ * to. The first version highlighted row 0 on every keystroke, so someone typing
+ * "man" and pressing Enter to submit the form got "Manchester" instead — the
+ * destructive direction of the mistake ADR-0028 §6 refuses free text over.
  */
 function Combobox<T>(props: ComboboxProps<T>) {
   const {
@@ -58,26 +73,26 @@ function Combobox<T>(props: ComboboxProps<T>) {
     defaultOpen = false,
     onOpenChange,
     name,
+    form,
     size,
     className,
     ref,
+    carrierRef,
     onKeyDown,
     onBlur,
+    onChange,
+    onClick,
+    disabled,
+    readOnly,
     ...rest
   } = props;
 
   const t = useMessages(comboboxMessages);
   const listId = useId();
   const optionId = (index: number) => `${listId}-${String(index)}`;
-  // THE FIELD IS HELD IN STATE, not in a ref, and that is the Rules of React
-  // rather than taste: `useAnchored` takes the anchor as a VALUE, so reading
-  // `ref.current` during render to hand it over is exactly the access the
-  // compiler refuses ("Cannot access refs during render"). A callback ref makes
-  // the node a render-safe value, which is what `Tooltip` and `NavGroup`
-  // already do for the same primitive. The ref beside it stays for the two
-  // imperative things — focusing after a pick, and merging the caller's.
   const [anchor, setAnchor] = useState<HTMLInputElement | null>(null);
-  const field = useRef<HTMLInputElement>(null);
+  const visible = useRef<HTMLInputElement>(null);
+  const carrier = useRef<HTMLInputElement>(null);
   const surface = useRef<HTMLDivElement>(null);
 
   const [chosen, setChosen] = useControlled<string | null>({
@@ -98,117 +113,201 @@ function Combobox<T>(props: ComboboxProps<T>) {
     onChange: onOpenChange,
     name: 'Combobox',
   });
-  // The HIGHLIGHT is ours and nobody else's: it is drawing state with no DOM
-  // home — an option is not focused — and a consumer holding it would own a
-  // second copy of something that changes on every arrow key.
-  const [active, setActive] = useState(0);
+  // `null` IS THE OPENING STATE, not `0` — see the note above. The highlight is
+  // ours and nobody else's: drawing state with no DOM home, since an option is
+  // never focused.
+  const [active, setActive] = useState<number | null>(null);
+  // WAS THE QUERY TYPED, or is it the label of what was picked? Without this the
+  // list reopens filtered by its own answer: choose "Milano" and the only row
+  // left is Milano, which reads to a screen reader as one result — as though
+  // the other cities had gone.
+  const [searching, setSearching] = useState(false);
+  // THE CARRIER'S DEFAULT IS A ONE-SHOT, captured at mount and never updated.
+  // Bound to the live choice it would defeat the very thing the carrier exists
+  // for: React re-syncs `defaultValue` to the current value on every update, so
+  // `form.reset()` would restore the field to what it already holds. Every
+  // later write goes through `setNativeValue` instead, which moves the value
+  // and leaves the default where the form can reset back to it.
+  const [seed] = useState(() => defaultValue ?? value ?? '');
 
-  // The list, after the consumer's question has been asked of each item. A
-  // `false` filter means the items ARE the answer already (a server searched),
-  // and asking twice is what empties a list that should have rows in it.
+  // Opt-in `Field` wiring, exactly as every other control in this package does:
+  // inside a `<Field>` this picks up the id the label points at, the
+  // `aria-describedby` its hint and error register into, and `aria-invalid`.
+  // Without it the label pointed at an id no element carried and the combobox
+  // had no accessible name at all.
+  const fieldProps = useFieldControl(rest);
+
+  useDevWarning(
+    name === undefined && form !== undefined,
+    'Combobox: `form` was given but `name` was not, so nothing is submitted — the carrier that holds the choice is only rendered when there is a name to submit it under.',
+  );
+
+  // WHAT THE FIELD READS when nothing has been typed: the label of the chosen
+  // item. Without this bridge a seeded or controlled `value` rendered an EMPTY
+  // box that submitted a key — the user saw "nothing chosen" while the form
+  // carried `42`.
+  const selected = items.find((item) => getKey(item) === chosen);
+  const text = searching || selected === undefined ? typed : getLabel(selected);
+
   const shown =
-    filter === false || typed === ''
+    !searching || filter === false || typed === ''
       ? items
       : items.filter((item) =>
           filter ? filter(item, typed) : matches(getLabel(item), typed),
         );
 
+  // CLAMPED AT RENDER, because `items` change from outside and nothing in here
+  // hears about it. Left alone, a highlight held past the end of a shorter list
+  // pointed `aria-activedescendant` at an id that did not exist (a broken IDREF,
+  // WCAG 4.1.2) and made `Enter` a silent no-op — in the server-search flow the
+  // docs themselves recommend.
+  const highlighted = active !== null && active < shown.length ? active : null;
+
   useAnchored(anchor, surface, {
     open: showing,
     placement: 'bottom-start',
     offset: 4,
-    // A field scrolled out of view under an open list leaves the list pointing
-    // at nothing, and the top layer is clipped by nothing.
     onAnchorLost: () => setShowing(false),
   });
 
-  // The platform opens and closes this too — Escape, a click outside, another
-  // popover taking the top layer — and every one of those arrives as `toggle`.
-  //
-  // `setShowing` IS PASSED DIRECTLY, and an inline arrow here was a real defect
-  // rather than a style point: the primitive says `report` must be stable
-  // because it is a subscription dependency AND its cleanup reports closed on
-  // the way past. A new identity every render therefore announced the surface
-  // shut on every render — measured, it made Enter a no-op (the handler saw a
-  // closed list), left the list covering the submit button, and never told a
-  // controlled parent anything. The compiler memoises `useControlled`'s setter,
-  // so this one is stable by construction.
-  useOpenMirror(surface, setShowing);
+  // A GENUINELY STABLE `report`, through a ref — and the comment this replaces
+  // was wrong, which is worth recording because it read as reasoning. It
+  // claimed the React Compiler memoises `useControlled`'s setter "by
+  // construction"; compiled with this build's own preset, that memo block
+  // depends on the CURRENT VALUE, so the setter's identity changes on every
+  // open↔close transition. `useOpenMirror` lists `report` in its deps, so it
+  // re-subscribed on exactly those transitions — and its cleanup reports closed
+  // on the way past while its setup re-reads a DOM the sync effect below has
+  // not caught up with yet. The state was resurrected to open, the list
+  // reopened, and the suite flaked roughly one cold run in five. Every other
+  // consumer of these primitives memoises explicitly; this now does too.
+  const latest = useRef(setShowing);
+  // Written in an EFFECT and not in render: the compiler refuses a ref write
+  // during render, and it is right to — this is bookkeeping, not something the
+  // render depends on.
+  useEffect(() => {
+    latest.current = setShowing;
+  }, [setShowing]);
+  const report = useCallback((next: boolean) => {
+    latest.current(next);
+  }, []);
+  useOpenMirror(surface, report);
 
-  // AND THE OTHER DIRECTION. The mirror hears the platform; this asks it — for
-  // `defaultOpen`, for a controlled `open`, and for the component's own calls.
-  // Guarded by what the element actually is, so the two cannot fight: the
-  // effect only acts when the DOM disagrees with the state.
+  // And the other direction — `defaultOpen`, a controlled `open`, and this
+  // component's own calls.
+  //
+  // NO DEPENDENCY ARRAY, deliberately. Keyed on `showing` alone, a controlled
+  // parent that refuses a close left the DOM shut and the state open with
+  // nothing to re-run the effect: the list could never be shown again and
+  // `aria-expanded` lied for the rest of the session. Run every commit it is a
+  // `matches()` call against a node we already hold, and the DOM can never stay
+  // diverged for longer than one render.
   useEffect(() => {
     const node = surface.current;
+    // The popover API is the floor this package declares, but not every engine
+    // at that floor has it — Firefox shipped it in 125 against a stated 121 —
+    // and `:popover-open` is an INVALID SELECTOR where it is missing, so
+    // `matches()` throws from inside a passive effect and takes the tree with
+    // it. `Tooltip` and `ToastRegion` both guard exactly this, the second with
+    // the note that unguarded it "took the whole page down".
+    if (!node || !('showPopover' in node)) return;
+    const shownNow = node.matches(':popover-open');
+    if (showing && !shownNow) node.showPopover();
+    if (!showing && shownNow) node.hidePopover();
+  });
+
+  // KEEP THE HIGHLIGHT ON SCREEN. The list scrolls at nine rows, and the
+  // highlight is an attribute rather than focus — so nothing scrolls it into
+  // view for us, and a keyboard user walking past row nine watched a list that
+  // appeared frozen. `nearest` leaves a row that is already visible alone.
+  useEffect(() => {
+    if (highlighted === null) return;
+    document
+      .getElementById(`${listId}-${String(highlighted)}`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [highlighted, listId]);
+
+  // THE CHOICE ONTO THE CARRIER, through the prototype setter so a real `input`
+  // event follows it. A React `value` prop would update the DOM and tell nobody:
+  // a ref-based binding reads the node and would never learn the choice had
+  // changed, which is the whole job the carrier exists for.
+  useEffect(() => {
+    const node = carrier.current;
     if (!node) return;
-    const shown = node.matches(':popover-open');
-    if (showing && !shown) node.showPopover();
-    if (!showing && shown) node.hidePopover();
-  }, [showing]);
+    const next = chosen ?? '';
+    if (node.value !== next) setNativeValue(node, next);
+  }, [chosen]);
+
+  const editable = disabled !== true && readOnly !== true;
 
   const show = (next: boolean) => {
+    if (!editable && next) return;
     setShowing(next);
   };
 
   const pick = (index: number) => {
     const item = shown[index];
-    if (!item) return;
+    if (!item || !editable) return;
     setChosen(getKey(item));
     setTyped(getLabel(item));
-    show(false);
-    field.current?.focus();
+    setSearching(false);
+    setActive(null);
+    setShowing(false);
+    visible.current?.focus();
   };
 
   const move = (delta: number) => {
     if (shown.length === 0) return;
     setActive((current) => {
+      // From nothing, a step down lands on the first row and a step up on the
+      // last — which is what makes "open, then press up" reach the end.
+      if (current === null) return delta > 0 ? 0 : shown.length - 1;
       const next = current + delta;
-      // Wraps, which is what a list of a few rows wants and what the APG's own
-      // example does. A long list is the consumer's to cap.
       return next < 0 ? shown.length - 1 : next % shown.length;
     });
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event);
-    if (event.defaultPrevented) return;
+    if (event.defaultPrevented || !editable) return;
 
     switch (event.key) {
       case 'ArrowDown':
       case 'ArrowUp': {
         event.preventDefault();
         if (!showing) {
-          show(true);
-          setActive(0);
+          setShowing(true);
+          setActive(null);
           return;
         }
         move(event.key === 'ArrowDown' ? 1 : -1);
         return;
       }
-      case 'Home':
-      case 'End': {
-        if (!showing) return;
-        event.preventDefault();
-        setActive(event.key === 'Home' ? 0 : shown.length - 1);
-        return;
-      }
       case 'Enter': {
-        if (!showing) return;
-        // Held back from the form: Enter on an open list chooses a row, and a
-        // submit here would send the form while the person was still picking.
+        // ONLY A ROW THE USER MOVED TO. With nothing highlighted this key is
+        // not ours: it belongs to the form, and taking it stopped people
+        // submitting with the keyboard.
+        if (!showing || highlighted === null) return;
         event.preventDefault();
-        pick(active);
+        pick(highlighted);
         return;
       }
       case 'Escape': {
-        // Closed, it clears — the APG's behaviour, and the only way back to
-        // "nothing chosen" from the keyboard alone.
-        if (showing) show(false);
-        else {
-          setTyped('');
-          setChosen(null);
+        // `Home` and `End` ARE DELIBERATELY ABSENT. They belong to the text
+        // field a person is typing in — taking them moved the highlight instead
+        // of the caret, which is the one thing a text box must never do.
+        //
+        // Stopped here either way: a `Combobox` inside a `Dialog` otherwise
+        // lost its value on the same keystroke that dismissed the dialog, and
+        // the user never saw it happen.
+        event.stopPropagation();
+        if (showing) {
+          setShowing(false);
+          return;
         }
+        setTyped('');
+        setChosen(null);
+        setSearching(false);
         return;
       }
       default:
@@ -219,83 +318,137 @@ function Combobox<T>(props: ComboboxProps<T>) {
     <div className={styles.root}>
       <input
         {...rest}
-        ref={mergeRefs(field, setAnchor, ref)}
+        {...fieldProps}
+        ref={mergeRefs(visible, setAnchor, ref)}
         className={cn(comboboxVariants({ size }), className)}
         type="text"
         role="combobox"
         autoComplete="off"
+        disabled={disabled}
+        readOnly={readOnly}
         aria-expanded={showing}
         aria-controls={listId}
-        // `list`, never `both`: inline completion writes into the field as you
-        // type, which fights an IME mid-composition and fights a value that is
-        // allowed not to be in the list at all.
         aria-autocomplete="list"
         aria-activedescendant={
-          showing && shown.length > 0 ? optionId(active) : undefined
+          showing && highlighted !== null ? optionId(highlighted) : undefined
         }
-        value={typed}
+        value={text}
         onChange={(event) => {
           setTyped(event.target.value);
-          setActive(0);
-          if (!showing) show(true);
+          setSearching(true);
+          setActive(null);
+          setShowing(true);
+        }}
+        onClick={(event) => {
+          onClick?.(event);
+          // A POINTER NEEDS A WAY IN. Without this the list opened only by
+          // typing or by an arrow key, so a touch or switch user facing an
+          // empty field could never see the options — on the very platform the
+          // centred branch in the stylesheet exists for.
+          if (!event.defaultPrevented) show(true);
         }}
         onKeyDown={handleKeyDown}
         onBlur={(event) => {
-          onBlur?.(event);
-          // The surface is in the top layer and light-dismissed by the
-          // platform, so leaving the field is not itself a reason to close —
-          // but focus moving somewhere outside both is.
-          if (!surface.current?.contains(event.relatedTarget)) show(false);
+          // `relatedTarget` is `null` for a click on something unfocusable —
+          // the surface's own padding, its scrollbar — and `contains(null)` is
+          // false, so closing on that read every such click as "focus left
+          // both". Measured: dragging the scrollbar closed the list and dumped
+          // focus on `<body>` mid-drag. The platform is the authority on a
+          // click inside its own popover; this only answers for focus moving to
+          // another element.
+          const next = event.relatedTarget;
+          if (next !== null && !surface.current?.contains(next)) show(false);
         }}
       />
-      {/* THE CARRIER. Hidden, native, and the only reason a form sees this
-          field at all: the visible input above holds the query. */}
+      {/*
+        THE CARRIER — `DateInput`'s, reused rather than re-derived: a text input
+        hidden by CSS, out of the tree and out of the tab order, and still
+        focusable. `name` and `form` live HERE, on the node that actually
+        contributes to the form; the visible field has no name and would
+        associate nothing.
+      */}
       {name === undefined ? null : (
-        <input type="hidden" name={name} value={chosen ?? ''} />
+        <input
+          ref={mergeRefs(carrier, carrierRef)}
+          data-carrier=""
+          className={styles.carrier}
+          type="text"
+          name={name}
+          form={form}
+          defaultValue={seed}
+          // `onChange` AND `onBlur` BELONG HERE, with the name and the value —
+          // the routing `DateInput` already settled. A binding's handler reads
+          // the field off the event target, and on the visible input it would
+          // hear a KEYSTROKE OF THE QUERY and read a node with no name: the
+          // library learned the search text and never learned the choice. The
+          // query has its own report, `onQueryChange`.
+          onChange={onChange}
+          onBlur={onBlur}
+          autoComplete="off"
+          readOnly
+          // Disabled together: a disabled control is not submitted, and left
+          // enabled the carrier would keep posting a value for a field the user
+          // was told they cannot touch.
+          disabled={disabled}
+          tabIndex={-1}
+          aria-hidden="true"
+          onFocus={(event) => {
+            visible.current?.focus();
+            // If the hop failed, hold no focus at all rather than hold it here.
+            if (document.activeElement === event.currentTarget) {
+              event.currentTarget.blur();
+            }
+          }}
+        />
       )}
-      <div
-        ref={surface}
-        id={listId}
-        role="listbox"
-        // `auto`, so the platform gives the top layer AND the light dismiss.
-        // Nothing inside is autofocused, which is what keeps the caret in the
-        // field — the combobox pattern's one hard requirement.
-        popover="auto"
-        className={styles.surface}
-      >
-        {shown.map((item, index) => (
-          <div
-            key={getKey(item)}
-            id={optionId(index)}
-            role="option"
-            aria-selected={getKey(item) === chosen}
-            // Truthful even when a consumer renders a window of a long list:
-            // without these a virtualised listbox announces "1 of 20" while the
-            // reader walks five thousand records.
-            aria-setsize={shown.length}
-            aria-posinset={index + 1}
-            data-active={index === active ? '' : undefined}
-            className={styles.option}
-            // `mousedown`, not `click`: the field must not lose focus first,
-            // and a click on a row is a pick rather than a focus change.
-            onMouseDown={(event) => {
-              event.preventDefault();
-              pick(index);
-            }}
-            onMouseEnter={() => setActive(index)}
-          >
-            {renderItem ? renderItem(item) : getLabel(item)}
-          </div>
-        ))}
+      <div ref={surface} popover="auto" className={styles.surface}>
+        <div
+          id={listId}
+          role="listbox"
+          // NAMED, because on iOS VoiceOver `aria-activedescendant` is not
+          // supported at all and touch exploration is the only way through the
+          // rows — into what would otherwise be an unnamed "list box".
+          aria-label={t('list')}
+          className={styles.list}
+        >
+          {shown.map((item, index) => (
+            <div
+              key={getKey(item)}
+              id={optionId(index)}
+              role="option"
+              aria-selected={getKey(item) === chosen}
+              aria-setsize={shown.length}
+              aria-posinset={index + 1}
+              data-active={index === highlighted ? '' : undefined}
+              className={styles.option}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                pick(index);
+              }}
+              onMouseEnter={() => setActive(index)}
+            >
+              {renderItem ? renderItem(item) : getLabel(item)}
+            </div>
+          ))}
+        </div>
+        {/* OUTSIDE the listbox: ARIA 1.2 lets a `listbox` own `option` and
+            `group` and nothing else, so a message inside it was invalid — and
+            unreachable anyway, since focus never enters the list. */}
         {shown.length === 0 ? (
           <div className={styles.empty}>{t('empty')}</div>
         ) : null}
       </div>
-      {/* Filtering is otherwise silent: the rows change and a screen-reader
-          user is told nothing at all. */}
-      <VisuallyHidden role="status">
-        {showing ? t('results', { count: shown.length }) : ''}
-      </VisuallyHidden>
+      {/*
+        The count, for a change nobody can see. It carries the QUERY as well,
+        and that is not decoration: two different searches that both leave one
+        row produced a byte-identical string, React committed no mutation, and
+        the region said nothing at all.
+      */}
+      <div role="status" aria-live="polite" className={styles.status}>
+        {showing && searching
+          ? t('results', { count: shown.length, query: typed })
+          : ''}
+      </div>
     </div>
   );
 }

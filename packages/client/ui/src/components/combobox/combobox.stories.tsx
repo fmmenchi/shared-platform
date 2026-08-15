@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Combobox } from './combobox.component.js';
 
@@ -106,26 +106,29 @@ export const RichRows: Story = {
  * server search: hold the query, fetch on it, and pass `filter={false}` so the
  * answer is not filtered twice.
  */
+/** A real component, because hooks may not live in a `render` function. */
+function ControlledDemo(args: ComponentProps<typeof Combobox<City>>) {
+  const [value, setValue] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const chosen = CITIES.find((city) => city.id === value);
+  return (
+    <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
+      <Combobox
+        {...args}
+        value={value}
+        onValueChange={setValue}
+        query={query}
+        onQueryChange={setQuery}
+      />
+      <p style={{ opacity: 0.7 }}>
+        {chosen ? `${chosen.name} — ${chosen.country}` : 'Nothing chosen'}
+      </p>
+    </div>
+  );
+}
+
 export const Controlled: Story = {
-  render: (args) => {
-    const [value, setValue] = useState<string | null>(null);
-    const [query, setQuery] = useState('');
-    const chosen = CITIES.find((city) => city.id === value);
-    return (
-      <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
-        <Combobox
-          {...args}
-          value={value}
-          onValueChange={setValue}
-          query={query}
-          onQueryChange={setQuery}
-        />
-        <p style={{ opacity: 0.7 }}>
-          {chosen ? `${chosen.name} — ${chosen.country}` : 'Nothing chosen'}
-        </p>
-      </div>
-    );
-  },
+  render: (args) => <ControlledDemo {...args} />,
 };
 
 /** The three heights, matching every other control on the row. */
@@ -149,7 +152,6 @@ export const InAForm: Story = {
       onSubmit={(event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        // eslint-disable-next-line no-alert -- a story showing what is submitted
         alert(`city = ${String(data.get('city'))}`);
       }}
       style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}

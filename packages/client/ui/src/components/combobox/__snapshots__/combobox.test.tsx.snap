@@ -2,7 +2,7 @@
 
 exports[`Combobox > matches the rendered snapshot 1`] = `
 <div
-  class="_root_je8we_4"
+  class="_root_bouy5_4"
 >
   <input
     aria-autocomplete="list"
@@ -10,66 +10,77 @@ exports[`Combobox > matches the rendered snapshot 1`] = `
     aria-expanded="false"
     aria-label="City"
     autocomplete="off"
-    class="_combobox_je8we_7 _md_je8we_58"
+    class="_combobox_bouy5_29 _md_bouy5_80"
     role="combobox"
     type="text"
     value=""
   />
   <input
+    aria-hidden="true"
+    autocomplete="off"
+    class="_carrier_bouy5_7"
+    data-carrier=""
     name="city"
-    type="hidden"
+    readonly=""
+    tabindex="-1"
+    type="text"
     value=""
   />
   <div
-    class="_surface_je8we_73"
-    id="«react-id»"
+    class="_surface_bouy5_95"
     popover="auto"
-    role="listbox"
   >
     <div
-      aria-posinset="1"
-      aria-selected="false"
-      aria-setsize="4"
-      class="_option_je8we_99"
-      data-active=""
-      id="_r_e_-0"
-      role="option"
+      aria-label="Suggestions"
+      class="_list_bouy5_118"
+      id="«react-id»"
+      role="listbox"
     >
-      Milano
-    </div>
-    <div
-      aria-posinset="2"
-      aria-selected="false"
-      aria-setsize="4"
-      class="_option_je8we_99"
-      id="_r_e_-1"
-      role="option"
-    >
-      Málaga
-    </div>
-    <div
-      aria-posinset="3"
-      aria-selected="false"
-      aria-setsize="4"
-      class="_option_je8we_99"
-      id="_r_e_-2"
-      role="option"
-    >
-      Manchester
-    </div>
-    <div
-      aria-posinset="4"
-      aria-selected="false"
-      aria-setsize="4"
-      class="_option_je8we_99"
-      id="_r_e_-3"
-      role="option"
-    >
-      Torino
+      <div
+        aria-posinset="1"
+        aria-selected="false"
+        aria-setsize="4"
+        class="_option_bouy5_124"
+        id="_r_s_-0"
+        role="option"
+      >
+        Milano
+      </div>
+      <div
+        aria-posinset="2"
+        aria-selected="false"
+        aria-setsize="4"
+        class="_option_bouy5_124"
+        id="_r_s_-1"
+        role="option"
+      >
+        Málaga
+      </div>
+      <div
+        aria-posinset="3"
+        aria-selected="false"
+        aria-setsize="4"
+        class="_option_bouy5_124"
+        id="_r_s_-2"
+        role="option"
+      >
+        Manchester
+      </div>
+      <div
+        aria-posinset="4"
+        aria-selected="false"
+        aria-setsize="4"
+        class="_option_bouy5_124"
+        id="_r_s_-3"
+        role="option"
+      >
+        Torino
+      </div>
     </div>
   </div>
-  <span
-    class="_visuallyHidden_tcu3i_3"
+  <div
+    aria-live="polite"
+    class="_status_bouy5_18"
     role="status"
   />
 </div>

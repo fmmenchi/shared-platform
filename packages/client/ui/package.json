@@ -658,6 +658,12 @@
       "types": "./dist/components/combobox/index.d.ts",
       "import": "./dist/combobox.js",
       "default": "./dist/combobox.js"
+    },
+    "./form-combobox": {
+      "@fmmenchi/source": "./src/components/form-combobox/index.ts",
+      "types": "./dist/components/form-combobox/index.d.ts",
+      "import": "./dist/form-combobox.js",
+      "default": "./dist/form-combobox.js"
     }
   },
   "nx": {

@@ -24,6 +24,23 @@
     display: contents;
   }
 
+  /*
+   * The carrier: out of sight, out of the accessibility tree, out of the tab
+   * order — and STILL FOCUSABLE, which is the whole reason it is not the
+   * `hidden` attribute and not `type="hidden"`. `DateInput`'s, for the reasons
+   * written there: `form.reset()` restores a text input and not a hidden one,
+   * react-hook-form reads `.value` off the node its ref was given, and
+   * `FormErrorSummary` finds a field by `name` and focuses it.
+   */
+  .carrier {
+    @apply sr-only;
+  }
+
+  /* The live region, which is text for assistive tech and nothing on screen. */
+  .status {
+    @apply sr-only;
+  }
+
   .combobox {
     @apply control-box;
     @apply control-forced-colors;
@@ -81,6 +98,13 @@
     @apply bg-input text-input-foreground border-input-border;
   }
 
+  /* The rows' own box, so the surface can also hold the empty message — which
+     may not live inside a `listbox` (ARIA 1.2 owns `option` and `group` there,
+     and nothing else). */
+  .list {
+    display: contents;
+  }
+
   .surface:not(:popover-open) {
     display: none;
   }
@@ -128,10 +152,22 @@
    */
   @media (pointer: coarse) {
     .surface {
+      /*
+       * ALL FOUR SIDES, and `top`/`left` are NOT set back to `auto` — which is
+       * the mistake `DatePicker`'s stylesheet already records ("leaving either
+       * at `auto` here left the box hanging off one edge"). Measured in
+       * Chromium at 600x600: with `top: auto; left: auto` the surface solves for
+       * the other two anchors and lands at 440,582 — the bottom-right CORNER,
+       * which on a phone is behind the software keyboard that is always up,
+       * since the list can be opened by typing. With all four, 220,291: centred.
+       *
+       * `fit-content` on both axes for the same reason `DatePicker` pins them:
+       * `margin: auto` centres a box, and a stretched box has nothing to centre.
+       */
       inset: 0;
       margin: auto;
-      top: auto;
-      left: auto;
+      inline-size: fit-content;
+      block-size: fit-content;
       max-block-size: 60vh;
       min-inline-size: min(22rem, 90vw);
     }

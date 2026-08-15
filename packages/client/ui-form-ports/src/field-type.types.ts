@@ -62,6 +62,15 @@ export type FormFieldType =
   | 'select'
   | 'textarea'
   /**
+   * A `Combobox`. Not an `<input>` type either: the field a form sees is the
+   * component's hidden CARRIER, a text input holding the chosen key, while the
+   * visible box holds the query. Declaring it is what stops an adapter shaping
+   * the carrier from a schema — Conform derives `type`, `pattern`, `min` and
+   * `multiple` from the constraint, and a `pattern` checked against a key can
+   * never match, which blocks the submit for good.
+   */
+  | 'combobox'
+  /**
    * The two that are not one control at all, but a FIELD DRAWN AS MANY — see
    * the note above. They are bound through `UseFormOptionField`, never through
    * `UseFormField`.

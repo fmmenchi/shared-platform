@@ -15,18 +15,30 @@ import { defineMessages } from '../../i18n/messages.js';
  * needs no rule — so the deferral costs nothing here instead of being worked
  * around with a hand-rolled two-form plural that only covers two of the three
  * locales this catalogue already ships.
+ *
+ * IT CARRIES THE QUERY, and that is not decoration either. `role="status"`
+ * announces a text CHANGE, so two different searches that both leave one row
+ * produced a byte-identical string, React committed no mutation, and the region
+ * said nothing at all — the exact silence it exists to break.
+ *
+ * `list` names the listbox. On iOS VoiceOver `aria-activedescendant` is not
+ * supported at all, so touch exploration is the only way through the rows, and
+ * an unnamed "list box" is where they land.
  */
 export const comboboxMessages = defineMessages('combobox', {
   en: {
-    results: 'Results: {count}',
+    results: 'Results for “{query}”: {count}',
     empty: 'No results',
+    list: 'Suggestions',
   },
   it: {
-    results: 'Risultati: {count}',
+    results: 'Risultati per «{query}»: {count}',
     empty: 'Nessun risultato',
+    list: 'Suggerimenti',
   },
   ar: {
-    results: 'النتائج: {count}',
+    results: 'نتائج «{query}»: {count}',
     empty: 'لا توجد نتائج',
+    list: 'اقتراحات',
   },
 });

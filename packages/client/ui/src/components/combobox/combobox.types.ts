@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, ReactNode } from 'react';
+import type { ComponentPropsWithRef, ReactNode, Ref } from 'react';
 import type { VariantProps } from 'class-variance-authority';
 import type { comboboxVariants } from './combobox.variants.js';
 
@@ -66,21 +66,45 @@ interface ComboboxOwnProps<T> {
   /** The list opened or closed, by any route including the platform's. */
   onOpenChange?: (open: boolean) => void;
   /**
-   * The field name the form submits under. Rendered on a hidden native carrier
-   * beside the visible field, because the visible one holds the QUERY and not
-   * the value — see the component's own note on what that costs.
+   * The field name the form submits under. Rendered on the CARRIER beside the
+   * visible field, because the visible one holds the query and not the value —
+   * see the component's own note on what that costs.
    */
   name?: string;
+  /**
+   * The `<form>` this field belongs to when it is not inside one — a dialog, a
+   * portal, a sticky footer. It goes on the carrier with the `name`, which is
+   * the node that actually contributes: put on the visible field it associated
+   * the one element that submits nothing.
+   */
+  form?: string;
+  /**
+   * A ref to the carrier — the node that holds the value, carries the `name`
+   * and fires a real `input` event when the choice changes.
+   *
+   * This is what a bound wrapper needs and the ordinary `ref` cannot be: a
+   * form library reads `.value` off the element its ref was given, and given
+   * the visible field it would read the search text. `ref` stays pointed at the
+   * visible input, which is where focus belongs.
+   */
+  carrierRef?: Ref<HTMLInputElement>;
 }
 
 /**
  * Public Combobox props — the visible control is an `<input>`, so every native
  * attribute passes through to it.
  *
- * `value`, `defaultValue` and `onChange` are taken over: on a combobox they are
- * ambiguous between the typed text and the chosen item, and conflating the two
- * is the defect this whole component exists around. The typed text is
+ * `value` and `defaultValue` are taken over: on a combobox they are ambiguous
+ * between the typed text and the chosen item, and conflating the two is the
+ * defect this whole component exists around. The typed text is
  * `query`/`onQueryChange`; the choice is `value`/`onValueChange`.
+ *
+ * `onChange` and `onBlur` go to the CARRIER, not to the visible field, which is
+ * the routing `DateInput` settled first. A form binding's handler arrives under
+ * those names and reads the field off the event target: on the visible input it
+ * would hear a keystroke of the QUERY and find a node with no name, so the
+ * library learned the search text and never learned the choice. What the user
+ * types is reported by `onQueryChange`.
  *
  * `type` and `role` are the control's identity. `list` is refused because
  * `<datalist>` is the OTHER answer to this problem (ADR-0028) and mixing the
@@ -89,12 +113,6 @@ interface ComboboxOwnProps<T> {
 export type ComboboxProps<T> = ComboboxOwnProps<T> &
   Omit<
     ComponentPropsWithRef<'input'>,
-    | keyof ComboboxOwnProps<T>
-    | 'type'
-    | 'role'
-    | 'list'
-    | 'size'
-    | 'onChange'
-    | 'children'
+    keyof ComboboxOwnProps<T> | 'type' | 'role' | 'list' | 'size' | 'children'
   > &
   ComboboxVariants;

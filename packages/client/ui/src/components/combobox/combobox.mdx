@@ -86,7 +86,13 @@ means Milan, whose key is `42`. So the choice rides on a hidden native carrier
 beside the field, which keeps `FormData`, `form.reset()` and every form binding
 working on an ordinary field.
 
-What it does not keep is the other half of
+The carrier is a CSS-hidden **text** input, not a `type="hidden"` one, and that
+difference is `form.reset()`: a hidden input is in value mode "default", so a
+reset restores its current value onto itself and the field comes back still
+holding the old choice. It is also focusable, because `FormErrorSummary` finds a
+field by `name` and calls `focus()` on it.
+
+What the carrier does not buy back is the other half of
 [ADR-0013](?path=/docs/adr-0013-form-controls-contract--docs): with the bundle
 unloaded there is no list and no filtering, so **this is the first control in
 this library that does not work without JavaScript**. A form rendered by a server
@@ -94,9 +100,42 @@ with a value already chosen still submits it; it simply cannot be changed. That
 exception is scoped to this component — `Input`, `Select`, `Textarea`,
 `Checkbox`, `Radio`, `Switch` and `Slider` are unchanged.
 
+### In a form, bound
+
+`FormCombobox` is this inside a `Field`, wired to the form library in scope —
+label associated, hint and error announced, and the binding's ref on the carrier
+rather than on the box you type in:
+
+```tsx
+<FormCombobox
+  name="city"
+  label="City"
+  items={cities}
+  getKey={(c) => c.id}
+  getLabel={(c) => c.name}
+/>
+```
+
+Declare it in your adapter's field types as `'combobox'`. It is not an `<input>`
+type: it tells the binding that the field it sees is the carrier, which is what
+keeps a schema-derived `pattern` off a control that holds a key.
+
 ### Not here yet
 
-Several-of-many with chips, option groups, and the states of data arriving
-(loading, empty-because-fetching, error) are decided in ADR-0028 and not built.
+Decided in ADR-0028 and **not built**:
+
+- **creation** — a "create «what you typed»" row, and **free text** as an opt-in,
+  which is the same feature seen from two sides;
+- **several-of-many with chips** (the port shape it needs is merged);
+- **option groups**;
+- the **states of data arriving** — loading, empty-because-fetching, error.
+
 Virtualisation stays a seam: bring your own windowing, and the row attributes
 above keep the announcement honest.
+
+### Keyboard, precisely
+
+`Home` and `End` are **not** taken. They belong to the text field you are typing
+in, and moving a highlight instead of the caret is the one thing a text box must
+never do. `Enter` is only taken once you have moved to a row: with nothing
+highlighted it belongs to the form, so you can still submit with the keyboard.

@@ -45,12 +45,18 @@ export function createConformField(
      * and the tests state stopped holding. The design system now filters the
      * bag by tag as a net; this is the cure.
      */
+    // A `Combobox`'s field IS a text input — its carrier — so Conform is asked
+    // for that and not for a type it has no member for. Declaring the kind is
+    // still what matters: it is how the select/textarea helpers are avoided,
+    // and how the constraint-derived `pattern`/`multiple` stay off a control
+    // that holds a key rather than the text a schema describes.
+    const shaped = type === 'combobox' ? 'text' : type;
     const control =
-      type === 'select'
+      shaped === 'select'
         ? getSelectProps(meta, { ariaAttributes: false })
-        : type === 'textarea'
+        : shaped === 'textarea'
           ? getTextareaProps(meta, { ariaAttributes: false })
-          : getInputProps(meta, { type, ariaAttributes: false });
+          : getInputProps(meta, { type: shaped, ariaAttributes: false });
 
     return {
       control,

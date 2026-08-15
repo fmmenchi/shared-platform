@@ -489,3 +489,5 @@ export type {
   ComboboxProps,
   ComboboxVariants,
 } from './components/combobox/combobox.types.js';
+export { FormCombobox } from './components/form-combobox/form-combobox.component.js';
+export type { FormComboboxProps } from './components/form-combobox/form-combobox.types.js';
