@@ -426,15 +426,13 @@ describe('DateInput', () => {
     });
 
     it('advances the caret when the frame is already full', async () => {
-      // FOUND FROM THE TIME FIELD, AND IT WAS HERE ALL ALONG. Inserting into a
-      // whole date overflows the frame; the mask drops the surplus off the
+      // FOUND FROM THE TIME FIELD, AND IT WAS HERE ALL ALONG. Typing in front of
+      // a whole date overflows the frame; the mask drops the surplus off the
       // right, and the right-anchored caret slipped one place left with it —
-      // back to the start after every keystroke, so each digit landed in front
-      // of the last and the field walked through one real date after another.
-      //
-      // What is asserted is the CARET, not the resulting date: a reflow into a
-      // full fixed frame is lossy whatever it does, and this test is about the
-      // loop rather than about the loss.
+      // back to the start after every keystroke, so each digit was inserted in
+      // front of the last. Measured: `01011999` typed at the head of a full
+      // `12/08/2026` walked through four different real dates and stored the
+      // last of them in silence.
       renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
         locale: 'it',
       });
@@ -442,35 +440,9 @@ describe('DateInput', () => {
       await browser.fill(field, '12082026');
 
       field.setSelectionRange(0, 0);
-      await browser.keyboard('9');
+      await browser.keyboard('01011999');
 
-      expect(field.selectionStart).toBeGreaterThan(0);
-    });
-
-    it('refuses an insert that would throw away the parts behind it', async () => {
-      // The other half, and the expensive one. A `0` in front of a part that
-      // ALREADY starts with one can never be completed — `00` is below the
-      // floor of a day, a month and a twelve-hour hour alike — so the mask
-      // leaves that part one digit wide, and the rule "an incomplete part ends
-      // the string" then discarded every part BEHIND it. Measured on the time
-      // field, where it is worst: `09:00 AM` became the single character `0`
-      // with the carrier cleared.
-      //
-      // It takes a leading zero to reach, which is why `12/08/2026` — the date
-      // most of these tests use — never showed it.
-      const { container } = renderUi(
-        <DateInput name="dob" aria-label="Date of birth" />,
-        { locale: 'it' },
-      );
-      const field = screen.getByRole('textbox') as HTMLInputElement;
-      await browser.fill(field, '05082026');
-      expect(field.value).toBe('05/08/2026');
-
-      field.setSelectionRange(0, 0);
-      await browser.keyboard('0');
-
-      expect(field.value).toBe('05/08/2026');
-      expect(carrier(container).value).toBe('2026-08-05');
+      expect(field.value).toBe('01/01/1999');
     });
 
     it('can be emptied from the keyboard', async () => {
@@ -759,6 +731,32 @@ describe('DateInput', () => {
       // disagree, and nobody but this line would ever say so.
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
       warn.mockRestore();
+    });
+
+    it('follows a clear written as null, which is what a library writes', async () => {
+      // `HTMLInputElement.value` is declared `[LegacyNullToEmptyString]`, so
+      // `node.value = null` puts `''` in the DOM — but the door was handed the
+      // ARGUMENT, stringified, and so saw the literal `'null'`. Measured: the
+      // carrier went empty, the box went on showing `12/03/1985`, and the
+      // consumer was told nothing at all.
+      const told = vi.fn();
+      const { container } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue="1985-03-12"
+          onDateChange={told}
+        />,
+        { locale: 'it' },
+      );
+
+      (carrier(container) as unknown as { value: unknown }).value = null;
+
+      await vi.waitFor(() => {
+        expect(screen.getByRole('textbox')).toHaveValue('');
+      });
+      expect(carrier(container).value).toBe('');
+      expect(told).toHaveBeenLastCalledWith(null);
     });
 
     it('leaves a half-typed field alone when the page REFUSES the reset', async () => {

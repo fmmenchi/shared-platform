@@ -20,18 +20,11 @@ export const timeInputMessages = defineMessages('timeInput', {
     hour: 'hh',
     minute: 'mm',
     second: 'ss',
-    /**
-     * What the browser says when the box holds text that names no time — which
-     * on a twelve-hour field includes the state that LOOKS finished, digits and
-     * all, with the half of the day still unchosen.
-     */
-    incomplete: 'Enter a complete time.',
   },
   it: {
     hour: 'hh',
     minute: 'mm',
     second: 'ss',
-    incomplete: 'Inserisci un orario completo.',
   },
   ar: {
     // سس for ساعة, دد for دقيقة, ثث for ثانية — Arabic groups for an Arabic
@@ -40,6 +33,5 @@ export const timeInputMessages = defineMessages('timeInput', {
     hour: 'سس',
     minute: 'دد',
     second: 'ثث',
-    incomplete: 'أدخل وقتًا كاملاً.',
   },
 });

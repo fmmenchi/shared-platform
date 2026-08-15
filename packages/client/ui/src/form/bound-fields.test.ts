@@ -17,15 +17,17 @@ import { createBoundFields } from './bound-fields.js';
  * package's own public surface, so a component added tomorrow fails here on the
  * day it lands rather than on the day somebody reaches for it.
  */
-const surface = import.meta.glob('../components/form-*/index.ts', {
-  eager: true,
-}) as Record<string, Record<string, unknown>>;
+// THE PACKAGE'S OWN BARREL, not a folder-name pattern. An earlier version
+// globbed `../components/form-*/index.ts`, which reads the CONVENTION rather
+// than the surface: a bound component in a folder named anything else is
+// exported, invisible here, and missing from the kit — measured with a
+// throwaway `FormThing` in `components/zzz-thing/`, which this file passed
+// straight over while the docstring claimed it read the public surface.
+import * as surface from '../index.js';
 
-/** Every `Form*` component the package ships, from its own folders. */
+/** Every `Form*` component the package actually exports. */
 const shipped = new Set(
-  Object.values(surface).flatMap((module) =>
-    Object.keys(module).filter((name) => name.startsWith('Form')),
-  ),
+  Object.keys(surface).filter((name) => name.startsWith('Form')),
 );
 
 /**
@@ -41,6 +43,7 @@ describe('the typed kit holds every bound field', () => {
     // vacuous, which is the failure mode of every test written this way.
     expect(shipped.size).toBeGreaterThan(5);
     expect(shipped.has('FormInput')).toBe(true);
+    expect(shipped.has('FormErrorSummary')).toBe(true);
   });
 
   it('lists all of them, and nothing that is not a field', () => {

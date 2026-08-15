@@ -65,25 +65,4 @@ export interface Masked {
   readonly text: string;
   /** The canonical value it names, or `''` while it names none yet. */
   readonly iso: string;
-  /**
-   * Typed digits the frame did not take, counted from what it CONSUMED rather
-   * than from how many slots it has.
-   *
-   * The caret is anchored on the digits to the right of it, and that anchor
-   * assumes they survive. Padding puts in a zero nobody typed, so a frame can
-   * fill up having eaten fewer digits than it has slots — and a caret told only
-   * about the capacity lands one place left of the keystroke.
-   */
-  readonly dropped: number;
-  /**
-   * The frame could not hold what was typed, so the caller should keep what it
-   * had rather than draw this.
-   *
-   * True only for a REFLOW — an insert into an already-full field that leaves
-   * an early part incomplete with full parts behind it. Typing forward fills
-   * left to right and never produces it. Obeyed rather than refused, that
-   * result threw away every part after the incomplete one: measured, one
-   * keystroke at the head of `09:00 AM` emptied the field to `0`.
-   */
-  readonly refused: boolean;
 }

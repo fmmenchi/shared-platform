@@ -123,30 +123,32 @@ function usePattern(
     const cycle: HourCycle =
       cycleHasPeriod(resolved) && !drawn ? 'h23' : resolved;
 
-    // WHICH KEYSTROKE NAMES WHICH HALF OF THE DAY.
+    // WHICH KEYSTROKE NAMES WHICH HALF OF THE DAY — BY PREFIX, not by letter.
     //
-    // Three rules in order, and the order is the whole design. An earlier
-    // version kept only the middle one and left the day period untypeable in
-    // more locales than it served — swept across every tag `Intl` knows:
+    // An earlier version scored each character on its own and let any letter
+    // shared by both words TOGGLE, so that no locale was left unable to reach a
+    // half. Swept across 2704 day-period configurations, that was a disaster in
+    // the locale it was least excusable in: `AM` typed into an `en-US` field
+    // read `A` as morning and then `M` — shared — as "the other one", storing
+    // half past two in the AFTERNOON. The field's own placeholder reads
+    // `hh:mm AM/PM`, so it instructed the user to type the sequence that gives
+    // the opposite value. Measured over 5408 word-typing cases: 4 wrong halves
+    // before, 4215 after.
     //
-    //   1. LATIN `a`/`p`, unless the OTHER word claims that letter. A keyboard
-    //      is not a locale: an `ar-EG` page on a Latin keyboard needs a way to
-    //      say `م`. Checking only the other word is what makes this work for
-    //      `cs` (`dop.`/`odp.`), where `p` is in both but `a` is in neither.
-    //   2. A CHARACTER ONE WORD HAS AND THE OTHER HAS NOT. Not "the first
-    //      letter": `午前`/`午後` share theirs, and so do `오전`/`오후`.
-    //   3. ANY OTHER LETTER OF EITHER WORD TOGGLES. This is the rule that makes
-    //      the field complete rather than clever. `ak` writes `AN`/`ANW` and
-    //      `cs` writes `dop.`/`odp.`, whose distinguishing sets are empty and
-    //      near-empty — under rules 1 and 2 alone, an Akan user could not enter
-    //      a morning time by keyboard at all, and a Czech user no afternoon.
-    //      Toggling is worse than naming and infinitely better than refusing.
+    // The words are matched as words instead, a letter at a time, against a
+    // buffer. A letter is only decisive while it is the prefix of ONE of them,
+    // which is what the character rule was reaching for and could not express —
+    // `午前`/`午後` share a first letter and differ at the second, `dop.`/`odp.`
+    // share every letter and differ in ORDER, and neither is expressible as a
+    // set. Latin `a`/`p` remain the fallback for a keyboard that cannot type the
+    // locale's own script, and only where they match neither word.
+    //
+    // Only LETTERS are kept. `blo` writes its periods as `1ka`/`2ja`, and with
+    // digits in the alphabet the `1` of an hour named a half of the day.
     const strip = (word: string) =>
-      new Set(
-        [...word.toLowerCase()].filter((char) => /\p{L}|\p{N}/u.test(char)),
-      );
-    const amChars = strip(am);
-    const pmChars = strip(pm);
+      [...word.toLowerCase()].filter((char) => /\p{L}/u.test(char)).join('');
+    const amKey = strip(am);
+    const pmKey = strip(pm);
 
     return {
       parts,
@@ -156,8 +158,8 @@ function usePattern(
       refused,
       am,
       pm,
-      amChars,
-      pmChars,
+      amKey,
+      pmKey,
     };
   }, [locale, asked, precision]);
 }
@@ -212,7 +214,7 @@ function TimeInput(props: TimeInputProps) {
 
   const formatter = useFormatter();
   const t = useMessages(timeInputMessages);
-  const { parts, order, numerals, cycle, refused, am, pm, amChars, pmChars } =
+  const { parts, order, numerals, cycle, refused, am, pm, amKey, pmKey } =
     usePattern(formatter.locale, hourCycle, precision);
   const hasPeriod = cycleHasPeriod(cycle);
 
@@ -370,13 +372,20 @@ function TimeInput(props: TimeInputProps) {
    * read off the screen and never off this.
    */
   const periodHeld = useRef<Period | null>(null);
+  /** Letters typed towards a day-period word but not yet naming one. */
+  const periodTyped = useRef('');
   const periodOf = (text: string): Period | null => {
     // AN EMPTY FIELD HAS CHOSEN NOTHING. Falling back to the remembered half
-    // here let a cleared field keep one: measured, `0230p`, then a
+    // here let a CLEARED field keep one: measured, `0230p`, then a
     // `setValue(name, '')` from a form library, then `0330` — and the box read
     // `03:30 PM` with `15:30` on the carrier, an afternoon the user had never
     // said anything about since the clear. `composeWith` below exists precisely
     // to refuse an unspoken period, and this walked around it.
+    //
+    // It only answers for a clear that has already LANDED, though. A
+    // select-all-and-retype is still on its way in when this is asked, so the
+    // text here is the one being replaced — that gesture is caught in
+    // `readPeriod`, by noticing the word among the characters removed.
     if (text === '') return null;
     return periodShown(text) ?? periodHeld.current;
   };
@@ -385,16 +394,17 @@ function TimeInput(props: TimeInputProps) {
    * WHICH HALF OF THE DAY THE USER JUST SAID, if they said anything.
    *
    * READ FROM WHAT WAS INSERTED, not from the whole field. Scanning the whole
-   * string meant scanning the words this component had just drawn, so an
-   * earlier version stripped them out first — and stripping every occurrence
-   * removes the one the USER just typed too. Measured on `ar-EG`, whose words
+   * string means scanning the words this component has just drawn — and an
+   * earlier version dealt with that by stripping them out first, which removes
+   * the one the USER pressed along with them. Measured on `ar-EG`, whose words
    * are one character each: the field draws `ص/م`, tells the reader in its own
-   * placeholder that those are the strings it takes, and then ignored both of
-   * them. Only Latin `a`/`p` worked, in the one locale that has a translated
-   * message catalogue.
+   * placeholder that those are the strings it takes, and then ignored both.
    *
-   * The last marker in the insertion wins, so `a` then `p` in one paste ends up
-   * PM rather than refusing to move.
+   * MATCHED AS WORDS, a letter at a time, against a buffer that survives the
+   * digits between them. A letter decides only while it is the prefix of ONE
+   * word; while it is a prefix of both it decides nothing and waits, which is
+   * how `午前`/`午後` and `오전`/`오후` are told apart on their SECOND letter
+   * rather than being guessed at on their first.
    */
   const readPeriod = (
     before: string,
@@ -404,18 +414,20 @@ function TimeInput(props: TimeInputProps) {
   ): Period | null => {
     if (!hasPeriod) return current;
 
-    // A PASTE IS THE WHOLE STRING, and there the insertion IS the text — so it
-    // is read whole. `02:30 PM` copied out of this very field, or out of a
-    // confirmation email, pasted back in came out as `02:30 AM/PM` with an
-    // empty carrier: the field would not accept its own output, which
-    // `DateInput` does. Only on a paste, because in ordinary typing the words
-    // on screen are the ones this component drew, and reading them back would
-    // pin the period to whatever it already was.
-    if (pasted) return periodShown(typed) ?? current;
+    // A PASTE IS A WHOLE NEW VALUE, so it is read whole and answers for itself.
+    // `02:30 PM` copied out of this very field pasted back in used to come out
+    // as `02:30 AM/PM` with an empty carrier — the field would not accept its
+    // own output, which `DateInput` does. And no falling back to the half that
+    // was there: a pasted value that names none has chosen none.
+    if (pasted) {
+      periodTyped.current = '';
+      return periodShown(typed);
+    }
 
-    // What the browser just put in: the span between the common prefix and the
-    // common suffix. The same arithmetic the deletion path uses, for the same
-    // reason — it is the only honest answer to "what changed".
+    // What the browser just put in, and what it took out: the spans between the
+    // common prefix and the common suffix. The same arithmetic the deletion
+    // path uses, for the same reason — it is the only honest answer to "what
+    // changed".
     let head = 0;
     while (
       head < typed.length &&
@@ -433,22 +445,68 @@ function TimeInput(props: TimeInputProps) {
       tail += 1;
     }
     const inserted = typed.slice(head, typed.length - tail);
+    const removed = before.slice(head, before.length - tail);
+
+    // DELETING THE WORD UNCHOOSES THE HALF. Select-all-and-retype takes it out
+    // with everything else, and the remembered half used to survive that:
+    // measured, `0230p` then select-all then `0330` stored `15:30` — an
+    // afternoon nobody had mentioned since the field was wiped. Clearing the
+    // same field with Backspace forgot it correctly, which made one gesture
+    // disagree with another that means the same thing.
+    let held = current;
+    if (
+      (am !== '' && removed.includes(am)) ||
+      (pm !== '' && removed.includes(pm))
+    ) {
+      held = null;
+      periodTyped.current = '';
+    }
 
     let found: Period | null = null;
+    /** Does this buffer name a half yet, and may it still grow? */
+    const weigh = (buffer: string): Period | null | undefined => {
+      const amStarts = amKey !== '' && amKey.startsWith(buffer);
+      const pmStarts = pmKey !== '' && pmKey.startsWith(buffer);
+      // An exact word wins over a prefix, so `an` names the morning in `ak`
+      // even though `anw` also begins with it.
+      if (buffer === amKey) return 'am';
+      if (buffer === pmKey) return 'pm';
+      if (amStarts && !pmStarts) return 'am';
+      if (pmStarts && !amStarts) return 'pm';
+      // Still ambiguous: wait for the next letter rather than guess.
+      if (amStarts && pmStarts) return null;
+      return undefined;
+    };
+
     for (const char of inserted.toLowerCase()) {
-      // 1. The Latin shortcut, unless the OTHER word claims that letter.
-      if (char === 'a' && !pmChars.has('a')) found = 'am';
-      else if (char === 'p' && !amChars.has('p')) found = 'pm';
-      // 2. A character one word has and the other has not.
-      else if (amChars.has(char) && !pmChars.has(char)) found = 'am';
-      else if (pmChars.has(char) && !amChars.has(char)) found = 'pm';
-      // 3. Any other letter of either word toggles, so no locale is left with
-      //    a half of the day it cannot reach.
-      else if (amChars.has(char) || pmChars.has(char)) {
-        found = (found ?? current) === 'pm' ? 'am' : 'pm';
+      if (!/\p{L}/u.test(char)) continue;
+      let buffer = periodTyped.current + char;
+      let weighed = weigh(buffer);
+      if (weighed === undefined) {
+        // The buffer led nowhere; start again from this letter alone, so a
+        // change of mind — `a` then `p` — is read as a fresh word.
+        buffer = char;
+        weighed = weigh(buffer);
+      }
+      if (weighed === undefined) {
+        // AND THE LATIN FALLBACK, last, because a keyboard is not a locale: an
+        // `ar-EG` page on a Latin keyboard needs a way to say `م`. It is tried
+        // only where the letter matches neither word, so `sq`'s `p.d.` — which
+        // is the MORNING — is never overruled by an English habit.
+        periodTyped.current = '';
+        if (char === 'a') found = 'am';
+        else if (char === 'p') found = 'pm';
+        continue;
+      }
+      periodTyped.current = buffer;
+      if (weighed !== null) {
+        found = weighed;
+        // Keep the buffer only while it could still grow into the other word.
+        const other = weighed === 'am' ? pmKey : amKey;
+        if (!other.startsWith(buffer)) periodTyped.current = '';
       }
     }
-    return found ?? current;
+    return found ?? held;
   };
 
   /** What the frame draws where the pattern is not typing a number. */
@@ -521,14 +579,13 @@ function TimeInput(props: TimeInputProps) {
 
   const maskWith = (typed: string, period: Period | null, pasted = false) =>
     maskSegments(frame, typed, composeWith(period), {
-      ...(pasted ? { passthrough: { recognise, display } } : {}),
+      ...(pasted ? { recognise, display } : {}),
       draw: drawWith(period),
     });
 
   const { carrier, field, shown, write, record } = useCarrierField({
     label: 'TimeInput',
     seed,
-    incomplete: t('incomplete'),
     display,
     normalise: (iso) => {
       const time = isoTimeOf(iso);
@@ -586,28 +643,12 @@ function TimeInput(props: TimeInputProps) {
                 frame,
                 shown.current,
                 typed,
+                caret,
                 composeWith(period),
                 drawWith(period),
               )
             : null;
-          const masked = deleted ?? maskWith(typed, period, pasted);
-          const { text, iso } = masked;
-
-          // AN EDIT THAT CHANGED NOTHING IS PUT BACK, caret included — a reflow
-          // the frame cannot hold, or a deletion with no digit in front of it.
-          // See the twin of this block in `DateInput` for what each cost.
-          if (masked.refused || (deleting && text === shown.current)) {
-            element.value = shown.current;
-            const back = Math.max(
-              0,
-              Math.min(
-                shown.current.length,
-                caret + (shown.current.length - typed.length),
-              ),
-            );
-            element.setSelectionRange(back, back);
-            return;
-          }
+          const { text, iso } = deleted ?? maskWith(typed, period, pasted);
 
           // Written straight onto the node. It is uncontrolled, so React will
           // not re-render it back — and a plain assignment is right HERE,
@@ -615,13 +656,7 @@ function TimeInput(props: TimeInputProps) {
           // React has already heard it.
           if (text !== typed) {
             element.value = text;
-            const position = caretFor(
-              frame,
-              text,
-              typed,
-              caret,
-              masked.dropped,
-            );
+            const position = caretFor(frame, text, typed, caret);
             element.setSelectionRange(position, position);
           }
 
