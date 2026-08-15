@@ -45,24 +45,28 @@ Not by popularity. Three questions, in this order:
 
 ## Next
 
-**Open.** The two items this section named — `Table` and `Progress` — have both shipped, and with
-them the third question above stops choosing: no remaining group is one component wide.
+**`Combobox`**, pending ADR-0028, which is `proposed` rather than accepted — so the decision is
+written and the code is not.
 
-That leaves the first two questions to decide it, and neither has an obvious answer waiting:
+It is chosen by the second question below, the strongest of the three, and this page had that
+question's answer wrong. It read _"nothing in the tree currently defers a decision to a component
+that does not exist"_. `Select` does, four times: `select.component.tsx` sends `multiple` to "a
+combobox for many", and `select.mdx` sends several-of-many to "a combobox with chips", search to "a
+combobox" and rich rows to "a combobox". A consumer following our own table today arrives at
+nothing. The claim was written when the first question was the one being answered and was never
+re-checked against the components that shipped after it.
+
+The other two questions still say what they said:
 
 1. **A native shell nobody has claimed yet.** `<details>` is taken by `Accordion`, `<dialog>` by
    `Dialog`, `<progress>` by `Progress`. `<meter>` is the one still unbuilt — a different claim from
    `<progress>` (a measurement inside a range, not a task advancing), which is exactly why it would
    need its own reason rather than inheriting this one's.
-2. **A written contract waiting on a component.** Nothing in the tree currently defers a decision to
-   a component that does not exist; the deferrals below are all deliberate refusals rather than
-   queued work.
+2. **How thin is its group?** No remaining group is one component wide, so it chooses nothing.
 
-So the next item is a decision, not a deduction — and this page will say which, once it is one.
-
-The first one taken that way was `Skeleton`, and the reasoning is recorded below rather than here,
-because what decided it was a property of the deferral (nothing was blocking it) rather than a
-property of this section.
+Before `Combobox` there was a gap where this section had no deduction to make, and the item taken
+then was `Skeleton` — recorded under **Deferred** rather than here, because what decided it was a
+property of the deferral (nothing was blocking it) rather than a property of this section.
 
 ## Deferred, with the reason
 
