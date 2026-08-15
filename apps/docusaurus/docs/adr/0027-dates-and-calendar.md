@@ -686,6 +686,50 @@ answer is another field of ours or nothing — not a fourth exception on its own
   reason to fork them — two copies of that code is the failure this repository has already measured
   twice, on `DateInput` and `Calendar`.
 
+## Addendum: what building it actually found
+
+Written **after** the amendment above, because four things came out of the build that the decision
+could not have known, and one of them changes what the amendment claimed.
+
+**The machinery generalised, and the extraction proved it.** `DateInput` went from 936 lines to 440:
+`segments.ts` now holds the mask arithmetic — the flow mask, the positional deletion, the
+right-anchored caret — parameterised by a frame, and `use-carrier-field.ts` holds the carrier and its
+three external-write doors. Behaviour is unchanged and that is the evidence: 3528 tests and 157
+ports-validation tests green before and after, with no test touched. One generalisation was needed —
+**a literal is what the frame draws between the digits, not what the pattern fixed**, because a
+twelve-hour field draws `AM` or `PM` there and the value decides which.
+
+**Two defects came out of that shared code, and `DateInput` had both since it shipped.** Neither was
+reachable from a date frame, which is the reason they survived three adversarial reviews:
+
+- A deletion **inside a literal that is not touching a digit** removed nothing and re-emitted the
+  same text — the key did nothing at all, for ever. Invisible while every literal was one character
+  wide; a twelve-hour time ends in a WORD.
+- **Right-anchoring the caret slipped one place left whenever the frame was already full**, because
+  the mask drops the overflow off the right. Typing `1`,`7`,`4`,`5` at the head of a full `09:00`
+  put the caret back at 0 after every keystroke, so each digit landed in front of the last and the
+  field walked through `10:09`, `07:10`, `04:07` to `05:04`. On dates, `01011999` typed at the head
+  of `12/08/2026` did the same. Four wrong-but-valid values from four keystrokes spelling a real one.
+
+**The ISO recogniser could not come over, and that is the one place the two frames genuinely
+differ.** `2026-08-12` is a shape nobody's locale types by hand, so `DateInput` can recognise it at
+any keystroke. `14:30` is exactly what half the world's locales **draw**, so the same rule fired on
+the field's own half-typed contents — jumping a seconds field to `09:30:00` on the fourth keystroke,
+and silently committing AM on an `en-US` one. It now fires only on a paste, which the browser reports
+outright via `inputType`.
+
+**`Intl` had three surprises**, all measured across twenty locales before any code was written, and
+each would have been a defect visible in one language and nowhere else: `ko-KR` writes the day period
+**first** (`오후 02:30`); `fi-FI` separates with `.`; and **`h11` is a real cycle** — Japanese's —
+which writes midnight _and_ noon as `00`, told apart only by 午前/午後. All four cycles `Intl` reports
+are handled. The day period's two words come from `Intl` rather than from the message catalogue,
+which is the one place this component departs from `DateInput`'s split: the field shows the reader
+the very strings it will accept, in the script it will accept them in.
+
+**And the day period is never defaulted.** Until it is chosen the field names no time and
+`onTimeChange` reports `null` — `02:30` with an unspoken AM is a wrong-but-valid value, and an
+unchosen period is exactly as incomplete as a half-typed minute.
+
 ## What would change this
 
 `::picker()` gaining a spec for date inputs would make the native popup themable and shrink what
