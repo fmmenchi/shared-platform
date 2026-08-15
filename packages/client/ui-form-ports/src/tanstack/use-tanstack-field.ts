@@ -1,8 +1,9 @@
 import type { AnyFieldApi, AnyFormApi } from '@tanstack/react-form';
 import { useField, useSelector } from '@tanstack/react-form';
 import type { UseFormErrors, UseFormField } from '@fmmenchi/ui';
-import { isBooleanField, readValue } from '../field-type.js';
+import { assertSingleField, isBooleanField, readValue } from '../field-type.js';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
+import { toMessages } from './tanstack-messages.js';
 
 /**
  * `@fmmenchi/ui`'s field port, implemented for TanStack Form.
@@ -41,7 +42,9 @@ export function createTanstackField(
   const { types = {} } = options;
 
   return function useTanstackField(name) {
-    const type = types[name];
+    // A group declared here would bind silently as text — one control for a
+    // field that needs many, submitting nothing while looking complete.
+    const type = assertSingleField(name, types[name]);
     const boolean = isBooleanField(type);
     const field: AnyFieldApi = useField({ form, name });
     // Quiet until the field has been LEFT, or the form has been sent once.
@@ -92,23 +95,4 @@ export function createTanstackErrors(form: AnyFormApi): UseFormErrors {
 /** A control's `value` prop is a string; `undefined` would make it uncontrolled. */
 function toInputValue(value: unknown): string {
   return value == null ? '' : String(value);
-}
-
-/**
- * TanStack keeps whatever the validator produced — and with a Standard Schema
- * validator that is an ISSUE OBJECT (`{ message, path }`), not a string. The
- * port carries messages, so unwrap it here rather than in every app.
- */
-function toMessages(errors: unknown): readonly string[] {
-  if (!Array.isArray(errors)) return [];
-  return errors
-    .map((error) =>
-      typeof error === 'string'
-        ? error
-        : ((error as { message?: unknown })?.message ?? ''),
-    )
-    .filter(
-      (message): message is string =>
-        typeof message === 'string' && message !== '',
-    );
 }

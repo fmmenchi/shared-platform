@@ -4,7 +4,8 @@ import { FieldsetContent } from '../fieldset-content/fieldset-content.component.
 import { SegmentedControl } from '../segmented-control/segmented-control.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
-import { useBoundField } from '../../form/form-adapter.context.js';
+import { useBoundOptionField } from '../../form/form-adapter.context.js';
+import { OptionBindingProvider } from '../../form/option-binding.context.js';
 import {
   useBindingOwnedWarning,
   withoutBindingOwned,
@@ -28,48 +29,43 @@ import type { FormSegmentedControlProps } from './form-segmented-control.types.j
  * the name it no longer has; the options are grouped by the `<fieldset>` and
  * paired by `name`, which is what the platform actually reads.
  *
- * THE PORT ASSUMES ONE CONTROL PER FIELD, and a group is the first place that
- * shows. Two of the three keys in `control` bend:
+ * BOUND PER OPTION, not through the group. This used to bind the field with the
+ * per-field port and bend two of its three keys to fit: `onChange` went on the
+ * group and worked by delegation (`change` bubbles, so `event.target.value` is
+ * the chosen option), and `ref` was dropped outright, because there is no "the
+ * input" of a radio group to hand one to. The cost was stated here rather than
+ * papered over — a library could not focus this field from an error summary,
+ * and a ref-based one could not write a value back into it at all.
  *
- * - `onChange` has no single input to sit on, so it goes on the group and
- *   works by DELEGATION — `change` bubbles, and `event.target.value` is the
- *   chosen option. That is a real event from a real radio, not a synthesised
- *   one, so every adapter reads it the way it already does.
- * - `ref` has no right answer here: there is no "the input" of a radio group.
- *   It is deliberately NOT forwarded. A library that uses it to focus a field
- *   from an error summary will not reach this one — stated in the docs rather
- *   than papered over by pointing it at whichever option happens to be first,
- *   which would be arbitrary and would move when the options are reordered.
+ * `UseFormOptionField` is the shape that was missing: the field is bound ONCE
+ * here, and each `SegmentedControlItem` asks for its own props through
+ * `OptionBindingProvider`. Every radio now carries the binding's `name`,
+ * `checked`, `onChange`, `onBlur` and — the part that was impossible — its
+ * `ref`. Nothing is delegated and nothing is dropped.
  */
 function FormSegmentedControl(props: FormSegmentedControlProps) {
   const { name, label, hint, children, ...rest } = props;
-  const { control, errors } = useBoundField(name, 'FormSegmentedControl');
+  const binding = useBoundOptionField(name, 'FormSegmentedControl');
   useBindingOwnedWarning(rest, 'FormSegmentedControl');
-  const messages = toMessages(errors);
+  const messages = toMessages(binding.errors);
 
   return (
     <Fieldset invalid={messages.length > 0}>
       <FieldsetLegend>{label}</FieldsetLegend>
       <FieldsetContent>
         <SegmentedControl
-          name={control.name ?? name}
-          // The adapter's value, when it has one — Conform's `getInputProps`
-          // does, react-hook-form's `register` does not and leaves the DOM to
-          // keep it. Narrowed to a string because `control` is typed for an
-          // `<input>`, where `value` may also be a number or a list; neither is
-          // a thing one of these options can be.
-          value={typeof control.value === 'string' ? control.value : undefined}
-          onChange={control.onChange}
-          // `onBlur` rides the same delegation as `onChange`: React's onBlur
-          // is `focusout`, which BUBBLES, so the group hears every segment's.
-          // Dropped, a touched-gated adapter never fired — Formik gates its
-          // errors on `meta.touched`, and `touched` is written by
-          // `field.onBlur` — so the group showed its error only after a
-          // submit, unlike every sibling bound control.
-          onBlur={control.onBlur}
+          // The group still needs the name — it is what pairs the radios, and
+          // what its own dev warning checks. The binding writes it onto every
+          // option too; they agree because both come from this one prop.
+          name={name}
           {...withoutBindingOwned(rest)}
         >
-          {children}
+          {/* The provider sits INSIDE the group so an item reads both: the
+              group for what a group knows (that it is a set), this for what
+              only the field knows (which option the form holds). */}
+          <OptionBindingProvider value={binding}>
+            {children}
+          </OptionBindingProvider>
         </SegmentedControl>
       </FieldsetContent>
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}

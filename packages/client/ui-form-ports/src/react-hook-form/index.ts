@@ -1,4 +1,8 @@
 export { createRhfField, useRhfField } from './use-rhf-field.js';
+export {
+  createRhfOptionField,
+  useRhfOptionField,
+} from './use-rhf-option-field.js';
 export { useRhfErrors } from './use-rhf-errors.js';
 export { RhfForm } from './rhf-form.component.js';
 export { createRhfForm } from './create-rhf-form.js';

@@ -3,29 +3,31 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormSegmentedControl } from './form-segmented-control.component.js';
 import { SegmentedControlItem } from '../segmented-control-item/segmented-control-item.component.js';
 import { UiProvider } from '../../i18n/provider.js';
-import type { UseFormField } from '../../form/form-adapter.types.js';
+import type { UseFormOptionField } from '../../form/form-adapter.types.js';
 
 /**
  * A hand-written adapter, so the stories stay free of any form library — which
  * is also the point being demonstrated: the components below name none.
  *
- * Note what it reads: `event.target.value`. The change arrives by DELEGATION
- * from whichever radio the user picked, because a group has no single input for
- * the binding's `onChange` to sit on.
+ * Note the shape it implements: `optionField`, not `field`. A group is one
+ * field drawn as MANY controls, so the binding answers per OPTION —
+ * `option(value)` — and each radio gets its own `name`, `checked` and handler
+ * instead of one bag delegated from the group.
  */
 function DemoForm({ children }: { children: ReactNode }) {
   const [values, setValues] = useState<Record<string, string>>({
     align: 'left',
     range: '',
   });
-  const useDemoField: UseFormField = (name) => ({
-    control: {
+  const useDemoOptionField: UseFormOptionField = (name) => ({
+    option: (value) => ({
       name,
+      checked: values[name] === value,
       onChange: (event) => {
         const el = event.target as HTMLInputElement;
         setValues((v) => ({ ...v, [name]: el.value }));
       },
-    },
+    }),
     errors: name === 'range' && values.range === '' ? ['Pick a range.'] : [],
   });
   return (
@@ -37,7 +39,10 @@ function DemoForm({ children }: { children: ReactNode }) {
       }}
     >
       <UiProvider
-        adapters={{ i18n: { locale: 'en' }, form: { field: useDemoField } }}
+        adapters={{
+          i18n: { locale: 'en' },
+          form: { optionField: useDemoOptionField },
+        }}
       >
         {children}
       </UiProvider>

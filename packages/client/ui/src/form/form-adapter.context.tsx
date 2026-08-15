@@ -1,6 +1,10 @@
 import { useUiAdapters } from '../i18n/provider.js';
 import { forTag } from './control-props.js';
-import type { BoundField, ControlTag } from './form-adapter.types.js';
+import type {
+  BoundField,
+  BoundOptionField,
+  ControlTag,
+} from './form-adapter.types.js';
 
 /**
  * The form binding in scope — the one given to `UiProvider` when the design
@@ -48,10 +52,22 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
   'use no memo';
 
   const binding = useFormBinding();
-  const useFormField = binding?.field;
-  if (useFormField == null) {
+  if (binding == null) {
     throw new Error(
       `${component}: no form binding in scope — give one to <UiProvider adapters={{ form }}>.`,
+    );
+  }
+  const useFormField = binding.field;
+  // TWO CASES, not one, since `field` became optional so a groups-only form
+  // need not invent one. Told "no form binding in scope" while a binding IS in
+  // scope, a developer opens the provider, finds the adapter wired, and has
+  // been sent to the wrong place — and nesting makes it reachable without
+  // anyone writing a partial binding on purpose, because a nested provider
+  // replaces the binding whole rather than merging it. Both siblings in this
+  // file already name what is missing; this one did not.
+  if (useFormField == null) {
+    throw new Error(
+      `${component}: the form binding provides no \`field\` — it binds one control to one name. Add it to the adapter, or use the component that matches the shape you have.`,
     );
   }
   /*
@@ -74,6 +90,64 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
    */
   const bound = useFormField(name) as BoundField<Tag>;
   return { ...bound, control: forTag(tag, bound.control) };
+}
+
+/**
+ * Bind one field that is drawn as MANY controls — a radio group, checkboxes
+ * under one name, a multi-select's carriers.
+ *
+ * Same hook discipline as `useBoundField`: the adapter's hook is called here,
+ * once, inside the component that renders the group. What comes back is a plain
+ * `option(value)` function, so the per-option props are produced during render
+ * without a hook per option — the number of options is data, and data must not
+ * decide how many hooks run.
+ *
+ * Throws when the binding has no `optionField`, naming the component, rather
+ * than falling back to `field`: bound through the per-field shape a group draws
+ * controls that share a name and can never report which one is checked, so the
+ * failure would be a form that submits nothing while looking complete.
+ */
+export function useBoundOptionField(
+  name: string,
+  component: string,
+): BoundOptionField {
+  /* Same reason as `useBoundField` above: the hook belongs to the app. */
+  'use no memo';
+
+  const binding = useFormBinding();
+  if (binding == null) {
+    throw new Error(
+      `${component}: no form binding in scope — give one to <UiProvider adapters={{ form }}>.`,
+    );
+  }
+  const useOptionField = binding.optionField;
+  if (useOptionField == null) {
+    throw new Error(
+      `${component}: the form binding provides no \`optionField\` — a group of controls sharing one name needs it. Add it to the adapter (every binding in @fmmenchi/ui-form-ports ships one).`,
+    );
+  }
+  // Called through a `use`-prefixed BINDING, never `binding.optionField()` — a
+  // member call is not recognised as a hook by the tooling, and the React
+  // Compiler then memoises around it.
+  const bound = useOptionField(name);
+
+  // NO `forTag` PASS — every control this shape serves is an `<input>`, and
+  // `forTag('input', …)` is the identity ("nothing is input-only for an
+  // `<input>`"). One thing IS taken out, though, and it is not a DOM prop at
+  // all: `key`. Conform's collection helper returns one per option as its
+  // remount token, and a bag carrying it is spread into JSX by every consumer
+  // of this port — which React 19 warns about, and which would silently make
+  // the option's React key the adapter's rather than the caller's. A list's
+  // keys belong to whoever writes the list.
+  return {
+    ...bound,
+    option: (value: string) => {
+      const { key: _key, ...props } = bound.option(value) as ReturnType<
+        BoundOptionField['option']
+      > & { key?: unknown };
+      return props;
+    },
+  };
 }
 
 /**

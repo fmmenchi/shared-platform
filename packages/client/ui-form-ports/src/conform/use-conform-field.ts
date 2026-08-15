@@ -5,6 +5,7 @@ import {
   useField,
 } from '@conform-to/react';
 import type { UseFormField } from '@fmmenchi/ui';
+import { assertSingleField } from '../field-type.js';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
@@ -32,7 +33,10 @@ export function createConformField(
 
   return function useConformField(name) {
     const [meta] = useField(name);
-    const type = types[name] ?? 'text';
+    // Refuses the two field kinds that are drawn as MANY controls: Conform
+    // passes this type straight to `getInputProps`, and `'checkbox-group'` is
+    // no `<input type>` at all.
+    const type = assertSingleField(name, types[name]) ?? 'text';
     /*
      * Conform has THREE helpers, one per element, and calling the wrong one is
      * not cosmetic: an adversarial review measured `getInputProps` emitting

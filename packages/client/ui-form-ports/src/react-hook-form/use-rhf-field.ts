@@ -1,5 +1,6 @@
 import { useFormContext, useFormState, type FieldError } from 'react-hook-form';
 import type { UseFormField } from '@fmmenchi/ui';
+import { assertSingleField } from '../field-type.js';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
 import { toFieldMessages } from './rhf-messages.js';
 
@@ -8,7 +9,11 @@ import { toFieldMessages } from './rhf-messages.js';
  *
  * Give it to the design system once and every bound component works:
  *
- *     <UiProvider adapters={{ i18n, form: { field: useRhfField, errors: useRhfErrors } }}>
+ *     <UiProvider adapters={{ i18n, form: {
+ *       field: useRhfField,
+ *       optionField: useRhfOptionField,  // radio groups, checkbox groups
+ *       errors: useRhfErrors,
+ *     } }}>
  *
  * It READS; it decides nothing. Validation, submission, values and form state
  * all stay with react-hook-form — this only presents them in the shape the
@@ -40,11 +45,14 @@ export function createRhfField(
   const { types = {} } = options;
 
   return function useRhfField(name) {
+    // A group declared here would register ONE control for a field that needs
+    // many — silent, and react-hook-form has no way to notice.
+    const type = assertSingleField(name, types[name]);
     const { register, control } = useFormContext();
     const { errors } = useFormState({ control, name });
     return {
       control: register(name, {
-        valueAsNumber: types[name] === 'number',
+        valueAsNumber: type === 'number',
       }),
       errors: toFieldMessages(errors[name] as FieldError | undefined),
     };

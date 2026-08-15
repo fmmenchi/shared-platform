@@ -1,5 +1,9 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import type { UseFormErrors, UseFormField } from '@fmmenchi/ui';
+import type {
+  UseFormErrors,
+  UseFormField,
+  UseFormOptionField,
+} from '@fmmenchi/ui';
 
 /**
  * The port, fed by REACT 19 ALONE — no form library.
@@ -41,6 +45,26 @@ export function ActionErrorsProvider(props: {
 export const useActionField: UseFormField = (name) => {
   const errors = useContext(ActionErrorsContext);
   return { control: { name }, errors: errors[name] };
+};
+
+/**
+ * The same, for a field drawn as MANY controls — a radio group, checkboxes
+ * under one name.
+ *
+ * Each option carries only its `name` and its own `value`, which is the whole
+ * binding: the browser decides what is checked, `FormData` collects the answer,
+ * and `FormData.getAll(name)` is what assembles a list from several checkboxes.
+ * There is no state here to keep in step, so this is the one adapter of the five
+ * with nothing to get wrong — and the one that shows what the other four are
+ * paying for.
+ *
+ * `defaultChecked` is deliberately not offered. A pre-selected option is server
+ * state, so it belongs in the markup the action rendered, not in a binding that
+ * has never seen the data.
+ */
+export const useActionOptionField: UseFormOptionField = (name) => {
+  const errors = useContext(ActionErrorsContext);
+  return { option: (value) => ({ name, value }), errors: errors[name] };
 };
 
 export const useActionErrors: UseFormErrors = () =>
