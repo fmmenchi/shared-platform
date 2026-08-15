@@ -24,4 +24,11 @@
   plugin from the per-component `dist/<name>.css` the build still emits). There is no
   `@fmmenchi/ui/<name>/style.css` and there must not be: 16 of 32 entries render other
   components, so a per-component stylesheet cannot carry what its component needs, and the
-  consumer has no way to know what is missing (ADR-0023). The whole stylesheet is 4.5 kB gzip.
+  consumer has no way to know what is missing (ADR-0023). The whole stylesheet is **12.1 kB gzip**
+  (102 kB raw), and every consumer pays all of it however little they import — for a single `Button`
+  that is 3.0 kB of JS against 12.1 kB of CSS.
+- **The size numbers live in `docs/bundle-size.md`**, measured per entry and against ten other React
+  libraries. Nothing in the build fails when they drift: this line said 4.5 kB from when the library
+  had 32 entries until it was re-measured at 101 and found to be 12.1 kB — 2.7× off, invisible
+  because the sheet grows a hundred bytes per component. Re-measure with the commands on that page
+  rather than quoting either figure from memory.
