@@ -766,10 +766,7 @@ AM` used to leave the field holding the single character `0` — but it only mov
 - **Correcting the caret by what the mask CONSUMED** rather than by the frame's capacity. It fixes
   the one keystroke that follows a padding insert and breaks typing a whole value in from the left:
   `01011999` at the head of a full `12/08/2026` gives that date under the old rule and `01/10/1199`
-  under the new one. An adversarial oracle over ~35,000 inserts shows the right rule is
-  `consumed − pads landing right of the caret`, which a single number cannot carry — the mask has to
-  report where the padding went. That is a real fix and it is **not** made here, because it is a
-  third guess at caret arithmetic and the first two both shipped a regression.
+  under the new one. **This one has since been fixed properly — see below.**
 - **`setCustomValidity` on an incomplete field.** The direction is defensible — a partially filled
   `input[type=date]` reports `badInput` and the browser stops the submit — but the implementation
   pushed the invariant at three sites and violated it at four, so a locale change could leave a field
@@ -778,6 +775,33 @@ AM` used to leave the field holding the single character `0` — but it only mov
   `ref`, silently erasing their own business-rule message. And the exemption it was justified by is
   false: only Conform sets `noValidate` by default, while this repo's own `RhfForm` sets it too — so
   the change reached the libraries that were fine and missed the recommended path entirely.
+
+### The caret, settled — by making the mask say where each digit came from
+
+Three rules were tried and two shipped a regression, in opposite directions, because both tried to
+DERIVE what had happened to a digit from a count: how many the frame had lost. The loss and the
+padding fall on different sides of the caret in different edits, and no single number says which.
+
+The mask now records, for every digit it draws, the offset it sits at and **the index it had in the
+typed stream — or `null` where the frame supplied it by padding**. The caret rule reads that record
+instead of inferring it: the digit the user just pressed is the last one before the caret, and the
+caret belongs at the digit after it, past whatever separator lies between. Where their keystroke did
+not survive at all — the frame was full and the overflow came off — the caret is left where it is,
+which was the last thing the two counting rules got wrong.
+
+Both contested cases now come out right at once, which neither counting rule could manage:
+`01011999` typed at the head of a full `12/08/2026` gives `01/01/1999`, and `9` at the head of an
+`en-US` `08/12/2026` puts the caret after the month the mask has just completed rather than in front
+of the digit just pressed. So does the story that started all of this: `0`,`1`,`0`,`5` at the head of
+`09:00` stores `01:05`, where the first version stored `00:10` and the version before it walked the
+field through four different real times.
+
+**It is checked against an ORACLE, not against itself.** `segments.test.ts` — which is also the first
+suite this shared engine has ever had — re-derives the answer by re-running the frame's own admission
+rules over the digit stream and watching for the moment the user's index is taken, then sweeps every
+digit at every offset of four whole values across seven date locales and eight time frames. Run the
+first time, the two disagreed on 18 of 88 frames — every one of them the same case, a keystroke that
+did not survive — and they disagree on none of the 9160 inserts now. Six mutants, each killing it.
 
 **What is left open, deliberately.** A masked field can still hold text that names nothing and be
 submitted as an empty string with no signal: `required` is satisfied by the visible text, and the

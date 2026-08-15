@@ -445,6 +445,27 @@ describe('DateInput', () => {
       expect(field.value).toBe('01/01/1999');
     });
 
+    it('puts the caret past a part the mask has just completed', async () => {
+      // The half a count of losses gets wrong, and it needs a locale whose
+      // FIRST part has a floor above zero — `en-US` writes the month first, so
+      // a `9` at the head makes it `09` by supplying a zero nobody typed. The
+      // caret belongs after that month, not in front of the digit just pressed:
+      // counted against the frame's capacity it lands at 1, and every following
+      // keystroke then goes in on the wrong side of it.
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'en-US',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '08122026');
+      expect(field.value).toBe('08/12/2026');
+
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('9');
+
+      expect(field.value).toBe('09/08/1220');
+      expect(field.selectionStart).toBe(3);
+    });
+
     it('can be emptied from the keyboard', async () => {
       const { container } = renderUi(
         <DateInput name="dob" aria-label="Date of birth" />,
