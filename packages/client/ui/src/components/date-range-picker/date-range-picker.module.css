@@ -1,0 +1,55 @@
+/*
+ * DateRangePicker styles. Colours ONLY through semantic role utilities, motion
+ * ONLY through var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate
+ * enforces both.
+ *
+ * Almost nothing here, as with the day picker: the fields draw themselves,
+ * `InputGroup` draws the border round all of it, `Popover` draws the surface
+ * and `Calendar` draws the grid.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  /* A field that is the calendar's trigger points like one. Not the greyed-out
+     treatment a read-only input would suggest: the field is the thing to click,
+     and dimming it would say "not available" where it means "open the
+     calendar". */
+  .asTrigger {
+    cursor: pointer;
+  }
+
+  /* The dash between the two fields — the one thing in this group that really is
+     decoration, so it keeps the affix colour the group gives its affixes. It may
+     not shrink: the fields can, and a dash that collapsed would leave two dates
+     touching. */
+  .separator {
+    @apply shrink-0;
+  }
+
+  /* Announced, never drawn. */
+  .announcement {
+    @apply sr-only;
+  }
+
+  /*
+   * UNDER A FINGER, THE CALENDAR CENTRES ITSELF — the same rule and the same
+   * measurement as `DatePicker`'s, for the same reason: `PopoverContent` caps
+   * every surface at 320px, and a calendar under a coarse pointer wants 338px
+   * with 46px day cells. Anchored, the grid is compressed below the 44px target
+   * `Calendar`'s own stylesheet promises.
+   *
+   * Doubled class because the rule it overrides is in another CSS module at the
+   * same specificity and in the same layer, where relative order is undefined.
+   */
+  @media (pointer: coarse) {
+    .surface.surface {
+      inset: 0;
+      margin: auto;
+      inline-size: fit-content;
+      block-size: fit-content;
+      max-inline-size: min(100dvw - 1rem, 24rem);
+      max-block-size: calc(100dvh - 1rem);
+      padding: 0.5rem;
+    }
+  }
+}
