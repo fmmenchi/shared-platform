@@ -131,6 +131,25 @@ export const Controlled: Story = {
   render: (args) => <ControlledDemo {...args} />,
 };
 
+/**
+ * A last row offering to create what was typed — an option, so the arrows reach
+ * it and a screen reader announces it like any other.
+ */
+export const Creatable: Story = {
+  args: {
+    // eslint-disable-next-line no-console -- a story showing what is reported
+    onCreate: (query: string) => console.log('create', query),
+  },
+};
+
+/**
+ * Free text, which is off by default: here the typed string is itself the
+ * value, so an unmatched query still submits.
+ */
+export const FreeText: Story = {
+  args: { freeText: true, name: 'city' },
+};
+
 /** The three heights, matching every other control on the row. */
 export const Sizes: Story = {
   render: (args) => (

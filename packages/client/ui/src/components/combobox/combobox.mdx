@@ -120,12 +120,45 @@ Declare it in your adapter's field types as `'combobox'`. It is not an `<input>`
 type: it tells the binding that the field it sees is the carrier, which is what
 keeps a schema-derived `pattern` off a control that holds a key.
 
+### Creating what is not there
+
+Give it `onCreate` and the list grows a last row — **an option, not a button
+beside the field**, so it inherits the arrows, the highlight and the
+announcement that already exist rather than needing its own of each.
+
+```tsx
+<Combobox {...wiring} onCreate={(query) => addCity(query)} />
+```
+
+It appears when something has been typed and no row already says it;
+`canCreate` decides otherwise (a minimum length, a format, a permission). The
+component reports the intent and nothing more — what creating _means_ is yours.
+
+<Canvas of={ComboboxStories.Creatable} />
+
+### Accepting what was typed
+
+**Off by default, and that default is the decision.** With free text off this is
+a _chooser_: what it submits is always a key from the list, so an unmatched
+query submits nothing. The failure mode of the other default is silent — a form
+that happily posts a typo as if it were a record.
+
+```tsx
+<Combobox {...wiring} freeText />
+```
+
+On, the typed string is itself the value and rides the carrier exactly as a key
+would. Neither mode turns on inline completion: writing into the field as you
+type fights an IME mid-composition, and fights a value that is allowed not to be
+in the list.
+
+In both modes, typing over a choice **drops it**. A field reading one thing
+while the form carries another is the defect this component is built around.
+
 ### Not here yet
 
 Decided in ADR-0028 and **not built**:
 
-- **creation** — a "create «what you typed»" row, and **free text** as an opt-in,
-  which is the same feature seen from two sides;
 - **several-of-many with chips** (the port shape it needs is merged);
 - **option groups**;
 - the **states of data arriving** — loading, empty-because-fetching, error.

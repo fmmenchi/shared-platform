@@ -553,4 +553,127 @@ describe('Combobox', () => {
       });
     }
   });
+
+  describe('creating what is not there, and accepting what was typed', () => {
+    it('offers the create row as an OPTION, reachable by the arrows', async () => {
+      const onCreate = vi.fn();
+      render(<Combobox {...wiring} aria-label="City" onCreate={onCreate} />);
+
+      await browser.click(field());
+      await browser.keyboard('Bologna');
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+      });
+      // A row, not a button beside the field: it inherits the keyboard, the
+      // highlight and the announcement that already exist.
+      const offer = screen.getByRole('option');
+      expect(offer).toHaveTextContent('Create “Bologna”');
+      expect(offer.closest('[role="listbox"]')).not.toBeNull();
+
+      await browser.keyboard('{ArrowDown}');
+      expect(activeOption()).toBe(offer);
+      await browser.keyboard('{Enter}');
+      expect(onCreate).toHaveBeenCalledWith('Bologna');
+    });
+
+    it('counts the offer in the row metadata, so the announcement is true', async () => {
+      const onCreate = vi.fn();
+      render(<Combobox {...wiring} aria-label="City" onCreate={onCreate} />);
+
+      await browser.click(field());
+      await browser.keyboard('mila');
+
+      await waitFor(() => {
+        // Milano, plus the offer.
+        expect(screen.getAllByRole('option')).toHaveLength(2);
+      });
+      for (const option of screen.getAllByRole('option')) {
+        expect(option).toHaveAttribute('aria-setsize', '2');
+      }
+    });
+
+    it('does not offer to create what the list already says', async () => {
+      const onCreate = vi.fn();
+      render(<Combobox {...wiring} aria-label="City" onCreate={onCreate} />);
+
+      await browser.click(field());
+      await browser.keyboard('milano');
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+      });
+      expect(screen.getByRole('option')).toHaveTextContent('Milano');
+    });
+
+    it('asks the consumer when the default is wrong for the list', async () => {
+      const onCreate = vi.fn();
+      render(
+        <Combobox
+          {...wiring}
+          aria-label="City"
+          onCreate={onCreate}
+          canCreate={(query) => query.length >= 5}
+        />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('zzz');
+      await waitFor(() => {
+        expect(screen.queryAllByRole('option')).toHaveLength(0);
+      });
+
+      await browser.keyboard('zz');
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+      });
+    });
+
+    it('submits nothing for an unmatched query — this is a chooser by default', async () => {
+      const { container } = render(
+        <Combobox {...wiring} name="city" aria-label="City" />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('Bologna');
+
+      // The default that matters: a form does not post a typo as if it were a
+      // record.
+      await waitFor(() => {
+        expect(carrier(container)).toHaveValue('');
+      });
+    });
+
+    it('submits the typed text once free text is on', async () => {
+      const { container } = render(
+        <Combobox {...wiring} name="city" aria-label="City" freeText />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('Bologna');
+
+      await waitFor(() => {
+        expect(carrier(container)).toHaveValue('Bologna');
+      });
+    });
+
+    it('drops a choice the text no longer says', async () => {
+      // Picked "Milano" and then typed over it, the field read the new text
+      // while the carrier still held the old key: the user saw one thing and
+      // the form sent another.
+      const { container } = render(
+        <Combobox {...wiring} name="city" aria-label="City" />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('{ArrowDown}{Enter}');
+      expect(carrier(container)).toHaveValue('1');
+
+      await browser.keyboard('x');
+      await waitFor(() => {
+        expect(carrier(container)).toHaveValue('');
+      });
+      expect(field()).toHaveValue('Milanox');
+    });
+  });
 });

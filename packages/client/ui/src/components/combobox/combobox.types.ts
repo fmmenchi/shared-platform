@@ -47,6 +47,35 @@ interface ComboboxOwnProps<T> {
    * "the server returns results and the list is empty".
    */
   filter?: ComboboxFilter<T> | false;
+  /**
+   * ACCEPT WHAT WAS TYPED, even when it is in no row.
+   *
+   * Off by default, and that default is the decision (ADR-0028): with free text
+   * off this is a CHOOSER — what it submits is always a key from the list — and
+   * the failure mode of the other default is silent, a form that happily posts
+   * a typo as if it were a record. On, the typed string is itself the value and
+   * rides the carrier exactly as a key would.
+   *
+   * It does NOT turn on inline completion in either mode: writing into the
+   * field as you type fights an IME mid-composition, and fights a value that is
+   * allowed not to be in the list.
+   */
+  freeText?: boolean;
+  /**
+   * Offer to create what was typed — as a ROW IN THE LIST, never a button
+   * beside it. One keyboard path, one highlight, one announcement, and no
+   * second code path to keep in step.
+   *
+   * Given, the row appears whenever the query is non-empty and no option's
+   * label already equals it; `canCreate` decides otherwise. The component only
+   * reports the intent — what creating MEANS, and what it produces, is yours.
+   */
+  onCreate?: (query: string) => void;
+  /**
+   * When the offer appears, if the default is wrong for this list — a minimum
+   * length, a format, a permission. Only asked when `onCreate` is given.
+   */
+  canCreate?: (query: string, shown: readonly T[]) => boolean;
   /** The chosen item's key — controlled. Pair with `onValueChange`. */
   value?: string | null;
   /** The chosen item's key at mount, when the component keeps it. */

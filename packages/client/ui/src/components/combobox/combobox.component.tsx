@@ -63,6 +63,9 @@ function Combobox<T>(props: ComboboxProps<T>) {
     getLabel,
     renderItem,
     filter,
+    freeText = false,
+    onCreate,
+    canCreate,
     value,
     defaultValue = null,
     onValueChange,
@@ -156,12 +159,31 @@ function Combobox<T>(props: ComboboxProps<T>) {
           filter ? filter(item, typed) : matches(getLabel(item), typed),
         );
 
+  // THE CREATE ROW IS A ROW, and that is the whole design: offered as an option
+  // at the end of the list, it inherits the keyboard, the highlight and the
+  // announcement that already exist. A button beside the field would be a
+  // second code path for every one of those (ADR-0028).
+  //
+  // WHEN it appears is the consumer's — `canCreate` — with a default that is
+  // the case everybody means: something was typed, and no row already says it.
+  const creatable =
+    onCreate !== undefined &&
+    typed !== '' &&
+    (canCreate
+      ? canCreate(typed, shown)
+      : !shown.some(
+          (item) =>
+            getLabel(item).toLocaleLowerCase() === typed.toLocaleLowerCase(),
+        ));
+  // One list for the keyboard to walk: the rows, then the offer.
+  const rows = creatable ? shown.length + 1 : shown.length;
+
   // CLAMPED AT RENDER, because `items` change from outside and nothing in here
   // hears about it. Left alone, a highlight held past the end of a shorter list
   // pointed `aria-activedescendant` at an id that did not exist (a broken IDREF,
   // WCAG 4.1.2) and made `Enter` a silent no-op — in the server-search flow the
   // docs themselves recommend.
-  const highlighted = active !== null && active < shown.length ? active : null;
+  const highlighted = active !== null && active < rows ? active : null;
 
   useAnchored(anchor, surface, {
     open: showing,
@@ -234,9 +256,12 @@ function Combobox<T>(props: ComboboxProps<T>) {
   useEffect(() => {
     const node = carrier.current;
     if (!node) return;
-    const next = chosen ?? '';
+    // WITH FREE TEXT ON, what was typed IS the value once nothing is chosen —
+    // that is the whole of the option. Off, an unmatched query submits nothing,
+    // which is what makes this a chooser.
+    const next = chosen ?? (freeText ? typed : '');
     if (node.value !== next) setNativeValue(node, next);
-  }, [chosen]);
+  }, [chosen, freeText, typed]);
 
   const editable = disabled !== true && readOnly !== true;
 
@@ -246,8 +271,21 @@ function Combobox<T>(props: ComboboxProps<T>) {
   };
 
   const pick = (index: number) => {
+    if (!editable) return;
+    // The last row, when there is an offer, is the offer. The component reports
+    // the intent and nothing else: what creating MEANS — a request, an optimistic
+    // row, a dialog — is the consumer's, and guessing at it here would be a
+    // second owner of their data.
+    if (creatable && index === shown.length) {
+      onCreate?.(typed);
+      setSearching(false);
+      setActive(null);
+      setShowing(false);
+      visible.current?.focus();
+      return;
+    }
     const item = shown[index];
-    if (!item || !editable) return;
+    if (!item) return;
     setChosen(getKey(item));
     setTyped(getLabel(item));
     setSearching(false);
@@ -257,13 +295,14 @@ function Combobox<T>(props: ComboboxProps<T>) {
   };
 
   const move = (delta: number) => {
-    if (shown.length === 0) return;
+    if (rows === 0) return;
     setActive((current) => {
       // From nothing, a step down lands on the first row and a step up on the
-      // last — which is what makes "open, then press up" reach the end.
-      if (current === null) return delta > 0 ? 0 : shown.length - 1;
+      // last — which is what makes "open, then press up" reach the end. The
+      // offer to create is the last row, so the same arithmetic reaches it.
+      if (current === null) return delta > 0 ? 0 : rows - 1;
       const next = current + delta;
-      return next < 0 ? shown.length - 1 : next % shown.length;
+      return next < 0 ? rows - 1 : next % rows;
     });
   };
 
@@ -338,6 +377,12 @@ function Combobox<T>(props: ComboboxProps<T>) {
           setSearching(true);
           setActive(null);
           setShowing(true);
+          // A CHOICE THE TEXT NO LONGER SAYS IS A LIE. Picked "Milano" and then
+          // typed over it, the field read the new text while the carrier still
+          // held the old key: the user saw one thing and the form sent another.
+          // With free text on the value simply follows the text instead (see
+          // the carrier below), so clearing it here is right in both modes.
+          if (chosen !== null) setChosen(null);
         }}
         onClick={(event) => {
           onClick?.(event);
@@ -417,7 +462,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
               id={optionId(index)}
               role="option"
               aria-selected={getKey(item) === chosen}
-              aria-setsize={shown.length}
+              aria-setsize={rows}
               aria-posinset={index + 1}
               data-active={index === highlighted ? '' : undefined}
               className={styles.option}
@@ -430,13 +475,35 @@ function Combobox<T>(props: ComboboxProps<T>) {
               {renderItem ? renderItem(item) : getLabel(item)}
             </div>
           ))}
+          {/* THE OFFER IS AN OPTION, and lives inside the listbox with the
+              rest: that is what gives it the arrows, the highlight and the
+              announcement without a line of its own. Outside, it would be
+              content a `listbox` may not own AND a target only a pointer could
+              reach. */}
+          {creatable ? (
+            <div
+              id={optionId(shown.length)}
+              role="option"
+              aria-selected={false}
+              aria-setsize={rows}
+              aria-posinset={rows}
+              data-active={highlighted === shown.length ? '' : undefined}
+              data-create=""
+              className={styles.option}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                pick(shown.length);
+              }}
+              onMouseEnter={() => setActive(shown.length)}
+            >
+              {t('create', { query: typed })}
+            </div>
+          ) : null}
         </div>
         {/* OUTSIDE the listbox: ARIA 1.2 lets a `listbox` own `option` and
             `group` and nothing else, so a message inside it was invalid — and
             unreachable anyway, since focus never enters the list. */}
-        {shown.length === 0 ? (
-          <div className={styles.empty}>{t('empty')}</div>
-        ) : null}
+        {rows === 0 ? <div className={styles.empty}>{t('empty')}</div> : null}
       </div>
       {/*
         The count, for a change nobody can see. It carries the QUERY as well,

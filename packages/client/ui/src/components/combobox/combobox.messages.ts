@@ -30,15 +30,18 @@ export const comboboxMessages = defineMessages('combobox', {
     results: 'Results for “{query}”: {count}',
     empty: 'No results',
     list: 'Suggestions',
+    create: 'Create “{query}”',
   },
   it: {
     results: 'Risultati per «{query}»: {count}',
     empty: 'Nessun risultato',
     list: 'Suggerimenti',
+    create: 'Crea «{query}»',
   },
   ar: {
     results: 'نتائج «{query}»: {count}',
     empty: 'لا توجد نتائج',
     list: 'اقتراحات',
+    create: 'إنشاء «{query}»',
   },
 });
