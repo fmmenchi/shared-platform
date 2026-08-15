@@ -20,9 +20,11 @@
    and `@reference` stay above the layer; `:root` tokens stay unlayered. */
 @layer fmmenchi {
   .select {
-    /* The UA baseline every control we draw needs — `box-sizing` and the font
-       family, with the measurements — lives once in `styles/utilities.css`. */
-    @apply control-base;
+    /* The box, the roles, the ring — shared with `Input` and `Combobox` in
+       `styles/utilities.css`, because this file and Input's restated all of it
+       comment for comment and the third copy was about to be written
+       (ADR-0028). */
+    @apply control-box;
     /* No `color-scheme` here ON PURPOSE. The list the UA paints does follow it,
        but `light dark` on the control means "either, per the USER'S preference"
        — measured: with the dark theme active and the OS set to light, the
@@ -32,10 +34,6 @@
        scheme belongs to the theme, so it is declared once next to it, in the
        `dark` preset — see `@fmmenchi/tokens/styles/presets/dark.css`. */
     appearance: none;
-    @apply w-full rounded-md border px-3;
-    @apply bg-input text-input-foreground border-input-border;
-    @apply transition;
-    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
     /* Room for OUR arrow. With the native one this padding was pure waste — the
        UA already reserves ~17px of its own and author padding is additive, so
        labels truncated ~32px early (measured, all three engines). */
@@ -56,6 +54,12 @@
     background-position:
       right 1.05rem center,
       right 0.75rem center;
+    /* Windows High Contrast, shared with the family in `styles/utilities.css`
+       — including its `:focus` selector, which is THIS control's lesson:
+       Firefox does not match `:focus-visible` on a clicked select, so a block
+       covering only `:focus-visible` missed the one engine the `:focus` ring
+       below was written for. */
+    @apply control-forced-colors;
   }
 
   /* `:dir()`, not the attribute selectors this rule used to be. The attribute
@@ -90,8 +94,7 @@
      by BOTH colour and weight (a thicker border) so it isn't carried by colour
      alone (WCAG 1.4.1) — the same weight cue then works in forced colors too. */
   .select[aria-invalid='true'] {
-    @apply border-input-invalid;
-    border-width: 2px;
+    @apply control-invalid;
   }
 
   /* The foreground has to be stated, and on this control especially: the UA used
@@ -101,30 +104,20 @@
      generic role for a control not tied to a colour family, the one Button's
      ghost treatment already uses; it is AA-exempt by WCAG 1.4.3. */
   .select:disabled {
-    @apply bg-input-disabled text-disabled-foreground cursor-not-allowed;
+    @apply control-disabled;
   }
 
   /* Size — heights match Input and Button (32/36/44) so controls align. Now
      that all three declare `border-box`, they do: measured 36/36/36 at `md`
      against the 36/40/38 they used to render without a consumer reset. */
   .sm {
-    @apply h-8 text-xs;
+    @apply control-sm;
   }
   .md {
-    @apply h-9 text-sm;
+    @apply control-md;
   }
   .lg {
-    @apply h-11 text-base;
-  }
-  /* A FINGER GETS 44px, the height `lg` already is — the same rule `Button`
-     carries, and it has to be the same rule: `InputGroup` centres its children
-     rather than stretching them, so a button that grew alone would sit taller
-     than the field beside it. Measured: 44 against 36. A target-size policy
-     belongs to the control family or to none of it. */
-  @media (pointer: coarse) {
-    .md {
-      @apply h-11;
-    }
+    @apply control-lg;
   }
 
   /* PROGRESSIVE ENHANCEMENT, and a deliberate one: `appearance: base-select` is
@@ -271,22 +264,6 @@
      the `border` below (0,1,0), so its 2px stands. Verified in Chromium and
      Firefox emulation. */
   @media (forced-colors: active) {
-    .select {
-      border: 1px solid ButtonText;
-    }
-    /* Restore the OS focus convention, like every other DS control — on BOTH
-       selectors this file draws a ring with. The ring exists on `:focus`
-       precisely because Firefox does not match `:focus-visible` on a clicked
-       select, so an FC block that only covered `:focus-visible` missed the one
-       engine the `:focus` rule was written for. */
-    .select:focus,
-    .select:focus-visible {
-      outline-color: Highlight;
-    }
-    .select:disabled {
-      border-color: GrayText;
-      color: GrayText;
-    }
     /* The list we draw only exists in the `base-select` branch, and there the
        selected row is carried by `bg-primary` — a token, so forced colors drop
        it. `Highlight` is the OS's own word for the same thing. */
