@@ -137,6 +137,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        combobox: 'src/components/combobox/index.ts',
         'form-date-range-picker':
           'src/components/form-date-range-picker/index.ts',
         'date-range-picker': 'src/components/date-range-picker/index.ts',

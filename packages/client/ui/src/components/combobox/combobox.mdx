@@ -1,0 +1,102 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as ComboboxStories from './combobox.stories.tsx';
+
+<Meta of={ComboboxStories} />
+
+# Combobox
+
+Choose one of many by typing: a text field with a listbox behind it, over
+options you supply in your own shape. The choice rides on a hidden native field,
+so a form collects it like any other — at the cost of being the one control here
+that needs JavaScript.
+
+## Props
+
+<Controls of={ComboboxStories.Default} />
+
+## Usage
+
+### Which control is this, and which is `Select`
+
+| The question                                                 | The answer                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------ |
+| one of a few, plain options                                  | [`Select`](?path=/docs/components-inputs-select--docs) |
+| a few, several of them                                       | `Fieldset` of `Checkbox`                               |
+| one of many, needing search                                  | **`Combobox`**                                         |
+| options that are rows, not strings                           | **`Combobox`**                                         |
+| one value out of many plain strings, typed, and nothing more | `<input list>` + `<datalist>`                          |
+
+That last row is not a joke at our own expense: the platform's own combobox does
+the simple case with no JavaScript at all, and where it is enough it is the
+better answer. This component exists for what it cannot do — rows, search you
+control, and (next) several-of-many with chips.
+
+<Canvas of={ComboboxStories.Default} />
+
+### The data is never ours
+
+You pass `items` in your shape, plus `getKey` and `getLabel`. Nothing here
+fetches, sorts or caches; the pipeline is yours and this is a control over it.
+
+<Canvas of={ComboboxStories.RichRows} />
+
+### Searching on a server
+
+Hold the query yourself, fetch on it, and pass **`filter={false}`**. That is not
+a convenience: the rows arriving from a server ARE the answer, and filtering
+them again applies the query twice — silently dropping every row whose match the
+server understood and the default here does not. The bug reads as "the server
+returns results and the list is empty".
+
+<Canvas of={ComboboxStories.Controlled} />
+
+### In a form
+
+<Canvas of={ComboboxStories.InAForm} />
+
+### Sizes
+
+<Canvas of={ComboboxStories.Sizes} />
+
+## Accessibility
+
+- **It is ARIA 1.2's combobox pattern.** The field keeps `role="combobox"`,
+  `aria-expanded` and `aria-controls`, and points at the highlighted row with
+  `aria-activedescendant` — so **focus never leaves the field**, and the caret
+  stays where the person is typing while the arrows move a highlight.
+- **The result count is announced.** Filtering is otherwise silent: the rows
+  change and a screen-reader user is told nothing. A live region beside the
+  field says how many are left.
+- **Keyboard:** `↓`/`↑` open and walk (wrapping), `Home`/`End` jump, `Enter`
+  chooses, `Escape` closes — and `Escape` on a closed field clears, which is the
+  only way back to "nothing chosen" from the keyboard alone.
+- **Every row carries `aria-setsize` and `aria-posinset`**, so a windowed list
+  still tells the truth about how many options there are. A virtualised listbox
+  without them announces "1 of 20" while the reader walks five thousand records.
+- **Under a coarse pointer the list centres** rather than anchoring, and its rows
+  grow to 44px — the same shape change `DatePicker` makes, for the same reason:
+  an anchored surface cannot hold rows sized for a finger.
+
+## Guidelines
+
+### What it costs, stated where you choose it
+
+The visible field holds the **query**, not the value: a person types "mil" and
+means Milan, whose key is `42`. So the choice rides on a hidden native carrier
+beside the field, which keeps `FormData`, `form.reset()` and every form binding
+working on an ordinary field.
+
+What it does not keep is the other half of
+[ADR-0013](?path=/docs/adr-0013-form-controls-contract--docs): with the bundle
+unloaded there is no list and no filtering, so **this is the first control in
+this library that does not work without JavaScript**. A form rendered by a server
+with a value already chosen still submits it; it simply cannot be changed. That
+exception is scoped to this component — `Input`, `Select`, `Textarea`,
+`Checkbox`, `Radio`, `Switch` and `Slider` are unchanged.
+
+### Not here yet
+
+Several-of-many with chips, option groups, and the states of data arriving
+(loading, empty-because-fetching, error) are decided in ADR-0028 and not built.
+Virtualisation stays a seam: bring your own windowing, and the row attributes
+above keep the announcement honest.

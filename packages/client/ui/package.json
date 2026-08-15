@@ -652,6 +652,12 @@
       "types": "./dist/components/form-date-range-picker/index.d.ts",
       "import": "./dist/form-date-range-picker.js",
       "default": "./dist/form-date-range-picker.js"
+    },
+    "./combobox": {
+      "@fmmenchi/source": "./src/components/combobox/index.ts",
+      "types": "./dist/components/combobox/index.d.ts",
+      "import": "./dist/combobox.js",
+      "default": "./dist/combobox.js"
     }
   },
   "nx": {

@@ -1,0 +1,76 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Combobox > matches the rendered snapshot 1`] = `
+<div
+  class="_root_je8we_4"
+>
+  <input
+    aria-autocomplete="list"
+    aria-controls="«react-id»"
+    aria-expanded="false"
+    aria-label="City"
+    autocomplete="off"
+    class="_combobox_je8we_7 _md_je8we_58"
+    role="combobox"
+    type="text"
+    value=""
+  />
+  <input
+    name="city"
+    type="hidden"
+    value=""
+  />
+  <div
+    class="_surface_je8we_73"
+    id="«react-id»"
+    popover="auto"
+    role="listbox"
+  >
+    <div
+      aria-posinset="1"
+      aria-selected="false"
+      aria-setsize="4"
+      class="_option_je8we_99"
+      data-active=""
+      id="_r_e_-0"
+      role="option"
+    >
+      Milano
+    </div>
+    <div
+      aria-posinset="2"
+      aria-selected="false"
+      aria-setsize="4"
+      class="_option_je8we_99"
+      id="_r_e_-1"
+      role="option"
+    >
+      Málaga
+    </div>
+    <div
+      aria-posinset="3"
+      aria-selected="false"
+      aria-setsize="4"
+      class="_option_je8we_99"
+      id="_r_e_-2"
+      role="option"
+    >
+      Manchester
+    </div>
+    <div
+      aria-posinset="4"
+      aria-selected="false"
+      aria-setsize="4"
+      class="_option_je8we_99"
+      id="_r_e_-3"
+      role="option"
+    >
+      Torino
+    </div>
+  </div>
+  <span
+    class="_visuallyHidden_tcu3i_3"
+    role="status"
+  />
+</div>
+`;

@@ -13,19 +13,19 @@ at the bottom.
 Grouped as Storybook groups them. A **part** (`FieldLabel`, `MenuItem`, `PopoverContent`) is a
 sibling folder of its family and is documented on the family's page, not its own.
 
-| Group             | Components                                                                                                                                                                                                                                         |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Typography**    | `Heading`                                                                                                                                                                                                                                          |
-| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                                                                                             |
-| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                                                                                  |
-| **Inputs**        | `Input` · `DateInput` · `DatePicker` · `DateRangePicker` · `Calendar` · `Textarea` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
-| **Form adapters** | `FormInput` · `FormDateInput` · `FormDatePicker` · `FormDateRangePicker` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                               |
-| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                                                                                        |
-| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                                                                                             |
-| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                                                                                 |
-| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress` · `Skeleton`                                                                                                                                                                                             |
-| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                                                             |
-| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                                                                     |
+| Group             | Components                                                                                                                                                                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Typography**    | `Heading`                                                                                                                                                                                                                                                       |
+| **Disclosure**    | `Accordion` (+ Item, Trigger, Content)                                                                                                                                                                                                                          |
+| **Buttons**       | `Button` · `Toggle` · `SegmentedControl` (+ Item) · `Toolbar` (+ Item, Separator)                                                                                                                                                                               |
+| **Inputs**        | `Input` · `DateInput` · `DatePicker` · `DateRangePicker` · `Calendar` · `Textarea` · `Combobox` · `Select` · `Checkbox` · `Radio` · `Switch` · `Slider` · `ChoiceField` · `InputGroup` · `Field` (+ Label, Description, Error) · `Fieldset` (+ Legend, Content) |
+| **Form adapters** | `FormInput` · `FormDateInput` · `FormDatePicker` · `FormDateRangePicker` · `FormTextarea` · `FormSelect` · `FormChoice` · `FormSwitch` · `FormSegmentedControl` · `FormErrorSummary`                                                                            |
+| **Overlays**      | `Dialog` · `Popover` · `Tooltip` · `Menu` · `Menubar` (each with its parts)                                                                                                                                                                                     |
+| **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link)                                                                                                                                                          |
+| **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions)                                                                                                                                                                              |
+| **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress` · `Skeleton`                                                                                                                                                                                                          |
+| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                                                                          |
+| **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                                                                                  |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
 complete at one. **No group is now thin enough for the third question below to pick the next item
@@ -45,28 +45,25 @@ Not by popularity. Three questions, in this order:
 
 ## Next
 
-**`Combobox`**, pending ADR-0028, which is `proposed` rather than accepted — so the decision is
-written and the code is not.
+**Open.** `Combobox` shipped, single-select, and with it the strongest of the
+three questions below stops choosing: the four refusals `Select` had written
+into its own docs now point at something that exists.
 
-It is chosen by the second question below, the strongest of the three, and this page had that
-question's answer wrong. It read _"nothing in the tree currently defers a decision to a component
-that does not exist"_. `Select` does, four times: `select.component.tsx` sends `multiple` to "a
-combobox for many", and `select.mdx` sends several-of-many to "a combobox with chips", search to "a
-combobox" and rich rows to "a combobox". A consumer following our own table today arrives at
-nothing. The claim was written when the first question was the one being answered and was never
-re-checked against the components that shipped after it.
+What is left of it is not a new item but the rest of this one, and ADR-0028
+already decided the order: several-of-many with chips (which needs the
+one-name-to-many-controls port shape, now merged), option groups, and the states
+of data arriving. Those are commits on a shipped component rather than a
+decision this page has to make.
 
-The other two questions still say what they said:
+So the two remaining questions are back to what they were:
 
-1. **A native shell nobody has claimed yet.** `<details>` is taken by `Accordion`, `<dialog>` by
-   `Dialog`, `<progress>` by `Progress`. `<meter>` is the one still unbuilt — a different claim from
-   `<progress>` (a measurement inside a range, not a task advancing), which is exactly why it would
-   need its own reason rather than inheriting this one's.
-2. **How thin is its group?** No remaining group is one component wide, so it chooses nothing.
-
-Before `Combobox` there was a gap where this section had no deduction to make, and the item taken
-then was `Skeleton` — recorded under **Deferred** rather than here, because what decided it was a
-property of the deferral (nothing was blocking it) rather than a property of this section.
+1. **A native shell nobody has claimed yet.** `<details>` is taken by
+   `Accordion`, `<dialog>` by `Dialog`, `<progress>` by `Progress`. `<meter>` is
+   the one still unbuilt — a different claim from `<progress>` (a measurement
+   inside a range, not a task advancing), which is exactly why it would need its
+   own reason rather than inheriting this one's.
+2. **How thin is its group?** No remaining group is one component wide, so it
+   chooses nothing.
 
 ## Deferred, with the reason
 
@@ -78,7 +75,10 @@ times. `Separator` followed, the general-purpose `<hr>` its family separators (`
 `ToolbarSeparator`) were already pointing at. `Breadcrumb` and `Avatar` came with the page shell and
 the table around them. `Slider` stopped being a bet on engines: `::-webkit-slider-thumb` and
 `::-moz-range-thumb` still need writing twice, but they are writable, and the track is a background
-this package already paints from a token. And `Skeleton` — the one bullet here whose only reason was
+this package already paints from a token. `Combobox` left on the strongest reason
+this page has — a written contract waiting on it, four times over in `Select`'s
+own docs — once ADR-0028 had answered what it costs and `appearance: base-select`
+had been checked rather than assumed. And `Skeleton` — the one bullet here whose only reason was
 "behind the others" — went when **Next** ran out of deductions: with no group left thin and no
 contract waiting, the cheapest unblocked thing is the honest pick, and a reason that was never about
 the component itself expires the moment the queue in front of it does.
@@ -94,10 +94,6 @@ the component itself expires the moment the queue in front of it does.
   `muted-foreground` is a contract role whose Tailwind bridge coverage `tokens.test.ts` enforces, so
   `text-muted-foreground` compiles. A `Text` would also reintroduce polymorphic `as`, which
   `Heading` refuses on purpose.
-- **`Combobox`.** Not an oversight — the trade is written into `Select`: the box is ours and the
-  list is the browser's, because _"a themed list is what a combobox costs weeks for"_. Building one
-  reverses that trade, so it needs an ADR before it needs code, and `appearance: base-select` may
-  make part of it unnecessary.
 - **A time field.** The date line is finished: `DateInput`, `FormDateInput`, `Calendar`, `DatePicker`
   and `FormDatePicker` are all in the table above, and ADR-0027 records why each of them looks the
   way it does — including why the picker, first written as a composition, became a component. A time field is the
