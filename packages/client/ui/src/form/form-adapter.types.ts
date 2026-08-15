@@ -25,6 +25,51 @@ import type { ComponentProps } from 'react';
 export type UseFormField = (name: string) => BoundField;
 
 /**
+ * How a form library binds ONE field that is drawn as MANY controls — a radio
+ * group, a set of checkboxes under one name, a multi-select's carriers.
+ *
+ * `UseFormField` cannot express this and the shape says why: it returns one bag
+ * of props, and here every control needs the SAME `name` with a DIFFERENT
+ * `value`, plus a `checked` that only the current value can answer. The
+ * workaround `FormSegmentedControl` ships today is the evidence — it binds the
+ * GROUP, delegating `change` (which bubbles, so `event.target.value` is the
+ * chosen option) and dropping `ref` outright, because there is no "the input" of
+ * a radio group. That works for one-of-many and gives up two things: a library
+ * cannot focus the field from an error summary, and a ref-based library cannot
+ * write a value back into it at all.
+ *
+ * THE HOOK IS STILL ONE PER FIELD. `option` is a plain function called during
+ * render, once per rendered option — not a hook — so the rules of hooks hold
+ * even though the number of options is data and can change between renders.
+ * Every adapter is built that way: read the field once, then answer per value.
+ *
+ * This is also what makes a `'radio'` field type expressible at last. The reason
+ * it was refused (recorded in `@fmmenchi/ui-form-ports`) was that "the option's
+ * value cannot live in a map keyed by field NAME" — true, and it never had to:
+ * the value arrives as the argument here, and the map only has to say what KIND
+ * of field it is.
+ */
+export type UseFormOptionField = (name: string) => BoundOptionField;
+
+/** One field, bound across the many controls that draw it. */
+export interface BoundOptionField {
+  /**
+   * The props for the control standing for ONE option — spread onto it.
+   *
+   * Called during render, once per option, with that option's value. The
+   * adapter answers `checked` (or `defaultChecked`, where the library is
+   * uncontrolled) by comparing against the value it holds, which is the one
+   * question a per-field bag could never answer.
+   *
+   * Typed as the `input` bag because every control this shape serves is an
+   * `<input>`: a radio, a checkbox, or a hidden carrier.
+   */
+  option: (value: string) => ControlPropsByTag['input'];
+  /** What is wrong with the FIELD — see {@link FieldMessages}. Not per option. */
+  errors?: FieldMessages;
+}
+
+/**
  * Every field currently in error, by name, each with ALL of its messages. A
  * hook, for the same reason `UseFormField` is one: called inside the component
  * that renders it, so that component subscribes for itself.

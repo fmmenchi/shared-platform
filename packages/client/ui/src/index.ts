@@ -98,7 +98,9 @@ export type { FormDateInputProps } from './components/form-date-input/form-date-
 export type {
   UseFormField,
   UseFormErrors,
+  UseFormOptionField,
   BoundField,
+  BoundOptionField,
   FieldMessages,
   BindingOwned,
   BoundFields,

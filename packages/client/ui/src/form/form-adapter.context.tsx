@@ -1,6 +1,10 @@
 import { useUiAdapters } from '../i18n/provider.js';
 import { forTag } from './control-props.js';
-import type { BoundField, ControlTag } from './form-adapter.types.js';
+import type {
+  BoundField,
+  BoundOptionField,
+  ControlTag,
+} from './form-adapter.types.js';
 
 /**
  * The form binding in scope — the one given to `UiProvider` when the design
@@ -74,6 +78,54 @@ export function useBoundField<Tag extends ControlTag = 'input'>(
    */
   const bound = useFormField(name) as BoundField<Tag>;
   return { ...bound, control: forTag(tag, bound.control) };
+}
+
+/**
+ * Bind one field that is drawn as MANY controls — a radio group, checkboxes
+ * under one name, a multi-select's carriers.
+ *
+ * Same hook discipline as `useBoundField`: the adapter's hook is called here,
+ * once, inside the component that renders the group. What comes back is a plain
+ * `option(value)` function, so the per-option props are produced during render
+ * without a hook per option — the number of options is data, and data must not
+ * decide how many hooks run.
+ *
+ * Throws when the binding has no `optionField`, naming the component, rather
+ * than falling back to `field`: bound through the per-field shape a group draws
+ * controls that share a name and can never report which one is checked, so the
+ * failure would be a form that submits nothing while looking complete.
+ */
+export function useBoundOptionField(
+  name: string,
+  component: string,
+): BoundOptionField {
+  /* Same reason as `useBoundField` above: the hook belongs to the app. */
+  'use no memo';
+
+  const binding = useFormBinding();
+  if (binding == null) {
+    throw new Error(
+      `${component}: no form binding in scope — give one to <UiProvider adapters={{ form }}>.`,
+    );
+  }
+  const useOptionField = binding.optionField;
+  if (useOptionField == null) {
+    throw new Error(
+      `${component}: the form binding provides no \`optionField\` — a group of controls sharing one name needs it. Add it to the adapter (every binding in @fmmenchi/ui-form-ports ships one).`,
+    );
+  }
+  // Called through a `use`-prefixed BINDING, never `binding.optionField()` — a
+  // member call is not recognised as a hook by the tooling, and the React
+  // Compiler then memoises around it.
+  const bound = useOptionField(name);
+  return {
+    ...bound,
+    // Filtered per option for the same reason `useBoundField` filters: an
+    // adapter may emit props the element cannot carry (Conform emits `multiple`,
+    // which was measured turning a `<select>` into a listbox). Every control
+    // this shape serves is an `<input>`, so the tag is not a parameter.
+    option: (value: string) => forTag('input', bound.option(value)),
+  };
 }
 
 /**

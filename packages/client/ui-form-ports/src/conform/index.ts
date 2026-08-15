@@ -1,4 +1,5 @@
 export { createConformField } from './use-conform-field.js';
+export { createConformOptionField } from './use-conform-option-field.js';
 export { createConformErrors } from './use-conform-errors.js';
 export type {
   FormFieldType,

@@ -38,9 +38,17 @@ pnpm nx test @fmmenchi/ui-ports-validation   # THE suite — same assertions, fo
   assertions.
   - `date` is deliberately NOT converted: the value already is the canonical `YYYY-MM-DD` string, and
     a `Date` would be a decision about time zones that belongs to the schema.
-  - There is no `'radio'` and there cannot be: a radio group is N controls sharing one name with a
-    distinct value each, so the option's value cannot live in a map keyed by field NAME. Advertising
-    it would ship a control that can never be selected.
+  - `'radio'` and `'checkbox-group'` exist now, and what unblocked them is worth knowing: the option's
+    value never had to live in the map. It arrives as the argument to `option(value)` on
+    `UseFormOptionField` — **one name to many controls** — leaving the map to say only what KIND of
+    field it is. Both are refused by the per-field bindings (`assertSingleField` throws, naming the
+    fix), because bound one-control-per-field a group renders a single control that can never report
+    which option is checked and submits nothing while looking complete.
+  - **A group's list is in DOCUMENT order, and the suite decided that, not taste.** Written to append
+    in tick order it passed for the two controlled libraries and failed for the three uncontrolled
+    ones, where nothing is stored and `FormData.getAll()` reads the document — one port, two answers,
+    chosen by a library the consumer swapped. The controlled adapters now read the group off the form
+    at change time (`checkedInGroup`), which is the only order all five can produce.
 - **Name checking is a module-level kit, never a provider.** A type does not travel through React
   context (a context's type is fixed where it is created) and does not descend the JSX tree; an
   import is what carries it across a file boundary. The kit takes the VALUES type and derives the

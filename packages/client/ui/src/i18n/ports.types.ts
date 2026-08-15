@@ -1,6 +1,7 @@
 import type {
   UseFormErrors,
   UseFormField,
+  UseFormOptionField,
 } from '../form/form-adapter.types.js';
 /**
  * Injection ports — the contracts the app implements so the UI stays
@@ -76,6 +77,15 @@ export type IconRenderer = ComponentType<{ name: string }>;
 export interface FormBinding {
   field: UseFormField;
   errors?: UseFormErrors;
+  /**
+   * How one field bound to MANY controls is drawn — a radio group, checkboxes
+   * sharing a name, a multi-select's carriers.
+   *
+   * Optional for the same reason `errors` is: an app whose forms hold no group
+   * is not made to implement one, and a component that needs it says so by name
+   * when it is missing rather than binding nothing and submitting nothing.
+   */
+  optionField?: UseFormOptionField;
 }
 
 export interface UiAdapters {

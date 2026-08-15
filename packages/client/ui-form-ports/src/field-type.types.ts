@@ -18,12 +18,27 @@
  * an answer: the port is what writes the value, so the loss is the port's to
  * undo. See `readValue`.
  *
- * `radio` is deliberately ABSENT. A radio group is N controls sharing one name
- * with a distinct value each, so the option's value — the thing the binding
- * turns on — cannot be expressed in a map keyed by field NAME. Advertising it
- * would have meant a control that can never be selected: every option would
- * write the same value and none would read back as checked. That binding needs
- * its own shape, one name to many controls, and it does not exist yet.
+ * `radio` WAS deliberately absent, and the reason is worth keeping because it is
+ * what shaped the fix. A radio group is N controls sharing one name with a
+ * distinct value each, so the option's value — the thing the binding turns on —
+ * could not be expressed in a map keyed by field NAME. Advertising it then would
+ * have meant a control that can never be selected: every option writing the same
+ * value, none reading back as checked.
+ *
+ * What was missing was never the map entry, it was the SHAPE: one name to many
+ * controls. `UseFormOptionField` is that shape, and it moves the option's value
+ * out of the map and into the call — `option('red')` — leaving this map with the
+ * only question it was ever able to answer: what KIND of field is this. So the
+ * two members below are now expressible, and mean cardinality rather than a tag:
+ *
+ * - `radio` — one of many. The stored value is the chosen option.
+ * - `checkbox-group` — several of many, under one name. The stored value is a
+ *   list, and the adapters that hold state (Formik, TanStack) add and remove
+ *   from it; the uncontrolled ones (react-hook-form, Conform, React 19) let the
+ *   DOM and `FormData` do it, which is what `FormData.getAll()` is for.
+ *
+ * Neither is reachable through `UseFormField`, and that is deliberate: bound
+ * one-control-per-field a group can never report which option is checked.
  */
 export type FormFieldType =
   | 'text'
@@ -45,7 +60,14 @@ export type FormFieldType =
    * flipped the element's role to `listbox`.
    */
   | 'select'
-  | 'textarea';
+  | 'textarea'
+  /**
+   * The two that are not one control at all, but a FIELD DRAWN AS MANY — see
+   * the note above. They are bound through `UseFormOptionField`, never through
+   * `UseFormField`.
+   */
+  | 'radio'
+  | 'checkbox-group';
 
 export interface FormFieldTypeOptions {
   /**

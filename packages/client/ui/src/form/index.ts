@@ -1,7 +1,9 @@
 export type {
   UseFormField,
   UseFormErrors,
+  UseFormOptionField,
   BoundField,
+  BoundOptionField,
   ControlTag,
   ControlPropsByTag,
   FieldMessages,

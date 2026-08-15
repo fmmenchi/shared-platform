@@ -1,6 +1,6 @@
 import { useField, useFormikContext } from 'formik';
 import type { UseFormField } from '@fmmenchi/ui';
-import { isBooleanField, readValue } from '../field-type.js';
+import { assertSingleField, isBooleanField, readValue } from '../field-type.js';
 import type { FormFieldTypeOptions } from '../field-type.types.js';
 
 /**
@@ -31,7 +31,9 @@ export function createFormikField(
   const { types = {} } = options;
 
   return function useFormikField(name) {
-    const type = types[name];
+    // A group declared here would bind silently as text — one control for a
+    // field that needs many, submitting nothing while looking complete.
+    const type = assertSingleField(name, types[name]);
     const boolean = isBooleanField(type);
     const { setFieldValue } = useFormikContext();
     // Formik keys its binding off the type too: asked for a checkbox it returns
