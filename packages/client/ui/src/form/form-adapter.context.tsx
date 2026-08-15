@@ -117,15 +117,11 @@ export function useBoundOptionField(
   // Called through a `use`-prefixed BINDING, never `binding.optionField()` — a
   // member call is not recognised as a hook by the tooling, and the React
   // Compiler then memoises around it.
-  const bound = useOptionField(name);
-  return {
-    ...bound,
-    // Filtered per option for the same reason `useBoundField` filters: an
-    // adapter may emit props the element cannot carry (Conform emits `multiple`,
-    // which was measured turning a `<select>` into a listbox). Every control
-    // this shape serves is an `<input>`, so the tag is not a parameter.
-    option: (value: string) => forTag('input', bound.option(value)),
-  };
+  // Returned as it came, with no `forTag` pass: every control this shape serves
+  // is an `<input>`, and `forTag('input', …)` is the identity — "nothing is
+  // input-only for an `<input>`". Wrapping it would be a filter that filters
+  // nothing, and a reader would have to open it to find that out.
+  return useOptionField(name);
 }
 
 /**

@@ -75,7 +75,15 @@ export type IconRenderer = ComponentType<{ name: string }>;
 /** The bundle the app injects through the single `UiProvider`. */
 /** What a form library provides to the design system, given once at setup. */
 export interface FormBinding {
-  field: UseFormField;
+  /**
+   * How ONE field bound to one control is drawn — the ordinary case.
+   *
+   * Optional since `optionField` arrived beside it: a form built only of groups
+   * would otherwise have to supply a member nothing ever calls, which was
+   * measured the first time a story and a test both had to invent one. Each
+   * bound component demands what it needs, by name, when it is missing.
+   */
+  field?: UseFormField;
   errors?: UseFormErrors;
   /**
    * How one field bound to MANY controls is drawn — a radio group, checkboxes

@@ -3,7 +3,12 @@ import { useState, type ComponentProps, type ComponentType } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { z } from 'zod';
-import type { UseFormOptionField } from '@fmmenchi/ui';
+import {
+  FormSegmentedControl,
+  SegmentedControlItem,
+  UiProvider,
+  type UseFormOptionField,
+} from '@fmmenchi/ui';
 import {
   FormProvider,
   useForm as useRhfForm,
@@ -48,10 +53,18 @@ const TAGS = ['news', 'offers', 'events'] as const;
 const Schema = z.object({
   colour: z.string().min(1, 'Pick a colour.'),
   tags: z.array(z.string()).min(1, 'Pick at least one.'),
+  // OPTIONAL on purpose: the assertions that do not touch the design system's
+  // group must still be able to submit, or adding it here would rewrite what
+  // the other four tests mean.
+  size: z.string().optional(),
 });
 type Values = z.infer<typeof Schema>;
 
-const TYPES = { colour: 'radio', tags: 'checkbox-group' } as const;
+const TYPES = {
+  colour: 'radio',
+  tags: 'checkbox-group',
+  size: 'radio',
+} as const;
 
 /**
  * The markup, written ONCE and rendered by every screen — which is the claim
@@ -119,7 +132,7 @@ const rhfResolver: Resolver<Values> = (values) => {
 function RhfScreen() {
   const [saved, setSaved] = useState<unknown>(null);
   const form = useRhfForm<Values>({
-    defaultValues: { colour: '', tags: [] },
+    defaultValues: { colour: '', tags: [], size: '' },
     resolver: rhfResolver,
   });
   return (
@@ -139,7 +152,7 @@ function FormikScreen() {
   const [saved, setSaved] = useState<unknown>(null);
   return (
     <Formik
-      initialValues={{ colour: '', tags: [] as string[] }}
+      initialValues={{ colour: '', tags: [] as string[], size: '' }}
       onSubmit={setSaved}
     >
       <FormikForm>
@@ -154,7 +167,7 @@ function FormikScreen() {
 function TanstackScreen() {
   const [saved, setSaved] = useState<unknown>(null);
   const form = useTanstackForm({
-    defaultValues: { colour: '', tags: [] as string[] },
+    defaultValues: { colour: '', tags: [] as string[], size: '' },
     onSubmit: ({ value }) => setSaved(value),
   });
   const optionField = createTanstackOptionField(form, { types: TYPES });
@@ -186,6 +199,7 @@ function ConformScreen() {
       setSaved({
         colour: formData.get('colour'),
         tags: formData.getAll('tags'),
+        size: formData.get('size'),
       });
     },
     shouldValidate: 'onSubmit',
@@ -208,7 +222,11 @@ function React19Screen() {
       onSubmit={(event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);
-        setSaved({ colour: data.get('colour'), tags: data.getAll('tags') });
+        setSaved({
+          colour: data.get('colour'),
+          tags: data.getAll('tags'),
+          size: data.get('size'),
+        });
       }}
     >
       <Bound saved={saved} useOptionField={useActionOptionField} />
@@ -219,6 +237,11 @@ function React19Screen() {
 /**
  * The one component every screen renders, so the hook is called in the same
  * place each time — once per field, inside the form's provider.
+ *
+ * It also renders the DESIGN SYSTEM's own bound group through the same binding,
+ * which is the half a port test alone cannot reach: `option-fields` proves the
+ * five adapters agree, and this proves the component that consumes them works
+ * against a real library rather than against a hand-written stub.
  */
 function Bound(props: { saved: unknown; useOptionField: UseFormOptionField }) {
   const colour = props.useOptionField('colour');
@@ -226,6 +249,17 @@ function Bound(props: { saved: unknown; useOptionField: UseFormOptionField }) {
   return (
     <>
       <Groups colour={colour} tags={tags} />
+      <UiProvider
+        adapters={{
+          i18n: { locale: 'en' },
+          form: { optionField: props.useOptionField },
+        }}
+      >
+        <FormSegmentedControl name="size" label="Size">
+          <SegmentedControlItem value="s">Small</SegmentedControlItem>
+          <SegmentedControlItem value="l">Large</SegmentedControlItem>
+        </FormSegmentedControl>
+      </UiProvider>
       <button type="submit">Save</button>
       <Saved values={props.saved} />
     </>
@@ -292,6 +326,24 @@ describe.each(SCREENS)('one name, many controls — %s', (_name, Screen) => {
 
     await waitFor(async () => {
       expect((await saved()).tags).toEqual(['offers']);
+    });
+  });
+
+  it("binds the design system's own group, through the same adapter", async () => {
+    // `FormSegmentedControl` migrated onto this shape, and until now it was
+    // only ever exercised against a hand-written stub. Here it meets a real
+    // library: the pick has to reach the form's state like any other field.
+    render(<Screen />);
+
+    await browser.click(
+      screen.getByRole('radio', { name: 'Large' }).closest('label') as Element,
+    );
+    await browser.click(screen.getByRole('radio', { name: 'red' }));
+    await browser.click(screen.getByRole('checkbox', { name: 'news' }));
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(async () => {
+      expect((await saved()).size).toBe('l');
     });
   });
 
