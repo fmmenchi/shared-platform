@@ -169,6 +169,7 @@ export default defineConfig(() => ({
         'form-segmented-control':
           'src/components/form-segmented-control/index.ts',
         'form-date-input': 'src/components/form-date-input/index.ts',
+        'form-time-input': 'src/components/form-time-input/index.ts',
         'segmented-control-item':
           'src/components/segmented-control-item/index.ts',
         'segmented-control': 'src/components/segmented-control/index.ts',

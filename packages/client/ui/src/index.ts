@@ -95,6 +95,8 @@ export { FormSegmentedControl } from './components/form-segmented-control/form-s
 export type { FormSegmentedControlProps } from './components/form-segmented-control/form-segmented-control.types.js';
 export { FormDateInput } from './components/form-date-input/form-date-input.component.js';
 export type { FormDateInputProps } from './components/form-date-input/form-date-input.types.js';
+export { FormTimeInput } from './components/form-time-input/form-time-input.component.js';
+export type { FormTimeInputProps } from './components/form-time-input/form-time-input.types.js';
 export type {
   UseFormField,
   UseFormErrors,
@@ -450,6 +452,23 @@ export type {
 // — and the parse is exactly what nobody should re-derive, since the obvious
 // version (`new Date(iso)`) is wrong in every timezone west of Greenwich.
 export { parseIsoDate, formatIsoDate } from './date/civil-date.js';
+export { TimeInput } from './components/time-input/time-input.component.js';
+export type {
+  TimeInputProps,
+  TimePart,
+} from './components/time-input/time-input.types.js';
+// The civil-time pair, public for the reason the civil-date pair is: `TimeInput`
+// hands a consumer a `CivilTime`, so reading one back out of storage or a fetch
+// response has to be possible without re-deriving the parse — and `new
+// Date(iso)` is not a parse of a clock reading at all, it is a conversion into
+// an instant, which is the one thing this type exists to refuse.
+export { parseIsoTime, formatIsoTime } from './date/civil-time.js';
+export type { HourCycle } from './date/civil-time.js';
+export type {
+  CivilTime,
+  IsoTime,
+  TimePrecision,
+} from './date/civil-time.types.js';
 // Setting a `DateInput` from outside it — what a `Calendar` in a `Popover` does
 // when ADR-0027 says it "sets the field rather than replacing it".
 export { writeDateInput } from './date/write-date-input.js';

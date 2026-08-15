@@ -491,6 +491,12 @@
       "import": "./dist/form-date-input.js",
       "default": "./dist/form-date-input.js"
     },
+    "./form-time-input": {
+      "@fmmenchi/source": "./src/components/form-time-input/index.ts",
+      "types": "./dist/components/form-time-input/index.d.ts",
+      "import": "./dist/form-time-input.js",
+      "default": "./dist/form-time-input.js"
+    },
     "./progress": {
       "@fmmenchi/source": "./src/components/progress/index.ts",
       "types": "./dist/components/progress/index.d.ts",

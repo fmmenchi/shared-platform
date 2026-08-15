@@ -1,0 +1,92 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as Stories from './form-time-input.stories.tsx';
+
+<Meta of={Stories} />
+
+# FormTimeInput
+
+A labelled time field **already bound to the form library in scope** — the
+label, the field, the hint and the errors in one tag.
+
+```tsx
+<UiProvider adapters={{ form: { field: useMyFormField } }}>
+  <FormTimeInput name="opens" label="Opens at" />
+</UiProvider>
+```
+
+It is `FormDateInput` with a different control inside. The binding sees
+`HH:mm`; the user sees their locale's hour cycle. On an `en-US` page those are
+never the same string, and that is the whole reason the field has a **carrier**.
+
+<Canvas of={Stories.Default} />
+
+## Props
+
+`name`, `label`, `hint`, plus every `TimeInput` prop the binding does not own.
+
+<Controls of={Stories.Default} />
+
+## Usage
+
+### What the binding sees
+
+<Canvas of={Stories.WhatTheBindingSees} />
+
+Type `0230`, then `p`. The box says `02:30 PM` and the value printed below — the
+one a schema validates and the one `FormData` posts — says `14:30`. The binding's
+`onChange` fires off the **carrier**, so `event.target.value` is always the ISO
+string and `event.target.name` is always the field's name.
+
+The binding's **ref** goes to the carrier too, which matters for the libraries
+that read a value straight off the element they were handed: given the visible
+field, react-hook-form would store `02:30 PM`.
+
+### Errors
+
+<Canvas of={Stories.WithErrors} />
+
+Each message is its own `FieldError`, so a screen reader announces them as
+separate statements. The hint keeps its place before them however many there
+are, and the field is marked `aria-invalid` as soon as there is one.
+
+### The same value, two locales
+
+<Canvas of={Stories.AcrossLocales} />
+
+One binding, one stored value, two readings. Nothing in the component knows
+which locale it is in — it asks `useFormatter()`, the same source `Time` and
+`Numeric` use.
+
+### Seeding
+
+Give the starting value **to your form library**, not to this component.
+`defaultTime` is refused by the type and warned about at runtime: it would seed
+the DOM without telling the library, which then validates an empty field and
+overwrites the seed on its first pass.
+
+A starting value is picked up under either name a library emits — Conform's
+`defaultValue`, Formik's and TanStack's `value` — and a **controlled** adapter,
+which hands over `value` and no ref, is followed after the first render too.
+
+### What never travels
+
+A schema that declares `types: { opens: 'time' }` — the natural thing to declare
+for a time — must not turn the visible field back into the native control this
+component exists to replace. Neither `type` nor `pattern`, `min`, `max` or
+`step` is forwarded: they describe a native control this is not, and checked
+against `02:30 PM` a `pattern` that can never match would block the submit for
+good. Everything else the binding sends does travel, `required`, `id` and `form`
+included — a field rendered outside its `<form>` posts nothing without the last
+of those.
+
+## Accessibility
+
+- **One textbox with one label.** There is no `Fieldset` and no legend here:
+  those belong to controls that are a group, and a time field is not one.
+- **Hint and errors are wired by `Field`** into `aria-describedby`, and merge
+  with `TimeInput`'s own format hint rather than displacing it.
+- **`aria-invalid`** is set from the binding's errors, not guessed.
+- **`FormErrorSummary` can reach this field by name**, because the name is on
+  the carrier and the carrier stays focusable; focus lands there and hops
+  straight to the visible input.
