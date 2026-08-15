@@ -20,11 +20,17 @@ export const dateInputMessages = defineMessages('dateInput', {
     day: 'dd',
     month: 'mm',
     year: 'yyyy',
+    /**
+     * What the browser says when the box holds text that names no date. It is a
+     * sentence rather than a fragment because the platform reads it out as one.
+     */
+    incomplete: 'Enter a complete date.',
   },
   it: {
     day: 'gg',
     month: 'mm',
     year: 'aaaa',
+    incomplete: 'Inserisci una data completa.',
   },
   ar: {
     day: 'يي',
@@ -34,5 +40,6 @@ export const dateInputMessages = defineMessages('dateInput', {
     // instruction this field gives — and bidi reordered the boundary between
     // them on top of that.
     year: 'سسسس',
+    incomplete: 'أدخل تاريخًا كاملاً.',
   },
 });

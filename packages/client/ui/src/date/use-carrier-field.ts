@@ -103,6 +103,21 @@ export function useCarrierField<Value>(
   // `setPicked`, a `setMonth` and a call to the consumer. The keystroke path
   // keeps its own per-keystroke reporting and records what it said here, so the
   // two cannot disagree about what the consumer was last told.
+  /**
+   * TEXT THAT NAMES NOTHING IS AN INVALID CONTROL, and the platform is told so
+   * rather than left to guess from an input that looks full.
+   *
+   * Cleared the moment the value is whole again, so a field is never left
+   * refusing a submit it should allow.
+   */
+  const saySo = (text: string, iso: string) => {
+    const target = field.current;
+    if (target === null) return;
+    target.setCustomValidity(
+      text !== '' && iso === '' ? latest.current.incomplete : '',
+    );
+  };
+
   const reported = useRef(seed);
   const announce = (iso: string) => {
     if (iso === reported.current) return;
@@ -136,6 +151,7 @@ export function useCarrierField<Value>(
       if (!wasWhole && !fromReset) return;
       target.value = '';
       shown.current = '';
+      saySo('', '');
       announce('');
       return;
     }
@@ -144,7 +160,22 @@ export function useCarrierField<Value>(
     // and what a consumer writes without thinking — used to fail the strict
     // parser and leave the field empty while the carrier held the instant.
     const canonical = latest.current.normalise(iso);
-    if (canonical === null) return;
+    if (canonical === null) {
+      // AND SAY SO, because this is the one arrival that leaves the carrier
+      // holding something the field cannot show. The setter has already
+      // committed the assignment by the time this runs, so `setValue(name,
+      // 'tomorrow')` left the form posting `tomorrow` beside a box still
+      // showing the old value, reporting nothing to the consumer and warning
+      // nobody — while the SEED path warns for that exact string. Reverting is
+      // not this component's call: the write came from outside with intent, and
+      // guessing at a repair for it would be worse than being loud.
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `${label}: the value ${JSON.stringify(iso)} was written to this field from outside and does not name anything it can show, so the box still holds what it held. The form will post it as it is.`,
+        );
+      }
+      return;
+    }
     // AND THE CARRIER IS BROUGHT WITH IT, through the component's own write, so
     // the form posts what the field is showing rather than what it was handed.
     // A date field holding an instant is the `Date`-versus-day conflation this
@@ -154,10 +185,21 @@ export function useCarrierField<Value>(
     if (canonical !== iso) write(canonical);
     const text = latest.current.display(canonical);
     if (text === '') return;
-    if (text !== target.value) {
-      target.value = text;
-      shown.current = text;
-    }
+    if (text !== target.value) target.value = text;
+    // RECORDED WHETHER OR NOT THE REPAINT WAS NEEDED, and the difference is not
+    // cosmetic. `shown` is what the deletion path reads as "the text before this
+    // keystroke", and on a RESET the platform reverts the visible field on its
+    // own — so by the time this door runs the box already says `text` and the
+    // old code, which recorded only inside the repaint, left `shown` holding the
+    // text that had just been thrown away. Measured on a field seeded
+    // `1985-03-12`: type `01/01/2000`, reset — the box correctly returns to
+    // `12/03/1985` — then one Backspace emptied the whole field, because the
+    // deletion was mapped onto a string with nothing in common with it. The same
+    // staleness made `isWholeShown` above answer about the discarded text, so an
+    // external clear was refused and the box went on showing a value the form no
+    // longer held.
+    shown.current = text;
+    saySo(text, canonical);
     announce(canonical);
   };
 
@@ -257,7 +299,18 @@ export function useCarrierField<Value>(
     // in a later commit got no listener at all. The document is always there,
     // and the filter is the carrier's own membership, read at event time.
     const reset = (event: Event) => {
-      if (event.target !== element.form) return;
+      // EITHER FORM, because with a `form=` attribute there are two. The
+      // carrier carries the name and can be associated with a form it is not
+      // inside — a portal, a dialog, a sticky footer — while the VISIBLE field
+      // has no name and therefore belongs to whatever form it sits in. The
+      // platform reverts each control through its own form, so filtering on the
+      // carrier's alone missed the case that `form=` exists for: measured, a
+      // `<form id="qui">` holding a field bound to `altrove`, typed into and
+      // then reset, put the box back to the seed and left the carrier on the
+      // typed value — so `altrove` would post a value that was not on screen,
+      // which is this family's founding defect in a mirror.
+      const owner = event.target;
+      if (owner !== element.form && owner !== field.current?.form) return;
       setTimeout(() => {
         // A RESET CAN BE REFUSED, and this listener used to wipe the field
         // anyway. `preventDefault()` on the event — a page asking "are you
@@ -289,6 +342,7 @@ export function useCarrierField<Value>(
   const record = (text: string, iso: string) => {
     shown.current = text;
     reported.current = iso;
+    saySo(text, iso);
   };
 
   return { carrier, field, shown, write, record };

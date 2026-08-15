@@ -463,9 +463,9 @@ export type {
 // Date(iso)` is not a parse of a clock reading at all, it is a conversion into
 // an instant, which is the one thing this type exists to refuse.
 export { parseIsoTime, formatIsoTime } from './date/civil-time.js';
-export type { HourCycle } from './date/civil-time.js';
 export type {
   CivilTime,
+  HourCycle,
   IsoTime,
   TimePrecision,
 } from './date/civil-time.types.js';

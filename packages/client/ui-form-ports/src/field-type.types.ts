@@ -46,7 +46,21 @@ export type FormFieldType =
   | 'password'
   | 'checkbox'
   | 'number'
+  /**
+   * The two the design system REPLACES rather than uses (ADR-0027), and which
+   * are here anyway because a consumer's schema declares what a field IS, not
+   * which control draws it. `types: { opens: 'time' }` is the natural thing to
+   * write beside a `HH:mm` field, and refusing it at the type level would only
+   * push the consumer to lie — `'text'` — losing whatever else the adapter
+   * derives from the truth.
+   *
+   * What they must NOT do is reach the control: Conform shapes every prop by
+   * this map, so it emits `type`, `pattern`, `min` and `max` from them, and the
+   * bound components drop exactly those. `apps/ui-ports-validation` declares
+   * both on purpose, because nothing inside this package can see that work.
+   */
   | 'date'
+  | 'time'
   | 'search'
   | 'tel'
   | 'url'

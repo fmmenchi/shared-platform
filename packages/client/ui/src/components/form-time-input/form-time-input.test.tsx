@@ -225,8 +225,12 @@ describe('FormTimeInput', () => {
       );
       const field = screen.getByRole('textbox');
       expect(field).toHaveAttribute('aria-invalid', 'true');
+      // THE ORDER IS PINNED, hint then errors then format — the same assertion
+      // the date twin makes, and for the reason recorded there: asserting only
+      // that a message is somewhere in the description is what let the format go
+      // unannounced for as long as it did.
       expect(field).toHaveAccessibleDescription(
-        expect.stringContaining('Required') as unknown as string,
+        /When doors open.*Required.*Must be after opening time.*hh:mm AM\/PM/,
       );
       expect(
         screen.getByText('Must be after opening time'),

@@ -14,7 +14,7 @@ import {
   isoTimeOf,
   parseIsoTime,
 } from '../../date/civil-time.js';
-import type { HourCycle } from '../../date/civil-time.js';
+import type { HourCycle } from '../../date/civil-time.types.js';
 import {
   applyDeletion,
   caretFor,
@@ -63,23 +63,37 @@ function usePattern(
   precision: 'minute' | 'second',
 ) {
   return useMemo(() => {
-    const options: Intl.DateTimeFormatOptions = {
+    const base: Intl.DateTimeFormatOptions = {
       hour: '2-digit',
       minute: '2-digit',
       timeZone: 'UTC',
       ...(precision === 'second' ? { second: '2-digit' as const } : {}),
-      ...(asked === undefined ? {} : { hourCycle: asked }),
     };
-    const format = new Intl.DateTimeFormat(locale, options);
+    // A CYCLE `Intl` DOES NOT KNOW IS DROPPED, NOT THROWN. `new
+    // Intl.DateTimeFormat(locale, { hourCycle })` raises a `RangeError` for
+    // anything outside the four — `'h13'`, or `'H12'`, which is a plausible
+    // typo — and this call is in render, so a config-driven value would take
+    // the subtree down to the nearest error boundary. Every other bad input
+    // this component takes degrades and says so; this one now does too.
+    // Built OUTSIDE the `try`, because the React Compiler refuses a conditional
+    // inside one — "Support value blocks within a try/catch statement" is a
+    // stated `Todo` of its, not a rule with a reason, so the shape moves rather
+    // than the behaviour.
+    const wanted: Intl.DateTimeFormatOptions =
+      asked === undefined ? base : { ...base, hourCycle: asked };
+    let format: Intl.DateTimeFormat;
+    let refused = false;
+    try {
+      format = new Intl.DateTimeFormat(locale, wanted);
+    } catch {
+      format = new Intl.DateTimeFormat(locale, base);
+      refused = true;
+    }
     // A fixed instant, not `now`: the pattern belongs to the locale and must
     // not depend on the minute the component happens to render.
     const parts = format.formatToParts(
       new Date(Date.UTC(2026, 7, 12, 14, 30, 45)),
     );
-    // What the engine actually resolved, which is not always what was asked:
-    // an unknown cycle, or none, falls back to the locale's own.
-    const cycle = (format.resolvedOptions().hourCycle ?? 'h23') as HourCycle;
-
     // THE TWO WORDS, FROM `Intl` RATHER THAN FROM A CATALOGUE. `AM`/`PM` in
     // English, `ص`/`م` in Arabic, `午前`/`午後` in Japanese — the field shows the
     // reader the very strings it will accept, in the script it will accept them
@@ -91,49 +105,59 @@ function usePattern(
     const am = wordAt(9);
     const pm = wordAt(21);
 
-    // WHICH CHARACTERS NAME WHICH HALF OF THE DAY.
+    // THE CYCLE THE ENGINE RESOLVED — AND ONLY IF IT ALSO DREW THE PERIOD.
     //
-    // Not "the first letter": `午前` and `午後` share theirs, and so do `오전`
-    // and `오후`, so a first-letter rule would have made the day period
-    // untypeable in Japanese and Korean while working perfectly in English.
-    // What distinguishes them is what one word has and the other has not —
-    // computed, not written down.
+    // A twelve-hour cycle needs a word to tell the halves apart, and one locale
+    // in the sweep says twelve-hour and draws none: `fr-CM` under `h12` returns
+    // `[hour][:][minute]` and no `dayPeriod` at all. Taking `resolvedOptions()`
+    // at its word there gave a field where `09:30` and `21:30` are the same
+    // three characters, which stores nothing until an invisible keystroke and
+    // cannot read its own value back. Twenty-four hours is the honest reading of
+    // a pattern with no period in it.
+    const resolved = (format.resolvedOptions().hourCycle ?? 'h23') as HourCycle;
+    const drawn =
+      parts.some((piece) => piece.type === 'dayPeriod') &&
+      am !== '' &&
+      pm !== '' &&
+      am !== pm;
+    const cycle: HourCycle =
+      cycleHasPeriod(resolved) && !drawn ? 'h23' : resolved;
+
+    // WHICH KEYSTROKE NAMES WHICH HALF OF THE DAY.
     //
-    // Latin `a`/`p` are offered as well, because a keyboard is not a locale: an
-    // `ar-EG` page on a Latin keyboard would otherwise have no way to say `م`.
-    // They are dropped again if the locale's own words already claim them
-    // ambiguously, so a shortcut can never overrule the language.
-    const amMarks = new Set([...am.toLowerCase(), 'a']);
-    const pmMarks = new Set([...pm.toLowerCase(), 'p']);
-    for (const mark of [...amMarks]) {
-      if (pmMarks.has(mark)) {
-        amMarks.delete(mark);
-        pmMarks.delete(mark);
-      }
-    }
-    // A separator is not a marker. `fi-FI` types `.` between the parts, and a
-    // period word carrying `.` — Spanish writes `a. m.` — would otherwise have
-    // made every separator keystroke a day-period keystroke.
-    const literals = new Set(
-      parts
-        .filter((piece) => piece.type === 'literal')
-        .flatMap((piece) => [...piece.value.toLowerCase()]),
-    );
-    for (const marks of [amMarks, pmMarks]) {
-      for (const mark of [...marks]) {
-        if (literals.has(mark) || mark.trim() === '') marks.delete(mark);
-      }
-    }
+    // Three rules in order, and the order is the whole design. An earlier
+    // version kept only the middle one and left the day period untypeable in
+    // more locales than it served — swept across every tag `Intl` knows:
+    //
+    //   1. LATIN `a`/`p`, unless the OTHER word claims that letter. A keyboard
+    //      is not a locale: an `ar-EG` page on a Latin keyboard needs a way to
+    //      say `م`. Checking only the other word is what makes this work for
+    //      `cs` (`dop.`/`odp.`), where `p` is in both but `a` is in neither.
+    //   2. A CHARACTER ONE WORD HAS AND THE OTHER HAS NOT. Not "the first
+    //      letter": `午前`/`午後` share theirs, and so do `오전`/`오후`.
+    //   3. ANY OTHER LETTER OF EITHER WORD TOGGLES. This is the rule that makes
+    //      the field complete rather than clever. `ak` writes `AN`/`ANW` and
+    //      `cs` writes `dop.`/`odp.`, whose distinguishing sets are empty and
+    //      near-empty — under rules 1 and 2 alone, an Akan user could not enter
+    //      a morning time by keyboard at all, and a Czech user no afternoon.
+    //      Toggling is worse than naming and infinitely better than refusing.
+    const strip = (word: string) =>
+      new Set(
+        [...word.toLowerCase()].filter((char) => /\p{L}|\p{N}/u.test(char)),
+      );
+    const amChars = strip(am);
+    const pmChars = strip(pm);
 
     return {
       parts,
       order: parts.map((piece) => piece.type).filter(isPart),
       numerals: numeralsOf(locale),
       cycle,
+      refused,
       am,
       pm,
-      amMarks,
-      pmMarks,
+      amChars,
+      pmChars,
     };
   }, [locale, asked, precision]);
 }
@@ -188,9 +212,21 @@ function TimeInput(props: TimeInputProps) {
 
   const formatter = useFormatter();
   const t = useMessages(timeInputMessages);
-  const { parts, order, numerals, cycle, am, pm, amMarks, pmMarks } =
+  const { parts, order, numerals, cycle, refused, am, pm, amChars, pmChars } =
     usePattern(formatter.locale, hourCycle, precision);
   const hasPeriod = cycleHasPeriod(cycle);
+
+  useDevWarning(
+    refused,
+    `TimeInput: \`hourCycle\` ${JSON.stringify(hourCycle)} is not one \`Intl\` knows, so the locale's own cycle is used instead. It takes \`h11\`, \`h12\`, \`h23\` or \`h24\`.`,
+  );
+  useDevWarning(
+    !refused &&
+      hourCycle !== undefined &&
+      cycleHasPeriod(hourCycle) &&
+      !hasPeriod,
+    `TimeInput: \`hourCycle="${String(hourCycle)}"\` needs a day period to tell the halves of the day apart, and the locale in scope draws none — so the field reads twenty-four-hour instead. Without it, 09:30 and 21:30 would be the same three characters.`,
+  );
 
   const formatId = useId();
 
@@ -305,9 +341,18 @@ function TimeInput(props: TimeInputProps) {
    */
   const periodShown = (text: string): Period | null => {
     if (!hasPeriod) return null;
-    if (periodHint !== '' && text.includes(periodHint)) return null;
-    if (pm !== '' && text.includes(pm)) return 'pm';
-    if (am !== '' && text.includes(am)) return 'am';
+    // LONGEST FIRST, so a word that contains the other cannot be read as the
+    // other. `ak` writes `AN` and `ANW`, and the safe order there is luck rather
+    // than design — a rule the sort makes true for every locale instead.
+    for (const [word, half] of (
+      [
+        [periodHint, null],
+        [pm, 'pm'],
+        [am, 'am'],
+      ] as [string, Period | null][]
+    ).sort(([a], [b]) => b.length - a.length)) {
+      if (word !== '' && text.includes(word)) return half;
+    }
     return null;
   };
 
@@ -325,30 +370,83 @@ function TimeInput(props: TimeInputProps) {
    * read off the screen and never off this.
    */
   const periodHeld = useRef<Period | null>(null);
-  const periodOf = (text: string): Period | null =>
-    periodShown(text) ?? periodHeld.current;
+  const periodOf = (text: string): Period | null => {
+    // AN EMPTY FIELD HAS CHOSEN NOTHING. Falling back to the remembered half
+    // here let a cleared field keep one: measured, `0230p`, then a
+    // `setValue(name, '')` from a form library, then `0330` — and the box read
+    // `03:30 PM` with `15:30` on the carrier, an afternoon the user had never
+    // said anything about since the clear. `composeWith` below exists precisely
+    // to refuse an unspoken period, and this walked around it.
+    if (text === '') return null;
+    return periodShown(text) ?? periodHeld.current;
+  };
 
   /**
    * WHICH HALF OF THE DAY THE USER JUST SAID, if they said anything.
    *
-   * The words this component drew are stripped first — longest first, so `AM/PM`
-   * goes before `AM` — because their own letters are markers and would
-   * otherwise be re-read on every keystroke as though they had just been typed.
-   * What is left is what the user actually pressed; the LAST marker in it wins,
-   * so `a` then `p` ends up PM rather than refusing to move.
+   * READ FROM WHAT WAS INSERTED, not from the whole field. Scanning the whole
+   * string meant scanning the words this component had just drawn, so an
+   * earlier version stripped them out first — and stripping every occurrence
+   * removes the one the USER just typed too. Measured on `ar-EG`, whose words
+   * are one character each: the field draws `ص/م`, tells the reader in its own
+   * placeholder that those are the strings it takes, and then ignored both of
+   * them. Only Latin `a`/`p` worked, in the one locale that has a translated
+   * message catalogue.
+   *
+   * The last marker in the insertion wins, so `a` then `p` in one paste ends up
+   * PM rather than refusing to move.
    */
-  const readPeriod = (typed: string, current: Period | null): Period | null => {
+  const readPeriod = (
+    before: string,
+    typed: string,
+    current: Period | null,
+    pasted: boolean,
+  ): Period | null => {
     if (!hasPeriod) return current;
-    let rest = typed;
-    for (const word of [periodHint, pm, am].sort(
-      (a, b) => b.length - a.length,
-    )) {
-      if (word !== '') rest = rest.split(word).join('');
+
+    // A PASTE IS THE WHOLE STRING, and there the insertion IS the text — so it
+    // is read whole. `02:30 PM` copied out of this very field, or out of a
+    // confirmation email, pasted back in came out as `02:30 AM/PM` with an
+    // empty carrier: the field would not accept its own output, which
+    // `DateInput` does. Only on a paste, because in ordinary typing the words
+    // on screen are the ones this component drew, and reading them back would
+    // pin the period to whatever it already was.
+    if (pasted) return periodShown(typed) ?? current;
+
+    // What the browser just put in: the span between the common prefix and the
+    // common suffix. The same arithmetic the deletion path uses, for the same
+    // reason — it is the only honest answer to "what changed".
+    let head = 0;
+    while (
+      head < typed.length &&
+      head < before.length &&
+      typed[head] === before[head]
+    ) {
+      head += 1;
     }
+    let tail = 0;
+    while (
+      tail < typed.length - head &&
+      tail < before.length - head &&
+      typed[typed.length - 1 - tail] === before[before.length - 1 - tail]
+    ) {
+      tail += 1;
+    }
+    const inserted = typed.slice(head, typed.length - tail);
+
     let found: Period | null = null;
-    for (const char of rest.toLowerCase()) {
-      if (amMarks.has(char)) found = 'am';
-      else if (pmMarks.has(char)) found = 'pm';
+    for (const char of inserted.toLowerCase()) {
+      // 1. The Latin shortcut, unless the OTHER word claims that letter.
+      if (char === 'a' && !pmChars.has('a')) found = 'am';
+      else if (char === 'p' && !amChars.has('p')) found = 'pm';
+      // 2. A character one word has and the other has not.
+      else if (amChars.has(char) && !pmChars.has(char)) found = 'am';
+      else if (pmChars.has(char) && !amChars.has(char)) found = 'pm';
+      // 3. Any other letter of either word toggles, so no locale is left with
+      //    a half of the day it cannot reach.
+      else if (amChars.has(char) || pmChars.has(char)) {
+        found = (found ?? current) === 'pm' ? 'am' : 'pm';
+      }
     }
     return found ?? current;
   };
@@ -423,13 +521,14 @@ function TimeInput(props: TimeInputProps) {
 
   const maskWith = (typed: string, period: Period | null, pasted = false) =>
     maskSegments(frame, typed, composeWith(period), {
-      ...(pasted ? { recognise, display } : {}),
+      ...(pasted ? { passthrough: { recognise, display } } : {}),
       draw: drawWith(period),
     });
 
   const { carrier, field, shown, write, record } = useCarrierField({
     label: 'TimeInput',
     seed,
+    incomplete: t('incomplete'),
     display,
     normalise: (iso) => {
       const time = isoTimeOf(iso);
@@ -465,13 +564,19 @@ function TimeInput(props: TimeInputProps) {
           const element = event.currentTarget;
           const typed = element.value;
           const caret = element.selectionStart ?? typed.length;
-          const period = readPeriod(typed, periodOf(shown.current));
+          const how = (event.nativeEvent as InputEvent).inputType;
+          const pasted = how === 'insertFromPaste' || how === 'insertFromDrop';
+          const period = readPeriod(
+            shown.current,
+            typed,
+            periodOf(shown.current),
+            pasted,
+          );
           periodHeld.current = period;
           // IS THIS A DELETION? The browser says so outright, and asking it is
           // the difference between reading a gesture and guessing at one:
           // "shorter than before" reads SELECT-ALL AND RETYPE as a deletion and
           // then applies it positionally to a string the user has just wiped.
-          const how = (event.nativeEvent as InputEvent).inputType;
           const deleting =
             how === undefined || how === ''
               ? typed.length < shown.current.length
@@ -481,18 +586,28 @@ function TimeInput(props: TimeInputProps) {
                 frame,
                 shown.current,
                 typed,
-                caret,
                 composeWith(period),
                 drawWith(period),
               )
             : null;
-          const { text, iso } =
-            deleted ??
-            maskWith(
-              typed,
-              period,
-              how === 'insertFromPaste' || how === 'insertFromDrop',
+          const masked = deleted ?? maskWith(typed, period, pasted);
+          const { text, iso } = masked;
+
+          // AN EDIT THAT CHANGED NOTHING IS PUT BACK, caret included — a reflow
+          // the frame cannot hold, or a deletion with no digit in front of it.
+          // See the twin of this block in `DateInput` for what each cost.
+          if (masked.refused || (deleting && text === shown.current)) {
+            element.value = shown.current;
+            const back = Math.max(
+              0,
+              Math.min(
+                shown.current.length,
+                caret + (shown.current.length - typed.length),
+              ),
             );
+            element.setSelectionRange(back, back);
+            return;
+          }
 
           // Written straight onto the node. It is uncontrolled, so React will
           // not re-render it back — and a plain assignment is right HERE,
@@ -500,7 +615,13 @@ function TimeInput(props: TimeInputProps) {
           // React has already heard it.
           if (text !== typed) {
             element.value = text;
-            const position = caretFor(frame, text, typed, caret);
+            const position = caretFor(
+              frame,
+              text,
+              typed,
+              caret,
+              masked.dropped,
+            );
             element.setSelectionRange(position, position);
           }
 
