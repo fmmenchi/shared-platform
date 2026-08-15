@@ -192,6 +192,82 @@ describe('TimeInput', () => {
       expect(carrier(container)).toHaveValue('21:30');
     });
 
+    it('takes the half of the day from the locales own word', async () => {
+      // THE FIELD MUST ACCEPT WHAT IT ADVERTISES. `ar-EG` writes its day period
+      // as a single character, `ص` and `م`, and the placeholder shows the reader
+      // both — while an earlier reader stripped every occurrence of those words
+      // out of the text before looking for a marker, which removed the one the
+      // user had just pressed along with the one on screen. Measured: neither
+      // Arabic word did anything, in the one locale with a translated catalogue,
+      // and only Latin `a`/`p` worked.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" />,
+        { locale: 'ar-EG' },
+      );
+      const field = screen.getByRole('textbox');
+      await browser.click(field);
+      await browser.keyboard('٠٩٣٠');
+      await browser.keyboard('م');
+      expect(carrier(container)).toHaveValue('21:30');
+
+      await browser.keyboard('ص');
+      expect(carrier(container)).toHaveValue('09:30');
+    });
+
+    it('reads only what was just typed, not the word already on screen', async () => {
+      // A letter both words share TOGGLES, which is what keeps the day period
+      // reachable in `ak` and `cs`, whose words have no distinguishing letter
+      // between them. That rule only works if the reader looks at the KEYSTROKE:
+      // read off the whole field instead, the `M` this component had already
+      // drawn toggles as well, the two cancel, and the key does nothing.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" defaultValue="02:30" />,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox');
+      expect(field).toHaveValue('02:30 AM');
+
+      await browser.click(field);
+      await browser.keyboard('m');
+
+      expect(field).toHaveValue('02:30 PM');
+      expect(carrier(container)).toHaveValue('14:30');
+    });
+
+    it('accepts its own output pasted back in', async () => {
+      // `DateInput` round-trips its own rendering; this did not. Copied out of
+      // the field beside it — or out of a confirmation email — `02:30 PM`
+      // pasted back came out as `02:30 AM/PM` with an empty carrier, because
+      // the reader that stops the field re-reading its own drawn words on every
+      // keystroke was also running on the one string that is entirely new.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" />,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      field.focus();
+      // Through the PROTOTYPE setter, not a plain assignment: React's value
+      // tracker records a direct write and then judges the event a no-op, so
+      // `onChange` never fires and the test would be measuring nothing. The
+      // same reason `setNativeValue` exists one directory up.
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )?.set?.call(field, '02:30 PM');
+      field.dispatchEvent(
+        new InputEvent('input', {
+          bubbles: true,
+          inputType: 'insertFromPaste',
+          data: '02:30 PM',
+        }),
+      );
+
+      await vi.waitFor(() => {
+        expect(carrier(container)).toHaveValue('14:30');
+      });
+      expect(field).toHaveValue('02:30 PM');
+    });
+
     it('carries seconds when it is asked to, and never when it is not', async () => {
       const minute = renderUi(
         <TimeInput name="a" aria-label="A" defaultValue="09:30:45" />,
@@ -245,11 +321,14 @@ describe('TimeInput', () => {
 
     it('advances the caret when the frame is already full', async () => {
       // THE ANCHOR'S ONE BLIND SPOT, and it is not a twelve-hour one — the same
-      // hole is in every segmented field this engine drives. Typing in front of
-      // a full value overflows the frame, the mask drops the surplus off the
-      // right, and the right-anchored caret slipped one place left with it: back
-      // to the start, every time, so each keystroke was inserted in front of the
-      // last. Four keystrokes spelling a real time produced four wrong ones.
+      // hole is in every segmented field this engine drives. Inserting into a
+      // full value overflows the frame, the mask drops the surplus off the
+      // right, and the right-anchored caret slipped one place left with it:
+      // back to the start, every time, so each keystroke landed in front of the
+      // last and the field walked through `10:09`, `07:10`, `04:07` to `05:04`.
+      //
+      // The CARET is what is asserted. A reflow into a full fixed frame is
+      // lossy whatever it does; the defect was the loop, not the loss.
       renderUi(
         <TimeInput name="opens" aria-label="Opens at" defaultValue="09:00" />,
         { locale: 'it' },
@@ -257,8 +336,34 @@ describe('TimeInput', () => {
       const field = screen.getByRole('textbox') as HTMLInputElement;
       await browser.click(field);
       field.setSelectionRange(0, 0);
-      await browser.keyboard('1745');
-      expect(field).toHaveValue('17:45');
+      await browser.keyboard('1');
+      expect(field.selectionStart).toBeGreaterThan(0);
+    });
+
+    it('refuses an insert that would throw away the parts behind it', async () => {
+      // THE EXPENSIVE ONE, and it only shows where a part has a floor above
+      // zero — which is every twelve-hour hour, and no `it` one, which is why
+      // three reviews of `DateInput` never saw it.
+      //
+      // `09:00 AM`, caret at the head, press `0`. The hour cannot be `00`, so
+      // the second `0` starts the minute and the hour is left one digit wide —
+      // and the rule "an incomplete part ends the string" then threw the minute
+      // and the day period away behind it. Measured: the field became the
+      // single character `0` with the carrier cleared, and typing on
+      // (`1`,`0`,`0`) settled at `10:00 AM`. The user spelled one o'clock and
+      // stored ten.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" defaultValue="09:00" />,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      expect(field).toHaveValue('09:00 AM');
+      await browser.click(field);
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('0');
+
+      expect(field).toHaveValue('09:00 AM');
+      expect(carrier(container)).toHaveValue('09:00');
     });
 
     it('edits one part without moving the others', async () => {
@@ -303,6 +408,33 @@ describe('TimeInput', () => {
         expect(told).toHaveBeenCalledWith({ hour: 21, minute: 5 });
       });
       expect(screen.getByRole('textbox')).toHaveValue('09:05 PM');
+    });
+
+    it('forgets the half of the day when the field is cleared from outside', async () => {
+      // The last half-of-the-day the user typed is remembered, so an edit that
+      // trims the word off the text does not make them choose again. A CLEAR is
+      // not an edit: `setValue(name, '')` means the value is gone, and the
+      // remembered afternoon then attached itself to the next thing typed.
+      // Measured: `0230p`, clear, `0330` — and the box read `03:30 PM` with
+      // `15:30` on the carrier, an afternoon nobody had mentioned since.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" />,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox');
+      await browser.click(field);
+      await browser.keyboard('0230p');
+      expect(carrier(container)).toHaveValue('14:30');
+
+      carrier(container).value = '';
+      await vi.waitFor(() => {
+        expect(field).toHaveValue('');
+      });
+
+      await browser.click(field);
+      await browser.keyboard('0330');
+      expect(field).toHaveValue('03:30 AM/PM');
+      expect(carrier(container)).toHaveValue('');
     });
 
     it('goes back to its default on a form reset', async () => {
@@ -386,6 +518,65 @@ describe('TimeInput', () => {
         'inputmode',
         'numeric',
       );
+    });
+
+    it('refuses to submit text that names no time, digits and all', async () => {
+      // THE STATE THAT LOOKS FINISHED. `08/12/` reads as unfinished; `02:30
+      // AM/PM` does not — and the platform could not tell the difference,
+      // because the visible input holds text (so `required` is satisfied) while
+      // the carrier holds `''` and is deliberately not `required` itself.
+      // Measured before this: `validity.valueMissing` false,
+      // `checkValidity()` true, `aria-invalid` absent, and the form posted an
+      // empty string with no signal of any kind.
+      const { container } = renderUi(
+        <form>
+          <TimeInput name="opens" aria-label="Opens at" required />
+        </form>,
+        { locale: 'en-US' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      await browser.keyboard('0230');
+      expect(field).toHaveValue('02:30 AM/PM');
+
+      const form = container.querySelector('form') as HTMLFormElement;
+      expect(field.validity.customError).toBe(true);
+      expect(field.validationMessage).toBe('Enter a complete time.');
+      expect(form.checkValidity()).toBe(false);
+
+      // And it stops the moment the time is whole, so a field is never left
+      // refusing a submit it should allow.
+      await browser.keyboard('p');
+      expect(carrier(container)).toHaveValue('14:30');
+      expect(field.validity.customError).toBe(false);
+      expect(form.checkValidity()).toBe(true);
+    });
+
+    it('drops an hour cycle Intl does not know, rather than throwing', () => {
+      // `new Intl.DateTimeFormat(locale, { hourCycle })` raises a `RangeError`
+      // for anything outside the four, and that call is in render — so a
+      // config-driven value took the whole subtree down to the nearest error
+      // boundary, where every other bad input this component takes degrades and
+      // says so.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      renderUi(
+        <TimeInput
+          name="opens"
+          aria-label="Opens at"
+          defaultValue="14:30"
+          // @ts-expect-error — refused by the type; this is the caller the type
+          // does not see, which is where a `RangeError` would come from.
+          hourCycle="H12"
+        />,
+        { locale: 'it' },
+      );
+      expect(screen.getByRole('textbox')).toHaveValue('14:30');
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('is not one `Intl` knows'),
+      );
+      warn.mockRestore();
     });
 
     it('warns rather than starting empty in silence', () => {

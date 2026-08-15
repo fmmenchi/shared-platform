@@ -38,6 +38,24 @@ export interface CarrierFieldOptions<Value> {
   readonly isWholeShown: (text: string) => boolean;
   /** Told whenever the value moves, from any of the doors or from a keystroke. */
   readonly onValueChange?: (value: Value | null) => void;
+  /**
+   * What the browser should say about a field holding text that names nothing.
+   *
+   * A masked field can look complete and store nothing — `08/12/` reads as
+   * unfinished, but `02:30 AM/PM` does not — and the platform had no way to
+   * know: the visible input holds text, so `required` is satisfied, and the
+   * CARRIER holds `''` and is not `required` on purpose, because a required
+   * carrier is an invalid control the browser cannot focus and the submit is
+   * refused showing nothing. Measured: `<TimeInput required />`, type `0230`,
+   * submit — `validity.valueMissing` false, `checkValidity()` true, and the
+   * form posted an empty string with no signal of any kind.
+   *
+   * Given here, it becomes the visible field's `setCustomValidity`, which is
+   * the platform's own answer: the submit is refused, the browser focuses the
+   * field and reads the message out, and `:invalid` styling applies. It is copy
+   * in a language, so it comes from the component's catalogue.
+   */
+  readonly incomplete: string;
 }
 
 /** The nodes and the two writes a segmented field drives them with. */

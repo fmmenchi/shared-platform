@@ -5,6 +5,9 @@ import { FormSelect } from '../components/form-select/form-select.component.js';
 import { FormSwitch } from '../components/form-switch/form-switch.component.js';
 import { FormDateInput } from '../components/form-date-input/form-date-input.component.js';
 import { FormCombobox } from '../components/form-combobox/form-combobox.component.js';
+import { FormTimeInput } from '../components/form-time-input/form-time-input.component.js';
+import { FormDatePicker } from '../components/form-date-picker/form-date-picker.component.js';
+import { FormDateRangePicker } from '../components/form-date-range-picker/form-date-range-picker.component.js';
 import { FormSegmentedControl } from '../components/form-segmented-control/form-segmented-control.component.js';
 import type { BoundFields } from './bound-fields.types.js';
 
@@ -43,6 +46,9 @@ export function createBoundFields<
     FormInput,
     FormDateInput,
     FormCombobox,
+    FormTimeInput,
+    FormDatePicker,
+    FormDateRangePicker,
     FormChoice,
     FormTextarea,
     FormSelect,

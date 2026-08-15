@@ -1,4 +1,9 @@
-import type { CivilTime, IsoTime, TimePrecision } from './civil-time.types.js';
+import type {
+  CivilTime,
+  HourCycle,
+  IsoTime,
+  TimePrecision,
+} from './civil-time.types.js';
 
 /** `HH:mm` with optional `:ss`, and nothing else. */
 const ISO_TIME = /^(\d{2}):(\d{2})(?::(\d{2}))?$/;
@@ -97,26 +102,6 @@ export function fromTwelveHour(hour: number, pm: boolean): number {
   const base = hour % 12;
   return pm ? base + 12 : base;
 }
-
-/**
- * THE FOUR CYCLES A CLOCK CAN BE READ IN, because `Intl` reports four and a
- * field that handled two would be wrong in the other two rather than merely
- * incomplete.
- *
- * Measured, forcing each cycle on a locale that has it:
- *
- * | cycle | midnight | noon  | 23:05 | reads    |
- * | ----- | -------- | ----- | ----- | -------- |
- * | h11   | 00 AM    | 00 PM | 11 PM | 0–11     |
- * | h12   | 12 AM    | 12 PM | 11 PM | 1–12     |
- * | h23   | 00       | 12    | 23    | 0–23     |
- * | h24   | 24       | 12    | 23    | 1–24     |
- *
- * `h11` is the one that surprises: it is Japanese's, and it writes midnight and
- * noon BOTH as `00`, distinguished only by 午前/午後. A field that assumed
- * `h12`'s `12` there would show a time nobody in that locale writes.
- */
-export type HourCycle = 'h11' | 'h12' | 'h23' | 'h24';
 
 /** The hour as this cycle writes it, and whether it needs a PM marker. */
 export function hourInCycle(

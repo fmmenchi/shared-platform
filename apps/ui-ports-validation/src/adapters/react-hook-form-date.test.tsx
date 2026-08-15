@@ -236,19 +236,23 @@ describe('FormDateInput through react-hook-form', () => {
     ).toHaveValue('05/01/2000');
   });
 
-  it('submits nothing for a date that does not exist', async () => {
+  it('refuses the submit for a date that does not exist', async () => {
     const onSubmit = vi.fn();
     render(<DateForm onSubmit={onSubmit} />);
 
-    // 30 February can be typed — refusing it mid-edit would mean refusing the
-    // `3` of a `30` on its way to March — and is then simply never stored.
-    await browser.fill(
-      screen.getByRole('textbox', { name: 'Data di nascita' }),
-      '30022026',
-    );
+    // 30 February can be TYPED — refusing it mid-edit would mean refusing the
+    // `3` of a `30` on its way to March — and is then never stored. What
+    // changed is what happens next: the field used to submit an empty string,
+    // so the user saw `30/02/2026` on screen and "this field is required"
+    // underneath it. Now the box says it holds no date, which is what the
+    // native control says about the same keystrokes.
+    const field = screen.getByRole('textbox', {
+      name: 'Data di nascita',
+    }) as HTMLInputElement;
+    await browser.fill(field, '30022026');
     await browser.click(screen.getByRole('button', { name: 'Invia' }));
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({ dob: '' });
+    expect(field.validity.customError).toBe(true);
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

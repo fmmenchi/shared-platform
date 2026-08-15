@@ -39,11 +39,19 @@ this one.
 Leaving it to the consumer's schema would not have been an answer: the port is what writes the
 value, so the loss is the port's to undo.
 
-## `date` is deliberately not converted
+## `date` and `time` are deliberately not converted
 
-A date input's value already **is** the canonical `YYYY-MM-DD` string, so passing it on loses
-nothing. Turning it into a `Date` would be a decision about time zones, and that belongs to the
-schema.
+A date field's value already **is** the canonical `YYYY-MM-DD` string, and a time field's is `HH:mm`,
+so passing either on loses nothing. Turning them into a `Date` would be a decision about time zones,
+and that belongs to the schema — a `CivilTime` is a clock reading with no zone at all, which is
+exactly what the conversion would destroy.
+
+Both are accepted here even though the design system **replaces** those native controls rather than
+using them (ADR-0027): your schema declares what a field IS, not which control draws it, and refusing
+the honest answer would only push you to write `'text'` and lose whatever else the adapter derives.
+What the map must never do is reach the control — Conform shapes every prop by it, so it emits
+`type`, `pattern`, `min` and `max`, and `FormDateInput`/`FormTimeInput` drop precisely those. The
+shared suite declares both on purpose, because nothing inside the design system can see that work.
 
 ## There is no `'radio'`
 

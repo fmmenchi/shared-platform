@@ -4,7 +4,13 @@ import { userEvent as browser } from 'vitest/browser';
 import { UiProvider, FormTimeInput, type UseFormField } from '@fmmenchi/ui';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { Formik, Form as FormikForm, useFormikContext } from 'formik';
+import {
+  FormProvider as ConformProvider,
+  getFormProps,
+  useForm as useConformForm,
+} from '@conform-to/react';
 import { createFormikField } from '@fmmenchi/ui-form-ports/formik';
+import { createConformField } from '@fmmenchi/ui-form-ports/conform';
 
 /**
  * The time field against two REAL form libraries, one of each shape.
@@ -198,5 +204,83 @@ describe('FormTimeInput under Formik, which holds the value itself', () => {
 
     expect(carrier(container, 'opens').value).toBe('09:15');
     expect(screen.getByTestId('state').textContent).toContain('09:15');
+  });
+});
+
+// ── FormData-shaped: Conform ────────────────────────────────────────────────
+
+/**
+ * `types: { opens: 'time' }` is declared ON PURPOSE. It is the natural thing to
+ * declare for a time, and it is what makes Conform emit `type="time"`,
+ * `pattern`, `min` and `max` into a masked TEXT field — which would hand the
+ * field back to the native control this whole component exists to replace, and
+ * check a `pattern` derived from `HH:mm` against `02:30 PM`, blocking the submit
+ * for good. The routing table in the bound component exists for exactly this,
+ * and nothing outside this app can see it work.
+ */
+const conformTime = createConformField({ types: { opens: 'time' } });
+
+function ConformTimeForm() {
+  const [form] = useConformForm({ defaultValue: { opens: '14:30' } });
+  return (
+    <ConformProvider context={form.context}>
+      <form {...getFormProps(form)}>
+        <UiProvider
+          adapters={{ i18n: { locale: 'en-US' }, form: { field: conformTime } }}
+        >
+          <FormTimeInput name="opens" label="Opens at" />
+        </UiProvider>
+        <button type="reset">Reset</button>
+      </form>
+    </ConformProvider>
+  );
+}
+
+describe('FormTimeInput under Conform, for which the carrier IS the state', () => {
+  it('takes the seed Conform emits, and shows it in the readers own cycle', () => {
+    render(<ConformTimeForm />);
+    expect(screen.getByRole('textbox', { name: 'Opens at' })).toHaveValue(
+      '02:30 PM',
+    );
+  });
+
+  it('stays a text field, whatever the schema declares', () => {
+    const { container } = render(<ConformTimeForm />);
+    const field = screen.getByRole('textbox', { name: 'Opens at' });
+    expect(field).toHaveAttribute('type', 'text');
+    expect(field).not.toHaveAttribute('pattern');
+    expect(field).not.toHaveAttribute('min');
+    // The value the form reads is the carrier's, and it is ISO.
+    expect(carrier(container, 'opens').value).toBe('14:30');
+  });
+
+  it('posts HH:mm in the FormData the library reads', async () => {
+    const { container } = render(<ConformTimeForm />);
+    const field = screen.getByRole('textbox', {
+      name: 'Opens at',
+    }) as HTMLInputElement;
+    await browser.click(field);
+    field.setSelectionRange(0, field.value.length);
+    await browser.keyboard('0915a');
+
+    const form = container.querySelector('form') as HTMLFormElement;
+    expect(new FormData(form).getAll('opens')).toEqual(['09:15']);
+  });
+
+  it('goes back to the seed on the reset Conform renders', async () => {
+    const { container } = render(<ConformTimeForm />);
+    const field = screen.getByRole('textbox', {
+      name: 'Opens at',
+    }) as HTMLInputElement;
+    await browser.click(field);
+    field.setSelectionRange(0, field.value.length);
+    await browser.keyboard('0915a');
+    expect(carrier(container, 'opens').value).toBe('09:15');
+
+    await browser.click(screen.getByRole('button', { name: 'Reset' }));
+    await vi.waitFor(() => {
+      expect(field).toHaveValue('02:30 PM');
+    });
+    expect(carrier(container, 'opens').value).toBe('14:30');
   });
 });

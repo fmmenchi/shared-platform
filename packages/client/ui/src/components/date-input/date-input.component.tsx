@@ -274,7 +274,9 @@ function DateInput(props: DateInputProps) {
     // millennia out, announced by nothing. It is the one shape that can be told
     // apart from a typed date with certainty, because nobody's locale writes a
     // four-digit run first AND separates with hyphens by accident.
-    maskSegments(frame, typed, compose, { recognise: isoDayOf, display });
+    maskSegments(frame, typed, compose, {
+      passthrough: { recognise: isoDayOf, display },
+    });
 
   // THE CARRIER AND ITS THREE DOORS, which are not this component's to own —
   // `TimeInput` needs exactly the same ones and ADR-0027 forbids a second copy.
@@ -284,6 +286,7 @@ function DateInput(props: DateInputProps) {
   const { carrier, field, shown, write, record } = useCarrierField({
     label: 'DateInput',
     seed,
+    incomplete: t('incomplete'),
     display,
     normalise: isoDayOf,
     parse: parseIsoDate,
@@ -342,9 +345,34 @@ function DateInput(props: DateInputProps) {
               ? typed.length < shown.current.length
               : how.startsWith('delete');
           const deleted = deleting
-            ? applyDeletion(frame, shown.current, typed, caret, compose)
+            ? applyDeletion(frame, shown.current, typed, compose)
             : null;
-          const { text, iso } = deleted ?? mask(typed);
+          const masked = deleted ?? mask(typed);
+          const { text, iso } = masked;
+
+          // AN EDIT THAT CHANGED NOTHING IS PUT BACK, caret included.
+          //
+          // Two ways to get here and one repair. A REFLOW the frame cannot hold
+          // is refused by the mask — obeyed, one keystroke at the head of a full
+          // field emptied it. And a DELETION with nothing to delete — inside a
+          // literal that has no digit before it — re-emits the same string,
+          // which is right, but the caret was then re-anchored and jumped
+          // forward on a key that had done nothing.
+          //
+          // The browser has already applied its edit, so putting the caret back
+          // means undoing exactly the length it changed by.
+          if (masked.refused || (deleting && text === shown.current)) {
+            element.value = shown.current;
+            const back = Math.max(
+              0,
+              Math.min(
+                shown.current.length,
+                caret + (shown.current.length - typed.length),
+              ),
+            );
+            element.setSelectionRange(back, back);
+            return;
+          }
 
           // Written straight onto the node. It is uncontrolled, so React will
           // not re-render it back — and a plain assignment is right HERE,
@@ -352,7 +380,13 @@ function DateInput(props: DateInputProps) {
           // React has already heard it.
           if (text !== typed) {
             element.value = text;
-            const position = caretFor(frame, text, typed, caret);
+            const position = caretFor(
+              frame,
+              text,
+              typed,
+              caret,
+              masked.dropped,
+            );
             element.setSelectionRange(position, position);
           }
 

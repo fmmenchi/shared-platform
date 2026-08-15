@@ -10,7 +10,7 @@ import {
   parseIsoTime,
   toTwelveHour,
 } from './civil-time.js';
-import type { HourCycle } from './civil-time.js';
+import type { HourCycle } from './civil-time.types.js';
 
 describe('parseIsoTime', () => {
   it('reads a time to the minute, and leaves seconds absent', () => {

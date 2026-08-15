@@ -1,7 +1,10 @@
 import type { ComponentProps, Ref } from 'react';
 import type { Input } from '../input/input.component.js';
-import type { CivilTime, TimePrecision } from '../../date/civil-time.types.js';
-import type { HourCycle } from '../../date/civil-time.js';
+import type {
+  CivilTime,
+  HourCycle,
+  TimePrecision,
+} from '../../date/civil-time.types.js';
 
 /** The parts a clock reading is typed in, named as `Intl` names them. */
 export type TimePart = 'hour' | 'minute' | 'second';
