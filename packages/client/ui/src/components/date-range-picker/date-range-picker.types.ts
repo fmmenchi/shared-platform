@@ -82,4 +82,27 @@ export type DateRangePickerProps = SharedFieldProps & {
   pickOnly?: boolean;
   /** The text between the two fields. Defaults to an en dash. */
   separator?: ReactNode;
+  /**
+   * PROPS FOR ONE FIELD ONLY, which the shared ones above cannot be.
+   *
+   * Everything else here reaches BOTH inputs, and that is right for `disabled`
+   * or `size`. It is wrong for anything a form binding produces: measured, a
+   * bound twin spreading one end's `onChange` through the shared channel
+   * attached it to both carriers, so the start's binding was told the end's
+   * value and the two ends of the form held the same date.
+   *
+   * Applied after the shared props, so a per-field prop wins.
+   */
+  startFieldProps?: Partial<ComponentProps<typeof DateInput>>;
+  endFieldProps?: Partial<ComponentProps<typeof DateInput>>;
+  /**
+   * The nodes holding the two ISO values, if you need them.
+   *
+   * The picker keeps its own references regardless; yours are merged in. What
+   * actually asks for these is a form binding — react-hook-form reads `.value`
+   * off the element its ref was given, and it has to be the carrier and not the
+   * visible field, which holds `12/08/2026`.
+   */
+  startCarrierRef?: ComponentProps<typeof DateInput>['carrierRef'];
+  endCarrierRef?: ComponentProps<typeof DateInput>['carrierRef'];
 };

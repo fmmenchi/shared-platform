@@ -9,6 +9,7 @@ import { CalendarGlyph } from '../date-picker/calendar-glyph.component.js';
 import { useMessages } from '../../i18n/provider.js';
 import { useFormatter } from '../../formatting/use-formatter.js';
 import { cn } from '../../util/cn.js';
+import { mergeRefs } from '../../primitives/merge-refs.js';
 import { parseIsoDate } from '../../date/civil-date.js';
 import { writeDateInput } from '../../date/write-date-input.js';
 import { startOfMonth, compareDays } from '../../date/civil-math.js';
@@ -83,6 +84,10 @@ function DateRangePicker(props: DateRangePickerProps) {
     triggerLabel,
     pickOnly = false,
     separator = '–',
+    startCarrierRef,
+    endCarrierRef,
+    startFieldProps,
+    endFieldProps,
     className,
     ...field
   } = props;
@@ -239,10 +244,15 @@ function DateRangePicker(props: DateRangePickerProps) {
     <InputGroup className={cn(asTrigger && styles.asTrigger, className)}>
       <DateInput
         {...field}
+        {...startFieldProps}
         aria-label={startLabel}
         name={startName}
         defaultValue={defaultStart}
-        carrierRef={startCarrier}
+        // Ours AND the caller's, built inside the callback rather than during
+        // render: the compiler allows `mergeRefs` under a `ref` prop and
+        // refuses it under any other, and `carrierRef` is an ordinary prop that
+        // happens to carry one.
+        carrierRef={(node) => mergeRefs(startCarrier, startCarrierRef)(node)}
         ref={startField}
         announceFormat={!asTrigger}
         onDateChange={startTyped}
@@ -260,10 +270,11 @@ function DateRangePicker(props: DateRangePickerProps) {
       </span>
       <DateInput
         {...field}
+        {...endFieldProps}
         aria-label={endLabel}
         name={endName}
         defaultValue={defaultEnd}
-        carrierRef={endCarrier}
+        carrierRef={(node) => mergeRefs(endCarrier, endCarrierRef)(node)}
         ref={endField}
         announceFormat={!asTrigger}
         onDateChange={endTyped}
