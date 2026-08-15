@@ -162,6 +162,15 @@ interface ComboboxOwnProps<T> {
  * rendered when there is one, and without it neither handler can ever fire —
  * warned about in development.
  *
+ * `onBlur` ON THE CARRIER CANNOT HEAR THE VISIBLE FIELD, and that is worth
+ * stating rather than leaving to be discovered. React's `onBlur` is `focusout`,
+ * which bubbles up the REACT tree; the carrier is a SIBLING of the box a person
+ * types in, not an ancestor of it, so the only blur it ever sees is its own. A
+ * library validating on blur (`mode: 'onBlur'`) therefore validates this field
+ * when the choice changes and not when focus leaves it. Inherited from
+ * `DateInput`, whose carrier has the same shape, and the alternative is worse:
+ * on the visible field the handler reads a node with no name.
+ *
  * `required` lands on the VISIBLE field, which is `DateInput`'s policy and for
  * its reason: required on a CSS-hidden carrier is an invalid control the browser
  * cannot scroll to or focus, so it refuses the submit while showing nothing.
