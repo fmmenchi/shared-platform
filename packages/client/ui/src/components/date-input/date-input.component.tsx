@@ -1,15 +1,21 @@
-import { useEffect, useId, useMemo, useRef } from 'react';
+import { useId, useMemo } from 'react';
 import { Input } from '../input/input.component.js';
 import { useFormatter } from '../../formatting/use-formatter.js';
 import { useMessages } from '../../i18n/provider.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import { setNativeValue } from '../../primitives/set-native-value.js';
+import { useCarrierField } from '../../date/use-carrier-field.js';
 import {
   formatIsoDate,
   isoDayOf,
   parseIsoDate,
 } from '../../date/civil-date.js';
+import {
+  applyDeletion,
+  caretFor,
+  maskSegments,
+  numeralsOf,
+} from '../../date/segments.js';
 import { dateInputMessages } from './date-input.messages.js';
 import type { DatePart, DateInputProps } from './date-input.types.js';
 import styles from './date-input.module.css';
@@ -73,12 +79,7 @@ function usePattern(locale: string | undefined) {
     // string from the pattern on each keystroke, so a deleted mark comes back.
     const order = parts.map((part) => part.type).filter(isPart);
 
-    // The locale's own numerals, 0-9 in order, so `١٢` can be read and written
-    // as readily as `12`.
-    const format = new Intl.NumberFormat(locale, { useGrouping: false });
-    const numerals = Array.from({ length: 10 }, (_, digit) =>
-      format.format(digit),
-    );
+    const numerals = numeralsOf(locale);
 
     // What the locale would have used if we had not pinned it — reported, not
     // obeyed, so a consumer on a Buddhist or Persian page is told rather than
@@ -156,22 +157,6 @@ function DateInput(props: DateInputProps) {
   );
 
   const formatId = useId();
-  const carrier = useRef<HTMLInputElement>(null);
-  const field = useRef<HTMLInputElement>(null);
-  // The last text this component put on screen. A change event says what the
-  // field holds NOW; telling a deletion from an insertion needs what it held
-  // before, and reading it back off the node is too late — the browser has
-  // already applied the edit.
-  const shown = useRef('');
-
-  /** This locale's numeral for an ASCII digit, and back again. */
-  const toLocal = (ascii: string) =>
-    [...ascii].map((char) => numerals[Number(char)] ?? char).join('');
-  const toAscii = (char: string) => {
-    const index = numerals.indexOf(char);
-    if (index !== -1) return String(index);
-    return char >= '0' && char <= '9' ? char : '';
-  };
 
   /**
    * `12/08/2026` for `it`, `١٢/٠٨/٢٠٢٦` for `ar-EG` — the ISO date, localised.
@@ -246,546 +231,65 @@ function DateInput(props: DateInputProps) {
     .join('');
 
   /**
-   * The mask: what was typed, reduced to what a date can contain.
+   * THE FRAME THIS FIELD TYPES INTO, handed to the shared mask engine.
    *
-   * ONLY DIGITS SURVIVE — this locale's or ASCII, so an Arabic keyboard and a
-   * numeric keypad both work — and the separators are put back from the
-   * locale's own pattern. A letter cannot be typed, a second separator cannot
-   * be typed, and `12082026` becomes `12/08/2026` on its own.
-   *
-   * A DIGIT THAT MAKES A PART IMPOSSIBLE IS REFUSED AND NOT CONSUMED. Consuming
-   * it was the first version and it was catastrophic rather than merely wrong:
-   * a part holding one digit that no second digit could complete then swallowed
-   * every digit after it, so `8/12/2026` in `en-US` left `8` behind and no
-   * further keystroke could ever land. Left in place, the digit starts the next
-   * part instead — `5` then `9` is the 5th, then September.
-   *
-   * BOTH ENDS ARE ENFORCED. A ceiling alone let `00/00/2026` be typed in full:
-   * complete-looking, and storing nothing, with nothing to tell the user why.
-   *
-   * What it does NOT decide is whether the whole date exists: 30 February can
-   * be typed, and is then simply not stored. Blocking it mid-edit would mean
-   * refusing the `3` of a `30` that was on its way to March.
+   * Everything the engine needs and nothing it does not: the locale's pattern,
+   * the order of the parts, how wide each is and what it may say. The
+   * arithmetic itself — the flow mask, the positional deletion, the caret
+   * anchoring — lives in `segments.ts`, because `TimeInput` types into a
+   * different frame with the same rules and ADR-0027 forbids a second copy of
+   * them.
    */
-  /**
-   * Walk a masked string and say which part each digit belongs to, and where it
-   * sits.
-   *
-   * The mask lays parts out in fixed slots between fixed literals, so a string
-   * it produced can be read back positionally instead of being re-flowed. That
-   * is the whole difference between a deletion that touches one part and one
-   * that cascades through all three.
-   *
-   * Offsets are in CODE UNITS, because that is what `selectionStart` counts and
-   * what `slice` takes — one locale (`ccp`) writes its numerals above the BMP,
-   * so a digit is not always one unit wide.
-   */
-  const placeDigits = (text: string) => {
-    const digits: {
-      part: DatePart;
-      ascii: string;
-      at: number;
-      size: number;
-    }[] = [];
-    let at = 0;
-    for (const piece of parts) {
-      if (!isPart(piece.type)) {
-        if (text.startsWith(piece.value, at)) at += piece.value.length;
-        continue;
-      }
-      let held = 0;
-      while (at < text.length && held < WIDTH[piece.type]) {
-        const char = String.fromCodePoint(text.codePointAt(at) ?? 0);
-        const ascii = toAscii(char);
-        if (ascii === '') break;
-        digits.push({ part: piece.type, ascii, at, size: char.length });
-        at += char.length;
-        held += 1;
-      }
-    }
-    return digits;
-  };
+  const frame = useMemo(
+    () => ({
+      parts,
+      order,
+      width: WIDTH,
+      ceiling: CEILING,
+      floor: FLOOR,
+      isPart,
+      toLocal: (ascii: string) =>
+        [...ascii].map((char) => numerals[Number(char)] ?? char).join(''),
+      toAscii: (char: string) => {
+        const index = numerals.indexOf(char);
+        if (index !== -1) return String(index);
+        return char >= '0' && char <= '9' ? char : '';
+      },
+    }),
+    [parts, order, numerals],
+  );
 
-  /**
-   * A deletion, applied to the part it happened in.
-   *
-   * The flow mask below is right for TYPING and wrong for editing: it pours one
-   * stream of digits back into the slots, so removing a digit — or a separator —
-   * pulls every later digit one place forward. Measured on `12/08/2026`: one
-   * Backspace over the day left `10/08/2026`, a different real day, submitted in
-   * silence; deleting a separator left the digits unchanged, so the mask
-   * re-emitted the same text and the key did nothing at all, for ever.
-   *
-   * Here the previous text is read positionally, the removed range is mapped
-   * onto it, and only the digits inside that range go. Nothing after them moves.
-   * A separator has no digits of its own, so Backspace over one takes the digit
-   * in front of it instead, which is what every mask does and what the user
-   * meant.
-   */
-  const applyDeletion = (
-    before: string,
-    typed: string,
-    caret: number,
-  ): { text: string; iso: string } | null => {
-    const placed = placeDigits(before);
-    if (placed.length === 0) return null;
+  /** What a full set of parts names — the one thing the engine cannot know. */
+  const compose = (held: ReadonlyMap<DatePart, string>) =>
+    formatIsoDate({
+      year: Number(held.get('year')),
+      month: Number(held.get('month')),
+      day: Number(held.get('day')),
+    }) ?? '';
 
-    // What was cut: the span between the common prefix and the common suffix.
-    let head = 0;
-    while (
-      head < typed.length &&
-      head < before.length &&
-      typed[head] === before[head]
-    ) {
-      head += 1;
-    }
-    let tail = 0;
-    while (
-      tail < typed.length - head &&
-      tail < before.length - head &&
-      typed[typed.length - 1 - tail] === before[before.length - 1 - tail]
-    ) {
-      tail += 1;
-    }
-    const from = head;
-    const to = before.length - tail;
-    if (to <= from) return null;
-
-    const cut = placed.filter(
-      (digit) => digit.at < to && digit.at + digit.size > from,
-    );
-    // Only literals were removed — take the digit in front of the cut with them.
-    const removing =
-      cut.length > 0
-        ? cut
-        : placed.filter((digit) => digit.at + digit.size === from).slice(-1);
-    if (removing.length === 0) return null;
-
-    const held = new Map<DatePart, string>();
-    for (const part of order) held.set(part, '');
-    for (const digit of placed) {
-      if (removing.includes(digit)) continue;
-      held.set(digit.part, (held.get(digit.part) ?? '') + digit.ascii);
-    }
-
-    // NO TRUNCATION HERE, unlike the flow mask. A part left short by a deletion
-    // still has whole parts after it, and they are exactly what "leave the
-    // others alone" means: `1/08/2026`, not `1`. Only the literals with nothing
-    // left on one side of them come off, so an emptied field is empty rather
-    // than a row of separators.
-    const tokens = parts.map((piece) =>
-      isPart(piece.type)
-        ? { literal: false, value: toLocal(held.get(piece.type) ?? '') }
-        : { literal: true, value: piece.value },
-    );
-    const filled = tokens.map((token) => !token.literal && token.value !== '');
-    const first = filled.indexOf(true);
-    const last = filled.lastIndexOf(true);
-    const text =
-      first === -1
-        ? ''
-        : tokens
-            .slice(first, last + 1)
-            .map((token) => token.value)
-            .join('');
-
-    const whole = order.every(
-      (part) => (held.get(part) ?? '').length === WIDTH[part],
-    );
-    return {
-      text,
-      iso: whole
-        ? (formatIsoDate({
-            year: Number(held.get('year')),
-            month: Number(held.get('month')),
-            day: Number(held.get('day')),
-          }) ?? '')
-        : '',
-    };
-  };
-
-  const mask = (typed: string): { text: string; iso: string } => {
+  const mask = (typed: string) =>
     // AN ISO DATE PASTED IN IS AN ISO DATE, not eight digits to re-segment.
     // `2026-08-12` out of an API, a spreadsheet or this component's own carrier
     // was read as `20`, `02`, `6081` under `it` — complete-looking, four
     // millennia out, announced by nothing. It is the one shape that can be told
     // apart from a typed date with certainty, because nobody's locale writes a
     // four-digit run first AND separates with hyphens by accident.
-    const iso = isoDayOf(typed);
-    if (iso !== null) {
-      const value = iso;
-      return { text: display(value), iso: value };
-    }
+    maskSegments(frame, typed, compose, { recognise: isoDayOf, display });
 
-    const digits = [...typed].map(toAscii).filter((char) => char !== '');
-    const held = new Map<DatePart, string>();
-    let index = 0;
-
-    const admits = (part: DatePart, candidate: string) => {
-      const value = Number(candidate);
-      if (value > CEILING[part]) return false;
-      // A part is allowed to be `0` while it is still growing — `0` is on its
-      // way to `05` — but never once it is as wide as it will get.
-      return candidate.length < WIDTH[part] || value >= FLOOR[part];
-    };
-
-    for (const part of order) {
-      let value = '';
-      while (index < digits.length && value.length < WIDTH[part]) {
-        const candidate = value + digits[index];
-        if (!admits(part, candidate)) break;
-        value = candidate;
-        index += 1;
-      }
-      // A part closed early by a digit that did not fit is PADDED, so that digit
-      // starts the next part rather than being lost. Only when digits remain, so
-      // it does not fire while a part is still being typed: `12` `4` waits at
-      // `12/4`. And never into a value the part may not hold, which is what
-      // keeps a lone `0` from becoming `00`.
-      const padded = value.padStart(WIDTH[part], '0');
-      if (
-        value !== '' &&
-        value.length < WIDTH[part] &&
-        index < digits.length &&
-        Number(padded) >= FLOOR[part]
-      ) {
-        value = padded;
-      }
-      held.set(part, value);
-    }
-
-    let text = '';
-    for (const piece of parts) {
-      if (!isPart(piece.type)) {
-        text += piece.value;
-        continue;
-      }
-      const value = held.get(piece.type) ?? '';
-      text += toLocal(value);
-      // An incomplete part ends the string: everything after it would be a
-      // separator, or a field with nothing in front of it.
-      if (value.length < WIDTH[piece.type]) return { text, iso: '' };
-    }
-
-    return {
-      text,
-      iso:
-        formatIsoDate({
-          year: Number(held.get('year')),
-          month: Number(held.get('month')),
-          day: Number(held.get('day')),
-        }) ?? '',
-    };
-  };
-
-  /**
-   * Where the caret goes once the text has been rewritten under it.
-   *
-   * Counted in DIGITS, not in characters: the mask inserts and removes
-   * separators, so a character index taken before it means nothing after. Put
-   * the caret after the same digit the user was behind — and past the separator
-   * that follows it, or the next keystroke lands in front of the `/` and the
-   * caret jumps backwards on every third character.
-   */
-  const caretFor = (masked: string, typed: string, caret: number): number => {
-    // Walked as CODE POINTS with their unit offsets carried along, because
-    // `selectionStart` counts units while a digit is not always one unit wide:
-    // `ccp` writes its numerals above the BMP. Indexed by unit, every one of
-    // them read as half a surrogate, no digit was ever counted, and the caret
-    // went to the end on every keystroke — mid-string editing was impossible in
-    // that locale and nowhere else.
-    const points: { char: string; at: number }[] = [];
-    for (let at = 0; at < masked.length;) {
-      const char = String.fromCodePoint(masked.codePointAt(at) ?? 0);
-      points.push({ char, at });
-      at += char.length;
-    }
-
-    // ANCHORED ON THE RIGHT, and this is the whole of the function.
-    //
-    // Counting the digits BEFORE the caret is the obvious way and it is wrong,
-    // because padding inserts a digit to their left: the `n`-th digit of the
-    // masked text is then the zero the mask added, not the one the person
-    // pressed, so the caret lands in FRONT of their keystroke and everything
-    // after it is typed into the wrong place. Measured over all 336 dates of
-    // 2026 typed in short form — `8` `/` `1` `2` `/` `2026` rather than
-    // `08/12/2026` — that stored a WRONG BUT VALID date 186 times in `en-US`,
-    // 172 in `it` and 132 in `ja-JP`: `8/12/2026` came out as `0261-08-22`.
-    //
-    // The digits to the RIGHT of the caret are the ones padding cannot move, so
-    // they are what to hold on to. Same sweep, anchored this way: 13 wrong in
-    // `en-US` and 0 in `ja-JP`, and the 13 are genuine short-form ambiguity —
-    // `1 13 2026` and `11 3 2026` are the same digits — which no mask on one
-    // field can tell apart.
-    const isDigit = (char: string) => toAscii(char) !== '';
-    const after = [...typed.slice(caret)].filter(isDigit).length;
-    if (after === 0) return masked.length;
-
-    let seen = 0;
-    for (let index = points.length - 1; index >= 0; index -= 1) {
-      const point = points[index];
-      if (point === undefined || !isDigit(point.char)) continue;
-      seen += 1;
-      if (seen === after) return point.at;
-    }
-    return 0;
-  };
-
-  // Raised while this component writes its OWN carrier, so the doors below can
-  // tell that write from an external one. They are indistinguishable at the
-  // event level — both go through the prototype setter and dispatch `input` —
-  // and the difference matters for exactly one case: an empty ISO. From outside
-  // it means the date was CLEARED and the box must follow; from here it means
-  // the digits under the caret do not name a day yet, and wiping them would
-  // delete what the user is in the middle of typing. Measured: without this,
-  // one Backspace emptied the whole field.
-  const writingOwn = useRef(false);
-  const write = (iso: string) => {
-    const element = carrier.current;
-    if (element === null || element.value === iso) return;
-    writingOwn.current = true;
-    const wrote = setNativeValue(element, iso);
-    writingOwn.current = false;
-    if (!wrote && process.env.NODE_ENV !== 'production') {
-      console.warn(
-        'DateInput: this environment has no `value` setter on HTMLInputElement.prototype, so the field cannot tell a form library what was typed.',
-      );
-    }
-  };
-
-  // RE-DISPLAY WHEN THE LOCALE MOVES. React does not re-apply `defaultValue` to
-  // a field the user has touched, so a live language switch — which ADR-0027
-  // makes the supported way to re-locale a subtree — left `01/02/2000` on
-  // screen under a `mm/dd/yyyy` hint, meaning one day to the reader and another
-  // to the carrier, until the next keystroke silently swapped them.
-  useEffect(() => {
-    const element = field.current;
-    if (element === null) return;
-    const iso = carrier.current?.value ?? '';
-    // A HALF-TYPED VALUE IS CLEARED rather than left behind. The carrier is
-    // empty until a date is whole, so an early return here left `١٢/٠٨/` on
-    // screen in the OLD locale's numerals — which the new locale's reader then
-    // scores as no digits at all, so the next keystroke wiped everything typed.
-    // There is no ISO to redraw it from, and text in a numbering system the
-    // field no longer speaks is worse than an empty field.
-    if (iso === '') {
-      if (element.value !== '' && shown.current !== '') {
-        element.value = '';
-        shown.current = '';
-      }
-      return;
-    }
-    element.value = display(iso);
-    shown.current = element.value;
-  }, [display]);
-
-  // THE LATEST `onDateChange`, reachable from the listeners below.
-  //
-  // They are installed once and torn down on a locale change, so a handler
-  // captured when they were built would go stale the first time the consumer
-  // re-rendered — and the consumer here is usually a picker holding the
-  // selected day in state, which is exactly the thing that must not fall
-  // behind. Synced in an effect rather than in render, because writing a ref
-  // during render is what the compiler refuses and what tears under Strict
-  // Mode's double invocation.
-  const latest = useRef(onDateChange);
-  useEffect(() => {
-    latest.current = onDateChange;
+  // THE CARRIER AND ITS THREE DOORS, which are not this component's to own —
+  // `TimeInput` needs exactly the same ones and ADR-0027 forbids a second copy.
+  // What is passed in is everything that is about DAYS rather than about the
+  // machinery: how one is drawn, what any string a consumer assigns reduces to,
+  // and what a whole one looks like on screen.
+  const { carrier, field, shown, write, record } = useCarrierField({
+    label: 'DateInput',
+    seed,
+    display,
+    normalise: isoDayOf,
+    parse: parseIsoDate,
+    isWholeShown: (text) => mask(text).iso !== '',
+    onValueChange: onDateChange,
   });
-
-  // WHAT AN EXTERNAL WRITE OWES THE CONSUMER. The component's own keystroke
-  // path reports for itself; these three doors did not report at all, so a
-  // `DatePicker`'s grid — and any consumer holding the date in state — sat on a
-  // value the field no longer held.
-  //
-  // AND ONLY WHEN IT ACTUALLY MOVED. A reset fires on every control in the form,
-  // touched or not, so an untouched field announced the value it already held —
-  // measured, an untouched seeded field reported `{1985,3,12}` on every click of
-  // a reset button, and a `DatePicker` turned each one into a `setPicked`, a
-  // `setMonth` and a call to the consumer. The keystroke path keeps its own
-  // per-keystroke reporting and records what it said here, so the two cannot
-  // disagree about what the consumer was last told.
-  const reported = useRef(seed);
-  const announce = (iso: string) => {
-    if (iso === reported.current) return;
-    reported.current = iso;
-    latest.current?.(parseIsoDate(iso));
-  };
-
-  // FOLLOW THE CARRIER WHEN SOMETHING ELSE WRITES IT.
-  //
-  // A form library setting a value does not go through this component:
-  // react-hook-form's `setValue` and `reset` assign straight onto the element
-  // its `register()` ref was given, which is the carrier. That fires no event,
-  // records no mutation, and — measured — triggers no render either, since a
-  // binding that only calls `register()` subscribes to nothing. So no effect
-  // can catch it: the carrier held the new date while the user went on reading
-  // the old one, and the form submitted a date that was never on screen.
-  //
-  // The only thing that can see an assignment is the property being assigned to.
-  // React has already installed its own `value` descriptor here for its change
-  // tracker, so this WRAPS whatever is on the node rather than replacing it —
-  // the tracker keeps working, and the original goes back on unmount. Our own
-  // writes go through the prototype setter (`setNativeValue`), so they do not
-  // come back round through this.
-  // WHAT EVERY EXTERNAL WRITE DOES, in one place, because the three doors below
-  // differ only in how they are told.
-  //
-  // `cleared` separates the two things an empty carrier can mean, which the
-  // first version collapsed. Half-typed, it means "no whole date yet" and the
-  // digits under the caret must survive. CLEARED — `setValue(name, '')`,
-  // `writeDateInput(node, null)`, a reset to an empty default — it means the
-  // date is gone, and leaving it on screen was measured showing a date the form
-  // no longer held while the consumer still held the old one. A whole date on
-  // screen is what tells them apart: nobody is mid-edit on a complete date.
-  const arrive = (iso: string, fromReset = false) => {
-    const target = field.current;
-    if (target === null) return;
-    // OUR OWN WRITE IS NOT AN ARRIVAL. Every keystroke pushes the new ISO onto
-    // the carrier, which dispatches `input`, which lands here — and the field
-    // has already been drawn and the consumer already told by the handler that
-    // did it. Measured after the first version of this helper: one typed date
-    // reported TWICE, because the equality check that used to stop it had moved
-    // to guard only the repaint. A grid pick reported once and typing twice, so
-    // the two paths disagreed about the same event.
-    if (writingOwn.current && !fromReset) return;
-    if (iso === '') {
-      const wasWhole = mask(shown.current).iso !== '';
-      if (!wasWhole && !fromReset) return;
-      target.value = '';
-      shown.current = '';
-      announce('');
-      return;
-    }
-    // THE SAME GRAMMAR THE MASK USES, which is the point of `isoDayOf`. An
-    // assignment of `2026-08-12T00:00:00.000Z` — what `toISOString()` gives,
-    // and what a consumer writes without thinking — used to fail the strict
-    // parser and leave the field empty while the carrier held the instant.
-    const day = isoDayOf(iso);
-    if (day === null) return;
-    // AND THE CARRIER IS BROUGHT WITH IT, through the component's own write, so
-    // the form posts the day the field is showing rather than the instant it
-    // was handed. A date field holding an instant is the `Date`-versus-day
-    // conflation this whole family exists to refuse — and `write` dispatches a
-    // real event, so the library that sent the instant is told what it became
-    // instead of being left disagreeing with the DOM.
-    if (day !== iso) write(day);
-    const text = display(day);
-    if (text === '') return;
-    if (text !== target.value) {
-      target.value = text;
-      shown.current = text;
-    }
-    announce(day);
-  };
-
-  useEffect(() => {
-    const element = carrier.current;
-    if (element === null) return;
-    const own = Object.getOwnPropertyDescriptor(element, 'value');
-    const proto = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      'value',
-    );
-    const set = own?.set ?? proto?.set;
-    const get = own?.get ?? proto?.get;
-    if (set === undefined || get === undefined) return;
-
-    // AND WHATEVER WAS WRITTEN BEFORE THIS RAN. `register()`'s ref callback
-    // fires in the COMMIT phase, so react-hook-form has already assigned the
-    // node by the time this passive effect installs the descriptor — measured,
-    // a `defaultValues` holding a datetime went straight past all three doors
-    // and the field started empty while the form held the instant. Reading the
-    // node once, here, is the only place that write can still be seen.
-    const arrived = element.value;
-
-    Object.defineProperty(element, 'value', {
-      configurable: true,
-      enumerable: own?.enumerable ?? false,
-      // Bound to the element rather than to `this`: the descriptor is installed
-      // on this one node and nowhere else, and the React Compiler refuses a
-      // file containing a `this` it cannot follow.
-      get() {
-        return get.call(element) as string;
-      },
-      set(next: unknown) {
-        set.call(element, next);
-        arrive(String(next));
-      },
-    });
-
-    // AND THE OTHER DOOR: a write that arrives as an EVENT rather than as a
-    // bare assignment. That is how anything outside the component sets this
-    // field on purpose — `writeDateInput`, and therefore a `Calendar` in a
-    // `Popover` "setting the field" as ADR-0027 says it does. It cannot use the
-    // assignment path, because the only way to leave React's value tracker
-    // stale enough to hear the change is the prototype setter, which by
-    // definition steps over the property wrapped above.
-    //
-    // Guarded on the text actually differing, so the component's OWN writes —
-    // which dispatch the same event on every keystroke — do not redraw the
-    // field under the caret.
-    const follow = () => arrive(element.value);
-    element.addEventListener('input', follow);
-    if (arrived !== '') arrive(arrived);
-
-    // AND THE THIRD DOOR, which takes neither of the first two: `form.reset()`.
-    // The platform reverts a control to its default without going through the
-    // `value` property and without an `input` event, so nothing tells anyone the
-    // date changed.
-    //
-    // READ ON A TASK, NOT A MICROTASK, and this is the correction that matters:
-    // a microtask checkpoint runs as soon as the listener returns and the JS
-    // stack is empty — which it IS when the browser runs the reset from a
-    // button's activation behaviour, i.e. the only reset a user can perform.
-    // Measured at the platform level, typing into a seeded field:
-    //
-    //     button click   listener: typed | microtask: typed | timeout: seed
-    //     form.reset()   listener: typed | microtask: seed  | timeout: seed
-    //
-    // So the microtask version reported the date that had just been DISCARDED,
-    // and drove a `DatePicker`'s grid to it. Only `form.reset()` from script
-    // keeps the stack long enough for the microtask to land after the revert,
-    // and that is the path the test happened to take.
-    //
-    // ON THE DOCUMENT, IN THE CAPTURE PHASE, rather than on `element.form`. A
-    // listener bound to the form is bound to the form the carrier had WHEN THE
-    // EFFECT RAN: the cleanup then reads `element.form` after React has detached
-    // the node, gets `null`, and removes nothing — measured, a `DateInput`
-    // unmounted from a surviving form leaked its listener and its whole closure
-    // every time. A changed `form=` prop never rebuilt it either, so resets went
-    // to the old form and not the new one, and a form rendered in a later commit
-    // got no listener at all. The document is always there, and the filter is
-    // the carrier's own membership, read at event time.
-    const reset = (event: Event) => {
-      if (event.target !== element.form) return;
-      setTimeout(() => {
-        // A RESET CAN BE REFUSED, and this listener used to wipe the field
-        // anyway. `preventDefault()` on the event — a page asking "are you
-        // sure?" — cancels the revert, so the carrier still holds what it held
-        // and the box should too; measured, a half-typed `01/01/` was emptied
-        // by a reset the page had just called off.
-        //
-        // Read HERE rather than in the listener: this is capture phase on the
-        // document, so it runs BEFORE the handler that would refuse, and the
-        // flag is only true once the dispatch is over. The same task that makes
-        // the revert visible makes the refusal visible.
-        if (event.defaultPrevented) return;
-        arrive(element.value, true);
-      }, 0);
-    };
-    document.addEventListener('reset', reset, true);
-
-    return () => {
-      element.removeEventListener('input', follow);
-      document.removeEventListener('reset', reset, true);
-      if (own === undefined) {
-        Reflect.deleteProperty(element, 'value');
-      } else {
-        Object.defineProperty(element, 'value', own);
-      }
-    };
-  }, [display]);
 
   return (
     <>
@@ -838,7 +342,7 @@ function DateInput(props: DateInputProps) {
               ? typed.length < shown.current.length
               : how.startsWith('delete');
           const deleted = deleting
-            ? applyDeletion(shown.current, typed, caret)
+            ? applyDeletion(frame, shown.current, typed, caret, compose)
             : null;
           const { text, iso } = deleted ?? mask(typed);
 
@@ -848,15 +352,15 @@ function DateInput(props: DateInputProps) {
           // React has already heard it.
           if (text !== typed) {
             element.value = text;
-            const position = caretFor(text, typed, caret);
+            const position = caretFor(frame, text, typed, caret);
             element.setSelectionRange(position, position);
           }
-          shown.current = text;
 
           write(iso);
-          // Reported from here, and recorded, so the doors above can tell a
-          // value that moved from one they have already announced.
-          reported.current = iso;
+          // Drawn and reported from here, and both recorded together, so the
+          // doors can tell a value that moved from one they have already
+          // announced.
+          record(text, iso);
           onDateChange?.(parseIsoDate(iso));
         }}
       />
