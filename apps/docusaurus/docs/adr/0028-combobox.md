@@ -314,18 +314,54 @@ updated a `FormInput` beside the date field and left the field itself stale, so 
 one date while the library held another, and clearing did nothing at all. A `Combobox` binding that
 skips this repeats it.
 
-So: a `FormCombobox` adapter ships with the component, and two things are proven in
-`apps/ui-ports-validation` — the shared suite that caught the above — **before** it ships:
+**The port already carries half of this, and already refuses the other half in writing.**
 
-1. **Multiple against a ref-based binding is the unproven combination.** One field name, N hidden
-   carriers, and a `register()` that hands over one ref per registration. It may work; nobody here
-   has shown that it does. If a binding cannot express it, then multiple binds through that
-   library's controlled API and the carriers stay for `FormData` and the no-JS remainder — but that
-   is a fallback to be chosen deliberately, not discovered by a consumer.
+`field-type.ts` is the shared layer above all five bindings: a map of field name → control kind,
+plus `readValue`, which undoes the DOM's "everything is a string" in one place (`checked` for
+booleans, `valueAsNumber` for numbers, `undefined` rather than `NaN` because that is what "no value
+yet" means to a schema). Single-select is a small, well-understood extension of it — `'combobox'`
+joins `FormFieldType` the way `'select'` and `'textarea'` did, and those were added for a measured
+defect rather than for tidiness: without a member for it, Conform shaped a select through
+`getInputProps` and emitted `type`, `pattern`, `accept` and `multiple` onto it, and `multiple`
+flipped the element's role to `listbox`. Adding the member is what stops a library mis-shaping a
+control it does not recognise, and it fixes all five bindings at once. A combobox whose keys are
+numeric ids then inherits `readValue`'s coercion instead of every consumer's schema doing it.
+
+**Multiple, on the other hand, needs a port shape that does not exist — and the port says so
+itself.** `FormFieldType` deliberately has no `radio` member, with this reason recorded in its
+source:
+
+> A radio group is N controls sharing one name with a distinct value each, so the option's value —
+> the thing the binding turns on — cannot be expressed in a map keyed by field NAME. Advertising it
+> would have meant a control that can never be selected […] That binding needs its own shape, one
+> name to many controls, and it does not exist yet.
+
+A multi-select combobox is exactly that shape: one `name`, N carriers, a distinct value each. So the
+prerequisite for multiple is not a test, it is a **port-level piece of work** — and it now has **two
+customers**, radio groups being the first, which is this package's own threshold for when an
+abstraction earns its place. It stayed unbuilt because one customer was not enough reason.
+
+That ordering is the decision: `'combobox'` in `FormFieldType` first, single-select binds; the
+one-name-to-many-controls shape next, and multiple binds on top of it. Building multiple against the
+existing shape would mean faking in the component what the port refused to fake, which is how a
+control that can never be selected gets shipped.
+
+Then, in `apps/ui-ports-validation` — the shared suite that caught the Formik defect above — two
+things are proven **before** the component ships:
+
+1. **Multiple against a ref-based binding**, once the port shape exists. One field name, N carriers,
+   a `register()` that hands over one ref per registration, and a count that changes as chips come
+   and go. If a binding still cannot express it, multiple binds through that library's controlled
+   API and the carriers stay for `FormData` and the no-JS remainder — a fallback chosen deliberately,
+   not discovered by a consumer.
 2. **Creation changes what the bound value IS.** With free text on, what the library holds may be a
    key from the list or a draft that has no key yet. A validation schema cannot discriminate between
    them unless the shape says which it is, so the value the adapter reports must carry that
    distinction rather than flattening both to a string.
+
+And `@fmmenchi/ui` stays out of all of it: `Combobox` and `FormCombobox` bind to the **port**, never
+to a library. The alternative is a component per library per control, which is the multiplication
+ADR-0008 exists to prevent.
 
 ### 13. Deferred, deliberately: the states of data arriving
 
