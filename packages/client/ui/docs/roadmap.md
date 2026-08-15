@@ -98,12 +98,15 @@ the component itself expires the moment the queue in front of it does.
   list is the browser's, because _"a themed list is what a combobox costs weeks for"_. Building one
   reverses that trade, so it needs an ADR before it needs code, and `appearance: base-select` may
   make part of it unnecessary.
-- **A time field.** The date line is finished: `DateInput`, `FormDateInput`, `Calendar`, `DatePicker`
-  and `FormDatePicker` are all in the table above, and ADR-0027 records why each of them looks the
-  way it does — including why the picker, first written as a composition, became a component. A time field is the
-  same consideration on `type="time"` and waits for someone to ask. Note it is **not** blocked the way
-  `type="date"` is: that refusal exists because a date's segment ORDER contradicts the declared
-  locale, and because there is a replacement to send people to. Neither is true of time yet.
+- **A time field — no longer deferred, and this bullet was wrong.** It said `type="time"` is "not
+  blocked the way `type="date"` is", which was written without measuring. Measured: a native time
+  field draws `14:30` under `en-US`, `it-IT`, `ja-JP` and `ar-EG` alike, while `Intl` writes
+  `02:30 PM` for the first and `٠٢:٣٠ م` for the last — the same ceiling, and worse, because the
+  control follows the operating system's regional format rather than even the locale the engine
+  reports. So `TimeInput` and `FormTimeInput` are built and `type="time"` is refused, on the
+  argument ADR-0027's time amendment records. What stays deferred is a time PICKER: a set of
+  available slots is a consumer's data rendered as a `Select` or a list, not a grid this package
+  must draw.
 - **Date ranges.** `Calendar` picks one day, deliberately: a range is where the cost curve turns —
   two ends, a hovered preview between them, and a keyboard contract that has to say which end is
   moving — and it is the piece MUI charges for. It needs its own justification and its own ADR

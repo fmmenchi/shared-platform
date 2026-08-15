@@ -70,10 +70,12 @@ export const States: Story = {
 /**
  * Native input types work — it's a transparent `<input>`.
  *
- * All but one: `type="date"` is refused (ADR-0027), and this canvas used to
- * render a live native date picker directly above the section explaining that
- * it is not accepted. `type="time"` stands in for it, which is the same recipe
- * with none of the locale problem.
+ * All but two: `type="date"` and `type="time"` are refused (ADR-0027), and this
+ * canvas used to render a live native date picker directly above the section
+ * explaining that it is not accepted. It then used `type="time"` as the stand-in
+ * "with none of the locale problem", which was written without measuring and is
+ * false — a native time field draws the same 24-hour reading whatever locale
+ * the page declares. Reach for `DateInput` and `TimeInput`.
  */
 export const Types: Story = {
   render: () => (
@@ -81,7 +83,7 @@ export const Types: Story = {
       <Field label="Email" type="email" placeholder="you@example.com" />
       <Field label="Password" type="password" placeholder="••••••••" />
       <Field label="Amount" type="number" inputMode="numeric" placeholder="0" />
-      <Field label="Time" type="time" />
+      <Field label="Website" type="url" placeholder="https://" />
     </div>
   ),
 };
