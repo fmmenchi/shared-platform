@@ -134,7 +134,8 @@
       ]
     },
     "build-storybook": {
-      "dependsOn": ["codegen"]
+      "//": "`^build`, not just `codegen`: a workspace dependency resolves through its package exports, which point at `dist`. On a fresh checkout that dist does not exist, so the preview bundle fails to resolve it (`@fmmenchi/formatting` broke the docs deploy for a day, invisibly — locally everyone already had the dist built, and nx served the storybook build from cache).",
+      "dependsOn": ["codegen", "^build"]
     },
     "storybook": {
       "dependsOn": ["codegen"]
