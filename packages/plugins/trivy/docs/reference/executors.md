@@ -85,7 +85,10 @@ pnpm nx run @fmmenchi/ui:sbom [options]
   format of the workspace's own package manager (`detectPackageManager`); Trivy reads **that pruned
   lock** — exactly what a consumer installs.
 - For `cyclonedx`, the SBOM's root component is renamed to the package name and version (Trivy would
-  otherwise root it at the scan path).
+  otherwise root it at the scan path). Under the **docker** runner that file is written by root, so
+  the rename unlinks before rewriting — overwriting in place fails with `EACCES` on a Linux CI runner,
+  and every SBOM published from CI used to keep `/scan` as its root component because of it. If the
+  rename cannot happen, the executor now says so instead of leaving Trivy's raw output silently.
 - Same failure contract as `scan`: a missing `trivy`/`docker` binary fails loudly.
 
 ---
