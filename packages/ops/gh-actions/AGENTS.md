@@ -13,8 +13,9 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   `@fmmenchi/nx-notify`), plus pure-computation bricks (`compute-context` derives the canonical run
   context — event kind, release flag, sha/ref slugs — once, for every downstream job). One source of
   truth: plugin logic is never duplicated here.
-- **Reusable workflow** lives at `../../../.github/workflows/security.reusable.yml` (GitHub only
-  discovers reusable workflows under `.github/workflows/`), and references the actions above.
+- **Reusable workflows** live at `../../../.github/workflows/{security,docs}.reusable.yml` (GitHub
+  only discovers reusable workflows under `.github/workflows/`), and reference the actions above.
+  **Release is bricks only** — there is no `release.reusable.yml`, by the rule below.
 - The `src/` TS is scaffolding only (the lib carries no code) — it exists so nx has a project to
   version/tag.
 
@@ -26,6 +27,14 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   where the plugin is a project. Ask the graph instead (`nx show projects --with-target <t> --json`,
   take the first) and **fail when the answer is empty** — `nx run-many` exits 0 on no matches
   (measured), which would turn an unregistered plugin into a green security job that scanned nothing.
+- **A reusable workflow only for a job that is self-contained and parametric.** `security` and `docs`
+  qualify: nothing about them is ordered against the caller's other jobs, and everything repo-shaped
+  is an input. A **release** is neither — it must run after the caller's checks (and a called workflow
+  cannot require that of its caller: only `needs:`/`workflow_run`/an approval `environment` in the
+  caller can), and it must run a script from a path that differs between a consumer
+  (`node_modules/@fmmenchi/ci/…`) and this repo (source, no `node_modules/@fmmenchi` at all — so the
+  old `release.reusable.yml` could never be dogfooded here, and never was). Work like that ships as
+  bricks plus a documented job; the ordering decision stays with whoever owns the pipeline.
 - **An action and the targets it invokes ship in TWO releases, never one.** The reusable workflows
   reference the actions by tag (`@gh-actions/v0`), and that alias only moves **after** the release
   job runs — so for one cycle the OLD action runs against the NEW workspace. Moving the trivy scan

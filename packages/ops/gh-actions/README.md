@@ -31,21 +31,28 @@ jobs:
     secrets: inherit
 ```
 
-## Turnkey: the reusable release workflow
+## Release is bricks, not a turnkey workflow
 
-Version + tag the affected projects, attach an SBOM to each release, and announce each to Slack —
-on push to your main (needs `@fmmenchi/ci` installed and the same nx release setup):
+There is deliberately **no** `release.reusable.yml`. Releasing has to be sequenced against your own
+checks, and a called workflow cannot require that of its caller — so the ordering stays where the
+decision belongs, in your job graph. Compose the bricks (see
+[compose the bricks](./docs/guides/compose-bricks.md) for the full job):
 
 ```yaml
-# .github/workflows/release.yml in a consumer repo
-name: Release
-on:
-  push:
-    branches: [main]
 jobs:
+  gate: { … your typecheck / build / lint / test … }
   release:
-    uses: fmmenchi/shared-platform/.github/workflows/release.reusable.yml@gh-actions/v0
-    secrets: inherit
+    needs: gate # ← the part a reusable workflow could never enforce for you
+    if: github.ref == 'refs/heads/main'
+    concurrency: { group: release, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+        with: { registry-url: 'https://npm.pkg.github.com' }
+      - run: node node_modules/@fmmenchi/ci/dist/release.js # versions, tags, records new tags
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/announce-releases@gh-actions/v0
 ```
 
 ## Turnkey: the reusable docs workflow

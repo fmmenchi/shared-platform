@@ -6,12 +6,16 @@ sidebar_position: 1
 
 # Reuse a whole workflow
 
-Call a turnkey reusable workflow (`security`, `release`, `docs`) as a **job** — you own the triggers,
-it does the work.
+Call a turnkey reusable workflow (`security`, `docs`) as a **job** — you own the triggers, it does
+the work.
+
+There is no release equivalent, and that is a decision rather than a gap: a release must run **after**
+your own checks, and a called workflow cannot require that of its caller. It is
+[bricks in a job you own](./compose-bricks.md#the-release-job) instead.
 
 ## Intent
 
-You want a complete pipeline (vuln + secret scan, or release + SBOM + announce, or a docs deploy)
+You want a complete pipeline (vuln + secret scan, or a docs deploy)
 without assembling the steps yourself. A reusable workflow gives you that in one `uses:` line.
 
 ## Step 1: Create a caller workflow
@@ -49,17 +53,7 @@ jobs:
 | `with:`                                | The reusable's inputs (see [reference](../reference/workflows.md)).             |
 | `secrets: inherit`                     | Pass all your secrets in one line — or map them explicitly.                     |
 
-## Release and docs — same mechanic
-
-```yaml
-# .github/workflows/release.yml
-on:
-  push: { branches: [main] }
-jobs:
-  release:
-    uses: fmmenchi/shared-platform/.github/workflows/release.reusable.yml@gh-actions/v0
-    secrets: inherit
-```
+## Docs — same mechanic
 
 ```yaml
 # .github/workflows/docs.yml

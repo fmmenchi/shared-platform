@@ -11,14 +11,31 @@ sidebar_position: 3
 GitHub gives two native mechanisms, with opposite ergonomics — this toolkit ships both:
 
 - **Reusable workflow** (`*.reusable.yml`, `on: workflow_call`) — a whole **job**, called with
-  `uses:` at the job level. Turnkey: you get checkout + setup + scan (or release, or docs deploy) in
-  one line. You own the triggers; you can't add steps to that job.
+  `uses:` at the job level. Turnkey: you get checkout + setup + scan (or a docs deploy) in one line.
+  You own the triggers; you can't add steps to that job.
 - **Composite action** (a "brick", under `actions/`) — a block of **steps**, used with `uses:` at
   the step level inside your own job. Compose them by hand when the turnkey workflow isn't enough.
 
 A reusable workflow has **no triggers of its own**, so it can't run alone — it only runs when called.
 That's why a consumer keeps a plain workflow (with `on: push/pull_request/schedule`) that either
 calls a reusable workflow or wires the bricks directly.
+
+### Which of the two, and why release is bricks
+
+A job earns a **reusable workflow** when it is _self-contained_ (nothing about it is ordered against
+your other jobs) and _parametric_ (everything repo-shaped is an input). `security` and `docs` are
+both: a scan depends on no build of yours, and the docs site is named by an input.
+
+A **release** is neither, so it ships as bricks plus [a documented job](../guides/compose-bricks.md#the-release-job):
+
+- It must run **after** your checks — and a called workflow cannot require that. Only the caller can
+  express it, with `needs:`, a `workflow_run` trigger, or an approval `environment`. A turnkey
+  release would hide the one decision that is actually yours and enforce none of it.
+- It has to run the release script from a path that depends on how the repo is built:
+  `node_modules/@fmmenchi/ci/…` in a consumer, but source in `shared-platform`, which has no
+  `node_modules/@fmmenchi` at all. The `release.reusable.yml` that used to live here could therefore
+  never run in the repo that published it — and a brick nobody can run is a brick nobody should
+  trust.
 
 ## The logic lives in the plugins — the toolkit is glue
 
