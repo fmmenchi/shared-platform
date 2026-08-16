@@ -122,10 +122,21 @@ const runExecutor: PromiseExecutor<SbomExecutorSchema> = async (
           if (packageJson.version) {
             sbom.metadata.component.version = packageJson.version;
           }
+          // Unlink before writing. Under the docker runner the container writes this
+          // file as root, so overwriting it IN PLACE fails with EACCES on a Linux CI
+          // runner — while unlinking is governed by the directory's permissions, which
+          // we do own. Without this, every SBOM published from CI kept `/scan` (the
+          // container's mount point) as its root component: a bill of materials that
+          // never said which package it described. It passed unnoticed because macOS
+          // maps the container's writes to the host user, so it only ever failed in CI.
+          rmSync(outputAbs, { force: true });
           writeFileSync(outputAbs, `${JSON.stringify(sbom, null, 2)}\n`);
         }
-      } catch {
-        /* leave Trivy's output as-is if it isn't the shape we expect */
+      } catch (error) {
+        // Never silent: this is the step that makes the artifact identifiable.
+        console.warn(
+          `sbom: kept Trivy's raw output — could not name the root component (${String(error)}).`,
+        );
       }
     }
 
