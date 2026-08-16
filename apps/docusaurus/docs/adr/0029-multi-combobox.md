@@ -78,59 +78,60 @@ these are two controls.
 **A tag input is not a third component.** It is this one with `items={[]}`, `freeText` and
 `onCreate`.
 
-### 2. N values ride N text carriers, and the port grows a value-shaped group
+### 2. N values ride N hidden checkboxes, the port does not change, and the removal ordering is the contract
 
-ADR-0028 §12 left this open deliberately, and predicted the fork: _"If a binding still cannot express
-it, multiple binds through that library's controlled API and the carriers stay for `FormData`."_ It
-was measured rather than reasoned about — a throwaway spike in `apps/ui-ports-validation`, Chromium,
-with the selection held in React state and carriers mounted and unmounted as it changed.
+ADR-0028 §12 left this open and named the two things that had to be proven: _"Multiple against a
+ref-based binding […] One field name, N carriers, a `register()` that hands over one ref per
+registration, and a **count that changes as chips come and go**."_
 
-|                                        | N text inputs | N hidden checkboxes, mounted checked       |
-| -------------------------------------- | ------------- | ------------------------------------------ |
-| `FormData.getAll(name)`                | `["a","b"]`   | `["a","b"]`                                |
-| Formik, through the merged option port | `[]`          | `["b"]` — but only after a real `.click()` |
-| `form.reset()` on a set React mounted  | **no-op**     | **no-op**                                  |
+**This section reached the opposite conclusion first, on partial evidence, and the correction is
+left in view because it is the point.** A first spike measured only Formik — a controlled library —
+and concluded "N text carriers, and a value-shaped group in the port", rejecting checkboxes as the
+component _"faking a user interaction on a control no user can see"_. Then the ref-based binding
+§12 actually asked for was measured, and it refuted the decision outright.
 
-Three findings, in ascending order of consequence.
+Throwaway spikes in `apps/ui-ports-validation`, Chromium, with the selection held in React state and
+carriers mounted and unmounted as it changes:
 
-**`FormData` is indifferent.** Both shapes submit both values, so the three uncontrolled bindings —
-react-hook-form, Conform, React 19 — do not decide this question.
+|                                        | N text inputs                 | N hidden checkboxes, mounted checked |
+| -------------------------------------- | ----------------------------- | ------------------------------------ |
+| `FormData.getAll(name)`                | `["a","b"]`                   | `["a","b"]`                          |
+| Formik, through the merged option port | `[]`                          | `["b"]` — after a real `.click()`    |
+| react-hook-form, one carrier           | holds `[]`, **DOM `[""]`**    | holds `["a"]`                        |
+| react-hook-form, two carriers          | holds `[]`, **DOM `["",""]`** | holds `["a","b"]`                    |
+| react-hook-form, a chip removed        | —                             | holds `["a","b"]` — **stale**        |
+| …unchecked first, then unmounted       | —                             | holds `["a"]` ✓                      |
+| `form.reset()` on a set React mounted  | **no-op**                     | **no-op**                            |
 
-**A controlled library sees only checkboxes.** `checkedInGroup` filters
-`element.type === 'checkbox'`, so text carriers are invisible to Formik and TanStack and they store
-`[]`. This is the real constraint, and it is in the port rather than in the component.
+**Text carriers are not merely invisible to a ref-based binding, they are destroyed by it.**
+react-hook-form holds `[]` however many are mounted — and `FormData` reads `[""]`, because
+`register()` writes the field's value onto the node it is given and the field's value is a list.
+The carriers are blanked in the DOM by the library that cannot read them. That is worse than the
+Formik result, and it removes the option entirely.
 
-**`form.reset()` is a no-op on a set React mounted — in _both_ shapes.** This is the finding that
-outlives whichever carrier wins, and it is the hidden-input defect from §4 again, one level up and
-for the same reason: each control's default is whatever React mounted it with, so the platform
-restores every control to itself, and the _number_ of them is React state the platform cannot reach.
-**The component owns reset.** `useCarrierSync` already listens for the event; multiple generalises
-its seed from one key to a list.
+**Checkboxes work, and the `.click()` is not theatre — it is the only lever that exists.** It is
+what a controlled library needs to learn a selection, and what a ref-based one needs, in both
+directions. The earlier rejection weighed an aesthetic argument against evidence from one library
+and lost; ADR-0028 §12's warning about "faking what the port refused to fake" is about something
+else — the port refused to put an option's **value** in a map keyed by field name, which the
+one-name-to-many-controls shape solved. Activating a real control is not that.
 
-**The decision is N text carriers, and a value-shaped group in the port.**
+**The removal ordering is part of the contract, not an implementation detail.** Unmounting is not a
+change, so a library that holds its own state keeps the removed key — measured, `["a","b"]` after a
+chip was taken away. The component must **uncheck the carrier and let that be heard, then unmount
+it**. In that order it is `["a"]`. Written down here because the reverse order is the natural way to
+write the code and is silently wrong.
 
-Checkboxes are rejected on principle and not on capability, which is worth stating plainly because
-they were measured working. To make them work the component must mount the carrier **unchecked** —
-the bound option is controlled by the library, whose state does not yet contain the key, so there is
-nothing for it to assert on mount — and then call `.click()` on it, because only the element's real
-activation behaviour toggles a checkbox and reaches the port's change path. A synthesised
-`new Event('click')` toggles nothing; that is how this was measured wrong the first time, and the
-correction is the reason the row above says "only after a real `.click()`".
+**So the port does not change at all.** `UseFormOptionField` and `checkedInGroup` — merged for radio
+groups and checkbox groups — already answer this, which reverses ADR-0028 §12's ordering
+("port-level work first"): there is no port-level work. The prerequisite it named turned out to be
+satisfied by the shape that landed for the other customer.
 
-That is the component performing a user interaction on a control no user can see, in order to tell a
-library something it already knows. ADR-0028 §12 names it in advance:
-
-> Building multiple against the existing shape would mean faking in the component what the port
-> refused to fake, which is how a control that can never be selected gets shipped.
-
-Text carriers need none of that theatre. The write is `setNativeValue` — already the component's
-idiom, already dispatching the real `input` event every adapter listens for, and already what
-`useCarrierSync` watches. The cost is moved to where this package says it belongs: a component that
-must fake a user interaction to reach the port has found a gap in the port, exactly as an adapter
-that needs the design system to change has.
-
-So the port work is **a group whose members carry a `value` rather than a `checked`**, beside the
-existing one. The ordering from ADR-0028 §12 is unchanged: port first, component second.
+**`form.reset()` is a no-op on a set React mounted, in both shapes.** This survives the reversal
+unchanged, and it is the `type="hidden"` defect from §4 one level up, for the same reason: each
+control's default is whatever React mounted it with, so the platform restores every one to itself,
+and the _number_ of them is React state the platform cannot reach. **The component owns reset.**
+`useCarrierSync` already listens for the event; multiple generalises its seed from one key to a list.
 
 ### 3. The row is declared, and multiple is what turns that from a nicety into a prerequisite
 
@@ -185,18 +186,30 @@ deliberately not chosen.
 
 - Two bound wrappers, `FormCombobox` and `FormMultiCombobox`, and **two rows** in the shared
   validation suite rather than one. That is the cost of the split, stated rather than discovered.
-- ADR-0028 §4 is corrected (the carrier is a CSS-hidden text input, not `type="hidden"`) and §5 is
-  revised (two components, not one with a mode).
-- The port grows before the component does, which is ADR-0028 §12's ordering and is unchanged by any
-  of this.
+- ADR-0028 §4 is corrected (the single-select carrier is a CSS-hidden text input, not
+  `type="hidden"`) and §5 is revised (two components, not one with a mode).
+- **ADR-0028 §12's ordering falls away**: it made port-level work the prerequisite for multiple, and
+  the measurement in §2 says there is none — the one-name-to-many-controls shape that landed for
+  radio and checkbox groups already answers this. The component is the whole of the work.
+- The single-select carrier is a **text** input and the multiple one is a **checkbox**, which is a
+  divergence inside one family and has to be documented where a reader meets it rather than only
+  here. Each is the only shape its cardinality can use: one value that a form must reset to a seed,
+  against N values a library must be able to hear appear and disappear.
 - The shared list layer is extracted **before** the second consumer exists, which is a deliberate
   exception to this package's "move a policy at the second copy" rule: the second copy is certain,
   and extracting afterwards would mean writing it twice on purpose.
 
 ## Evidence
 
-The table in §2 is the output of a throwaway spike run in `apps/ui-ports-validation` under Chromium
-in vitest browser mode. It is **not kept**: it asserts nothing, and a probe that asserts nothing is
-not a test. What will hold these answers is the suite rows the ordering in §2 requires — the same
-suite that caught the Formik defect ADR-0028 §12 cites, and the same one that caught, three days
-later, a `FormCombobox` whose routing table a hand-written stub could not see.
+The table in §2 is the output of two throwaway spikes run in `apps/ui-ports-validation` under
+Chromium in vitest browser mode. They are **not kept**: they assert nothing, and a probe that
+asserts nothing is not a test. What will hold these answers is a row in the shared validation
+suite — the same suite that caught the Formik defect ADR-0028 §12 cites, and the same one that
+caught, days later, a `FormCombobox` whose routing table a hand-written stub could not see.
+
+The two spikes are also why this section carries its own reversal rather than reading as though the
+answer were obvious. The first measured one library and produced a decision with a principled
+argument attached to it; the second measured the library ADR-0028 had explicitly asked about and
+showed the decision was wrong, the principle was aimed at the wrong target, and the rejected option
+was the only one that works. A partial measurement with a good argument on top of it is more
+convincing than no measurement, and no more correct.
