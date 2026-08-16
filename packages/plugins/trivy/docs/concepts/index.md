@@ -31,7 +31,25 @@ outcomes must never be confused with success:
 - A **non-zero exit** — findings at or above the `severity` threshold when `failOnFindings` is on —
   fails the target.
 
-### 3. Trivy's own vocabulary
+### 3. Infer a fact, generate a policy
+
+The plugin puts targets on your projects two different ways, and which one it uses is not a style
+choice:
+
+- The **scan targets are inferred**, onto the workspace root project (created if your workspace has
+  none). That is a fact about the workspace: you registered a scanner in `nx.json`, and per §1 the
+  scan is workspace-wide whatever hosts it — so the host is ceremony, and **one** host is the right
+  number. Inferring onto every project would run the identical root scan N times.
+- The **`sbom` target is generated**, per project, by `nx g @fmmenchi/nx-trivy:sbom <project>`. That
+  is a policy: whether a package publishes a bill of materials depends on what you distribute and who
+  audits it, which nothing in the file tree can tell you.
+
+The plugin used to do the opposite — infer `sbom` onto anything `name && !private` — and that
+smuggled one repo's release policy into every consumer while excluding the case that matters most,
+a private app that ships to production. See
+[ADR-0029](../../../adr/0029-infer-facts-generate-policy.md).
+
+### 4. Trivy's own vocabulary
 
 Options mirror Trivy's own flags (`scanType`, `scanners`, `severity`, `format`, `ignorefile`, …)
 rather than inventing bespoke aliases. If you know Trivy, you know the options; the executor just

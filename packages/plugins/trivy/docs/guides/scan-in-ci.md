@@ -17,23 +17,28 @@ install step.
 
 ## Step 1: Run the scan with the Docker runner
 
-nx reserves the `--runner` CLI flag (for tasks-runner selection), so the docker runner is selected
-via a **target** with `runner: docker` in its options — not `--runner=docker` on the command line.
-The plugin is executor-only and does **not** infer such a target onto your project, so define one
-yourself alongside `scan`:
-
-```jsonc
-"scan-docker": { "executor": "@fmmenchi/nx-trivy:scan", "options": { "runner": "docker" } }
-```
-
-```bash
-pnpm nx run <project>:scan-docker
-```
+`scan-docker` is one of the four targets the plugin infers onto the workspace root project once it is
+registered in `nx.json` (see [Run a scan](./run-a-scan.md)). It is a separate target rather than a
+`--runner=docker` flag because nx reserves `--runner` for tasks-runner selection, so that flag never
+reaches the executor.
 
 It runs the `scan` executor inside the `aquasec/trivy` image, mounts the workspace at `/workspace`,
 and runs the same default scan (`trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .`).
-A CRITICAL or HIGH finding exits non-zero and fails the job. That's exactly what `shared-platform`
-does to dogfood the plugin — the target lives in the plugin's own project config.
+A CRITICAL or HIGH finding exits non-zero and fails the job.
+
+**Don't hardcode the project name in a workflow** — the root project is named after your root
+`package.json`, so it differs in every repo. Ask the graph, and fail when the answer is empty:
+
+```bash
+host=$(pnpm nx show projects --with-target scan-docker --json \
+  | node -p "(JSON.parse(require('fs').readFileSync(0,'utf8'))[0] ?? '')")
+[ -n "$host" ] || { echo "::error::plugin not registered — run 'pnpm nx add @fmmenchi/nx-trivy'"; exit 1; }
+pnpm nx run "$host:scan-docker"
+```
+
+The guard is not ceremony: `nx run-many -t scan-docker` **exits 0 when nothing matches** (measured),
+so the obvious project-agnostic one-liner turns an unregistered plugin into a green build that never
+scanned anything. The `trivy-scan` action in `@fmmenchi/gh-actions` does exactly the above for you.
 
 ## Step 2: Choose a trigger cadence
 
@@ -51,7 +56,7 @@ with `cacheDir` (a normal CLI option — unlike `--runner`, it isn't reserved) a
 with your CI's cache action:
 
 ```bash
-pnpm nx run <project>:scan-docker --cacheDir="$RUNNER_TEMP/trivy-cache"
+pnpm nx run <root-project>:scan-docker --cacheDir="$RUNNER_TEMP/trivy-cache"
 ```
 
 `cacheDir` must be an **absolute host path** — it becomes the source of a Docker bind-mount

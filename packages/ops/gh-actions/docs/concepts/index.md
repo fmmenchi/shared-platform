@@ -30,11 +30,20 @@ truth.
 
 A plugin's targets (e.g. `@fmmenchi/nx-trivy:scan-docker`) exist only where the plugin is itself an
 nx **project** — i.e. only in this monorepo. In a consumer the plugin is an installed dependency,
-**not** a project, so that target doesn't exist. So the plugins **infer** their per-package targets
-onto _your_ projects via `createNodesV2` (matched by `**/package.json`, any layout): `nx-trivy`
-infers `sbom`, `nx-notify` infers `announce-release`/`announce-error`. The bricks then run
-`<project>:<target>`, which works in any nx workspace. Workspace-level concerns (the Trivy scan, the
-failure alert) are a target you point the brick at, not a per-package inference.
+**not** a project, so that target doesn't exist. **A brick must therefore never name a project.**
+The targets land on _your_ projects two ways, and the bricks handle both:
+
+- **Inferred** via `createNodesV2` (matched by `**/package.json`, any layout) — `nx-trivy` infers the
+  four scan targets onto your **workspace root project**, `nx-notify` infers
+  `announce-release`/`announce-error`.
+- **Generated**, when the target is a policy rather than a fact — `nx g @fmmenchi/nx-trivy:sbom
+<project>` opts a project into a bill of materials
+  ([ADR-0029](../../../adr/0029-infer-facts-generate-policy.md)).
+
+Either way the brick asks the graph who owns the target (`nx show projects --with-target …`) and runs
+`<project>:<target>`, which works in any nx workspace. When the answer is empty the brick **fails**:
+`nx run-many` would exit 0 on no matches (measured), and a security scan that silently did not happen
+is worse than one that fails.
 
 ## Versioning — `gh-actions/v{version}`
 

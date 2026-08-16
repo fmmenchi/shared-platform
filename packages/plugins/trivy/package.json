@@ -26,64 +26,6 @@
   },
   "nx": {
     "targets": {
-      "scan": {
-        "executor": "@fmmenchi/nx-trivy:scan",
-        "dependsOn": [
-          "build"
-        ]
-      },
-      "scan-docker": {
-        "executor": "@fmmenchi/nx-trivy:scan",
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "runner": "docker"
-        }
-      },
-      "scan-secrets": {
-        "executor": "@fmmenchi/nx-trivy:scan",
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "scanners": "secret",
-          "extraArgs": [
-            "--skip-dirs",
-            "**/node_modules",
-            "--skip-dirs",
-            "**/dist",
-            "--skip-dirs",
-            "**/build",
-            "--skip-dirs",
-            "**/.nx",
-            "--skip-dirs",
-            ".git"
-          ]
-        }
-      },
-      "scan-secrets-docker": {
-        "executor": "@fmmenchi/nx-trivy:scan",
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "runner": "docker",
-          "scanners": "secret",
-          "extraArgs": [
-            "--skip-dirs",
-            "**/node_modules",
-            "--skip-dirs",
-            "**/dist",
-            "--skip-dirs",
-            "**/build",
-            "--skip-dirs",
-            "**/.nx",
-            "--skip-dirs",
-            ".git"
-          ]
-        }
-      },
       "build": {
         "executor": "@nx/js:tsc",
         "outputs": [
@@ -108,6 +50,15 @@
             }
           ]
         }
+      },
+      "sbom": {
+        "executor": "@fmmenchi/nx-trivy:sbom",
+        "cache": false,
+        "configurations": {
+          "docker": {
+            "runner": "docker"
+          }
+        }
       }
     },
     "tags": [
@@ -125,6 +76,8 @@
   "files": [
     "dist",
     "!**/*.tsbuildinfo",
-    "executors.json"
-  ]
+    "executors.json",
+    "generators.json"
+  ],
+  "generators": "./generators.json"
 }

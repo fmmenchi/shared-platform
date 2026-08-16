@@ -7,7 +7,7 @@ sidebar_position: 1
 # Executors
 
 Every executor and pre-configured target in `@fmmenchi/nx-trivy`. The plugin ships **two executors**
-(`scan`, `sbom`) and **no generators**.
+(`scan`, `sbom`) and two generators ([`init`, `sbom`](./generators.md)).
 
 ---
 
@@ -19,7 +19,7 @@ dependency-vulnerability scan that fails on CRITICAL/HIGH findings.
 **Usage**
 
 ```bash
-pnpm nx run <project>:scan [options]
+pnpm nx run <root-project>:scan [options]
 ```
 
 With defaults this executes:
@@ -60,8 +60,8 @@ closure — the artifact to attach to that package's published release.
 
 **Usage**
 
-The `sbom` target is **inferred onto every publishable package** (see [Targets](#sbom-1)), so you
-normally run it on the project itself — no `--projectName`:
+The `sbom` target is added to a project by the [`sbom` generator](./generators.md#sbom) (see
+[Targets](#sbom-1)), so you run it on the project itself — no `--projectName`:
 
 ```bash
 pnpm nx run @fmmenchi/ui:sbom [options]
@@ -69,20 +69,21 @@ pnpm nx run @fmmenchi/ui:sbom [options]
 
 ### Options
 
-| Option        | Type     | Default                       | Description                                                                                                                                                                                         |
-| :------------ | :------- | :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `projectName` | `string` | the host project              | Override which project to describe. Rarely needed — the inferred target already runs on its own project. (`project` is reserved by nx — it redirects the target — so this option is `projectName`.) |
-| `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                                                                                                         |
-| `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path).                                                                                  |
-| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image). Select docker via the target's **`docker` configuration** (`--configuration=docker`) — nx reserves `--runner` as a CLI flag.     |
-| `dockerImage` | `string` | `aquasec/trivy:0.72.0`        | Docker image used when `runner` is `docker`.                                                                                                                                                        |
+| Option        | Type     | Default                       | Description                                                                                                                                                                                     |
+| :------------ | :------- | :---------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `projectName` | `string` | the host project              | Override which project to describe. Rarely needed — the target already runs on its own project. (`project` is reserved by nx — it redirects the target — so this option is `projectName`.)      |
+| `format`      | `string` | `cyclonedx`                   | SBOM format: `cyclonedx`, `spdx-json`, `spdx`, or `github`.                                                                                                                                     |
+| `output`      | `string` | `<projectRoot>/sbom.cdx.json` | Output file, **relative to the workspace root** (it is joined with `context.root` — do not pass an absolute path).                                                                              |
+| `runner`      | `string` | `local`                       | `local` (the `trivy` CLI) or `docker` (the `aquasec/trivy` image). Select docker via the target's **`docker` configuration** (`--configuration=docker`) — nx reserves `--runner` as a CLI flag. |
+| `dockerImage` | `string` | `aquasec/trivy:0.72.0`        | Docker image used when `runner` is `docker`.                                                                                                                                                    |
 
 ### Behaviour
 
-- A pnpm monorepo has **no per-package lockfile**, so Trivy can't read a package's deps by scanning
-  its directory. The executor reconstructs them: nx's `createPackageJson` prunes the project's
-  `package.json` to its real dependency closure and `createLockFile` emits the matching pnpm lock;
-  Trivy reads **that pruned lock** — exactly what a consumer installs.
+- A workspace has **no per-package lockfile**, so Trivy can't read a package's deps by scanning its
+  directory. The executor reconstructs them: nx's `createPackageJson` prunes the project's
+  `package.json` to its real dependency closure and `createLockFile` emits the matching lock, in the
+  format of the workspace's own package manager (`detectPackageManager`); Trivy reads **that pruned
+  lock** — exactly what a consumer installs.
 - For `cyclonedx`, the SBOM's root component is renamed to the package name and version (Trivy would
   otherwise root it at the scan path).
 - Same failure contract as `scan`: a missing `trivy`/`docker` binary fails loudly.
@@ -91,14 +92,23 @@ pnpm nx run @fmmenchi/ui:sbom [options]
 
 ## Targets
 
-The plugin's own `nx` config defines the ready-made targets below. All depend on `build`.
+The four scan targets below are **inferred onto the workspace root project** as soon as the plugin is
+registered in `nx.json` — nothing to hand-write. They are all **uncached**: a scan goes red because
+the world changed (a CVE was published against a dependency nobody touched), so a cache hit keyed on
+unchanged files would be a green that means nothing.
+
+The root project's name comes from your root `package.json`, so don't hardcode it — ask the graph:
+
+```bash
+pnpm nx show projects --with-target scan-docker
+```
 
 ### `scan`
 
 The `scan` executor with defaults — the local runner.
 
 ```bash
-pnpm nx run <project>:scan
+pnpm nx run <root-project>:scan
 ```
 
 ### `scan-docker`
@@ -107,7 +117,7 @@ The `scan` executor with `runner: docker` pre-set — runs inside the `aquasec/t
 local `trivy` CLI is required.
 
 ```bash
-pnpm nx run <project>:scan-docker
+pnpm nx run <root-project>:scan-docker
 ```
 
 This is the `scan` executor with `runner: docker` in its **options**. nx reserves the `--runner`
@@ -121,24 +131,24 @@ rather than dependency vulnerabilities. It skips `node_modules`, `dist`, `build`
 (via `extraArgs`) to avoid noise. `-docker` uses the image.
 
 ```bash
-pnpm nx run <project>:scan-secrets         # local
-pnpm nx run <project>:scan-secrets-docker  # via the aquasec/trivy image
+pnpm nx run <root-project>:scan-secrets         # local
+pnpm nx run <root-project>:scan-secrets-docker  # via the aquasec/trivy image
 ```
 
 ### `sbom`
 
-**Inferred, not hand-declared.** The plugin's `createNodesV2` adds a `sbom` target to **every
-publishable package** — a project under `packages/<scope>/<name>` with a `name` and no
-`private: true`. New publishable packages get it automatically; nothing to wire per-package. The
-plugin must be listed in the root `nx.json` `plugins` for the inference to run.
+**Generated, not inferred** — `pnpm nx g @fmmenchi/nx-trivy:sbom <project>` writes it onto the
+project you name. Whether a package publishes a bill of materials is a policy of your workspace, not
+a fact about its files, so it is opt-in per project
+([ADR-0029](../../../adr/0029-infer-facts-generate-policy.md)).
 
-The inferred target `dependsOn` the **plugin's own `build`** (the executor runs from the plugin's
-`dist`) and is **uncached** (the SBOM tracks the whole dependency closure, which a project's own file
-inputs don't capture — a cache hit could serve a stale bill of materials).
+The target is **uncached** (the SBOM tracks the whole dependency closure, which a project's own file
+inputs don't capture — a cache hit could serve a stale bill of materials) and ships a `docker`
+configuration.
 
 ```bash
-pnpm nx run @fmmenchi/ui:sbom                        # any publishable package
-pnpm nx run-many -t sbom                              # all of them
+pnpm nx run @fmmenchi/ui:sbom                        # a project that opted in
+pnpm nx run-many -t sbom                              # every project that opted in
 pnpm nx run @fmmenchi/ui:sbom --configuration=docker  # aquasec/trivy image (as CI does)
 ```
 

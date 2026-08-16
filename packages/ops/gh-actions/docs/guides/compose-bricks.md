@@ -47,9 +47,11 @@ jobs:
     github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-Each brick runs the target the plugins **infer** onto your projects (`<project>:sbom`,
-`<project>:announce-release`) — so it works in any nx workspace, provided the plugins are registered
-in your `nx.json` `plugins`.
+No brick names a project. Each one asks the graph which project owns the target it needs — inferred
+(`<root>:scan-docker`, `<project>:announce-release`) or generated (`<project>:sbom`, opted in with
+`nx g @fmmenchi/nx-trivy:sbom`) — so it works in any nx workspace, provided the plugins are
+registered in your `nx.json` `plugins`. When nothing owns the target, the brick fails with a message
+naming the command that fixes it, rather than passing quietly.
 
 ## Related
 

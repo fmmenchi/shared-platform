@@ -21,7 +21,11 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
 ## Rules
 
 - **Actions reference the plugins, never inline trivy/slack** — consumers are nx workspaces, so the
-  action shells out to `pnpm nx run @fmmenchi/nx-...`. Keep it that way (no duplication).
+  action shells out to `pnpm nx run <project>:<target>`. Keep it that way (no duplication).
+- **Never name a project in an action.** `@fmmenchi/nx-trivy:scan-docker` exists only in this repo,
+  where the plugin is a project. Ask the graph instead (`nx show projects --with-target <t> --json`,
+  take the first) and **fail when the answer is empty** — `nx run-many` exits 0 on no matches
+  (measured), which would turn an unregistered plugin into a green security job that scanned nothing.
 - **Every composite `run:` step needs `shell: bash`** (composite-action requirement).
 - **`nx`-safe references only.** Actions are referenced by repo path + tag
   (`fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0`); the reusable

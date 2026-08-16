@@ -17,8 +17,9 @@ Pin everything to the moving major tag **`@gh-actions/v0`**.
 
 - The consumer repo is an **nx workspace** with the relevant plugins installed
   (`pnpm add -D @fmmenchi/nx-trivy @fmmenchi/nx-notify @fmmenchi/ci`).
-- Those plugins are registered in the root **`nx.json` `plugins`** (so the `sbom` / `announce-*`
-  targets are inferred onto your packages).
+- Those plugins are registered in the root **`nx.json` `plugins`** — `pnpm nx add @fmmenchi/nx-trivy`
+  does it for you — so the scan / `announce-*` targets are inferred onto your workspace.
+- For an SBOM per released package, opt each one in: `pnpm nx g @fmmenchi/nx-trivy:sbom <project>`.
 - For **private** repos in the same org: _Settings → Actions → General → Access_ → allow other repos
   in the org to use these workflows/actions.
 

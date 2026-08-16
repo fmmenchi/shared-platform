@@ -1,5 +1,5 @@
 import type { PromiseExecutor } from '@nx/devkit';
-import { createProjectGraphAsync } from '@nx/devkit';
+import { createProjectGraphAsync, detectPackageManager } from '@nx/devkit';
 import { createLockFile, createPackageJson, getLockFileName } from '@nx/js';
 import { execFileSync } from 'node:child_process';
 import {
@@ -72,7 +72,11 @@ const runExecutor: PromiseExecutor<SbomExecutorSchema> = async (
 
   const graph = await createProjectGraphAsync();
   const packageJson = createPackageJson(project, graph, { root: context.root });
-  const lockFile = createLockFile(packageJson, graph, 'pnpm');
+  // The consumer's package manager, not ours: `createLockFile` READS the workspace lock
+  // to resolve the closure, so hardcoding pnpm made this fail with a bare ENOENT on the
+  // lockfile in any npm/yarn/bun workspace — measured against a scratch npm consumer.
+  const packageManager = detectPackageManager(context.root);
+  const lockFile = createLockFile(packageJson, graph, packageManager);
 
   const format = options.format ?? 'cyclonedx';
   const outputRel = options.output ?? join(cfg.root, 'sbom.cdx.json');
@@ -89,7 +93,7 @@ const runExecutor: PromiseExecutor<SbomExecutorSchema> = async (
       join(scanDir, 'package.json'),
       JSON.stringify(packageJson, null, 2),
     );
-    writeFileSync(join(scanDir, getLockFileName('pnpm')), lockFile);
+    writeFileSync(join(scanDir, getLockFileName(packageManager)), lockFile);
     mkdirSync(dirname(outputAbs), { recursive: true });
 
     const [bin, args] =
