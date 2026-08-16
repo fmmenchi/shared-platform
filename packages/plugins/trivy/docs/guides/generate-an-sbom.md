@@ -18,31 +18,34 @@ of materials.
 
 ## Why it can't just scan the package folder
 
-A pnpm monorepo has **no per-package lockfile** — there's one lock at the root for the whole
-workspace. Point Trivy at a package directory and it finds nothing to resolve, so the SBOM comes back
-empty. The `sbom` executor reconstructs the missing lock: nx's `createPackageJson` prunes the project
-to its real dependency closure and `createLockFile` emits the matching pnpm lock, which Trivy then
-reads. The result is exactly what a consumer installs.
+A workspace has **no per-package lockfile** — there's one lock at the root for the whole workspace.
+Point Trivy at a package directory and it finds nothing to resolve, so the SBOM comes back empty. The
+`sbom` executor reconstructs the missing lock: nx's `createPackageJson` prunes the project to its
+real dependency closure and `createLockFile` emits the matching lock — in **your** package manager's
+format, detected from the workspace — which Trivy then reads. The result is exactly what a consumer
+installs.
 
-## Step 1: Run it
+## Step 1: Opt the project in
 
-The `sbom` target is **inferred onto every publishable package**, so run it on the project itself:
+```bash
+pnpm nx g @fmmenchi/nx-trivy:sbom <project>
+```
+
+That writes an `sbom` target (plus a `docker` configuration) into the project's own config. It is a
+**generator, not inference**, and deliberately so: whether a package publishes a bill of materials
+depends on what you distribute and who audits it — not on anything visible in its files. A private
+app that ships to production usually wants one; a published helper library may not. See
+[ADR-0029](../../../adr/0029-infer-facts-generate-policy.md).
+
+## Step 2: Run it
 
 ```bash
 pnpm nx run @fmmenchi/ui:sbom       # a single package
-pnpm nx run-many -t sbom            # all publishable packages at once
+pnpm nx run-many -t sbom            # every project that opted in
 ```
 
-No target to declare per-package, and no `--projectName` — the target already runs on its own
-project. The SBOM lands at `<projectRoot>/sbom.cdx.json` unless you pass `--output`.
-
-:::note[How the target gets there]
-
-`@fmmenchi/nx-trivy` is registered in the root `nx.json` `plugins`; its `createNodesV2` infers a
-`sbom` target onto every project under `packages/<scope>/<name>` that has a `name` and is not
-`private`. New publishable packages get it for free.
-
-:::
+No `--projectName` — the target already runs on its own project. The SBOM lands at
+`<projectRoot>/sbom.cdx.json` unless you pass `--output`.
 
 With the local runner the `trivy` CLI must be on PATH (`brew install trivy`). No local install? The
 target ships a **`docker`** configuration that runs the `aquasec/trivy` image — select it with
@@ -53,7 +56,7 @@ flag):
 pnpm nx run @fmmenchi/ui:sbom --configuration=docker
 ```
 
-## Step 2: Choose the output and format
+## Step 3: Choose the output and format
 
 ```bash
 # a specific path — RELATIVE to the workspace root (it is joined with the root)

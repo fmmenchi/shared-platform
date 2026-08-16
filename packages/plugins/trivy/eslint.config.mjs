@@ -23,7 +23,7 @@ export default [
     ignores: ['**/out-tsc'],
   },
   {
-    files: ['**/package.json', '**/executors.json'],
+    files: ['**/package.json', '**/executors.json', '**/generators.json'],
     rules: {
       '@nx/nx-plugin-checks': 'error',
     },

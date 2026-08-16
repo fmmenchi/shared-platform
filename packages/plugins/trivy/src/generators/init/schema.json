@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "NxTrivyInit",
+  "title": "Initialise Trivy scanning in this workspace",
+  "description": "Registers @fmmenchi/nx-trivy in nx.json (which is what makes its target inference run) and seeds a .trivyignore.yaml at the scan root. Run automatically by `nx add @fmmenchi/nx-trivy`.",
+  "type": "object",
+  "properties": {
+    "skipFormat": {
+      "type": "boolean",
+      "description": "Skip formatting the files touched by this generator.",
+      "default": false
+    }
+  },
+  "required": []
+}

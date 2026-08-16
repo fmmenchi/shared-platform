@@ -1,51 +1,70 @@
 import type { CreateNodesResultV2, CreateNodesV2 } from '@nx/devkit';
 import { createNodesFromFiles } from '@nx/devkit';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 
 const PLUGIN = '@fmmenchi/nx-trivy';
-const SBOM_TARGET = 'sbom';
 
-type PackageJson = { name?: string; private?: boolean };
 type ProjectNode = NonNullable<
   CreateNodesResultV2[number][1]['projects']
 >[string];
+type Targets = NonNullable<ProjectNode['targets']>;
 
-/** True when a package.json describes a publishable package (has a name, not private). */
-export function isPublishable(pkg: PackageJson): boolean {
-  return Boolean(pkg.name) && pkg.private !== true;
-}
+/** Dirs a secret scan must never walk: vendored code and build output, all noise. */
+const SECRET_SKIP_DIRS = [
+  '--skip-dirs',
+  '**/node_modules',
+  '--skip-dirs',
+  '**/dist',
+  '--skip-dirs',
+  '**/build',
+  '--skip-dirs',
+  '**/.nx',
+  '--skip-dirs',
+  '.git',
+];
 
 /**
- * The `sbom` target inferred onto a project. `dependsOn` the plugin's own `build`
- * (the executor runs from the plugin's `dist`, not the host project's). Uncached:
- * the SBOM tracks the whole dependency closure (the lockfile), which a project's
- * own file inputs don't capture — a cache hit could serve a stale bill of materials.
+ * The four scan targets, inferred onto the workspace root project.
  *
- * A `docker` configuration flips the executor to the aquasec/trivy image. It is set
- * here (not via a CLI `--runner=docker`) because nx reserves `--runner` for its
- * tasks-runner selection — passing it on the CLI never reaches the executor. Select
- * it with `--configuration=docker` (what CI does, where there is no local trivy).
+ * Uncached, always: a scan goes red because the WORLD changed — a CVE published against a
+ * dependency nobody touched — so a cache hit keyed on unchanged files would serve a green
+ * that means nothing.
  */
-export function sbomTarget(): NonNullable<ProjectNode['targets']>[string] {
-  return {
-    executor: `${PLUGIN}:${SBOM_TARGET}`,
+export function scanTargets(): Targets {
+  const scan = (options: Record<string, unknown>) => ({
+    executor: `${PLUGIN}:scan`,
     cache: false,
-    dependsOn: [{ projects: [PLUGIN], target: 'build' }],
-    configurations: { docker: { runner: 'docker' } },
+    options,
     metadata: {
       description:
-        'Generate a CycloneDX SBOM for this package (inferred by @fmmenchi/nx-trivy).',
+        'Scan the workspace with Trivy (inferred by @fmmenchi/nx-trivy).',
       technologies: ['trivy'],
     },
+  });
+  const secret = { scanners: 'secret', extraArgs: SECRET_SKIP_DIRS };
+
+  return {
+    scan: scan({}),
+    'scan-docker': scan({ runner: 'docker' }),
+    'scan-secrets': scan(secret),
+    'scan-secrets-docker': scan({ ...secret, runner: 'docker' }),
   };
 }
 
 /**
- * Infers a `sbom` target onto every **publishable** package, in ANY workspace layout
- * (`packages/`, `libs/`, flat …) — matched by `**\/package.json` and filtered by
- * publishability, not a hardcoded path. An SBOM is a per-package artifact, so the
- * target belongs on each project rather than being invoked centrally.
+ * Infers the scan targets onto the **workspace root project**, creating that project when the
+ * workspace has none — matched by the root `package.json`, so it works in any layout.
+ *
+ * Why root, and why inferred at all: the scan runs from `context.root` whatever project hosts
+ * it (ADR-0007), so the host is pure ceremony — and asking every consumer to hand-write a
+ * target whose only purpose is to name an executor is ceremony we can delete. Registering the
+ * plugin IS the intent; the targets follow. Exactly one host also means `nx run-many -t
+ * scan-docker` can never run the same workspace-wide scan N times.
+ *
+ * The `sbom` target is deliberately NOT inferred: whether a package publishes a bill of
+ * materials is a policy of the workspace, not a fact about its files — an app that ships to
+ * production may want one while a published helper lib does not. It is opt-in, per project,
+ * via the `sbom` generator.
  */
 export const createNodesV2: CreateNodesV2 = [
   '**/package.json',
@@ -53,23 +72,8 @@ export const createNodesV2: CreateNodesV2 = [
     createNodesFromFiles(
       (configFile) => {
         const projectRoot = dirname(configFile);
-        // Skip the workspace-root package.json — it isn't a project.
-        if (projectRoot === '.' || projectRoot === '') return {};
-        let pkg: PackageJson;
-        try {
-          pkg = JSON.parse(
-            readFileSync(join(context.workspaceRoot, configFile), 'utf-8'),
-          );
-        } catch {
-          return {};
-        }
-        if (!isPublishable(pkg)) return {};
-
-        return {
-          projects: {
-            [projectRoot]: { targets: { [SBOM_TARGET]: sbomTarget() } },
-          },
-        };
+        if (projectRoot !== '.' && projectRoot !== '') return {};
+        return { projects: { '.': { targets: scanTargets() } } };
       },
       configFiles,
       options,

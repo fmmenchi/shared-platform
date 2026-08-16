@@ -9,6 +9,17 @@ sidebar_position: 0
 Nx executor that runs [Trivy](https://trivy.dev) security scans as an Nx target — a
 **workspace-wide dependency-vulnerability scan** that fails on CRITICAL/HIGH by default.
 
+## Install
+
+```bash
+pnpm nx add @fmmenchi/nx-trivy
+```
+
+That installs the package and runs its [`init` generator](./reference/generators.md), which registers
+the plugin in `nx.json` (target inference only runs for registered plugins) and seeds a
+`.trivyignore.yaml` at the scan root. Already installed? Run `pnpm nx g @fmmenchi/nx-trivy:init` — it
+is idempotent.
+
 ## Prerequisites
 
 - An existing **Nx workspace** (the executor scans from `context.root`, the workspace root).
@@ -25,6 +36,7 @@ Nx executor that runs [Trivy](https://trivy.dev) security scans as an Nx target 
 ## 📚 Reference
 
 - [Executors](./reference/executors.md) — the `scan` executor and both targets, with every option.
+- [Generators](./reference/generators.md) — `init`, what it writes, and why it must be called `init`.
 
 ## 🏗 Concepts
 
