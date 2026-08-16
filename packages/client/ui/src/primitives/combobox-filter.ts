@@ -15,6 +15,16 @@
  * Not exported from the package. A consumer wanting this behaviour gets it by
  * passing nothing; a consumer wanting a variation of it writes theirs, and one
  * more helper on the public surface would be a second thing to keep in step.
+ *
+ * HERE AND NOT IN `components/combobox/`, which is where it was written. ADR-0029
+ * calls the fold part of what two combobox-shaped controls share, and `Combobox`
+ * itself no longer uses it — `useComboboxList` does. Left in the component's
+ * folder it was the package's first RUNTIME import from a primitive back into a
+ * component, so deleting or renaming one of the two consumers would have broken
+ * the shared layer, and the second component's build entry would have pulled a
+ * module out of the first component's folder. No lint rule catches that edge;
+ * moving it costs one commit now and more after the second consumer exists,
+ * which is the same argument that extracted the hook early.
  */
 export function matches(label: string, query: string): boolean {
   return fold(label).includes(fold(query));

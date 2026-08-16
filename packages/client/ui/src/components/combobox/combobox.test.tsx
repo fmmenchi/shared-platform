@@ -31,9 +31,22 @@ const wiring = {
 const field = () => screen.getByRole('combobox');
 const carrier = (container: HTMLElement) =>
   container.querySelector('[data-carrier]') as HTMLInputElement | null;
+/**
+ * The id the field POINTS AT, whether or not anything carries it.
+ *
+ * Split out from `activeOption` because that helper resolves the id to an
+ * element, so it answers `null` for BOTH "the field points at nothing" and "the
+ * field points at an id no element has" — a dangling IDREF, WCAG 4.1.2. A
+ * mutation run measured what that costs: the render clamp, whose whole reason
+ * for existing is that second case, could be deleted with the entire suite
+ * green, because the one test written for it asserted `activeOption()` was null
+ * and the broken state satisfies that as readily as the fixed one. Where the
+ * distinction is the point, assert this.
+ */
+const activeId = () => field().getAttribute('aria-activedescendant');
 /** The option the arrows are on — pointed at, never focused. */
 const activeOption = () => {
-  const id = field().getAttribute('aria-activedescendant');
+  const id = activeId();
   return id === null ? null : document.getElementById(id);
 };
 
@@ -100,6 +113,37 @@ describe('Combobox', () => {
       expect(field()).toHaveValue('Milano');
       expect(carrier(container)).toHaveValue('1');
     });
+  });
+
+  it('scrolls the highlighted row into view, since nothing else will', async () => {
+    // The highlight is an ATTRIBUTE and not focus, so the platform scrolls
+    // nothing for us: past row nine a keyboard user watched a list that
+    // appeared frozen. Every fixture in this file has four rows, so the effect
+    // that fixes it could be deleted in silence.
+    const MANY = Array.from({ length: 30 }, (_, index) => ({
+      id: String(index),
+      name: `City ${String(index)}`,
+    }));
+    const { container } = render(
+      <Combobox {...wiring} items={MANY} aria-label="City" />,
+    );
+
+    await browser.click(field());
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(MANY.length);
+    });
+    const surface = container.querySelector('[popover]') as HTMLElement;
+    expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight);
+
+    await browser.keyboard('{ArrowDown}'.repeat(20));
+
+    const row = activeOption() as HTMLElement;
+    expect(row).toHaveTextContent('City 19');
+    expect(surface.scrollTop).toBeGreaterThan(0);
+    const seen = row.getBoundingClientRect();
+    const view = surface.getBoundingClientRect();
+    expect(seen.top).toBeGreaterThanOrEqual(view.top - 1);
+    expect(seen.bottom).toBeLessThanOrEqual(view.bottom + 1);
   });
 
   it('walks the rows with the arrows, and wraps both ways', async () => {
@@ -807,6 +851,29 @@ describe('Combobox', () => {
       });
     });
 
+    it('gives the offer an id of its own, not the first row’s', async () => {
+      // With one id shared between the offer and row 0, `getElementById`
+      // answers with whichever comes FIRST in the document — the real row. So
+      // `aria-activedescendant` would name "Milano" while the highlight was
+      // painted on `Create “mila”`: the screen reader and the screen disagreeing
+      // about which row `Enter` takes, over a pair of duplicate ids that no rule
+      // in this suite looks for.
+      render(<Combobox {...wiring} aria-label="City" onCreate={vi.fn()} />);
+
+      await browser.click(field());
+      await browser.keyboard('mila');
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(2);
+      });
+
+      const [row, offer] = screen.getAllByRole('option');
+      expect(offer?.id).not.toBe(row?.id);
+
+      await browser.keyboard('{ArrowDown}{ArrowDown}');
+      expect(activeOption()).toBe(offer);
+      expect(activeOption()).toHaveTextContent('Create “mila”');
+    });
+
     it('counts the offer in the announcement, as the row metadata already did', async () => {
       // The two counts of one list contradicted each other out loud: every row
       // announced "1 of 1" while the region said "Results for “Bologna”: 0", so
@@ -1011,6 +1078,34 @@ describe('Combobox', () => {
 
       await browser.keyboard('{ArrowDown}');
       expect(activeOption()).toHaveTextContent('Milano');
+    });
+
+    it('points at nothing rather than at an id that is gone', async () => {
+      // THE TEST ABOVE CANNOT TELL THOSE TWO APART. `activeOption()` resolves
+      // the id to an element, so an absent `aria-activedescendant` and one
+      // naming an id nothing carries both come back `null` — and a mutation run
+      // measured the cost: the render clamp, written for exactly this, could be
+      // deleted with all 68 assertions green. The broken form is a dangling
+      // IDREF (WCAG 4.1.2): a screen reader is told the focus is on a row that
+      // is not in the tree, and `Enter` is a silent no-op. So assert the
+      // ATTRIBUTE, which is the thing that is either there or not.
+      const { rerender } = render(
+        <Combobox {...wiring} filter={false} aria-label="City" />,
+      );
+
+      await browser.click(field());
+      await browser.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}');
+      expect(activeOption()).toHaveTextContent('Torino');
+
+      rerender(
+        <Combobox
+          {...wiring}
+          items={CITIES.slice(0, 3)}
+          filter={false}
+          aria-label="City"
+        />,
+      );
+      expect(activeId()).toBeNull();
     });
 
     it('cannot commit a row that took the offer’s place', async () => {

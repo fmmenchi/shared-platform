@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react';
-import { matches, says } from '../components/combobox/combobox.filter.js';
+import { matches, says } from './combobox-filter.js';
 import type {
   ComboboxList,
   ComboboxListOptions,
