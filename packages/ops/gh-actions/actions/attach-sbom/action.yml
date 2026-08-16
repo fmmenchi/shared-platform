@@ -24,9 +24,16 @@ runs:
           pkg=${tag%@*}
           # The release names the package; the asset just needs to say what it is.
           out="sbom.cdx.json"
+          # An SBOM is opt-in per project (`nx g @fmmenchi/nx-trivy:sbom <project>`), so a released
+          # package may legitimately have no `sbom` target. Say so as a warning — the release is
+          # already out, and failing the job here would help nobody.
+          if ! pnpm nx show project "$pkg" --json | grep -q '"sbom"'; then
+            echo "::warning::$pkg has no 'sbom' target — run 'pnpm nx g @fmmenchi/nx-trivy:sbom $pkg' to attach one to its releases."
+            continue
+          fi
           if pnpm nx run "$pkg:sbom" --configuration=docker --output="$out"; then
-            gh release upload "$tag" "$out" --clobber || echo "SBOM upload failed for $tag."
+            gh release upload "$tag" "$out" --clobber || echo "::warning::SBOM upload failed for $tag."
           else
-            echo "SBOM generation failed for $pkg — skipping."
+            echo "::warning::SBOM generation failed for $pkg — skipping."
           fi
         done < "${{ inputs.tags-file }}"

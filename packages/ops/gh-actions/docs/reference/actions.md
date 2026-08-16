@@ -54,6 +54,11 @@ pnpm + Node + a frozen install for an nx workspace.
 
 Vulnerability + secret scan via `@fmmenchi/nx-trivy` (docker runner), caching the vuln DB per day.
 
+It names no project: it asks the graph which one owns `scan-docker` (the plugin infers the scan
+targets onto your workspace root project) and **fails** when nothing does, since an unregistered
+plugin would otherwise mean a green job that never scanned. The fix it prints is
+`pnpm nx add @fmmenchi/nx-trivy`.
+
 | Input         | Type    | Default | Description                                       |
 | :------------ | :------ | :------ | :------------------------------------------------ |
 | `secret-scan` | boolean | `true`  | Also run the secret scan (built-in rules, no DB). |
@@ -61,7 +66,9 @@ Vulnerability + secret scan via `@fmmenchi/nx-trivy` (docker runner), caching th
 ## `attach-sbom`
 
 For each `{project}@{version}` tag in `tags-file`, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy`
-and upload it to that Release as `sbom.cdx.json`. Non-fatal per tag.
+and upload it to that Release as `sbom.cdx.json`. Non-fatal per tag: an SBOM is opt-in per project
+(`nx g @fmmenchi/nx-trivy:sbom <project>`), so a released package without the target is reported as a
+warning naming that command, not a failure — the release is already out.
 
 | Input          | Type   | Default | Description                                                 |
 | :------------- | :----- | :------ | :---------------------------------------------------------- |

@@ -12,6 +12,28 @@ inputs:
 runs:
   using: composite
   steps:
+    # Never name a project here. The scan targets are INFERRED onto the workspace root project,
+    # whose name differs in every repo, so the action asks the graph who owns them. Empty means
+    # the plugin is not registered in nx.json — which is a scan that would silently not happen,
+    # so it fails the job instead. (`nx run-many` would exit 0 on no matches: measured.)
+    - name: Resolve the scan host project
+      id: host
+      shell: bash
+      run: |
+        first() {
+          pnpm nx show projects --with-target "$1" --json \
+            | node -p "(JSON.parse(require('fs').readFileSync(0,'utf8'))[0] ?? '')"
+        }
+        vuln="$(first scan-docker)"
+        if [ -z "$vuln" ]; then
+          echo "::error::No project exposes a 'scan-docker' target. Run 'pnpm nx add @fmmenchi/nx-trivy' (or 'pnpm nx g @fmmenchi/nx-trivy:init' if it is already installed) so the plugin is registered in nx.json and its scan targets are inferred."
+          exit 1
+        fi
+        {
+          echo "vuln=$vuln"
+          echo "secret=$(first scan-secrets-docker)"
+        } >> "$GITHUB_OUTPUT"
+
     - name: Resolve the day (DB cache key)
       id: day
       shell: bash
@@ -29,7 +51,7 @@ runs:
       shell: bash
       run: |
         mkdir -p "$RUNNER_TEMP/trivy-cache"
-        pnpm nx run @fmmenchi/nx-trivy:scan-docker --cacheDir="$RUNNER_TEMP/trivy-cache"
+        pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker" --cacheDir="$RUNNER_TEMP/trivy-cache"
 
     # The docker runner writes the DB as root; hand it back so the post-job cache save can archive it.
     - name: Reclaim the cache dir
@@ -39,4 +61,10 @@ runs:
     - name: Secret scan
       if: ${{ inputs.secret-scan == 'true' }}
       shell: bash
-      run: pnpm nx run @fmmenchi/nx-trivy:scan-secrets-docker
+      run: |
+        host='${{ steps.host.outputs.secret }}'
+        if [ -z "$host" ]; then
+          echo "::error::secret-scan was requested but no project exposes a 'scan-secrets-docker' target. Run 'pnpm nx g @fmmenchi/nx-trivy:init', or pass secret-scan: false."
+          exit 1
+        fi
+        pnpm nx run "$host:scan-secrets-docker"
