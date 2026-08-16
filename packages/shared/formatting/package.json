@@ -1,7 +1,7 @@
 {
   "name": "@fmmenchi/formatting",
   "version": "0.0.1",
-  "description": "Locale-aware formatting of dates, numbers and money \u2014 one answer per value, shared by the client and the server. Framework-agnostic, isomorphic, no dependencies beyond Intl.",
+  "description": "Locale-aware formatting of dates, numbers and money — one answer per value, shared by the client and the server. Framework-agnostic, isomorphic, no dependencies beyond Intl.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -33,7 +33,18 @@
       "scope:shared",
       "type:util",
       "doc:shared"
-    ]
+    ],
+    "targets": {
+      "sbom": {
+        "executor": "@fmmenchi/nx-trivy:sbom",
+        "cache": false,
+        "configurations": {
+          "docker": {
+            "runner": "docker"
+          }
+        }
+      }
+    }
   },
   "dependencies": {
     "tslib": "^2.3.0"

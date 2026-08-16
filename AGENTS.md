@@ -69,7 +69,8 @@ Browser-mode tests need Chromium once: `pnpm exec playwright install chromium`. 
 (Stylelint) enforces design-token values in the UI's CSS Modules — see [ui](./.agents/doc/ui.md).
 
 CI also runs a **workspace security scan** (`@fmmenchi/nx-trivy`, Trivy) that fails on CRITICAL/HIGH
-dependency vulnerabilities. Run it locally with `pnpm nx run @fmmenchi/nx-trivy:scan` (needs the
+dependency vulnerabilities. The scan targets are **inferred onto the workspace root project**
+(`@fmmenchi/source`), so run it locally with `pnpm nx run @fmmenchi/source:scan` (needs the
 `trivy` CLI) or `:scan-docker` (needs only Docker). Remediate by bumping the dep; for a **transitive**
 one that means a `pnpm-workspace.yaml` `overrides` entry, scoped to the vulnerable version line.
 

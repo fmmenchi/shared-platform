@@ -5,6 +5,9 @@ dist
 tmp
 out-tsc
 
+# a bill of materials is a release artifact, generated per run — never committed
+sbom.cdx.json
+
 # dependencies
 node_modules
 
