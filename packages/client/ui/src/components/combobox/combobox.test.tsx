@@ -144,6 +144,16 @@ describe('Combobox', () => {
     const view = surface.getBoundingClientRect();
     expect(seen.top).toBeGreaterThanOrEqual(view.top - 1);
     expect(seen.bottom).toBeLessThanOrEqual(view.bottom + 1);
+
+    // AND `nearest` SPECIFICALLY, which everything above passes without:
+    // `center` and `start` both keep the row on screen and both keep
+    // `scrollTop` positive. What they lose is the documented half — "leaves a
+    // row that is already visible alone" — and losing it means the list jumps
+    // under the reader on every single arrow.
+    const settled = surface.scrollTop;
+    await browser.keyboard('{ArrowUp}');
+    expect(activeOption()).toHaveTextContent('City 18');
+    expect(surface.scrollTop).toBe(settled);
   });
 
   it('walks the rows with the arrows, and wraps both ways', async () => {
@@ -1105,6 +1115,36 @@ describe('Combobox', () => {
           aria-label="City"
         />,
       );
+      // AND THE LIST IS STILL OPEN, which is the second cause of that same
+      // `null`: `aria-activedescendant` is written as `showing && highlighted
+      // !== null`, so a change that closed the surface when `items` moved would
+      // make this test green with the clamp deleted. One attribute, two reasons
+      // — the shape this whole commit is about, one level up.
+      expect(field()).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getAllByRole('option')).toHaveLength(3);
+      expect(activeId()).toBeNull();
+    });
+
+    it('drops the highlight the moment the query changes under it', async () => {
+      // The HOOK's `clearHighlight` is pinned; the component's CALL to it on
+      // typing was not. The only arrow-then-type sequence in this file typed a
+      // query that left zero rows, so the render clamp masked the state.
+      // Without the call: arm Milano, type `tor`, and the one remaining row is
+      // highlighted — so `Enter` commits Torino, a row the user never moved to.
+      // The destructive defect in this component's header, through the other
+      // door.
+      render(<Combobox {...wiring} aria-label="City" />);
+
+      await browser.click(field());
+      await browser.keyboard('{ArrowDown}');
+      expect(activeOption()).toHaveTextContent('Milano');
+
+      await browser.keyboard('tor');
+      await waitFor(() => {
+        expect(screen.getAllByRole('option')).toHaveLength(1);
+      });
+      // The ATTRIBUTE: `activeOption()` is blind here, since a highlight held
+      // at index 0 would resolve to the one row that is left.
       expect(activeId()).toBeNull();
     });
 

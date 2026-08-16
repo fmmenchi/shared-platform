@@ -69,10 +69,10 @@ describe('useComboboxList', () => {
     // forty-row list and pressing Up to reach the end would land on the first
     // row instead.
     render(<Host />);
-    expect(where()).toHaveTextContent('none');
+    expect(where().textContent).toBe('none');
 
     await press('up');
-    expect(where()).toHaveTextContent('3');
+    expect(where().textContent).toBe('3');
   });
 
   it('has nowhere to go in an empty list, and does not remember trying', async () => {
@@ -82,16 +82,16 @@ describe('useComboboxList', () => {
     // is armed, one Enter from committing a row the user never moved onto. It
     // is the manual-selection rule, broken through the loading state.
     const { rerender } = render(<Host items={[]} query="zzz" />);
-    expect(rows()).toHaveTextContent('0');
+    expect(rows().textContent).toBe('0');
 
     await press('down');
     await press('down');
-    expect(where()).toHaveTextContent('none');
+    expect(where().textContent).toBe('none');
 
     // The search answers.
     rerender(<Host query="zzz" filter={false} />);
-    expect(shown()).toHaveTextContent('Milano,Málaga,Manchester,Torino');
-    expect(where()).toHaveTextContent('none');
+    expect(shown().textContent).toBe('Milano,Málaga,Manchester,Torino');
+    expect(where().textContent).toBe('none');
   });
 
   it('offers nothing to create until something other than space is typed', async () => {
@@ -99,13 +99,13 @@ describe('useComboboxList', () => {
     // on an empty field shows `Create “”` — a row whose only job is to name
     // what it will make, naming nothing — and Enter hands `onCreate('')`.
     const { rerender } = render(<Host offersCreation query="" />);
-    expect(offer()).toHaveTextContent('false');
+    expect(offer().textContent).toBe('false');
 
     rerender(<Host offersCreation query="   " />);
-    expect(offer()).toHaveTextContent('false');
+    expect(offer().textContent).toBe('false');
 
     rerender(<Host offersCreation query="Bologna" />);
-    expect(offer()).toHaveTextContent('true');
+    expect(offer().textContent).toBe('true');
   });
 
   it('asks the consumer’s filter when there is one', async () => {
@@ -114,8 +114,48 @@ describe('useComboboxList', () => {
     // green, while a consumer matching on a code, a synonym or a fuzzy score
     // silently got substring-on-the-label instead.
     render(<Host query="3" filter={(city, query) => city.id === query} />);
-    expect(shown()).toHaveTextContent('Manchester');
-    expect(rows()).toHaveTextContent('1');
+    expect(shown().textContent).toBe('Manchester');
+    expect(rows().textContent).toBe('1');
+  });
+
+  it('reaches the offer from nothing, since the offer is the last row', async () => {
+    // `rows - 1` and `shown.length - 1` are the same number whenever there is
+    // no offer, and every wrap test in this package runs without one — so both
+    // could be swapped with the suite green, and "open a creatable list, press
+    // Up" would land on the last REAL row instead. The offer would be
+    // unreachable from above.
+    render(<Host items={[]} query="Bologna" offersCreation />);
+
+    await press('up');
+    expect(where().textContent).toBe('create');
+  });
+
+  it('wraps off the offer and back to the first row', async () => {
+    // The other end of the same arithmetic: stepping DOWN from the offer has to
+    // come back to row 0, and no test walked off it — the one that reaches the
+    // offer turns creation off before its second press.
+    render(<Host query="Bologna" offersCreation filter={false} />);
+
+    await press('up');
+    expect(where().textContent).toBe('create');
+
+    await press('down');
+    expect(where().textContent).toBe('0');
+  });
+
+  it('shows everything again when the query goes back to empty, whatever the filter says', async () => {
+    // `query === ''` reads as a pure optimisation under the DEFAULT filter —
+    // folding an empty string and asking `includes('')` is always true — so
+    // deleting it changes nothing anywhere the suite looks. It only bites with
+    // a consumer's filter: backspacing to an empty field would empty the list
+    // instead of restoring it. The same hole as `filter`-as-a-function, one
+    // term further along the same expression.
+    const seek = (city: City, query: string) => city.id === query;
+    const { rerender } = render(<Host query="3" filter={seek} />);
+    expect(shown().textContent).toBe('Manchester');
+
+    rerender(<Host query="" filter={seek} />);
+    expect(shown().textContent).toBe('Milano,Málaga,Manchester,Torino');
   });
 
   it('hands canCreate the rows on screen, not the whole catalogue', async () => {
@@ -130,7 +170,7 @@ describe('useComboboxList', () => {
         canCreate={(_query, onScreen) => onScreen.length === 0}
       />,
     );
-    expect(offer()).toHaveTextContent('true');
+    expect(offer().textContent).toBe('true');
   });
 
   it('lets go of the offer, and of the position, when a row starts saying it', async () => {
@@ -146,13 +186,13 @@ describe('useComboboxList', () => {
     );
 
     await press('down');
-    expect(where()).toHaveTextContent('create');
+    expect(where().textContent).toBe('create');
 
     rerender(<Host query="Milano" offersCreation filter={false} />);
-    expect(offer()).toHaveTextContent('false');
-    expect(where()).toHaveTextContent('none');
+    expect(offer().textContent).toBe('false');
+    expect(where().textContent).toBe('none');
 
     await press('down');
-    expect(where()).toHaveTextContent('0');
+    expect(where().textContent).toBe('0');
   });
 });

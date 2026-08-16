@@ -1,4 +1,6 @@
 import { useEffect, useId, useState } from 'react';
+import { UI_FALLBACK_LOCALE } from '../i18n/messages.js';
+import { useUiAdapters } from '../i18n/provider.js';
 import { matches, says } from './combobox-filter.js';
 import type {
   ComboboxList,
@@ -49,6 +51,12 @@ export function useComboboxList<T>(
     canCreate,
   } = options;
 
+  // THE READER'S TAG, not the copy's, which is `useTableFilters`' distinction
+  // and its reason: a German app whose copy fell back to English must still
+  // fold as German. Reached through the adapters rather than through
+  // `useCopyLocale`, exactly as the table's filter does, so a combobox and a
+  // table on one screen answer "contains" the same way.
+  const locale = useUiAdapters()?.i18n.locale ?? UI_FALLBACK_LOCALE;
   const listId = useId();
   const optionId = (spot: Spot) =>
     `${listId}-${spot === 'create' ? 'create' : String(spot)}`;
@@ -64,7 +72,7 @@ export function useComboboxList<T>(
     !searching || filter === false || query === ''
       ? items
       : items.filter((item) =>
-          filter ? filter(item, query) : matches(getLabel(item), query),
+          filter ? filter(item, query) : matches(getLabel(item), query, locale),
         );
 
   // "NO RECORD ALREADY SAYS THIS" IS NOT NEGOTIABLE, and `canCreate` refines it
@@ -77,7 +85,7 @@ export function useComboboxList<T>(
   const creatable =
     offersCreation &&
     query.trim() !== '' &&
-    !items.some((item) => says(getLabel(item), query)) &&
+    !items.some((item) => says(getLabel(item), query, locale)) &&
     (canCreate ? canCreate(query, shown) : true);
   const rows = creatable ? shown.length + 1 : shown.length;
 
