@@ -26,6 +26,18 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   where the plugin is a project. Ask the graph instead (`nx show projects --with-target <t> --json`,
   take the first) and **fail when the answer is empty** — `nx run-many` exits 0 on no matches
   (measured), which would turn an unregistered plugin into a green security job that scanned nothing.
+- **An action and the targets it invokes ship in TWO releases, never one.** The reusable workflows
+  reference the actions by tag (`@gh-actions/v0`), and that alias only moves **after** the release
+  job runs — so for one cycle the OLD action runs against the NEW workspace. Moving the trivy scan
+  targets and updating `trivy-scan` in the same merge did exactly that: the tagged action still asked
+  for `@fmmenchi/nx-trivy:scan-docker`, which had just stopped existing, and the security job died
+  with `Cannot find configuration for task`. Either release the tolerant action first, or expect one
+  red run and re-run after the alias moves.
+- **Dogfooding through the reusable is not dogfooding the action.** `ci.yml` uses the local action
+  paths, but `security.yml` calls `security.reusable.yml`, and a reusable workflow cannot use `./`
+  (GitHub resolves a relative `uses:` against the CALLER's checkout, which for a consumer is their
+  repo). So the security path always runs the **published** action — that gap is why the rule above
+  exists.
 - **Every composite `run:` step needs `shell: bash`** (composite-action requirement).
 - **`nx`-safe references only.** Actions are referenced by repo path + tag
   (`fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0`); the reusable

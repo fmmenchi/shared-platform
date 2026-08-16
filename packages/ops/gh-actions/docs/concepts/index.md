@@ -52,3 +52,16 @@ published to npm). `nx release` tags it **automatically** from conventional comm
 release group, as `gh-actions/v{version}` — **`uses`-safe** (slash-scoped: a leading `@` like the
 `@fmmenchi/*` package tags would clash with the `uses: path@ref` delimiter). The CI release job moves
 the moving-major alias `gh-actions/v0`, which is what consumers pin.
+
+### The alias moves last, so an action and its targets ship apart
+
+The reusable workflows reference the actions by that alias, and the alias only moves **after** the
+release job. For one cycle, therefore, the **old** action runs against the **new** workspace. A merge
+that both moved the Trivy scan targets and taught `trivy-scan` to find them proved it: the tagged
+action still asked for `@fmmenchi/nx-trivy:scan-docker`, which had just stopped existing, and the
+security job failed with `Cannot find configuration for task` until the alias caught up.
+
+So a change to an action and a change to what it invokes belong in **two** releases — the action
+first, tolerant of both worlds — or you accept one red run and re-run after the release. And note it
+cannot be dodged by pointing the reusable at a local path: GitHub resolves a relative `uses:` against
+the **caller's** checkout, which in a consumer is the consumer's repo.
