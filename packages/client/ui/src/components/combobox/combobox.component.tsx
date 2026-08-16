@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useId,
   useRef,
   useState,
   type KeyboardEvent,
@@ -13,26 +12,16 @@ import { useAnchored } from '../../primitives/use-anchored.js';
 import { useCarrierSync } from '../../primitives/use-carrier-sync.js';
 import { useControlled } from '../../primitives/use-controlled.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
+import { useComboboxList } from '../../primitives/use-combobox-list.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
 import { useFieldControl } from '../field/field.context.js';
 import { useMessages } from '../../i18n/provider.js';
 import { comboboxVariants } from './combobox.variants.js';
 import { comboboxMessages } from './combobox.messages.js';
-import { matches, says } from './combobox.filter.js';
+
+import type { Spot } from '../../primitives/use-combobox-list.types.js';
 import type { ComboboxProps } from './combobox.types.js';
 import styles from './combobox.module.css';
-
-/**
- * WHERE THE HIGHLIGHT IS — a row of the filtered list, or the offer to create.
- *
- * A union rather than an index, and that is a fix rather than taste. Identified
- * as "the last position", the offer was whatever sat at `shown.length` WHEN THE
- * KEY WAS PRESSED: in the server-search flow the docs recommend, a response
- * landing between the arrow and the `Enter` grew the list, and the position the
- * user had highlighted was by then a real city they had never seen. Named, it
- * cannot be mistaken for a row no matter what the list does underneath.
- */
-type Spot = number | 'create';
 
 /**
  * Choose one of many, by typing.
@@ -114,9 +103,6 @@ function Combobox<T>(props: ComboboxProps<T>) {
   } = props;
 
   const t = useMessages(comboboxMessages);
-  const listId = useId();
-  const optionId = (spot: Spot) =>
-    `${listId}-${spot === 'create' ? 'create' : String(spot)}`;
   const [anchor, setAnchor] = useState<HTMLInputElement | null>(null);
   const [carrier, setCarrier] = useState<HTMLInputElement | null>(null);
   const visible = useRef<HTMLInputElement>(null);
@@ -140,10 +126,6 @@ function Combobox<T>(props: ComboboxProps<T>) {
     onChange: onOpenChange,
     name: 'Combobox',
   });
-  // `null` IS THE OPENING STATE, not `0` — see the note above. The highlight is
-  // ours and nobody else's: drawing state with no DOM home, since an option is
-  // never focused.
-  const [active, setActive] = useState<Spot | null>(null);
   // WAS THE QUERY TYPED, or is it the label of what was picked? Without this the
   // list reopens filtered by its own answer: choose "Milano" and the only row
   // left is Milano, which reads to a screen reader as one result — as though
@@ -191,51 +173,29 @@ function Combobox<T>(props: ComboboxProps<T>) {
   const selected = items.find((item) => getKey(item) === chosen);
   const text = searching || selected === undefined ? typed : getLabel(selected);
 
-  const shown =
-    !searching || filter === false || typed === ''
-      ? items
-      : items.filter((item) =>
-          filter ? filter(item, typed) : matches(getLabel(item), typed),
-        );
-
-  // THE CREATE ROW IS A ROW, and that is the whole design: offered as an option
-  // at the end of the list, it inherits the keyboard, the highlight and the
-  // announcement that already exist. A button beside the field would be a
-  // second code path for every one of those (ADR-0028).
-  //
-  // "NO RECORD ALREADY SAYS THIS" IS NOT NEGOTIABLE, and `canCreate` REFINES it
-  // rather than replacing it — the correction of a real defect, not a change of
-  // taste. Replacing, the documented example (`(query) => query.length >= 5`)
-  // offered `Create “Torino”` in a list where Torino was two rows above and
-  // marked as selected, because a consumer adding a length rule cannot be
-  // expected to re-implement a duplicate check they were never told they had
-  // taken over.
-  //
-  // ASKED OF `items` AND NOT OF `shown`, which is the other half of the same
-  // defect: a query the filter rejects leaves an empty list, and a check against
-  // an empty list passes trivially. `Milano ` with a trailing space showed
-  // nothing but the offer to create it.
-  const creatable =
-    onCreate !== undefined &&
-    typed.trim() !== '' &&
-    !items.some((item) => says(getLabel(item), typed)) &&
-    (canCreate ? canCreate(typed, shown) : true);
-  // One list for the keyboard to walk: the rows, then the offer.
-  const rows = creatable ? shown.length + 1 : shown.length;
-
-  // CLAMPED AT RENDER, because `items` change from outside and nothing in here
-  // hears about it. Left alone, a highlight held past the end of a shorter list
-  // pointed `aria-activedescendant` at an id that did not exist (a broken IDREF,
-  // WCAG 4.1.2) and made `Enter` a silent no-op — in the server-search flow the
-  // docs themselves recommend.
-  const highlighted: Spot | null =
-    active === 'create'
-      ? creatable
-        ? 'create'
-        : null
-      : active !== null && active < shown.length
-        ? active
-        : null;
+  // THE LIST, AND WHERE THE KEYBOARD IS IN IT — the half `MultiCombobox` shares
+  // (ADR-0029 §1). It owns the rows and the highlight and nothing else: what is
+  // chosen, what the field displays and whether a pick closes the surface all
+  // stay here, because any of them inside the hook would be the `multiple`
+  // boolean that ADR refuses, one level down.
+  const {
+    listId,
+    optionId,
+    shown,
+    creatable,
+    rows,
+    highlighted,
+    move,
+    clearHighlight,
+  } = useComboboxList({
+    items,
+    getLabel,
+    filter,
+    query: typed,
+    searching,
+    offersCreation: onCreate !== undefined,
+    canCreate,
+  });
 
   // A GENUINELY STABLE `report`, through a ref — and the comment this replaces
   // was wrong, which is worth recording because it read as reasoning. It
@@ -310,16 +270,6 @@ function Combobox<T>(props: ComboboxProps<T>) {
     if (showing && !shownNow) node.showPopover();
     if (!showing && shownNow) node.hidePopover();
   });
-
-  // KEEP THE HIGHLIGHT ON SCREEN. The list scrolls at nine rows, and the
-  // highlight is an attribute rather than focus — so nothing scrolls it into
-  // view for us, and a keyboard user walking past row nine watched a list that
-  // appeared frozen. `nearest` leaves a row that is already visible alone.
-  const highlightId = highlighted === null ? null : optionId(highlighted);
-  useEffect(() => {
-    if (highlightId === null) return;
-    document.getElementById(highlightId)?.scrollIntoView({ block: 'nearest' });
-  }, [highlightId]);
 
   // THE CHOICE ONTO THE CARRIER, through the prototype setter so a real `input`
   // event follows it. A React `value` prop would update the DOM and tell nobody:
@@ -396,7 +346,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
 
   const close = () => {
     setSearching(false);
-    setActive(null);
+    clearHighlight();
     setShowing(false);
     visible.current?.focus();
   };
@@ -432,38 +382,6 @@ function Combobox<T>(props: ComboboxProps<T>) {
     close();
   };
 
-  const move = (delta: number) => {
-    if (rows === 0) return;
-    setActive((current) => {
-      // FROM THE CLAMPED POSITION, not the raw one. The render clamps a stale
-      // highlight to nothing, but this used to read the state: with `active` at
-      // 7 and the list down to 3 rows, `aria-activedescendant` correctly
-      // disappeared and `ArrowDown` then computed `8 % 3` and landed on the
-      // THIRD row — the same "commit a row you never looked at" the manual
-      // selection rule exists to prevent, through the other door.
-      const from =
-        current === 'create'
-          ? creatable
-            ? shown.length
-            : null
-          : current !== null && current < shown.length
-            ? current
-            : null;
-      // From nothing, a step down lands on the first row and a step up on the
-      // last — which is what makes "open, then press up" reach the end. The
-      // offer to create is the last row, so the same arithmetic reaches it.
-      const next =
-        from === null
-          ? delta > 0
-            ? 0
-            : rows - 1
-          : from + delta < 0
-            ? rows - 1
-            : (from + delta) % rows;
-      return creatable && next === shown.length ? 'create' : next;
-    });
-  };
-
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event);
     if (event.defaultPrevented || !editable) return;
@@ -474,7 +392,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
         event.preventDefault();
         if (!showing) {
           setShowing(true);
-          setActive(null);
+          clearHighlight();
           return;
         }
         move(event.key === 'ArrowDown' ? 1 : -1);
@@ -548,7 +466,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
         onChange={(event) => {
           setTyped(event.target.value);
           setSearching(true);
-          setActive(null);
+          clearHighlight();
           setShowing(true);
           setAnnounced('');
           // A CHOICE THE TEXT NO LONGER SAYS IS A LIE. Picked "Milano" and then
