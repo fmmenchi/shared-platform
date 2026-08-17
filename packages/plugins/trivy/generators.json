@@ -4,11 +4,6 @@
       "factory": "./dist/generators/init/init",
       "schema": "./dist/generators/init/schema.json",
       "description": "Register @fmmenchi/nx-trivy in nx.json and seed the workspace .trivyignore.yaml."
-    },
-    "sbom": {
-      "factory": "./dist/generators/sbom/sbom",
-      "schema": "./dist/generators/sbom/schema.json",
-      "description": "Add the sbom target (CycloneDX bill of materials) to a project."
     }
   }
 }

@@ -7,7 +7,7 @@ sidebar_position: 1
 # Executors
 
 Every executor and pre-configured target in `@fmmenchi/nx-trivy`. The plugin ships **two executors**
-(`scan`, `sbom`) and two generators ([`init`, `sbom`](./generators.md)).
+(`scan`, `sbom`) and one generator ([`init`](./generators.md)).
 
 ---
 
@@ -60,8 +60,8 @@ closure — the artifact to attach to that package's published release.
 
 **Usage**
 
-The `sbom` target is added to a project by the [`sbom` generator](./generators.md#sbom) (see
-[Targets](#sbom-1)), so you run it on the project itself — no `--projectName`:
+The `sbom` target is inferred onto every project with a package.json (see [Targets](#sbom-1)), so you
+run it on the project itself — no `--projectName`:
 
 ```bash
 pnpm nx run @fmmenchi/ui:sbom [options]
@@ -140,10 +140,11 @@ pnpm nx run <root-project>:scan-secrets-docker  # via the aquasec/trivy image
 
 ### `sbom`
 
-**Generated, not inferred** — `pnpm nx g @fmmenchi/nx-trivy:sbom <project>` writes it onto the
-project you name. Whether a package publishes a bill of materials is a policy of your workspace, not
-a fact about its files, so it is opt-in per project
-([ADR-0029](../../../adr/0029-infer-facts-generate-policy.md)).
+**Inferred onto every project with a package.json.** Having a dependency closure is a fact, so the
+verb is always there — including on an app, which is never "publishable" and is exactly the thing a
+bill of materials is for. WHICH releases carry one is a policy, and it lives where it already was: the
+release record CI reads, which lists what nx actually released
+([ADR-0031](../../../adr/0031-being-describable-is-a-fact.md)).
 
 The target is **uncached** (the SBOM tracks the whole dependency closure, which a project's own file
 inputs don't capture — a cache hit could serve a stale bill of materials) and ships a `docker`

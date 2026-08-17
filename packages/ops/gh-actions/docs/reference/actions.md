@@ -94,10 +94,10 @@ command runs in a consumer and in the repo that publishes it.
 ## `attach-sbom`
 
 For each project in the release record, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy` and upload
-it to that Release as `sbom.cdx.json`. The record carries the project, so nothing here cuts one out
-of a tag. Non-fatal per release: an SBOM is opt-in per project
-(`nx g @fmmenchi/nx-trivy:sbom <project>`), so a released package without the target is reported as a
-warning naming that command, not a failure — the release is already out.
+it to that Release as `sbom.cdx.json`. The record carries the project and the version, so nothing here
+cuts either out of a tag. Every project with a package.json infers the `sbom` target, so this loop —
+the release record — is the entire policy about who gets one. Non-fatal per release: a generation or
+upload failure is a warning, because the release is already out and failing here helps nobody.
 
 | Input          | Type   | Default | Description                                                                  |
 | :------------- | :----- | :------ | :--------------------------------------------------------------------------- |

@@ -25,17 +25,15 @@ real dependency closure and `createLockFile` emits the matching lock — in **yo
 format, detected from the workspace — which Trivy then reads. The result is exactly what a consumer
 installs.
 
-## Step 1: Opt the project in
+## Step 1: Nothing to opt into
 
-```bash
-pnpm nx g @fmmenchi/nx-trivy:sbom <project>
-```
+Every project with a `package.json` already has the target: having a dependency closure is a fact, so
+the verb is inferred rather than written down. That includes an app, which is never "publishable" and
+is exactly the thing a bill of materials is for.
 
-That writes an `sbom` target (plus a `docker` configuration) into the project's own config. It is a
-**generator, not inference**, and deliberately so: whether a package publishes a bill of materials
-depends on what you distribute and who audits it — not on anything visible in its files. A private
-app that ships to production usually wants one; a published helper library may not. See
-[ADR-0029](../../../adr/0029-infer-facts-generate-policy.md).
+What decides which **releases** carry one is the release record your CI reads — whatever nx actually
+released gets an SBOM attached, and nothing else needs to be declared anywhere
+([ADR-0031](../../../adr/0031-being-describable-is-a-fact.md)).
 
 ## Step 2: Run it
 

@@ -40,14 +40,15 @@ choice:
   none). That is a fact about the workspace: you registered a scanner in `nx.json`, and per §1 the
   scan is workspace-wide whatever hosts it — so the host is ceremony, and **one** host is the right
   number. Inferring onto every project would run the identical root scan N times.
-- The **`sbom` target is generated**, per project, by `nx g @fmmenchi/nx-trivy:sbom <project>`. That
-  is a policy: whether a package publishes a bill of materials depends on what you distribute and who
-  audits it, which nothing in the file tree can tell you.
+- The **`sbom` target is inferred onto every project with a package.json**. Having a dependency
+  closure is a fact, so the verb is always there — on an app too, which is never "publishable" and is
+  exactly what a bill of materials is for. Which **releases** carry one is the policy, and it lives in
+  the release record CI reads: whatever nx released gets one.
 
-The plugin used to do the opposite — infer `sbom` onto anything `name && !private` — and that
-smuggled one repo's release policy into every consumer while excluding the case that matters most,
-a private app that ships to production. See
-[ADR-0029](../../../adr/0029-infer-facts-generate-policy.md).
+Two earlier designs put that policy in the target's existence — first a `name && !private` heuristic,
+then a per-project generator — and both excluded the case that motivated them, the app that actually
+ships. See [ADR-0029](../../../adr/0029-infer-facts-generate-policy.md) for the rule and
+[ADR-0031](../../../adr/0031-being-describable-is-a-fact.md) for what it took to apply it correctly.
 
 ### 4. Trivy's own vocabulary
 

@@ -47,9 +47,8 @@ jobs:
 ```
 
 No brick names a project. Where a brick runs an nx target it asks the graph who owns it — inferred
-(`<root>:scan-docker`) or generated (`<project>:sbom`, opted in with `nx g @fmmenchi/nx-trivy:sbom`)
-— and where it runs a script it runs a **bin** (`pnpm exec fmmenchi-release`), which resolves the
-same way in every workspace. When nothing owns a target, the brick fails with a message naming the
+(`<root>:scan-docker`, `<project>:sbom`) — and where it runs a script it resolves the package's own
+entrypoint, which reads the same way in every workspace. When nothing owns a target, the brick fails with a message naming the
 command that fixes it, rather than passing quietly.
 
 ## The release job

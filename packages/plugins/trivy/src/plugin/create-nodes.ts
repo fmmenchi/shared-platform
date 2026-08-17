@@ -52,19 +52,44 @@ export function scanTargets(): Targets {
 }
 
 /**
- * Infers the scan targets onto the **workspace root project**, creating that project when the
- * workspace has none — matched by the root `package.json`, so it works in any layout.
+ * The `sbom` target inferred onto a project. Uncached: an SBOM tracks the whole dependency
+ * closure (the lockfile), which a project's own file inputs don't capture — a cache hit
+ * could serve a stale bill of materials.
  *
- * Why root, and why inferred at all: the scan runs from `context.root` whatever project hosts
- * it (ADR-0007), so the host is pure ceremony — and asking every consumer to hand-write a
- * target whose only purpose is to name an executor is ceremony we can delete. Registering the
- * plugin IS the intent; the targets follow. Exactly one host also means `nx run-many -t
- * scan-docker` can never run the same workspace-wide scan N times.
+ * The `docker` configuration flips the executor to the aquasec/trivy image. It is a
+ * configuration and not a CLI `--runner=docker` because nx reserves `--runner` for its
+ * tasks-runner selection, so that flag never reaches the executor.
+ */
+export function sbomTarget(): Targets[string] {
+  return {
+    executor: `${PLUGIN}:sbom`,
+    cache: false,
+    configurations: { docker: { runner: 'docker' } },
+    metadata: {
+      description:
+        'Generate a CycloneDX SBOM for this project (inferred by @fmmenchi/nx-trivy).',
+      technologies: ['trivy'],
+    },
+  };
+}
+
+/**
+ * Infers the scan targets onto the **workspace root project** (creating that project when the
+ * workspace has none), and `sbom` onto **every other project with a package.json**.
  *
- * The `sbom` target is deliberately NOT inferred: whether a package publishes a bill of
- * materials is a policy of the workspace, not a fact about its files — an app that ships to
- * production may want one while a published helper lib does not. It is opt-in, per project,
- * via the `sbom` generator.
+ * Why the scan is on the root: it runs from `context.root` whatever project hosts it
+ * (ADR-0007), so the host is pure ceremony, and one host means `nx run-many -t scan-docker`
+ * can never repeat the same workspace-wide scan N times.
+ *
+ * Why `sbom` is on everything (ADR-0031): any project with a package.json HAS a dependency
+ * closure, so being describable is a fact, not a policy. Which releases carry a bill of
+ * materials is the policy — and it already lives where it belongs, in the release record the
+ * CI reads: whatever nx released gets one. An earlier design put that decision in the
+ * target's existence and had it generated per project; it excluded exactly the case that
+ * motivated it (an app, which is never "publishable" but is the thing that ships), and left
+ * a package silently without an SBOM because nobody had run a generator.
+ *
+ * The root project is skipped: its package.json describes the workspace, not a package.
  */
 export const createNodesV2: CreateNodesV2 = [
   '**/package.json',
@@ -72,8 +97,14 @@ export const createNodesV2: CreateNodesV2 = [
     createNodesFromFiles(
       (configFile) => {
         const projectRoot = dirname(configFile);
-        if (projectRoot !== '.' && projectRoot !== '') return {};
-        return { projects: { '.': { targets: scanTargets() } } };
+        const isRoot = projectRoot === '.' || projectRoot === '';
+        return {
+          projects: {
+            [isRoot ? '.' : projectRoot]: {
+              targets: isRoot ? scanTargets() : { sbom: sbomTarget() },
+            },
+          },
+        };
       },
       configFiles,
       options,

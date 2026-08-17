@@ -50,13 +50,9 @@ runs:
           [ -z "$pkg" ] && continue
           # The release names the package; the asset just needs to say what it is.
           out="sbom.cdx.json"
-          # An SBOM is opt-in per project (`nx g @fmmenchi/nx-trivy:sbom <project>`), so a released
-          # package may legitimately have no `sbom` target. Say so as a warning — the release is
-          # already out, and failing the job here would help nobody.
-          if ! pnpm nx show project "$pkg" --json | grep -q '"sbom"'; then
-            echo "::warning::$pkg has no 'sbom' target — run 'pnpm nx g @fmmenchi/nx-trivy:sbom $pkg' to attach one to its releases."
-            continue
-          fi
+          # No "does this project have an sbom target?" question any more: every project with
+          # a package.json infers one (ADR-0031). What decides who gets a bill of materials is
+          # this loop — the release record — and nothing else.
           # `--packageVersion`, from the record: this job has its own fresh checkout, where
           # package.json still holds the PRE-release version (nx does not commit its bumps),
           # so without it the bill of materials names a version nobody shipped. It cannot be

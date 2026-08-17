@@ -17,11 +17,11 @@ pnpm nx run <root-project>:scan         # trivy fs --scanners vuln --severity CR
 pnpm nx run <root-project>:scan-docker  # via the aquasec/trivy image — no local trivy needed
 ```
 
-A per-project **SBOM** is opt-in, because what you publish a bill of materials for is a policy, not a
-fact about your files:
+Every project with a `package.json` also infers an **`sbom`** target — having a dependency closure is
+a fact, so the verb is always there. Which releases carry a bill of materials is decided by CI, from
+the release record:
 
 ```bash
-pnpm nx g @fmmenchi/nx-trivy:sbom <project>
 pnpm nx run <project>:sbom
 ```
 

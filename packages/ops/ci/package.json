@@ -1,7 +1,7 @@
 {
   "name": "@fmmenchi/ci",
   "version": "0.0.1",
-  "description": "CI helper scripts for an Nx release monorepo \u2014 prints the releasable projects Nx marks affected between two refs.",
+  "description": "CI helper scripts for an Nx release monorepo — prints the releasable projects Nx marks affected between two refs.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -31,18 +31,7 @@
       "scope:ops",
       "type:util",
       "doc:ops"
-    ],
-    "targets": {
-      "sbom": {
-        "executor": "@fmmenchi/nx-trivy:sbom",
-        "cache": false,
-        "configurations": {
-          "docker": {
-            "runner": "docker"
-          }
-        }
-      }
-    }
+    ]
   },
   "dependencies": {
     "@fmmenchi/notify": "workspace:*",

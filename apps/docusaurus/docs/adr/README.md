@@ -16,28 +16,29 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## In force
 
-Read these. Eighteen decisions, grouped as they are actually made.
+Read these. Nineteen decisions, grouped as they are actually made.
 
-| ADR                                                   | Title                                                                 |
-| ----------------------------------------------------- | --------------------------------------------------------------------- |
-| [0002](./0002-ui-library-foundations-decision.md)     | UI library foundations: native-first, no behaviour layer              |
-| [0006](./0006-absorb-ui-ports.md)                     | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`                       |
-| [0007](./0007-security-scanning-workspace-level.md)   | Security scanning is workspace-level                                  |
-| [0008](./0008-cross-app-framework-agnostic-layers.md) | What earns a place as a shared layer (cross-app + framework-agnostic) |
-| [0013](./0013-form-controls-contract.md)              | Form controls are transparent native controls; validation stays out   |
-| [0016](./0016-minimal-semantic-markup.md)             | Markup is minimal and semantic; an element must earn its place        |
-| [0017](./0017-browser-platform-target.md)             | Browser platform target: Baseline Widely, Newly as enhancement        |
-| [0018](./0018-how-the-ds-ships-css.md)                | How the design system ships CSS: layer, typed tokens, no runtime      |
-| [0019](./0019-ui-package-organisation.md)             | How the UI package is organised: folders, taxonomy, doc levels        |
-| [0020](./0020-where-things-live.md)                   | Where things live: `packages/` published, `apps/` not, docs with code |
-| [0021](./0021-anchored-surfaces.md)                   | Anchored surfaces: platform layer, imported geometry, our behaviour   |
-| [0022](./0022-browser-defaults-no-reset.md)           | Browser defaults: components normalise themselves, baseline optional  |
-| [0023](./0023-one-stylesheet.md)                      | The design system ships one stylesheet; JS subpaths stay              |
-| [0024](./0024-toggle-switch-checkbox-boundary.md)     | Toggle, Switch and Checkbox: where the boundary between them runs     |
-| [0025](./0025-one-of-many-is-a-radio-group.md)        | One of many, drawn as buttons, is a radio group                       |
-| [0026](./0026-formatting-is-a-shared-layer.md)        | Formatting values is a shared layer; the DS only binds it             |
-| [0029](./0029-infer-facts-generate-policy.md)         | A plugin infers facts and generates policy                            |
-| [0030](./0030-an-announcement-is-an-event.md)         | An announcement is an event, and announcing is not releasing          |
+| ADR                                                   | Title                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------ |
+| [0002](./0002-ui-library-foundations-decision.md)     | UI library foundations: native-first, no behaviour layer                 |
+| [0006](./0006-absorb-ui-ports.md)                     | Absorb `@fmmenchi/ui-ports` into `@fmmenchi/ui`                          |
+| [0007](./0007-security-scanning-workspace-level.md)   | Security scanning is workspace-level                                     |
+| [0008](./0008-cross-app-framework-agnostic-layers.md) | What earns a place as a shared layer (cross-app + framework-agnostic)    |
+| [0013](./0013-form-controls-contract.md)              | Form controls are transparent native controls; validation stays out      |
+| [0016](./0016-minimal-semantic-markup.md)             | Markup is minimal and semantic; an element must earn its place           |
+| [0017](./0017-browser-platform-target.md)             | Browser platform target: Baseline Widely, Newly as enhancement           |
+| [0018](./0018-how-the-ds-ships-css.md)                | How the design system ships CSS: layer, typed tokens, no runtime         |
+| [0019](./0019-ui-package-organisation.md)             | How the UI package is organised: folders, taxonomy, doc levels           |
+| [0020](./0020-where-things-live.md)                   | Where things live: `packages/` published, `apps/` not, docs with code    |
+| [0021](./0021-anchored-surfaces.md)                   | Anchored surfaces: platform layer, imported geometry, our behaviour      |
+| [0022](./0022-browser-defaults-no-reset.md)           | Browser defaults: components normalise themselves, baseline optional     |
+| [0023](./0023-one-stylesheet.md)                      | The design system ships one stylesheet; JS subpaths stay                 |
+| [0024](./0024-toggle-switch-checkbox-boundary.md)     | Toggle, Switch and Checkbox: where the boundary between them runs        |
+| [0025](./0025-one-of-many-is-a-radio-group.md)        | One of many, drawn as buttons, is a radio group                          |
+| [0026](./0026-formatting-is-a-shared-layer.md)        | Formatting values is a shared layer; the DS only binds it                |
+| [0029](./0029-infer-facts-generate-policy.md)         | A plugin infers facts and generates policy                               |
+| [0030](./0030-an-announcement-is-an-event.md)         | An announcement is an event, and announcing is not releasing             |
+| [0031](./0031-being-describable-is-a-fact.md)         | Being describable is a fact; the release record decides who gets an SBOM |
 
 ## Proposed
 

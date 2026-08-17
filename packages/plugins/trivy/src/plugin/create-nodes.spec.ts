@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scanTargets } from './create-nodes';
+import { sbomTarget, scanTargets } from './create-nodes';
 
 describe('scanTargets', () => {
   it('infers the four targets CI and the docs refer to by name', () => {
@@ -36,5 +36,23 @@ describe('scanTargets', () => {
     expect(targets['scan-secrets'].options?.extraArgs).toContain(
       '**/node_modules',
     );
+  });
+});
+
+describe('sbomTarget', () => {
+  it('runs the sbom executor', () => {
+    expect(sbomTarget().executor).toBe('@fmmenchi/nx-trivy:sbom');
+  });
+
+  it('is uncached — a stale bill of materials is worse than a slow one', () => {
+    expect(sbomTarget().cache).toBe(false);
+  });
+
+  it('exposes a docker configuration (nx reserves the --runner CLI flag)', () => {
+    expect(sbomTarget().configurations?.docker).toEqual({ runner: 'docker' });
+  });
+
+  it('carries no options — nothing about it is per-project policy any more', () => {
+    expect(sbomTarget().options).toBeUndefined();
   });
 });

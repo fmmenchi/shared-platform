@@ -6,9 +6,8 @@ sidebar_position: 2
 
 # Generators
 
-`@fmmenchi/nx-trivy` ships **two generators**: `init`, the one command that makes the plugin do
-anything in a workspace that has just installed it, and `sbom`, which opts a project into publishing
-a bill of materials.
+`@fmmenchi/nx-trivy` ships **one generator**, `init` — the one command that makes the plugin do
+anything in a workspace that has just installed it. Everything else it provides is inferred.
 
 ---
 
@@ -39,37 +38,6 @@ pnpm nx g @fmmenchi/nx-trivy:init   # or run it by hand, any time
 Re-running it changes nothing: an existing registration is left alone (in either accepted form — the
 bare string or `{ plugin, options }`), and an existing `.trivyignore.yaml` is **never** overwritten,
 so your suppressions cannot be lost by re-running `init`.
-
----
-
-## `sbom`
-
-```bash
-pnpm nx g @fmmenchi/nx-trivy:sbom <project>
-```
-
-Adds an `sbom` target to the named project — a CycloneDX bill of materials for that project's
-dependency closure — plus a `docker` configuration that runs it via the `aquasec/trivy` image
-(select it with `--configuration=docker`; nx reserves `--runner` as a CLI flag).
-
-### Options
-
-| Option       | Type      | Default | What it does                                           |
-| ------------ | --------- | ------- | ------------------------------------------------------ |
-| `project`    | `string`  | —       | **Required.** The project that should publish an SBOM. |
-| `skipFormat` | `boolean` | `false` | Skip formatting the files the generator wrote.         |
-
-### Why a generator and not inference
-
-Because it is a **policy, not a fact**. Inferring it onto every "publishable" package smuggles one
-workspace's release policy into every consumer, and gets the interesting case backwards: measured in
-a scratch consumer, the heuristic gave an SBOM to an ordinary library and gave **nothing** to the app
-that ships to production — the one thing a bill of materials exists for. What you distribute, and who
-audits it, is a decision; decisions get written down on the project. See
-[ADR-0029](../../../adr/0029-infer-facts-generate-policy.md).
-
-Re-running it preserves any options already set on an existing `sbom` target, and it throws on an
-unknown project rather than quietly writing nothing.
 
 ---
 

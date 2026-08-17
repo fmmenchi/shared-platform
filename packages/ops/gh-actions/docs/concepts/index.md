@@ -52,9 +52,9 @@ The targets land on _your_ projects two ways, and the bricks handle both:
 
 - **Inferred** via `createNodesV2` (matched by `**/package.json`, any layout) — `nx-trivy` infers the
   four scan targets onto your **workspace root project**.
-- **Generated**, when the target is a policy rather than a fact — `nx g @fmmenchi/nx-trivy:sbom
-<project>` opts a project into a bill of materials
-  ([ADR-0029](../../../adr/0029-infer-facts-generate-policy.md)).
+- **Generated**, when what you are writing down is a decision that cannot be derived — which today
+  is nothing in this toolkit's path: even the `sbom` target is inferred, and the release record
+  decides who gets one ([ADR-0031](../../../adr/0031-being-describable-is-a-fact.md)).
 
 Either way the brick asks the graph who owns the target (`nx show projects --with-target …`) and runs
 `<project>:<target>`, which works in any nx workspace. When the answer is empty the brick **fails**:

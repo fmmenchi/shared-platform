@@ -17,14 +17,13 @@ pnpm nx run @fmmenchi/source:scan            # vuln scan (local trivy CLI) — t
 pnpm nx run @fmmenchi/source:scan-docker     # vuln scan via the aquasec/trivy image (no local CLI)
 pnpm nx run @fmmenchi/source:scan-secrets        # secret scan (local)
 pnpm nx run @fmmenchi/source:scan-secrets-docker # secret scan via the image
-pnpm nx run @fmmenchi/ui:sbom                # CycloneDX SBOM (target added per project by the generator)
+pnpm nx run @fmmenchi/ui:sbom                # CycloneDX SBOM (inferred on every package.json project)
 pnpm nx g @fmmenchi/nx-trivy:init            # register the plugin in nx.json + seed .trivyignore.yaml
-pnpm nx g @fmmenchi/nx-trivy:sbom <project>  # opt a project into publishing a bill of materials
 ```
 
 ## Shape
 
-- **Two executors (`scan`, `sbom`) and two generators (`init`, `sbom`).** `scan` runs `trivy <scanType> …` from the
+- **Two executors (`scan`, `sbom`) and one generator (`init`).** `scan` runs `trivy <scanType> …` from the
   **workspace root** (`context.root`), so it is a workspace-wide scan regardless of the host project.
   Default vector: `trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .`.
   Options mirror Trivy's own flags (`runner`, `dockerImage`, `cacheDir`, `scanType`, `path`,
@@ -35,8 +34,8 @@ pnpm nx g @fmmenchi/nx-trivy:sbom <project>  # opt a project into publishing a b
   dependency closure and Trivy reads that pruned lock. The lockfile format follows
   `detectPackageManager(context.root)`: hardcoding pnpm made this die with a bare `ENOENT:
 pnpm-lock.yaml` in an npm consumer (measured against a scratch npm workspace). The target is added
-  **per project by the `sbom` generator**, never inferred — see Rules. CI attaches one to each
-  published GitHub Release (docker runner). See [reference/executors.md](./docs/reference/executors.md).
+  **inferred onto every project with a package.json** — see Rules. CI attaches one to each released
+  project, reading the release record. See [reference/executors.md](./docs/reference/executors.md).
 - **Two runners** (`runner`): `local` (the `trivy` CLI, default) or `docker` (the `aquasec/trivy`
   image — mounts the workspace at `/workspace`, needs only Docker). The vuln DB caches in a named
   volume by default; pass `cacheDir` to bind-mount a host dir instead so CI can persist it via
@@ -50,8 +49,7 @@ pnpm-lock.yaml` in an npm consumer (measured against a scratch npm workspace). T
 - **`init` generator** — registers the plugin in `nx.json` (inference runs only for registered
   plugins, so without it the install is inert) and seeds a `.trivyignore.yaml` at the scan root.
   Idempotent in both halves.
-- **`sbom` generator** — adds the `sbom` target to one project, with a `docker` configuration.
-  Both in [reference/generators.md](./docs/reference/generators.md).
+  See [reference/generators.md](./docs/reference/generators.md).
 - **`buildTrivyArgs` / `buildDockerArgs`** — the pure arg-vector builders (unit-tested); the
   shell-out itself needs no test.
 
@@ -67,18 +65,19 @@ pnpm-lock.yaml` in an npm consumer (measured against a scratch npm workspace). T
   named **`init`** for the same reason, and cannot be renamed: `nx add <plugin>` invokes
   `<plugin>:init` by name and **silently no-ops** when it is missing (Nx catches the lookup and moves
   on), so a `trivy-init` would make `nx add` install the package and do nothing, with no error.
-- **Infer what is a fact, generate what is a policy** ([ADR-0029](../../../apps/docusaurus/docs/adr/0029-infer-facts-generate-policy.md)).
-  `scan` is a fact: you registered a scanner, and the scan is workspace-wide whatever hosts it — so
-  it is **inferred**, onto exactly one host (the root project), which is also what keeps a
-  `run-many` from running the same root scan N times. `sbom` is a policy: whether a package ships a
-  bill of materials depends on what you distribute and who audits it, not on anything on disk — so
-  it is **generated**, per project, and lives on the project like any other opt-in target. The old
-  `name && !private` heuristic was this repo's release policy wearing an inference costume, and it
-  got the interesting case backwards: a private app that ships to production is exactly what an SBOM
-  is for, and it was the one project excluded.
-- **This repo is a consumer.** Nothing here hand-writes a target the plugin can provide: our scan
-  targets come from the same inference a consumer gets, our `sbom` targets from the same generator.
-  If it only works here, it does not work.
+- **Infer what is a fact, generate what is a policy** ([ADR-0029](../../../apps/docusaurus/docs/adr/0029-infer-facts-generate-policy.md)),
+  with the sharper form from [ADR-0031](../../../apps/docusaurus/docs/adr/0031-being-describable-is-a-fact.md):
+  infer when the target's presence carries no information and the facts arrive at runtime.
+  `scan` is inferred onto exactly one host (the root project) because the scan is workspace-wide
+  whatever holds it, and one host keeps `run-many` from repeating it N times. `sbom` is inferred onto
+  **every** project with a package.json, because HAVING a dependency closure is a fact — while WHICH
+  releases carry a bill of materials is a policy that already lives in the release record the CI
+  reads. Two earlier attempts got this wrong: `name && !private` (this repo's release policy in an
+  inference costume, which excluded the app that actually ships) and then a per-project generator
+  (which excluded it again, one command later).
+- **This repo is a consumer.** Nothing here hand-writes a target the plugin can provide: every scan
+  and sbom target comes from the same inference a consumer gets. If it only works here, it does not
+  work.
 
 ## Use from a consumer
 
@@ -86,9 +85,9 @@ pnpm-lock.yaml` in an npm consumer (measured against a scratch npm workspace). T
 pnpm nx add @fmmenchi/nx-trivy   # installs + runs `init` (nx.json registration, .trivyignore.yaml)
 ```
 
-That is the whole setup: no target to write, and `init` seeds the `.trivyignore.yaml` Trivy
-auto-detects at the scan root. Per-project SBOMs are opted in one at a time
-(`nx g @fmmenchi/nx-trivy:sbom <project>`).
+That is the whole setup: no target to write anywhere. `init` seeds the `.trivyignore.yaml` Trivy
+auto-detects at the scan root, registration puts the scan targets on the root project, and every
+project with a package.json gets `sbom`.
 
 Never name a project in CI — the root project is named after the consumer's own root `package.json`.
 Ask the graph (`nx show projects --with-target scan-docker --json`) and fail on empty; the
