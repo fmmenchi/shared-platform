@@ -59,5 +59,5 @@ for is upstream, in the job that was supposed to be green.
 
 ## 🚫 Not here
 
-**Notifications.** The release job dogfoods `@fmmenchi/nx-notify`, so the Slack surface has one
+**Message building.** `fmmenchi-notify` delivers and counts; `@fmmenchi/notify` builds. One
 implementation. Adding a second here would mean two things to keep in step for one message.

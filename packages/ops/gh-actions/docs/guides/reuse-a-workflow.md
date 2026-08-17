@@ -40,7 +40,6 @@ jobs:
     uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@gh-actions/v0
     with:
       alert-on-failure: ${{ github.event_name == 'schedule' }} # alert only on the weekly run
-      announce-project: '@myorg/core' # any publishable project, for the Slack alert
     secrets: inherit # pass SLACK_BOT_TOKEN / SLACK_CHANNEL_ID
 ```
 

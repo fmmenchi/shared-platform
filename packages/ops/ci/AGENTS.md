@@ -44,9 +44,10 @@ pnpm nx test @fmmenchi/ci      # the pure half — tags, alias
   nx on a publish failure, after tags are pushed and Releases are live — so a failed run can leave
   tags with no record at all. Splitting publish out (`skipPublish` + `releasePublish`) is the fix,
   and it is not done yet.
-- **Notifications are NOT here.** The release job dogfoods `@fmmenchi/nx-notify`, so the Slack
-  surface has one implementation. A second one here would be two things to keep in step for one
-  message.
+- **The notification LOGIC is not here — the entrypoint is.** `fmmenchi-notify` reads events,
+  delivers them and counts what arrived; every message is built and sent by `@fmmenchi/notify`, which
+  stays the single implementation. This package owns the two CI doors (`fmmenchi-release`,
+  `fmmenchi-notify`) and nothing about how a message looks.
 - **The release job is `skipped`, not `failed`, when the gate is red** — that is a property of the
   workflow, not of this package, and it is the first thing to check when "the release stopped
   working". No tags, no releases, no publish, and no error anywhere.

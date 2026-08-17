@@ -31,6 +31,5 @@ jobs:
     uses: ./.github/workflows/security.reusable.yml
     with:
       app-name: shared-platform
-      announce-project: '@fmmenchi/ci'
       alert-on-failure: ${{ github.event_name == 'schedule' }}
     secrets: inherit

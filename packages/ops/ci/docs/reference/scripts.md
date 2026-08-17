@@ -117,7 +117,7 @@ backwards.
 
 ## What is deliberately not here
 
-**Notifications.** The release job dogfoods the `@fmmenchi/nx-notify` plugin instead, so the Slack
-surface has one implementation rather than two.
+**Message building.** `fmmenchi-notify` is the CI door; `@fmmenchi/notify` is the implementation,
+so the Slack surface has one owner rather than two.
 
 **An affected pre-filter.** See [Concepts](../concepts/index.md).

@@ -34,24 +34,23 @@ jobs:
 # vuln + secret scan with a per-day-cached DB
 - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0
 
-# after a release: attach an SBOM to each new tag, then announce them
+# after a release: both read the SAME record, and neither parses a tag
 - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
   with:
-    tags-file: ${{ runner.temp }}/new_tags.txt
+    result-file: ${{ steps.release.outputs.result-file }}
     github-token: ${{ secrets.GITHUB_TOKEN }}
-- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/announce-releases@gh-actions/v0
+- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
   with:
-    tags-file: ${{ runner.temp }}/new_tags.txt
+    result-file: ${{ steps.release.outputs.result-file }}
     bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
     channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-    github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-No brick names a project. Each one asks the graph which project owns the target it needs — inferred
-(`<root>:scan-docker`, `<project>:announce-release`) or generated (`<project>:sbom`, opted in with
-`nx g @fmmenchi/nx-trivy:sbom`) — so it works in any nx workspace, provided the plugins are
-registered in your `nx.json` `plugins`. When nothing owns the target, the brick fails with a message
-naming the command that fixes it, rather than passing quietly.
+No brick names a project. Where a brick runs an nx target it asks the graph who owns it — inferred
+(`<root>:scan-docker`) or generated (`<project>:sbom`, opted in with `nx g @fmmenchi/nx-trivy:sbom`)
+— and where it runs a script it runs a **bin** (`pnpm exec fmmenchi-release`), which resolves the
+same way in every workspace. When nothing owns a target, the brick fails with a message naming the
+command that fixes it, rather than passing quietly.
 
 ## The release job
 
@@ -84,32 +83,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # Runs `nx release` and writes the newly cut {project}@{version} tags to NEW_TAGS_FILE,
-      # which the next two bricks read. The tag diff lives in @fmmenchi/ci, unit-tested.
+      # Releases, and emits the record of what it released: { project, version, tag } each,
+      # asked of nx rather than deduced from a git-tag diff.
       - name: Release
-        run: node node_modules/@fmmenchi/ci/dist/release.js
-        env:
-          NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: release
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/release@gh-actions/v0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
         with:
-          tags-file: ${{ runner.temp }}/new_tags.txt
+          result-file: ${{ steps.release.outputs.result-file }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # A Release created with GITHUB_TOKEN does not trigger other workflows, so a
-      # `release: published` listener would never fire — announce inline instead.
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/announce-releases@gh-actions/v0
+      # `release: published` listener would never fire — announce from here.
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
         with:
-          tags-file: ${{ runner.temp }}/new_tags.txt
+          result-file: ${{ steps.release.outputs.result-file }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-Prerequisites: `@fmmenchi/ci` installed, and an `nx release` config with the
-`{projectName}@{version}` tag pattern (`@fmmenchi/ci` classifies new tags by it).
+:::tip[Three steps, or three jobs?]
+
+As written they are three steps of one job, which is the simple shape. But attaching an SBOM and
+announcing are **separate operations** from releasing — the release is irreversible, they are not —
+and as steps they can only be retried by re-running the release itself. Split them into jobs
+(`needs: release`) and pass the record across the boundary with `actions/upload-artifact` plus a job
+output, and "Re-run failed jobs" re-announces **without re-releasing**. That is what `shared-platform`
+does in its own `ci.yml`.
+
+:::
+
+Prerequisites: `@fmmenchi/ci` installed (it provides the `fmmenchi-release` and `fmmenchi-notify`
+bins), and an `nx release` config. The tag pattern is read from your own release groups, so any
+pattern works — `{projectName}@{version}`, `v{version}`, `{releaseGroupName}/v{version}`.
 
 :::tip[Other ways to sequence it]
 

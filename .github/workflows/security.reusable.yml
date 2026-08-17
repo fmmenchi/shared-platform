@@ -28,13 +28,6 @@ on:
         type: string
         required: false
         default: ''
-      announce-project:
-        description: >-
-          Any publishable nx project — the workspace-level Slack alert runs its inferred
-          `announce-*` target. Required when `alert-on-failure` is used.
-        type: string
-        required: false
-        default: ''
     secrets:
       SLACK_BOT_TOKEN:
         required: false
@@ -62,14 +55,14 @@ jobs:
         with:
           secret-scan: ${{ inputs.secret-scan }}
 
+      # No project to name: the alert carries its own identity in the event, so nothing
+      # here has to know which of your projects hosts a notification target.
       - name: Alert Slack on findings
         if: ${{ failure() && inputs.alert-on-failure }}
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/slack-notify@gh-actions/v0
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
         with:
-          type: error
-          app-name: ${{ inputs.app-name || github.event.repository.name }}
-          project: ${{ inputs.announce-project }}
+          kind: error
+          app: ${{ inputs.app-name || github.event.repository.name }}
           message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}

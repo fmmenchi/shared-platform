@@ -8,9 +8,10 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
 
 ## Shape
 
-- **Composite actions** in `actions/` (`setup`, `compute-context`, `trivy-scan`, `attach-sbom`,
-  `announce-releases`, `slack-notify`) — thin glue that wraps the nx plugins (`@fmmenchi/nx-trivy`,
-  `@fmmenchi/nx-notify`), plus pure-computation bricks (`compute-context` derives the canonical run
+- **Composite actions** in `actions/` (`setup`, `compute-context`, `trivy-scan`, `release`,
+  `attach-sbom`, `notify`) — thin glue over `@fmmenchi/nx-trivy` (an nx plugin, run as a target) and
+  `@fmmenchi/ci`'s bins (`fmmenchi-release`, `fmmenchi-notify`), plus pure-computation bricks
+  (`compute-context` derives the canonical run
   context — event kind, release flag, sha/ref slugs — once, for every downstream job). One source of
   truth: plugin logic is never duplicated here.
 - **Reusable workflows** live at `../../../.github/workflows/{security,docs}.reusable.yml` (GitHub
@@ -21,8 +22,13 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
 
 ## Rules
 
-- **Actions reference the plugins, never inline trivy/slack** — consumers are nx workspaces, so the
-  action shells out to `pnpm nx run <project>:<target>`. Keep it that way (no duplication).
+- **Actions reference the packages, never inline trivy/slack** — an action shells out to
+  `pnpm nx run <project>:<target>` (trivy) or to a bin (`pnpm exec fmmenchi-release`,
+  `pnpm exec fmmenchi-notify`). Keep it that way (no duplication).
+- **A task on the workspace is a plugin; an event passing through is a bin.** Trivy scanning is a
+  target with options, configurations and inference — a plugin earns that. Announcing is a one-shot
+  side effect with no per-project configuration: once the event carried its own identity there was
+  nothing left for a target to hold, so `@fmmenchi/nx-notify` was deleted rather than rewritten.
 - **Never name a project in an action.** `@fmmenchi/nx-trivy:scan-docker` exists only in this repo,
   where the plugin is a project. Ask the graph instead (`nx show projects --with-target <t> --json`,
   take the first) and **fail when the answer is empty** — `nx run-many` exits 0 on no matches

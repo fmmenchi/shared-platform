@@ -40,7 +40,7 @@ A **release** is neither, so it ships as bricks plus [a documented job](../guide
 ## The logic lives in the plugins — the toolkit is glue
 
 Scanning, SBOMs and Slack announcements are nx **executors** in `@fmmenchi/nx-trivy` and
-`@fmmenchi/nx-notify`. The bricks don't reimplement any of that; they run the plugins. One source of
+`@fmmenchi/ci`'s bins. The bricks don't reimplement any of that; they run them. One source of
 truth.
 
 ### Genericity: bricks run `<your-project>:<target>`, never the plugin's own target
@@ -51,8 +51,7 @@ nx **project** — i.e. only in this monorepo. In a consumer the plugin is an in
 The targets land on _your_ projects two ways, and the bricks handle both:
 
 - **Inferred** via `createNodesV2` (matched by `**/package.json`, any layout) — `nx-trivy` infers the
-  four scan targets onto your **workspace root project**, `nx-notify` infers
-  `announce-release`/`announce-error`.
+  four scan targets onto your **workspace root project**.
 - **Generated**, when the target is a policy rather than a fact — `nx g @fmmenchi/nx-trivy:sbom
 <project>` opts a project into a bill of materials
   ([ADR-0029](../../../adr/0029-infer-facts-generate-policy.md)).

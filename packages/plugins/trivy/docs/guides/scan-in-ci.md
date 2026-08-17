@@ -46,7 +46,7 @@ A fresh vulnerability DB catches newly disclosed CVEs even when nothing in the c
 good pattern is **on dependency changes plus a periodic schedule**. This is exactly how
 `shared-platform` dogfoods the plugin — its `security.yml` workflow runs `scan-docker` on dep
 changes and on a weekly schedule, and the weekly run's findings are announced to Slack via the
-`@fmmenchi/nx-notify` plugin.
+`notify` brick in `@fmmenchi/gh-actions`.
 
 ## Step 3: Cache the vulnerability DB
 

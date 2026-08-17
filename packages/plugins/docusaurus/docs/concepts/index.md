@@ -73,7 +73,7 @@ start` run over a flat local `docs/` folder like any ordinary site. The sidebar 
 ### The self-contained tree invariant
 
 Because the assembled tree is a single flat folder, every in-site link must resolve **within it** —
-cross-package links point into the assembled paths (e.g. `../../plugins/nx-notify/index.md`). The
+cross-package links point into the assembled paths (e.g. `../../plugins/nx-trivy/index.md`). The
 generated site sets `onBrokenLinks: 'throw'`, so a dead link fails the build rather than shipping
 silently. Destination folders use the **unscoped** package name to stay unique and collision-free.
 

@@ -19,9 +19,6 @@
       "path": "./packages/shared/notify"
     },
     {
-      "path": "./packages/plugins/notify"
-    },
-    {
       "path": "./packages/plugins/trivy"
     },
     {

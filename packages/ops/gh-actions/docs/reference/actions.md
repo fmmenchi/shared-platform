@@ -63,39 +63,56 @@ plugin would otherwise mean a green job that never scanned. The fix it prints is
 | :------------ | :------ | :------ | :------------------------------------------------ |
 | `secret-scan` | boolean | `true`  | Also run the secret scan (built-in rules, no DB). |
 
+## `release`
+
+Run `nx release` through `@fmmenchi/ci` and emit a **record** of what it released — one
+`{ project, version, tag }` per release, asked of nx rather than deduced from a git-tag diff. It
+names no project and no path: the script is a bin (`pnpm exec fmmenchi-release`), so the same
+command runs in a consumer and in the repo that publishes it.
+
+| Input          | Type    | Default | Description                                                             |
+| :------------- | :------ | :------ | :---------------------------------------------------------------------- |
+| `dry-run`      | boolean | `false` | Rehearse: the record is stamped, and no consumable tag list is written. |
+| `github-token` | string  | –       | **Required.** Tags, GitHub Releases, publishing.                        |
+
+| Output        | Description                                                |
+| :------------ | :--------------------------------------------------------- |
+| `result-file` | Path to the record — what the SBOM and notify bricks read. |
+| `released`    | How many projects were released (`0` when nothing was).    |
+| `tags-file`   | Transitional: the released package tags, one per line.     |
+
+**It does not gate itself.** Sequencing the release after your checks stays in your job graph —
+`needs:` — because only the caller can express it.
+
 ## `attach-sbom`
 
-For each `{project}@{version}` tag in `tags-file`, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy`
-and upload it to that Release as `sbom.cdx.json`. Non-fatal per tag: an SBOM is opt-in per project
+For each project in the release record, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy` and upload
+it to that Release as `sbom.cdx.json`. The record carries the project, so nothing here cuts one out
+of a tag. Non-fatal per release: an SBOM is opt-in per project
 (`nx g @fmmenchi/nx-trivy:sbom <project>`), so a released package without the target is reported as a
 warning naming that command, not a failure — the release is already out.
 
-| Input          | Type   | Default | Description                                                 |
-| :------------- | :----- | :------ | :---------------------------------------------------------- |
-| `tags-file`    | string | –       | **Required.** File with one `{project}@{version}` per line. |
-| `github-token` | string | –       | **Required.** Token with `contents: write`.                 |
+| Input          | Type   | Default | Description                                                                  |
+| :------------- | :----- | :------ | :--------------------------------------------------------------------------- |
+| `result-file`  | string | `''`    | **Preferred.** The record from the `release` brick.                          |
+| `tags-file`    | string | `''`    | Deprecated. One `{project}@{version}` tag per line, split by string surgery. |
+| `github-token` | string | –       | **Required.** Token with `contents: write`.                                  |
 
-## `announce-releases`
+## `notify`
 
-Announce every package in `tags-file` to Slack via `@fmmenchi/nx-notify` (the Release notes become
-the changelog). Skips green without Slack secrets.
+Deliver notifications to Slack via `@fmmenchi/notify` — every release in a record, or one event you
+describe here. It **fails when a message it was asked to send did not arrive** (delivered vs asked,
+counted), and skips green — loudly, with a `::notice::` — when the Slack secrets are absent.
 
-| Input          | Type   | Default | Description                                       |
-| :------------- | :----- | :------ | :------------------------------------------------ |
-| `tags-file`    | string | –       | **Required.** One `{project}@{version}` per line. |
-| `bot-token`    | string | `''`    | Slack bot token (`SLACK_BOT_TOKEN`).              |
-| `channel-id`   | string | `''`    | Slack channel id (`SLACK_CHANNEL_ID`).            |
-| `github-token` | string | –       | **Required.** Reads each Release's notes/url.     |
+No project anywhere: an event carries its own identity (`app`), so nothing has to know which of your
+projects hosts a notification target.
 
-## `slack-notify`
-
-Announce one release or error to Slack via `@fmmenchi/nx-notify`. Skips green without Slack secrets.
-
-| Input                              | Type   | Default | Description                                                                        |
-| :--------------------------------- | :----- | :------ | :--------------------------------------------------------------------------------- |
-| `type`                             | string | –       | **Required.** `release` or `error`.                                                |
-| `app-name`                         | string | –       | **Required.** The name the message is about.                                       |
-| `project`                          | string | –       | **Required.** A publishable nx project whose inferred `announce-*` target runs it. |
-| `bot-token` / `channel-id`         | string | `''`    | Slack secrets.                                                                     |
-| `message` / `url`                  | string | `''`    | `error` mode: body + a link to the run.                                            |
-| `version` / `release-url` / `body` | string | `''`    | `release` mode: version, Release URL, changelog body.                              |
+| Input                      | Type   | Default       | Description                                               |
+| :------------------------- | :----- | :------------ | :-------------------------------------------------------- |
+| `result-file`              | string | `''`          | A release record — one announcement per released project. |
+| `kind`                     | string | `''`          | Single event instead: `release` or `error`.               |
+| `app`                      | string | the repo name | Single event: what the message is about.                  |
+| `message` / `version`      | string | `''`          | Single event: the error text, or the released version.    |
+| `url`                      | string | this run      | Single event: where to read more.                         |
+| `repository-url`           | string | this repo     | Base URL used to form release links.                      |
+| `bot-token` / `channel-id` | string | `''`          | Slack secrets. Absent → skips green.                      |

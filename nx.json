@@ -17,7 +17,6 @@
   },
   "plugins": [
     "@fmmenchi/nx-trivy",
-    "@fmmenchi/nx-notify",
     {
       "plugin": "@nx/js/typescript",
       "options": {
@@ -130,7 +129,9 @@
       "inputs": [
         "default",
         "^production",
-        { "externalDependencies": ["typescript"] }
+        {
+          "externalDependencies": ["typescript"]
+        }
       ]
     },
     "build-storybook": {

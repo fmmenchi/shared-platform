@@ -18,12 +18,11 @@ optional Slack alert.
 
 ### Inputs
 
-| Input              | Type    | Default       | Description                                                                                             |
-| :----------------- | :------ | :------------ | :------------------------------------------------------------------------------------------------------ |
-| `secret-scan`      | boolean | `true`        | Also run the secret scan after the vulnerability scan.                                                  |
-| `alert-on-failure` | boolean | `false`       | Post a Slack alert if the scan fails. Gate it yourself (e.g. only on `schedule`).                       |
-| `app-name`         | string  | the repo name | Name used in the Slack alert.                                                                           |
-| `announce-project` | string  | –             | A publishable project whose inferred `announce-error` runs the alert. Required when `alert-on-failure`. |
+| Input              | Type    | Default       | Description                                                                       |
+| :----------------- | :------ | :------------ | :-------------------------------------------------------------------------------- |
+| `secret-scan`      | boolean | `true`        | Also run the secret scan after the vulnerability scan.                            |
+| `alert-on-failure` | boolean | `false`       | Post a Slack alert if the scan fails. Gate it yourself (e.g. only on `schedule`). |
+| `app-name`         | string  | the repo name | Name used in the Slack alert.                                                     |
 
 ### Secrets
 

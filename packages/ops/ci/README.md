@@ -29,5 +29,5 @@ These scripts wrap the two bits nx doesn't give you:
 `isPackageTag` / `newTags` (tag classification + diff) and `majorAlias` (semver-ordered alias target)
 are the pure, unit-tested pieces behind the scripts.
 
-Notifications are **not** here: the release job dogfoods the
-[`@fmmenchi/nx-notify`](../../plugins/notify) plugin.
+Message _building_ is **not** here: `fmmenchi-notify` is only the CI door to
+[`@fmmenchi/notify`](../../shared/notify), which stays the single implementation.

@@ -8,7 +8,7 @@ sidebar_position: 0
 
 A **reusable CI toolkit** for `@fmmenchi` consumers — turnkey GitHub Actions **reusable workflows**
 (security, release, docs) plus the **composite actions** they're built from. The logic lives in the
-nx plugins (`@fmmenchi/nx-trivy`, `@fmmenchi/nx-notify`); these are the thin, versioned glue that
+plugins and packages (`@fmmenchi/nx-trivy`, `@fmmenchi/ci`, `@fmmenchi/notify`); these are the thin, versioned glue that
 wires them into CI, so there's one source of truth.
 
 Pin everything to the moving major tag **`@gh-actions/v0`**.
@@ -16,7 +16,7 @@ Pin everything to the moving major tag **`@gh-actions/v0`**.
 ## Prerequisites
 
 - The consumer repo is an **nx workspace** with the relevant plugins installed
-  (`pnpm add -D @fmmenchi/nx-trivy @fmmenchi/nx-notify @fmmenchi/ci`).
+  (`pnpm add -D @fmmenchi/nx-trivy @fmmenchi/ci`).
 - Those plugins are registered in the root **`nx.json` `plugins`** — `pnpm nx add @fmmenchi/nx-trivy`
   does it for you — so the scan / `announce-*` targets are inferred onto your workspace.
 - For an SBOM per released package, opt each one in: `pnpm nx g @fmmenchi/nx-trivy:sbom <project>`.
