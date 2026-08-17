@@ -48,7 +48,14 @@ runs:
         RELEASE_RESULT_FILE: ${{ runner.temp }}/release-result.json
         NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
       run: |
-        node "$(node -p "require.resolve('@fmmenchi/ci/release')")"
+        entry=$(node -p "require.resolve('@fmmenchi/ci/release')") || entry=''
+        # Checked, because `node ""` exits 0 doing nothing: an unresolved entrypoint would
+        # otherwise be a release step that succeeds without releasing. Measured.
+        if [ -z "$entry" ]; then
+          echo "::error::cannot resolve @fmmenchi/ci/release — is @fmmenchi/ci installed (and built, if it is a source project here)?"
+          exit 1
+        fi
+        node "$entry"
         released=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RELEASE_RESULT_FILE,'utf8')).releases.length")
         {
           echo "result-file=$RELEASE_RESULT_FILE"
