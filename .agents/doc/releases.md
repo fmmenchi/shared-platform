@@ -59,8 +59,15 @@
 ## Commands
 
 ```bash
-pnpm nx release --dry-run            # always allowed (preview)
+RELEASE_DRY_RUN=true node node_modules/@fmmenchi/ci/dist/release.js
+                                     # rehearse what CI actually runs: it writes the record,
+                                     # leaves the consumable tag list empty, and cuts nothing
 pnpm nx release --first-release      # first ever release (no {projectName}@{version} tag yet)
 pnpm nx release                      # a maintainer's local release; CI does this automatically on
                                      # every push to main, so rarely needed by hand
 ```
+
+There is no `release-preview` job on pull requests any more. It ran `nx release --dry-run`, which
+exercises a path CI does not use — the release job goes through `@fmmenchi/ci`'s own entrypoint — so
+a green preview said nothing about the release that would follow. Rehearse the entrypoint instead,
+with the command above.

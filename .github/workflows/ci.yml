@@ -156,22 +156,6 @@ jobs:
   # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
   # only the projects with releasing conventional commits, so a plain dry-run is already
   # accurate — no affected pre-filter to mirror. Never versions/tags/publishes.
-  release-preview:
-    needs: context
-    if: needs.context.outputs.event == 'pull-request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - uses: ./packages/ops/gh-actions/actions/setup
-
-      - name: nx release --dry-run (preview — never publishes)
-        run: pnpm nx release --dry-run --skip-publish
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   # Trunk-based release: every green push to main versions each package from its
   # conventional commits, tags {projectName}@{version}, creates the per-project GitHub
   # Release, publishes to GitHub Packages, and announces each newly cut package on Slack
