@@ -16,7 +16,7 @@ decision, numbered sequentially: `NNNN-<kebab-title>.md`.
 
 ## In force
 
-Read these. Seventeen decisions, grouped as they are actually made.
+Read these. Eighteen decisions, grouped as they are actually made.
 
 | ADR                                                   | Title                                                                 |
 | ----------------------------------------------------- | --------------------------------------------------------------------- |
@@ -37,6 +37,7 @@ Read these. Seventeen decisions, grouped as they are actually made.
 | [0025](./0025-one-of-many-is-a-radio-group.md)        | One of many, drawn as buttons, is a radio group                       |
 | [0026](./0026-formatting-is-a-shared-layer.md)        | Formatting values is a shared layer; the DS only binds it             |
 | [0029](./0029-infer-facts-generate-policy.md)         | A plugin infers facts and generates policy                            |
+| [0030](./0030-an-announcement-is-an-event.md)         | An announcement is an event, and announcing is not releasing          |
 
 ## Proposed
 
