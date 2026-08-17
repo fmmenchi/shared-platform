@@ -132,11 +132,16 @@ describe('eventsFromReleases', () => {
     expect(eventsFromReleases(released)[0]?.url).toBeUndefined();
   });
 
-  it('attaches a body only when there is one', () => {
-    const [event] = eventsFromReleases(released, {
-      bodies: { '@fmmenchi/ui': '### notes' },
-    });
+  it('carries the notes from the record — the field that was there and unread', () => {
+    const [event] = eventsFromReleases([
+      { ...released[0]!, notes: '### notes' },
+    ]);
     expect(event?.kind === 'release' && event.body).toBe('### notes');
+  });
+
+  it('omits the body when the record has no notes', () => {
+    const [event] = eventsFromReleases(released);
+    expect(event?.kind === 'release' && event.body).toBeUndefined();
   });
 
   it('produces one event per released project — the batch notify expects', () => {

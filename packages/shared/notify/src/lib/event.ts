@@ -108,6 +108,8 @@ export interface ReleasedProject {
   project: string;
   version: string;
   tag: string;
+  /** The changelog the release step recorded, as the release tool rendered it. */
+  notes?: string;
 }
 
 /**
@@ -117,12 +119,18 @@ export interface ReleasedProject {
  * neutral vocabulary, and the announcement is derived from that — here, in tested code,
  * rather than by cutting tags apart in a shell. The URL is FORMED from the tag (a GitHub
  * Release lives at a known address), so nothing has to ask GitHub what it already knows.
+ *
+ * The changelog comes from the record's own `notes`. It has to be read from there and
+ * nowhere else: the first version of this function only looked at an injected `bodies` map,
+ * so when the record started carrying its notes the announcements kept going out with a
+ * title and a link and no changelog at all — the notes were present the whole time and
+ * nothing was reading them.
  */
 export function eventsFromReleases(
   released: readonly ReleasedProject[],
-  options: { repositoryUrl?: string; bodies?: Record<string, string> } = {},
+  options: { repositoryUrl?: string } = {},
 ): NotifyEvent[] {
-  return released.map(({ project, version, tag }) => ({
+  return released.map(({ project, version, tag, notes }) => ({
     kind: 'release' as const,
     app: project,
     version,
@@ -131,6 +139,6 @@ export function eventsFromReleases(
           url: `${options.repositoryUrl.replace(/\/$/, '')}/releases/tag/${encodeURIComponent(tag)}`,
         }
       : {}),
-    ...(options.bodies?.[project] ? { body: options.bodies[project] } : {}),
+    ...(notes ? { body: notes } : {}),
   }));
 }
