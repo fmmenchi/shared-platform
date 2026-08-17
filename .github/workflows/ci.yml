@@ -153,9 +153,6 @@ jobs:
           sudo dmesg | tail -60 || echo 'dmesg unavailable'
           echo '::endgroup::'
 
-  # Preview on PRs: what the release would cut if this PR merged. `nx release` versions
-  # only the projects with releasing conventional commits, so a plain dry-run is already
-  # accurate — no affected pre-filter to mirror. Never versions/tags/publishes.
   # Trunk-based release: every green push to main versions each package from its
   # conventional commits, tags {projectName}@{version}, creates the per-project GitHub
   # Release, publishes to GitHub Packages, and announces each newly cut package on Slack
