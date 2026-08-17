@@ -13,11 +13,11 @@
 // notifications belongs in here — a message-shaped bug must never be able to break, or
 // half-finish, an irreversible release.
 //
-// NOT written when nx itself fails: `release()` calls `process.exit(1)` internally on a
-// publish error, so a run that tagged and published but then died leaves no record at all.
-// That is a real hole, and it is the reason the record must never be treated as "the
-// release did not happen" — only as "here is what it did, when it got this far".
-import { release } from 'nx/release';
+// The record is written BEFORE publishing, and publishing is done here rather than inside
+// `release()`, which exits the process from within nx when a registry refuses. That order
+// is the whole point: a failed publish now leaves tags, Releases AND a record, so the
+// announce job can be re-run on its own instead of dying with the process.
+import { release, releasePublish } from 'nx/release';
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { assertReleaseGroups, toReleaseRecords } from './release-result.js';
@@ -42,6 +42,11 @@ const { projectsVersionData, releaseGraph } = await release({
   // CI has nobody to answer a prompt.
   yes: true,
   verbose: false,
+  // Publishing is done BELOW, by us, after the record is on disk. `release()` publishes
+  // last and calls process.exit(1) from inside nx when a registry refuses — which killed
+  // this script before it could write anything, exactly in the case where the record
+  // matters most: tags pushed, Releases live, and nothing left saying what went out.
+  skipPublish: true,
   // Rehearsable: `RELEASE_DRY_RUN=true` runs the whole script without cutting anything.
   // A release entrypoint you cannot run without releasing is one you only ever test in
   // production. It writes NO consumable output — see below.
@@ -87,6 +92,26 @@ writeFileSync(
   process.env['NEW_TAGS_FILE'] ?? 'new_tags.txt',
   packageTags.length ? `${packageTags.join('\n')}\n` : '',
 );
+
+// Publish LAST, and only now — the record is already on disk, so a registry that refuses
+// leaves a failed job with a full account of what was released, and the announce job can
+// be re-run on its own instead of being lost with the process.
+if (records.length > 0) {
+  const publishResults = await releasePublish({
+    dryRun,
+    versionData: projectsVersionData,
+    releaseGraph,
+  });
+  const allOk = Object.values(publishResults).every(
+    (result) => result.code === 0,
+  );
+  if (!allOk) {
+    console.error(
+      'nx-release: a package failed to publish. The tags, the Releases and the record all stand — fix the registry problem and re-run only what failed.',
+    );
+    process.exitCode = 1;
+  }
+}
 
 const others = records.filter((r) => !isPackageTag(r.tag)).map((r) => r.tag);
 console.log(

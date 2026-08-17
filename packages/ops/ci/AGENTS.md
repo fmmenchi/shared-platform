@@ -40,10 +40,11 @@ pnpm nx test @fmmenchi/ci      # the pure half — tags, alias
 - **A rehearsal must not produce a consumable.** `RELEASE_DRY_RUN=true` stamps the record and leaves
   `NEW_TAGS_FILE` empty. nx computes real versions under `dryRun`, so writing them would hand the
   announce step tags that do not exist.
-- **The record is not proof that nothing happened.** `release()` calls `process.exit(1)` from inside
-  nx on a publish failure, after tags are pushed and Releases are live — so a failed run can leave
-  tags with no record at all. Splitting publish out (`skipPublish` + `releasePublish`) is the fix,
-  and it is not done yet.
+- **Publish LAST, and by us.** `release()` is called with `skipPublish: true` and the record is
+  written before `releasePublish()` runs. nx exits the process from inside on a registry failure, so
+  publishing within it destroyed the account of a release that had already tagged and pushed. Now a
+  failed publish leaves tags, Releases and a record — and the announce job can be re-run alone.
+  Keep that order: anything that writes the record must come before anything that can exit.
 - **The notification LOGIC is not here — the entrypoint is.** `fmmenchi-notify` reads events,
   delivers them and counts what arrived; every message is built and sent by `@fmmenchi/notify`, which
   stays the single implementation. This package owns the two CI doors (`fmmenchi-release`,

@@ -38,9 +38,10 @@ separate operations, so nothing message-shaped may live in the step that cannot 
 `"dryRun": true` and `NEW_TAGS_FILE` is left **empty** — those tags do not exist yet, and a
 downstream step handed one would announce a release nobody cut.
 
-**One hole to know about**: `release()` calls `process.exit(1)` from inside nx on a publish failure,
-so a run that tagged and published and then died writes **no** record at all. Never read a missing
-record as "nothing was released".
+**Publishing happens last, and here rather than inside `release()`** (which is called with
+`skipPublish`). nx exits the process from within on a registry failure, so publishing inside it
+destroyed the record of a release that had already tagged and pushed. Now a failed publish leaves the
+tags, the Releases **and** the record — so the announce job can be re-run on its own.
 
 Toolkit tags are logged and excluded from `NEW_TAGS_FILE` — see [`isPackageTag`](#ispackagetag).
 
