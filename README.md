@@ -14,7 +14,7 @@ packages/
   shared/           # isomorphic (no DOM, no Node APIs) — notify
   client/           # browser-only — tokens, ui (the design system)
   server/           # server-side only (secrets; never a client bundle) — signing
-  plugins/          # Nx plugins, consumed as devDeps by other repos — nx-notify, nx-theme-generator, nx-docusaurus, nx-trivy
+  plugins/          # Nx plugins, consumed as devDeps by other repos — nx-theme-generator, nx-docusaurus, nx-trivy
   ops/              # CI/CD & release automation — ci, gh-actions
 apps/               # non-published — docusaurus (the docs site)
 ```

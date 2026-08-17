@@ -43,7 +43,7 @@ Three layers — build a neutral notification, pick transport(s), send:
   The neutral `Notification` is the seam; keep channel formatting inside its transport.
 - **Pure — no git, no `child_process`, no side effects** beyond `fetch` inside a transport. Builders
   receive already-collected commits, which is what makes it a reusable brick. Commit collection
-  (git) lives in the consumer, e.g. `@fmmenchi/nx-notify`.
+  (git) lives in the consumer, e.g. `@fmmenchi/ci`'s `fmmenchi-notify` bin.
 - `text` is never optional: it is the phone-notification / screen-reader fallback.
 - `appName` is a parameter, never hardcoded — one channel can carry many projects.
 - **Types in `*.types.ts`** (`notification.types.ts`, `transport.types.ts`, `slack.types.ts`),

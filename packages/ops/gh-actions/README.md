@@ -1,7 +1,7 @@
 # Reusable CI — composite actions & workflows
 
 Shared GitHub Actions building blocks for `@fmmenchi` consumers. The **logic** lives in the nx
-plugins (`@fmmenchi/nx-trivy`, `@fmmenchi/nx-notify`); these are the thin **glue** that wires them
+plugins and packages (`@fmmenchi/nx-trivy`, `@fmmenchi/ci`, `@fmmenchi/notify`); these are the thin **glue** that wires them
 into CI, so there's one source of truth. **Consumers must be nx workspaces** with the relevant
 plugins installed.
 
@@ -31,21 +31,33 @@ jobs:
     secrets: inherit
 ```
 
-## Turnkey: the reusable release workflow
+## Release is bricks, not a turnkey workflow
 
-Version + tag the affected projects, attach an SBOM to each release, and announce each to Slack —
-on push to your main (needs `@fmmenchi/ci` installed and the same nx release setup):
+There is deliberately **no** `release.reusable.yml`. Releasing has to be sequenced against your own
+checks, and a called workflow cannot require that of its caller — so the ordering stays where the
+decision belongs, in your job graph. Compose the bricks (see
+[compose the bricks](./docs/guides/compose-bricks.md) for the full job):
 
 ```yaml
-# .github/workflows/release.yml in a consumer repo
-name: Release
-on:
-  push:
-    branches: [main]
 jobs:
+  gate: { … your typecheck / build / lint / test … }
   release:
-    uses: fmmenchi/shared-platform/.github/workflows/release.reusable.yml@gh-actions/v0
-    secrets: inherit
+    needs: gate # ← the part a reusable workflow could never enforce for you
+    if: github.ref == 'refs/heads/main'
+    concurrency: { group: release, cancel-in-progress: false }
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+        with: { registry-url: 'https://npm.pkg.github.com' }
+      - id: release
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/release@gh-actions/v0
+        with: { github-token: '${{ secrets.GITHUB_TOKEN }}' }
+      # …then read the record it emitted — ideally from their own jobs, so each retries alone:
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
+        with: { result-file: '${{ steps.release.outputs.result-file }}' }
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
+        with: { result-file: '${{ steps.release.outputs.result-file }}' }
 ```
 
 ## Turnkey: the reusable docs workflow
@@ -75,13 +87,13 @@ jobs:
 Weave these into your own jobs when the turnkey workflow isn't enough. Run `setup` first — the others
 shell out to nx.
 
-| Action                                                                         | Does                                                                                                           |
-| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0` | pnpm + Node + frozen install (`registry-url` input for publishing jobs)                                        |
-| `.../gh-actions/actions/trivy-scan@gh-actions/v0`                              | vuln + secret scan via `@fmmenchi/nx-trivy`, per-day DB cache                                                  |
-| `.../gh-actions/actions/attach-sbom@gh-actions/v0`                             | per-tag CycloneDX SBOM (`tags-file` input) → uploaded to each Release as `sbom.cdx.json`                       |
-| `.../gh-actions/actions/announce-releases@gh-actions/v0`                       | announce every newly-released package (`tags-file`) to Slack via `@fmmenchi/nx-notify`                         |
-| `.../gh-actions/actions/slack-notify@gh-actions/v0`                            | `@fmmenchi/nx-notify` release/error announce for one message (`type` input); skips green without Slack secrets |
+| Action                                                                         | Does                                                                                                     |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0` | pnpm + Node + frozen install (`registry-url` input for publishing jobs)                                  |
+| `.../gh-actions/actions/trivy-scan@gh-actions/v0`                              | vuln + secret scan via `@fmmenchi/nx-trivy`, per-day DB cache                                            |
+| `.../gh-actions/actions/attach-sbom@gh-actions/v0`                             | one CycloneDX SBOM per released project (`result-file`) → uploaded to each Release as `sbom.cdx.json`    |
+| `.../gh-actions/actions/release@gh-actions/v0`                                 | run `nx release` and emit the record of what it released (`result-file`, `released`)                     |
+| `.../gh-actions/actions/notify@gh-actions/v0`                                  | announce every release in a record, or one event; RED when a message it was asked to send did not arrive |
 
 ## Versioning
 

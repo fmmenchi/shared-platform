@@ -4,3 +4,5 @@ export * from './lib/transport.types.js';
 export * from './lib/notify.js';
 export * from './lib/transports/slack/slack.js';
 export * from './lib/transports/slack/slack.types.js';
+export * from './lib/event.js';
+export * from './lib/event.types.js';

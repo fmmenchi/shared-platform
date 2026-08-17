@@ -18,12 +18,11 @@ optional Slack alert.
 
 ### Inputs
 
-| Input              | Type    | Default       | Description                                                                                             |
-| :----------------- | :------ | :------------ | :------------------------------------------------------------------------------------------------------ |
-| `secret-scan`      | boolean | `true`        | Also run the secret scan after the vulnerability scan.                                                  |
-| `alert-on-failure` | boolean | `false`       | Post a Slack alert if the scan fails. Gate it yourself (e.g. only on `schedule`).                       |
-| `app-name`         | string  | the repo name | Name used in the Slack alert.                                                                           |
-| `announce-project` | string  | –             | A publishable project whose inferred `announce-error` runs the alert. Required when `alert-on-failure`. |
+| Input              | Type    | Default       | Description                                                                       |
+| :----------------- | :------ | :------------ | :-------------------------------------------------------------------------------- |
+| `secret-scan`      | boolean | `true`        | Also run the secret scan after the vulnerability scan.                            |
+| `alert-on-failure` | boolean | `false`       | Post a Slack alert if the scan fails. Gate it yourself (e.g. only on `schedule`). |
+| `app-name`         | string  | the repo name | Name used in the Slack alert.                                                     |
 
 ### Secrets
 
@@ -31,21 +30,21 @@ optional Slack alert.
 
 ---
 
-## `release.reusable.yml`
+## Release — there isn't one, on purpose
 
-Version + tag the affected projects (`nx release`), attach a CycloneDX SBOM to each release, and
-announce each to Slack. Needs `@fmmenchi/ci` installed and the same nx release setup.
+Releasing is **bricks only**: see [compose the bricks](../guides/compose-bricks.md#the-release-job).
+Two reasons, and the second is the one that settles it.
 
-### Inputs
+A release must run **after** your checks, and a called workflow cannot require that of its caller —
+GitHub can express the ordering (`needs:` in your job graph, `workflow_run`, an approval
+`environment`), but only the caller can express it. A turnkey release would therefore hide the one
+decision that is genuinely yours, and enforce none of it.
 
-| Input          | Type   | Default                      | Description                 |
-| :------------- | :----- | :--------------------------- | :-------------------------- |
-| `registry-url` | string | `https://npm.pkg.github.com` | npm registry to publish to. |
-
-### Secrets
-
-`SLACK_BOT_TOKEN`, `SLACK_CHANNEL_ID` (optional). `GITHUB_TOKEN` is used automatically
-(`contents: write`, `packages: write`).
+And it could never be dogfooded. Such a workflow has to run the release script from **somewhere**,
+and where that is depends on how the repo is built: in a consumer it is
+`node_modules/@fmmenchi/ci/dist/release.js`, while in shared-platform `@fmmenchi/ci` is a source
+project with no `node_modules/@fmmenchi` at all. A brick we cannot run here is a brick we cannot
+promise you — which is exactly what the old `release.reusable.yml` was, until it was removed.
 
 ---
 

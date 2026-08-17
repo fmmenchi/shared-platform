@@ -53,4 +53,4 @@ behaviour a shell script can't guarantee and a unit test can.
 | `errorNotification(appName, message, url)`               | Neutral error alert.                                            |
 | `formatChangelog({fromRef, toRef, commits})`             | Markdown changelog: `from → to` + bullets, capped at 15.        |
 
-For firing these from CI on release, see **`@fmmenchi/nx-notify`** (the Nx executors that wrap this).
+To fire these from CI, see **`@fmmenchi/ci`** — its `fmmenchi-notify` bin reads a batch of events (or a release record), delivers them through this library, and fails when one it was asked to send did not arrive.

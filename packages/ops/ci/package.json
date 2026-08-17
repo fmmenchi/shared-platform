@@ -1,7 +1,7 @@
 {
   "name": "@fmmenchi/ci",
   "version": "0.0.1",
-  "description": "CI helper scripts for an Nx release monorepo — prints the releasable projects Nx marks affected between two refs.",
+  "description": "CI helper scripts for an Nx release monorepo \u2014 prints the releasable projects Nx marks affected between two refs.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -43,10 +43,23 @@
     }
   },
   "dependencies": {
+    "@fmmenchi/notify": "workspace:*",
     "tslib": "^2.3.0"
   },
   "files": [
     "dist",
     "!**/*.tsbuildinfo"
-  ]
+  ],
+  "peerDependencies": {
+    "nx": "^23.1.1"
+  },
+  "peerDependenciesMeta": {
+    "nx": {
+      "optional": true
+    }
+  },
+  "bin": {
+    "fmmenchi-release": "./dist/release.js",
+    "fmmenchi-notify": "./dist/notify.js"
+  }
 }

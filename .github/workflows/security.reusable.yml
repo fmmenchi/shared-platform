@@ -18,6 +18,14 @@ on:
         type: boolean
         required: false
         default: true
+      cache-db:
+        description: >-
+          Cache Trivy's vulnerability DB between runs. Leave it on when you scan on every
+          dependency change; turn it OFF for a weekly-only cadence, where the DB has
+          expired by the next run and the cache costs an upload nobody reads.
+        type: boolean
+        required: false
+        default: true
       alert-on-failure:
         description: Post a Slack alert if the scan fails. Let the caller gate this (e.g. only on schedule).
         type: boolean
@@ -25,13 +33,6 @@ on:
         default: false
       app-name:
         description: Name used in Slack messages (defaults to the repo name).
-        type: string
-        required: false
-        default: ''
-      announce-project:
-        description: >-
-          Any publishable nx project — the workspace-level Slack alert runs its inferred
-          `announce-*` target. Required when `alert-on-failure` is used.
         type: string
         required: false
         default: ''
@@ -61,15 +62,16 @@ jobs:
         uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0
         with:
           secret-scan: ${{ inputs.secret-scan }}
+          cache-db: ${{ inputs.cache-db }}
 
+      # No project to name: the alert carries its own identity in the event, so nothing
+      # here has to know which of your projects hosts a notification target.
       - name: Alert Slack on findings
         if: ${{ failure() && inputs.alert-on-failure }}
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/slack-notify@gh-actions/v0
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
         with:
-          type: error
-          app-name: ${{ inputs.app-name || github.event.repository.name }}
-          project: ${{ inputs.announce-project }}
+          kind: error
+          app: ${{ inputs.app-name || github.event.repository.name }}
           message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
-          url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}

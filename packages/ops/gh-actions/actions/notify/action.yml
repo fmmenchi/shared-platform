@@ -1,0 +1,83 @@
+name: Notify
+description: >-
+  Deliver notifications to Slack via @fmmenchi/notify — either every release in a release
+  record, or one event you describe here. Skips green (loudly) without Slack secrets, and
+  fails when a message it was asked to send did not arrive. Requires a prior `setup`, and
+  @fmmenchi/ci installed.
+
+inputs:
+  result-file:
+    description: A release record from the `release` brick — one announcement per released project.
+    required: false
+    default: ''
+  kind:
+    description: 'Single event instead of a record: release | error.'
+    required: false
+    default: ''
+  app:
+    description: 'Single event: what the message is about (defaults to the repository name).'
+    required: false
+    default: ''
+  message:
+    description: 'Single event (error): what went wrong.'
+    required: false
+    default: ''
+  version:
+    description: 'Single event (release): the version.'
+    required: false
+    default: ''
+  url:
+    description: 'Single event: where to read more (defaults to this run).'
+    required: false
+    default: ''
+  repository-url:
+    description: Base URL used to form release links.
+    required: false
+    default: ''
+  bot-token:
+    description: Slack bot token. Absent → skips green, and says so.
+    required: false
+    default: ''
+  channel-id:
+    description: Slack channel id.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.bot-token }}
+        SLACK_CHANNEL_ID: ${{ inputs.channel-id }}
+        NOTIFY_REPOSITORY_URL: ${{ inputs.repository-url || format('{0}/{1}', github.server_url, github.repository) }}
+        RESULT_FILE: ${{ inputs.result-file }}
+        KIND: ${{ inputs.kind }}
+        APP: ${{ inputs.app || github.event.repository.name }}
+        MESSAGE: ${{ inputs.message }}
+        VERSION: ${{ inputs.version }}
+        URL: ${{ inputs.url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
+      run: |
+        if [ -n "$RESULT_FILE" ]; then
+          # Every released project, announced from the record the release step wrote. The
+          # record -> events mapping is tested code in @fmmenchi/notify, not shell.
+          pnpm exec fmmenchi-notify --releaseResult="$RESULT_FILE"
+          exit $?
+        fi
+
+        if [ -z "$KIND" ]; then
+          echo "::error::notify needs result-file, or kind (+ app/message/version)."
+          exit 1
+        fi
+
+        # One event, written as JSON by node — never assembled in YAML, where a Slack emoji
+        # is full of colons and a colon inside a run: is a mapping.
+        export EVENTS="$RUNNER_TEMP/notify-event.json"
+        node -e '
+          const [kind, app, message, version, url] = process.argv.slice(1);
+          const event = kind === "release"
+            ? { kind, app, version, url }
+            : { kind, app, message, url };
+          require("fs").writeFileSync(process.env.EVENTS, JSON.stringify([event]));
+        ' "$KIND" "$APP" "$MESSAGE" "$VERSION" "$URL"
+        pnpm exec fmmenchi-notify --eventsFile="$EVENTS"

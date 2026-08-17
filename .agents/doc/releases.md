@@ -37,15 +37,16 @@
   files aren't project inputs), while a change that legitimately affects everything (`nx.json`, the
   lockfile) releases everything. An earlier `affected-releasable` pre-filter (guarding a since-fixed
   nx cascade) was **removed** — it was redundant and could have suppressed legitimate releases.
-  `release.js` only adds what nx doesn't: the before/after tag diff that feeds the SBOM/announce
+  `release.js` only adds what nx doesn't: a record of what the release did, which feeds the SBOM/announce
   steps the newly-cut package tags.
 - `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
   the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
-- **Slack, inline.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger `on: release`
-  workflows, so the release job announces each newly cut tag itself — dogfooding the
-  `@fmmenchi/nx-notify` plugin (`nx run @fmmenchi/nx-notify:announce-release --appName=<pkg>` per
-  tag, with the release body as the changelog). Secrets `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID`
-  absent → skips green.
+- **Slack, from its own job.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger
+  `on: release` workflows, so the pipeline announces the releases itself — in an `announce` job that
+  `needs: release` and reads the release record from an artifact. One message per released project,
+  and the job is RED when a message it was asked to send did not arrive. Secrets
+  `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` absent → skips green, with a `::notice::` saying how many were
+  not sent. Announcing is a separate job precisely so it can be re-run without re-releasing.
 
 ## Publishing — GitHub Packages
 

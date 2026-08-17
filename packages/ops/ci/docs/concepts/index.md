@@ -35,7 +35,8 @@ which was right by accident and untestable by construction.
 
 ### 3. The logic is separated from the side effects
 
-`isPackageTag`, `newTags` and `majorAlias` take arrays and return values. Every `git` call and every
+`isPackageTag`, `formatTag`, `toReleaseRecords`, `assertReleaseGroups` and `majorAlias` take values
+and return values. Every `git` call and every
 file write lives in the two scripts.
 
 That split is the whole reason any of this has tests. The interesting failures are all in the pure
@@ -58,5 +59,5 @@ for is upstream, in the job that was supposed to be green.
 
 ## 🚫 Not here
 
-**Notifications.** The release job dogfoods `@fmmenchi/nx-notify`, so the Slack surface has one
+**Message building.** `fmmenchi-notify` delivers and counts; `@fmmenchi/notify` builds. One
 implementation. Adding a second here would mean two things to keep in step for one message.

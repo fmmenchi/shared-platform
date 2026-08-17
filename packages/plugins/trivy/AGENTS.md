@@ -94,7 +94,7 @@ Never name a project in CI — the root project is named after the consumer's ow
 Ask the graph (`nx show projects --with-target scan-docker --json`) and fail on empty; the
 `trivy-scan` action in `@fmmenchi/gh-actions` does exactly that. shared-platform's own CI dogfoods it
 (`.github/workflows/security.yml`) on **dep changes and a weekly schedule**; the weekly run's findings
-alert Slack via `@fmmenchi/nx-notify`. See [scan in CI](./docs/guides/scan-in-ci.md) for DB caching
+alert Slack via the `notify` brick. See [scan in CI](./docs/guides/scan-in-ci.md) for DB caching
 and cadence. Local CLI: `brew install trivy`.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

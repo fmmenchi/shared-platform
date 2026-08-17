@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # Scripts and API
 
-Two scripts to run from a workflow, and three pure functions behind them.
+Two scripts to run from a workflow, and the pure functions behind them.
 
 ---
 
@@ -14,16 +14,36 @@ Two scripts to run from a workflow, and three pure functions behind them.
 
 ### `release.js`
 
-Runs `nx release`, then diffs the git tags before and after and writes the newly cut **package** tags
-to a file.
+Releases through nx's **programmatic API** (`release()` from `nx/release` — the same function the
+`nx release` CLI calls), then writes a record of what it did.
 
-| Environment variable | Default        | What it is                                           |
-| -------------------- | -------------- | ---------------------------------------------------- |
-| `NEW_TAGS_FILE`      | `new_tags.txt` | Where the new package tags are written, one per line |
-| `GITHUB_TOKEN`       | —              | Passed through to `nx release` for tags and releases |
-| `NODE_AUTH_TOKEN`    | —              | Passed through for publishing                        |
+The record is the point. nx decides which projects release, at which version and under which tag
+pattern; the script asks it, instead of photographing the git tags before and after and inferring the
+answer. Each tag is **formed** from that project's own release-group pattern — so a group shaped
+`gh-actions/v{version}` comes out right without anyone encoding `{project}@{version}` in a regex —
+and then **verified against the tags git really has** before anything downstream sees it.
 
-Toolkit tags are logged and excluded — see [`isPackageTag`](#ispackagetag).
+| Environment variable  | Default               | What it is                                                             |
+| --------------------- | --------------------- | ---------------------------------------------------------------------- |
+| `RELEASE_RESULT_FILE` | `release-result.json` | The record: `{ dryRun, releases: [{ project, version, tag }] }`        |
+| `NEW_TAGS_FILE`       | `new_tags.txt`        | Transitional: the same records projected to package tags, one per line |
+| `RELEASE_DRY_RUN`     | unset                 | `true` rehearses the whole script without releasing (see below)        |
+| `GITHUB_TOKEN`        | —                     | Passed through for tags and GitHub Releases                            |
+| `NODE_AUTH_TOKEN`     | —                     | Passed through for publishing                                          |
+
+**The record is neutral.** It names no message, channel or artifact: releasing and announcing are
+separate operations, so nothing message-shaped may live in the step that cannot be undone.
+
+**A rehearsal writes no consumable output.** With `RELEASE_DRY_RUN=true` the record is stamped
+`"dryRun": true` and `NEW_TAGS_FILE` is left **empty** — those tags do not exist yet, and a
+downstream step handed one would announce a release nobody cut.
+
+**Publishing happens last, and here rather than inside `release()`** (which is called with
+`skipPublish`). nx exits the process from within on a registry failure, so publishing inside it
+destroyed the record of a release that had already tagged and pushed. Now a failed publish leaves the
+tags, the Releases **and** the record — so the announce job can be re-run on its own.
+
+Toolkit tags are logged and excluded from `NEW_TAGS_FILE` — see [`isPackageTag`](#ispackagetag).
 
 ### `move-major-alias.js`
 
@@ -56,13 +76,30 @@ exist.
 It replaced a `*@*` glob with an explicit rule for exactly that reason: the glob was right by
 accident and untestable by construction.
 
+### `toReleaseRecords` / `formatTag` / `assertReleaseGroups`
+
+```ts
+toReleaseRecords(projectsVersionData, releaseGroups): ReleaseRecord[]
+formatTag(pattern, project, version, releaseGroupName?): string
+assertReleaseGroups(value: unknown): ReleaseGroupSummary[]
+```
+
+What nx returned, turned into `{ project, version, tag }` — only for projects that actually got a new
+version. `formatTag` mirrors nx's own tag interpolation, sanitising the project name the way nx does
+and filling every `{projectName}` / `{version}` / `{releaseGroupName}` occurrence.
+
+Both refuse to guess: a group with no tag pattern, or a release graph that is not the shape these
+functions read, throws. nx moved that property once already — a silent default would fabricate a
+package-shaped tag, and the announce step would post about a release nobody cut.
+
 ### `newTags`
 
 ```ts
 newTags(before: readonly string[], after: readonly string[]): string[]
 ```
 
-The tags present in `after` and not in `before`, sorted. Empty is a normal answer.
+The tags present in `after` and not in `before`, sorted. Empty is a normal answer. No longer used by
+`release.js` (which asks nx instead of diffing tags), kept for consumers that still diff.
 
 ### `majorAlias`
 
@@ -81,7 +118,7 @@ backwards.
 
 ## What is deliberately not here
 
-**Notifications.** The release job dogfoods the `@fmmenchi/nx-notify` plugin instead, so the Slack
-surface has one implementation rather than two.
+**Message building.** `fmmenchi-notify` is the CI door; `@fmmenchi/notify` is the implementation,
+so the Slack surface has one owner rather than two.
 
 **An affected pre-filter.** See [Concepts](../concepts/index.md).
