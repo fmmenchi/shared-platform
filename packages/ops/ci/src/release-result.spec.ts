@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toReleaseRecords } from './release-result.js';
+import { publishableProjects, toReleaseRecords } from './release-result.js';
 
 const changelogs = {
   '@fmmenchi/ui': {
@@ -64,5 +64,43 @@ describe('toReleaseRecords', () => {
     expect(() =>
       toReleaseRecords({ '@acme/x': { newVersion: '1.0.0' } }, changelogs),
     ).toThrow(/handed back no git tag/);
+  });
+});
+
+describe('publishableProjects', () => {
+  const record = {
+    project: '@fmmenchi/ui',
+    version: '0.6.1',
+    tag: '@fmmenchi/ui@0.6.1',
+  };
+
+  it('keeps a project that has the publish target', () => {
+    expect(
+      publishableProjects([record], {
+        '@fmmenchi/ui': { data: { targets: { 'nx-release-publish': {} } } },
+      }),
+    ).toEqual([record]);
+  });
+
+  it('is empty for a private deliverable — nx creates no publish target for it', () => {
+    expect(
+      publishableProjects([record], {
+        '@fmmenchi/ui': { data: { targets: { build: {} } } },
+      }),
+    ).toEqual([]);
+  });
+
+  it('keeps the publishable half of a mixed release', () => {
+    const priv = { project: 'blog', version: '1.0.0', tag: 'v1.0.0' };
+    expect(
+      publishableProjects([record, priv], {
+        '@fmmenchi/ui': { data: { targets: { 'nx-release-publish': {} } } },
+        blog: { data: { targets: {} } },
+      }),
+    ).toEqual([record]);
+  });
+
+  it('is empty, not a crash, for a project missing from the graph', () => {
+    expect(publishableProjects([record], {})).toEqual([]);
   });
 });

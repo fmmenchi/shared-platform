@@ -52,3 +52,28 @@ export function toReleaseRecords(
     },
   );
 }
+
+/** A project graph, reduced to the one thing publishing depends on. */
+export type PublishTargets = Record<
+  string,
+  { data?: { targets?: Record<string, unknown> } } | undefined
+>;
+
+/**
+ * The released projects that can actually be published.
+ *
+ * `nx-release-publish` is added by `@nx/js` — and NOT added to a package with
+ * `"private": true`. `releasePublish` throws outright when none of the projects it matched
+ * has that target, which is the normal state of a repo that versions and tags but publishes
+ * nothing: a blog, an app, any private deliverable. Releasing there is legitimate and the
+ * failure is not, so the caller asks this first and skips publishing when the answer is
+ * empty. A mixed workspace is unaffected: nx only refuses when NOTHING is publishable.
+ */
+export function publishableProjects(
+  records: readonly ReleaseRecord[],
+  nodes: PublishTargets,
+): ReleaseRecord[] {
+  return records.filter(
+    (record) => nodes[record.project]?.data?.targets?.['nx-release-publish'],
+  );
+}

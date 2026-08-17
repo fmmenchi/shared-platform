@@ -17,9 +17,10 @@
 // part of a combined one that exits the process from within nx when a registry refuses.
 // That order is the whole point: a failed publish leaves tags, Releases AND a record, so
 // the announce job can be re-run on its own instead of dying with the process.
+import { createProjectGraphAsync } from '@nx/devkit';
 import { releaseChangelog, releasePublish, releaseVersion } from 'nx/release';
 import { writeFileSync } from 'node:fs';
-import { toReleaseRecords } from './release-result.js';
+import { publishableProjects, toReleaseRecords } from './release-result.js';
 import type {
   ProjectChangelogs,
   ProjectsVersionData,
@@ -86,7 +87,22 @@ writeFileSync(
 // Publish LAST, and only now — the record is already on disk, so a registry that refuses
 // leaves a failed job with a full account of what was released, and the announce job can
 // be re-run on its own instead of being lost with the process.
-if (records.length > 0) {
+//
+// And only if there IS something publishable. `releasePublish` throws when none of the
+// projects it matched has the `nx-release-publish` target, which @nx/js does not create for
+// a `private` package — so a repo that versions and tags a private deliverable (a blog, an
+// app) would see its release blow up AFTER tagging, on a step it never wanted. Reported from
+// another repo doing exactly that.
+const graph = await createProjectGraphAsync();
+const publishable = publishableProjects(records, graph.nodes as never);
+
+if (publishable.length === 0 && records.length > 0) {
+  console.log(
+    `nx-release: nothing to publish (${records.length} released project(s), none with an nx-release-publish target — private packages do not get one). Skipping publish.`,
+  );
+}
+
+if (publishable.length > 0) {
   const publishResults = await releasePublish({
     dryRun,
     versionData: projectsVersionData,
