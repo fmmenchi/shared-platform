@@ -48,5 +48,8 @@
   "files": [
     "dist",
     "!**/*.tsbuildinfo"
-  ]
+  ],
+  "peerDependencies": {
+    "nx": "^23.1.1"
+  }
 }
