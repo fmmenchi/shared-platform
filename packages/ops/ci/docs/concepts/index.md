@@ -35,7 +35,8 @@ which was right by accident and untestable by construction.
 
 ### 3. The logic is separated from the side effects
 
-`isPackageTag`, `newTags` and `majorAlias` take arrays and return values. Every `git` call and every
+`isPackageTag`, `formatTag`, `toReleaseRecords`, `assertReleaseGroups` and `majorAlias` take values
+and return values. Every `git` call and every
 file write lives in the two scripts.
 
 That split is the whole reason any of this has tests. The interesting failures are all in the pure

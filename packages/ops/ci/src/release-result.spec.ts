@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { formatTag, toReleaseRecords } from './release-result.js';
+import {
+  assertReleaseGroups,
+  formatTag,
+  toReleaseRecords,
+} from './release-result.js';
 import type { ReleaseGroupSummary } from './release-result.types.js';
 
 const groups: ReleaseGroupSummary[] = [
@@ -79,15 +83,74 @@ describe('toReleaseRecords', () => {
     ).toEqual([]);
   });
 
-  it('falls back to nx’s default pattern for a project in no group', () => {
-    expect(
-      toReleaseRecords({ '@acme/loose': { newVersion: '1.0.0' } }, groups),
-    ).toEqual([
-      { project: '@acme/loose', version: '1.0.0', tag: '@acme/loose@1.0.0' },
-    ]);
-  });
-
   it('is empty, not undefined, when nothing was released', () => {
     expect(toReleaseRecords({}, groups)).toEqual([]);
+  });
+});
+
+describe('the tag mirrors nx, not a convention', () => {
+  it('sanitises the project name the way nx does before interpolating', () => {
+    expect(formatTag('{projectName}@{version}', ':common:lib', '1.0.0')).toBe(
+      'common/lib@1.0.0',
+    );
+    expect(formatTag('{projectName}@{version}', 'my app', '1.0.0')).toBe(
+      'my-app@1.0.0',
+    );
+  });
+
+  it('fills {releaseGroupName}, which nx supports too', () => {
+    expect(
+      formatTag('{releaseGroupName}/v{version}', '@x/y', '0.1.0', 'gh-actions'),
+    ).toBe('gh-actions/v0.1.0');
+  });
+
+  it('replaces EVERY occurrence, not just the first', () => {
+    expect(
+      formatTag('{projectName}/{projectName}-{version}', 'a', '1.0.0'),
+    ).toBe('a/a-1.0.0');
+  });
+
+  it('refuses to guess when a group carries no pattern — it would fabricate a tag', () => {
+    expect(() =>
+      toReleaseRecords({ '@x/y': { newVersion: '1.0.0' } }, [
+        { name: 'legacy', projects: ['@x/y'] },
+      ]),
+    ).toThrow(/no tag pattern/);
+  });
+
+  it('refuses just as loudly when the project is in no group at all', () => {
+    expect(() =>
+      toReleaseRecords({ '@acme/loose': { newVersion: '1.0.0' } }, groups),
+    ).toThrow(/no tag pattern/);
+  });
+});
+
+describe('assertReleaseGroups', () => {
+  it('passes through the shape we read', () => {
+    expect(assertReleaseGroups(groups)).toEqual(groups);
+  });
+
+  it('throws when nx hands back something that is not a list', () => {
+    expect(() => assertReleaseGroups(undefined)).toThrow(/expected an array/);
+  });
+
+  it('throws when the pattern moved — the rename nx already did once', () => {
+    expect(() =>
+      assertReleaseGroups([
+        {
+          name: 'packages',
+          projects: ['@x/y'],
+          releaseTagPattern: '{version}',
+        },
+      ]),
+    ).toThrow(/shape/);
+  });
+
+  it('throws when projects is missing, rather than forming tags for nobody', () => {
+    expect(() =>
+      assertReleaseGroups([
+        { name: 'packages', releaseTag: { pattern: 'v{version}' } },
+      ]),
+    ).toThrow(/shape/);
   });
 });

@@ -15,9 +15,12 @@ config-only push releases nothing, and a change that legitimately affects everyt
 lockfile) releases everything. No affected pre-filter is needed; nx does the right thing on its own.
 These scripts wrap the two bits nx doesn't give you:
 
-- **`release.js`** — runs `nx release`, then diffs the git tags before/after and writes the
-  newly-cut **package** tags to `NEW_TAGS_FILE`, for the downstream SBOM + announce steps. Toolkit
-  tags (e.g. `gh-actions/v*`) are logged but kept out (see `isPackageTag`).
+- **`release.js`** — releases via nx's programmatic API (`release()` from `nx/release`) and writes a
+  **record of what it did** to `RELEASE_RESULT_FILE`: `{ dryRun, releases: [{ project, version, tag }] }`,
+  asked of nx rather than inferred from a git-tag diff, with every tag verified against the tags git
+  really has. It also projects the package tags to `NEW_TAGS_FILE` for the SBOM + announce steps that
+  still read them (toolkit tags like `gh-actions/v*` stay out — see `isPackageTag`). The record names
+  nothing message-shaped: releasing and announcing are separate operations.
 - **`move-major-alias.js`** — moves a moving-major tag alias (`ALIAS_PREFIX`, default `gh-actions/v`)
   to the latest exact `<prefix>X.Y.Z`. nx doesn't maintain such aliases; consumers pin them.
 

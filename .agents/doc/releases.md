@@ -37,7 +37,7 @@
   files aren't project inputs), while a change that legitimately affects everything (`nx.json`, the
   lockfile) releases everything. An earlier `affected-releasable` pre-filter (guarding a since-fixed
   nx cascade) was **removed** — it was redundant and could have suppressed legitimate releases.
-  `release.js` only adds what nx doesn't: the before/after tag diff that feeds the SBOM/announce
+  `release.js` only adds what nx doesn't: a record of what the release did, which feeds the SBOM/announce
   steps the newly-cut package tags.
 - `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
   the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.

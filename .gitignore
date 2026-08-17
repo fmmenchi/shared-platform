@@ -5,6 +5,10 @@ dist
 tmp
 out-tsc
 
+# release-step artifacts: what a release did, and the tags it cut
+release-result.json
+new_tags.txt
+
 # a bill of materials is a release artifact, generated per run — never committed
 sbom.cdx.json
 

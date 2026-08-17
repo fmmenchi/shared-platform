@@ -210,7 +210,7 @@ jobs:
 
       # Run `nx release` (it versions only the projects with releasing conventional commits —
       # a root-file-only change releases nothing) and record the new package tags for the
-      # SBOM/announce steps. The tag diff + package-vs-toolkit split lives in @fmmenchi/ci
+      # SBOM/announce steps. The record + package-vs-toolkit split lives in @fmmenchi/ci
       # (src/release.ts), unit-tested, not inline here.
       - name: Release
         run: node packages/ops/ci/dist/release.js

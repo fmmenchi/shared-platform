@@ -51,5 +51,10 @@
   ],
   "peerDependencies": {
     "nx": "^23.1.1"
+  },
+  "peerDependenciesMeta": {
+    "nx": {
+      "optional": true
+    }
   }
 }
