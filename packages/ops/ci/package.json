@@ -43,6 +43,7 @@
     }
   },
   "dependencies": {
+    "@fmmenchi/notify": "workspace:*",
     "tslib": "^2.3.0"
   },
   "files": [
@@ -58,6 +59,7 @@
     }
   },
   "bin": {
-    "fmmenchi-release": "./dist/release.js"
+    "fmmenchi-release": "./dist/release.js",
+    "fmmenchi-notify": "./dist/notify.js"
   }
 }
