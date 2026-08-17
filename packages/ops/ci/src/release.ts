@@ -1,78 +1,68 @@
 #!/usr/bin/env node
 // The CI release entrypoint: run the release, then say what it did.
 //
-// The facts come from nx's own programmatic API (`nx/release`), not from a photograph of
-// the git tags taken before and after shelling out to the CLI. nx is the one that decides
-// which projects release, at which version and under which tag pattern — asking it is
-// exact, while reconstructing the answer afterwards was a guess that had to encode the
-// tag convention (`{project}@{version}`) in a regex, and got it wrong for any workspace
-// that tags differently.
+// Every fact is HANDED OVER by nx, never reconstructed: the versions, the tags as nx formed
+// them, and the release notes as nx rendered them. What this replaced, in order: a
+// photograph of the git tags before and after shelling out to the CLI; then a mirror of
+// nx's own tag interpolation, checked against git because a mirror cannot be trusted; and,
+// for a moment, a GitHub API round trip to read back the changelog nx had just written.
+// Each one was a way of asking downstream what was already known upstream.
 //
 // Releasing and announcing stay SEPARATE operations. This writes a neutral record of what
 // was released; the SBOM and announce steps read it and fail on their own. Nothing about
 // notifications belongs in here — a message-shaped bug must never be able to break, or
 // half-finish, an irreversible release.
 //
-// The record is written BEFORE publishing, and publishing is done here rather than inside
-// `release()`, which exits the process from within nx when a registry refuses. That order
-// is the whole point: a failed publish now leaves tags, Releases AND a record, so the
-// announce job can be re-run on its own instead of dying with the process.
-import { release, releasePublish } from 'nx/release';
-import { execFileSync } from 'node:child_process';
+// The record is written BEFORE publishing, and publishing is a separate call rather than
+// part of a combined one that exits the process from within nx when a registry refuses.
+// That order is the whole point: a failed publish leaves tags, Releases AND a record, so
+// the announce job can be re-run on its own instead of dying with the process.
+import { releaseChangelog, releasePublish, releaseVersion } from 'nx/release';
 import { writeFileSync } from 'node:fs';
-import { assertReleaseGroups, toReleaseRecords } from './release-result.js';
-import type { ProjectsVersionData } from './release-result.types.js';
+import { toReleaseRecords } from './release-result.js';
+import type {
+  ProjectChangelogs,
+  ProjectsVersionData,
+} from './release-result.types.js';
 import { isPackageTag } from './tags.js';
-
-/** `true` when the tag exists in this repository — evidence, not prediction. */
-const tagExists = (tag: string): boolean => {
-  try {
-    execFileSync('git', ['rev-parse', '-q', '--verify', `refs/tags/${tag}`], {
-      stdio: 'ignore',
-    });
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 const dryRun = process.env['RELEASE_DRY_RUN'] === 'true';
 
-const { projectsVersionData, releaseGraph } = await release({
-  // CI has nobody to answer a prompt.
-  yes: true,
-  verbose: false,
-  // Publishing is done BELOW, by us, after the record is on disk. `release()` publishes
-  // last and calls process.exit(1) from inside nx when a registry refuses — which killed
-  // this script before it could write anything, exactly in the case where the record
-  // matters most: tags pushed, Releases live, and nothing left saying what went out.
-  skipPublish: true,
-  // Rehearsable: `RELEASE_DRY_RUN=true` runs the whole script without cutting anything.
-  // A release entrypoint you cannot run without releasing is one you only ever test in
-  // production. It writes NO consumable output — see below.
+// The three subcommands, in nx's own order, instead of the combined `release()`.
+//
+// This is what makes nx HAND OVER the tag and the release notes rather than us
+// reconstructing them: `releaseVersion` returns the versions, `releaseChangelog` returns
+// each project's `gitTag` and the rendered `contents` — the same text it writes into the
+// GitHub Release. Asking GitHub for that text afterwards would be asking it to give back
+// what nx produced in this very process.
+//
+// The explicit git flags are not decoration: both subcommands refuse to run beside a
+// top-level `release.git` UNLESS gitCommit, gitTag and stageChanges are all passed. Passing
+// them keeps `nx release` (the CLI) working for maintainers, and reproduces today's
+// behaviour exactly — no commit, tag and push once, at the changelog step.
+const gitFlags = { gitCommit: false, stageChanges: false } as const;
+
+const { projectsVersionData, releaseGraph } = await releaseVersion({
   dryRun,
+  verbose: false,
+  ...gitFlags,
+  gitTag: false, // the changelog step tags, as it does under `nx release`
 });
 
-// Checked at runtime, because it cannot be checked at compile time: nx's own type for a
-// release group does not declare `projects`, so any typed handshake here is a cast.
+const { projectChangelogs } = await releaseChangelog({
+  dryRun,
+  verbose: false,
+  versionData: projectsVersionData,
+  releaseGraph,
+  ...gitFlags,
+  gitTag: true,
+  gitPush: true,
+});
+
 const records = toReleaseRecords(
   (projectsVersionData ?? {}) as ProjectsVersionData,
-  assertReleaseGroups(releaseGraph?.releaseGroups ?? []),
+  (projectChangelogs ?? {}) as ProjectChangelogs,
 );
-
-// The tags are FORMED from nx's patterns, which mirrors logic that lives inside nx — so
-// they are checked against the tags git really has. A mismatch means our mirror drifted
-// from nx, and the only safe outcome is a loud one: announcing a tag that does not exist
-// posts about a release nobody cut, and uploads an SBOM to nothing.
-if (!dryRun) {
-  const missing = records.filter((r) => !tagExists(r.tag));
-  if (missing.length) {
-    throw new Error(
-      `nx-release: ${missing.length} tag(s) were formed but do not exist in git: ` +
-        `${missing.map((r) => r.tag).join(', ')}. The release ran; the record was not written.`,
-    );
-  }
-}
 
 const resultFile = process.env['RELEASE_RESULT_FILE'] ?? 'release-result.json';
 writeFileSync(
