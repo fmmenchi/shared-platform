@@ -1,13 +1,22 @@
 name: Attach SBOMs to releases
 description: >-
-  For each {project}@{version} tag in `tags-file`, generate a CycloneDX SBOM via @fmmenchi/nx-trivy
-  (docker runner) and upload it to that GitHub Release as sbom.cdx.json. Non-fatal per tag.
-  Requires a prior `setup` (nx + the plugin installed).
+  For each project in the release record, generate a CycloneDX SBOM via @fmmenchi/nx-trivy
+  (docker runner) and upload it to that GitHub Release as sbom.cdx.json. Non-fatal per
+  release. Requires a prior `setup` (nx + the plugin installed).
 
 inputs:
+  result-file:
+    description: >-
+      The release record from the `release` brick — { releases: [{ project, version, tag }] }.
+      Preferred: it carries the project, so nothing here has to cut one out of a tag.
+    required: false
+    default: ''
   tags-file:
-    description: Path to a file with one {project}@{version} tag per line.
-    required: true
+    description: >-
+      Deprecated. One {project}@{version} tag per line, split back into project and version
+      by string surgery — which only works for repos that tag that way. Use `result-file`.
+    required: false
+    default: ''
   github-token:
     description: A token with contents:write, to upload the release asset.
     required: true
@@ -18,10 +27,27 @@ runs:
     - shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        RESULT_FILE: ${{ inputs.result-file }}
+        TAGS_FILE: ${{ inputs.tags-file }}
       run: |
-        while IFS= read -r tag; do
-          [ -z "$tag" ] && continue
-          pkg=${tag%@*}
+        if [ -z "$RESULT_FILE" ] && [ -z "$TAGS_FILE" ]; then
+          echo "::error::attach-sbom needs result-file (preferred) or tags-file."
+          exit 1
+        fi
+
+        # One "<project> <tag>" line per release. From the record the project is GIVEN; from
+        # the deprecated tags file it has to be cut out of the tag, which is precisely the
+        # parsing the record exists to abolish — and which is wrong for any repo whose tags
+        # are not {project}@{version}.
+        if [ -n "$RESULT_FILE" ]; then
+          releases=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RESULT_FILE,'utf8')).releases.map(r=>r.project+' '+r.tag).join('\n')")
+        else
+          releases=$(while IFS= read -r tag; do [ -z "$tag" ] || echo "${tag%@*} $tag"; done < "$TAGS_FILE")
+        fi
+        [ -z "$releases" ] && { echo "Nothing was released — no SBOM to attach."; exit 0; }
+
+        while read -r pkg tag; do
+          [ -z "$pkg" ] && continue
           # The release names the package; the asset just needs to say what it is.
           out="sbom.cdx.json"
           # An SBOM is opt-in per project (`nx g @fmmenchi/nx-trivy:sbom <project>`), so a released
@@ -36,4 +62,4 @@ runs:
           else
             echo "::warning::SBOM generation failed for $pkg — skipping."
           fi
-        done < "${{ inputs.tags-file }}"
+        done <<< "$releases"

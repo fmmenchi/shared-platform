@@ -1,0 +1,51 @@
+name: Release
+description: >-
+  Run `nx release` through @fmmenchi/ci and emit a record of what it released
+  ({ project, version, tag } per release). The record is what the SBOM and announce steps
+  read. Requires a prior `setup`, and @fmmenchi/ci installed.
+
+inputs:
+  dry-run:
+    description: Rehearse without releasing. The record is stamped, and no consumable tag list is written.
+    required: false
+    default: 'false'
+  github-token:
+    description: Token used for tags, GitHub Releases and publishing.
+    required: true
+
+outputs:
+  result-file:
+    description: >-
+      Path to the release record: dryRun plus one entry per release (project, version, tag).
+    value: ${{ steps.run.outputs.result-file }}
+  released:
+    description: How many projects were released (0 when nothing was).
+    value: ${{ steps.run.outputs.released }}
+  tags-file:
+    description: Transitional — the released package tags, one per line.
+    value: ${{ steps.run.outputs.tags-file }}
+
+runs:
+  using: composite
+  steps:
+    # The script ships as a bin of @fmmenchi/ci, so this one command is identical in a
+    # consumer and in the repo that publishes it — which is the only way this brick can be
+    # dogfooded at all. It names no project and no path.
+    - name: Release
+      id: run
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
+        RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+        RELEASE_RESULT_FILE: ${{ runner.temp }}/release-result.json
+        NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
+      run: |
+        pnpm exec fmmenchi-release
+        released=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RELEASE_RESULT_FILE,'utf8')).releases.length")
+        {
+          echo "result-file=$RELEASE_RESULT_FILE"
+          echo "tags-file=$NEW_TAGS_FILE"
+          echo "released=$released"
+        } >> "$GITHUB_OUTPUT"
+        echo "Released $released project(s)."
