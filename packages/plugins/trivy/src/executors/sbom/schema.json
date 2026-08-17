@@ -29,6 +29,10 @@
       "type": "string",
       "description": "Docker image used when runner is docker.",
       "default": "aquasec/trivy:latest"
+    },
+    "packageVersion": {
+      "type": "string",
+      "description": "Version to record as the SBOM's root component, for when the package.json on disk does not have it — a release that does not commit its version bumps leaves them only in the release job's working tree, so a separate SBOM job on a fresh checkout would label the artifact with the pre-release version. Named packageVersion because nx reserves --version."
     }
   },
   "required": []
