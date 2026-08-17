@@ -274,6 +274,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./packages/ops/gh-actions/actions/setup
+
+      # This job has its own fresh runner, and here @fmmenchi/ci is a SOURCE project: its
+      # dist does not exist until built. A consumer installs it built, which is why the
+      # notify brick found nothing on its first run and — before it was taught to check —
+      # reported success anyway.
+      - run: pnpm nx build @fmmenchi/ci
+
       - uses: actions/download-artifact@v4
         with:
           name: release-result

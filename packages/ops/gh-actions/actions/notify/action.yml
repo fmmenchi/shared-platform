@@ -58,13 +58,22 @@ runs:
         VERSION: ${{ inputs.version }}
         URL: ${{ inputs.url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
       run: |
+        entry=$(node -p "require.resolve('@fmmenchi/ci/notify')") || entry=''
+        # Checked, because `node ""` exits 0 doing nothing. Unguarded, this brick reported
+        # SUCCESS while announcing nothing at all — the exact failure this whole design is
+        # against, and it was in the design's own plumbing. Measured, not supposed.
+        if [ -z "$entry" ]; then
+          echo "::error::cannot resolve @fmmenchi/ci/notify — is @fmmenchi/ci installed (and built, if it is a source project here)?"
+          exit 1
+        fi
+
         if [ -n "$RESULT_FILE" ]; then
           # Every released project, announced from the record the release step wrote. The
           # record -> events mapping is tested code in @fmmenchi/notify, not shell.
-          # Resolved, then run as a script — not the bin (linked at install time, skipped
-          # when its target does not exist yet) and not `node -e` (which leaves argv[1]
-          # undefined, and nx reads it). See the release brick for both scars.
-          node "$(node -p "require.resolve('@fmmenchi/ci/notify')")" --releaseResult="$RESULT_FILE"
+          # Resolved above, then run as a script — not the bin (linked at install time,
+          # skipped when its target does not exist yet) and not `node -e` (which leaves
+          # argv[1] undefined, and nx reads it). See the release brick for both scars.
+          node "$entry" --releaseResult="$RESULT_FILE"
           exit $?
         fi
 
@@ -83,4 +92,4 @@ runs:
             : { kind, app, message, url };
           require("fs").writeFileSync(process.env.EVENTS, JSON.stringify([event]));
         ' "$KIND" "$APP" "$MESSAGE" "$VERSION" "$URL"
-        node "$(node -p "require.resolve('@fmmenchi/ci/notify')")" --eventsFile="$EVENTS"
+        node "$entry" --eventsFile="$EVENTS"

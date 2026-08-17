@@ -119,8 +119,12 @@ const runExecutor: PromiseExecutor<SbomExecutorSchema> = async (
         const sbom = JSON.parse(readFileSync(outputAbs, 'utf-8'));
         if (sbom?.metadata?.component) {
           sbom.metadata.component.name = project;
-          if (packageJson.version) {
-            sbom.metadata.component.version = packageJson.version;
+          // `packageVersion` wins over the manifest: on a fresh checkout the manifest still
+          // holds the PRE-release version (nx does not commit its bumps), so a separate
+          // SBOM job would otherwise label the artifact with a version nobody shipped.
+          const version = options.packageVersion ?? packageJson.version;
+          if (version) {
+            sbom.metadata.component.version = version;
           }
           // Unlink before writing. Under the docker runner the container writes this
           // file as root, so overwriting it IN PLACE fails with EACCES on a Linux CI
