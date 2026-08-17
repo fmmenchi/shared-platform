@@ -181,6 +181,8 @@ jobs:
     needs: [main, context]
     if: needs.context.outputs.is-release == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release.outputs.released }}
     # Serialize releases: two quick merges must not run `nx release` (tag + push)
     # concurrently and race on the push.
     concurrency:
@@ -227,24 +229,63 @@ jobs:
           ALIAS_PREFIX: gh-actions/v
         run: node packages/ops/ci/dist/move-major-alias.js
 
-      # Attach a per-package CycloneDX SBOM to each release — supply-chain transparency for
-      # the deployable projects that consume these packages. The attach-sbom brick generates
-      # each (docker runner, from an nx-pruned lockfile) and uploads it as sbom.cdx.json.
-      # Non-fatal per tag: the release is already out, so a failed SBOM must not fail the job.
+      # The record crosses the job boundary two ways, because the two consumers need
+      # different things: `released` as a job output (a string, cheap, drives the `if:`),
+      # and the record itself as an artifact — which is what makes "Re-run failed jobs"
+      # able to re-announce a release without re-releasing it.
+      - name: Publish the release record
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-result
+          path: ${{ steps.release.outputs.result-file }}
+          if-no-files-found: error
+          retention-days: 30
+
+  # Attaching an SBOM and announcing are SEPARATE OPERATIONS from releasing, so they are
+  # separate jobs: each fails, and is re-run, on its own. The release is irreversible; these
+  # are not. The price is a checkout + install per job, and it buys exactly that.
+  sbom:
+    needs: [release]
+    if: needs.release.outputs.released != '0'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./packages/ops/gh-actions/actions/setup
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-result
+          path: ${{ runner.temp }}
+
+      # Supply-chain transparency for whoever consumes these packages: one CycloneDX SBOM
+      # per RELEASED project (the record names the project, so nothing parses a tag),
+      # generated from an nx-pruned lockfile and uploaded to that Release.
       - name: Attach SBOMs to the releases
         uses: ./packages/ops/gh-actions/actions/attach-sbom
         with:
-          result-file: ${{ steps.release.outputs.result-file }}
+          result-file: ${{ runner.temp }}/release-result.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
-      # workflows (no recursive runs), so a `release: published` listener never fires from
-      # here. Announce inline instead via the announce-releases brick: one Slack message per
-      # newly cut package tag, with the notes nx wrote into each Release. Missing secrets skip green.
-      - name: Announce releases to Slack
-        uses: ./packages/ops/gh-actions/actions/announce-releases
+  announce:
+    needs: [release]
+    if: needs.release.outputs.released != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./packages/ops/gh-actions/actions/setup
+      - uses: actions/download-artifact@v4
         with:
-          tags-file: ${{ steps.release.outputs.tags-file }}
+          name: release-result
+          path: ${{ runner.temp }}
+
+      # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
+      # workflows, so a `release: published` listener would never fire — announce from here.
+      # One message per released project, and the step is RED if a message it was asked to
+      # send did not arrive. Missing Slack secrets skip green, loudly.
+      - name: Announce the releases
+        uses: ./packages/ops/gh-actions/actions/notify
+        with:
+          result-file: ${{ runner.temp }}/release-result.json
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
