@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // The CI release entrypoint: run the release, then say what it did.
 //
 // The facts come from nx's own programmatic API (`nx/release`), not from a photograph of
