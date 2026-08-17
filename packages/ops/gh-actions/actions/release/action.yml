@@ -28,9 +28,16 @@ outputs:
 runs:
   using: composite
   steps:
-    # The script ships as a bin of @fmmenchi/ci, so this one command is identical in a
-    # consumer and in the repo that publishes it — which is the only way this brick can be
-    # dogfooded at all. It names no project and no path.
+    # RESOLVED, then run as a script. Two traps, both met head-on:
+    #   - not the bin (`pnpm exec fmmenchi-release`): pnpm links bins at INSTALL time and
+    #     silently skips one whose target does not exist yet, which is always the case in a
+    #     repo that builds @fmmenchi/ci from source after installing. This brick died on its
+    #     first real run with `Command "fmmenchi-release" not found`.
+    #   - not `node -e "import(…)"` either: that leaves process.argv[1] undefined, and nx's
+    #     task runner reads it to name the run — publishing crashed with
+    #     `ERR_INVALID_ARG_TYPE: The "path" argument must be of type string`.
+    # `require.resolve` honours the package's exports map, so the path is right in a
+    # consumer and here, and node gets a real script to run.
     - name: Release
       id: run
       shell: bash
@@ -41,7 +48,7 @@ runs:
         RELEASE_RESULT_FILE: ${{ runner.temp }}/release-result.json
         NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
       run: |
-        pnpm exec fmmenchi-release
+        node "$(node -p "require.resolve('@fmmenchi/ci/release')")"
         released=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RELEASE_RESULT_FILE,'utf8')).releases.length")
         {
           echo "result-file=$RELEASE_RESULT_FILE"

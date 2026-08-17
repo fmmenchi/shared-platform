@@ -61,7 +61,10 @@ runs:
         if [ -n "$RESULT_FILE" ]; then
           # Every released project, announced from the record the release step wrote. The
           # record -> events mapping is tested code in @fmmenchi/notify, not shell.
-          pnpm exec fmmenchi-notify --releaseResult="$RESULT_FILE"
+          # Resolved, then run as a script — not the bin (linked at install time, skipped
+          # when its target does not exist yet) and not `node -e` (which leaves argv[1]
+          # undefined, and nx reads it). See the release brick for both scars.
+          node "$(node -p "require.resolve('@fmmenchi/ci/notify')")" --releaseResult="$RESULT_FILE"
           exit $?
         fi
 
@@ -80,4 +83,4 @@ runs:
             : { kind, app, message, url };
           require("fs").writeFileSync(process.env.EVENTS, JSON.stringify([event]));
         ' "$KIND" "$APP" "$MESSAGE" "$VERSION" "$URL"
-        pnpm exec fmmenchi-notify --eventsFile="$EVENTS"
+        node "$(node -p "require.resolve('@fmmenchi/ci/notify')")" --eventsFile="$EVENTS"
