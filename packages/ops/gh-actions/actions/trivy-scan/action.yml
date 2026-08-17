@@ -1,11 +1,20 @@
 name: Trivy scan
 description: >-
-  Run the @fmmenchi/nx-trivy vulnerability (and optionally secret) scan via the docker runner,
-  caching the vulnerability DB per day. Requires a prior `setup` (nx + the plugin installed).
+  Run the @fmmenchi/nx-trivy vulnerability (and optionally secret) scan via the docker runner.
+  Requires a prior `setup` (nx + the plugin installed).
 
 inputs:
   secret-scan:
     description: Also run the secret scan after the vulnerability scan.
+    required: false
+    default: 'true'
+  cache-db:
+    description: >-
+      Cache Trivy's vulnerability DB between runs, keyed per day. Worth it when you scan
+      OFTEN (on every dependency change): the DB is ~100 MiB to download and ~70 MiB to
+      store. Turn it OFF when you scan on a WEEKLY schedule — the DB expires in about 21
+      hours, so a restored copy is always stale, Trivy discards it and downloads a fresh
+      one anyway, and the run pays to upload another copy nobody will use.
     required: false
     default: 'true'
 
@@ -36,10 +45,12 @@ runs:
 
     - name: Resolve the day (DB cache key)
       id: day
+      if: ${{ inputs.cache-db == 'true' }}
       shell: bash
       run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
     - name: Cache the Trivy vulnerability DB
+      if: ${{ inputs.cache-db == 'true' }}
       uses: actions/cache@v4
       with:
         path: ${{ runner.temp }}/trivy-cache
@@ -47,14 +58,21 @@ runs:
         restore-keys: trivy-db-
 
     # Only the vulnerability scan downloads the DB (secret scan uses built-in rules).
+    # Without `cache-db` there is no host dir to bind-mount: the docker runner then caches
+    # in its own named volume, which is the zero-config default.
     - name: Vulnerability scan
       shell: bash
       run: |
-        mkdir -p "$RUNNER_TEMP/trivy-cache"
-        pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker" --cacheDir="$RUNNER_TEMP/trivy-cache"
+        if [ "${{ inputs.cache-db }}" = "true" ]; then
+          mkdir -p "$RUNNER_TEMP/trivy-cache"
+          pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker" --cacheDir="$RUNNER_TEMP/trivy-cache"
+        else
+          pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker"
+        fi
 
     # The docker runner writes the DB as root; hand it back so the post-job cache save can archive it.
     - name: Reclaim the cache dir
+      if: ${{ inputs.cache-db == 'true' }}
       shell: bash
       run: sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/trivy-cache" || true
 

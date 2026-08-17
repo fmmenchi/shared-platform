@@ -18,6 +18,14 @@ on:
         type: boolean
         required: false
         default: true
+      cache-db:
+        description: >-
+          Cache Trivy's vulnerability DB between runs. Leave it on when you scan on every
+          dependency change; turn it OFF for a weekly-only cadence, where the DB has
+          expired by the next run and the cache costs an upload nobody reads.
+        type: boolean
+        required: false
+        default: true
       alert-on-failure:
         description: Post a Slack alert if the scan fails. Let the caller gate this (e.g. only on schedule).
         type: boolean
@@ -54,6 +62,7 @@ jobs:
         uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0
         with:
           secret-scan: ${{ inputs.secret-scan }}
+          cache-db: ${{ inputs.cache-db }}
 
       # No project to name: the alert carries its own identity in the event, so nothing
       # here has to know which of your projects hosts a notification target.

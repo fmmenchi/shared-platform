@@ -59,9 +59,16 @@ targets onto your workspace root project) and **fails** when nothing does, since
 plugin would otherwise mean a green job that never scanned. The fix it prints is
 `pnpm nx add @fmmenchi/nx-trivy`.
 
-| Input         | Type    | Default | Description                                       |
-| :------------ | :------ | :------ | :------------------------------------------------ |
-| `secret-scan` | boolean | `true`  | Also run the secret scan (built-in rules, no DB). |
+| Input         | Type    | Default | Description                                                                    |
+| :------------ | :------ | :------ | :----------------------------------------------------------------------------- |
+| `secret-scan` | boolean | `true`  | Also run the secret scan (built-in rules, no DB).                              |
+| `cache-db`    | boolean | `true`  | Cache the vulnerability DB per day. Turn it **off** for a weekly-only cadence. |
+
+**On `cache-db`.** The DB is ~100 MiB to download, ~70 MiB to store, and expires in about 21 hours.
+Scanning on every dependency change, caching pays for itself. Scanning once a week, it cannot: the
+restored copy is always stale, Trivy throws it away and downloads a fresh one, and the run still
+uploads another 70 MiB for a next run that will do the same. Off, the docker runner keeps its own
+named volume, which is the zero-config default.
 
 ## `release`
 
