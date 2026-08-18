@@ -67,6 +67,11 @@
   shape. Committed, that lockfile would turn the next push's `format:check --all` red — a red gate
   on a file no human touched. Skipped, `format:check` is green with nx's own writes in the tree,
   which was verified rather than assumed.
+- **The git flags come from `nx.json`, not from `@fmmenchi/ci`.** The subcommand APIs refuse to run
+  beside a top-level `release.git` unless `gitCommit`/`gitTag`/`stageChanges` are passed explicitly,
+  so `gitFlagsFor()` reads this workspace's config and passes it through. It used to hardcode them,
+  which silently overrode a consumer that keeps `commit: false` — a published script may choose the
+  order of the steps, never whether another repo's trunk receives commits.
 - **Slack, from its own job.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger
   `on: release` workflows, so the pipeline announces the releases itself — in an `announce` job that
   `needs: release` and reads the release record from an artifact. One message per released project,

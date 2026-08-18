@@ -17,17 +17,30 @@
 // part of a combined one that exits the process from within nx when a registry refuses.
 // That order is the whole point: a failed publish leaves tags, Releases AND a record, so
 // the announce job can be re-run on its own instead of dying with the process.
-import { createProjectGraphAsync } from '@nx/devkit';
+import {
+  createProjectGraphAsync,
+  readJsonFile,
+  workspaceRoot,
+} from '@nx/devkit';
 import { releaseChangelog, releasePublish, releaseVersion } from 'nx/release';
-import { writeFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { publishableProjects, toReleaseRecords } from './release-result.js';
 import type {
   ProjectChangelogs,
   ProjectsVersionData,
 } from './release-result.types.js';
 import { isPackageTag } from './tags.js';
+import { gitFlagsFor } from './git-flags.js';
+import type { ReleaseGitConfig } from './git-flags.types.js';
 
 const dryRun = process.env['RELEASE_DRY_RUN'] === 'true';
+
+function readReleaseConfig(): ReleaseGitConfig | undefined {
+  const path = join(workspaceRoot, 'nx.json');
+  if (!existsSync(path)) return undefined;
+  return (readJsonFile(path) as { release?: ReleaseGitConfig }).release;
+}
 
 // The three subcommands, in nx's own order, instead of the combined `release()`.
 //
@@ -38,25 +51,27 @@ const dryRun = process.env['RELEASE_DRY_RUN'] === 'true';
 // what nx produced in this very process.
 //
 // The explicit git flags are not decoration: both subcommands refuse to run beside a
-// top-level `release.git` UNLESS gitCommit, gitTag and stageChanges are all passed. They
-// reproduce `nx release` (the CLI) exactly — stage as we go, then commit, tag and push ONCE,
-// at the changelog step.
+// top-level `release.git` UNLESS gitCommit, gitTag and stageChanges are all passed — that is
+// how nx tells the subcommand API apart from the `nx release` CLI, which owns them itself.
 //
-// `stageChanges: true` is the load-bearing one, and it is why the published tarballs were
-// wrong for four releases. nx writes each new version into its package.json, but with
-// nothing staged and nothing committed, the repo's manifests stayed at 0.0.1 forever — and
-// `pnpm publish`, which is what substitutes a `workspace:*` dependency, reads that number
-// off the DISK. Every @fmmenchi/ci published without @fmmenchi/notify in the same run
-// therefore declared `"@fmmenchi/notify": "0.0.1"`, a version that has never existed.
-const gitFlags = { stageChanges: true } as const;
+// They are READ FROM THE CONSUMER'S nx.json, never chosen here. Passing our own values was a
+// real defect, reported from a consumer that deliberately keeps `release.git.commit: false`:
+// a hardcoded `gitCommit: true` overrode it, their rehearsal died with "No changed files to
+// commit", and a real run would have started pushing bump commits to their trunk. A published
+// release script may decide the ORDER of the steps; it may not decide whether somebody else's
+// trunk receives commits.
+// Read straight from nx.json rather than through devkit's `readNxJson`, which takes a
+// generator Tree this process does not have. `readJsonFile` tolerates the comments nx allows.
+const releaseConfig = readReleaseConfig();
+
+const versionGit = gitFlagsFor('version', releaseConfig);
+const changelogGit = gitFlagsFor('changelog', releaseConfig);
 
 const { workspaceVersion, projectsVersionData, releaseGraph } =
   await releaseVersion({
     dryRun,
     verbose: false,
-    ...gitFlags,
-    gitCommit: false, // the changelog step commits, as it does under `nx release`
-    gitTag: false,
+    ...versionGit,
   });
 
 // NOTHING RELEASED — stop here, before the changelog step.
@@ -91,10 +106,7 @@ const { projectChangelogs } = await releaseChangelog({
   verbose: false,
   versionData: projectsVersionData,
   releaseGraph,
-  ...gitFlags,
-  gitCommit: true,
-  gitTag: true,
-  gitPush: true,
+  ...changelogGit,
 });
 
 const records = toReleaseRecords(
