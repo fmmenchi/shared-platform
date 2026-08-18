@@ -36,6 +36,23 @@ pnpm nx test @fmmenchi/ci      # the pure half — tags, release records
   `assertReleaseGroups` fails loudly if nx's shape moved. nx renamed `releaseTagPattern` →
   `releaseTag.pattern` once and carries a `TODO(v24)` for the next move: a silent default there would
   fabricate a package-shaped tag and announce a release nobody cut.
+- **Never decide a git flag for the consumer.** `releaseVersion`/`releaseChangelog` refuse to run
+  beside a top-level `release.git` unless `gitCommit`, `gitTag` and `stageChanges` are passed — that
+  is how nx tells the subcommand API from the `nx release` CLI — so they MUST be passed, and
+  `gitFlagsFor()` reads them out of the consumer's `nx.json`. Hardcoding them shipped a real defect:
+  `gitCommit: true` (right for this workspace) overrode `release.git.commit: false` in a consumer that
+  deliberately keeps its versions in tags only, killing their rehearsal with "No changed files to
+  commit" and, on a real run, pushing bump commits to their trunk. A published release script may
+  decide the ORDER of the steps; it may not decide whether somebody else's trunk receives commits.
+  The defaults copy nx's own derivation from `release.js` (`shouldCommit`/`shouldStage`/`shouldTag`),
+  and the version step NEVER commits or tags however the config reads: one commit and one tag per
+  release, at the end, exactly as the combined command does it.
+- **Why not just call `release()`, then.** It returns `{ workspaceVersion, projectsVersionData,
+releaseGraph }` and nothing else — no `gitTag`, no rendered notes. Those come only from
+  `releaseChangelog`, and they are what the record carries, which is why the SBOM never parses a tag
+  and the announcement never asks GitHub for a changelog it already has. Reading them afterwards does
+  not work either: with `automaticFromRef` the notes are computed from the last tag, and `release()`
+  has just created that tag at HEAD — the answer would be empty.
 - **The manifest on disk is what gets published — keep it true.** `pnpm publish` (not nx) is what
   replaces a `workspace:*` dependency, and it reads the dependency's version from its
   `package.json` ON DISK. So the release must stage and commit the bumps (`stageChanges: true`
