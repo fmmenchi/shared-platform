@@ -6,7 +6,7 @@ name: Docs (reusable)
 #
 #   jobs:
 #     docs:
-#       uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0
+#       uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0.1.2
 #       with:
 #         docs-project: '@myorg/docs'
 #         docs-output: apps/docs/build
@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.1.2
 
       - run: pnpm nx run ${{ inputs.docs-project }}:build
 

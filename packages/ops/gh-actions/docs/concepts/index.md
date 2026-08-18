@@ -66,18 +66,25 @@ is worse than one that fails.
 This is a real nx library (`@fmmenchi/gh-actions`, `scope:ops`, `private` — versioned + tagged, not
 published to npm). `nx release` tags it **automatically** from conventional commits, in its own
 release group, as `gh-actions/v{version}` — **`uses`-safe** (slash-scoped: a leading `@` like the
-`@fmmenchi/*` package tags would clash with the `uses: path@ref` delimiter). The CI release job moves
-the moving-major alias `gh-actions/v0`, which is what consumers pin.
+`@fmmenchi/*` package tags would clash with the `uses: path@ref` delimiter). Consumers pin an exact
+one; **nothing moves a tag**, here or anywhere else in this toolkit.
 
-### The alias moves last, so an action and its targets ship apart
+### Why no moving major tag
 
-The reusable workflows reference the actions by that alias, and the alias only moves **after** the
-release job. For one cycle, therefore, the **old** action runs against the **new** workspace. A merge
-that both moved the Trivy scan targets and taught `trivy-scan` to find them proved it: the tagged
-action still asked for `@fmmenchi/nx-trivy:scan-docker`, which had just stopped existing, and the
-security job failed with `Cannot find configuration for task` until the alias caught up.
+It was tried, and it failed in both ways a thing can fail.
 
-So a change to an action and a change to what it invokes belong in **two** releases — the action
-first, tolerant of both worlds — or you accept one red run and re-run after the release. And note it
-cannot be dodged by pointing the reusable at a local path: GitHub resolves a relative `uses:` against
-the **caller's** checkout, which in a consumer is the consumer's repo.
+Operationally: moving a tag is a force-push, and GitHub refuses a ref push from Actions when the
+target commit's `.github/workflows/` differs from any branch tip — the `GITHUB_TOKEN` is an App token
+and cannot hold the `workflows` permission, which is not even expressible in a workflow's
+`permissions:` block. Every release therefore ended with a red step after a successful release. The
+usual workaround is a long-lived PAT with the `workflow` scope, i.e. a permanent right to rewrite
+this repository's CI, kept in a secret, so that a tag can move.
+
+And by design: a tag that someone can move is a decision about _what code you run_ taken by somebody
+other than you. That is precisely how `tj-actions/changed-files` was compromised in March 2025 —
+existing version tags were rewritten to point at a malicious commit, and 20k repositories ran it
+without changing a line.
+
+So the tags stand still and Dependabot proposes the bumps. The cost is real and worth naming: an
+action and the targets it invokes now ship in two releases, explicitly, with a pin bump in between —
+where the alias used to paper over that with a delay nobody could see.

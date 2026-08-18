@@ -7,7 +7,7 @@ sidebar_position: 2
 # Composite actions
 
 Use any of these as a **step**
-(`uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0`). Run `setup`
+(`uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0.1.2`). Run `setup`
 first — the others shell out to nx.
 
 ---
@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - id: ctx
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/compute-context@gh-actions/v0
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/compute-context@gh-actions/v0.1.2
   release:
     needs: [main, context]
     if: needs.context.outputs.is-release == 'true'

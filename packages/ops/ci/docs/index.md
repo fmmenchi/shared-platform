@@ -23,8 +23,6 @@ own. These scripts wrap the two things it does not give you.
 
 - [Release from CI](./guides/release-from-ci.md) — run `nx release` and hand the newly cut tags to
   the steps that follow.
-- [Keep a moving major alias](./guides/keep-a-major-alias.md) — the `v0` a consumer pins, moved to
-  the latest exact tag.
 
 ## 📚 Reference
 

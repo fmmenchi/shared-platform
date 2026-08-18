@@ -6,7 +6,7 @@ sidebar_position: 1
 
 # Reusable workflows
 
-Call any of these as a **job** (`uses: fmmenchi/shared-platform/.github/workflows/<name>@gh-actions/v0`),
+Call any of these as a **job** (`uses: fmmenchi/shared-platform/.github/workflows/<name>@gh-actions/v0.1.2`),
 with `secrets: inherit`. All expect an nx workspace with the plugins registered in `nx.json`.
 
 ---

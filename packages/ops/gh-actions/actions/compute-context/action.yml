@@ -13,7 +13,7 @@
 #       steps:
 #         - uses: actions/checkout@v7
 #         - id: ctx
-#           uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/compute-context@gh-actions/v0
+#           uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/compute-context@gh-actions/v0.1.2
 #     release:
 #       needs: [main, context]
 #       if: needs.context.outputs.is-release == 'true'

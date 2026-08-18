@@ -35,7 +35,7 @@ which was right by accident and untestable by construction.
 
 ### 3. The logic is separated from the side effects
 
-`isPackageTag`, `formatTag`, `toReleaseRecords`, `assertReleaseGroups` and `majorAlias` take values
+`isPackageTag`, `toReleaseRecords` and `publishableProjects` take values
 and return values. Every `git` call and every
 file write lives in the two scripts.
 

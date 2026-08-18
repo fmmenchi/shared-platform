@@ -200,16 +200,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # nx tags the @fmmenchi/gh-actions toolkit as `gh-actions/v{version}` (its own release
-      # group). Consumers pin the moving major `gh-actions/v1`; nx doesn't maintain that alias,
-      # so move it here. Idempotent: it always points the major at the latest exact tag, whether
-      # or not this run released the toolkit — a no-op when nothing changed.
-      - name: Move the gh-actions major alias
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ALIAS_PREFIX: gh-actions/v
-        run: node packages/ops/ci/dist/move-major-alias.js
-
       # The record crosses the job boundary two ways, because the two consumers need
       # different things: `released` as a job output (a string, cheap, drives the `if:`),
       # and the record itself as an artifact — which is what makes "Re-run failed jobs"
