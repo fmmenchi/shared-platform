@@ -37,7 +37,7 @@ on: # ← the triggers are yours
 
 jobs:
   security:
-    uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@gh-actions/v0
+    uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@gh-actions/v0.1.2
     with:
       alert-on-failure: ${{ github.event_name == 'schedule' }} # alert only on the weekly run
     secrets: inherit # pass SLACK_BOT_TOKEN / SLACK_CHANNEL_ID
@@ -45,12 +45,12 @@ jobs:
 
 ## The four parts
 
-| Part                                   | What it does                                                                    |
-| -------------------------------------- | ------------------------------------------------------------------------------- |
-| `on:`                                  | **Your** triggers — the reusable only has `workflow_call`.                      |
-| `uses: …/x.reusable.yml@gh-actions/v0` | At the **job** level; the whole job becomes the reusable. Pin the moving major. |
-| `with:`                                | The reusable's inputs (see [reference](../reference/workflows.md)).             |
-| `secrets: inherit`                     | Pass all your secrets in one line — or map them explicitly.                     |
+| Part                                       | What it does                                                                     |
+| ------------------------------------------ | -------------------------------------------------------------------------------- |
+| `on:`                                      | **Your** triggers — the reusable only has `workflow_call`.                       |
+| `uses: …/x.reusable.yml@gh-actions/v0.1.2` | At the **job** level; the whole job becomes the reusable. Pin the exact version. |
+| `with:`                                    | The reusable's inputs (see [reference](../reference/workflows.md)).              |
+| `secrets: inherit`                         | Pass all your secrets in one line — or map them explicitly.                      |
 
 ## Docs — same mechanic
 
@@ -61,7 +61,7 @@ on:
 permissions: { contents: read, pages: write, id-token: write }
 jobs:
   docs:
-    uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0
+    uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0.1.2
     with:
       docs-project: '@myorg/docs'
       docs-output: apps/docs/build

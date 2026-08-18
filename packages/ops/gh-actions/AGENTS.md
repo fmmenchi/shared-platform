@@ -42,12 +42,11 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   old `release.reusable.yml` could never be dogfooded here, and never was). Work like that ships as
   bricks plus a documented job; the ordering decision stays with whoever owns the pipeline.
 - **An action and the targets it invokes ship in TWO releases, never one.** The reusable workflows
-  reference the actions by tag (`@gh-actions/v0`), and that alias only moves **after** the release
-  job runs — so for one cycle the OLD action runs against the NEW workspace. Moving the trivy scan
-  targets and updating `trivy-scan` in the same merge did exactly that: the tagged action still asked
-  for `@fmmenchi/nx-trivy:scan-docker`, which had just stopped existing, and the security job died
-  with `Cannot find configuration for task`. Either release the tolerant action first, or expect one
-  red run and re-run after the alias moves.
+  reference the actions by an exact tag, so a released action keeps running until somebody bumps that
+  pin. Moving the trivy scan targets and updating `trivy-scan` in the same merge proved the cost: the
+  tagged action still asked for `@fmmenchi/nx-trivy:scan-docker`, which had just stopped existing, and
+  the security job died with `Cannot find configuration for task`. Release the tolerant action first,
+  then bump the pin.
 - **Dogfooding through the reusable is not dogfooding the action.** `ci.yml` uses the local action
   paths, but `security.yml` calls `security.reusable.yml`, and a reusable workflow cannot use `./`
   (GitHub resolves a relative `uses:` against the CALLER's checkout, which for a consumer is their
@@ -55,12 +54,14 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   exists.
 - **Every composite `run:` step needs `shell: bash`** (composite-action requirement).
 - **`nx`-safe references only.** Actions are referenced by repo path + tag
-  (`fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0`); the reusable
-  workflow by `.github/workflows/security.reusable.yml@gh-actions/v0`. Never `@fmmenchi/…@x.y.z` (the
+  (`fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0.1.2`); the reusable
+  workflow by `.github/workflows/security.reusable.yml@gh-actions/v0.1.2`. Never `@fmmenchi/…@x.y.z` (the
   leading `@` clashes with the `uses:` `path@ref` delimiter).
-- **Versioning is automatic.** `nx release` tags `gh-actions/v{version}` from conventional commits
-  (`feat(gh-actions)`/`fix(gh-actions)`), in its own release group; the CI release job moves the
-  `gh-actions/v0` moving-major alias. Never tag by hand.
+- **Versioning is automatic, and NOTHING MOVES.** `nx release` tags `gh-actions/v{version}` from
+  conventional commits, in its own release group. There is no moving major alias: moving a tag is a
+  force-push that GitHub refuses from Actions (the `GITHUB_TOKEN` cannot hold the `workflows`
+  permission), and a movable tag is how `tj-actions/changed-files` was compromised in 2025. Consumers
+  pin exact tags and Dependabot bumps them. Never tag by hand, never re-point a tag.
 - **Dogfood via local path.** This repo's own `security.yml` / `ci.yml` consume the actions via
   `./packages/ops/gh-actions/actions/…` — what's exported is what's run.
 

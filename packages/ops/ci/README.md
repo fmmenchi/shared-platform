@@ -21,13 +21,13 @@ These scripts wrap the two bits nx doesn't give you:
   really has. It also projects the package tags to `NEW_TAGS_FILE` for the SBOM + announce steps that
   still read them (toolkit tags like `gh-actions/v*` stay out — see `isPackageTag`). The record names
   nothing message-shaped: releasing and announcing are separate operations.
-- **`move-major-alias.js`** — moves a moving-major tag alias (`ALIAS_PREFIX`, default `gh-actions/v`)
-  to the latest exact `<prefix>X.Y.Z`. nx doesn't maintain such aliases; consumers pin them.
+  (There used to be a second script here, `move-major-alias.js`, which force-pushed a moving major tag
+  after each release. It is gone: tags are never moved now — see the toolkit's Versioning section.)
 
 ## API (tested)
 
-`isPackageTag` / `newTags` (tag classification + diff) and `majorAlias` (semver-ordered alias target)
-are the pure, unit-tested pieces behind the scripts.
+`isPackageTag`, `toReleaseRecords` and `publishableProjects` are the pure, unit-tested pieces behind
+the script.
 
 Message _building_ is **not** here: `fmmenchi-notify` is only the CI door to
 [`@fmmenchi/notify`](../../shared/notify), which stays the single implementation.

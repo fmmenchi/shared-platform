@@ -67,5 +67,4 @@ a broken release script.
 
 ## Next steps
 
-- [Keep a moving major alias](./keep-a-major-alias.md).
 - [Scripts and API](../reference/scripts.md).

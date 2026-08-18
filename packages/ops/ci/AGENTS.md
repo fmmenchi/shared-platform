@@ -10,7 +10,7 @@ them into it.
 ```bash
 pnpm nx typecheck @fmmenchi/ci
 pnpm nx build @fmmenchi/ci
-pnpm nx test @fmmenchi/ci      # the pure half — tags, alias
+pnpm nx test @fmmenchi/ci      # the pure half — tags, release records
 ```
 
 ## Rules
@@ -24,12 +24,11 @@ pnpm nx test @fmmenchi/ci      # the pure half — tags, alias
   not exist and fails on a package nobody released. It replaced a `*@*` glob that was right by
   accident and untestable by construction — do not put the glob back.
 - **The logic stays separate from the side effects.** `isPackageTag`, `formatTag`,
-  `toReleaseRecords`, `assertReleaseGroups` and `majorAlias`
-  take arrays and return values; every `git` call and file write lives in the two scripts. That
+  `toReleaseRecords` and `publishableProjects`
+  take values and return values; every `git` call and file write lives in the two scripts. That
   split is the whole reason there are tests, and the interesting failures are all in the pure half —
   a lexical sort putting `v0.9.0` above `v0.10.0`, a glob matching a toolkit tag — none of which
   needs a repository to reproduce. A new behaviour goes in a pure function first.
-- **`majorAlias` orders by SEMVER, never lexically.** This is the bug the function exists to prevent.
 - **Ask nx, then check nx.** The release facts come from `release()` (`nx/release`) — project,
   version, and each group's own tag pattern — never from a git-tag diff. But the tag is FORMED by
   code that mirrors logic living inside nx (`sanitizeProjectNameForGitTag` + interpolation), so it is
@@ -52,8 +51,11 @@ pnpm nx test @fmmenchi/ci      # the pure half — tags, alias
 - **The release job is `skipped`, not `failed`, when the gate is red** — that is a property of the
   workflow, not of this package, and it is the first thing to check when "the release stopped
   working". No tags, no releases, no publish, and no error anywhere.
+- **No tag is ever moved.** The script that force-pushed a moving major alias is gone: GitHub
+  refuses that push from Actions (the `GITHUB_TOKEN` cannot hold the `workflows` permission), and a
+  movable tag is how `tj-actions/changed-files` was compromised in 2025. Consumers pin exact tags.
 - **A local tag is not the remote tag.** `git fetch` does not update a tag that already exists
-  locally, so a stale local alias looks exactly like a broken script. Diagnose with
+  locally, so a stale local one looks exactly like a broken script. Diagnose with
   `git ls-remote --tags origin` before reading any code here.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

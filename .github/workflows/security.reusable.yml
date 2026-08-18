@@ -5,7 +5,7 @@ name: Security (reusable)
 #
 #   jobs:
 #     security:
-#       uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@gh-actions/v0
+#       uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@gh-actions/v0.1.2
 #       secrets: inherit
 #
 # The caller owns the triggers (dep-change paths + a weekly schedule is the recommended pair)
@@ -56,10 +56,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.1.2
 
       - name: Scan
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0.1.2
         with:
           secret-scan: ${{ inputs.secret-scan }}
           cache-db: ${{ inputs.cache-db }}
@@ -68,7 +68,7 @@ jobs:
       # here has to know which of your projects hosts a notification target.
       - name: Alert Slack on findings
         if: ${{ failure() && inputs.alert-on-failure }}
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0.1.2
         with:
           kind: error
           app: ${{ inputs.app-name || github.event.repository.name }}

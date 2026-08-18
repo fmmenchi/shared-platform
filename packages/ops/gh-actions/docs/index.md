@@ -11,7 +11,7 @@ A **reusable CI toolkit** for `@fmmenchi` consumers — turnkey GitHub Actions *
 plugins and packages (`@fmmenchi/nx-trivy`, `@fmmenchi/ci`, `@fmmenchi/notify`); these are the thin, versioned glue that
 wires them into CI, so there's one source of truth.
 
-Pin everything to the moving major tag **`@gh-actions/v0`**.
+Pin everything to an **exact** tag — `@gh-actions/v0.1.2`. No tag is ever moved; Dependabot opens the bump PRs.
 
 ## Prerequisites
 

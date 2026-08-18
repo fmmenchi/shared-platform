@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.1.2
 ```
 
 `setup` is pnpm + Node + a frozen install; pass `registry-url` on a job that publishes.
@@ -32,14 +32,14 @@ jobs:
 
 ```yaml
 # vuln + secret scan with a per-day-cached DB
-- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0
+- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0.1.2
 
 # after a release: both read the SAME record, and neither parses a tag
-- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
+- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0.1.2
   with:
     result-file: ${{ steps.release.outputs.result-file }}
     github-token: ${{ secrets.GITHUB_TOKEN }}
-- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
+- uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0.1.2
   with:
     result-file: ${{ steps.release.outputs.result-file }}
     bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 } # nx release reads the tag history
 
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.1.2
         with: { registry-url: 'https://npm.pkg.github.com' }
 
       - name: Configure git author
@@ -86,18 +86,18 @@ jobs:
       # asked of nx rather than deduced from a git-tag diff.
       - name: Release
         id: release
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/release@gh-actions/v0
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/release@gh-actions/v0.1.2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/attach-sbom@gh-actions/v0.1.2
         with:
           result-file: ${{ steps.release.outputs.result-file }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # A Release created with GITHUB_TOKEN does not trigger other workflows, so a
       # `release: published` listener would never fire — announce from here.
-      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0.1.2
         with:
           result-file: ${{ steps.release.outputs.result-file }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
