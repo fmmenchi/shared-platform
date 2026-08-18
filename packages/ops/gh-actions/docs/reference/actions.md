@@ -10,6 +10,21 @@ Use any of these as a **step**
 (`uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/<name>@gh-actions/v0.1.2`). Run `setup`
 first — the others shell out to nx.
 
+## What each one needs granted
+
+A `permissions:` block on a job **replaces** the workflow-level one rather than merging with it, so a
+job that declares `contents: write` and nothing else has lost `packages: write` — which is a publish
+that 403s after the tags are already pushed. Declare the whole set the job's bricks need:
+
+| Brick             | Permissions                          | Why                                           |
+| :---------------- | :----------------------------------- | :-------------------------------------------- |
+| `compute-context` | none                                 | Reads `github.*`, calls nothing.              |
+| `setup`           | `contents: read`                     | The checkout it runs against.                 |
+| `trivy-scan`      | `contents: read`                     | Scans the checkout; the cache needs no scope. |
+| `release`         | `contents: write`, `packages: write` | Tags + GitHub Releases; publishing.           |
+| `attach-sbom`     | `contents: write`                    | Uploads a Release asset.                      |
+| `notify`          | none                                 | Slack secrets only — nothing at GitHub.       |
+
 ---
 
 ## `compute-context`
@@ -86,10 +101,29 @@ command runs in a consumer and in the repo that publishes it.
 | :------------ | :--------------------------------------------------------- |
 | `result-file` | Path to the record — what the SBOM and notify bricks read. |
 | `released`    | How many projects were released (`0` when nothing was).    |
+| `version`     | The version, when exactly one project was released.        |
+| `tag`         | The tag, on the same terms.                                |
 | `tags-file`   | Transitional: the released package tags, one per line.     |
 
-**It does not gate itself.** Sequencing the release after your checks stays in your job graph —
-`needs:` — because only the caller can express it.
+**Use `version`/`tag` instead of `git describe`.** A downstream job that re-derives the version from
+git needs `fetch-depth: 0`, a tag glob, and still answers with the PREVIOUS release on a push that
+released nothing — it cannot tell "just released 1.4.0" from "released nothing, and 1.4.0 is what
+was there before". These outputs come from what nx returned. They are empty when zero or many
+projects were released: a monorepo has no single version, and the record is the honest answer there.
+
+**Gate what follows on `released`**, or a run that released nothing still deploys, announces and
+uploads:
+
+```yaml
+deploy:
+  needs: [release]
+  if: needs.release.outputs.released != '0'
+  steps:
+    - run: echo "shipping ${{ needs.release.outputs.version }}"
+```
+
+**It does not gate ITSELF**, though. Sequencing the release after your checks stays in your job
+graph — `needs:` — because only the caller can express it.
 
 ## `attach-sbom`
 

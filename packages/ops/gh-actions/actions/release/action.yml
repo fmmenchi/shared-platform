@@ -21,6 +21,15 @@ outputs:
   released:
     description: How many projects were released (0 when nothing was).
     value: ${{ steps.run.outputs.released }}
+  version:
+    description: >-
+      The released version, when exactly one project was released — the single-project case,
+      where a caller would otherwise re-derive it with `git describe`. Empty for zero or many:
+      a monorepo has no single version, and must read the record.
+    value: ${{ steps.run.outputs.version }}
+  tag:
+    description: The released tag, on the same terms as `version`.
+    value: ${{ steps.run.outputs.tag }}
   tags-file:
     description: Transitional — the released package tags, one per line.
     value: ${{ steps.run.outputs.tags-file }}
@@ -56,10 +65,25 @@ runs:
           exit 1
         fi
         node "$entry"
-        released=$(node -p "JSON.parse(require('fs').readFileSync(process.env.RELEASE_RESULT_FILE,'utf8')).releases.length")
+        # `version` and `tag` are the outputs that stop a caller re-deriving what this step
+        # already knows. Without them a deploy job reaches for `git describe`, which needs a
+        # full-history checkout, a tag glob, and answers with the PREVIOUS tag on a push that
+        # released nothing — a real bug, found in a consumer.
+        #
+        # Single release only: with many, there is no such thing as "the" version, and the
+        # honest answer is empty plus a record to read.
+        outputs=$(node -p "
+          const r = JSON.parse(require('fs').readFileSync(process.env.RELEASE_RESULT_FILE, 'utf8')).releases;
+          const only = r.length === 1 ? r[0] : {};
+          ['released=' + r.length, 'version=' + (only.version ?? ''), 'tag=' + (only.tag ?? '')].join('\n');
+        ")
         {
           echo "result-file=$RELEASE_RESULT_FILE"
           echo "tags-file=$NEW_TAGS_FILE"
-          echo "released=$released"
+          echo "$outputs"
         } >> "$GITHUB_OUTPUT"
-        echo "Released $released project(s)."
+        # Repeated in the log because $GITHUB_OUTPUT is invisible from here, and this line is
+        # what a human reads when asking why the job below skipped. Derived from the same
+        # string that was written, not recomputed: a log that can disagree with the gate is
+        # worse than no log.
+        echo "Released $(echo "$outputs" | sed -n 's/^released=//p') project(s)."
