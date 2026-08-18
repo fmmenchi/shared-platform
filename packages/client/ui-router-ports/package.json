@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/ui-router-ports",
-  "version": "0.0.1",
+  "version": "0.0.36",
   "private": false,
   "type": "module",
   "exports": {

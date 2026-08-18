@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/analytics",
-  "version": "0.0.1",
+  "version": "0.0.9",
   "description": "Provider-agnostic, cookieless web analytics — one track()/pageview() API over Umami / Plausible / Cloudflare, resolved from env, no-op by default. Framework-agnostic, isomorphic, no dependencies.",
   "license": "UNLICENSED",
   "repository": {

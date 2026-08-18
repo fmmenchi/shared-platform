@@ -76,13 +76,17 @@
       "pattern": "{projectName}@{version}"
     },
     "git": {
-      "commit": false,
-      "stageChanges": false,
+      "commit": true,
+      "commitMessage": "chore(release): publish versions [skip ci]",
+      "stageChanges": true,
       "tag": true,
       "push": true
     },
     "version": {
       "conventionalCommits": true,
+      "versionActionsOptions": {
+        "skipLockFileUpdate": true
+      },
       "preVersionCommand": "pnpm nx run-many -t build",
       "fallbackCurrentVersionResolver": "disk"
     },
