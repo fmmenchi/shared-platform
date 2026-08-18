@@ -1,3 +1,21 @@
+## 0.4.0 (2026-08-18)
+
+### 🚀 Features
+
+- **notify:** a failure notification that asks what broke, and can carry the report ([2c599f7](https://github.com/fmmenchi/shared-platform/commit/2c599f7))
+
+### 🩹 Fixes
+
+- ⚠️  **gh-actions:** no reusable workflows — the platform puts them where nothing owns them ([07c0b9e](https://github.com/fmmenchi/shared-platform/commit/07c0b9e))
+
+### ⚠️  Breaking Changes
+
+- **gh-actions:** no reusable workflows — the platform puts them where nothing owns them  ([07c0b9e](https://github.com/fmmenchi/shared-platform/commit/07c0b9e))
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.3.1 (2026-08-18)
 
 ### 🚀 Features
