@@ -1,18 +1,16 @@
+# Deploy the docs site to GitHub Pages on every push to main.
+#
+# TWO SITES, ONE DEPLOY: Docusaurus at the root and the Storybook under /storybook/.
+# Pages allows exactly one deployment per repo, so they cannot be separate workflows —
+# the second would silently replace the first. That constraint is the only non-obvious
+# thing here, which is why this job is written out rather than hidden behind a reusable
+# workflow: every step below is GitHub's own Pages boilerplate with an `nx run` in the
+# middle, and none of it is @fmmenchi logic worth centralising.
 name: Docs
 
-# Deploy the documentation site (apps/docusaurus, serving its co-located docs/) WITH the
-# component Storybook under /storybook/ to GitHub Pages, on every push to main that touches
-# the site, a package's docs, or the design system. Dogfoods the reusable docs workflow.
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'apps/docusaurus/**'
-      - 'packages/**/docs/**'
-      - 'packages/client/**'
-      - '.github/workflows/docs.yml'
-      - '.github/workflows/docs.reusable.yml'
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -20,11 +18,45 @@ permissions:
   pages: write
   id-token: write
 
+# One deploy at a time; let an in-flight deploy finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  HUSKY: 0
+
 jobs:
-  docs:
-    uses: ./.github/workflows/docs.reusable.yml
-    with:
-      docs-project: '@fmmenchi/docs'
-      docs-output: apps/docusaurus/build
-      storybook-project: '@fmmenchi/ui'
-      storybook-static: packages/client/ui/storybook-static
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./packages/ops/gh-actions/actions/setup
+
+      - run: pnpm nx run @fmmenchi/docs:build
+
+      # The Storybook rides along under /storybook/ — its static build uses relative asset
+      # paths, so any subpath works.
+      - name: Build the Storybook under /storybook/
+        run: |
+          pnpm nx run @fmmenchi/ui:build-storybook
+          cp -r packages/client/ui/storybook-static apps/docusaurus/build/storybook
+
+      - uses: actions/configure-pages@v6
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: apps/docusaurus/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
