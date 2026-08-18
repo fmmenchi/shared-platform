@@ -1,7 +1,7 @@
 {
   "name": "@fmmenchi/nx-ui",
-  "version": "0.0.13",
-  "description": "Nx generators for developing the @fmmenchi/ui design system \u2014 scaffold a component with the full archetype (component/types/variants/css/stories/mdx/tests) and wire its exports.",
+  "version": "0.0.14",
+  "description": "Nx generators for developing the @fmmenchi/ui design system — scaffold a component with the full archetype (component/types/variants/css/stories/mdx/tests) and wire its exports.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -52,7 +52,7 @@
       "nx-release-publish": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "echo \"skip npm publish \u2014 internal DS tooling (versioned + tagged only)\""
+          "command": "echo \"skip npm publish — internal DS tooling (versioned + tagged only)\""
         }
       }
     },

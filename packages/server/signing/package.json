@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/signing",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Framework-agnostic HMAC signing — sign a value into an opaque, tamper-proof, optionally-expiring token and verify it back. Web Crypto only (Node / edge / worker), no dependencies.",
   "license": "UNLICENSED",
   "repository": {
