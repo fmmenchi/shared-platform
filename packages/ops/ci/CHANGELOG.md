@@ -1,3 +1,17 @@
+## 0.1.0 (2026-08-18)
+
+### 🩹 Fixes
+
+- ⚠️  **ci:** the git flags belong to the consumer, not to this script ([98eab35](https://github.com/fmmenchi/shared-platform/commit/98eab35))
+
+### ⚠️  Breaking Changes
+
+- **ci:** the git flags belong to the consumer, not to this script  ([98eab35](https://github.com/fmmenchi/shared-platform/commit/98eab35))
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.19 (2026-08-18)
 
 ### 🚀 Features
