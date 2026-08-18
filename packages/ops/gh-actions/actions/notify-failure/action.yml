@@ -1,0 +1,59 @@
+name: Notify failure
+description: >-
+  Ask GitHub what failed in this run — which jobs, which steps — and send it to Slack, with
+  optional files attached. Put it after the work, gated on `failure()`.
+
+inputs:
+  github-token:
+    description: >-
+      Token used to read the run's jobs. Needs `actions: read`. Without it the API answers 404
+      on a private repo, which would read as "nothing failed" — so this brick fails instead.
+    required: true
+  bot-token:
+    description: Slack bot token (`chat:write`, plus `files:write` when attaching files).
+    required: false
+    default: ''
+  channel-id:
+    description: Slack channel ID. Absent (with bot-token) → skips green, loudly.
+    required: false
+    default: ''
+  app:
+    description: What the message is about. Defaults to the repository name.
+    required: false
+    default: ''
+  attachments:
+    description: >-
+      Files to attach, one path per line. A path that does not exist FAILS the step after the
+      message is sent: a report nobody received is not a detail. Blank lines are ignored.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        SLACK_BOT_TOKEN: ${{ inputs.bot-token }}
+        SLACK_CHANNEL_ID: ${{ inputs.channel-id }}
+        NOTIFY_APP: ${{ inputs.app }}
+        ATTACHMENTS: ${{ inputs.attachments }}
+      run: |
+        entry=$(node -p "require.resolve('@fmmenchi/ci/notify')") || entry=''
+        # Checked, because `node ""` exits 0 doing nothing — which once made a notify step
+        # report success while sending nothing at all. Measured, not supposed.
+        if [ -z "$entry" ]; then
+          echo "::error::cannot resolve @fmmenchi/ci/notify — is @fmmenchi/ci installed (and built, if it is a source project here)?"
+          exit 1
+        fi
+
+        # One --attach= per non-empty line. Built as an array so a path with spaces survives,
+        # and skipped entirely when the input is blank — `--attach=` with nothing after it
+        # would ask the transport to send a file called "".
+        args=()
+        while IFS= read -r path; do
+          [ -n "$path" ] || continue
+          args+=("--attach=$path")
+        done <<< "$ATTACHMENTS"
+
+        node "$entry" --fromRun "${args[@]}"

@@ -6,54 +6,56 @@ sidebar_position: 1
 
 # Reusable workflows
 
-Call any of these as a **job** (`uses: fmmenchi/shared-platform/.github/workflows/<name>@gh-actions/v0.1.2`),
-with `secrets: inherit`. All expect an nx workspace with the plugins registered in `nx.json`.
+**This toolkit has none.** All three it once shipped were removed, each after a specific failure, and
+the reasons are kept here because "why is there no turnkey workflow?" is the first thing a consumer
+asks.
+
+What it ships instead: [composite actions](./actions.md), wired into
+[a job you own](../guides/compose-bricks.md).
 
 ---
 
-## `security.reusable.yml`
+## The structural reason, found last
 
-Vulnerability + secret scan (via `@fmmenchi/nx-trivy`, docker runner, per-day-cached DB), with an
-optional Slack alert.
+GitHub discovers a reusable workflow **only** under `.github/workflows/`. A file there belongs to no
+nx project — so `nx release` never sees it change. Measured: a commit touching only
+`security.reusable.yml`, typed `fix(gh-actions)`, leaves nx reporting _"No changes were detected"_.
+Nothing released it and no target checked it.
 
-### Inputs
+The consequences were not hypothetical. Its internal `uses:` pins sat at `@gh-actions/v0.1.2` while
+the toolkit shipped `v0.3.1` — two minors of drift, invisible. It declared `contents: read` and not
+`packages: read`, so a consumer whose lockfile holds `@fmmenchi/*` got a 401 from the install. And
+those pins **cannot** be made relative: `./` inside a called workflow resolves against the
+_caller's_ checkout, not ours.
 
-| Input              | Type    | Default       | Description                                                                       |
-| :----------------- | :------ | :------------ | :-------------------------------------------------------------------------------- |
-| `secret-scan`      | boolean | `true`        | Also run the secret scan after the vulnerability scan.                            |
-| `alert-on-failure` | boolean | `false`       | Post a Slack alert if the scan fails. Gate it yourself (e.g. only on `schedule`). |
-| `app-name`         | string  | the repo name | Name used in the Slack alert.                                                     |
+A composite action has none of these problems: it lives in the project, so changing it releases the
+toolkit and every gate runs over it.
 
-### Secrets
+## `security` — removed
 
-`SLACK_BOT_TOKEN`, `SLACK_CHANNEL_ID` (both optional — absent → the alert skips green).
+It was four steps: checkout, `setup`, `trivy-scan`, and a Slack alert on failure. The first consumer
+to read it declined it and wired the bricks by hand, which is the clearest verdict a turnkey
+convenience can get. It is now [a guide](../guides/run-a-security-scan.md) with the job to copy.
 
----
+## `docs` — removed
 
-## Release — there isn't one, on purpose
+It **carried nothing of ours**: `checkout`, `setup`, an `nx run`, a `cp`, and three
+`actions/*-pages` steps — GitHub's own boilerplate with a build in the middle. A reusable workflow is
+worth a pin when it holds logic you should not reimplement; that one held a Node version, a registry
+and two target names, all of which are yours. Now [a guide](../guides/deploy-a-docs-site.md), which
+also carries the part that was actually worth sharing: **Pages allows exactly one deployment per
+repository**, so a docs site and a Storybook cannot be two workflows.
 
-Releasing is **bricks only**: see [compose the bricks](../guides/compose-bricks.md#the-release-job).
-Two reasons, and the second is the one that settles it.
+## `release` — never possible
 
-A release must run **after** your checks, and a called workflow cannot require that of its caller —
-GitHub can express the ordering (`needs:` in your job graph, `workflow_run`, an approval
-`environment`), but only the caller can express it. A turnkey release would therefore hide the one
-decision that is genuinely yours, and enforce none of it.
+Two reasons, and the second settles it.
 
-And it could never be dogfooded. Such a workflow has to run the release script from **somewhere**,
-and where that is depends on how the repo is built: in a consumer it is
-`node_modules/@fmmenchi/ci/dist/release.js`, while in shared-platform `@fmmenchi/ci` is a source
-project with no `node_modules/@fmmenchi` at all. A brick we cannot run here is a brick we cannot
-promise you — which is exactly what the old `release.reusable.yml` was, until it was removed.
+A release must run **after** your checks, and a called workflow cannot require that of its caller.
+GitHub can express the ordering — `needs:`, `workflow_run`, an approval `environment` — but only the
+caller can write it. A turnkey release would hide the one decision that is genuinely yours and
+enforce none of it.
 
----
-
-## Docs — there isn't one either
-
-Deploying a docs site to Pages is [a job you own](../guides/deploy-a-docs-site.md).
-
-The release workflow above was removed because it could not be dogfooded. This one was removed for a
-simpler reason: **it carried nothing of ours**. Its steps were `checkout`, `setup`, `nx run`, `cp`,
-and three `actions/*-pages` steps — GitHub's own boilerplate with a build in the middle. A reusable
-workflow is worth a pin when it holds logic you should not reimplement; that one held a Node version,
-a registry and two target names, all of which are yours.
+And it could never be dogfooded. It has to run the release script from **somewhere**, and where that
+is depends on how the repo is built: `node_modules/@fmmenchi/ci/…` in a consumer, but a source
+project in `shared-platform`, which has no `node_modules/@fmmenchi` at all. A brick we cannot run
+here is a brick we cannot promise you. It is [bricks in a job you own](../guides/compose-bricks.md#the-release-job).

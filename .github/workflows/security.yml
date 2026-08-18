@@ -1,10 +1,22 @@
 name: Security
 
-# A vulnerability scan is not a test. A test goes red because the CODE changed; a scan goes
-# red because the WORLD changed — a CVE was published against a dependency nobody touched.
-# So it runs on two triggers: when the dependencies change (that is when WE introduce
-# something), and every Monday (that is when the world does). This repo consumes its own
-# reusable security workflow exactly like an external @fmmenchi consumer would — see ADR-0007.
+# THIS half is the one that catches what WE introduce: it runs when the dependencies change.
+# The other half — the world changing under an untouched dependency — is `weekly-audit.yml`,
+# and they are separate files because they want different settings, not out of tidiness: the
+# weekly one turns the DB cache OFF (a restored copy has always expired by then) and alerts to
+# Slack, while this one wants the cache ON and needs no alert, because a PR already shows a red
+# check. One file could not express both without an `if:` on every line that differs.
+#
+# See ADR-0007 for why the scan is a workspace-level concern rather than a per-project one.
+#
+# The steps are the toolkit's own bricks, wired here. There used to be a
+# `security.reusable.yml` that this file called in one line, and it was deleted: GitHub only
+# runs a reusable workflow from `.github/workflows/`, where a file belongs to no nx project —
+# so changing it released nothing (measured: nx reports "No changes were detected" even for a
+# `fix(gh-actions)` commit) and no target checked it. Its internal action pins sat at v0.1.2
+# while the toolkit shipped v0.3.1, it was missing `packages: read`, and the first consumer to
+# read it declined it and wired the bricks by hand. Four steps are not worth a file that
+# nothing can release, test, or keep honest.
 on:
   pull_request:
     paths:
@@ -17,19 +29,28 @@ on:
       - 'pnpm-lock.yaml'
       - '**/package.json'
       - 'packages/plugins/trivy/**'
-  schedule:
-    - cron: '0 6 * * 1' # weekly audit — Monday 06:00 UTC
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# A CI install must not run git hooks — the reusable workflow this file used to call carried
+# this, and inlining it would have quietly dropped it.
+env:
+  HUSKY: 0
+
 jobs:
-  # Dogfood the turnkey pipeline (the reusable, not just the bricks). The caller owns the
-  # triggers above and the gating: alert only on the weekly run (a PR already shows a red check).
-  security:
-    uses: ./.github/workflows/security.reusable.yml
-    with:
-      app-name: shared-platform
-      alert-on-failure: ${{ github.event_name == 'schedule' }}
-    secrets: inherit
+  scan:
+    name: Vulnerabilities & secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./packages/ops/gh-actions/actions/setup
+
+      # cache-db stays on: this repo also scans on every dependency change, so the DB is fresh
+      # enough to be worth restoring. A weekly-only consumer should pass `cache-db: false`.
+      - uses: ./packages/ops/gh-actions/actions/trivy-scan
+
+      # No Slack here on purpose: a failed check on the PR is already the signal, and a
+      # second one for the same fact is how people learn to ignore both.

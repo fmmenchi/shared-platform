@@ -1,7 +1,12 @@
 import { errorNotification, releaseNotification } from './notification.js';
-import type { Notification } from './notification.types.js';
+import type { Attachment, Notification } from './notification.types.js';
 import type { Transport } from './transport.types.js';
-import type { Delivery, NotifyEvent } from './event.types.js';
+import type {
+  Delivery,
+  ErrorEvent,
+  NotifyEvent,
+  RunFailures,
+} from './event.types.js';
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -27,6 +32,29 @@ const requireString = (
  * option nx swallowed, an env var never set. A missing field is a broken caller, and a
  * broken caller must hear about it.
  */
+/**
+ * Attachments are validated like everything else — a `path` that is not a string is a broken
+ * caller. Nothing is read from disk here: whether the file EXISTS is the transport's problem,
+ * and failing at parse time would make a report that appears mid-run impossible to attach.
+ */
+function parseAttachments(raw: unknown[], index: number): Attachment[] {
+  return raw.map((entry, position) => {
+    if (!isObject(entry)) {
+      throw new Error(
+        `notify: event ${index} attachment ${position} is not an object.`,
+      );
+    }
+    return {
+      path: requireString(
+        entry['path'],
+        `attachments[${position}].path`,
+        index,
+      ),
+      ...(typeof entry['title'] === 'string' ? { title: entry['title'] } : {}),
+    };
+  });
+}
+
 export function parseEvents(input: unknown): NotifyEvent[] {
   const list = Array.isArray(input) ? input : [input];
   return list.map((raw, index) => {
@@ -49,6 +77,10 @@ export function parseEvents(input: unknown): NotifyEvent[] {
         app,
         message: requireString(raw['message'], 'message', index),
         ...(typeof raw['url'] === 'string' ? { url: raw['url'] } : {}),
+        ...(typeof raw['body'] === 'string' ? { body: raw['body'] } : {}),
+        ...(Array.isArray(raw['attachments'])
+          ? { attachments: parseAttachments(raw['attachments'], index) }
+          : {}),
       };
     }
     throw new Error(
@@ -66,7 +98,10 @@ export function toNotification(event: NotifyEvent): Notification {
         event.url ?? '',
         event.body ? { body: event.body } : undefined,
       )
-    : errorNotification(event.app, event.message, event.url ?? '');
+    : errorNotification(event.app, event.message, event.url ?? '', {
+        ...(event.body ? { body: event.body } : {}),
+        ...(event.attachments ? { attachments: event.attachments } : {}),
+      });
 }
 
 /**
@@ -141,4 +176,42 @@ export function eventsFromReleases(
       : {}),
     ...(notes ? { body: notes } : {}),
   }));
+}
+
+/**
+ * One event describing everything that failed in a workflow run.
+ *
+ * A step and a job are BOTH inspected, and that is not belt-and-braces. Used from a separate
+ * job (`needs:` + `if: failure()`) the failed jobs have concluded, so `job.conclusion` is the
+ * signal; used from the SAME job as the thing that broke — a weekly audit alerting on its own
+ * scan — that job is still `in_progress` while its failed step has already concluded. Reading
+ * only one of the two would work in exactly one of the two shapes, and the other would send a
+ * message naming nothing.
+ *
+ * Returns null when nothing failed. The caller must not treat that as success: it was invoked
+ * because something went red, so an empty answer means the view is wrong (a token without
+ * `actions: read`, a job not visible yet) and saying nothing would hide that twice over.
+ */
+export function eventFromRunFailures(failures: RunFailures): ErrorEvent | null {
+  const failed = failures.jobs.flatMap((job) => {
+    const steps = (job.steps ?? [])
+      .filter((step) => step.conclusion === 'failure')
+      .map((step) => step.name);
+    if (job.conclusion !== 'failure' && steps.length === 0) return [];
+    return [{ job: job.name, steps }];
+  });
+
+  if (failed.length === 0) return null;
+
+  const lines = failed.map(({ job, steps }) =>
+    steps.length > 0 ? `• ${job} › ${steps.join(', ')}` : `• ${job}`,
+  );
+
+  return {
+    kind: 'error',
+    app: failures.app,
+    message: `${failures.workflow ?? 'Workflow'} failed — ${failed.length} job(s)`,
+    body: lines.join('\n'),
+    url: failures.url,
+  };
 }

@@ -6,12 +6,15 @@ sidebar_position: 0
 
 # @fmmenchi/gh-actions
 
-A **reusable CI toolkit** for `@fmmenchi` consumers — turnkey GitHub Actions **reusable workflows**
-(security, release, docs) plus the **composite actions** they're built from. The logic lives in the
-plugins and packages (`@fmmenchi/nx-trivy`, `@fmmenchi/ci`, `@fmmenchi/notify`); these are the thin, versioned glue that
-wires them into CI, so there's one source of truth.
+A **reusable CI toolkit** for `@fmmenchi` consumers: **composite actions** — bricks — that you wire
+into jobs you own. The logic lives in the plugins and packages (`@fmmenchi/nx-trivy`,
+`@fmmenchi/ci`, `@fmmenchi/notify`); these are the thin, versioned glue that wires them into CI, so
+there's one source of truth.
 
-Pin everything to an **exact** tag — `@gh-actions/v0.1.2`. No tag is ever moved; Dependabot opens the bump PRs.
+There are **no reusable workflows**. All three that once shipped were removed —
+[why](./reference/workflows.md), and it is worth two minutes before you ask for one back.
+
+Pin everything to an **exact** tag — `@gh-actions/v0.3.1`. No tag is ever moved; Dependabot opens the bump PRs.
 
 ## Prerequisites
 
@@ -25,13 +28,14 @@ Pin everything to an **exact** tag — `@gh-actions/v0.1.2`. No tag is ever move
 
 ## 🚀 Guides
 
-- [Reuse a whole workflow](./guides/reuse-a-workflow.md) — call `security`/`docs` in one line; release is bricks.
-- [Compose the building blocks](./guides/compose-bricks.md) — weave the composite actions into your own job.
+- [Run a security scan](./guides/run-a-security-scan.md) — vuln + secret scan, four steps.
+- [Compose the building blocks](./guides/compose-bricks.md) — the release job, from bricks.
+- [Deploy a docs site](./guides/deploy-a-docs-site.md) — GitHub Pages, with the one-deployment trap.
 
 ## 📚 Reference
 
-- [Reusable workflows](./reference/workflows.md) — `security`/`docs`, with every input (and why release is not one).
-- [Composite actions](./reference/actions.md) — the five bricks, with every input.
+- [Composite actions](./reference/actions.md) — the six bricks, with every input.
+- [Reusable workflows](./reference/workflows.md) — there are none, and what each removal cost.
 
 ## 🏗 Concepts
 

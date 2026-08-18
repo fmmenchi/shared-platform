@@ -11,26 +11,39 @@ sidebar_position: 3
 GitHub gives two native mechanisms, with opposite ergonomics — this toolkit ships both:
 
 - **Reusable workflow** (`*.reusable.yml`, `on: workflow_call`) — a whole **job**, called with
-  `uses:` at the job level. Turnkey: you get checkout + setup + scan (or a docs deploy) in one line.
-  You own the triggers; you can't add steps to that job.
+  `uses:` at the job level — a whole job you cannot add steps to. **This toolkit ships none**, for the
+  reason below; the concept matters only so the reason makes sense.
 - **Composite action** (a "brick", under `actions/`) — a block of **steps**, used with `uses:` at
-  the step level inside your own job. Compose them by hand when the turnkey workflow isn't enough.
+  the step level inside your own job. This is the whole toolkit: one brick per verb, composed by you.
 
 A reusable workflow has **no triggers of its own**, so it can't run alone — it only runs when called.
 That's why a consumer keeps a plain workflow (with `on: push/pull_request/schedule`) that either
 calls a reusable workflow or wires the bricks directly.
 
-### Which of the two, and why release is bricks
+### Why nothing here is a reusable workflow
 
-A job earns a **reusable workflow** when it is _self-contained_ (nothing about it is ordered against
-your other jobs) and _parametric_ (everything repo-shaped is an input). `security` is both: a scan
-depends on no build of yours, and everything it varies is an input.
+A job would earn a **reusable workflow** by being _self-contained_ (nothing about it is ordered
+against your other jobs) and _parametric_ (everything repo-shaped is an input). Three candidates were
+tried and all three are gone — the reasons are worth more than the convenience was.
 
-A docs site looked like it qualified and did not, which is the sharpest test of the rule here. GitHub
-Pages allows exactly **one** deployment per repository, so a site is ordered against everything else
-you publish — and once the build command, the artifact path and the environment are all inputs, what
-is left to call is a wrapper around three standard actions. It ships as
-[a documented job](../guides/deploy-a-docs-site.md) instead.
+`docs` looked like it qualified and did not: GitHub Pages allows exactly **one** deployment per
+repository, so a site is ordered against everything else you publish; and once the build command, the
+artifact path and the environment are all inputs, what is left to call is a wrapper around three
+standard actions.
+
+`security` genuinely qualified on those two tests, and was still removed — for a reason that has
+nothing to do with the job and everything to do with **where GitHub makes you keep the file**.
+Reusable workflows are discovered only under `.github/workflows/`, and a file there belongs to no nx
+project: `nx release` never sees it change (measured — a `fix(gh-actions)` commit touching only that
+file leaves nx reporting "No changes were detected"), and no target ever runs over it. It had no
+owner, so it rotted where everyone could see it: internal pins two minors behind, a missing
+`packages: read` that 401'd a consumer's install, and — the verdict — the first consumer to read it
+declined it and wired the four steps by hand.
+
+That generalises into the rule this toolkit now follows: **nothing that ships to a consumer may live
+outside an nx project.** Outside one there is no release, no target and no gate, so it cannot be
+fixed in a way anybody receives. When the platform forces a file outside (as `workflow_call` does),
+the answer is not to ship that thing.
 
 A **release** is neither, so it ships as bricks plus [a documented job](../guides/compose-bricks.md#the-release-job):
 

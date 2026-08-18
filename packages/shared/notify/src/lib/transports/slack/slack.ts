@@ -1,20 +1,25 @@
+import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
 import type {
+  Attachment,
   Notification,
   NotificationKind,
 } from '../../notification.types.js';
 import type { Transport } from '../../transport.types.js';
-import type { SlackBlock, SlackConfig } from './slack.types.js';
+import type {
+  SlackBlock,
+  SlackConfig,
+  SlackResponse,
+  SlackUploadUrlResponse,
+} from './slack.types.js';
 
 const ENDPOINT = 'https://slack.com/api/chat.postMessage';
+const UPLOAD_URL_ENDPOINT = 'https://slack.com/api/files.getUploadURLExternal';
+const UPLOAD_COMPLETE_ENDPOINT =
+  'https://slack.com/api/files.completeUploadExternal';
 
 /** Slack's per-section text ceiling is 3000 chars; leave room for the trailing note. */
 const MAX_BODY = 2800;
-
-/** Slack's response shape — an internal cast for the parsed body. */
-interface SlackResponse {
-  ok: boolean;
-  error?: string;
-}
 
 /** Emoji lead per notification kind — the Slack transport's own styling. */
 const LEAD: Record<NotificationKind, string> = {
@@ -115,7 +120,7 @@ export function slackBlocks(notification: Notification): SlackBlock[] {
 async function post(
   { token, channel }: SlackConfig,
   notification: Notification,
-): Promise<void> {
+): Promise<string | undefined> {
   const response = await fetch(ENDPOINT, {
     method: 'POST',
     headers: {
@@ -141,6 +146,111 @@ async function post(
       `Slack refused the message: ${body.error ?? 'unknown error'}`,
     );
   }
+
+  // The message timestamp is the thread. Files go INTO it rather than beside it, so a report
+  // cannot end up in the channel detached from the failure it belongs to.
+  return body.ts;
+}
+
+/**
+ * Uploads one file and returns nothing — or throws with Slack's own reason.
+ *
+ * Three calls, because that is what the current API is: ask for a URL, PUT the bytes there,
+ * then tell Slack to attach the finished file to a channel. The old one-shot `files.upload`
+ * is deprecated. Every step is checked for `{ok:false}` on an HTTP 200, the same trap as
+ * posting: a token without `files:write` answers 200 and uploads nothing.
+ */
+async function upload(
+  { token, channel }: SlackConfig,
+  attachment: Attachment,
+  threadTs: string | undefined,
+): Promise<void> {
+  const bytes = await readFile(attachment.path);
+  const filename = attachment.title ?? basename(attachment.path);
+
+  const urlResponse = await fetch(
+    `${UPLOAD_URL_ENDPOINT}?${new URLSearchParams({
+      filename,
+      length: String(bytes.byteLength),
+    })}`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+  );
+  const urlBody = (await urlResponse.json()) as SlackUploadUrlResponse;
+  if (
+    !urlResponse.ok ||
+    !urlBody.ok ||
+    !urlBody.upload_url ||
+    !urlBody.file_id
+  ) {
+    throw new Error(
+      `Slack refused an upload URL for ${filename}: ${urlBody.error ?? `HTTP ${urlResponse.status}`}`,
+    );
+  }
+
+  const put = await fetch(urlBody.upload_url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: new Uint8Array(bytes),
+  });
+  if (!put.ok) {
+    throw new Error(
+      `Slack rejected the bytes of ${filename}: HTTP ${put.status}`,
+    );
+  }
+
+  const complete = await fetch(UPLOAD_COMPLETE_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json; charset=utf-8',
+    },
+    body: JSON.stringify({
+      files: [{ id: urlBody.file_id, title: filename }],
+      channel_id: channel,
+      ...(threadTs ? { thread_ts: threadTs } : {}),
+    }),
+  });
+  const completeBody = (await complete.json()) as SlackResponse;
+  if (!complete.ok || !completeBody.ok) {
+    throw new Error(
+      `Slack refused to attach ${filename}: ${completeBody.error ?? `HTTP ${complete.status}`}`,
+    );
+  }
+}
+
+/**
+ * Posts, then uploads every attachment, then reports what failed.
+ *
+ * The order is the point. The message goes first so a broken report cannot swallow the
+ * alert — an alert with no attachment is degraded, an attachment with no alert is silence.
+ * Every file is attempted before throwing, so one unreadable path does not hide a second
+ * one; and it DOES throw, because a step asked to send a report and sending nothing is the
+ * failure this whole package exists to make visible. The thrown message says the
+ * notification itself arrived, so whoever retries knows they will duplicate it.
+ */
+async function postWithAttachments(
+  config: SlackConfig,
+  notification: Notification,
+): Promise<void> {
+  const threadTs = await post(config, notification);
+  const attachments = notification.attachments ?? [];
+  if (attachments.length === 0) return;
+
+  const failures: string[] = [];
+  for (const attachment of attachments) {
+    try {
+      await upload(config, attachment, threadTs);
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Slack: the notification was posted, but ${failures.length} of ${attachments.length} attachment(s) were not — ` +
+        `a retry will duplicate the message. ${failures.join(' | ')}`,
+    );
+  }
 }
 
 /**
@@ -148,5 +258,5 @@ async function post(
  * `.send()`) delivers channel-neutral notifications to it.
  */
 export function slack(config: SlackConfig): Transport {
-  return { send: (notification) => post(config, notification) };
+  return { send: (notification) => postWithAttachments(config, notification) };
 }

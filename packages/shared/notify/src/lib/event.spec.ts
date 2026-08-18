@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   deliver,
+  eventFromRunFailures,
   eventsFromReleases,
   parseEvents,
   toNotification,
@@ -151,5 +152,182 @@ describe('eventsFromReleases', () => {
         { project: '@x/y', version: '1.0.0', tag: 'v1' },
       ]),
     ).toHaveLength(2);
+  });
+});
+
+describe('eventFromRunFailures', () => {
+  const base = { app: 'shared-platform', url: 'https://run/1', workflow: 'CI' };
+
+  it('names the failed job and its failed steps', () => {
+    const event = eventFromRunFailures({
+      ...base,
+      jobs: [
+        {
+          name: 'main',
+          conclusion: 'failure',
+          steps: [
+            { name: 'Run tests', conclusion: 'failure' },
+            { name: 'Lint', conclusion: 'success' },
+          ],
+        },
+        { name: 'context', conclusion: 'success', steps: [] },
+      ],
+    });
+
+    expect(event).toMatchObject({
+      kind: 'error',
+      app: 'shared-platform',
+      url: 'https://run/1',
+    });
+    expect(event?.kind === 'error' && event.body).toBe('• main › Run tests');
+  });
+
+  it('keeps the reason to one line and puts the list in the body', () => {
+    const event = eventFromRunFailures({
+      ...base,
+      jobs: [
+        {
+          name: 'a',
+          conclusion: 'failure',
+          steps: [{ name: 's1', conclusion: 'failure' }],
+        },
+        {
+          name: 'b',
+          conclusion: 'failure',
+          steps: [{ name: 's2', conclusion: 'failure' }],
+        },
+      ],
+    });
+
+    // The title is what a phone shows; a multi-line one renders as an unreadable smear.
+    expect(event?.kind === 'error' && event.message).toBe(
+      'CI failed — 2 job(s)',
+    );
+    expect(event?.kind === 'error' && event.message).not.toContain('\n');
+    expect(event?.kind === 'error' && event.body).toBe('• a › s1\n• b › s2');
+  });
+
+  it('sees a failed step inside a job that is still running — the same-job alert', () => {
+    // A weekly audit alerting on its own scan: the job cannot have concluded yet, because
+    // the step doing the alerting is part of it. Reading job.conclusion alone finds nothing.
+    const event = eventFromRunFailures({
+      ...base,
+      workflow: 'Weekly audit',
+      jobs: [
+        {
+          name: 'audit',
+          conclusion: null,
+          steps: [
+            { name: 'Scan', conclusion: 'failure' },
+            { name: 'Alert Slack', conclusion: null },
+          ],
+        },
+      ],
+    });
+
+    expect(event?.kind === 'error' && event.message).toBe(
+      'Weekly audit failed — 1 job(s)',
+    );
+    expect(event?.kind === 'error' && event.body).toBe('• audit › Scan');
+  });
+
+  it('reports a failed job with no step detail rather than dropping it', () => {
+    const event = eventFromRunFailures({
+      ...base,
+      jobs: [{ name: 'deploy', conclusion: 'failure' }],
+    });
+
+    expect(event?.kind === 'error' && event.body).toBe('• deploy');
+  });
+
+  it('is null when nothing failed — the caller must not read that as success', () => {
+    expect(
+      eventFromRunFailures({
+        ...base,
+        jobs: [
+          {
+            name: 'main',
+            conclusion: 'success',
+            steps: [{ name: 'ok', conclusion: 'success' }],
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
+
+  it('ignores cancelled and skipped, which are not failures', () => {
+    expect(
+      eventFromRunFailures({
+        ...base,
+        jobs: [
+          {
+            name: 'a',
+            conclusion: 'cancelled',
+            steps: [{ name: 's', conclusion: 'cancelled' }],
+          },
+          { name: 'b', conclusion: 'skipped', steps: [] },
+        ],
+      }),
+    ).toBeNull();
+  });
+});
+
+describe('parseEvents — attachments', () => {
+  it('keeps a path and an optional title', () => {
+    const [event] = parseEvents([
+      {
+        kind: 'error',
+        app: 'a',
+        message: 'boom',
+        attachments: [{ path: 'r.json', title: 'Report' }],
+      },
+    ]);
+
+    expect(event?.kind === 'error' && event.attachments).toEqual([
+      { path: 'r.json', title: 'Report' },
+    ]);
+  });
+
+  it('throws on an attachment without a path, naming which one', () => {
+    expect(() =>
+      parseEvents([
+        {
+          kind: 'error',
+          app: 'a',
+          message: 'boom',
+          attachments: [{ title: 'no path' }],
+        },
+      ]),
+    ).toThrow(/attachments\[0\]\.path/);
+  });
+
+  it('does not read the file — a report written later is still attachable', () => {
+    expect(() =>
+      parseEvents([
+        {
+          kind: 'error',
+          app: 'a',
+          message: 'boom',
+          attachments: [{ path: '/not/yet.json' }],
+        },
+      ]),
+    ).not.toThrow();
+  });
+});
+
+describe('toNotification — error detail', () => {
+  it('carries the body and the attachments through to the transport', () => {
+    const notification = toNotification({
+      kind: 'error',
+      app: 'a',
+      message: 'CI failed — 1 job(s)',
+      body: '• main › Run tests',
+      url: 'https://run',
+      attachments: [{ path: 'r.json' }],
+    });
+
+    expect(notification.body).toBe('• main › Run tests');
+    expect(notification.attachments).toEqual([{ path: 'r.json' }]);
+    expect(notification.title).not.toContain('\n');
   });
 });

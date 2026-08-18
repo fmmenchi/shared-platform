@@ -38,7 +38,7 @@
     },
     "severity": {
       "type": "string",
-      "description": "Trivy --severity — the levels that count.",
+      "description": "Trivy --severity \u2014 the levels that count.",
       "default": "CRITICAL,HIGH"
     },
     "failOnFindings": {
@@ -48,7 +48,7 @@
     },
     "format": {
       "type": "string",
-      "description": "Trivy --format (table, json, sarif, …).",
+      "description": "Trivy --format (table, json, sarif, \u2026).",
       "default": "table"
     },
     "ignorefile": {
@@ -57,8 +57,14 @@
     },
     "extraArgs": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Extra raw arguments appended to the trivy invocation."
+    },
+    "output": {
+      "type": "string",
+      "description": "Trivy --output: write the report to this path instead of stdout, relative to the workspace root (the docker runner mounts it at /workspace, so the same path works for both runners). Note that Trivy writes EITHER stdout or a file, so a run with `output` set leaves no table in the CI log \u2014 pair it with a report the reader gets some other way, e.g. attached to a Slack alert."
     }
   },
   "required": []

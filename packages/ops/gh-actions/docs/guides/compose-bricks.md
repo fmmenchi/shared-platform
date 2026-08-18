@@ -156,6 +156,6 @@ workflow you call.
 
 ## Related
 
-- [Reuse a whole workflow](./reuse-a-workflow.md) — the turnkey path, for `security`.
+- [Run a security scan](./run-a-security-scan.md) — the same composition, for Trivy.
 - [Deploy a docs site](./deploy-a-docs-site.md) — the same composition, for GitHub Pages.
 - [Composite actions reference](../reference/actions.md) — every input.
