@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/ci",
-  "version": "0.0.1",
+  "version": "0.0.17",
   "description": "CI helper scripts for an Nx release monorepo — prints the releasable projects Nx marks affected between two refs.",
   "license": "UNLICENSED",
   "repository": {

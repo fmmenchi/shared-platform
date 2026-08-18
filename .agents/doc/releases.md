@@ -39,8 +39,34 @@
   nx cascade) was **removed** — it was redundant and could have suppressed legitimate releases.
   `release.js` only adds what nx doesn't: a record of what the release did, which feeds the SBOM/announce
   steps the newly-cut package tags.
-- `git.commit: false` (tags + push only, no release commit) so the release does not re-trigger CI;
-  the current version is resolved from the tag, `fallbackCurrentVersionResolver: disk` otherwise.
+- **`git.commit: true` — the version bumps are committed back to `main`**, with `[skip ci]` in the
+  message so the release does not re-trigger CI. nx pushes commit and tags in a single
+  `git push --follow-tags --atomic`: a rejected push (a merge landed mid-run) leaves NOTHING behind,
+  and the next release recomputes the same versions from the tags.
+
+  It was `false` for a long time, and that was a silent defect rather than a preference. nx writes
+  each new version into its `package.json` during the run; with nothing committed, every manifest in
+  the repo stayed at `0.0.1` forever and the truth lived only in the tags. Everything that ASKS NX
+  was fine. Everything that READS THE DISK was wrong — and `pnpm publish` is what substitutes a
+  `workspace:*` dependency, off the disk. Four consecutive `@fmmenchi/ci` releases therefore shipped
+  declaring `"@fmmenchi/notify": "0.0.1"`, a version that has never been published; a consumer could
+  only install them with a `pnpm-workspace.yaml` override. Only `ci@0.0.13` was correct, because it
+  happened to be released in the same run as notify — which is the whole diagnosis in one data point.
+
+  The alternative (keep the manifests frozen and set `preserveLocalDependencyProtocols: false`) was
+  measured and works, but it makes `pnpm` resolve the dependency from the REGISTRY at version time —
+  a version that has not been published yet in the same run. Committing the bumps removes the class
+  instead of routing around it.
+
+- The current version is resolved from the tag (`conventionalCommits`), `fallbackCurrentVersionResolver: disk`
+  otherwise — so a manifest and its tag can disagree without breaking a release. `CHANGELOG.md` files
+  are written per project and committed with the bumps.
+- **`versionActionsOptions.skipLockFileUpdate: true`**, and measured before switching it off: nx's
+  lockfile step re-runs `pnpm install --lockfile-only`, which for a workspace version bump changes
+  NOTHING semantic (local deps are `link:` entries) and rewrites all ~14k lines out of Prettier
+  shape. Committed, that lockfile would turn the next push's `format:check --all` red — a red gate
+  on a file no human touched. Skipped, `format:check` is green with nx's own writes in the tree,
+  which was verified rather than assumed.
 - **Slack, from its own job.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger
   `on: release` workflows, so the pipeline announces the releases itself — in an `announce` job that
   `needs: release` and reads the release record from an artifact. One message per released project,

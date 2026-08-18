@@ -38,17 +38,25 @@ const dryRun = process.env['RELEASE_DRY_RUN'] === 'true';
 // what nx produced in this very process.
 //
 // The explicit git flags are not decoration: both subcommands refuse to run beside a
-// top-level `release.git` UNLESS gitCommit, gitTag and stageChanges are all passed. Passing
-// them keeps `nx release` (the CLI) working for maintainers, and reproduces today's
-// behaviour exactly — no commit, tag and push once, at the changelog step.
-const gitFlags = { gitCommit: false, stageChanges: false } as const;
+// top-level `release.git` UNLESS gitCommit, gitTag and stageChanges are all passed. They
+// reproduce `nx release` (the CLI) exactly — stage as we go, then commit, tag and push ONCE,
+// at the changelog step.
+//
+// `stageChanges: true` is the load-bearing one, and it is why the published tarballs were
+// wrong for four releases. nx writes each new version into its package.json, but with
+// nothing staged and nothing committed, the repo's manifests stayed at 0.0.1 forever — and
+// `pnpm publish`, which is what substitutes a `workspace:*` dependency, reads that number
+// off the DISK. Every @fmmenchi/ci published without @fmmenchi/notify in the same run
+// therefore declared `"@fmmenchi/notify": "0.0.1"`, a version that has never existed.
+const gitFlags = { stageChanges: true } as const;
 
 const { workspaceVersion, projectsVersionData, releaseGraph } =
   await releaseVersion({
     dryRun,
     verbose: false,
     ...gitFlags,
-    gitTag: false, // the changelog step tags, as it does under `nx release`
+    gitCommit: false, // the changelog step commits, as it does under `nx release`
+    gitTag: false,
   });
 
 // NOTHING RELEASED — stop here, before the changelog step.
@@ -84,6 +92,7 @@ const { projectChangelogs } = await releaseChangelog({
   versionData: projectsVersionData,
   releaseGraph,
   ...gitFlags,
+  gitCommit: true,
   gitTag: true,
   gitPush: true,
 });

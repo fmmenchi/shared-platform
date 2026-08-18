@@ -36,6 +36,14 @@ pnpm nx test @fmmenchi/ci      # the pure half — tags, release records
   `assertReleaseGroups` fails loudly if nx's shape moved. nx renamed `releaseTagPattern` →
   `releaseTag.pattern` once and carries a `TODO(v24)` for the next move: a silent default there would
   fabricate a package-shaped tag and announce a release nobody cut.
+- **The manifest on disk is what gets published — keep it true.** `pnpm publish` (not nx) is what
+  replaces a `workspace:*` dependency, and it reads the dependency's version from its
+  `package.json` ON DISK. So the release must stage and commit the bumps (`stageChanges: true`
+  here, `git.commit: true` in nx.json): with them uncommitted the repo's manifests sat at `0.0.1`,
+  and four `@fmmenchi/ci` releases shipped depending on `@fmmenchi/notify@0.0.1` — a version that
+  was never published, so the package could not be installed at all without a consumer-side
+  override. Anything that ASKS NX for a version is safe; anything that READS THE DISK is only as
+  true as the last commit.
 - **A rehearsal must not produce a consumable.** `RELEASE_DRY_RUN=true` stamps the record and leaves
   `NEW_TAGS_FILE` empty. nx computes real versions under `dryRun`, so writing them would hand the
   announce step tags that do not exist.
