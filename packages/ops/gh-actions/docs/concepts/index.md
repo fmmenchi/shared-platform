@@ -23,8 +23,14 @@ calls a reusable workflow or wires the bricks directly.
 ### Which of the two, and why release is bricks
 
 A job earns a **reusable workflow** when it is _self-contained_ (nothing about it is ordered against
-your other jobs) and _parametric_ (everything repo-shaped is an input). `security` and `docs` are
-both: a scan depends on no build of yours, and the docs site is named by an input.
+your other jobs) and _parametric_ (everything repo-shaped is an input). `security` is both: a scan
+depends on no build of yours, and everything it varies is an input.
+
+A docs site looked like it qualified and did not, which is the sharpest test of the rule here. GitHub
+Pages allows exactly **one** deployment per repository, so a site is ordered against everything else
+you publish — and once the build command, the artifact path and the environment are all inputs, what
+is left to call is a wrapper around three standard actions. It ships as
+[a documented job](../guides/deploy-a-docs-site.md) instead.
 
 A **release** is neither, so it ships as bricks plus [a documented job](../guides/compose-bricks.md#the-release-job):
 

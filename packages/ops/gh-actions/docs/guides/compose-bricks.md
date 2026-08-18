@@ -113,6 +113,31 @@ and as steps they can only be retried by re-running the release itself. Split th
 output, and "Re-run failed jobs" re-announces **without re-releasing**. That is what `shared-platform`
 does in its own `ci.yml`.
 
+Split, they need a gate the single job does not: `if: needs.release.outputs.released != '0'`. As
+steps they are unconditional and harmless — an empty record is a no-op in both bricks — but as jobs
+they would spin up a runner, install, and report success for a push that released nothing. Anything
+else you hang off the release (a deploy, a smoke test) needs that same gate, and there it is not
+cosmetic: without it you deploy on every push to the trunk.
+
+:::
+
+:::tip[Don't re-derive the version downstream]
+
+A deploy job that reaches for `git describe --tags` needs `fetch-depth: 0`, a glob to skip the tags
+that aren't packages, and **still answers with the previous release** when this push released
+nothing — it cannot tell the two apart. The `release` brick already knows, and says so:
+
+```yaml
+deploy:
+  needs: [release]
+  if: needs.release.outputs.released != '0'
+  steps:
+    - run: ./deploy.sh "${{ needs.release.outputs.version }}"
+```
+
+`version` and `tag` are filled when exactly one project was released, and empty when zero or many —
+a monorepo releasing three packages has no single version, and the record is the answer there.
+
 :::
 
 Prerequisites: `@fmmenchi/ci` installed (it provides the `fmmenchi-release` and `fmmenchi-notify`
@@ -131,5 +156,6 @@ workflow you call.
 
 ## Related
 
-- [Reuse a whole workflow](./reuse-a-workflow.md) — the turnkey path, for `security` and `docs`.
+- [Reuse a whole workflow](./reuse-a-workflow.md) — the turnkey path, for `security`.
+- [Deploy a docs site](./deploy-a-docs-site.md) — the same composition, for GitHub Pages.
 - [Composite actions reference](../reference/actions.md) — every input.
