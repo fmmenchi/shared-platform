@@ -12,10 +12,12 @@
 import { readFileSync } from 'node:fs';
 import {
   deliver,
+  eventFromRunFailures,
   eventsFromReleases,
   parseEvents,
   slack,
 } from '@fmmenchi/notify';
+import { fetchRunJobs, runContextFromEnv, runUrl } from './run-failures.js';
 import type { NotifyEvent } from '@fmmenchi/notify';
 
 const argValue = (name: string): string | undefined =>
@@ -28,10 +30,17 @@ const eventsFile = argValue('eventsFile') ?? process.env['NOTIFY_EVENTS_FILE'];
 // output, turned into events by tested code (`eventsFromReleases`) rather than by cutting
 // tags apart in a shell. One channel, a file; two shapes; one parsed type after it.
 const releaseResult = argValue('releaseResult');
+// The THIRD shape of the same one input: this run's own failures, asked of GitHub rather
+// than described by hand. A workflow knows which of its steps it wrote; it does not know
+// which of its jobs the run lost, so that fact is fetched instead of guessed.
+const fromRun = process.argv.includes('--fromRun');
+const attachments = process.argv
+  .filter((arg) => arg.startsWith('--attach='))
+  .map((arg) => ({ path: arg.slice('--attach='.length) }));
 
-if (!eventsFile && !releaseResult) {
+if (!eventsFile && !releaseResult && !fromRun) {
   console.error(
-    'notify: pass --eventsFile=<path> or --releaseResult=<path> (or set NOTIFY_EVENTS_FILE).',
+    'notify: pass --eventsFile=<path>, --releaseResult=<path> or --fromRun (or set NOTIFY_EVENTS_FILE).',
   );
   process.exit(1);
 }
@@ -40,12 +49,41 @@ const read = (path: string): unknown => JSON.parse(readFileSync(path, 'utf-8'));
 
 // Parsed before anything else: a malformed batch is a broken caller, and it must fail
 // before a single message goes out rather than halfway through.
-const events: NotifyEvent[] = releaseResult
-  ? eventsFromReleases(
-      (read(releaseResult) as { releases?: [] }).releases ?? [],
-      { repositoryUrl: process.env['NOTIFY_REPOSITORY_URL'] ?? '' },
-    )
-  : parseEvents(read(eventsFile as string));
+let events: NotifyEvent[];
+
+if (fromRun) {
+  const context = runContextFromEnv(process.env);
+  const event = eventFromRunFailures({
+    app:
+      process.env['NOTIFY_APP'] ||
+      context.repository.split('/')[1] ||
+      context.repository,
+    url: runUrl(context),
+    ...(context.workflow ? { workflow: context.workflow } : {}),
+    jobs: await fetchRunJobs(context),
+  });
+
+  // Invoked because something went red, and nothing red found: the view is wrong — a token
+  // without `actions: read`, or a job not visible yet — and staying quiet would hide the
+  // original failure AND this one. Loud, with the run named.
+  if (!event) {
+    console.error(
+      `::error::notify: --fromRun found no failed job or step in ${context.repository} run ${context.runId}. ` +
+        `Nothing was sent. Check that the token has \`actions: read\` and that this step runs after ` +
+        `the jobs it reports on.`,
+    );
+    process.exit(1);
+  }
+
+  events = [attachments.length > 0 ? { ...event, attachments } : event];
+} else {
+  events = releaseResult
+    ? eventsFromReleases(
+        (read(releaseResult) as { releases?: [] }).releases ?? [],
+        { repositoryUrl: process.env['NOTIFY_REPOSITORY_URL'] ?? '' },
+      )
+    : parseEvents(read(eventsFile as string));
+}
 
 const token = process.env['SLACK_BOT_TOKEN'];
 const channel = process.env['SLACK_CHANNEL_ID'];

@@ -42,6 +42,7 @@ jobs:
     permissions:
       contents: read
       packages: read
+      actions: read # the alert asks the API which jobs and steps failed
     steps:
       - uses: actions/checkout@v7
 
@@ -52,19 +53,27 @@ jobs:
       - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0.3.1
         with:
           cache-db: false # see below
+          report: trivy-report.json # so the alert can carry it
 
-      # Alert on the scheduled run only: a PR already shows a red check, and a second signal for
-      # the same fact is how people learn to ignore both.
-      - name: Alert Slack on findings
-        if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0.3.1
+      # The message is not written here: the brick asks GitHub which jobs and steps failed.
+      # The report rides along, in the message's own thread.
+      - name: Alert Slack with the report
+        if: ${{ failure() }}
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify-failure@gh-actions/v0.3.1
         with:
-          kind: error
-          app: my-repo
-          message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
           channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          attachments: trivy-report.json
 ```
+
+## Two files, not one
+
+Above is the **weekly** shape. The dependency-change scan wants the opposite settings — DB cache
+**on**, no Slack (a PR already shows a red check) — so it belongs in its own workflow rather than
+behind an `if:` on every line that differs. That is how this repo runs it: `security.yml` on
+dependency changes, `weekly-audit.yml` on the clock. Only the second one alerts, and only the second
+one writes a report.
 
 ## The two settings worth a thought
 

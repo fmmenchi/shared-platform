@@ -78,6 +78,14 @@ plugin would otherwise mean a green job that never scanned. The fix it prints is
 | :------------ | :------ | :------ | :----------------------------------------------------------------------------- |
 | `secret-scan` | boolean | `true`  | Also run the secret scan (built-in rules, no DB).                              |
 | `cache-db`    | boolean | `true`  | Cache the vulnerability DB per day. Turn it **off** for a weekly-only cadence. |
+| `report`      | string  | `''`    | Also write a JSON report here, for attaching to an alert.                      |
+
+**On `report`.** It costs a second scan, and that is deliberate: Trivy writes **either** stdout or
+a file, so a single run with `--output` would leave no table in the log. The report pass runs first
+with findings _not_ fatal, then the gating pass runs normally — so the report exists even when the
+scan is red, which is the only case anyone wants it. The DB is already cached by then. The step also
+**fails if the report is missing**, because nx has been caught swallowing flags before and an alert
+with nothing attached explains nothing.
 
 **On `cache-db`.** The DB is ~100 MiB to download, ~70 MiB to store, and expires in about 21 hours.
 Scanning on every dependency change, caching pays for itself. Scanning once a week, it cannot: the
@@ -157,3 +165,35 @@ projects hosts a notification target.
 | `url`                      | string | this run      | Single event: where to read more.                         |
 | `repository-url`           | string | this repo     | Base URL used to form release links.                      |
 | `bot-token` / `channel-id` | string | `''`          | Slack secrets. Absent → skips green.                      |
+
+## `notify-failure`
+
+Asks GitHub which jobs and steps failed in **this run**, and sends that to Slack — with files
+attached if you pass any. Put it after the work, gated on `failure()`.
+
+| Input          | Type   | Default       | Description                                                   |
+| :------------- | :----- | :------------ | :------------------------------------------------------------ |
+| `github-token` | string | –             | **Required.** Needs `actions: read` to read the run's jobs.   |
+| `bot-token`    | string | `''`          | Slack bot token — `chat:write`, plus `files:write` to attach. |
+| `channel-id`   | string | `''`          | Slack channel ID. Absent → skips green, loudly.               |
+| `app`          | string | the repo name | What the message is about.                                    |
+| `attachments`  | string | `''`          | Files to attach, one path per line.                           |
+
+**Why it asks instead of being told.** A workflow knows which of its steps it wrote; it does not know
+which of its jobs the run lost. A hand-written message ("the audit failed") is a sentence composed
+before the failure existed — it survives every change to the pipeline and describes none of them.
+This brick reports what actually went red: `• audit › Scan`.
+
+It reads a **failed step inside a still-running job** as well as a failed job, and both are needed:
+used from a separate job (`needs:` + `if: failure()`) the failed jobs have concluded, but used from
+the SAME job as the thing that broke — a weekly audit alerting on its own scan — that job cannot have
+concluded, because this step is part of it.
+
+**It fails when it finds nothing.** It was invoked because something went red, so an empty answer
+means the view is wrong — a token without `actions: read`, or a step placed before the jobs it
+reports on — and staying quiet would hide the original failure and this one together.
+
+**Attachments arrive in the message's thread**, not loose in the channel, and an attachment that
+cannot be sent fails the step **after** the message is posted: an alert with no report is degraded, a
+report with no alert is silence. The error says the message already went out, so whoever retries knows
+they will duplicate it.

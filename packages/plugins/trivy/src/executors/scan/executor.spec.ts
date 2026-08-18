@@ -76,3 +76,21 @@ describe('buildDockerArgs', () => {
     ).toContain('trivy-cache:/root/.cache/trivy');
   });
 });
+
+describe('buildTrivyArgs — report output', () => {
+  it('writes to the given path, workspace-relative for both runners', () => {
+    const args = buildTrivyArgs({
+      format: 'json',
+      output: 'trivy-report.json',
+    });
+
+    expect(args).toContain('--output');
+    expect(args[args.indexOf('--output') + 1]).toBe('trivy-report.json');
+    // The path is left alone: the docker runner works in /workspace, which IS the workspace.
+    expect(args.join(' ')).not.toContain('/workspace');
+  });
+
+  it('omits the flag entirely when no report is wanted', () => {
+    expect(buildTrivyArgs({}).join(' ')).not.toContain('--output');
+  });
+});

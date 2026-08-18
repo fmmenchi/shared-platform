@@ -31,6 +31,10 @@ export function buildTrivyArgs(options: ScanExecutorSchema): string[] {
     o.format,
     ...(o.failOnFindings ? ['--exit-code', '1'] : []),
     ...(o.ignorefile ? ['--ignorefile', o.ignorefile] : []),
+    // A workspace-relative path works for BOTH runners: the docker runner mounts the
+    // workspace at /workspace and works there, so trivy resolves it to the same file the
+    // host sees. No translation, and nothing for a caller to get wrong.
+    ...(o.output ? ['--output', o.output] : []),
     ...(o.extraArgs ?? []),
     o.path,
   ];

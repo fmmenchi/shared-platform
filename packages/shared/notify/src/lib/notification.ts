@@ -1,4 +1,5 @@
 import type {
+  Attachment,
   Changelog,
   Notification,
   ReleaseChangelog,
@@ -59,11 +60,17 @@ export function errorNotification(
   appName: string,
   message: string,
   url: string,
+  detail: { body?: string; attachments?: Attachment[] } = {},
 ): Notification {
   return {
     kind: 'error',
     text: `${appName}: ${message}`,
+    // The TITLE stays the one-liner and the detail goes to the body, deliberately: a title
+    // built from a multi-line reason (a list of failed jobs, a stack) renders as one long
+    // unreadable line in every channel, and is what a phone notification shows.
     title: `${appName} — ${message}`,
+    ...(detail.body ? { body: detail.body } : {}),
+    ...(detail.attachments?.length ? { attachments: detail.attachments } : {}),
     actions: [{ label: 'See the run', url }],
   };
 }

@@ -1,0 +1,67 @@
+name: Weekly audit
+
+# The other half of security.yml. A scan goes red because the WORLD changed — a CVE published
+# against a dependency nobody touched — so this one is on a clock, and it is the half that has
+# to shout: nobody is watching a Monday-morning run.
+#
+# Three things differ from the dependency-change scan, and they are why this is its own file:
+# the DB cache is OFF (Trivy's DB expires in ~21h, so a weekly restore is always stale — it
+# gets thrown away and re-downloaded, and the run still uploads ~70 MiB nobody reads), the scan
+# writes a JSON report, and a failure goes to Slack WITH that report attached.
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: 0
+
+jobs:
+  audit:
+    name: Weekly vulnerability audit
+    runs-on: ubuntu-latest
+    # `actions: read` is what lets the alert ASK which jobs and steps failed, instead of being
+    # handed a sentence written in advance. Without it the API answers 404 on a private repo,
+    # which would read as "nothing failed" — the brick fails loudly rather than allow that.
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./packages/ops/gh-actions/actions/setup
+
+      # @fmmenchi/ci is a SOURCE project here, so its dist does not exist until built. A
+      # consumer installs it built. The announce job in ci.yml learned this the hard way.
+      - run: pnpm nx build @fmmenchi/ci
+
+      - uses: ./packages/ops/gh-actions/actions/trivy-scan
+        with:
+          cache-db: false
+          report: trivy-report.json
+
+      # The message is not written here: the brick asks GitHub which jobs and steps failed and
+      # says so. The report rides along, in the message's own thread.
+      - name: Alert Slack with the report
+        if: ${{ failure() }}
+        uses: ./packages/ops/gh-actions/actions/notify-failure
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+          app: shared-platform
+          attachments: trivy-report.json
+
+      # Kept even when the scan passes: a report you can diff week over week is how a slow
+      # accumulation of MEDIUMs becomes visible before one of them turns CRITICAL.
+      - name: Keep the report as an artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+          if-no-files-found: warn
+          retention-days: 30

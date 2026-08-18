@@ -18,6 +18,16 @@ inputs:
     required: false
     default: 'true'
 
+  report:
+    description: >-
+      Write a JSON report to this path (workspace-relative), for attaching to an alert. It costs
+      a SECOND scan: Trivy writes either stdout or a file, and a run that only wrote the file
+      would leave no table in the log. So the report pass runs first with findings NOT fatal,
+      then the gating pass runs normally — the report therefore exists even when the scan is red,
+      which is the only case anyone wants it. The DB is already cached by then.
+    required: false
+    default: ''
+
 runs:
   using: composite
   steps:
@@ -62,13 +72,28 @@ runs:
     # in its own named volume, which is the zero-config default.
     - name: Vulnerability scan
       shell: bash
+      env:
+        REPORT: ${{ inputs.report }}
       run: |
+        cache_arg=()
         if [ "${{ inputs.cache-db }}" = "true" ]; then
           mkdir -p "$RUNNER_TEMP/trivy-cache"
-          pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker" --cacheDir="$RUNNER_TEMP/trivy-cache"
-        else
-          pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker"
+          cache_arg=(--cacheDir="$RUNNER_TEMP/trivy-cache")
         fi
+
+        if [ -n "$REPORT" ]; then
+          pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker" "${cache_arg[@]}" \
+            --format=json --output="$REPORT" --failOnFindings=false
+          # Checked, and this is the guard that matters: nx silently swallows some flags
+          # (`--version` and `--runner` are documented scars in this repo), and a swallowed
+          # `--output` would leave the alert with nothing attached and no explanation.
+          if [ ! -s "$REPORT" ]; then
+            echo "::error::the scan wrote no report at '$REPORT'. Check that nx forwarded --output to the executor."
+            exit 1
+          fi
+        fi
+
+        pnpm nx run "${{ steps.host.outputs.vuln }}:scan-docker" "${cache_arg[@]}"
 
     # The docker runner writes the DB as root; hand it back so the post-job cache save can archive it.
     - name: Reclaim the cache dir

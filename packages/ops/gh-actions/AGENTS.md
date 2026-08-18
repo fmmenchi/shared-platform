@@ -9,7 +9,7 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
 ## Shape
 
 - **Composite actions** in `actions/` (`setup`, `compute-context`, `trivy-scan`, `release`,
-  `attach-sbom`, `notify`) — thin glue over `@fmmenchi/nx-trivy` (an nx plugin, run as a target) and
+  `attach-sbom`, `notify`, `notify-failure`) — thin glue over `@fmmenchi/nx-trivy` (an nx plugin, run as a target) and
   `@fmmenchi/ci`'s bins (`fmmenchi-release`, `fmmenchi-notify`), plus pure-computation bricks
   (`compute-context` derives the canonical run
   context — event kind, release flag, sha/ref slugs — once, for every downstream job). One source of
@@ -33,6 +33,17 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   target with options, configurations and inference — a plugin earns that. Announcing is a one-shot
   side effect with no per-project configuration: once the event carried its own identity there was
   nothing left for a target to hold, so `@fmmenchi/nx-notify` was deleted rather than rewritten.
+- **A brick that can ASK must not be TOLD.** `notify-failure` reads which jobs and steps failed from
+  the API instead of taking a message: a sentence written in advance ("the audit failed") survives
+  every change to the pipeline and describes none of them. Same rule that removed the project name
+  from `trivy-scan` and the tag-diffing from `release` — and it comes with the same obligation, to
+  **fail when the answer is empty** rather than send a message naming nothing.
+- **Two verbs that must act as one become a bin, not a bundled action.** A composite action cannot
+  reliably `uses:` a sibling — in a remote action `./` resolves against the CALLER's workspace — so
+  bundling in YAML means either an absolute self-pin (the drift that killed the reusable workflow) or
+  duplicating the sibling's body. In TypeScript it is an import: versioned by the package manager,
+  tested, one definition. That is why the failure collection lives in `@fmmenchi/notify` +
+  `@fmmenchi/ci` and the brick is ten lines of shell.
 - **Never name a project in an action.** `@fmmenchi/nx-trivy:scan-docker` exists only in this repo,
   where the plugin is a project. Ask the graph instead (`nx show projects --with-target <t> --json`,
   take the first) and **fail when the answer is empty** — `nx run-many` exits 0 on no matches

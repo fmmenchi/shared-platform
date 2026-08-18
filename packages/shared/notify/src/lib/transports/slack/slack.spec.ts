@@ -159,3 +159,145 @@ describe('toMrkdwn', () => {
     });
   });
 });
+
+describe('slack transport — attachments', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /** The three calls Slack needs, in order, each answering 200 like it always does. */
+  function uploadReplies() {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, ts: '1700.1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          upload_url: 'https://files.slack/upload',
+          file_id: 'F1',
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200 })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  async function withFile<T>(run: (path: string) => Promise<T>): Promise<T> {
+    const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = await mkdtemp(join(tmpdir(), 'notify-attach-'));
+    const path = join(dir, 'trivy-report.json');
+    await writeFile(path, '{"findings":[]}');
+    try {
+      return await run(path);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('posts first, then uploads the file into the message thread', async () => {
+    const fetchMock = uploadReplies();
+
+    await withFile((path) =>
+      slack(config).send(
+        errorNotification('dev-blog', 'the audit failed', 'https://run', {
+          attachments: [{ path }],
+        }),
+      ),
+    );
+
+    const urls = fetchMock.mock.calls.map((call: unknown[]) => String(call[0]));
+    expect(urls[0]).toContain('chat.postMessage');
+    expect(urls[1]).toContain('files.getUploadURLExternal');
+    expect(urls[2]).toBe('https://files.slack/upload');
+    expect(urls[3]).toContain('files.completeUploadExternal');
+
+    // The file belongs to the alert, not to the channel at large: same thread as the message.
+    const complete = JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body));
+    expect(complete).toMatchObject({
+      channel_id: 'C0123',
+      thread_ts: '1700.1',
+      files: [{ id: 'F1', title: 'trivy-report.json' }],
+    });
+  });
+
+  it('asks for the URL with the real byte length, not a guess', async () => {
+    const fetchMock = uploadReplies();
+
+    await withFile((path) =>
+      slack(config).send(
+        errorNotification('dev-blog', 'the audit failed', 'https://run', {
+          attachments: [{ path, title: 'report.json' }],
+        }),
+      ),
+    );
+
+    const url = new URL(String(fetchMock.mock.calls[1]?.[0]));
+    expect(url.searchParams.get('filename')).toBe('report.json');
+    expect(url.searchParams.get('length')).toBe('15');
+  });
+
+  it('throws — and says the message already went out — when a file cannot be sent', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, ts: '1700.1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: false, error: 'missing_scope' }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      withFile((path) =>
+        slack(config).send(
+          errorNotification('dev-blog', 'the audit failed', 'https://run', {
+            attachments: [{ path }],
+          }),
+        ),
+      ),
+    ).rejects.toThrow(/notification was posted.*missing_scope/s);
+  });
+
+  it('attempts every file before failing, so one bad path cannot hide a second', async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) =>
+      String(url).includes('chat.postMessage')
+        ? {
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: true, ts: '1700.1' }),
+          }
+        : {
+            ok: true,
+            status: 200,
+            json: async () => ({ ok: false, error: 'missing_scope' }),
+          },
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      slack(config).send(
+        errorNotification('dev-blog', 'the audit failed', 'https://run', {
+          attachments: [{ path: '/nope/a.json' }, { path: '/nope/b.json' }],
+        }),
+      ),
+    ).rejects.toThrow(/2 of 2 attachment\(s\) were not/);
+  });
+});

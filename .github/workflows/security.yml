@@ -1,10 +1,13 @@
 name: Security
 
-# A vulnerability scan is not a test. A test goes red because the CODE changed; a scan goes
-# red because the WORLD changed — a CVE was published against a dependency nobody touched.
-# So it runs on two triggers: when the dependencies change (that is when WE introduce
-# something), and every Monday (that is when the world does). See ADR-0007 for why the scan is
-# a workspace-level concern rather than a per-project one.
+# THIS half is the one that catches what WE introduce: it runs when the dependencies change.
+# The other half — the world changing under an untouched dependency — is `weekly-audit.yml`,
+# and they are separate files because they want different settings, not out of tidiness: the
+# weekly one turns the DB cache OFF (a restored copy has always expired by then) and alerts to
+# Slack, while this one wants the cache ON and needs no alert, because a PR already shows a red
+# check. One file could not express both without an `if:` on every line that differs.
+#
+# See ADR-0007 for why the scan is a workspace-level concern rather than a per-project one.
 #
 # The steps are the toolkit's own bricks, wired here. There used to be a
 # `security.reusable.yml` that this file called in one line, and it was deleted: GitHub only
@@ -26,12 +29,15 @@ on:
       - 'pnpm-lock.yaml'
       - '**/package.json'
       - 'packages/plugins/trivy/**'
-  schedule:
-    - cron: '0 6 * * 1' # weekly audit — Monday 06:00 UTC
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# A CI install must not run git hooks — the reusable workflow this file used to call carried
+# this, and inlining it would have quietly dropped it.
+env:
+  HUSKY: 0
 
 jobs:
   scan:
@@ -46,14 +52,5 @@ jobs:
       # enough to be worth restoring. A weekly-only consumer should pass `cache-db: false`.
       - uses: ./packages/ops/gh-actions/actions/trivy-scan
 
-      # Alert only on the weekly run — a PR already shows a red check, and a second signal for
-      # the same fact is how people learn to ignore both.
-      - name: Alert Slack on findings
-        if: ${{ failure() && github.event_name == 'schedule' }}
-        uses: ./packages/ops/gh-actions/actions/notify
-        with:
-          kind: error
-          app: shared-platform
-          message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
-          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
+      # No Slack here on purpose: a failed check on the PR is already the signal, and a
+      # second one for the same fact is how people learn to ignore both.

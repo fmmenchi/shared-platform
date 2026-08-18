@@ -18,6 +18,8 @@ export interface ScanExecutorSchema {
   failOnFindings?: boolean;
   /** Trivy `--format`. Default `table`. */
   format?: string;
+  /** Write the report here (workspace-relative) instead of stdout. */
+  output?: string;
   /** Trivy `--ignorefile` (a `.trivyignore` at the scan root is picked up automatically). */
   ignorefile?: string;
   /** Extra raw arguments appended to the `trivy` invocation. */
