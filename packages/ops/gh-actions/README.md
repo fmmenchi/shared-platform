@@ -5,11 +5,11 @@ plugins and packages (`@fmmenchi/nx-trivy`, `@fmmenchi/ci`, `@fmmenchi/notify`);
 into CI, so there's one source of truth. **Consumers must be nx workspaces** with the relevant
 plugins installed.
 
-Reference them pinned to an **exact** tag — `@gh-actions/v0.1.2`. There is no moving major tag; see [Versioning](#versioning).
+Reference them pinned to an **exact** tag — `@gh-actions/v0.3.1`. There is no moving major tag; see [Versioning](#versioning).
 
-## Turnkey: the reusable security workflow
+## Security: a scan and an alert, in a job you own
 
-One job, one line — vuln + secret scan with a cached DB, and an optional Slack alert:
+Vuln + secret scan with a cached DB, and a Slack alert on the weekly run:
 
 ```yaml
 # .github/workflows/security.yml in a consumer repo
@@ -21,15 +21,32 @@ on:
     branches: [main]
     paths: ['pnpm-lock.yaml', '**/package.json']
   schedule:
-    - cron: '0 6 * * 1'
+    - cron: '0 6 * * 1' # a scan goes red because the WORLD changed, not your code
+env:
+  HUSKY: 0
 jobs:
-  security:
-    uses: fmmenchi/shared-platform/.github/workflows/security.reusable.yml@gh-actions/v0.1.2
-    # alert to Slack only on the scheduled run (a PR already shows a red check)
-    with:
-      alert-on-failure: ${{ github.event_name == 'schedule' }}
-    secrets: inherit
+  scan:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: read } # packages: read → the install can fetch @fmmenchi/*
+    steps:
+      - uses: actions/checkout@v7
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.3.1
+        with: { github-token: '${{ secrets.GITHUB_TOKEN }}' }
+      - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/trivy-scan@gh-actions/v0.3.1
+        with: { cache-db: false } # weekly-only cadence: the cached DB has always expired
+      - name: Alert Slack on findings
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0.3.1
+        with:
+          kind: error
+          message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
+          bot-token: '${{ secrets.SLACK_BOT_TOKEN }}'
+          channel-id: '${{ secrets.SLACK_CHANNEL_ID }}'
 ```
+
+There **was** a one-line `security.reusable.yml`, and it was deleted after it rotted in public: see
+[reusable workflows](./docs/reference/workflows.md). Full walkthrough —
+[run a security scan](./docs/guides/run-a-security-scan.md).
 
 ## Release is bricks, not a turnkey workflow
 

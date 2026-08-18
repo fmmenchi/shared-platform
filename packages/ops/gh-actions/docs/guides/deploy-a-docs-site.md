@@ -95,4 +95,4 @@ The knowledge worth sharing was never the YAML. It is the sentence at the top of
 ## Related
 
 - [Compose the building blocks](./compose-bricks.md) — the same reasoning, applied to the release job.
-- [Reuse a whole workflow](./reuse-a-workflow.md) — what a reusable workflow is still right for.
+- [Run a security scan](./run-a-security-scan.md) — what a reusable workflow is still right for.

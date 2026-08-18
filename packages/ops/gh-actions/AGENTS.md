@@ -14,9 +14,13 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   (`compute-context` derives the canonical run
   context — event kind, release flag, sha/ref slugs — once, for every downstream job). One source of
   truth: plugin logic is never duplicated here.
-- **Reusable workflows** live at `../../../.github/workflows/{security,docs}.reusable.yml` (GitHub
-  only discovers reusable workflows under `.github/workflows/`), and reference the actions above.
-  **Release is bricks only** — there is no `release.reusable.yml`, by the rule below.
+- **No reusable workflows at all**, and that is the newest decision here. GitHub discovers them only
+  under `.github/workflows/`, where a file belongs to no nx project — so `nx release` never sees it
+  change (measured: a `fix(gh-actions)` commit touching only `security.reusable.yml` leaves nx
+  reporting "No changes were detected") and no target ever checked it. The security one therefore
+  rotted in public: internal pins at `v0.1.2` while the toolkit shipped `v0.3.1`, `packages: read`
+  missing so a consumer's install 401'd, and the first consumer to read it wired the bricks by hand
+  instead. Deleted; `security.yml` here now wires the bricks, and the docs carry the job to copy.
 - The `src/` TS is scaffolding only (the lib carries no code) — it exists so nx has a project to
   version/tag.
 
@@ -33,6 +37,15 @@ long-form [concepts](./docs/concepts/index.md) / [guides](./docs/index.md) /
   where the plugin is a project. Ask the graph instead (`nx show projects --with-target <t> --json`,
   take the first) and **fail when the answer is empty** — `nx run-many` exits 0 on no matches
   (measured), which would turn an unregistered plugin into a green security job that scanned nothing.
+- **Nothing that ships to a consumer may live outside an nx project.** That is the general form of the
+  reusable-workflow lesson: outside a project there is no release, no target, no gate — so it cannot
+  be fixed in a way anyone receives, and it decays silently. If GitHub forces a file to live outside
+  (as it does for `workflow_call`), that is a reason not to ship the thing at all.
+- **A consumer's install needs a token, not a `registry-url`.** `setup` takes `github-token` and puts
+  it in `NODE_AUTH_TOKEN`; a consumer whose lockfile holds `@fmmenchi/*` from GitHub Packages 401s
+  without it (and needs `packages: read` on the job). Passing `registry-url` instead is worse than
+  useless: `actions/setup-node` writes a GLOBAL `registry=` line from it, sending public dependencies
+  to GitHub Packages too. Scope mapping belongs in the consumer's `.npmrc`.
 - **A reusable workflow only for a job that is self-contained and parametric.** `security` and `docs`
   qualify: nothing about them is ordered against the caller's other jobs, and everything repo-shaped
   is an input. A **release** is neither — it must run after the caller's checks (and a called workflow

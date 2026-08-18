@@ -7,7 +7,18 @@ inputs:
     required: false
     default: '24'
   registry-url:
-    description: npm registry to configure (set it only for jobs that publish, e.g. GitHub Packages).
+    description: >-
+      npm registry to configure, for jobs that PUBLISH. Deliberately not the way to install private
+      packages: actions/setup-node turns this into a GLOBAL `registry=` line, which would send your
+      public dependencies to that registry too. To install `@fmmenchi/*` from GitHub Packages, map
+      the scope in your own `.npmrc` (`@fmmenchi:registry=...`) and pass `github-token` below.
+    required: false
+    default: ''
+  github-token:
+    description: >-
+      Install token (`NODE_AUTH_TOKEN`) for private `@fmmenchi` dependencies. A consumer whose
+      lockfile holds them gets a 401 from the frozen install without it — `secrets.GITHUB_TOKEN` is
+      enough, with `packages: read` on the job. Omit it when every dependency is public or local.
     required: false
     default: ''
 
@@ -22,5 +33,10 @@ runs:
         cache: pnpm
         registry-url: ${{ inputs.registry-url }}
 
+    # NODE_AUTH_TOKEN is what a scoped `.npmrc` line resolves at install time, and what
+    # setup-node's own generated .npmrc references. Empty is fine: pnpm only needs it for a
+    # registry that asks.
     - run: pnpm install --frozen-lockfile
       shell: bash
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.github-token }}

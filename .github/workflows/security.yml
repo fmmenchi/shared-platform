@@ -3,8 +3,17 @@ name: Security
 # A vulnerability scan is not a test. A test goes red because the CODE changed; a scan goes
 # red because the WORLD changed — a CVE was published against a dependency nobody touched.
 # So it runs on two triggers: when the dependencies change (that is when WE introduce
-# something), and every Monday (that is when the world does). This repo consumes its own
-# reusable security workflow exactly like an external @fmmenchi consumer would — see ADR-0007.
+# something), and every Monday (that is when the world does). See ADR-0007 for why the scan is
+# a workspace-level concern rather than a per-project one.
+#
+# The steps are the toolkit's own bricks, wired here. There used to be a
+# `security.reusable.yml` that this file called in one line, and it was deleted: GitHub only
+# runs a reusable workflow from `.github/workflows/`, where a file belongs to no nx project —
+# so changing it released nothing (measured: nx reports "No changes were detected" even for a
+# `fix(gh-actions)` commit) and no target checked it. Its internal action pins sat at v0.1.2
+# while the toolkit shipped v0.3.1, it was missing `packages: read`, and the first consumer to
+# read it declined it and wired the bricks by hand. Four steps are not worth a file that
+# nothing can release, test, or keep honest.
 on:
   pull_request:
     paths:
@@ -25,11 +34,26 @@ permissions:
   contents: read
 
 jobs:
-  # Dogfood the turnkey pipeline (the reusable, not just the bricks). The caller owns the
-  # triggers above and the gating: alert only on the weekly run (a PR already shows a red check).
-  security:
-    uses: ./.github/workflows/security.reusable.yml
-    with:
-      app-name: shared-platform
-      alert-on-failure: ${{ github.event_name == 'schedule' }}
-    secrets: inherit
+  scan:
+    name: Vulnerabilities & secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./packages/ops/gh-actions/actions/setup
+
+      # cache-db stays on: this repo also scans on every dependency change, so the DB is fresh
+      # enough to be worth restoring. A weekly-only consumer should pass `cache-db: false`.
+      - uses: ./packages/ops/gh-actions/actions/trivy-scan
+
+      # Alert only on the weekly run — a PR already shows a red check, and a second signal for
+      # the same fact is how people learn to ignore both.
+      - name: Alert Slack on findings
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        uses: ./packages/ops/gh-actions/actions/notify
+        with:
+          kind: error
+          app: shared-platform
+          message: 'The Trivy audit found CRITICAL/HIGH dependency vulnerabilities.'
+          bot-token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
