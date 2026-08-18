@@ -43,14 +43,42 @@ const dryRun = process.env['RELEASE_DRY_RUN'] === 'true';
 // behaviour exactly — no commit, tag and push once, at the changelog step.
 const gitFlags = { gitCommit: false, stageChanges: false } as const;
 
-const { projectsVersionData, releaseGraph } = await releaseVersion({
-  dryRun,
-  verbose: false,
-  ...gitFlags,
-  gitTag: false, // the changelog step tags, as it does under `nx release`
-});
+const { workspaceVersion, projectsVersionData, releaseGraph } =
+  await releaseVersion({
+    dryRun,
+    verbose: false,
+    ...gitFlags,
+    gitTag: false, // the changelog step tags, as it does under `nx release`
+  });
+
+// NOTHING RELEASED — stop here, before the changelog step.
+//
+// `projectsVersionData` lists every project nx considered, most of them with no new
+// version: a push that releases nothing is the ordinary case, not an error. Going on
+// anyway hands `releaseChangelog` a run with nothing to describe, and then asks it to tag
+// and push — reported from a consumer repo as a junk tag on a push that released nothing.
+// The record is still written (empty), because "nothing was released" and "the step never
+// ran" must not look the same to whatever reads it next.
+const releasedAnything = Object.values(projectsVersionData ?? {}).some(
+  (data) => data?.newVersion,
+);
+
+if (!releasedAnything) {
+  writeFileSync(
+    process.env['RELEASE_RESULT_FILE'] ?? 'release-result.json',
+    `${JSON.stringify({ dryRun, releases: [] }, null, 2)}\n`,
+  );
+  writeFileSync(process.env['NEW_TAGS_FILE'] ?? 'new_tags.txt', '');
+  console.log(
+    'nx-release: no project has a new version — nothing to changelog, tag or publish.',
+  );
+  process.exit(0);
+}
 
 const { projectChangelogs } = await releaseChangelog({
+  // Passed as the CLI passes it: in a fixed/single-group workspace the changelog step
+  // needs the workspace version, and leaving it out lets that step decide for itself.
+  version: workspaceVersion,
   dryRun,
   verbose: false,
   versionData: projectsVersionData,
