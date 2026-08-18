@@ -52,20 +52,11 @@ jobs:
 | `with:`                                    | The reusable's inputs (see [reference](../reference/workflows.md)).              |
 | `secrets: inherit`                         | Pass all your secrets in one line — or map them explicitly.                      |
 
-## Docs — same mechanic
+## Docs — not a reusable workflow
 
-```yaml
-# .github/workflows/docs.yml
-on:
-  push: { branches: [main] }
-permissions: { contents: read, pages: write, id-token: write }
-jobs:
-  docs:
-    uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0.1.2
-    with:
-      docs-project: '@myorg/docs'
-      docs-output: apps/docs/build
-```
+Deploying a docs site is [a job you own](./deploy-a-docs-site.md): every step in it is GitHub's Pages
+boilerplate, so there is nothing of ours to centralise. `security` is the only turnkey workflow here,
+and it is turnkey because the logic inside it is ours.
 
 ## Related
 

@@ -48,18 +48,12 @@ promise you — which is exactly what the old `release.reusable.yml` was, until 
 
 ---
 
-## `docs.reusable.yml`
+## Docs — there isn't one either
 
-Build an nx docs site (Docusaurus via `@fmmenchi/nx-docusaurus`) and deploy it to GitHub Pages,
-optionally with a Storybook under `/storybook/`.
+Deploying a docs site to Pages is [a job you own](../guides/deploy-a-docs-site.md).
 
-### Inputs
-
-| Input               | Type   | Default | Description                                                                      |
-| :------------------ | :----- | :------ | :------------------------------------------------------------------------------- |
-| `docs-project`      | string | –       | **Required.** The nx project that builds the site (its `build` target).          |
-| `docs-output`       | string | –       | **Required.** The built site directory to deploy (e.g. `apps/docs/build`).       |
-| `storybook-project` | string | `''`    | Optional nx project with a `build-storybook` target → rides under `/storybook/`. |
-| `storybook-static`  | string | `''`    | The storybook static output dir (required when `storybook-project` is set).      |
-
-The caller needs `permissions: { contents: read, pages: write, id-token: write }`.
+The release workflow above was removed because it could not be dogfooded. This one was removed for a
+simpler reason: **it carried nothing of ours**. Its steps were `checkout`, `setup`, `nx run`, `cp`,
+and three `actions/*-pages` steps — GitHub's own boilerplate with a build in the middle. A reusable
+workflow is worth a pin when it holds logic you should not reimplement; that one held a Node version,
+a registry and two target names, all of which are yours.

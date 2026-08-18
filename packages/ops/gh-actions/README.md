@@ -60,27 +60,16 @@ jobs:
         with: { result-file: '${{ steps.release.outputs.result-file }}' }
 ```
 
-## Turnkey: the reusable docs workflow
+## Docs on GitHub Pages — a job you own
 
-Build an nx docs site (Docusaurus via `@fmmenchi/nx-docusaurus`) and deploy it to GitHub Pages,
-optionally with a Storybook under `/storybook/`:
+There is no docs reusable workflow either, and for a different reason than the release one: it
+carried no `@fmmenchi` logic at all. `checkout`, `setup`, an `nx run`, a `cp`, and GitHub's own
+`*-pages` actions — boilerplate you can read, hidden behind a tag you had to pin.
 
-```yaml
-# .github/workflows/docs.yml in a consumer repo
-name: Docs
-on:
-  push: { branches: [main] }
-permissions: { contents: read, pages: write, id-token: write }
-jobs:
-  docs:
-    uses: fmmenchi/shared-platform/.github/workflows/docs.reusable.yml@gh-actions/v0.1.2
-    with:
-      docs-project: '@myorg/docs'
-      docs-output: apps/docs/build
-      # optional Storybook:
-      storybook-project: '@myorg/ui'
-      storybook-static: packages/ui/storybook-static
-```
+The part worth sharing was never the YAML: **Pages allows exactly one deployment per repository**, so
+a docs site and a Storybook cannot be two workflows — the second silently replaces the first. The
+whole job, with that warning, is in
+[deploy a docs site](./docs/guides/deploy-a-docs-site.md).
 
 ## Building blocks (composite actions)
 
