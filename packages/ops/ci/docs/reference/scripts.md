@@ -28,6 +28,7 @@ and then **verified against the tags git really has** before anything downstream
 | `RELEASE_RESULT_FILE` | `release-result.json` | The record: `{ dryRun, releases: [{ project, version, tag }] }`        |
 | `NEW_TAGS_FILE`       | `new_tags.txt`        | Transitional: the same records projected to package tags, one per line |
 | `RELEASE_DRY_RUN`     | unset                 | `true` rehearses the whole script without releasing (see below)        |
+| `RELEASE_VERBOSE`     | unset                 | `true` makes nx print the `git` commands it is about to run            |
 | `GITHUB_TOKEN`        | —                     | Passed through for tags and GitHub Releases                            |
 | `NODE_AUTH_TOKEN`     | —                     | Passed through for publishing                                          |
 
@@ -69,26 +70,49 @@ accident and untestable by construction.
 ### `toReleaseRecords` / `publishableProjects`
 
 ```ts
-toReleaseRecords(projectsVersionData, projectChangelogs): ReleaseRecord[]
+toReleaseRecords(projectsVersionData, tagByProject, projectChangelogs?): ReleaseRecord[]
 publishableProjects(records, projectGraphNodes): ReleaseRecord[]
 ```
 
 What nx returned, turned into `{ project, version, tag, notes }` — only for projects that actually got
-a new version. Nothing is formed or parsed: the tag is `ReleaseVersion.gitTag` and the notes are the
-rendered `contents`, both handed over by `releaseChangelog`. A released project with no tag throws
-rather than being given an invented one.
+a new version. Nothing is formed or parsed here: the version comes from `releaseVersion`, the tag from
+`tagsByProject` below, the notes from `releaseChangelog` when the consumer configured changelogs at
+all. A released project with no tag throws rather than being given an invented one.
+
+The notes are optional and the tag is not, and that asymmetry is the point. Both used to come out of
+`projectChangelogs`, which nx populates **only** for a consumer who configured project changelogs — so
+on nx's default config the record could not be built at all, after the release had already been cut.
 
 `publishableProjects` answers "is there anything to publish?" — `nx-release-publish` is not created
 for a `private` package, and `releasePublish` throws when nothing it matched has that target.
 
-### `newTags`
+### `tagsByProject` / `remoteReleaseProviderOf`
 
 ```ts
-newTags(before: readonly string[], after: readonly string[]): string[]
+tagsByProject(projectsVersionData, graph, ReleaseVersion, expectedTags): Map<string, string>
+remoteReleaseProviderOf(changelogConfig): unknown
 ```
 
-The tags present in `after` and not in `before`, sorted. Empty is a normal answer. No longer used by
-`release.js` (which asks nx instead of diffing tags), kept for consumers that still diff.
+`tagsByProject` is the only mapping that is per project. nx's own `createGitTagValues` returns a flat
+list — one tag for a whole **fixed** group — so it can say which tags exist but not who owns each one.
+The tag is formed here by nx's own `ReleaseVersion` (injected, so this stays testable) from the tag
+pattern nx resolved onto the project's release group, then **cross-checked** against that flat list:
+two answers out of the same source, and a disagreement stops the release rather than recording a tag
+nobody will cut.
+
+`remoteReleaseProviderOf` returns the hosted-release provider a resolved changelog config asks for, or
+`undefined` for none — the one piece of nx's top-level `release()` that cannot be imported.
+
+:::note[Why the tags are not read back out of git]
+
+Because a tag cannot say which project it belongs to. This very workspace cuts two shapes from two
+release groups — `@fmmenchi/ci@0.1.0` and `gh-actions/v0.4.0` — and the second contains no project
+name to cut back out. Reading git also has nothing to read during a rehearsal, and re-derives, badly,
+what `projectsVersionData` already states. `newTags(before, after)`, which diffed a photograph of the
+tags taken before the release against one taken after, was this package's first answer to that
+question; it was removed, unused, when the record replaced it.
+
+:::
 
 ---
 
