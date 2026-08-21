@@ -1,3 +1,13 @@
+## 0.4.1 (2026-08-21)
+
+### 🚀 Features
+
+- **gh-actions:** the release brick can be asked what git it is running ([13165f6](https://github.com/fmmenchi/shared-platform/commit/13165f6))
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.4.0 (2026-08-18)
 
 ### 🚀 Features
