@@ -204,11 +204,18 @@ jobs:
       # the steps below. Same brick, same `pnpm exec fmmenchi-release`, that a consumer runs —
       # nothing here knows a path into @fmmenchi/ci. nx versions only the projects with
       # releasing conventional commits, so a root-file-only change releases nothing.
+      #
+      # `verbose: true` on purpose. nx prints the `git commit` and `git tag` it is about to run
+      # only when verbose, so without it the one artefact worth having in a release log — what
+      # was actually committed, tagged and pushed, in what order — is absent. It is also the
+      # only thing that makes a wrong command visible: a premature push from the version step
+      # survived precisely as long as nobody could switch this on.
       - name: Release
         id: release
         uses: ./packages/ops/gh-actions/actions/release
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          verbose: true
 
       # The record crosses the job boundary two ways, because the two consumers need
       # different things: `released` as a job output (a string, cheap, drives the `if:`),

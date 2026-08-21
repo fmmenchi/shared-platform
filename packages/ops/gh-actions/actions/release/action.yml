@@ -9,6 +9,15 @@ inputs:
     description: Rehearse without releasing. The record is stamped, and no consumable tag list is written.
     required: false
     default: 'false'
+  verbose:
+    description: >-
+      Print the git commands the release is about to run (nx logs `git commit`/`git tag` only
+      when verbose). Off by default — a release is loud enough — but it is the ONLY way a
+      wrong one is visible, and a release misbehaves in CI, not on somebody's laptop. A
+      premature push from the version step was invisible for exactly as long as this was
+      unreachable. Harmless against an older @fmmenchi/ci, which ignores the variable.
+    required: false
+    default: 'false'
   github-token:
     description: Token used for tags, GitHub Releases and publishing.
     required: true
@@ -54,6 +63,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github-token }}
         NODE_AUTH_TOKEN: ${{ inputs.github-token }}
         RELEASE_DRY_RUN: ${{ inputs.dry-run }}
+        RELEASE_VERBOSE: ${{ inputs.verbose }}
         RELEASE_RESULT_FILE: ${{ runner.temp }}/release-result.json
         NEW_TAGS_FILE: ${{ runner.temp }}/new_tags.txt
       run: |
