@@ -103,7 +103,17 @@ command runs in a consumer and in the repo that publishes it.
 | Input          | Type    | Default | Description                                                             |
 | :------------- | :------ | :------ | :---------------------------------------------------------------------- |
 | `dry-run`      | boolean | `false` | Rehearse: the record is stamped, and no consumable tag list is written. |
+| `verbose`      | boolean | `false` | Print the `git` commands the release is about to run.                   |
 | `github-token` | string  | –       | **Required.** Tags, GitHub Releases, publishing.                        |
+
+:::tip[Turn `verbose` on when a release misbehaves]
+
+nx logs the `git commit` and `git tag` it is about to run **only** when verbose, so without it a
+wrong command is invisible — and a release misbehaves in CI, not on somebody's laptop. A premature
+push from the version step (`add → push → commit → tag` instead of `add → commit → tag → push`)
+survived exactly as long as nobody could switch this on. Pair it with `dry-run: true` to rehearse.
+
+:::
 
 | Output        | Description                                                |
 | :------------ | :--------------------------------------------------------- |
