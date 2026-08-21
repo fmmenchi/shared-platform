@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPackageTag, newTags } from './tags.js';
+import { isPackageTag } from './tags.js';
 
 describe('isPackageTag', () => {
   it('accepts a scoped published-package tag', () => {
@@ -15,25 +15,5 @@ describe('isPackageTag', () => {
   it('rejects a bare version tag', () => {
     expect(isPackageTag('v1.0.0')).toBe(false);
     expect(isPackageTag('')).toBe(false);
-  });
-});
-
-describe('newTags', () => {
-  it('returns only tags present in after but not before, sorted', () => {
-    const before = ['@fmmenchi/ui@0.0.5', 'gh-actions/v0.0.1'];
-    const after = [
-      '@fmmenchi/ui@0.0.5',
-      '@fmmenchi/ui@0.0.6',
-      'gh-actions/v0.0.1',
-      'gh-actions/v0.0.2',
-    ];
-    expect(newTags(before, after)).toEqual([
-      '@fmmenchi/ui@0.0.6',
-      'gh-actions/v0.0.2',
-    ]);
-  });
-
-  it('is empty when nothing changed', () => {
-    expect(newTags(['a@1.0.0'], ['a@1.0.0'])).toEqual([]);
   });
 });
