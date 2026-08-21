@@ -72,6 +72,16 @@ jobs:
       - run: pnpm nx run-many -t typecheck build lint lint-css build-storybook
           --outputStyle=stream
 
+      # The release script's contract with `nx release`. It builds throwaway nx workspaces and
+      # runs BOTH implementations over them as a rehearsal, comparing the git commands each says
+      # it would run — the only check that covers the ORDER of a release, which no type does and
+      # which is the one thing we took ownership of by composing nx's subcommands ourselves.
+      #
+      # Its own step, and not folded into the run-many above, for the reason that step's comment
+      # gives at length: it spawns two full nx runs per scenario, so its ~25s would be attributed
+      # to whichever project's output nx happened to interleave it with.
+      - run: pnpm nx run @fmmenchi/ci:contract
+
       # The browser-mode suite, alone. Second because a type error makes every
       # test below it meaningless, and this is the slower half.
       #

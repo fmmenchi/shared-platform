@@ -31,7 +31,24 @@
       "scope:ops",
       "type:util",
       "doc:ops"
-    ]
+    ],
+    "targets": {
+      "contract": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "vitest run --config vitest.contract.config.mts",
+          "cwd": "packages/ops/ci"
+        },
+        "dependsOn": [
+          "build"
+        ],
+        "cache": true,
+        "inputs": [
+          "default",
+          "^default"
+        ]
+      }
+    }
   },
   "dependencies": {
     "@fmmenchi/notify": "workspace:*",

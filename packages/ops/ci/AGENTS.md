@@ -11,7 +11,13 @@ them into it.
 pnpm nx typecheck @fmmenchi/ci
 pnpm nx build @fmmenchi/ci
 pnpm nx test @fmmenchi/ci      # the pure half — tags, release records
+pnpm nx run @fmmenchi/ci:contract   # the release vs `nx release`, on throwaway workspaces (~25s)
 ```
+
+`contract` is deliberately NOT part of `test`: it spawns two full nx runs per scenario, where the
+unit suite runs in milliseconds. CI runs it as its own step. Rehearse a release by hand with
+`RELEASE_DRY_RUN=true RELEASE_VERBOSE=true` — verbose is what makes nx print the git commands, and
+without it a wrong one is invisible.
 
 ## Rules
 
@@ -89,6 +95,15 @@ releaseGraph }` and nothing else: it computes the tags and the rendered notes in
   is committed or tagged. Caught in a rehearsal twice, the second time on the day it was dropped
   while moving the git operations into this script. Rehearse with `RELEASE_VERBOSE=true` and read
   the `git` commands: that is the only way this one is visible.
+  **`nx release` itself still has this defect** — measured, on `git: { push: true }` with no hosted
+  release configured: `nx release` runs `add → push → commit → tag` where this script runs
+  `add → commit → tag → push`. It is the one place the two deliberately differ, and the contract
+  test pins BOTH sequences so that a fix upstream shows up as a red test rather than a surprise.
+- **The contract test is what covers the ORDER.** Composing nx's subcommands means owning the
+  sequence, and no type covers a sequence. `contract` builds throwaway nx workspaces and compares
+  the git commands this script would run against the ones `nx release` would. It is verified to
+  catch the real thing: removing `gitPush: false` from the version step turns it red, naming the
+  premature push. Add a scenario whenever a release-shaped decision is made here.
 - **The notification LOGIC is not here — the entrypoint is.** `fmmenchi-notify` reads events,
   delivers them and counts what arrived; every message is built and sent by `@fmmenchi/notify`, which
   stays the single implementation. This package owns the two CI doors (`fmmenchi-release`,
