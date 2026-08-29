@@ -125,7 +125,9 @@
       "inputs": ["production", "^production"]
     },
     "codegen": {
-      "cache": false
+      "//": "`^build` for the same reason `build-storybook` below carries it, and this target is where it was missing: a codegen script is ordinary node, so an import of a workspace package resolves through its `exports` — which point at `dist`, never at the source. `@fmmenchi/ui`'s manager-theme generator read the tokens as CSS for months and needed no build; the moment it imported `@fmmenchi/tokens/resolve`, it needed one, and nothing said so. `build-storybook` already declared `^build` and could not help: `codegen` is its dependency, so it runs FIRST and died before the build it was waiting for. Measured in a fresh worktree — ERR_MODULE_NOT_FOUND on `dist/resolve.js`, the same failure that turned `main` red.",
+      "cache": false,
+      "dependsOn": ["^build"]
     },
     "typecheck": {
       "dependsOn": ["codegen", "build", "^typecheck"],
