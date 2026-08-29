@@ -155,12 +155,27 @@ export function PaletteRamps() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', flex: 1, minInlineSize: 0 }}>
+          {/* WRAPPING, and a floor on the swatch width.
+              The neutral ramp is 36 rungs — the regular 50s plus the exact
+              lightnesses the two themes stand on, which the pale end needs
+              because five surfaces live inside nine points of lightness there.
+              Laid out as one row they came out 30px wide with unreadable
+              labels: a scale nobody can read is not doing the job a scale is
+              for. Wrapping keeps every rung legible and lets a long ramp take
+              the height it needs. */}
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              flex: 1,
+              minInlineSize: 0,
+            }}
+          >
             {ramp.steps.map(({ step, property }) => (
               <div
                 key={step}
                 title={`${property}\n${values[property] ?? ''}`}
-                style={{ flex: 1, minInlineSize: 0 }}
+                style={{ flex: '1 0 4.5rem', minInlineSize: 0 }}
               >
                 <div
                   style={{
