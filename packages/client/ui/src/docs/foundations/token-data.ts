@@ -5,7 +5,13 @@ import {
   colorVar,
   type ColorRole,
 } from '@fmmenchi/tokens';
-import type { ColorPair, RoleEntry, RoleGroup } from './token-data.types.js';
+import type {
+  ColorPair,
+  HueFamily,
+  RoleEntry,
+  RoleGroup,
+  Shade,
+} from './token-data.types.js';
 
 /**
  * The token CONTRACT, arranged for a page to lay out — never a copy of it.
@@ -83,6 +89,101 @@ export function remainingGroups(): RoleGroup[] {
       (a, b) =>
         b.entries.length - a.entries.length || a.name.localeCompare(b.name),
     );
+}
+
+/** Every colour property, for a page that wants the whole set at once. */
+export const ALL_COLOR_PROPERTIES: readonly string[] =
+  COLOR_ROLES.map(colorVar);
+
+/**
+ * `oklch(L C H)` → its three numbers, or null for anything else.
+ *
+ * Chromium serialises a registered `<color>` back in the notation it was
+ * authored in, which for every value here is `oklch()` — verified by reading
+ * the computed values off the page rather than assumed. Anything that does not
+ * parse is skipped rather than guessed at: a palette with one silently wrong
+ * entry is worse than one that is visibly short.
+ */
+export function parseOklch(
+  value: string,
+): { lightness: number; chroma: number; hue: number } | null {
+  const match = /^oklch\(\s*([\d.]+)%?\s+([\d.]+)\s+([\d.]+)/i.exec(
+    value.trim(),
+  );
+  if (match === null) return null;
+
+  const [, l = '', c = '', h = ''] = match;
+  const raw = Number(l);
+  return {
+    // Authored as `41%`, serialised as `0.41` — both appear depending on where
+    // the string came from, so anything above 1 is read as a percentage.
+    lightness: raw > 1 ? raw / 100 : raw,
+    chroma: Number(c),
+    hue: Number(h),
+  };
+}
+
+/** Chroma below which a colour is grey and its hue angle means nothing. */
+const NEUTRAL_CHROMA = 0.03;
+
+/** Hues within this many degrees are the same family. */
+const HUE_TOLERANCE = 8;
+
+/**
+ * THE PALETTE, RECONSTRUCTED.
+ *
+ * There is no primitive palette file to show: `vars.css` says so itself — the
+ * values are static `oklch` literals resolved AT AUTHORING TIME from the ramp
+ * methodology, so the ramp was applied by hand and never became code. The
+ * closest true thing is therefore this: take every semantic value, group it by
+ * hue and order it by lightness, and the palette that is actually in use falls
+ * out.
+ *
+ * It is also the more honest artefact. A primitives file would say what was
+ * intended; this says what is shipped — including that several roles resolve to
+ * the SAME value, which is why each shade carries the list of roles that share
+ * it rather than pretending to be one.
+ */
+export function hueFamilies(values: Record<string, string>): HueFamily[] {
+  const byValue = new Map<string, Shade>();
+
+  for (const role of COLOR_ROLES) {
+    const value = values[colorVar(role)] ?? '';
+    const parsed = parseOklch(value);
+    if (parsed === null) continue;
+
+    const existing = byValue.get(value);
+    if (existing === undefined) {
+      byValue.set(value, { value, ...parsed, roles: [role] });
+    } else {
+      existing.roles.push(role);
+    }
+  }
+
+  const families: HueFamily[] = [];
+  for (const shade of byValue.values()) {
+    const neutral = shade.chroma < NEUTRAL_CHROMA;
+    const family = families.find(
+      (candidate) =>
+        candidate.neutral === neutral &&
+        (neutral || Math.abs(candidate.hue - shade.hue) <= HUE_TOLERANCE),
+    );
+    if (family === undefined) {
+      families.push({ hue: shade.hue, neutral, shades: [shade] });
+    } else {
+      family.shades.push(shade);
+    }
+  }
+
+  for (const family of families) {
+    family.shades.sort((a, b) => b.lightness - a.lightness);
+  }
+
+  // Neutrals last: they are the longest ramp and the least interesting one to
+  // land on first.
+  return families.sort(
+    (a, b) => Number(a.neutral) - Number(b.neutral) || a.hue - b.hue,
+  );
 }
 
 /*

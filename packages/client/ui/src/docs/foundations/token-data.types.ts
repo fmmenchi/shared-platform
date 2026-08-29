@@ -13,6 +13,29 @@ export type RoleGroup = {
   entries: RoleEntry[];
 };
 
+/** One value in the palette, and every role that resolves to it. */
+export type Shade = {
+  value: string;
+  lightness: number;
+  chroma: number;
+  hue: number;
+  /** Every role sharing this exact value — often more than one. */
+  roles: ColorRole[];
+};
+
+/**
+ * A hue family, reconstructed from the values rather than read from a file.
+ *
+ * `hue` is the representative angle; `neutral` marks the near-zero-chroma
+ * cluster, where the angle carries no meaning and grouping by it would be
+ * grouping by noise.
+ */
+export type HueFamily = {
+  hue: number;
+  neutral: boolean;
+  shades: Shade[];
+};
+
 /**
  * A declared foreground/background pair.
  *

@@ -20,6 +20,34 @@ values are read out of the DOM in whichever theme is on screen. Use the
 **Theme** toolbar — every swatch and every number on this page follows it,
 because nothing here holds a copy of a value.
 
+## The palette
+
+There is no primitives file to show you, and that is a decision rather than an
+omission. `vars.css` says it plainly: the values are static `oklch` literals
+**resolved at authoring time** from the ramp methodology — base ± lightness,
+scaled chroma. The ramp was applied when the numbers were chosen and never
+became code, so there is no `blue-500` anywhere to import, and no primitive
+layer to drift from the semantic one.
+
+What can be shown is the palette that is actually shipped, reconstructed from
+the values: every distinct colour, grouped by hue, ordered by lightness. It
+cannot go stale, because it _is_ the tokens.
+
+Reading it is worth a minute. The label under each swatch is its lightness; a
+`·N` means **N roles resolve to that exact value** — 84 roles come out as far
+fewer colours, and white alone does the work of eleven of them. Hovering a
+swatch lists every role that shares it.
+
+Two things this view makes visible that a list of roles cannot:
+
+- the neutrals are by far the longest ramp, which is what a restrained system
+  looks like from the inside;
+- there are **two blues, ten degrees apart** — `info` sits at 245° while
+  `primary`, `link`, `ring` and `selection` sit at 255°. Deliberate or not, it
+  is the kind of thing that is invisible until the palette is drawn.
+
+<Canvas of={ColorStories.FullPalette} />
+
 ## Action families
 
 Four families for things a person can do — `primary`, `secondary`, `accent`,

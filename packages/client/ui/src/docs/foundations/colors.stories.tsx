@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DeclaredPairs } from './color-specimens.js';
-import { Palette } from './palette.js';
+import { Palette, SourcePalette } from './palette.js';
 import {
   ACTION_GROUPS,
   REMAINING_GROUPS,
@@ -28,6 +28,8 @@ const meta: Meta = {
 export default meta;
 
 type Story = StoryObj;
+
+export const FullPalette: Story = { render: () => <SourcePalette /> };
 
 export const Action: Story = {
   render: () => <Palette groups={ACTION_GROUPS} />,
