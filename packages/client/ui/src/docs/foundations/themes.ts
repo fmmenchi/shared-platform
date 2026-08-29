@@ -7,6 +7,18 @@
  * neutral where it does not. A pale brand colour therefore keeps its own
  * lightness and takes dark text, instead of being darkened until white works.
  *
+ * WHAT IS THEIRS AND WHAT IS NOT. These companies publish an IDENTITY — two to
+ * five colours — never a semantic palette. Airbnb's five (Rausch, Babu, Arches,
+ * Hof, Foggy) are documented by third parties, Airbnb having no public design
+ * system; Babu is recorded as their success colour as well as an accent.
+ * Spotify publishes a green and a black. Stripe publishes blurple and a
+ * navy/slate family.
+ *
+ * So warning and info are the platform's own in every theme here, and
+ * several other slots too — no brand publishes them. Each hex below is marked.
+ * Saying which is which is worth more than filling every slot and implying a
+ * fidelity that is not there.
+ *
  * They live in a story rather than the package: shipping someone else's palette
  * under their name would be a use of their mark, not an example.
  */
@@ -91,7 +103,7 @@ export const THEMES: Record<ThemeName, { label: string; bases: string }> = {
       --fm-palette-secondary-base: oklch(55% 0.1972 39);
       --fm-palette-accent-base: oklch(55% 0.1149 185);
       --fm-palette-negative-base: oklch(55% 0.1816 34);
-      --fm-palette-success-base: oklch(55% 0.1855 143);
+      --fm-palette-success-base: oklch(55% 0.1149 185);
       --fm-palette-warning-base: oklch(55% 0.1706 78);
       --fm-palette-info-base: oklch(55% 0.1874 259);
 
@@ -111,8 +123,8 @@ export const THEMES: Record<ThemeName, { label: string; bases: string }> = {
       --fm-color-destructive-foreground: var(--fm-palette-neutral-0);
       --fm-color-destructive-hover: var(--fm-palette-negative-600);
       --fm-color-destructive-active: var(--fm-palette-negative-700);
-      --fm-color-success: var(--fm-palette-success-500); /* #008A05 L55% -> 500, white 4.51 */
-      --fm-color-success-foreground: var(--fm-palette-neutral-0);
+      --fm-color-success: var(--fm-palette-success-300); /* #00A699 L65% -> 300, white 2.53 */
+      --fm-color-success-foreground: var(--fm-palette-neutral-760);
       --fm-color-warning: var(--fm-palette-warning-200); /* #FFB400 L82% -> 200, white 1.91 */
       --fm-color-warning-foreground: var(--fm-palette-neutral-760);
       --fm-color-info: var(--fm-palette-info-300); /* #428BFF L65% -> 300, white 2.72 */
