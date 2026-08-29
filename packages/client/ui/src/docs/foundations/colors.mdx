@@ -6,257 +6,140 @@ import * as ColorStories from './colors.stories.tsx';
 
 # Colors
 
-Colour here is a **role**, never a hue. A component asks for
+Colour is built in **three levels**, and they are the order of this page:
+
+1. **Bases** — one colour per family. Eight numbers.
+2. **The palette** — a ramp derived from each base, `100…900`.
+3. **Roles** — the 84 semantic tokens, each pointing at a step.
+
+A component only ever touches level 3. It asks for
 `--fm-color-primary-subtle-foreground` — "the ink that goes on the soft primary
-wash" — and a theme decides what that is. That indirection is the whole point:
-a rebrand moves a value in one stylesheet instead of every call site, and the
-component keeps working because it never knew the colour in the first place.
+wash" — and the theme decides what that is. That indirection is the whole point:
+a rebrand moves a base instead of every call site, and the component keeps
+working because it never knew the colour.
 
-There **is** a palette underneath, and it is not yours to reach for. The
-contract exposes semantic roles and nothing else: the ramp exists so the roles
-can be derived from something instead of each carrying its own number, not so a
-component can ask for `primary-500`. See [Three levels](#three-levels) for what
-sits where.
+Everything below is read live: the names come from the stylesheet and the
+contract, the values from the DOM in whichever theme is on screen. Use the
+**Theme** toolbar — every swatch and every number here follows it, because
+nothing holds a copy of a value.
 
-Everything below is derived: the names come from `@fmmenchi/tokens`, and the
-values are read out of the DOM in whichever theme is on screen. Use the
-**Theme** toolbar — every swatch and every number on this page follows it,
-because nothing here holds a copy of a value.
+---
 
-## The vocabulary
+## Level 1 · Bases
 
-Every family is built from the same few words. Learn these six and you can read
-any role in the system without looking it up.
+One colour per family, and the only place a hue is decided. Everything else is
+derived from these eight or points at something that is.
 
-| Role             | What it is                                      | Use it for                                                                              |
-| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `base`           | The solid fill. The loudest form of the family. | A filled button, a solid badge, a filled progress bar. One per screen area, not five.   |
-| `on base`        | The ink that sits **on** the solid fill.        | Label and icons inside that filled thing. Never as text on the page.                    |
-| `subtle`         | The soft wash — same meaning, a tenth as loud.  | Alert backgrounds, chips, selected rows, anything that tints a region behind real text. |
-| `on subtle`      | The ink that sits **on** the wash.              | Text inside the alert or the chip. It is dark where `on base` is light.                 |
-| `border`         | The line at the edge of a subtle region.        | The rule around an alert. Status families only — an action family has hover instead.    |
-| `hover`/`active` | The fill, darkened one and two steps.           | Pointer and pressed states of a `base` fill. Never a resting colour.                    |
+This is also what a brand preset replaces. An app bringing its own colours
+overrides the bases and inherits the ramp and the mapping — eight numbers
+instead of eighty-four.
 
-Two rules that follow from the shape rather than from taste:
+<Canvas of={ColorStories.Bases} />
 
-**An ink is only valid on its own fill.** `on base` is measured against `base`
-and nothing else. Put it on the page background and the contrast guarantee in
-the table below does not apply to it — most `on base` inks here are white.
+## Level 2 · The palette
 
-**`base` and `subtle` are not light and dark versions of each other.** They are
-two different jobs: `base` is a thing you press, `subtle` is a region you read
-inside. Choosing between them is choosing whether the colour is the object or
-the backdrop — which is why each has its own ink instead of sharing one.
+Each base becomes a ramp: nine steps, constant spacing, `100` palest to `900`
+darkest, with `500` being the base itself. The neutrals are their own scale —
+rungs 50 apart, from white (`0`) to black (`1000`).
 
-`disabled` and `on disabled` mirror `base`/`on base` for the unavailable state,
-and are the one pair exempt from the contrast floor (see below).
+<Canvas of={ColorStories.Ramps} />
 
-## The matrix
-
-Families down, slots across — the one view that lets a colour be compared with
-the colour it should match. Reading **down** a column puts every family's
-`subtle` side by side; reading **across** a row is one family's full vocabulary.
-
-The empty cells carry as much as the filled ones. `border` is blank for the four
-action families and filled for the status ones; `hover` and `active` are the
-reverse. That is the difference between something you press and something you
-read, drawn rather than described.
-
-Hover any cell for its role, its property and its resolved value.
-
-<Canvas of={ColorStories.Matrix} />
-
-`input` is deliberately not a row here: its slots are its own (`invalid`,
-`placeholder`) and a column used by a single family makes every other row look
-incomplete. It appears under Surfaces below.
-
-## Three levels
-
-Colour is built in three, and knowing which one you are looking at is most of
-understanding the system.
-
-**1 · Bases.** One colour per family — `--fm-palette-primary-base`. Seven
-numbers, and the only place a hue is decided.
-
-**2 · The palette.** A `100…900` ramp derived from each base, in CSS:
-
-```css
---fm-palette-primary-800: oklch(
-  from var(--fm-palette-primary-base) calc(l - 0.24) calc(c * 0.72) h
-);
-```
-
-**3 · Roles.** The 84 semantic tokens, each pointing at a step —
-`--fm-color-primary: var(--fm-palette-primary-700)`.
-
-**Components only ever touch level 3.** The palette is not part of the contract:
-it has no `@property` registration, no Tailwind bridge, and no promise of
-stability. Reach past a role and you are depending on something that can move
-without notice.
+Two things it shows that a list of roles cannot. `destructive` and `error` are
+the **same ramp** — same hue, same base, two names because one is a button and
+the other is a message. And the neutral scale is **shared between the themes**:
+light and dark do not have different greys, they point at opposite ends of one
+scale, `background` being `neutral-15` in light and `neutral-790` in dark.
 
 ### Why the ramp looks the way it does
 
-Neither curve was chosen — both were measured, and they are the interesting part
-of this page.
+Neither curve was chosen. Both were measured, and that is the interesting part.
 
 **The lightness curve was already there.** Before any of this existed, every
 family's roles sat at the same offsets from its fill: hover −0.10, active −0.19,
-subtle +0.49, disabled +0.39. Step for step, all seven. The ramp methodology the
-old tokens described really had been applied by hand; the bases are just those
-fills undone, which is why step 700 reproduces the fill each family always had.
+subtle +0.49, disabled +0.39. Step for step, all eight families. So the bases
+are simply those fills undone, which is why step 700 reproduces the fill each
+family always had.
 
 **The chroma coefficients _are_ the sRGB gamut.** Solved numerically, the most
 the tightest hue can take at each lightness is `100 ×0.22`, `200 ×0.55`,
-`700 ×0.96`, `800 ×0.72`, `900 ×0.50` — and those land within a hundredth of the
-literals the system already shipped. The numbers that looked irregular were not
-untidiness: whoever picked them had pushed every step to the edge of what sRGB
-can display. Borrowing another system's curve instead put five blue steps _out_
-of gamut, which is how this was discovered.
+`700 ×0.96`, `800 ×0.72`, `900 ×0.50` — within a hundredth of the literals the
+system already shipped. The numbers that looked irregular were not untidiness:
+every step had been pushed to the edge of what sRGB can display. Borrowing
+another system's curve put five blue steps _out_ of gamut, which is how this was
+found.
 
 There is **no step 50**: at base + 0.42 the lightness is ≈0.97, where the gamut
 admits almost nothing — every family solved under 0.10 chroma, `warning` at
 0.00. A step that can only be grey is not a step of a colour ramp.
 
-One curve serves every family, and that costs something: `accent` and `success`
+One curve serves every family, and it costs something: `accent` and `success`
 could carry more chroma at 100 than the red allows, and do not. That is the
-price of a constant step — and a constant step is what makes this a scale
-instead of a set of values with a shared prefix.
+price of a constant step, and a constant step is what makes this a scale.
 
-### What is not converted yet
+The greys are the exception, written out rather than derived: no curve coarse
+enough to span 1.00 to 0.00 also resolves the pale end, where a page, a card and
+a wash sit a hundredth of a lightness apart. Their cast deepens with the grey —
+0 at white, 0.004 at 98.5%, 0.02 from 46% down — because that is where the gamut
+leaves room.
 
-**The dark preset is half converted.** Its NEUTRALS are done — 27 roles now
-point at the shared ramp, and nothing moved, because a grey carries almost no
-chroma and therefore no gamut problem. Its COLOUR families still hold literals:
-levelling those produced 20 contrast regressions in the browser suite (`menu` in
-dark measured 4.13 against a 4.5 floor), because reducing chroma to fit the
-gamut moves relative luminance. Retuning that is measurement, not guesswork, so
-it is a separate change.
+## Level 3 · Roles
 
-**Relative colour is a waiver, not the default tier.** It is Baseline _Newly_
-and reaches _Widely_ around January 2027; the platform's floor is Widely
-(ADR-0017), and this takes the same kind of waiver the Popover API did — not
-degradable, but the Widely date lands before any consumer could realistically
-ship. If that stops being true, the documented way back is a precomputed ramp:
-same three levels, literals instead of the formula.
+What a component may actually use. Every family is built from the same few
+words, and learning these six is enough to read any role in the system.
 
-## The palette
+| Role             | What it is                                      | Use it for                                                                            |
+| ---------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `base`           | The solid fill. The loudest form of the family. | A filled button, a solid badge, a filled progress bar. One per screen area, not five. |
+| `on base`        | The ink that sits **on** the solid fill.        | Label and icons inside that filled thing. Never as text on the page.                  |
+| `subtle`         | The soft wash — same meaning, a tenth as loud.  | Alert backgrounds, chips, selected rows: anything tinting a region behind real text.  |
+| `on subtle`      | The ink that sits **on** the wash.              | Text inside the alert or the chip. It is dark where `on base` is light.               |
+| `border`         | The line at the edge of a subtle region.        | The rule around an alert. Status families only — an action family has hover instead.  |
+| `hover`/`active` | The fill, darkened one and two steps.           | Pointer and pressed states of a `base` fill. Never a resting colour.                  |
 
-Level 2 as it is declared: every family's ramp, constant step, palest first. The
-step names are read out of `vars.css` itself, so this cannot drift from the
-stylesheet — and the values come from the DOM, because the declaration is a
-formula rather than a colour.
+Two rules follow from the shape rather than from taste.
 
-Two things worth noticing. `destructive` and `error` are the **same ramp**: same
-hue, same base, two names because one is a button and the other is a message.
-And the neutrals are their own shape: a **regular scale, rungs 50 apart** from
-white (`0`) to black (`1000`), written by hand rather than derived — no curve
-coarse enough to span that range also resolves the pale end, where surfaces sit
-a hundredth of a lightness apart. It carries a few finer rungs besides, at the
-exact lightnesses the two themes stand on, so adopting the scale moved no
-colour.
+**An ink is only valid on its own fill.** `on base` is measured against `base`
+and nothing else. Put it on the page background and the contrast guarantee below
+does not apply — most `on base` inks here are white.
 
-The neutral ramp is **shared between the themes**. Light and dark do not have
-different greys; they point at opposite ends of the same scale — `background` is
-`neutral-15` in light and `neutral-790` in dark. That is the whole difference,
-and it is why the grey half of the dark preset is a mapping while its coloured
-half is still literals.
+**`base` and `subtle` are not light and dark versions of each other.** They are
+two jobs: `base` is a thing you press, `subtle` is a region you read inside.
+Choosing between them is choosing whether the colour is the object or the
+backdrop, which is why each has its own ink instead of sharing one.
 
-<Canvas of={ColorStories.Ramps} />
+`disabled` and `on disabled` mirror `base`/`on base` for the unavailable state,
+and are the one pair exempt from the contrast floor.
 
-## Where the roles land
+### The matrix
 
-Below is what those ramps actually resolve to: every distinct colour the
-theme paints, grouped by hue and ordered by lightness. Read from the DOM rather
-than from the ramp's source, so it shows the colours after the browser has
-evaluated the formulas — and it cannot go stale, because it _is_ the tokens.
+Families down, slots across — the view that lets a colour be compared with the
+colour it should match. Reading **down** a column puts every family's `subtle`
+side by side; reading **across** a row is one family's full vocabulary. Hover
+any cell for its role, its property and its resolved value.
 
-It also answers a question the ramp cannot: which roles land on the **same**
-value, and therefore move together when a base moves.
+The empty cells carry as much as the filled ones: `border` is blank for the four
+action families and filled for the status ones, while `hover` and `active` are
+the reverse. That is the difference between something you press and something
+you read, drawn rather than described.
 
-Each strip is named after the family with the most roles in that hue —
-`destructive`, not `hue 27°` — because the angle is where a colour sits, not
-what it is for. Anything else living at the same angle is listed as **shared
-with**, and the distinction is worth keeping: sitting at the same hue is not
-being the same role.
+<Canvas of={ColorStories.Matrix} />
 
-The blue strip is the one to read closely, because the three names sharing it
-are in three different situations:
+### Surfaces, inputs and neutrals
 
-- **`secondary` is a genuinely different colour.** One degree away, but chroma
-  `0.05` against `primary`'s `0.135` — near enough to grey that it reads as
-  slate, not blue.
-- **`link` is `primary`, to the last decimal.** Both are
-  `oklch(41% 0.135 255)`, and `link-hover` equals `primary-hover`. It is not a
-  new colour; it is a second name for one, so that a link can stop following the
-  brand later without every call site changing.
-- **`selection` is `primary-subtle`**, and `selection-foreground` is
-  `primary-hover`. Same story.
+What has no family shape: the page and its cards, the input palette, and the
+single-purpose roles — `ring`, `scrim`, `selection`, `link`, `tooltip`.
 
-None of that is visible in the role listing, where the four appear as unrelated
-entries. It is the reason to draw a palette at all.
-
-Under each swatch is its **lightness**, 0–100. A `·N` after it means **N roles
-resolve to that exact value**: the 84 roles come out as far fewer colours, and
-in the light theme a single value serves eleven of them. Hovering a swatch lists
-every role that shares it.
-
-The counts are the theme's own — a preset is a complete reassignment of every
-role, so toggling redraws this whole section rather than re-tinting it. In light
-the lightest shade is pure white and does most of that sharing; in dark it is
-not, and the sharing lands elsewhere.
-
-Two things this view makes visible that a list of roles cannot:
-
-- the neutrals are by far the longest ramp, which is what a restrained system
-  looks like from the inside;
-- there are **two blues, ten degrees apart** — `info` sits at 245° while
-  `primary`, `link`, `ring` and `selection` sit at 255°. It holds in both
-  presets, and it is the kind of thing that is invisible until the palette is
-  drawn.
-
-<Canvas of={ColorStories.FullPalette} />
-
-## Action families
-
-Four families for things a person can do — `primary`, `secondary`, `accent`,
-`destructive` — each with the same eight roles: the solid fill, the ink on it,
-hover and active, the subtle wash and its ink, and the disabled pair.
-
-A family is complete or it is not a family: a theme that assigns six of the
-eight has a component with nowhere to go on hover.
-
-<Canvas of={ColorStories.Action} />
-
-## Status families
-
-`success`, `warning`, `info`, `error` — feedback, not action. They carry a
-`-border` instead of hover and active states, because a status is something a
-person reads, not something they press.
-
-`error` and `destructive` are the same red and deliberately two roles: one is an
-alert, the other is a button. Splitting them is what lets a destructive button
-darken on press while an error message stays exactly as loud as it was.
-
-<Canvas of={ColorStories.Status} />
-
-## Surfaces, inputs and neutrals
-
-What is left: the page and its cards, the input palette, the neutral and
-disabled roles, and the single-purpose ones — `ring`, `scrim`, `selection`,
-`link`, `tooltip`.
-
-These are grouped by name prefix rather than by a list written here, so the
-shape you see is the shape the contract has. Some come out as a pair, some as a
-strip of one — and a strip of one is a colour that was needed once and named,
-not a gap waiting to be filled.
+`input` is not a row in the matrix because its slots are its own (`invalid`,
+`placeholder`), and a column used by one family makes every other row look
+incomplete.
 
 <Canvas of={ColorStories.SurfacesInputsNeutrals} />
 
 ## Contrast, measured
 
-Every pair the contract declares, with the ratio measured live — the ink
-painted on its own background and the two read back, so the number is the
-browser's answer rather than this page's arithmetic.
+Every pair the contract declares, with the ratio measured live — the ink painted
+on its own background and the two read back, so the number is the browser's
+answer rather than this page's arithmetic.
 
 The floor is **4.5**, WCAG 1.4.3 at AA for body text. Disabled pairs are marked
 exempt: 1.4.3 excludes them, and they are shown anyway, because a number nobody
@@ -264,21 +147,39 @@ is allowed to hide is how you notice one that has drifted well past "low on
 purpose".
 
 An exempt pair is sampled as two tiles rather than as a line of text, and that
-is not a cosmetic choice. The exemption covers the colours of a disabled
-_control_; it does not cover this page painting real 1.38-contrast text in a
-table. The first version did exactly that and axe failed the story — correctly,
-which is the argument for running the a11y check on the documentation and not
-only on the components.
+is not cosmetic. The exemption covers the colours of a disabled _control_; it
+does not cover this page painting real 1.38-contrast text in a table. The first
+version did exactly that and axe failed the story — correctly, which is the
+argument for running the a11y check over the documentation and not only over the
+components.
 
 This is not the gate. `tokens.test.ts` already fails the build on a pair that
-drops below the floor, in both presets. What the table adds is the distance: a
-pair that passes at 4.6 and one that passes at 12 are the same green tick to a
-test and very different things to look at — and toggling the theme re-measures
-every row.
+drops below the floor, in both presets, and now does it on the _derived_ values.
+What the table adds is the distance: a pair that passes at 4.6 and one that
+passes at 12 are the same green tick to a test and very different things to look
+at — and toggling the theme re-measures every row.
 
 The pairs are derived by rule (`role` has a partner when `role-foreground`
 exists), which finds all of them but one: `background`/`foreground` are the page
-itself, named before that convention existed. It is the only hand-stated pair
-here.
+itself, named before that convention existed.
 
 <Canvas of={ColorStories.Contrast} />
+
+---
+
+## What is not converted yet
+
+**The dark preset is half done.** Its neutrals are levelled — 27 roles point at
+the shared scale, and nothing moved, because a grey carries almost no chroma and
+so no gamut risk. Its colour families still hold literals: levelling those
+produced 20 contrast regressions in the browser suite (`menu` in dark measured
+4.13 against the 4.5 floor), because reducing chroma to fit the gamut moves
+relative luminance. Retuning that is measurement, not guesswork, so it is a
+separate change.
+
+**Relative colour is a waiver, not the default tier.** It is Baseline _Newly_
+and reaches _Widely_ around January 2027; the platform floor is Widely
+(ADR-0017), and this takes the same kind of waiver the Popover API did — not
+degradable, but the Widely date lands before any consumer could realistically
+ship. If that stops being true, the documented way back is a precomputed ramp:
+same three levels, literals instead of the formula.

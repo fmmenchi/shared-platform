@@ -18,6 +18,71 @@ import { useTokenValues } from './use-token-values.js';
 
 type Ramp = { family: string; steps: { step: number; property: string }[] };
 
+/**
+ * LEVEL 1 — the bases, read from the stylesheet the same way the ramps are.
+ *
+ * Shown because a page that explains three levels and draws two is describing
+ * something other than the system. Eight numbers, and the only place a hue is
+ * decided.
+ */
+const BASES: { family: string; property: string }[] = [
+  ...new Set(
+    [...varsCss.matchAll(/--fm-palette-([a-z]+)-base\s*:/g)].map((m) => m[1]),
+  ),
+].map((family) => ({
+  family: family as string,
+  property: `--fm-palette-${family}-base`,
+}));
+
+export function PaletteBases() {
+  const properties = useMemo(() => BASES.map((b) => b.property), []);
+  const { ref, values } = useTokenValues(properties);
+
+  return (
+    <div
+      ref={ref}
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 'var(--fm-space-inline-m)',
+      }}
+    >
+      {BASES.map(({ family, property }) => (
+        <div key={family} style={{ inlineSize: '9rem' }}>
+          <div
+            style={{
+              blockSize: '4rem',
+              background: `var(${property})`,
+              borderRadius: 'var(--fm-radius-sm)',
+              border:
+                'var(--fm-border-width-default) solid var(--fm-color-border)',
+            }}
+          />
+          <div
+            style={{
+              fontSize: 'var(--fm-text-sm)',
+              fontWeight: 'var(--fm-font-weight-semibold)',
+              paddingBlockStart: 'var(--fm-space-internal-xs)',
+            }}
+          >
+            {family}
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--fm-font-mono)',
+              fontSize: 'var(--fm-text-xs)',
+              color: 'var(--fm-color-muted-foreground)',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {values[property] ?? ''}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const RAMPS: Ramp[] = (() => {
   const byFamily = new Map<string, { step: number; property: string }[]>();
 
