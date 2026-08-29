@@ -8,7 +8,7 @@ import * as ColorStories from './colors.stories.tsx';
 
 Colour is built in **three levels**, and they are the order of this page:
 
-1. **Bases** — one colour per family. Eight numbers.
+1. **Bases** — one colour per hue. Seven numbers.
 2. **The palette** — a ramp derived from each base, `100…900`.
 3. **Roles** — the 84 semantic tokens, each pointing at a step.
 
@@ -27,11 +27,14 @@ nothing holds a copy of a value.
 
 ## Level 1 · Bases
 
-One colour per family, and the only place a hue is decided. Everything else is
-derived from these eight or points at something that is.
+One colour per hue, and the only place a hue is decided. Everything else is
+derived from these seven or points at something that is.
+
+Seven, not eight, because `destructive` and `error` share one — they are the
+same red by design, so they are one base with two treatments above it.
 
 This is also what a brand preset replaces. An app bringing its own colours
-overrides the bases and inherits the ramp and the mapping — eight numbers
+overrides the bases and inherits the ramp and the mapping — seven numbers
 instead of eighty-four.
 
 <Canvas of={ColorStories.Bases} />
@@ -44,9 +47,9 @@ rungs 50 apart, from white (`0`) to black (`1000`).
 
 <Canvas of={ColorStories.Ramps} />
 
-Two things it shows that a list of roles cannot. `destructive` and `error` are
-the **same ramp** — same hue, same base, two names because one is a button and
-the other is a message. And the neutral scale is **shared between the themes**:
+Two things it shows that a list of roles cannot. `negative` is one ramp serving
+**two families** — `destructive` presses, `error` reads. And the neutral scale
+is **shared between the themes**:
 light and dark do not have different greys, they point at opposite ends of one
 scale, `background` being `neutral-15` in light and `neutral-790` in dark.
 
@@ -56,7 +59,7 @@ Neither curve was chosen. Both were measured, and that is the interesting part.
 
 **The lightness curve was already there.** Before any of this existed, every
 family's roles sat at the same offsets from its fill: hover −0.10, active −0.19,
-subtle +0.49, disabled +0.39. Step for step, all eight families. So the bases
+subtle +0.49, disabled +0.39. Step for step, every family. So the bases
 are simply those fills undone, which is why step 700 reproduces the fill each
 family always had.
 
@@ -84,8 +87,51 @@ leaves room.
 
 ## Level 3 · Roles
 
-What a component may actually use. Every family is built from the same few
-words, and learning these six is enough to read any role in the system.
+What a component may actually use. A role is two choices: **which family**, and
+**which slot in it**.
+
+### The families, and what they mean
+
+The system splits on one question — _does a person press this, or read it?_
+
+**Actions.** Things you press. They carry `hover` and `active`, because a
+pointer arrives and a finger lands.
+
+| Family        | What it means                                                       | When                                                                       |
+| ------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `primary`     | The one action this screen is for.                                  | Submit, save, continue. **One per screen area** — a second one is a tie.   |
+| `secondary`   | The alternative, deliberately quieter. Brand hue, almost no chroma. | Cancel, back, "not now". Anything that sits beside a `primary`.            |
+| `accent`      | Emphasis that is **not** an invitation to act.                      | The bar on the active nav item, a category badge, a highlighted cell.      |
+| `destructive` | The action that takes something away.                               | Delete, revoke, remove. Never for "an error happened" — that is a message. |
+
+**Statuses.** Things you read. They carry `border` instead of hover/active,
+because an outline is how a region announces itself when nothing will be pressed.
+
+| Family    | What it means                        | When                                                       |
+| --------- | ------------------------------------ | ---------------------------------------------------------- |
+| `success` | It worked.                           | Confirmations, a passed check, a completed step.           |
+| `warning` | It might go wrong.                   | Something is about to expire; a setting with consequences. |
+| `info`    | Neutral fact worth noticing.         | A tip, an explanation, a "did you know".                   |
+| `error`   | It went wrong.                       | Validation messages, failed requests, inline field errors. |
+| `neutral` | No status at all — inactive, unread. | A default badge, a disabled state, "none of the above".    |
+
+### Two pairs that confuse people
+
+**`destructive` and `error` are the same red, and that is deliberate.** One is a
+button, the other is a message. `destructive` gets hover and active because you
+press it; `error` gets a border because you read it. They now share a single
+ramp (`negative`) rather than two identical ones — if the red moves, both move,
+which is the point.
+
+**`accent` is not a second brand colour.** `primary` says "act here"; `accent`
+says "look here". That is why the active nav item is marked with `accent` and
+not with `primary` — a nav item is not a call to action, and painting it in the
+submit-button colour makes every screen look like it is asking for something.
+
+### The vocabulary
+
+Whichever family, the slots are the same few words, and learning these six is
+enough to read any role in the system.
 
 | Role             | What it is                                      | Use it for                                                                            |
 | ---------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |

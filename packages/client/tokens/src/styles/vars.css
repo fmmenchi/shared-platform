@@ -91,11 +91,10 @@
   --fm-palette-primary-base: oklch(55% 0.1406 255);
   --fm-palette-secondary-base: oklch(57% 0.0521 256);
   --fm-palette-accent-base: oklch(54% 0.0708 195);
-  --fm-palette-destructive-base: oklch(57% 0.1823 27);
+  --fm-palette-negative-base: oklch(57% 0.1823 27);
   --fm-palette-success-base: oklch(55% 0.1167 150);
   --fm-palette-warning-base: oklch(60% 0.099 78);
   --fm-palette-info-base: oklch(56% 0.1094 245);
-  --fm-palette-error-base: oklch(57% 0.1823 27);
 
   /* ==========================================================
      LEVEL 2 — THE PALETTE, derived with relative colour.
@@ -209,30 +208,30 @@
   );
 
   /* destructive */
-  --fm-palette-destructive-100: oklch(
-    from var(--fm-palette-destructive-base) calc(l + 0.35) calc(c * 0.22) h
+  --fm-palette-negative-100: oklch(
+    from var(--fm-palette-negative-base) calc(l + 0.35) calc(c * 0.22) h
   );
-  --fm-palette-destructive-200: oklch(
-    from var(--fm-palette-destructive-base) calc(l + 0.25) calc(c * 0.55) h
+  --fm-palette-negative-200: oklch(
+    from var(--fm-palette-negative-base) calc(l + 0.25) calc(c * 0.55) h
   );
-  --fm-palette-destructive-300: oklch(
-    from var(--fm-palette-destructive-base) calc(l + 0.15) calc(c * 0.95) h
+  --fm-palette-negative-300: oklch(
+    from var(--fm-palette-negative-base) calc(l + 0.15) calc(c * 0.95) h
   );
-  --fm-palette-destructive-400: oklch(
-    from var(--fm-palette-destructive-base) calc(l + 0.05) c h
+  --fm-palette-negative-400: oklch(
+    from var(--fm-palette-negative-base) calc(l + 0.05) c h
   );
-  --fm-palette-destructive-500: var(--fm-palette-destructive-base);
-  --fm-palette-destructive-600: oklch(
-    from var(--fm-palette-destructive-base) calc(l - 0.05) c h
+  --fm-palette-negative-500: var(--fm-palette-negative-base);
+  --fm-palette-negative-600: oklch(
+    from var(--fm-palette-negative-base) calc(l - 0.05) c h
   );
-  --fm-palette-destructive-700: oklch(
-    from var(--fm-palette-destructive-base) calc(l - 0.14) calc(c * 0.96) h
+  --fm-palette-negative-700: oklch(
+    from var(--fm-palette-negative-base) calc(l - 0.14) calc(c * 0.96) h
   );
-  --fm-palette-destructive-800: oklch(
-    from var(--fm-palette-destructive-base) calc(l - 0.24) calc(c * 0.72) h
+  --fm-palette-negative-800: oklch(
+    from var(--fm-palette-negative-base) calc(l - 0.24) calc(c * 0.72) h
   );
-  --fm-palette-destructive-900: oklch(
-    from var(--fm-palette-destructive-base) calc(l - 0.33) calc(c * 0.5) h
+  --fm-palette-negative-900: oklch(
+    from var(--fm-palette-negative-base) calc(l - 0.33) calc(c * 0.5) h
   );
 
   /* success */
@@ -316,33 +315,6 @@
     from var(--fm-palette-info-base) calc(l - 0.33) calc(c * 0.5) h
   );
 
-  /* error */
-  --fm-palette-error-100: oklch(
-    from var(--fm-palette-error-base) calc(l + 0.35) calc(c * 0.22) h
-  );
-  --fm-palette-error-200: oklch(
-    from var(--fm-palette-error-base) calc(l + 0.25) calc(c * 0.55) h
-  );
-  --fm-palette-error-300: oklch(
-    from var(--fm-palette-error-base) calc(l + 0.15) calc(c * 0.95) h
-  );
-  --fm-palette-error-400: oklch(
-    from var(--fm-palette-error-base) calc(l + 0.05) c h
-  );
-  --fm-palette-error-500: var(--fm-palette-error-base);
-  --fm-palette-error-600: oklch(
-    from var(--fm-palette-error-base) calc(l - 0.05) c h
-  );
-  --fm-palette-error-700: oklch(
-    from var(--fm-palette-error-base) calc(l - 0.14) calc(c * 0.96) h
-  );
-  --fm-palette-error-800: oklch(
-    from var(--fm-palette-error-base) calc(l - 0.24) calc(c * 0.72) h
-  );
-  --fm-palette-error-900: oklch(
-    from var(--fm-palette-error-base) calc(l - 0.33) calc(c * 0.5) h
-  );
-
   /* ==========================================================
      COLOR — action families (primary · secondary · accent · destructive)
      X                      → solid fill (buttons, solid badges)
@@ -379,14 +351,14 @@
   --fm-color-accent-disabled: var(--fm-palette-accent-200);
   --fm-color-accent-disabled-foreground: var(--fm-palette-accent-100);
 
-  --fm-color-destructive: var(--fm-palette-destructive-700);
+  --fm-color-destructive: var(--fm-palette-negative-700);
   --fm-color-destructive-foreground: var(--fm-palette-neutral-0);
-  --fm-color-destructive-hover: var(--fm-palette-destructive-800);
-  --fm-color-destructive-active: var(--fm-palette-destructive-900);
-  --fm-color-destructive-subtle: var(--fm-palette-destructive-100);
-  --fm-color-destructive-subtle-foreground: var(--fm-palette-destructive-800);
-  --fm-color-destructive-disabled: var(--fm-palette-destructive-200);
-  --fm-color-destructive-disabled-foreground: var(--fm-palette-destructive-100);
+  --fm-color-destructive-hover: var(--fm-palette-negative-800);
+  --fm-color-destructive-active: var(--fm-palette-negative-900);
+  --fm-color-destructive-subtle: var(--fm-palette-negative-100);
+  --fm-color-destructive-subtle-foreground: var(--fm-palette-negative-800);
+  --fm-color-destructive-disabled: var(--fm-palette-negative-200);
+  --fm-color-destructive-disabled-foreground: var(--fm-palette-negative-100);
 
   /* ==========================================================
      COLOR — status vocabulary (success · warning · info · neutral)
@@ -412,11 +384,11 @@
 
   /* error: the feedback-red status family (Alerts, inline errors). Same hue as
      destructive (27), status treatment — subtle wash + tinted border. */
-  --fm-color-error: var(--fm-palette-error-700);
+  --fm-color-error: var(--fm-palette-negative-700);
   --fm-color-error-foreground: var(--fm-palette-neutral-0);
-  --fm-color-error-subtle: var(--fm-palette-error-100);
-  --fm-color-error-subtle-foreground: var(--fm-palette-error-800);
-  --fm-color-error-border: var(--fm-palette-error-700);
+  --fm-color-error-subtle: var(--fm-palette-negative-100);
+  --fm-color-error-subtle-foreground: var(--fm-palette-negative-800);
+  --fm-color-error-border: var(--fm-palette-negative-700);
 
   --fm-color-neutral: var(--fm-palette-neutral-540);
   --fm-color-neutral-foreground: var(--fm-palette-neutral-0);
