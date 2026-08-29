@@ -308,7 +308,7 @@
 
   /* Action families */
   --fm-color-primary: var(--fm-palette-primary-500);
-  --fm-color-primary-foreground: oklch(24% 0.02 256);
+  --fm-color-primary-foreground: var(--fm-palette-neutral-760);
   --fm-color-primary-hover: var(--fm-palette-primary-400);
   --fm-color-primary-active: var(--fm-palette-primary-300);
   --fm-color-primary-subtle: var(--fm-palette-primary-1300);
@@ -317,7 +317,7 @@
   --fm-color-primary-disabled-foreground: var(--fm-palette-primary-1300);
 
   --fm-color-secondary: var(--fm-palette-secondary-500);
-  --fm-color-secondary-foreground: oklch(24% 0.028 256);
+  --fm-color-secondary-foreground: var(--fm-palette-neutral-760);
   --fm-color-secondary-hover: var(--fm-palette-secondary-400);
   --fm-color-secondary-active: var(--fm-palette-secondary-300);
   --fm-color-secondary-subtle: var(--fm-palette-secondary-1300);
@@ -326,7 +326,7 @@
   --fm-color-secondary-disabled-foreground: var(--fm-palette-secondary-1300);
 
   --fm-color-accent: var(--fm-palette-accent-500);
-  --fm-color-accent-foreground: oklch(24% 0.02 256);
+  --fm-color-accent-foreground: var(--fm-palette-neutral-760);
   --fm-color-accent-hover: var(--fm-palette-accent-400);
   --fm-color-accent-active: var(--fm-palette-accent-300);
   --fm-color-accent-subtle: var(--fm-palette-accent-1300);
@@ -335,7 +335,7 @@
   --fm-color-accent-disabled-foreground: var(--fm-palette-accent-1300);
 
   --fm-color-destructive: var(--fm-palette-negative-500);
-  --fm-color-destructive-foreground: oklch(24% 0.02 256);
+  --fm-color-destructive-foreground: var(--fm-palette-neutral-760);
   --fm-color-destructive-hover: var(--fm-palette-negative-400);
   --fm-color-destructive-active: var(--fm-palette-negative-300);
   --fm-color-destructive-subtle: var(--fm-palette-negative-1300);
@@ -345,25 +345,25 @@
 
   /* Status vocabulary */
   --fm-color-success: var(--fm-palette-success-500);
-  --fm-color-success-foreground: oklch(24% 0.02 256);
+  --fm-color-success-foreground: var(--fm-palette-neutral-760);
   --fm-color-success-subtle: var(--fm-palette-success-1300);
   --fm-color-success-subtle-foreground: var(--fm-palette-success-100);
   --fm-color-success-border: var(--fm-palette-success-500);
 
   --fm-color-warning: var(--fm-palette-warning-500);
-  --fm-color-warning-foreground: oklch(24% 0.02 256);
+  --fm-color-warning-foreground: var(--fm-palette-neutral-760);
   --fm-color-warning-subtle: var(--fm-palette-warning-1300);
   --fm-color-warning-subtle-foreground: var(--fm-palette-warning-100);
   --fm-color-warning-border: var(--fm-palette-warning-500);
 
   --fm-color-info: var(--fm-palette-info-500);
-  --fm-color-info-foreground: oklch(24% 0.02 256);
+  --fm-color-info-foreground: var(--fm-palette-neutral-760);
   --fm-color-info-subtle: var(--fm-palette-info-1300);
   --fm-color-info-subtle-foreground: var(--fm-palette-info-100);
   --fm-color-info-border: var(--fm-palette-info-500);
 
   --fm-color-error: var(--fm-palette-negative-500);
-  --fm-color-error-foreground: oklch(24% 0.02 256);
+  --fm-color-error-foreground: var(--fm-palette-neutral-760);
   --fm-color-error-subtle: var(--fm-palette-negative-1300);
   --fm-color-error-subtle-foreground: var(--fm-palette-negative-100);
   --fm-color-error-border: var(--fm-palette-negative-500);
@@ -387,11 +387,11 @@
   --fm-color-muted: var(--fm-palette-neutral-690);
   --fm-color-muted-foreground: var(--fm-palette-neutral-260);
   --fm-color-border: var(--fm-palette-neutral-660);
-  --fm-color-ring: oklch(77% 0.118 256);
+  --fm-color-ring: var(--fm-palette-primary-500);
   --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
-  --fm-color-link: oklch(77% 0.118 256);
-  --fm-color-link-hover: oklch(82% 0.091 256);
-  --fm-color-selection: oklch(39% 0.108 256);
+  --fm-color-link: var(--fm-palette-primary-500);
+  --fm-color-link-hover: var(--fm-palette-primary-400);
+  --fm-color-selection: var(--fm-palette-primary-1200);
   --fm-color-selection-foreground: var(--fm-palette-neutral-30);
   --fm-color-tooltip: var(--fm-palette-neutral-50);
   --fm-color-tooltip-foreground: var(--fm-palette-neutral-760);
