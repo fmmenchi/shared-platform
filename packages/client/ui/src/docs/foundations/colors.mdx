@@ -219,6 +219,23 @@ itself, named before that convention existed.
 
 ---
 
+## Overriding, from the app that instantiates the theme
+
+Deriving did not take the override away — it added a second granularity, and
+both are asserted in `src/docs/token-overrides.test.tsx` rather than promised
+here:
+
+- **override a base** and the whole family moves with it, every step
+  recomputing, because the ramp is relative colour evaluated live. A rebrand is
+  seven numbers. With the old literals it was eighty-four;
+- **override a role** and only that role moves. Its neighbours, and the ramp
+  itself, are untouched.
+
+Both work from the consumer's own stylesheet, on the same selectors the presets
+use — including re-theming `[data-theme='dark']` from the app. The tests do it
+that way on purpose: an inline style would win trivially and prove nothing about
+the cascade.
+
 ## A role may leave the ramp
 
 Any role may hold its own value, with a comment saying why. The ramp is here to
