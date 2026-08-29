@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { THEMES, type ThemeName } from './themes.js';
 import { Button } from '../../components/button/button.component.js';
 import { Badge } from '../../components/badge/badge.component.js';
 import { Alert } from '../../components/alert/alert.component.js';
@@ -28,39 +29,29 @@ import { FieldLabel } from '../../components/field-label/field-label.component.j
  * ramp formula by hand, with a contrast gate to satisfy afterwards.
  */
 
-/** The seven declarations. Derived from the brand hues; see the module comment. */
-const REBRAND = `:root {
-  --fm-palette-primary-base: oklch(55% 0.2346 278);
-  --fm-palette-secondary-base: oklch(55% 0.0373 249);
-  --fm-palette-accent-base: oklch(55% 0.0971 220);
-  --fm-palette-negative-base: oklch(55% 0.214 19);
-  --fm-palette-success-base: oklch(55% 0.1786 143);
-  --fm-palette-warning-base: oklch(55% 0.1126 75);
-  --fm-palette-info-base: oklch(55% 0.1822 256);
-}`;
-
 /**
- * ON `:root`, and not on a wrapper — which the first version of this story got
- * wrong and the screenshot caught.
+ * Applied ON `:root`, and not on a wrapper — which the first version of this
+ * story got wrong and a screenshot caught.
  *
  * A custom property is resolved WHERE IT IS DECLARED. `--fm-color-primary:
  * var(--fm-palette-primary-700)` lives on `:root`, so its computed value is
- * settled there, and descendants inherit that settled value. Redefining a base
- * on a `<div>` therefore changes nothing below it: the roles were resolved
- * before the new base existed.
+ * settled there and descendants inherit that settled value. Redefining a base
+ * on a `<div>` changes nothing below it: the roles were resolved before the new
+ * base existed.
  *
- * The consequence is worth knowing: a rebrand belongs on the same element the
- * roles are declared on. A SUBTREE with different colours — one widget in
- * another brand — cannot be done by overriding bases alone; it has to redeclare
- * the roles it wants changed.
+ * The consequence is worth knowing. A rebrand belongs on the element the roles
+ * are declared on, and a SUBTREE in another brand — one widget, a preview pane —
+ * cannot be done by overriding bases alone; it has to redeclare the roles it
+ * wants changed.
  */
-function useRebrand() {
+function useTheme(theme: ThemeName | null) {
   useEffect(() => {
+    if (theme === null) return;
     const style = document.createElement('style');
-    style.textContent = REBRAND;
+    style.textContent = `:root { ${THEMES[theme].bases} }`;
     document.head.append(style);
     return () => style.remove();
-  }, []);
+  }, [theme]);
 }
 
 function Showcase({ title }: { title: string }) {
@@ -134,14 +125,60 @@ export default meta;
 
 type Story = StoryObj;
 
-/** The system as it ships. Switch between this and `Rebranded` to compare. */
+function Switcher() {
+  const [theme, setTheme] = useState<ThemeName | null>(null);
+  useTheme(theme);
+
+  return (
+    <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 'var(--fm-space-inline-s)',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
+        <Button
+          variant={theme === null ? 'primary' : 'secondary'}
+          onClick={() => setTheme(null)}
+        >
+          Shipped
+        </Button>
+        {(Object.keys(THEMES) as ThemeName[]).map((name) => (
+          <Button
+            key={name}
+            variant={theme === name ? 'primary' : 'secondary'}
+            onClick={() => setTheme(name)}
+          >
+            {name}
+          </Button>
+        ))}
+      </div>
+
+      <p
+        style={{
+          margin: 0,
+          fontSize: 'var(--fm-text-sm)',
+          color: 'var(--fm-color-muted-foreground)',
+        }}
+      >
+        {theme === null
+          ? 'The bases as the package ships them.'
+          : THEMES[theme].label}
+      </p>
+
+      <Showcase
+        title={theme === null ? 'Shipped bases' : `Seven bases: ${theme}`}
+      />
+    </div>
+  );
+}
+
+/** Click through the brands: seven declarations change between each. */
+export const Switch: Story = { render: () => <Switcher /> };
+
+/** The system as it ships, for a side-by-side in two windows. */
 export const Shipped: Story = {
   render: () => <Showcase title="Shipped bases" />,
 };
-
-function Rebrand() {
-  useRebrand();
-  return <Showcase title="Seven bases replaced" />;
-}
-
-export const Rebranded: Story = { render: () => <Rebrand /> };
