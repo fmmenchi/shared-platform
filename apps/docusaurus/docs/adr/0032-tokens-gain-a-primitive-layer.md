@@ -86,6 +86,31 @@ date lands before any consumer could realistically ship. Relative colour reaches
 (Firefox 128, July 2024, plus 30 months); the only consumers today are this workspace's own docs site
 and the ports-validation app. Same reasoning as the Popover waiver of 2026-07.
 
+## A role may leave the ramp, and that is not a failure
+
+**Any role may hold its own value, with a comment saying why.** The ramp exists
+to remove numbers nobody can account for, not to forbid a number somebody can.
+
+This is stated because the alternative is a trap. A derived system moves the
+cost of a fix: where a wrong colour used to be one number to change, it becomes
+a choice between moving a step (and everything else pointing at it, in both
+themes), adding a step, or pointing somewhere else. Without a fourth option a
+maintainer facing an irreducible tuning has no legal move, and the pressure goes
+into distorting the scale for one case — which is how a scale stops being one.
+
+The system already does this and nobody has called it a violation: `scrim` is a
+literal with alpha, the three shadows are literal `rgba()`. They are not
+failures of the ramp, they are colours that are not ramp steps.
+
+The conditions are only that it be **deliberate and legible**: a comment naming
+what the value is for and why the ramp could not supply it. The gates do not
+care either way — completeness, gamut and contrast are checked on the resolved
+value, whether it came from a formula or from a person.
+
+What is NOT acceptable is the state this ADR found: 84 literals with no stated
+reason, several of them the same value by accident, and the ramp methodology
+they came from described in a comment but present nowhere in the code.
+
 ## Considered options
 
 **Keep one level.** Rejected: it is the status quo whose three costs are measured above.

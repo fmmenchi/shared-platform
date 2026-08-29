@@ -219,6 +219,26 @@ itself, named before that convention existed.
 
 ---
 
+## A role may leave the ramp
+
+Any role may hold its own value, with a comment saying why. The ramp is here to
+remove numbers nobody can account for — not to forbid a number somebody can.
+
+The system already does it: `scrim` is a literal with alpha, and the three
+shadows are literal `rgba()`. Neither is a violation; they are colours that are
+not ramp steps.
+
+It matters because a derived system moves the cost of a fix. A wrong colour used
+to be one number to change; now it is a choice — move the step and everything
+pointing at it moves too, add a step, point elsewhere, or take the value out of
+the ramp. That last option has to stay open, or the pressure of a tuning that
+cannot be expressed goes into bending the scale for one case, and the scale
+stops being one.
+
+The only conditions are that it be deliberate and legible. The gates are
+indifferent: completeness, gamut and contrast are checked on the resolved value,
+whichever way it got there.
+
 ## What is not converted yet
 
 **The dark preset is half done.** Its neutrals are levelled — 27 roles point at
