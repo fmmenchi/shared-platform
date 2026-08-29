@@ -1,0 +1,88 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as ColorStories from './colors.stories.tsx';
+
+<Meta of={ColorStories} />
+
+# Colors
+
+Colour here is a **role**, never a hue. A component asks for
+`--fm-color-primary-subtle-foreground` — "the ink that goes on the soft primary
+wash" — and a theme decides what that is. That indirection is the whole point:
+a rebrand moves a value in one stylesheet instead of every call site, and the
+component keeps working because it never knew the colour in the first place.
+
+There is no primitive ramp to reach past it. The contract exposes semantic roles
+and nothing else, so there is no `blue-500` here to be tempted by.
+
+Everything below is derived: the names come from `@fmmenchi/tokens`, and the
+values are read out of the DOM in whichever theme is on screen. Use the
+**Theme** toolbar — every swatch and every number on this page follows it,
+because nothing here holds a copy of a value.
+
+## Action families
+
+Four families for things a person can do — `primary`, `secondary`, `accent`,
+`destructive` — each with the same eight roles: the solid fill, the ink on it,
+hover and active, the subtle wash and its ink, and the disabled pair.
+
+A family is complete or it is not a family: a theme that assigns six of the
+eight has a component with nowhere to go on hover.
+
+<Canvas of={ColorStories.Action} />
+
+## Status families
+
+`success`, `warning`, `info`, `error` — feedback, not action. They carry a
+`-border` instead of hover and active states, because a status is something a
+person reads, not something they press.
+
+`error` and `destructive` are the same red and deliberately two roles: one is an
+alert, the other is a button. Splitting them is what lets a destructive button
+darken on press while an error message stays exactly as loud as it was.
+
+<Canvas of={ColorStories.Status} />
+
+## Surfaces, inputs and neutrals
+
+What is left: the page and its cards, the input palette, the neutral and
+disabled roles, and the single-purpose ones — `ring`, `scrim`, `selection`,
+`link`, `tooltip`.
+
+These are grouped by name prefix rather than by a list written here, so the
+shape you see is the shape the contract has. Some come out as a pair, some as a
+strip of one — and a strip of one is a colour that was needed once and named,
+not a gap waiting to be filled.
+
+<Canvas of={ColorStories.SurfacesInputsNeutrals} />
+
+## Contrast, measured
+
+Every pair the contract declares, with the ratio measured live — the ink
+painted on its own background and the two read back, so the number is the
+browser's answer rather than this page's arithmetic.
+
+The floor is **4.5**, WCAG 1.4.3 at AA for body text. Disabled pairs are marked
+exempt: 1.4.3 excludes them, and they are shown anyway, because a number nobody
+is allowed to hide is how you notice one that has drifted well past "low on
+purpose".
+
+An exempt pair is sampled as two tiles rather than as a line of text, and that
+is not a cosmetic choice. The exemption covers the colours of a disabled
+_control_; it does not cover this page painting real 1.38-contrast text in a
+table. The first version did exactly that and axe failed the story — correctly,
+which is the argument for running the a11y check on the documentation and not
+only on the components.
+
+This is not the gate. `tokens.test.ts` already fails the build on a pair that
+drops below the floor, in both presets. What the table adds is the distance: a
+pair that passes at 4.6 and one that passes at 12 are the same green tick to a
+test and very different things to look at — and toggling the theme re-measures
+every row.
+
+The pairs are derived by rule (`role` has a partner when `role-foreground`
+exists), which finds all of them but one: `background`/`foreground` are the page
+itself, named before that convention existed. It is the only hand-stated pair
+here.
+
+<Canvas of={ColorStories.Contrast} />
