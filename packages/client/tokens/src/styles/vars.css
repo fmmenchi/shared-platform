@@ -28,6 +28,266 @@
 
 :root {
   /* ==========================================================
+     LEVEL 1 — BASES (ADR-0032). One colour per family; the ramp
+     below is derived from it, and the roles further down point at
+     the ramp. Nothing outside this file may read either.
+     ========================================================== */
+  --fm-palette-primary-base: oklch(55% 0.1406 255);
+  --fm-palette-secondary-base: oklch(57% 0.0521 256);
+  --fm-palette-accent-base: oklch(54% 0.0708 195);
+  --fm-palette-destructive-base: oklch(57% 0.1823 27);
+  --fm-palette-success-base: oklch(55% 0.1167 150);
+  --fm-palette-warning-base: oklch(60% 0.099 78);
+  --fm-palette-info-base: oklch(56% 0.1094 245);
+  --fm-palette-error-base: oklch(57% 0.1823 27);
+
+  /* ==========================================================
+     LEVEL 2 — THE PALETTE, derived with relative colour.
+
+     LIGHTNESS is one curve for every family, and it was already
+     there: measured, every family followed it step for step (hover
+     = fill - 0.10, active - 0.19, subtle + 0.49, disabled + 0.39).
+     The bases are the fills undone, so step 700 reproduces the fill
+     each family shipped before this layer existed.
+
+     CHROMA is one curve too, and its coefficients ARE the gamut.
+     Solved numerically, the most the tightest hue can take at each
+     lightness is 100 x0.22, 200 x0.55, 700 x0.96, 800 x0.72, 900
+     x0.50 — the red binding the pale end, the teal the dark one.
+     Those land within a hundredth of the literals this file used to
+     hold: whoever chose them had already pushed every step to the
+     edge of sRGB, which is why they looked irregular.
+
+     The cost of ONE curve is that a family with room to spare does
+     not use it: accent and success could carry more chroma at 100
+     than the red allows. That is the price of a constant step, and
+     a constant step is what makes this a scale rather than a set.
+
+     There is no step 50. At base + 0.42 the lightness is ~0.97 and
+     the gamut admits almost nothing — every family solved under
+     0.10, warning at 0.00. A step that can only be grey is not a
+     step of a colour ramp.
+
+     NOT for components: they consume the semantic roles below.
+     ========================================================== */
+
+  /* primary */
+  --fm-palette-primary-100: oklch(
+    from var(--fm-palette-primary-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-primary-200: oklch(
+    from var(--fm-palette-primary-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-primary-300: oklch(
+    from var(--fm-palette-primary-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-primary-400: oklch(
+    from var(--fm-palette-primary-base) calc(l + 0.05) c h
+  );
+  --fm-palette-primary-500: var(--fm-palette-primary-base);
+  --fm-palette-primary-600: oklch(
+    from var(--fm-palette-primary-base) calc(l - 0.05) c h
+  );
+  --fm-palette-primary-700: oklch(
+    from var(--fm-palette-primary-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-primary-800: oklch(
+    from var(--fm-palette-primary-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-primary-900: oklch(
+    from var(--fm-palette-primary-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* secondary */
+  --fm-palette-secondary-100: oklch(
+    from var(--fm-palette-secondary-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-secondary-200: oklch(
+    from var(--fm-palette-secondary-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-secondary-300: oklch(
+    from var(--fm-palette-secondary-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-secondary-400: oklch(
+    from var(--fm-palette-secondary-base) calc(l + 0.05) c h
+  );
+  --fm-palette-secondary-500: var(--fm-palette-secondary-base);
+  --fm-palette-secondary-600: oklch(
+    from var(--fm-palette-secondary-base) calc(l - 0.05) c h
+  );
+  --fm-palette-secondary-700: oklch(
+    from var(--fm-palette-secondary-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-secondary-800: oklch(
+    from var(--fm-palette-secondary-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-secondary-900: oklch(
+    from var(--fm-palette-secondary-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* accent */
+  --fm-palette-accent-100: oklch(
+    from var(--fm-palette-accent-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-accent-200: oklch(
+    from var(--fm-palette-accent-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-accent-300: oklch(
+    from var(--fm-palette-accent-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-accent-400: oklch(
+    from var(--fm-palette-accent-base) calc(l + 0.05) c h
+  );
+  --fm-palette-accent-500: var(--fm-palette-accent-base);
+  --fm-palette-accent-600: oklch(
+    from var(--fm-palette-accent-base) calc(l - 0.05) c h
+  );
+  --fm-palette-accent-700: oklch(
+    from var(--fm-palette-accent-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-accent-800: oklch(
+    from var(--fm-palette-accent-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-accent-900: oklch(
+    from var(--fm-palette-accent-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* destructive */
+  --fm-palette-destructive-100: oklch(
+    from var(--fm-palette-destructive-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-destructive-200: oklch(
+    from var(--fm-palette-destructive-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-destructive-300: oklch(
+    from var(--fm-palette-destructive-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-destructive-400: oklch(
+    from var(--fm-palette-destructive-base) calc(l + 0.05) c h
+  );
+  --fm-palette-destructive-500: var(--fm-palette-destructive-base);
+  --fm-palette-destructive-600: oklch(
+    from var(--fm-palette-destructive-base) calc(l - 0.05) c h
+  );
+  --fm-palette-destructive-700: oklch(
+    from var(--fm-palette-destructive-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-destructive-800: oklch(
+    from var(--fm-palette-destructive-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-destructive-900: oklch(
+    from var(--fm-palette-destructive-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* success */
+  --fm-palette-success-100: oklch(
+    from var(--fm-palette-success-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-success-200: oklch(
+    from var(--fm-palette-success-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-success-300: oklch(
+    from var(--fm-palette-success-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-success-400: oklch(
+    from var(--fm-palette-success-base) calc(l + 0.05) c h
+  );
+  --fm-palette-success-500: var(--fm-palette-success-base);
+  --fm-palette-success-600: oklch(
+    from var(--fm-palette-success-base) calc(l - 0.05) c h
+  );
+  --fm-palette-success-700: oklch(
+    from var(--fm-palette-success-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-success-800: oklch(
+    from var(--fm-palette-success-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-success-900: oklch(
+    from var(--fm-palette-success-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* warning */
+  --fm-palette-warning-100: oklch(
+    from var(--fm-palette-warning-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-warning-200: oklch(
+    from var(--fm-palette-warning-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-warning-300: oklch(
+    from var(--fm-palette-warning-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-warning-400: oklch(
+    from var(--fm-palette-warning-base) calc(l + 0.05) c h
+  );
+  --fm-palette-warning-500: var(--fm-palette-warning-base);
+  --fm-palette-warning-600: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.05) c h
+  );
+  --fm-palette-warning-700: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-warning-800: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-warning-900: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* info */
+  --fm-palette-info-100: oklch(
+    from var(--fm-palette-info-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-info-200: oklch(
+    from var(--fm-palette-info-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-info-300: oklch(
+    from var(--fm-palette-info-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-info-400: oklch(
+    from var(--fm-palette-info-base) calc(l + 0.05) c h
+  );
+  --fm-palette-info-500: var(--fm-palette-info-base);
+  --fm-palette-info-600: oklch(
+    from var(--fm-palette-info-base) calc(l - 0.05) c h
+  );
+  --fm-palette-info-700: oklch(
+    from var(--fm-palette-info-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-info-800: oklch(
+    from var(--fm-palette-info-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-info-900: oklch(
+    from var(--fm-palette-info-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* error */
+  --fm-palette-error-100: oklch(
+    from var(--fm-palette-error-base) calc(l + 0.35) calc(c * 0.22) h
+  );
+  --fm-palette-error-200: oklch(
+    from var(--fm-palette-error-base) calc(l + 0.25) calc(c * 0.55) h
+  );
+  --fm-palette-error-300: oklch(
+    from var(--fm-palette-error-base) calc(l + 0.15) calc(c * 0.95) h
+  );
+  --fm-palette-error-400: oklch(
+    from var(--fm-palette-error-base) calc(l + 0.05) c h
+  );
+  --fm-palette-error-500: var(--fm-palette-error-base);
+  --fm-palette-error-600: oklch(
+    from var(--fm-palette-error-base) calc(l - 0.05) c h
+  );
+  --fm-palette-error-700: oklch(
+    from var(--fm-palette-error-base) calc(l - 0.14) calc(c * 0.96) h
+  );
+  --fm-palette-error-800: oklch(
+    from var(--fm-palette-error-base) calc(l - 0.24) calc(c * 0.72) h
+  );
+  --fm-palette-error-900: oklch(
+    from var(--fm-palette-error-base) calc(l - 0.33) calc(c * 0.5) h
+  );
+
+  /* ==========================================================
      COLOR — action families (primary · secondary · accent · destructive)
      X                      → solid fill (buttons, solid badges)
      X-foreground           → text/icon ON the solid fill
@@ -36,71 +296,71 @@
      X-subtle-foreground    → text ON the soft background
      X-disabled(-foreground)→ disabled fill / its text (AA-exempt)
      ========================================================== */
-  --fm-color-primary: oklch(41% 0.135 255);
+  --fm-color-primary: var(--fm-palette-primary-700);
   --fm-color-primary-foreground: oklch(100% 0 0);
-  --fm-color-primary-hover: oklch(31% 0.102 255);
-  --fm-color-primary-active: oklch(22% 0.072 255);
-  --fm-color-primary-subtle: oklch(90% 0.049 255);
-  --fm-color-primary-subtle-foreground: oklch(31% 0.102 255);
-  --fm-color-primary-disabled: oklch(80% 0.102 255);
-  --fm-color-primary-disabled-foreground: oklch(90% 0.049 255);
+  --fm-color-primary-hover: var(--fm-palette-primary-800);
+  --fm-color-primary-active: var(--fm-palette-primary-900);
+  --fm-color-primary-subtle: var(--fm-palette-primary-100);
+  --fm-color-primary-subtle-foreground: var(--fm-palette-primary-800);
+  --fm-color-primary-disabled: var(--fm-palette-primary-200);
+  --fm-color-primary-disabled-foreground: var(--fm-palette-primary-100);
 
-  --fm-color-secondary: oklch(43% 0.05 256);
+  --fm-color-secondary: var(--fm-palette-secondary-700);
   --fm-color-secondary-foreground: oklch(100% 0 0);
-  --fm-color-secondary-hover: oklch(34% 0.048 256);
-  --fm-color-secondary-active: oklch(24% 0.043 256);
-  --fm-color-secondary-subtle: oklch(83% 0.023 256);
-  --fm-color-secondary-subtle-foreground: oklch(24% 0.043 256);
-  --fm-color-secondary-disabled: oklch(73% 0.032 256);
-  --fm-color-secondary-disabled-foreground: oklch(83% 0.023 256);
+  --fm-color-secondary-hover: var(--fm-palette-secondary-800);
+  --fm-color-secondary-active: var(--fm-palette-secondary-900);
+  --fm-color-secondary-subtle: var(--fm-palette-secondary-100);
+  --fm-color-secondary-subtle-foreground: var(--fm-palette-secondary-800);
+  --fm-color-secondary-disabled: var(--fm-palette-secondary-200);
+  --fm-color-secondary-disabled-foreground: var(--fm-palette-secondary-100);
 
-  --fm-color-accent: oklch(40% 0.068 195);
+  --fm-color-accent: var(--fm-palette-accent-700);
   --fm-color-accent-foreground: oklch(100% 0 0);
-  --fm-color-accent-hover: oklch(30% 0.051 195);
-  --fm-color-accent-active: oklch(21% 0.035 195);
-  --fm-color-accent-subtle: oklch(89% 0.059 195);
-  --fm-color-accent-subtle-foreground: oklch(30% 0.051 195);
-  --fm-color-accent-disabled: oklch(79% 0.081 195);
-  --fm-color-accent-disabled-foreground: oklch(89% 0.059 195);
+  --fm-color-accent-hover: var(--fm-palette-accent-800);
+  --fm-color-accent-active: var(--fm-palette-accent-900);
+  --fm-color-accent-subtle: var(--fm-palette-accent-100);
+  --fm-color-accent-subtle-foreground: var(--fm-palette-accent-800);
+  --fm-color-accent-disabled: var(--fm-palette-accent-200);
+  --fm-color-accent-disabled-foreground: var(--fm-palette-accent-100);
 
-  --fm-color-destructive: oklch(43% 0.175 27);
+  --fm-color-destructive: var(--fm-palette-destructive-700);
   --fm-color-destructive-foreground: oklch(100% 0 0);
-  --fm-color-destructive-hover: oklch(33% 0.134 27);
-  --fm-color-destructive-active: oklch(24% 0.097 27);
-  --fm-color-destructive-subtle: oklch(92% 0.04 27);
-  --fm-color-destructive-subtle-foreground: oklch(33% 0.134 27);
-  --fm-color-destructive-disabled: oklch(82% 0.1 27);
-  --fm-color-destructive-disabled-foreground: oklch(92% 0.04 27);
+  --fm-color-destructive-hover: var(--fm-palette-destructive-800);
+  --fm-color-destructive-active: var(--fm-palette-destructive-900);
+  --fm-color-destructive-subtle: var(--fm-palette-destructive-100);
+  --fm-color-destructive-subtle-foreground: var(--fm-palette-destructive-800);
+  --fm-color-destructive-disabled: var(--fm-palette-destructive-200);
+  --fm-color-destructive-disabled-foreground: var(--fm-palette-destructive-100);
 
   /* ==========================================================
      COLOR — status vocabulary (success · warning · info · neutral)
      Lifecycle/feedback roles, DISTINCT from the brand families.
      ========================================================== */
-  --fm-color-success: oklch(41% 0.112 150);
+  --fm-color-success: var(--fm-palette-success-700);
   --fm-color-success-foreground: oklch(100% 0 0);
-  --fm-color-success-subtle: oklch(90% 0.068 150);
-  --fm-color-success-subtle-foreground: oklch(31% 0.085 150);
-  --fm-color-success-border: oklch(41% 0.112 150);
+  --fm-color-success-subtle: var(--fm-palette-success-100);
+  --fm-color-success-subtle-foreground: var(--fm-palette-success-800);
+  --fm-color-success-border: var(--fm-palette-success-700);
 
-  --fm-color-warning: oklch(46% 0.095 78);
+  --fm-color-warning: var(--fm-palette-warning-700);
   --fm-color-warning-foreground: oklch(100% 0 0);
-  --fm-color-warning-subtle: oklch(95% 0.043 78);
-  --fm-color-warning-subtle-foreground: oklch(36% 0.075 78);
-  --fm-color-warning-border: oklch(46% 0.095 78);
+  --fm-color-warning-subtle: var(--fm-palette-warning-100);
+  --fm-color-warning-subtle-foreground: var(--fm-palette-warning-800);
+  --fm-color-warning-border: var(--fm-palette-warning-700);
 
-  --fm-color-info: oklch(42% 0.105 245);
+  --fm-color-info: var(--fm-palette-info-700);
   --fm-color-info-foreground: oklch(100% 0 0);
-  --fm-color-info-subtle: oklch(91% 0.046 245);
-  --fm-color-info-subtle-foreground: oklch(32% 0.08 245);
-  --fm-color-info-border: oklch(42% 0.105 245);
+  --fm-color-info-subtle: var(--fm-palette-info-100);
+  --fm-color-info-subtle-foreground: var(--fm-palette-info-800);
+  --fm-color-info-border: var(--fm-palette-info-700);
 
   /* error: the feedback-red status family (Alerts, inline errors). Same hue as
      destructive (27), status treatment — subtle wash + tinted border. */
-  --fm-color-error: oklch(43% 0.175 27);
+  --fm-color-error: var(--fm-palette-error-700);
   --fm-color-error-foreground: oklch(100% 0 0);
-  --fm-color-error-subtle: oklch(92% 0.04 27);
-  --fm-color-error-subtle-foreground: oklch(33% 0.134 27);
-  --fm-color-error-border: oklch(43% 0.175 27);
+  --fm-color-error-subtle: var(--fm-palette-error-100);
+  --fm-color-error-subtle-foreground: var(--fm-palette-error-800);
+  --fm-color-error-border: var(--fm-palette-error-700);
 
   --fm-color-neutral: oklch(46% 0.02 256);
   --fm-color-neutral-foreground: oklch(100% 0 0);
