@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { contrast } from '../../test/contrast.js';
-import { ALL_COLOR_PROPERTIES, hueFamilies } from './token-data.js';
 import { useTokenValues } from './use-token-values.js';
 import type { RoleEntry, RoleGroup } from './token-data.types.js';
 
@@ -160,99 +159,6 @@ function Strip({
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-/**
- * The palette itself: every distinct VALUE, grouped by hue, ordered by
- * lightness.
- *
- * The design system has no primitives file to put here — `vars.css` states that
- * the ramp was resolved at authoring time and only the semantic values were
- * kept — so this is reconstructed from what is shipped. Which makes it the more
- * useful of the two artefacts: it shows the palette in use rather than the one
- * intended, and it cannot drift from the tokens because it IS the tokens.
- */
-export function SourcePalette() {
-  const { ref, values } = useTokenValues(ALL_COLOR_PROPERTIES);
-  const families = hueFamilies(values);
-
-  return (
-    <div ref={ref}>
-      {families.map((family) => (
-        <div
-          key={`${family.neutral ? 'neutral' : family.hue}`}
-          style={{
-            display: 'flex',
-            gap: 'var(--fm-space-inline-m)',
-            alignItems: 'flex-start',
-            paddingBlock: 'var(--fm-space-stack-s)',
-            borderBlockEnd:
-              'var(--fm-border-width-divider) solid var(--fm-color-neutral-border)',
-          }}
-        >
-          <div style={nameCell}>
-            {family.name}
-            <div
-              style={{
-                fontWeight: 'var(--fm-font-weight-regular)',
-                color: 'var(--fm-color-muted-foreground)',
-                fontSize: 'var(--fm-text-xs)',
-              }}
-            >
-              {family.shades.length} shades ·{' '}
-              {family.neutral ? 'grey' : `${Math.round(family.hue)}°`}
-              {family.alsoUsedBy.length > 0 && (
-                // "shared with", not a longer name. Sitting at the same hue is
-                // not being the same role: `secondary` is a different colour a
-                // degree away, while `link` is `primary` to the last decimal —
-                // and a title reading `primary · secondary · link` claimed all
-                // three were one thing.
-                <>
-                  <br />
-                  shared with {family.alsoUsedBy.join(', ')}
-                </>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flex: 1, minInlineSize: 0 }}>
-            {family.shades.map((shade) => (
-              <div
-                key={shade.value}
-                // Every role that resolves to this value, because several do
-                // and the palette is the only place that fact is visible.
-                title={`${shade.value}\n\n${shade.roles.join('\n')}`}
-                style={{ flex: 1, minInlineSize: 0 }}
-              >
-                <div
-                  style={{
-                    blockSize: '3rem',
-                    background: shade.value,
-                    border:
-                      'var(--fm-border-width-default) solid var(--fm-color-border)',
-                  }}
-                />
-                <div
-                  style={{
-                    fontSize: 'var(--fm-text-xs)',
-                    color: 'var(--fm-color-muted-foreground)',
-                    paddingInline: 'var(--fm-space-internal-xs)',
-                    paddingBlockStart: 'var(--fm-space-internal-xs)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {Math.round(shade.lightness * 100)}
-                  {shade.roles.length > 1 ? ` ·${shade.roles.length}` : ''}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
     </div>
   );
 }

@@ -39,6 +39,7 @@ Read these. Nineteen decisions, grouped as they are actually made.
 | [0029](./0029-infer-facts-generate-policy.md)         | A plugin infers facts and generates policy                               |
 | [0030](./0030-an-announcement-is-an-event.md)         | An announcement is an event, and announcing is not releasing             |
 | [0031](./0031-being-describable-is-a-fact.md)         | Being describable is a fact; the release record decides who gets an SBOM |
+| [0032](./0032-tokens-gain-a-primitive-layer.md)       | Tokens gain a primitive layer, derived with relative colour              |
 
 ## Proposed
 

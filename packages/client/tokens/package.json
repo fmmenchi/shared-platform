@@ -35,6 +35,12 @@
       "import": "./dist/validate.js",
       "default": "./dist/validate.js"
     },
+    "./resolve": {
+      "@fmmenchi/source": "./src/resolve.ts",
+      "types": "./dist/resolve.d.ts",
+      "import": "./dist/resolve.js",
+      "default": "./dist/resolve.js"
+    },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
     "./styles/baseline.css": "./src/styles/baseline.css",

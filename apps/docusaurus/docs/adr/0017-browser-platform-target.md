@@ -79,6 +79,11 @@ of by lowering the floor for everything.
   `@starting-style` + `allow-discrete` for a future Dialog's entry and exit.
 - **Waiver, 2026-07:** the Popover API — not gracefully degradable, but its Widely date lands before
   any consuming component ships. Tracked in the ledger until then.
+- **Waiver, 2026-08:** relative colour syntax in the token ramps ([ADR-0032](./0032-tokens-gain-a-primitive-layer.md)) —
+  same shape as the Popover case. Not degradable (an unsupported declaration is invalid at
+  computed-value time, so the `var()` chain fails and components lose their colour), Widely ~Jan 2027,
+  and today's only consumers are this workspace's docs site and ports-validation app. The precomputed
+  ramp is the documented way back if that stops being true.
 - **Fixed by the policy itself:** direction detection moved from `getTextInfo` to
   `Intl.Locale.maximize().script`, which is Baseline _and_ more correct (`az-Arab` → rtl).
 

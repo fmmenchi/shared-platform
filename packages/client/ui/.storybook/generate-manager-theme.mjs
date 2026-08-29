@@ -13,6 +13,7 @@
  * Wired as the `codegen` target that `build-storybook`/`storybook` depend on.
  */
 import { formatHex } from 'culori';
+import { resolveValue } from '@fmmenchi/tokens/resolve';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -23,14 +24,31 @@ const here = dirname(fileURLToPath(import.meta.url));
 const tokenCss = (rel) =>
   fileURLToPath(import.meta.resolve(`@fmmenchi/tokens/styles/${rel}`));
 
-/** Extract `--fm-color-<role>` → raw value from one CSS file (single block). */
-function readColorRoles(cssPath) {
-  const css = readFileSync(cssPath, 'utf-8');
-  const map = {};
-  for (const m of css.matchAll(/--fm-color-([a-z0-9-]+):\s*([^;]+);/g)) {
-    map[m[1]] = m[2].trim();
+/**
+ * Extract `--fm-color-<role>` → the colour a browser would paint.
+ *
+ * Since ADR-0032 a role points at a palette step and the step is a relative
+ * colour, so the raw value is `var(--fm-palette-primary-700)` — which culori
+ * cannot turn into a hex, and this script threw on it. It resolves through the
+ * tokens package's own resolver rather than a second implementation: the value
+ * this chrome shows and the value the gate checks have to be the same value.
+ *
+ * The declaration map is built from EVERY `--fm-*` in the file, not just the
+ * roles, because the primitives are what the roles resolve through.
+ */
+function readColorRoles(cssPath, inherited = new Map()) {
+  const css = readFileSync(cssPath, 'utf-8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const declared = new Map(inherited);
+  for (const m of css.matchAll(/(--fm-[a-z0-9-]+):\s*([^;]+);/g)) {
+    declared.set(m[1], m[2].trim());
   }
-  return map;
+
+  const map = {};
+  for (const [name, value] of declared) {
+    const role = /^--fm-color-([a-z0-9-]+)$/.exec(name);
+    if (role) map[role[1]] = resolveValue(value, declared);
+  }
+  return { roles: map, declared };
 }
 
 const hex = (value) => {
@@ -39,8 +57,12 @@ const hex = (value) => {
   return out;
 };
 
-const light = readColorRoles(tokenCss('vars.css'));
-const dark = readColorRoles(tokenCss('presets/dark.css'));
+// The dark preset INHERITS: it re-pitches the bases and remaps the roles, but
+// the ramp steps between them are declared once in vars.css. Reading it alone
+// dead-ends at a palette step the file does not contain.
+const base = readColorRoles(tokenCss('vars.css'));
+const light = base.roles;
+const dark = readColorRoles(tokenCss('presets/dark.css'), base.declared).roles;
 
 // Storybook ThemeVars fields ← semantic token roles. One place, both themes.
 const roleMap = {

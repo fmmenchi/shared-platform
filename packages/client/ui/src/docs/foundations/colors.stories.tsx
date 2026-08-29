@@ -1,12 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DeclaredPairs } from './color-specimens.js';
-import { Palette, SourcePalette } from './palette.js';
+import { Palette } from './palette.js';
 import { RoleMatrix } from './matrix.js';
-import {
-  ACTION_GROUPS,
-  REMAINING_GROUPS,
-  STATUS_GROUPS,
-} from './token-data.js';
+import { PaletteBases, PaletteRamps } from './ramps.js';
+import { REMAINING_GROUPS } from './token-data.js';
 
 /**
  * STORIES rather than a bare MDX page, and the reason is the Theme toolbar: the
@@ -30,17 +27,11 @@ export default meta;
 
 type Story = StoryObj;
 
+export const Bases: Story = { render: () => <PaletteBases /> };
+
+export const Ramps: Story = { render: () => <PaletteRamps /> };
+
 export const Matrix: Story = { render: () => <RoleMatrix /> };
-
-export const FullPalette: Story = { render: () => <SourcePalette /> };
-
-export const Action: Story = {
-  render: () => <Palette groups={ACTION_GROUPS} />,
-};
-
-export const Status: Story = {
-  render: () => <Palette groups={STATUS_GROUPS} />,
-};
 
 export const SurfacesInputsNeutrals: Story = {
   render: () => <Palette groups={REMAINING_GROUPS} />,

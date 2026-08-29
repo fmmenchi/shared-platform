@@ -13,45 +13,6 @@ export type RoleGroup = {
   entries: RoleEntry[];
 };
 
-/** One value in the palette, and every role that resolves to it. */
-export type Shade = {
-  value: string;
-  lightness: number;
-  chroma: number;
-  hue: number;
-  /** Every role sharing this exact value — often more than one. */
-  roles: ColorRole[];
-};
-
-/**
- * A hue family, reconstructed from the values rather than read from a file.
- *
- * `hue` is the representative angle; `neutral` marks the near-zero-chroma
- * cluster, where the angle carries no meaning and grouping by it would be
- * grouping by noise.
- */
-export type HueFamily = {
-  hue: number;
-  neutral: boolean;
-  /**
-   * The family with the most roles in this hue — the one the strip is really
-   * about. Derived, because a hue angle is not a name anybody thinks in and
-   * inventing one ("crimson") would add a vocabulary the system does not have.
-   */
-  name: string;
-  /**
-   * The other families sharing the hue, most-used first.
-   *
-   * Kept SEPARATE from the name rather than joined into it. `primary ·
-   * secondary · link` read as one thing with three names, and the three are not
-   * alike: `secondary` is a genuinely different colour that happens to sit one
-   * degree away, while `link` is the same value as `primary` to the last
-   * decimal. Sharing a hue is not being the same role.
-   */
-  alsoUsedBy: string[];
-  shades: Shade[];
-};
-
 /**
  * A declared foreground/background pair.
  *

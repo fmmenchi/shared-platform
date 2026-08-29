@@ -17,6 +17,7 @@ import {
 } from './index.js';
 import { CONTRAST_PAIRS, validateTheme } from './validate.js';
 import { readVars } from './generate.js';
+import { resolveValue } from './resolve.js';
 
 /**
  * Validation of the token contract — this is what makes a theme "allowed":
@@ -48,31 +49,72 @@ const read = (p: string) => readFileSync(join(styles, p), 'utf8');
  */
 const parseVars = readVars;
 
-/** Resolve one-or-more levels of `var(--fm-x)` references. */
-function resolve(map: Map<string, string>, value: string, depth = 0): string {
-  if (depth > 5) throw new Error(`var() resolution too deep: ${value}`);
-  const m = value.match(/^var\((--fm-[a-z0-9-]+)\)$/);
-  if (!m) return value;
-  const next = map.get(m[1]);
-  if (!next) throw new Error(`unresolved reference ${m[1]}`);
-  return resolve(map, next, depth + 1);
+/**
+ * Resolve a declared value to the colour a browser would paint: references
+ * expanded AND the relative-colour ramp evaluated.
+ *
+ * The local expander this replaced only followed `var()`. Since ADR-0032 a role
+ * points at a palette step and the step is `oklch(from …)`, so following the
+ * reference now lands on an expression culori cannot read — every assertion
+ * below would fail for the one reason a gate must never fail: it can no longer
+ * see what it is checking. `resolve.ts` evaluates that one form, and refuses
+ * any other rather than guessing.
+ */
+function resolve(map: Map<string, string>, value: string): string {
+  return resolveValue(value, map);
 }
+
+/**
+ * The primitive layer, which is NOT the contract.
+ *
+ * `--fm-<family>-base` and `--fm-palette-*` are internal: no component may read
+ * them, no theme has to assign them, and the Tailwind bridge does not expose
+ * them. They are excluded from the completeness comparison for that reason, and
+ * asserted separately below — the contract is still exactly the semantic roles.
+ */
+const isPrimitive = (name: string) => name.startsWith('--fm-palette-');
 
 const light = parseVars(read('vars.css'));
 const dark = parseVars(read('presets/dark.css'));
 const bridge = read('tailwind.css').replace(/\s+/g, '');
 
+/**
+ * A preset is an OVERRIDE on `:root`, not a standalone stylesheet.
+ *
+ * Since ADR-0032 that distinction has teeth: the dark preset re-pitches the
+ * BASES and remaps the roles, but the ramp steps between them are declared once
+ * in `vars.css` and inherited. Resolving a dark role against the dark file
+ * alone therefore dead-ends at a palette step the file does not contain — which
+ * is not a broken token, it is the cascade doing its job. Every value assertion
+ * resolves against the cascade; completeness still asserts the pure map, because
+ * what a preset must ASSIGN is a different question from what it can SEE.
+ */
+const darkCascade = new Map([...light, ...dark]);
+
 describe('contract completeness', () => {
   it('vars.css defines exactly the contract', () => {
-    const defined = [...light.keys()].sort();
+    const defined = [...light.keys()].filter((n) => !isPrimitive(n)).sort();
     expect(defined).toEqual([...TOKEN_VARS].sort());
+  });
+
+  it('every palette step a role points at exists', () => {
+    // The failure this prevents is silent and total: an unresolvable `var()`
+    // leaves the role at its `@property` initial-value — black, on every
+    // consumer, in both themes. Cheap to check, invisible otherwise.
+    for (const [name, value] of light) {
+      for (const [, referenced] of value.matchAll(/var\((--fm-[a-z0-9-]+)/g)) {
+        expect(light.has(referenced as string), `${name} → ${referenced}`).toBe(
+          true,
+        );
+      }
+    }
   });
 
   it('the dark preset assigns exactly every color role + the shadows', () => {
     // Elevation is theme-dependent (light's 4-12% black shadows vanish on a
     // dark background), so shadows are the one non-color override a preset
     // makes; everything else non-color inherits.
-    const defined = [...dark.keys()].sort();
+    const defined = [...dark.keys()].filter((n) => !isPrimitive(n)).sort();
     expect(defined).toEqual(
       [
         ...COLOR_ROLES.map(colorVar),
@@ -82,11 +124,19 @@ describe('contract completeness', () => {
   });
 
   it('every color value parses as a color, in both themes', () => {
-    for (const role of COLOR_ROLES) {
-      for (const theme of [light, dark]) {
+    // Each theme resolves against ITS OWN cascade. This used to resolve both
+    // against `light`, which worked only while the two presets happened to name
+    // the same palette steps — the dark ramp has its own (0…1300, stepping 0.05
+    // because it works against the lightness ceiling), and the light map does
+    // not contain them.
+    for (const [theme, scope] of [
+      [light, light],
+      [dark, darkCascade],
+    ] as const) {
+      for (const role of COLOR_ROLES) {
         const raw = theme.get(colorVar(role));
         if (!raw) continue; // completeness asserted above
-        const value = resolve(light, raw);
+        const value = resolve(scope, raw);
         expect(parseColor(value), `${colorVar(role)}: ${value}`).toBeDefined();
       }
     }
@@ -239,7 +289,7 @@ describe('reference presets pass the PUBLIC validator (allowed-themes gate)', ()
   });
 
   it('dark preset is an allowed theme on its own (complete)', () => {
-    expect(validateTheme(toTheme(dark))).toEqual([]);
+    expect(validateTheme(toTheme(darkCascade))).toEqual([]);
   });
 
   it('the validator reports a broken theme (self-check)', () => {
@@ -282,7 +332,7 @@ describe('perceivability advisories (logged, not gated)', () => {
     };
     for (const [name, theme] of [
       ['light', light],
-      ['dark', dark],
+      ['dark', darkCascade],
     ] as const) {
       const t = themeOf(theme);
       const linkVsText = wcagContrast(t['link'], t['foreground']);
@@ -328,7 +378,7 @@ describe('APCA (advisory + floor)', () => {
 
   for (const [name, vars] of [
     ['light', light],
-    ['dark', dark],
+    ['dark', darkCascade],
   ] as const) {
     it(`text pairs stay above the |Lc| 45 floor in ${name}`, () => {
       const theme = toTheme(vars);
