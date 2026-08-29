@@ -10,11 +10,11 @@
 [data-theme='dark'] {
   /* ---------- LEVEL 1 — dark bases ---------- */
   --fm-palette-primary-base: oklch(75% 0.1263 256);
-  --fm-palette-secondary-base: oklch(75% 0.1263 256);
-  --fm-palette-accent-base: oklch(75% 0.1241 195);
+  --fm-palette-secondary-base: oklch(75% 0.04 256);
+  --fm-palette-accent-base: oklch(75% 0.11 195);
   --fm-palette-negative-base: oklch(75% 0.1462 27);
-  --fm-palette-success-base: oklch(75% 0.2004 150);
-  --fm-palette-warning-base: oklch(75% 0.1499 82);
+  --fm-palette-success-base: oklch(75% 0.141 150);
+  --fm-palette-warning-base: oklch(75% 0.132 82);
   --fm-palette-info-base: oklch(75% 0.1338 245);
 
   /* ---------- LEVEL 2 — the dark ramp ---------- */
@@ -388,7 +388,7 @@
   --fm-color-muted-foreground: var(--fm-palette-neutral-260);
   --fm-color-border: var(--fm-palette-neutral-660);
   --fm-color-ring: var(--fm-palette-primary-500);
-  --fm-color-scrim: oklch(from var(--fm-palette-neutral-900) l c h / 0.94);
+  --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
   --fm-color-link: var(--fm-palette-primary-500);
   --fm-color-link-hover: var(--fm-palette-primary-400);
   --fm-color-selection: var(--fm-palette-primary-1200);
