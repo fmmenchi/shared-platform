@@ -79,6 +79,44 @@ export function PaletteBases() {
           </div>
         </div>
       ))}
+
+      {/* The neutrals belong to level 1 by rights and have no base, so the
+          absence is drawn rather than left as a gap. Same reasoning as the
+          matrix's dashed cells: a missing thing that is missing ON PURPOSE has
+          to say so, or it reads as an oversight. */}
+      <div style={{ inlineSize: '9rem' }}>
+        <div
+          style={{
+            blockSize: '4rem',
+            borderRadius: 'var(--fm-radius-sm)',
+            border:
+              'var(--fm-border-width-default) dashed var(--fm-color-border)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 'var(--fm-text-xs)',
+            color: 'var(--fm-color-muted-foreground)',
+          }}
+        >
+          no base
+        </div>
+        <div
+          style={{
+            fontSize: 'var(--fm-text-sm)',
+            fontWeight: 'var(--fm-font-weight-semibold)',
+            paddingBlockStart: 'var(--fm-space-internal-xs)',
+          }}
+        >
+          neutral
+        </div>
+        <div
+          style={{
+            fontSize: 'var(--fm-text-xs)',
+            color: 'var(--fm-color-muted-foreground)',
+          }}
+        >
+          ramp written out, not derived
+        </div>
+      </div>
     </div>
   );
 }
@@ -188,6 +226,44 @@ export function PaletteRamps() {
           </div>
         </div>
       ))}
+
+      {/* The neutrals belong to level 1 by rights and have no base, so the
+          absence is drawn rather than left as a gap. Same reasoning as the
+          matrix's dashed cells: a missing thing that is missing ON PURPOSE has
+          to say so, or it reads as an oversight. */}
+      <div style={{ inlineSize: '9rem' }}>
+        <div
+          style={{
+            blockSize: '4rem',
+            borderRadius: 'var(--fm-radius-sm)',
+            border:
+              'var(--fm-border-width-default) dashed var(--fm-color-border)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: 'var(--fm-text-xs)',
+            color: 'var(--fm-color-muted-foreground)',
+          }}
+        >
+          no base
+        </div>
+        <div
+          style={{
+            fontSize: 'var(--fm-text-sm)',
+            fontWeight: 'var(--fm-font-weight-semibold)',
+            paddingBlockStart: 'var(--fm-space-internal-xs)',
+          }}
+        >
+          neutral
+        </div>
+        <div
+          style={{
+            fontSize: 'var(--fm-text-xs)',
+            color: 'var(--fm-color-muted-foreground)',
+          }}
+        >
+          ramp written out, not derived
+        </div>
+      </div>
     </div>
   );
 }
