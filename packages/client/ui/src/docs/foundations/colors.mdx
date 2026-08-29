@@ -124,11 +124,13 @@ instead of a set of values with a shared prefix.
 
 ### What is not converted yet
 
-**The dark preset still holds literals.** Levelling it too produced 20 contrast
-regressions in the browser suite — `menu` in dark measured 4.13 against a 4.5
-floor — because reducing chroma to fit the gamut moves relative luminance.
-Retuning that is measurement, not guesswork, so it is a separate change. Until
-then the two files are asymmetric: light derives, dark states.
+**The dark preset is half converted.** Its NEUTRALS are done — 27 roles now
+point at the shared ramp, and nothing moved, because a grey carries almost no
+chroma and therefore no gamut problem. Its COLOUR families still hold literals:
+levelling those produced 20 contrast regressions in the browser suite (`menu` in
+dark measured 4.13 against a 4.5 floor), because reducing chroma to fit the
+gamut moves relative luminance. Retuning that is measurement, not guesswork, so
+it is a separate change.
 
 **Relative colour is a waiver, not the default tier.** It is Baseline _Newly_
 and reaches _Widely_ around January 2027; the platform's floor is Widely
@@ -146,9 +148,18 @@ formula rather than a colour.
 
 Two things worth noticing. `destructive` and `error` are the **same ramp**: same
 hue, same base, two names because one is a button and the other is a message.
-And the neutrals are their own shape — ten rungs including `0`, `25` and `750`,
-written by hand rather than derived, because surfaces need steps a hundredth
-apart at the pale end that no single curve produces.
+And the neutrals are their own shape: a **regular scale, rungs 50 apart** from
+white (`0`) to black (`1000`), written by hand rather than derived — no curve
+coarse enough to span that range also resolves the pale end, where surfaces sit
+a hundredth of a lightness apart. It carries a few finer rungs besides, at the
+exact lightnesses the two themes stand on, so adopting the scale moved no
+colour.
+
+The neutral ramp is **shared between the themes**. Light and dark do not have
+different greys; they point at opposite ends of the same scale — `background` is
+`neutral-15` in light and `neutral-790` in dark. That is the whole difference,
+and it is why the grey half of the dark preset is a mapping while its coloured
+half is still literals.
 
 <Canvas of={ColorStories.Ramps} />
 

@@ -69,7 +69,7 @@
   --fm-color-warning: oklch(81% 0.132 82);
   --fm-color-warning-foreground: oklch(24% 0.02 256);
   --fm-color-warning-subtle: oklch(43% 0.088 82);
-  --fm-color-warning-subtle-foreground: oklch(100% 0 82);
+  --fm-color-warning-subtle-foreground: var(--fm-palette-neutral-0);
   --fm-color-warning-border: oklch(81% 0.132 82);
 
   --fm-color-info: oklch(77% 0.125 245);
@@ -84,43 +84,43 @@
   --fm-color-error-subtle-foreground: oklch(95% 0.024 27);
   --fm-color-error-border: oklch(77% 0.13 27);
 
-  --fm-color-neutral: oklch(74% 0.014 256);
-  --fm-color-neutral-foreground: oklch(24% 0.02 256);
-  --fm-color-neutral-subtle: oklch(31% 0.02 256);
-  --fm-color-neutral-subtle-foreground: oklch(82% 0.012 256);
-  --fm-color-neutral-border: oklch(74% 0.014 256);
+  --fm-color-neutral: var(--fm-palette-neutral-260);
+  --fm-color-neutral-foreground: var(--fm-palette-neutral-760);
+  --fm-color-neutral-subtle: var(--fm-palette-neutral-690);
+  --fm-color-neutral-subtle-foreground: var(--fm-palette-neutral-180);
+  --fm-color-neutral-border: var(--fm-palette-neutral-260);
 
-  --fm-color-disabled: oklch(31% 0.02 256);
-  --fm-color-disabled-foreground: oklch(60% 0.016 256);
+  --fm-color-disabled: var(--fm-palette-neutral-690);
+  --fm-color-disabled-foreground: var(--fm-palette-neutral-400);
 
   /* Surfaces & text */
-  --fm-color-background: oklch(21% 0.02 256);
-  --fm-color-foreground: oklch(95% 0.007 256);
-  --fm-color-card: oklch(26% 0.02 256);
-  --fm-color-card-foreground: oklch(95% 0.007 256);
-  --fm-color-popover: oklch(26% 0.02 256);
-  --fm-color-popover-foreground: oklch(95% 0.007 256);
-  --fm-color-muted: oklch(31% 0.02 256);
-  --fm-color-muted-foreground: oklch(74% 0.014 256);
-  --fm-color-border: oklch(34% 0.02 256);
+  --fm-color-background: var(--fm-palette-neutral-790);
+  --fm-color-foreground: var(--fm-palette-neutral-50);
+  --fm-color-card: var(--fm-palette-neutral-740);
+  --fm-color-card-foreground: var(--fm-palette-neutral-50);
+  --fm-color-popover: var(--fm-palette-neutral-740);
+  --fm-color-popover-foreground: var(--fm-palette-neutral-50);
+  --fm-color-muted: var(--fm-palette-neutral-690);
+  --fm-color-muted-foreground: var(--fm-palette-neutral-260);
+  --fm-color-border: var(--fm-palette-neutral-660);
   --fm-color-ring: oklch(77% 0.118 256);
   --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
   --fm-color-link: oklch(77% 0.118 256);
   --fm-color-link-hover: oklch(82% 0.091 256);
   --fm-color-selection: oklch(39% 0.108 256);
-  --fm-color-selection-foreground: oklch(97% 0.014 256);
-  --fm-color-tooltip: oklch(95% 0.007 256);
-  --fm-color-tooltip-foreground: oklch(24% 0.02 256);
+  --fm-color-selection-foreground: var(--fm-palette-neutral-30);
+  --fm-color-tooltip: var(--fm-palette-neutral-50);
+  --fm-color-tooltip-foreground: var(--fm-palette-neutral-760);
 
   /* Inputs */
-  --fm-color-input: oklch(31% 0.02 256);
-  --fm-color-input-foreground: oklch(95% 0.007 256);
-  --fm-color-input-hover: oklch(34% 0.02 256);
-  --fm-color-input-active: oklch(38% 0.02 256);
+  --fm-color-input: var(--fm-palette-neutral-690);
+  --fm-color-input-foreground: var(--fm-palette-neutral-50);
+  --fm-color-input-hover: var(--fm-palette-neutral-660);
+  --fm-color-input-active: var(--fm-palette-neutral-620);
   --fm-color-input-invalid: oklch(70% 0.19 27);
-  --fm-color-input-disabled: oklch(26% 0.02 256);
-  --fm-color-input-placeholder: oklch(74% 0.014 256);
-  --fm-color-input-border: oklch(56% 0.02 256);
+  --fm-color-input-disabled: var(--fm-palette-neutral-740);
+  --fm-color-input-placeholder: var(--fm-palette-neutral-260);
+  --fm-color-input-border: var(--fm-palette-neutral-440);
 
   /* Elevation is THEME-DEPENDENT: the light shadows (4-12% black) vanish on a
      21%-lightness background, so the dark preset re-tunes them — the one

@@ -51,6 +51,14 @@ is the point of having one, and keeping seven sets of coefficients would move th
 numbers rather than remove them. Consequence accepted deliberately: **roughly 20 of the 84 values
 change**, most visibly `destructive-subtle` (chroma 0.23 → ~0.45) and `accent-disabled` (1.19 → ~0.6).
 
+**The palette is internal to the package, not to the file.** Components consume
+roles and only roles. But an app writing its own brand preset assigns all 84 of
+them — that is what the public `validateTheme()` exists for — and for that app
+the ramp is the raw material: without it, a preset means inventing 84 oklch
+values by hand, which is the work this layer exists to remove. So the scale is
+deliberately COMPLETE rather than trimmed to what this workspace happens to use,
+and the neutral ramp is shared between presets rather than restated by each.
+
 **The neutrals stay explicit.** They are every surface, border and disabled role in the system, and a
 single base cannot produce the fine steps surfaces need — the same conclusion the reference
 implementation reached, whose neutral ramp is hand-written with extra steps while its brand ramps are
