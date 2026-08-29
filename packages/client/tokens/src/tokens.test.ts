@@ -124,11 +124,19 @@ describe('contract completeness', () => {
   });
 
   it('every color value parses as a color, in both themes', () => {
-    for (const role of COLOR_ROLES) {
-      for (const theme of [light, dark]) {
+    // Each theme resolves against ITS OWN cascade. This used to resolve both
+    // against `light`, which worked only while the two presets happened to name
+    // the same palette steps — the dark ramp has its own (0…1300, stepping 0.05
+    // because it works against the lightness ceiling), and the light map does
+    // not contain them.
+    for (const [theme, scope] of [
+      [light, light],
+      [dark, darkCascade],
+    ] as const) {
+      for (const role of COLOR_ROLES) {
         const raw = theme.get(colorVar(role));
         if (!raw) continue; // completeness asserted above
-        const value = resolve(light, raw);
+        const value = resolve(scope, raw);
         expect(parseColor(value), `${colorVar(role)}: ${value}`).toBeDefined();
       }
     }
