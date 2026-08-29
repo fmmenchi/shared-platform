@@ -1,3 +1,14 @@
+## 0.0.34 (2026-08-29)
+
+### 🩹 Fixes
+
+- **tokens:** secondary was identical to primary in the dark preset ([86d7470](https://github.com/fmmenchi/shared-platform/commit/86d7470))
+- **tokens:** solve dark chroma at the aligned lightness, and put input-invalid on the ramp ([8413c50](https://github.com/fmmenchi/shared-platform/commit/8413c50))
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.33 (2026-08-29)
 
 ### 🚀 Features
