@@ -164,11 +164,14 @@ function familyOf(role: string): string {
  * are shared by a dozen and the point is the gist, not the census — the count
  * of what is left is kept, so nothing is silently dropped.
  */
-function nameFor(shades: Shade[], neutral: boolean): string {
+function namesFor(
+  shades: Shade[],
+  neutral: boolean,
+): { name: string; alsoUsedBy: string[] } {
   // The greys are every surface, border, input and disabled role in the system.
   // Derived, they come out as `input · neutral · secondary +16` — a census, not
   // a name. What they are is the neutrals, and the subtitle carries the count.
-  if (neutral) return 'neutrals';
+  if (neutral) return { name: 'neutrals', alsoUsedBy: [] };
 
   const counts = new Map<string, number>();
   for (const shade of shades) {
@@ -190,9 +193,8 @@ function nameFor(shades: Shade[], neutral: boolean): string {
     ([family]) => family,
   );
 
-  const shown = kept.slice(0, 3).join(' · ');
-  const rest = kept.length - 3;
-  return rest > 0 ? `${shown} +${rest}` : shown;
+  const [name = '', ...rest] = kept;
+  return { name, alsoUsedBy: rest };
 }
 
 export function hueFamilies(values: Record<string, string>): HueFamily[] {
@@ -220,7 +222,13 @@ export function hueFamilies(values: Record<string, string>): HueFamily[] {
         (neutral || Math.abs(candidate.hue - shade.hue) <= HUE_TOLERANCE),
     );
     if (family === undefined) {
-      families.push({ hue: shade.hue, neutral, name: '', shades: [shade] });
+      families.push({
+        hue: shade.hue,
+        neutral,
+        name: '',
+        alsoUsedBy: [],
+        shades: [shade],
+      });
     } else {
       family.shades.push(shade);
     }
@@ -230,7 +238,9 @@ export function hueFamilies(values: Record<string, string>): HueFamily[] {
     family.shades.sort((a, b) => b.lightness - a.lightness);
     // Named after the grouping is complete: the name is a summary of the whole
     // family, so it cannot be decided while members are still arriving.
-    family.name = nameFor(family.shades, family.neutral);
+    const named = namesFor(family.shades, family.neutral);
+    family.name = named.name;
+    family.alsoUsedBy = named.alsoUsedBy;
   }
 
   // Neutrals last: they are the longest ramp and the least interesting one to

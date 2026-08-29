@@ -84,11 +84,27 @@ What can be shown, then, is the palette that is actually shipped, reconstructed
 from the values: every distinct colour, grouped by hue, ordered by lightness. It
 cannot go stale, because it _is_ the tokens.
 
-Each strip is named after the roles that live in that hue — `destructive ·
-error`, not `hue 27°` — because the angle is where a colour sits, not what it
-is for. The names are derived from the roles themselves, so nothing here is a
-colour name somebody invented; the angle stays in the subtitle for when you
-need it.
+Each strip is named after the family with the most roles in that hue —
+`destructive`, not `hue 27°` — because the angle is where a colour sits, not
+what it is for. Anything else living at the same angle is listed as **shared
+with**, and the distinction is worth keeping: sitting at the same hue is not
+being the same role.
+
+The blue strip is the one to read closely, because the three names sharing it
+are in three different situations:
+
+- **`secondary` is a genuinely different colour.** One degree away, but chroma
+  `0.05` against `primary`'s `0.135` — near enough to grey that it reads as
+  slate, not blue.
+- **`link` is `primary`, to the last decimal.** Both are
+  `oklch(41% 0.135 255)`, and `link-hover` equals `primary-hover`. It is not a
+  new colour; it is a second name for one, so that a link can stop following the
+  brand later without every call site changing.
+- **`selection` is `primary-subtle`**, and `selection-foreground` is
+  `primary-hover`. Same story.
+
+None of that is visible in the role listing, where the four appear as unrelated
+entries. It is the reason to draw a palette at all.
 
 Under each swatch is its **lightness**, 0–100. A `·N` after it means **N roles
 resolve to that exact value**: the 84 roles come out as far fewer colours, and

@@ -34,12 +34,21 @@ export type HueFamily = {
   hue: number;
   neutral: boolean;
   /**
-   * What this hue is FOR, derived from the roles that use it — `destructive ·
-   * error` rather than `hue 27°`. A hue angle is not a name anybody thinks in,
-   * and inventing one ("crimson") would add a vocabulary the system does not
-   * have.
+   * The family with the most roles in this hue — the one the strip is really
+   * about. Derived, because a hue angle is not a name anybody thinks in and
+   * inventing one ("crimson") would add a vocabulary the system does not have.
    */
   name: string;
+  /**
+   * The other families sharing the hue, most-used first.
+   *
+   * Kept SEPARATE from the name rather than joined into it. `primary ·
+   * secondary · link` read as one thing with three names, and the three are not
+   * alike: `secondary` is a genuinely different colour that happens to sit one
+   * degree away, while `link` is the same value as `primary` to the last
+   * decimal. Sharing a hue is not being the same role.
+   */
+  alsoUsedBy: string[];
   shades: Shade[];
 };
 

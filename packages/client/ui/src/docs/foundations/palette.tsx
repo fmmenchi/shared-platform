@@ -203,6 +203,17 @@ export function SourcePalette() {
             >
               {family.shades.length} shades ·{' '}
               {family.neutral ? 'grey' : `${Math.round(family.hue)}°`}
+              {family.alsoUsedBy.length > 0 && (
+                // "shared with", not a longer name. Sitting at the same hue is
+                // not being the same role: `secondary` is a different colour a
+                // degree away, while `link` is `primary` to the last decimal —
+                // and a title reading `primary · secondary · link` claimed all
+                // three were one thing.
+                <>
+                  <br />
+                  shared with {family.alsoUsedBy.join(', ')}
+                </>
+              )}
             </div>
           </div>
 
