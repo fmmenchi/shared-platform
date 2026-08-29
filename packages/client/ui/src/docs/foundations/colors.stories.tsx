@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DeclaredPairs } from './color-specimens.js';
 import { Palette, SourcePalette } from './palette.js';
 import { RoleMatrix } from './matrix.js';
+import { PaletteRamps } from './ramps.js';
 import {
   ACTION_GROUPS,
   REMAINING_GROUPS,
@@ -29,6 +30,8 @@ const meta: Meta = {
 export default meta;
 
 type Story = StoryObj;
+
+export const Ramps: Story = { render: () => <PaletteRamps /> };
 
 export const Matrix: Story = { render: () => <RoleMatrix /> };
 

@@ -139,7 +139,22 @@ same three levels, literals instead of the formula.
 
 ## The palette
 
-Below is what the ramp above actually resolves to: every distinct colour the
+Level 2 as it is declared: every family's ramp, constant step, palest first. The
+step names are read out of `vars.css` itself, so this cannot drift from the
+stylesheet — and the values come from the DOM, because the declaration is a
+formula rather than a colour.
+
+Two things worth noticing. `destructive` and `error` are the **same ramp**: same
+hue, same base, two names because one is a button and the other is a message.
+And the neutrals are their own shape — ten rungs including `0`, `25` and `750`,
+written by hand rather than derived, because surfaces need steps a hundredth
+apart at the pale end that no single curve produces.
+
+<Canvas of={ColorStories.Ramps} />
+
+## Where the roles land
+
+Below is what those ramps actually resolve to: every distinct colour the
 theme paints, grouped by hue and ordered by lightness. Read from the DOM rather
 than from the ramp's source, so it shows the colours after the browser has
 evaluated the formulas — and it cannot go stale, because it _is_ the tokens.

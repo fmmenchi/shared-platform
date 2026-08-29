@@ -28,6 +28,34 @@
 
 :root {
   /* ==========================================================
+     THE NEUTRAL RAMP — written out, not derived (ADR-0032).
+
+     A single base cannot produce what surfaces need. The pale end
+     wants steps a hundredth apart (0.985, 0.965, 0.95) to separate
+     a page from a card from a wash, and no lightness curve coarse
+     enough to span 1.00 to 0.14 also resolves that. Hence the extra
+     rungs (25, 750, 850, 950) the brand ramps have no use for.
+
+     Step numbers are DERIVED from lightness — (1 - l) x 1000 snapped
+     to a rung — so the number says where the grey sits instead of
+     merely counting.
+
+     Chroma is not zero: these greys carry ~0.02 at hue 256, a cold
+     cast that keeps them from reading as dead against the brand
+     blue. Preserved exactly rather than rounded away.
+     ========================================================== */
+  --fm-palette-neutral-0: oklch(100% 0 0);
+  --fm-palette-neutral-25: oklch(98.5% 0.004 256);
+  --fm-palette-neutral-50: oklch(96.5% 0.006 256);
+  --fm-palette-neutral-100: oklch(95% 0.007 256);
+  --fm-palette-neutral-200: oklch(91% 0.008 256);
+  --fm-palette-neutral-400: oklch(60% 0.016 256);
+  --fm-palette-neutral-500: oklch(58% 0.016 256);
+  --fm-palette-neutral-600: oklch(46% 0.02 256);
+  --fm-palette-neutral-700: oklch(38% 0.02 256);
+  --fm-palette-neutral-750: oklch(24% 0.02 256);
+
+  /* ==========================================================
      LEVEL 1 — BASES (ADR-0032). One colour per family; the ramp
      below is derived from it, and the roles further down point at
      the ramp. Nothing outside this file may read either.
@@ -297,7 +325,7 @@
      X-disabled(-foreground)→ disabled fill / its text (AA-exempt)
      ========================================================== */
   --fm-color-primary: var(--fm-palette-primary-700);
-  --fm-color-primary-foreground: oklch(100% 0 0);
+  --fm-color-primary-foreground: var(--fm-palette-neutral-0);
   --fm-color-primary-hover: var(--fm-palette-primary-800);
   --fm-color-primary-active: var(--fm-palette-primary-900);
   --fm-color-primary-subtle: var(--fm-palette-primary-100);
@@ -306,7 +334,7 @@
   --fm-color-primary-disabled-foreground: var(--fm-palette-primary-100);
 
   --fm-color-secondary: var(--fm-palette-secondary-700);
-  --fm-color-secondary-foreground: oklch(100% 0 0);
+  --fm-color-secondary-foreground: var(--fm-palette-neutral-0);
   --fm-color-secondary-hover: var(--fm-palette-secondary-800);
   --fm-color-secondary-active: var(--fm-palette-secondary-900);
   --fm-color-secondary-subtle: var(--fm-palette-secondary-100);
@@ -315,7 +343,7 @@
   --fm-color-secondary-disabled-foreground: var(--fm-palette-secondary-100);
 
   --fm-color-accent: var(--fm-palette-accent-700);
-  --fm-color-accent-foreground: oklch(100% 0 0);
+  --fm-color-accent-foreground: var(--fm-palette-neutral-0);
   --fm-color-accent-hover: var(--fm-palette-accent-800);
   --fm-color-accent-active: var(--fm-palette-accent-900);
   --fm-color-accent-subtle: var(--fm-palette-accent-100);
@@ -324,7 +352,7 @@
   --fm-color-accent-disabled-foreground: var(--fm-palette-accent-100);
 
   --fm-color-destructive: var(--fm-palette-destructive-700);
-  --fm-color-destructive-foreground: oklch(100% 0 0);
+  --fm-color-destructive-foreground: var(--fm-palette-neutral-0);
   --fm-color-destructive-hover: var(--fm-palette-destructive-800);
   --fm-color-destructive-active: var(--fm-palette-destructive-900);
   --fm-color-destructive-subtle: var(--fm-palette-destructive-100);
@@ -337,19 +365,19 @@
      Lifecycle/feedback roles, DISTINCT from the brand families.
      ========================================================== */
   --fm-color-success: var(--fm-palette-success-700);
-  --fm-color-success-foreground: oklch(100% 0 0);
+  --fm-color-success-foreground: var(--fm-palette-neutral-0);
   --fm-color-success-subtle: var(--fm-palette-success-100);
   --fm-color-success-subtle-foreground: var(--fm-palette-success-800);
   --fm-color-success-border: var(--fm-palette-success-700);
 
   --fm-color-warning: var(--fm-palette-warning-700);
-  --fm-color-warning-foreground: oklch(100% 0 0);
+  --fm-color-warning-foreground: var(--fm-palette-neutral-0);
   --fm-color-warning-subtle: var(--fm-palette-warning-100);
   --fm-color-warning-subtle-foreground: var(--fm-palette-warning-800);
   --fm-color-warning-border: var(--fm-palette-warning-700);
 
   --fm-color-info: var(--fm-palette-info-700);
-  --fm-color-info-foreground: oklch(100% 0 0);
+  --fm-color-info-foreground: var(--fm-palette-neutral-0);
   --fm-color-info-subtle: var(--fm-palette-info-100);
   --fm-color-info-subtle-foreground: var(--fm-palette-info-800);
   --fm-color-info-border: var(--fm-palette-info-700);
@@ -357,20 +385,20 @@
   /* error: the feedback-red status family (Alerts, inline errors). Same hue as
      destructive (27), status treatment — subtle wash + tinted border. */
   --fm-color-error: var(--fm-palette-error-700);
-  --fm-color-error-foreground: oklch(100% 0 0);
+  --fm-color-error-foreground: var(--fm-palette-neutral-0);
   --fm-color-error-subtle: var(--fm-palette-error-100);
   --fm-color-error-subtle-foreground: var(--fm-palette-error-800);
   --fm-color-error-border: var(--fm-palette-error-700);
 
-  --fm-color-neutral: oklch(46% 0.02 256);
-  --fm-color-neutral-foreground: oklch(100% 0 0);
-  --fm-color-neutral-subtle: oklch(95% 0.007 256);
-  --fm-color-neutral-subtle-foreground: oklch(38% 0.02 256);
-  --fm-color-neutral-border: oklch(46% 0.02 256);
+  --fm-color-neutral: var(--fm-palette-neutral-600);
+  --fm-color-neutral-foreground: var(--fm-palette-neutral-0);
+  --fm-color-neutral-subtle: var(--fm-palette-neutral-100);
+  --fm-color-neutral-subtle-foreground: var(--fm-palette-neutral-700);
+  --fm-color-neutral-border: var(--fm-palette-neutral-600);
 
   /* Generic disabled, for controls not tied to a colour family (AA-exempt). */
-  --fm-color-disabled: oklch(96.5% 0.006 256);
-  --fm-color-disabled-foreground: oklch(60% 0.016 256);
+  --fm-color-disabled: var(--fm-palette-neutral-50);
+  --fm-color-disabled-foreground: var(--fm-palette-neutral-400);
 
   /* ==========================================================
      COLOR — surfaces & text
@@ -381,15 +409,15 @@
      ring                  → :focus-visible ring (≥3:1 vs background)
      scrim                 → full-screen modal backdrop (alpha; no pair checked)
      ========================================================== */
-  --fm-color-background: oklch(98.5% 0.004 256);
-  --fm-color-foreground: oklch(24% 0.02 256);
-  --fm-color-card: oklch(100% 0 0);
-  --fm-color-card-foreground: oklch(24% 0.02 256);
-  --fm-color-popover: oklch(100% 0 0);
-  --fm-color-popover-foreground: oklch(24% 0.02 256);
-  --fm-color-muted: oklch(96.5% 0.006 256);
-  --fm-color-muted-foreground: oklch(38% 0.02 256);
-  --fm-color-border: oklch(91% 0.008 256);
+  --fm-color-background: var(--fm-palette-neutral-25);
+  --fm-color-foreground: var(--fm-palette-neutral-750);
+  --fm-color-card: var(--fm-palette-neutral-0);
+  --fm-color-card-foreground: var(--fm-palette-neutral-750);
+  --fm-color-popover: var(--fm-palette-neutral-0);
+  --fm-color-popover-foreground: var(--fm-palette-neutral-750);
+  --fm-color-muted: var(--fm-palette-neutral-50);
+  --fm-color-muted-foreground: var(--fm-palette-neutral-700);
+  --fm-color-border: var(--fm-palette-neutral-200);
   --fm-color-ring: oklch(50% 0.164 255);
   --fm-color-scrim: oklch(14% 0.02 256 / 0.92);
   /* Prose links (NOT button-primary: a distinct role brands may diverge). */
@@ -399,23 +427,23 @@
   --fm-color-selection: oklch(90% 0.049 255);
   --fm-color-selection-foreground: oklch(31% 0.102 255);
   /* Tooltip is the INVERTED surface by convention. */
-  --fm-color-tooltip: oklch(24% 0.02 256);
-  --fm-color-tooltip-foreground: oklch(96.5% 0.006 256);
+  --fm-color-tooltip: var(--fm-palette-neutral-750);
+  --fm-color-tooltip-foreground: var(--fm-palette-neutral-50);
 
   /* ==========================================================
      COLOR — form inputs (filled-style: bg, text, states)
      ========================================================== */
-  --fm-color-input: oklch(91% 0.008 256);
-  --fm-color-input-foreground: oklch(24% 0.02 256);
-  --fm-color-input-hover: oklch(95% 0.007 256);
-  --fm-color-input-active: oklch(91% 0.008 256);
+  --fm-color-input: var(--fm-palette-neutral-200);
+  --fm-color-input-foreground: var(--fm-palette-neutral-750);
+  --fm-color-input-hover: var(--fm-palette-neutral-100);
+  --fm-color-input-active: var(--fm-palette-neutral-200);
   --fm-color-input-invalid: oklch(57% 0.2 27);
-  --fm-color-input-disabled: oklch(96.5% 0.006 256);
-  --fm-color-input-placeholder: oklch(38% 0.02 256);
+  --fm-color-input-disabled: var(--fm-palette-neutral-50);
+  --fm-color-input-placeholder: var(--fm-palette-neutral-700);
   /* Field boundary (outline-style inputs): a control boundary must clear 3:1
      against the surrounding surface (WCAG 1.4.11) — the decorative --fm-color-
      border does not. Declared pair: background × input-border. */
-  --fm-color-input-border: oklch(58% 0.016 256);
+  --fm-color-input-border: var(--fm-palette-neutral-500);
 
   /* ==========================================================
      RADIUS
