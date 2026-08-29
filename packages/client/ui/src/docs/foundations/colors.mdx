@@ -57,8 +57,31 @@ scaled chroma. The ramp was applied when the numbers were chosen and never
 became code, so there is no `blue-500` anywhere to import, and no primitive
 layer to drift from the semantic one.
 
-What can be shown is the palette that is actually shipped, reconstructed from
-the values: every distinct colour, grouped by hue, ordered by lightness. It
+The obvious alternative is a derived ramp — one `--primary-base` per family and
+a `50…900` scale computed from it in CSS:
+
+```css
+--color-primary-50: oklch(
+  from var(--color-primary-base) calc(l + 0.42) calc(c * 0.3) h
+);
+```
+
+That is relative color syntax, and it is exactly the shape this system does
+**not** use. ADR-0003 sets the floor at Baseline **Widely** and names this
+feature among what that rules out. The trade is not about taste: an application
+picks its own browser floor, while a published library hands its floor to every
+consumer — so the same methodology is applied by hand and frozen as static
+literals instead of being computed at runtime. `vars.css` describes those
+numbers as "resolved at authoring time from the ramp methodology (base ±
+lightness, scaled chroma)", which is that formula, evaluated once by a person.
+
+It is on the calendar rather than closed: the ADR revisits it around January
+2027, when relative color reaches Widely — and already expects to keep the
+literals, because gamut handling and validation stay simpler when the values
+are values.
+
+What can be shown, then, is the palette that is actually shipped, reconstructed
+from the values: every distinct colour, grouped by hue, ordered by lightness. It
 cannot go stale, because it _is_ the tokens.
 
 Each strip is named after the roles that live in that hue — `destructive ·
