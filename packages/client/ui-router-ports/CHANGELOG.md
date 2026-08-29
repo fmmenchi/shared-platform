@@ -1,3 +1,25 @@
+## 0.1.0 (2026-08-29)
+
+### 🚀 Features
+
+- ⚠️  **ui-router-ports:** react-router 8 is the declared peer ([8abacb9](https://github.com/fmmenchi/shared-platform/commit/8abacb9))
+
+### ⚠️  Breaking Changes
+
+- **ui-router-ports:** react-router 8 is the declared peer  ([8abacb9](https://github.com/fmmenchi/shared-platform/commit/8abacb9))
+  `react-router` is now declared as an `^8.0.0` peer dependency
+  (was `^7.0.0`). A consumer on react-router 7 must upgrade to 8, which in turn
+  requires react >= 19.2.7 and Node >= 22.22.0.
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/ui to 0.7.5
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.37 (2026-08-18)
 
 ### 🩹 Fixes
