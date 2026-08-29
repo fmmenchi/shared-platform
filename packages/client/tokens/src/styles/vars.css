@@ -419,7 +419,7 @@
   --fm-color-muted-foreground: var(--fm-palette-neutral-620);
   --fm-color-border: var(--fm-palette-neutral-90);
   --fm-color-ring: var(--fm-palette-primary-600);
-  --fm-color-scrim: oklch(14% 0.02 256 / 0.92);
+  --fm-color-scrim: oklch(from var(--fm-palette-neutral-850) l c h / 0.92);
   /* Prose links (NOT button-primary: a distinct role brands may diverge). */
   --fm-color-link: var(--fm-palette-primary-700);
   --fm-color-link-hover: var(--fm-palette-primary-800);
