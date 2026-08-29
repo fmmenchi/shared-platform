@@ -91,6 +91,85 @@ export function remainingGroups(): RoleGroup[] {
     );
 }
 
+/**
+ * THE MATRIX: the families that share one vocabulary, against the slots in it.
+ *
+ * The families are the declared ones. `neutral` joins them because it is built
+ * from the same words; `input` does not, because its slots are its own
+ * (`invalid`, `placeholder`) and a column used by one row is a column that
+ * makes every other row look incomplete.
+ */
+export const MATRIX_FAMILIES: readonly string[] = [
+  ...ACTION_FAMILIES,
+  ...STATUS_FAMILIES,
+  'neutral',
+];
+
+/**
+ * Slot order, and the only hand-written list here.
+ *
+ * It is an order of PRESENTATION, not a set of data: fill before its ink,
+ * states before variants, the unavailable pair last. It cannot go stale into a
+ * lie the way a value copy would — a slot missing from this list is appended
+ * rather than dropped, so a new one shows up unstyled instead of invisibly
+ * absent.
+ */
+const SLOT_ORDER: readonly string[] = [
+  '',
+  '-foreground',
+  '-hover',
+  '-active',
+  '-subtle',
+  '-subtle-foreground',
+  '-border',
+  '-disabled',
+  '-disabled-foreground',
+];
+
+const SLOT_LABELS: Record<string, string> = {
+  '': 'base',
+  '-foreground': 'on base',
+  '-hover': 'hover',
+  '-active': 'active',
+  '-subtle': 'subtle',
+  '-subtle-foreground': 'on subtle',
+  '-border': 'border',
+  '-disabled': 'disabled',
+  '-disabled-foreground': 'on disabled',
+};
+
+/** Human label for a slot; an unlisted one shows its raw suffix. */
+export const slotLabel = (slot: string): string =>
+  SLOT_LABELS[slot] ?? slot.replace(/^-/, '');
+
+/**
+ * The slots any matrix family actually declares, in presentation order.
+ *
+ * Derived, so a column exists only if some family has it — and every column has
+ * at least one filled cell, which is what keeps the empty cells meaningful:
+ * `border` is blank for the action families because they genuinely have none,
+ * not because the table was drawn optimistically.
+ */
+export function matrixSlots(): string[] {
+  const roles = new Set<string>(COLOR_ROLES);
+  const used = SLOT_ORDER.filter((slot) =>
+    MATRIX_FAMILIES.some((family) => roles.has(`${family}${slot}`)),
+  );
+
+  const known = new Set(SLOT_ORDER);
+  const extra = [
+    ...new Set(
+      MATRIX_FAMILIES.flatMap((family) =>
+        COLOR_ROLES.filter(
+          (role) => role === family || role.startsWith(`${family}-`),
+        ).map((role) => role.slice(family.length)),
+      ),
+    ),
+  ].filter((slot) => !known.has(slot));
+
+  return [...used, ...extra];
+}
+
 /** Every colour property, for a page that wants the whole set at once. */
 export const ALL_COLOR_PROPERTIES: readonly string[] =
   COLOR_ROLES.map(colorVar);

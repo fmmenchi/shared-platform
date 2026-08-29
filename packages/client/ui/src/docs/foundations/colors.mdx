@@ -48,6 +48,25 @@ the backdrop — which is why each has its own ink instead of sharing one.
 `disabled` and `on disabled` mirror `base`/`on base` for the unavailable state,
 and are the one pair exempt from the contrast floor (see below).
 
+## The matrix
+
+Families down, slots across — the one view that lets a colour be compared with
+the colour it should match. Reading **down** a column puts every family's
+`subtle` side by side; reading **across** a row is one family's full vocabulary.
+
+The empty cells carry as much as the filled ones. `border` is blank for the four
+action families and filled for the status ones; `hover` and `active` are the
+reverse. That is the difference between something you press and something you
+read, drawn rather than described.
+
+Hover any cell for its role, its property and its resolved value.
+
+<Canvas of={ColorStories.Matrix} />
+
+`input` is deliberately not a row here: its slots are its own (`invalid`,
+`placeholder`) and a column used by a single family makes every other row look
+incomplete. It appears under Surfaces below.
+
 ## The palette
 
 There is no primitives file to show you, and that is a decision rather than an
