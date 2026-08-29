@@ -437,7 +437,7 @@
   --fm-color-input-foreground: var(--fm-palette-neutral-760);
   --fm-color-input-hover: var(--fm-palette-neutral-50);
   --fm-color-input-active: var(--fm-palette-neutral-90);
-  --fm-color-input-invalid: oklch(57% 0.2 27);
+  --fm-color-input-invalid: var(--fm-palette-negative-500);
   --fm-color-input-disabled: var(--fm-palette-neutral-35);
   --fm-color-input-placeholder: var(--fm-palette-neutral-620);
   /* Field boundary (outline-style inputs): a control boundary must clear 3:1
