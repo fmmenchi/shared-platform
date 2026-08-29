@@ -90,6 +90,21 @@ describe('evaluateRelativeOklch', () => {
     expect(evaluateRelativeOklch(wrapped)).toBe('oklch(41% 0.1344 255)');
   });
 
+  it('carries the alpha through', () => {
+    // A value that drops its alpha is a different colour, and the gate would
+    // then measure something the browser never paints: `scrim` is 94% opaque
+    // black, not black.
+    expect(evaluateRelativeOklch(`oklch(from ${origin} l c h / 0.94)`)).toBe(
+      'oklch(55% 0.14 255 / 0.94)',
+    );
+  });
+
+  it('keeps the origin alpha when none is given', () => {
+    expect(
+      evaluateRelativeOklch('oklch(from oklch(20% 0.02 256 / 0.9) l c h)'),
+    ).toBe('oklch(20% 0.02 256 / 0.9)');
+  });
+
   it('leaves a plain oklch() alone', () => {
     expect(evaluateRelativeOklch(origin)).toBe(origin);
   });

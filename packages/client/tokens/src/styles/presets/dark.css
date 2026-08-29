@@ -388,7 +388,7 @@
   --fm-color-muted-foreground: var(--fm-palette-neutral-260);
   --fm-color-border: var(--fm-palette-neutral-660);
   --fm-color-ring: var(--fm-palette-primary-500);
-  --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
+  --fm-color-scrim: oklch(from var(--fm-palette-neutral-900) l c h / 0.94);
   --fm-color-link: var(--fm-palette-primary-500);
   --fm-color-link-hover: var(--fm-palette-primary-400);
   --fm-color-selection: var(--fm-palette-primary-1200);

@@ -57,7 +57,7 @@ export function expandVars(
   return expandVars(flat.replace(whole, flatten(referenced)), vars, depth + 1);
 }
 
-type Channels = { l: number; c: number; h: number };
+type Channels = { l: number; c: number; h: number; alpha: number };
 
 /** `oklch(L C H)` → channels. Percentages and 0–1 lightness both appear. */
 function parseOklch(value: string): Channels | null {
@@ -67,12 +67,21 @@ function parseOklch(value: string): Channels | null {
     );
   if (match === null) return null;
 
-  const [, l = '', percent, c = '', h = ''] = match;
+  const [, l = '', percent, c = '', h = '', a] = match;
   const lightness = Number(l);
   return {
     l: percent === '%' ? lightness / 100 : lightness,
     c: Number(c),
     h: Number(h),
+    // Absent means opaque. Kept because a value that drops its alpha is a
+    // DIFFERENT colour, and the gate would then measure something the browser
+    // never paints — `scrim` is 94% opaque black, not black.
+    alpha:
+      a === undefined
+        ? 1
+        : a.endsWith('%')
+          ? Number(a.slice(0, -1)) / 100
+          : Number(a),
   };
 }
 
@@ -87,7 +96,7 @@ function parseOklch(value: string): Channels | null {
 function evaluateChannel(expression: string, origin: Channels): number {
   const text = expression.trim();
 
-  const direct = /^(l|c|h)$/i.exec(text);
+  const direct = /^(l|c|h|alpha)$/i.exec(text);
   if (direct !== null)
     return origin[direct[1]?.toLowerCase() as keyof Channels];
 
@@ -97,7 +106,7 @@ function evaluateChannel(expression: string, origin: Channels): number {
   }
 
   const calc =
-    /^calc\(\s*(l|c|h)\s*([+\-*/])\s*([\d.]+)\s*\)$/i.exec(text) ?? null;
+    /^calc\(\s*(l|c|h|alpha)\s*([+\-*/])\s*([\d.]+)\s*\)$/i.exec(text) ?? null;
   if (calc === null) {
     throw new Error(
       `Unsupported relative-colour channel "${text}". ADR-0032 uses a channel or one calc() with one operation; anything else must be evaluated by a browser, not guessed at here.`,
@@ -166,7 +175,14 @@ export function evaluateRelativeOklch(value: string): string {
     );
   }
 
-  const [lightness = '', chroma = '', hue = ''] = channels;
+  // `l c h / 0.94` — the slash and what follows are the alpha, which the
+  // browser applies and this resolver must not silently drop.
+  const slash = channels.indexOf('/');
+  const alphaText =
+    slash === -1 ? undefined : (channels[slash + 1] ?? undefined);
+  const colourChannels = slash === -1 ? channels : channels.slice(0, slash);
+
+  const [lightness = '', chroma = '', hue = ''] = colourChannels;
   const l = clamp(evaluateChannel(lightness, origin), 0, 1);
   const c = Math.max(evaluateChannel(chroma, origin), 0);
   const h = evaluateChannel(hue, origin);
@@ -174,7 +190,11 @@ export function evaluateRelativeOklch(value: string): string {
   const round = (n: number, places: number) =>
     Number(n.toFixed(places)).toString();
 
-  return `oklch(${round(l * 100, 2)}% ${round(c, 4)} ${round(h, 2)})`;
+  const alpha =
+    alphaText === undefined ? origin.alpha : evaluateChannel(alphaText, origin);
+
+  const body = `${round(l * 100, 2)}% ${round(c, 4)} ${round(h, 2)}`;
+  return alpha >= 1 ? `oklch(${body})` : `oklch(${body} / ${round(alpha, 4)})`;
 }
 
 /**
