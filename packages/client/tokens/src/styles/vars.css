@@ -418,14 +418,14 @@
   --fm-color-muted: var(--fm-palette-neutral-35);
   --fm-color-muted-foreground: var(--fm-palette-neutral-620);
   --fm-color-border: var(--fm-palette-neutral-90);
-  --fm-color-ring: oklch(50% 0.164 255);
-  --fm-color-scrim: oklch(14% 0.02 256 / 0.92);
+  --fm-color-ring: var(--fm-palette-primary-600);
+  --fm-color-scrim: oklch(from var(--fm-palette-neutral-850) l c h / 0.92);
   /* Prose links (NOT button-primary: a distinct role brands may diverge). */
-  --fm-color-link: oklch(41% 0.135 255);
-  --fm-color-link-hover: oklch(31% 0.102 255);
+  --fm-color-link: var(--fm-palette-primary-700);
+  --fm-color-link-hover: var(--fm-palette-primary-800);
   /* Selected item (menus, tabs, listboxes). */
-  --fm-color-selection: oklch(90% 0.049 255);
-  --fm-color-selection-foreground: oklch(31% 0.102 255);
+  --fm-color-selection: var(--fm-palette-primary-100);
+  --fm-color-selection-foreground: var(--fm-palette-primary-800);
   /* Tooltip is the INVERTED surface by convention. */
   --fm-color-tooltip: var(--fm-palette-neutral-760);
   --fm-color-tooltip-foreground: var(--fm-palette-neutral-35);
@@ -437,7 +437,7 @@
   --fm-color-input-foreground: var(--fm-palette-neutral-760);
   --fm-color-input-hover: var(--fm-palette-neutral-50);
   --fm-color-input-active: var(--fm-palette-neutral-90);
-  --fm-color-input-invalid: oklch(57% 0.2 27);
+  --fm-color-input-invalid: var(--fm-palette-negative-500);
   --fm-color-input-disabled: var(--fm-palette-neutral-35);
   --fm-color-input-placeholder: var(--fm-palette-neutral-620);
   /* Field boundary (outline-style inputs): a control boundary must clear 3:1
