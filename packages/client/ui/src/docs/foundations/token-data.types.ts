@@ -1,0 +1,66 @@
+import type { ColorRole } from '@fmmenchi/tokens';
+
+/** One role, with the custom property a consumer would actually write. */
+export type RoleEntry = {
+  role: ColorRole;
+  /** The `--fm-color-*` name — what appears in a stylesheet, not a hex. */
+  property: string;
+};
+
+/** A named strip of roles: an action family, a status family, or a prefix. */
+export type RoleGroup = {
+  name: string;
+  entries: RoleEntry[];
+};
+
+/** One value in the palette, and every role that resolves to it. */
+export type Shade = {
+  value: string;
+  lightness: number;
+  chroma: number;
+  hue: number;
+  /** Every role sharing this exact value — often more than one. */
+  roles: ColorRole[];
+};
+
+/**
+ * A hue family, reconstructed from the values rather than read from a file.
+ *
+ * `hue` is the representative angle; `neutral` marks the near-zero-chroma
+ * cluster, where the angle carries no meaning and grouping by it would be
+ * grouping by noise.
+ */
+export type HueFamily = {
+  hue: number;
+  neutral: boolean;
+  /**
+   * The family with the most roles in this hue — the one the strip is really
+   * about. Derived, because a hue angle is not a name anybody thinks in and
+   * inventing one ("crimson") would add a vocabulary the system does not have.
+   */
+  name: string;
+  /**
+   * The other families sharing the hue, most-used first.
+   *
+   * Kept SEPARATE from the name rather than joined into it. `primary ·
+   * secondary · link` read as one thing with three names, and the three are not
+   * alike: `secondary` is a genuinely different colour that happens to sit one
+   * degree away, while `link` is the same value as `primary` to the last
+   * decimal. Sharing a hue is not being the same role.
+   */
+  alsoUsedBy: string[];
+  shades: Shade[];
+};
+
+/**
+ * A declared foreground/background pair.
+ *
+ * `exempt` marks the disabled pairs, which WCAG 1.4.3 excludes from the
+ * contrast minimum. They are still SHOWN — a number nobody is allowed to hide
+ * is how you notice one that has drifted far past "low on purpose".
+ */
+export type ColorPair = {
+  background: ColorRole;
+  foreground: ColorRole;
+  exempt: boolean;
+};
