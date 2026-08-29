@@ -55,8 +55,12 @@ configure({ asyncUtilTimeout: 5_000 });
  * measured: assigning it here at import time changed nothing, 444 warnings
  * before and after. A hook is what runs late enough to be the last word.
  *
- * What it costs: `act()` called directly now warns instead. Exactly one file in
- * the suite uses it, and it says so where it does.
+ * What it costs: nothing the suite actually does. Four files call `act` and all
+ * four import it from `@testing-library/react`, which wraps the call in
+ * `withGlobalActEnvironment` — it raises the flag itself for the duration and
+ * restores it after, so the value set here never reaches those calls. Only a
+ * direct `act` from `react` would warn, and nothing imports one. (An earlier
+ * version of this comment claimed the opposite, and a count of one.)
  */
 beforeEach(() => {
   (
