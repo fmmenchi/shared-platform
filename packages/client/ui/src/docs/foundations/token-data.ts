@@ -85,6 +85,18 @@ export function remainingGroups(): RoleGroup[] {
     );
 }
 
+/*
+ * The groups, computed ONCE.
+ *
+ * The contract is static — these are derived from `as const` arrays and cannot
+ * change at runtime — so a fresh array per render would buy nothing and cost
+ * correctness: the property list is an effect dependency in `useTokenValues`,
+ * and a new identity every render re-reads the DOM forever.
+ */
+export const ACTION_GROUPS: RoleGroup[] = actionGroups();
+export const STATUS_GROUPS: RoleGroup[] = statusGroups();
+export const REMAINING_GROUPS: RoleGroup[] = remainingGroups();
+
 /**
  * The pairs the contract actually declares: a role, and the ink named for it.
  *

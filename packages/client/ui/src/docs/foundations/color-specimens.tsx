@@ -1,21 +1,16 @@
 import { colorVar } from '@fmmenchi/tokens';
 import { contrast } from '../../test/contrast.js';
-import {
-  actionGroups,
-  declaredPairs,
-  remainingGroups,
-  statusGroups,
-} from './token-data.js';
+import { declaredPairs } from './token-data.js';
 import { useTokenValues } from './use-token-values.js';
-import type { ColorPair, RoleGroup } from './token-data.types.js';
+import type { ColorPair } from './token-data.types.js';
 
 /**
- * The colour specimens. Each one READS the contract for its names and the DOM
- * for its values; none of them holds a colour of its own.
+ * The contrast specimen: every declared pair with its measured ratio. The
+ * swatch strips live in `palette.tsx`.
  *
  * Plain elements and inline styles rather than the design system's own
  * components: a page that documents the material should not be built out of
- * the things made from it, or a broken Card takes the page that would have
+ * the things made from it, or a broken Card takes down the page that would have
  * shown you the break. The inline styles are all `var(--fm-*)` — the page eats
  * its own tokens, so it re-themes with everything else.
  */
@@ -44,87 +39,6 @@ const cell = {
   borderBottom:
     'var(--fm-border-width-divider) solid var(--fm-color-neutral-border)',
 } as const;
-
-/**
- * One strip per group: the swatch, the role, and the property a consumer
- * would type. The property name is the useful half — a hex can be eyeballed
- * from the swatch, `--fm-color-primary-subtle-foreground` cannot be guessed.
- */
-function Strip({ group }: { group: RoleGroup }) {
-  return (
-    <section style={{ marginBlockEnd: 'var(--fm-space-stack-l)' }}>
-      <h3
-        style={{
-          fontSize: 'var(--fm-text-sm)',
-          fontWeight: 'var(--fm-font-weight-semibold)',
-          marginBlockEnd: 'var(--fm-space-stack-s)',
-        }}
-      >
-        {group.name}
-      </h3>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 'var(--fm-space-inline-s)',
-        }}
-      >
-        {group.entries.map(({ role, property }) => (
-          <div key={role} style={{ inlineSize: '11rem' }}>
-            <div
-              style={{
-                blockSize: '3rem',
-                background: `var(${property})`,
-                borderRadius: 'var(--fm-radius-sm)',
-                border:
-                  'var(--fm-border-width-default) solid var(--fm-color-border)',
-              }}
-            />
-            <div
-              style={{
-                ...mono,
-                marginBlockStart: 'var(--fm-space-internal-xs)',
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {property}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-export function ActionFamilies() {
-  return (
-    <div>
-      {actionGroups().map((group) => (
-        <Strip key={group.name} group={group} />
-      ))}
-    </div>
-  );
-}
-
-export function StatusFamilies() {
-  return (
-    <div>
-      {statusGroups().map((group) => (
-        <Strip key={group.name} group={group} />
-      ))}
-    </div>
-  );
-}
-
-export function SurfacesAndInputs() {
-  return (
-    <div>
-      {remainingGroups().map((group) => (
-        <Strip key={group.name} group={group} />
-      ))}
-    </div>
-  );
-}
 
 /**
  * The sample for an EXEMPT pair, as two tiles rather than a line of text.
