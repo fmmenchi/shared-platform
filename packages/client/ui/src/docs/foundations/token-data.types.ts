@@ -33,6 +33,13 @@ export type Shade = {
 export type HueFamily = {
   hue: number;
   neutral: boolean;
+  /**
+   * What this hue is FOR, derived from the roles that use it — `destructive ·
+   * error` rather than `hue 27°`. A hue angle is not a name anybody thinks in,
+   * and inventing one ("crimson") would add a vocabulary the system does not
+   * have.
+   */
+  name: string;
   shades: Shade[];
 };
 

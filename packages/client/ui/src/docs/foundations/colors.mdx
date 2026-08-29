@@ -20,6 +20,34 @@ values are read out of the DOM in whichever theme is on screen. Use the
 **Theme** toolbar — every swatch and every number on this page follows it,
 because nothing here holds a copy of a value.
 
+## The vocabulary
+
+Every family is built from the same few words. Learn these six and you can read
+any role in the system without looking it up.
+
+| Role             | What it is                                      | Use it for                                                                              |
+| ---------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `base`           | The solid fill. The loudest form of the family. | A filled button, a solid badge, a filled progress bar. One per screen area, not five.   |
+| `on base`        | The ink that sits **on** the solid fill.        | Label and icons inside that filled thing. Never as text on the page.                    |
+| `subtle`         | The soft wash — same meaning, a tenth as loud.  | Alert backgrounds, chips, selected rows, anything that tints a region behind real text. |
+| `on subtle`      | The ink that sits **on** the wash.              | Text inside the alert or the chip. It is dark where `on base` is light.                 |
+| `border`         | The line at the edge of a subtle region.        | The rule around an alert. Status families only — an action family has hover instead.    |
+| `hover`/`active` | The fill, darkened one and two steps.           | Pointer and pressed states of a `base` fill. Never a resting colour.                    |
+
+Two rules that follow from the shape rather than from taste:
+
+**An ink is only valid on its own fill.** `on base` is measured against `base`
+and nothing else. Put it on the page background and the contrast guarantee in
+the table below does not apply to it — most `on base` inks here are white.
+
+**`base` and `subtle` are not light and dark versions of each other.** They are
+two different jobs: `base` is a thing you press, `subtle` is a region you read
+inside. Choosing between them is choosing whether the colour is the object or
+the backdrop — which is why each has its own ink instead of sharing one.
+
+`disabled` and `on disabled` mirror `base`/`on base` for the unavailable state,
+and are the one pair exempt from the contrast floor (see below).
+
 ## The palette
 
 There is no primitives file to show you, and that is a decision rather than an
@@ -33,18 +61,30 @@ What can be shown is the palette that is actually shipped, reconstructed from
 the values: every distinct colour, grouped by hue, ordered by lightness. It
 cannot go stale, because it _is_ the tokens.
 
-Reading it is worth a minute. The label under each swatch is its lightness; a
-`·N` means **N roles resolve to that exact value** — 84 roles come out as far
-fewer colours, and white alone does the work of eleven of them. Hovering a
-swatch lists every role that shares it.
+Each strip is named after the roles that live in that hue — `destructive ·
+error`, not `hue 27°` — because the angle is where a colour sits, not what it
+is for. The names are derived from the roles themselves, so nothing here is a
+colour name somebody invented; the angle stays in the subtitle for when you
+need it.
+
+Under each swatch is its **lightness**, 0–100. A `·N` after it means **N roles
+resolve to that exact value**: the 84 roles come out as far fewer colours, and
+in the light theme a single value serves eleven of them. Hovering a swatch lists
+every role that shares it.
+
+The counts are the theme's own — a preset is a complete reassignment of every
+role, so toggling redraws this whole section rather than re-tinting it. In light
+the lightest shade is pure white and does most of that sharing; in dark it is
+not, and the sharing lands elsewhere.
 
 Two things this view makes visible that a list of roles cannot:
 
 - the neutrals are by far the longest ramp, which is what a restrained system
   looks like from the inside;
 - there are **two blues, ten degrees apart** — `info` sits at 245° while
-  `primary`, `link`, `ring` and `selection` sit at 255°. Deliberate or not, it
-  is the kind of thing that is invisible until the palette is drawn.
+  `primary`, `link`, `ring` and `selection` sit at 255°. It holds in both
+  presets, and it is the kind of thing that is invisible until the palette is
+  drawn.
 
 <Canvas of={ColorStories.FullPalette} />
 

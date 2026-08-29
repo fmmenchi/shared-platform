@@ -144,6 +144,57 @@ const HUE_TOLERANCE = 8;
  * the SAME value, which is why each shade carries the list of roles that share
  * it rather than pretending to be one.
  */
+/**
+ * The declared family a role belongs to — `primary-subtle-foreground` →
+ * `primary`, `card-foreground` → `card`.
+ */
+function familyOf(role: string): string {
+  const declared = [...ACTION_FAMILIES, ...STATUS_FAMILIES].find(
+    (family) => role === family || role.startsWith(`${family}-`),
+  );
+  return declared ?? prefixOf(role);
+}
+
+/**
+ * Name a hue after the roles that live in it, most-used first.
+ *
+ * Derived, not chosen: `destructive · error` says what the hue is for, where
+ * `hue 27°` says only where it sits and "crimson" would invent a vocabulary the
+ * system deliberately does not have. Capped at three names because the neutrals
+ * are shared by a dozen and the point is the gist, not the census — the count
+ * of what is left is kept, so nothing is silently dropped.
+ */
+function nameFor(shades: Shade[], neutral: boolean): string {
+  // The greys are every surface, border, input and disabled role in the system.
+  // Derived, they come out as `input · neutral · secondary +16` — a census, not
+  // a name. What they are is the neutrals, and the subtitle carries the count.
+  if (neutral) return 'neutrals';
+
+  const counts = new Map<string, number>();
+  for (const shade of shades) {
+    for (const role of shade.roles) {
+      const family = familyOf(role);
+      counts.set(family, (counts.get(family) ?? 0) + 1);
+    }
+  }
+
+  const ranked = [...counts].sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+  );
+
+  // Drop the one-role passers-by when there are real inhabitants: `input` earns
+  // a place in the red family off `input-invalid` ALONE, and reading
+  // "destructive · error · input" suggests the inputs are red.
+  const substantial = ranked.filter(([, count]) => count > 1);
+  const kept = (substantial.length > 0 ? substantial : ranked).map(
+    ([family]) => family,
+  );
+
+  const shown = kept.slice(0, 3).join(' · ');
+  const rest = kept.length - 3;
+  return rest > 0 ? `${shown} +${rest}` : shown;
+}
+
 export function hueFamilies(values: Record<string, string>): HueFamily[] {
   const byValue = new Map<string, Shade>();
 
@@ -169,7 +220,7 @@ export function hueFamilies(values: Record<string, string>): HueFamily[] {
         (neutral || Math.abs(candidate.hue - shade.hue) <= HUE_TOLERANCE),
     );
     if (family === undefined) {
-      families.push({ hue: shade.hue, neutral, shades: [shade] });
+      families.push({ hue: shade.hue, neutral, name: '', shades: [shade] });
     } else {
       family.shades.push(shade);
     }
@@ -177,6 +228,9 @@ export function hueFamilies(values: Record<string, string>): HueFamily[] {
 
   for (const family of families) {
     family.shades.sort((a, b) => b.lightness - a.lightness);
+    // Named after the grouping is complete: the name is a summary of the whole
+    // family, so it cannot be decided while members are still arriving.
+    family.name = nameFor(family.shades, family.neutral);
   }
 
   // Neutrals last: they are the longest ramp and the least interesting one to

@@ -193,7 +193,7 @@ export function SourcePalette() {
           }}
         >
           <div style={nameCell}>
-            {family.neutral ? 'neutral' : `hue ${Math.round(family.hue)}°`}
+            {family.name}
             <div
               style={{
                 fontWeight: 'var(--fm-font-weight-regular)',
@@ -201,7 +201,8 @@ export function SourcePalette() {
                 fontSize: 'var(--fm-text-xs)',
               }}
             >
-              {family.shades.length} shades
+              {family.shades.length} shades ·{' '}
+              {family.neutral ? 'grey' : `${Math.round(family.hue)}°`}
             </div>
           </div>
 
