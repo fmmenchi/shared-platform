@@ -12,8 +12,11 @@ wash" — and a theme decides what that is. That indirection is the whole point:
 a rebrand moves a value in one stylesheet instead of every call site, and the
 component keeps working because it never knew the colour in the first place.
 
-There is no primitive ramp to reach past it. The contract exposes semantic roles
-and nothing else, so there is no `blue-500` here to be tempted by.
+There **is** a palette underneath, and it is not yours to reach for. The
+contract exposes semantic roles and nothing else: the ramp exists so the roles
+can be derived from something instead of each carrying its own number, not so a
+component can ask for `primary-500`. See [Three levels](#three-levels) for what
+sits where.
 
 Everything below is derived: the names come from `@fmmenchi/tokens`, and the
 values are read out of the DOM in whichever theme is on screen. Use the
@@ -67,41 +70,82 @@ Hover any cell for its role, its property and its resolved value.
 `placeholder`) and a column used by a single family makes every other row look
 incomplete. It appears under Surfaces below.
 
-## The palette
+## Three levels
 
-There is no primitives file to show you, and that is a decision rather than an
-omission. `vars.css` says it plainly: the values are static `oklch` literals
-**resolved at authoring time** from the ramp methodology — base ± lightness,
-scaled chroma. The ramp was applied when the numbers were chosen and never
-became code, so there is no `blue-500` anywhere to import, and no primitive
-layer to drift from the semantic one.
+Colour is built in three, and knowing which one you are looking at is most of
+understanding the system.
 
-The obvious alternative is a derived ramp — one `--primary-base` per family and
-a `50…900` scale computed from it in CSS:
+**1 · Bases.** One colour per family — `--fm-palette-primary-base`. Seven
+numbers, and the only place a hue is decided.
+
+**2 · The palette.** A `100…900` ramp derived from each base, in CSS:
 
 ```css
---color-primary-50: oklch(
-  from var(--color-primary-base) calc(l + 0.42) calc(c * 0.3) h
+--fm-palette-primary-800: oklch(
+  from var(--fm-palette-primary-base) calc(l - 0.24) calc(c * 0.72) h
 );
 ```
 
-That is relative color syntax, and it is exactly the shape this system does
-**not** use. ADR-0003 sets the floor at Baseline **Widely** and names this
-feature among what that rules out. The trade is not about taste: an application
-picks its own browser floor, while a published library hands its floor to every
-consumer — so the same methodology is applied by hand and frozen as static
-literals instead of being computed at runtime. `vars.css` describes those
-numbers as "resolved at authoring time from the ramp methodology (base ±
-lightness, scaled chroma)", which is that formula, evaluated once by a person.
+**3 · Roles.** The 84 semantic tokens, each pointing at a step —
+`--fm-color-primary: var(--fm-palette-primary-700)`.
 
-It is on the calendar rather than closed: the ADR revisits it around January
-2027, when relative color reaches Widely — and already expects to keep the
-literals, because gamut handling and validation stay simpler when the values
-are values.
+**Components only ever touch level 3.** The palette is not part of the contract:
+it has no `@property` registration, no Tailwind bridge, and no promise of
+stability. Reach past a role and you are depending on something that can move
+without notice.
 
-What can be shown, then, is the palette that is actually shipped, reconstructed
-from the values: every distinct colour, grouped by hue, ordered by lightness. It
-cannot go stale, because it _is_ the tokens.
+### Why the ramp looks the way it does
+
+Neither curve was chosen — both were measured, and they are the interesting part
+of this page.
+
+**The lightness curve was already there.** Before any of this existed, every
+family's roles sat at the same offsets from its fill: hover −0.10, active −0.19,
+subtle +0.49, disabled +0.39. Step for step, all seven. The ramp methodology the
+old tokens described really had been applied by hand; the bases are just those
+fills undone, which is why step 700 reproduces the fill each family always had.
+
+**The chroma coefficients _are_ the sRGB gamut.** Solved numerically, the most
+the tightest hue can take at each lightness is `100 ×0.22`, `200 ×0.55`,
+`700 ×0.96`, `800 ×0.72`, `900 ×0.50` — and those land within a hundredth of the
+literals the system already shipped. The numbers that looked irregular were not
+untidiness: whoever picked them had pushed every step to the edge of what sRGB
+can display. Borrowing another system's curve instead put five blue steps _out_
+of gamut, which is how this was discovered.
+
+There is **no step 50**: at base + 0.42 the lightness is ≈0.97, where the gamut
+admits almost nothing — every family solved under 0.10 chroma, `warning` at
+0.00. A step that can only be grey is not a step of a colour ramp.
+
+One curve serves every family, and that costs something: `accent` and `success`
+could carry more chroma at 100 than the red allows, and do not. That is the
+price of a constant step — and a constant step is what makes this a scale
+instead of a set of values with a shared prefix.
+
+### What is not converted yet
+
+**The dark preset still holds literals.** Levelling it too produced 20 contrast
+regressions in the browser suite — `menu` in dark measured 4.13 against a 4.5
+floor — because reducing chroma to fit the gamut moves relative luminance.
+Retuning that is measurement, not guesswork, so it is a separate change. Until
+then the two files are asymmetric: light derives, dark states.
+
+**Relative colour is a waiver, not the default tier.** It is Baseline _Newly_
+and reaches _Widely_ around January 2027; the platform's floor is Widely
+(ADR-0017), and this takes the same kind of waiver the Popover API did — not
+degradable, but the Widely date lands before any consumer could realistically
+ship. If that stops being true, the documented way back is a precomputed ramp:
+same three levels, literals instead of the formula.
+
+## The palette
+
+Below is what the ramp above actually resolves to: every distinct colour the
+theme paints, grouped by hue and ordered by lightness. Read from the DOM rather
+than from the ramp's source, so it shows the colours after the browser has
+evaluated the formulas — and it cannot go stale, because it _is_ the tokens.
+
+It also answers a question the ramp cannot: which roles land on the **same**
+value, and therefore move together when a base moves.
 
 Each strip is named after the family with the most roles in that hue —
 `destructive`, not `hue 27°` — because the angle is where a colour sits, not
