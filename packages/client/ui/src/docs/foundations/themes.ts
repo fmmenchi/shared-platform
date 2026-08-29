@@ -53,7 +53,7 @@ export const THEMES: Record<ThemeName, { label: string; bases: string }> = {
     label: 'Green',
     bases: `
       --fm-palette-primary-base: oklch(55% 0.187 149);
-      --fm-palette-secondary-base: oklch(55% 0 256);
+      --fm-palette-secondary-base: oklch(55% 0.0082 18);
       --fm-palette-accent-base: oklch(55% 0.183 268);
       --fm-palette-negative-base: oklch(55% 0.2218 24);
       --fm-palette-success-base: oklch(55% 0.2124 149);
@@ -64,9 +64,9 @@ export const THEMES: Record<ThemeName, { label: string; bases: string }> = {
       --fm-color-primary-foreground: var(--fm-palette-neutral-760);
       --fm-color-primary-hover: var(--fm-palette-primary-400);
       --fm-color-primary-active: var(--fm-palette-primary-500);
-      --fm-color-secondary: var(--fm-palette-secondary-700); /* #535353 L44% -> 700, white 8.83 */
+      --fm-color-secondary: var(--fm-palette-secondary-900); /* #191414 L20% -> 900, white 17.35 */
       --fm-color-secondary-foreground: var(--fm-palette-neutral-0);
-      --fm-color-secondary-hover: var(--fm-palette-secondary-800);
+      --fm-color-secondary-hover: var(--fm-palette-secondary-900);
       --fm-color-secondary-active: var(--fm-palette-secondary-900);
       --fm-color-accent: var(--fm-palette-accent-700); /* #2D46B9 L45% -> 700, white 9.35 */
       --fm-color-accent-foreground: var(--fm-palette-neutral-0);
@@ -88,7 +88,7 @@ export const THEMES: Record<ThemeName, { label: string; bases: string }> = {
     label: 'Coral',
     bases: `
       --fm-palette-primary-base: oklch(55% 0.2004 22);
-      --fm-palette-secondary-base: oklch(55% 0 256);
+      --fm-palette-secondary-base: oklch(55% 0.1972 39);
       --fm-palette-accent-base: oklch(55% 0.1149 185);
       --fm-palette-negative-base: oklch(55% 0.1816 34);
       --fm-palette-success-base: oklch(55% 0.1855 143);
@@ -99,10 +99,10 @@ export const THEMES: Record<ThemeName, { label: string; bases: string }> = {
       --fm-color-primary-foreground: var(--fm-palette-neutral-760);
       --fm-color-primary-hover: var(--fm-palette-primary-400);
       --fm-color-primary-active: var(--fm-palette-primary-500);
-      --fm-color-secondary: var(--fm-palette-secondary-500); /* #767676 L57% -> 500, white 4.85 */
-      --fm-color-secondary-foreground: var(--fm-palette-neutral-0);
-      --fm-color-secondary-hover: var(--fm-palette-secondary-600);
-      --fm-color-secondary-active: var(--fm-palette-secondary-700);
+      --fm-color-secondary: var(--fm-palette-secondary-300); /* #FC642D L69% -> 300, white 2.89 */
+      --fm-color-secondary-foreground: var(--fm-palette-neutral-760);
+      --fm-color-secondary-hover: var(--fm-palette-secondary-400);
+      --fm-color-secondary-active: var(--fm-palette-secondary-500);
       --fm-color-accent: var(--fm-palette-accent-300); /* #00A699 L65% -> 300, white 2.53 */
       --fm-color-accent-foreground: var(--fm-palette-neutral-760);
       --fm-color-accent-hover: var(--fm-palette-accent-400);
