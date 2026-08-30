@@ -57,7 +57,7 @@ export type {
   DesignSystem,
   RampStrategy,
   ThemeSpec,
-  SwatchOverride,
+  RungKey,
   RolePin,
   Base,
   Swatch,

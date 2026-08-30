@@ -161,40 +161,27 @@ export interface DesignSystem {
 export type RampStrategy = 'constant-step' | 'constant-contrast';
 
 /**
- * One rung of the palette written BY HAND, overriding what was derived.
+ * Which rung a hand-written colour replaces: `primary-300`, the same name the
+ * palette variable carries.
  *
- * The derivation is a PROPOSAL. It exists because seven colours are a better
- * thing to ask for than eighty-four, not because it knows better than the person
- * looking at the result — so any rung can be replaced outright.
- *
- * A list rather than records nested three deep (theme, family, step): it is what
- * a form renders and what serialises without empty branches.
+ * A template key rather than a third level of nesting, so an override is one
+ * assignment for a form and cannot be duplicated.
  */
-export interface SwatchOverride {
-  /** `ThemeDefinition.name` — a rung of one theme's ramp, not of all of them. */
-  readonly theme: string;
-  readonly family: PaletteFamily;
-  readonly step: number;
-  /** The colour, as authored. */
-  readonly css: string;
-}
+export type RungKey = `${PaletteFamily}-${number}`;
 
 /**
  * A semantic role pointed at a value of the palette by hand.
  *
  * Carries a SOURCE and not just a step, because a role is not confined to its
  * own family: `ring` draws from `primary`, `background` from `neutral`, and a
- * person choosing a value for a role is choosing from the whole palette. Per
- * theme, because ramps do not share step names — nine rungs against thirteen —
- * so a step means nothing without saying which theme it belongs to.
+ * person choosing a value for a role is choosing from the whole palette.
  *
- * A list, like the overrides above, so the two kinds of manual edit read and
- * serialise the same way.
+ * The theme and the role are the KEY rather than fields, because this has to map
+ * onto a form. A list would let two pins disagree about the same role — a state
+ * that is representable and invalid, which is the kind a form generates by
+ * accident — and would make a control find-and-splice where it should assign.
  */
 export interface RolePin {
-  /** `ThemeDefinition.name`. Validated where a spec is applied. */
-  readonly theme: string;
-  readonly role: ColorRole;
   readonly source: PaletteSource;
   readonly step: number;
   /**
@@ -213,6 +200,15 @@ export interface RolePin {
  * the round trip possible — `ThemeSpec` → `buildPreset()` → emitted CSS →
  * `ThemeSpec` read back — since a role in that CSS is a reference to a rung and
  * a base is a literal, so nothing a person chose is lost on the way out.
+ *
+ * RESETTING falls out of the shape, and asymmetrically, which is worth knowing
+ * before writing the controls. `pins` and `swatches` reset by REMOVAL — delete a
+ * key and the derivation is back in charge, because absence is exactly what "as
+ * proposed" means. That works at every granularity a form needs: one role or one
+ * rung by deleting its key, a whole theme's edits by deleting the theme's, all of
+ * it by emptying the record. `brand` cannot reset that way, because it is total
+ * and a colour is never absent: resetting a family means RE-SEEDING it from the
+ * installed `DesignSystem`'s own base, the same value the wizard started from.
  *
  * It holds what a person changes about THE THEME, and deliberately nothing about
  * how they are looking at it. Which theme the preview is showing, whether the
@@ -235,13 +231,21 @@ export interface ThemeSpec {
    */
   readonly brand: Record<PaletteFamily, string>;
   /**
-   * Semantic roles pointed at a value of the palette by hand, overriding what
-   * the solver would pick. Empty where the solution was accepted.
+   * Semantic roles pointed at a value of the palette by hand, keyed by
+   * `ThemeDefinition.name` then by role, overriding what the solver would pick.
+   * Empty where the solution was accepted.
+   *
+   * Keyed by theme because ramps do not share step names — nine rungs against
+   * thirteen — so a step means nothing without saying which theme it belongs to.
+   * `string` rather than a union of our theme names, so a system defining a third
+   * theme needs no change here; the keys are validated against
+   * `DesignSystem.themes` where a spec is applied, the only place that knows them.
    */
-  readonly pins: readonly RolePin[];
+  readonly pins: Readonly<Record<string, Partial<Record<ColorRole, RolePin>>>>;
   /**
-   * Rungs written by hand. Empty when the derivation was accepted as proposed,
-   * which is the common case and the whole point of deriving.
+   * Rungs written by hand, keyed by `ThemeDefinition.name` then by rung. Empty
+   * when the derivation was accepted as proposed, which is the common case and
+   * the whole point of deriving.
    *
    * Two consequences worth knowing before using one. An overridden rung stops
    * following its base — the family moves around it when the brand colour
@@ -249,7 +253,7 @@ export interface ThemeSpec {
    * a pair that used to pass, which is why the verdict still runs over the
    * result rather than trusting the derivation that produced most of it.
    */
-  readonly swatches: readonly SwatchOverride[];
+  readonly swatches: Readonly<Record<string, Partial<Record<RungKey, string>>>>;
   /** Present because the form has a control for it; there is no absent state. */
   readonly strategy: RampStrategy;
 }
