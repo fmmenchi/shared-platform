@@ -100,6 +100,62 @@ it is a real app running the shipped CSS. It is also what makes the preview
 impossible to counterfeit: `@fmmenchi/ui` content-hashes its class names, so
 nothing outside the package can reproduce them.
 
+**Two routes, two theme wrappers.** The wizard and the demo are the same app on
+different routes, and each mounts its own theme. `/wizard/:step` runs on the
+reference theme — fixed, known-good, never the one being edited — while `/preview`
+runs on the theme under construction. The split is not tidiness. A theme is edited
+into a failing state constantly while it is being built, and a wizard wearing it
+would go down with it: the contrast error takes away the controls that would fix
+the contrast error. The tool has to stay usable exactly when the theme is not.
+
+**Both routes are built with the design system.** The isolation is about which
+THEME each one wears, never about which components: the wizard's own stepper,
+fields, buttons and dialogs are `@fmmenchi/ui`, pinned to the reference theme. That
+matters twice. It is the honest thing — a tool for a design system that reached for
+someone else's widgets would be evidence against the system it sells — and it makes
+the wizard a consumer, so any gap in the DS surfaces while building it rather than
+in somebody's product. What the wizard cannot find in `@fmmenchi/ui` is a finding
+about `@fmmenchi/ui`.
+
+**The preview docks, undocks and closes.** `/preview` is a real URL, so one route
+serves all three states. Docked, it is an `<iframe>` beside the step. Undocked —
+the escape a small screen needs — it is `window.open()` on that same URL, its own
+window on its own display. Closed, it is gone and the step has the full width.
+An edit reaches an open preview through the regenerated stylesheet, described
+below, rather than through a message protocol. The iframe is also what makes the
+isolation structural rather than disciplined: a separate document has its own
+`:root`, so nothing declared by the theme under construction can reach the
+chrome.
+
+**The update path is the generator, not a protocol.** A change in the wizard
+pushes no theme object anywhere. It re-runs the same CSS generation with a
+different, non-default output target — **the demo app's own stylesheet** instead of
+the preset the workspace ships — and the preview updates because that file changed.
+The dev server hot-replaces CSS, so the docked iframe and the undocked window both
+follow without a reload and without either of them needing to know the wizard
+exists.
+
+That buys more than the convenience. The preview is not rendering an in-memory
+approximation of the theme; it is rendering **the emitted CSS**, produced by the
+same code path that will write the real preset and differing only in where the file
+lands. A preview assembled any other way can drift from the output. This one has
+nothing to drift from — which is the same argument that rejected a hand-written
+preview page, applied one level further down: not just the real components, but the
+real stylesheet.
+
+**What that forces on a generated preset — measured, not assumed.** Each family
+step also shows components inline, inside the wizard's own document, where the
+theme is a container rather than a root. A custom property resolves where it is
+DECLARED, and the ramp is relative colour off the base, so overriding the seven
+bases on a container is **inert**: the ramp already settled at `:root` and does not
+re-derive. `packages/client/ui/src/docs/scoped-theme.test.tsx` measures both
+halves — a base override alone leaves every step unchanged, while the same override
+declared together with its ramp moves the family, and a sibling container keeps the
+root theme. So `buildPreset()` must emit the whole block (bases, ramp and roles)
+under a selector that can sit on a container, which is the shape
+`[data-theme='dark']` already has. Seven numbers are what a person chooses; a block
+is what gets written.
+
 It ships a `bin`, so it runs two ways:
 
 ```bash
@@ -239,6 +295,40 @@ one-way. What does have to change is mechanical: the release set is the glob
 `private: true` for the `publishConfig.registry` every published package here
 carries.
 
+### Dark mode — two independent switches
+
+"Dark" means two different things in this app, and conflating them is the obvious
+bug.
+
+**The chrome's scheme is the person's own preference.** The wizard is one of our
+apps, so it supports dark mode the way our apps do: the reference theme it wears
+has a dark preset, and the app follows the operating system unless the person says
+otherwise. This has nothing to do with the theme being built. Someone working at
+night builds a light theme in a dark wizard, and neither switch moves the other.
+
+**The previewed scheme is a control on the preview.** Docked or undocked, the
+preview carries its own light/dark switch, and the inline components in each family
+step follow it. That is the switch that matters to the work, and it is deliberately
+not the chrome's.
+
+**Dark is derived; the toggle is a view, not a second editor.** Both schemes come
+from the same seven colours — a brand's hues do not change between them — so the
+person assigns once. What differs is the methodology, and it is not a shared
+number: the light ramp has 9 steps at 55% bases, the dark ramp has 13 at 75%, so
+"primary → 700" is meaningless across the two. `buildPreset()` therefore takes the
+scheme and emits a role-to-step map per scheme; the wizard shows the dark result
+and **measures its contrast in the same step where the choice is made**. That is
+the whole reason the toggle exists: an assignment that reads well in light and
+fails in dark is exactly how the dark preset produced 20 contrast regressions the
+first time it was levelled, and the only fix is to see it while choosing rather
+than in a verdict eight steps later.
+
+**The escape hatch is per role, and it is visible.** When the derivation is wrong
+for one role in one scheme, that role can be pinned to a different dark step —
+reachable only while dark is showing, recorded as a deviation, and listed as such
+in the final verdict. A deviation you can see is maintainable; a silently
+hand-tuned preset is the 84-literal problem coming back one role at a time.
+
 ### What is deliberately NOT built
 
 **The generator does not host the GUI.** It launches a separate process and reads a
@@ -250,6 +340,12 @@ grew an HTTP server would be a generator with a second job.
 generator does not stay open while a person clicks. One handoff, one file. A
 watch mode where edits land in the repo as they happen is a different tool and a
 much larger promise.
+
+Which is not in tension with regenerating CSS on every change: that file is **the
+builder's own demo stylesheet**, inside its own app, and it is disposable. The
+CONSUMER's repository is written exactly once, by the generator, from the JSON the
+builder leaves behind on exit. Two very different files, and only one of them is
+somebody's source tree.
 
 ## Architecture
 
@@ -269,7 +365,7 @@ graph TB
 
     subgraph app["apps/theme-builder — real app, published with a bin"]
         wizard["wizard · 9 steps"]
-        preview["preview · demo page"]
+        preview["preview · /preview route<br/>docked iframe, undocked window"]
         verdict["verdict · validateTheme + axe"]
     end
 
@@ -373,6 +469,11 @@ palettes stay in the demo story and out of the package, for the reason recorded 
   include the two cases that break naive derivation (a pale fill, and two families sharing a hue).
 - The generator's existing spec keeps passing with no colour flags.
 - The builder story renders, via the story test run.
+- A preset scoped to a CONTAINER re-derives its ramp and its roles, a sibling
+  container keeps the root theme, and a base override alone is inert — the
+  cascade facts the wizard's two-theme document depends on
+  (`scoped-theme.test.tsx`, written before the app exists because it constrains
+  what `buildPreset()` may emit).
 - The wizard's step logic is unit-tested where it decides something: which steps a
   family may point at, and what the contrast of an assignment is.
 - The final verdict agrees with `validateTheme()` by construction, since it calls
