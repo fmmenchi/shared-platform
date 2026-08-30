@@ -106,10 +106,21 @@ from that, and the third is the one that mattered:
   whose ramp has different rungs gets their own rungs rather than ours silently
   substituted. Version skew stops being a hazard and becomes the input.
 
-`@fmmenchi/tokens` already exports the first part of this — `ACTION_FAMILIES`,
-`STATUS_FAMILIES` and `COLOR_ROLES` enumerate the families and the roles. What it
-does not yet carry is the **rung table** and the **per-role constraints**, and those
-two additions are what turn the existing contract into a `DesignSystem` value.
+Most of this already exists. `@fmmenchi/tokens` exports the families
+(`ACTION_FAMILIES`, `STATUS_FAMILIES`), the roles (`COLOR_ROLES`), and — through
+`@fmmenchi/tokens/validate` — the constraints themselves as `CONTRAST_PAIRS`,
+`[bg, fg, minimum]` triples derived from the family lists. Two things are genuinely
+absent:
+
+- **the rung table.** Which rungs exist and where they sit lives only as CSS text in
+  `vars.css`. The proof is that measuring any of the numbers in this ADR required
+  parsing the stylesheet and resolving it, which is not something a solver should
+  have to do.
+- **the direction per role**, so that hover walks toward the ink in light and toward
+  the surface in dark. Today that is implicit in the shipped assignments rather than
+  stated anywhere.
+
+One table and one field, then, rather than a new contract.
 
 `pins` is the parameter the wizard is made of. Without it the function derives a
 whole theme from seven hexes, which is the express route; with it, each family step
@@ -572,6 +583,38 @@ for one role in one scheme, that role can be pinned to a different dark step —
 reachable only while dark is showing, recorded as a deviation, and listed as such
 in the final verdict. A deviation you can see is maintainable; a silently
 hand-tuned preset is the 84-literal problem coming back one role at a time.
+
+### The demo app, and what it has to cover
+
+The preview is a **fake product**, not a component gallery: sections of a plausible
+application, composed of `@fmmenchi/ui` components that actually consume the family
+under discussion. A gallery would be cheaper and would hide the exact failures this
+tool exists to catch — a swatch on a neutral ground always looks fine, while
+`primary` sitting next to `destructive` in a real toolbar is where a person
+discovers they cannot tell submit from delete.
+
+So the sections follow the families. Action families (`primary`, `secondary`,
+`accent`, `destructive`) live where actions do — a toolbar, a form's submit and
+cancel, a destructive confirm, links in prose. Status families (`success`,
+`warning`, `info`, `error`) live where feedback does — validation on a form, alerts,
+an empty state, a banner. Each family step points the preview at the sections that
+use it rather than describing them.
+
+**"As much of the DS as possible" is a measurement, not an aspiration.** The verdict
+runs axe on this page, so a role the page never paints is a role the verdict cannot
+vouch for. The demo therefore reports its own **role coverage** — how many of the 84
+roles were actually painted — and the verdict states it. A theme that passes on a
+demo covering 60 roles has been checked less than one covering 80, and saying so is
+the difference between a verdict and a reassurance.
+
+Two details an implementer will hit immediately. The families of ROLES are eight
+(four action, four status) over **seven palette families**: `destructive` and
+`error` share `negative`, deliberately — same red, different treatment, an action
+having hover and active where a status has a subtle wash and a border. A wizard step
+is therefore a **palette** family, and the `negative` step assigns both. And the
+**neutral scale is fixed**: it is not a brand's to move, it is shared by both
+schemes, and every family already measures its ink against its ends. It appears in
+the wizard as context, never as a control.
 
 ### What is deliberately NOT built
 
