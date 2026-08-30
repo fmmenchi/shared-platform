@@ -807,6 +807,32 @@ graph TB
 only place the verdict does — both the wizard and CI call the same one, which is
 what stops the tool from promising what the pipeline refuses.
 
+**That last claim is not true yet, and it is the open decision this ADR leaves.**
+`validate.ts` contains no APCA: `validateTheme()` measures WCAG AA only. But
+`tokens.test.ts` additionally enforces an **APCA floor of |Lc| ≥ 45 as a hard
+failure** over the same `CONTRAST_PAIRS`, logging |Lc| < 60 as advisory. So the
+pipeline demands strictly more than the verdict, and a generated theme can pass the
+wizard and fail the repository's own gate — the precise failure the single-function
+architecture exists to prevent.
+
+Three ways out, and the choice is a decision rather than a detail:
+
+1. **Move the APCA floor into `validateTheme()`.** The one-function claim becomes
+   true, the wizard measures APCA in every family step alongside WCAG, and
+   `Constraint` carries both metrics rather than a single `floor`. The code already
+   exists; it is in the wrong file.
+2. **Leave it in the test** and downgrade the claim honestly: the wizard checks
+   WCAG, CI checks WCAG and APCA, and the gap is documented so nobody is surprised
+   by a red pipeline on a green theme.
+3. **Drop the APCA hard floor**, keeping it advisory. Cheapest, and it discards a
+   check that exists because WCAG 2.x is a blunt instrument on dark themes — which
+   is the case this ADR cares most about.
+
+The recommendation is (1). It is the only one that leaves the architecture's spine
+intact, and the type change it forces — a constraint with two metrics instead of one
+number — is a truer description of the policy this repo already runs than the single
+`floor` currently written above.
+
 The dashed edge is the important one: the generator **launches** the app as a
 process, it does not import it. That is what keeps a browser, a port and a bundle
 out of the plugin.
