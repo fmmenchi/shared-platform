@@ -1,16 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
 import { FAMILY_CONSTRAINTS } from './constraints.js';
-import { readVars } from '../utils/read-vars.js';
+import { readVars } from '@fmmenchi/tokens/read-vars';
 import {
   ACTION_FAMILIES,
   COLOR_ROLES,
   STATUS_FAMILIES,
-} from '../contract/tokens.js';
+} from '@fmmenchi/tokens';
 
 /**
  * A placement table is a claim ABOUT THE SHIPPED PALETTE — that `-hover` really
@@ -23,8 +22,16 @@ import {
  * decision, and the colour is downstream of it.
  */
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
-const vars = readVars(readFileSync(join(styles, 'vars.css'), 'utf8'));
+/**
+ * The stylesheets are read through the PUBLIC subpath, not by a relative path
+ * into a sibling package's source. That is how a consumer reaches them, it is
+ * what `describeSystem()` is given in the real flow, and a relative reach across
+ * packages would be a coupling the module boundaries exist to forbid.
+ */
+const styleFile = (name: string): string =>
+  fileURLToPath(import.meta.resolve(`@fmmenchi/tokens/styles/${name}`));
+
+const vars = readVars(readFileSync(styleFile('vars.css'), 'utf8'));
 
 /** `--fm-color-primary-hover: var(--fm-palette-primary-800)` → 800. */
 function pointsAt(role: string): { source: string; step: number } | undefined {

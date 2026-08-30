@@ -15,7 +15,7 @@ import {
   TEXT_TOKENS,
 } from '../index.js';
 import { themeAdvisories, validateTheme } from './validate.js';
-import { readVars } from '../services/generate.js';
+import { readVars } from '../utils/read-vars.js';
 import { resolveValue } from '../utils/resolve.js';
 
 /**

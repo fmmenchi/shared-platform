@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
@@ -13,8 +12,16 @@ import { describeSystem, type ThemeSource } from './system.js';
  * rather than passing quietly.
  */
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
-const read = (p: string) => readFileSync(join(styles, p), 'utf8');
+/**
+ * The stylesheets are read through the PUBLIC subpath, not by a relative path
+ * into a sibling package's source. That is how a consumer reaches them, it is
+ * what `describeSystem()` is given in the real flow, and a relative reach across
+ * packages would be a coupling the module boundaries exist to forbid.
+ */
+const styleFile = (name: string): string =>
+  fileURLToPath(import.meta.resolve(`@fmmenchi/tokens/styles/${name}`));
+
+const read = (name: string) => readFileSync(styleFile(name), 'utf8');
 
 const SOURCES: readonly ThemeSource[] = [
   {

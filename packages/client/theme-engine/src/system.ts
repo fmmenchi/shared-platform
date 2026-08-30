@@ -28,9 +28,9 @@
  */
 import { converter, parse as parseColor } from 'culori';
 
-import { readVars } from '../utils/read-vars.js';
-import { resolveAll } from '../utils/resolve.js';
-import { PALETTE_FAMILIES } from '../contract/tokens.js';
+import { readVars } from '@fmmenchi/tokens/read-vars';
+import { resolveAll } from '@fmmenchi/tokens/resolve';
+import { PALETTE_FAMILIES } from '@fmmenchi/tokens';
 import type {
   Base,
   DesignSystem,

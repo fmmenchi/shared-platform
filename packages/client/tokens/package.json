@@ -35,17 +35,17 @@
       "import": "./dist/validations/validate.js",
       "default": "./dist/validations/validate.js"
     },
+    "./read-vars": {
+      "@fmmenchi/source": "./src/utils/read-vars.ts",
+      "types": "./dist/utils/read-vars.d.ts",
+      "import": "./dist/utils/read-vars.js",
+      "default": "./dist/utils/read-vars.js"
+    },
     "./resolve": {
       "@fmmenchi/source": "./src/utils/resolve.ts",
       "types": "./dist/utils/resolve.d.ts",
       "import": "./dist/utils/resolve.js",
       "default": "./dist/utils/resolve.js"
-    },
-    "./system": {
-      "@fmmenchi/source": "./src/services/system.ts",
-      "types": "./dist/services/system.d.ts",
-      "import": "./dist/services/system.js",
-      "default": "./dist/services/system.js"
     },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",

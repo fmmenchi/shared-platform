@@ -1,12 +1,19 @@
 /**
  * `@fmmenchi/tokens` — the token contract. Values live in `styles/*.css`
  * (consumers read `var(--fm-*)`); this TS surface enumerates the roles and
- * types a theme must satisfy. Implementation: `./tokens.ts`; types:
- * `./tokens.types.ts`; theme validation: `./validate.ts`.
+ * types a theme must satisfy. Implementation: `contract/tokens.ts`; types:
+ * `contract/tokens.types.ts`; theme validation: `validations/validate.ts`.
+ *
+ * BUILDING a theme is not here. The model a theme is derived from, and the
+ * solver over it, live in `@fmmenchi/theme-engine`, which depends on this — the
+ * one direction that is allowed. This package says what a theme must satisfy;
+ * that one says how one is arrived at.
  */
 export {
   ACTION_FAMILIES,
   STATUS_FAMILIES,
+  ACTION_SUFFIXES,
+  STATUS_SUFFIXES,
   COLOR_ROLES,
   RADIUS_TOKENS,
   TEXT_TOKENS,
@@ -41,31 +48,8 @@ export type {
   ColorScheme,
 } from './contract/tokens.types.js';
 
-/**
- * The theme MODEL (ADR-0033) — how a theme is declared and resolved, as
- * distinct from `ThemeColors`, which is what a finished one looks like.
- * Types only: nothing here adds a byte to a consumer's bundle.
- */
-export type {
-  PaletteFamily,
-  PaletteSource,
-  Rung,
-  Ramp,
-  NeutralDefinition,
-  ThemeDefinition,
-  DesignSystem,
-  RampStrategy,
-  ThemeSpec,
-  Base,
-  RungKey,
-  RolePin,
-} from './services/theme.types.js';
-
 export type {
   ViolationKind,
   ThemeViolation,
   ThemeAdvisory,
-  Placement,
-  Floor,
-  Constraint,
 } from './validations/validate.types.js';

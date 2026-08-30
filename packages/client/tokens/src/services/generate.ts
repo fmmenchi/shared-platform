@@ -20,8 +20,6 @@ import { REGISTERED_SECTIONS } from './registry.js';
  * committed files honest is an ordinary assertion — see `generate.test.ts`.
  */
 
-export { readVars } from '../utils/read-vars.js';
-
 /**
  * A `<length>` the browser will accept as an `initial-value`: it has to be
  * computationally independent, which `rem` is not. Converted from the real

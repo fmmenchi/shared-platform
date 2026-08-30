@@ -18,8 +18,8 @@
  * consumed it, while every type below that real code touched, real code
  * corrected. It comes back shaped by the function that returns it.
  */
-import type { PALETTE_FAMILIES } from '../contract/tokens.js';
-import type { ColorRole } from '../contract/tokens.types.js';
+import type { PALETTE_FAMILIES } from '@fmmenchi/tokens';
+import type { ColorRole } from '@fmmenchi/tokens';
 
 /** One of the seven families a ramp is generated for. */
 export type PaletteFamily = (typeof PALETTE_FAMILIES)[number];

@@ -19,14 +19,10 @@ import {
   ACTION_SUFFIXES,
   STATUS_FAMILIES,
   STATUS_SUFFIXES,
-} from '../contract/tokens.js';
-import type { ColorRole } from '../contract/tokens.types.js';
-import { CONTRAST_PAIRS } from '../validations/validate.js';
-import type {
-  Constraint,
-  Floor,
-  Placement,
-} from '../validations/validate.types.js';
+} from '@fmmenchi/tokens';
+import type { ColorRole } from '@fmmenchi/tokens';
+import { CONTRAST_PAIRS } from '@fmmenchi/tokens/validate';
+import type { Constraint, Floor, Placement } from './constraints.types.js';
 
 /** APCA judges reading, so it applies to the text pairs and not to rings. */
 const TEXT_RATIO = 4.5;

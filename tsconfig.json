@@ -47,6 +47,9 @@
     },
     {
       "path": "./packages/shared/formatting"
+    },
+    {
+      "path": "./packages/client/theme-engine"
     }
   ],
   "compilerOptions": {}
