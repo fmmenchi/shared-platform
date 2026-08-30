@@ -131,6 +131,32 @@ export interface ThemeDefinition {
  * One ramp per theme, shared by every family, which is what the shipped palette
  * does. A system whose families each had their own ramp would widen
  * `ThemeDefinition` rather than change anything that reads this.
+ *
+ * @example A synthetic system — two families, three rungs — deliberately not ours,
+ * since a copy of the shipped ramp in a comment is a copy that can rot:
+ * ```ts
+ * const tiny: DesignSystem = {
+ *   families: ['primary', 'negative'],
+ *   neutral: [
+ *     { step: 0, css: 'oklch(100% 0 0)' },
+ *     { step: 500, css: 'oklch(60% 0.01 256)' },
+ *     { step: 900, css: 'oklch(20% 0.01 256)' },
+ *   ],
+ *   themes: [
+ *     {
+ *       name: 'base',
+ *       selector: ':root',
+ *       colorScheme: 'light',
+ *       ramp: [
+ *         { step: 100, lightness: 0.9, chromaFactor: 0.22 },
+ *         { step: 500, lightness: 0.55, chromaFactor: 1 },
+ *         { step: 900, lightness: 0.22, chromaFactor: 0.5 },
+ *       ],
+ *       inks: [0, 900],
+ *     },
+ *   ],
+ * };
+ * ```
  */
 export interface DesignSystem {
   /**
@@ -214,6 +240,39 @@ export interface RolePin {
  * how they are looking at it. Which theme the preview is showing, whether the
  * preview is docked, which step is open: all view state, none of it here. A
  * theme is not different because somebody scrolled.
+ *
+ * @example Three brand colours changed, one rung rejected, three roles pointed by
+ * hand — one of each kind of edit this type allows:
+ * ```ts
+ * const acme: ThemeSpec = {
+ *   name: 'acme',
+ *   strategy: 'constant-step',
+ *   // Total: the wizard seeded all seven, the person changed three.
+ *   brand: {
+ *     primary: '#FF5A5F',
+ *     secondary: '#FC642D',
+ *     accent: '#00A699',
+ *     negative: 'oklch(57% 0.1823 27)',
+ *     success: 'oklch(55% 0.1167 150)',
+ *     warning: 'oklch(60% 0.099 78)',
+ *     info: 'oklch(56% 0.1094 245)',
+ *   },
+ *   // Empty is the normal case. Delete the key to go back to the proposal.
+ *   swatches: { base: { 'primary-300': 'oklch(70% 0.16 22)' } },
+ *   pins: {
+ *     base: {
+ *       // The fill was fine, its ink was not — so only the ink moved.
+ *       'primary-foreground': { source: 'neutral', step: 760, alpha: 1 },
+ *       // A surface role drawing from a brand family.
+ *       link: { source: 'primary', step: 700, alpha: 1 },
+ *       // The one role that needs an alpha.
+ *       scrim: { source: 'neutral', step: 850, alpha: 0.92 },
+ *     },
+ *     // Another theme, its own step numbers: 900 is mid-ramp in thirteen rungs.
+ *     dark: { link: { source: 'primary', step: 900, alpha: 1 } },
+ *   },
+ * };
+ * ```
  */
 export interface ThemeSpec {
   /** What the theme is called. Editable, and the only place it is held. */
