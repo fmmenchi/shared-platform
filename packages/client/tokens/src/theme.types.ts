@@ -114,7 +114,17 @@ export interface ThemeDefinition {
   readonly selector: string;
   /** What it tells the browser it is, so native controls are painted to match. */
   readonly colorScheme: ColorScheme;
-  readonly ramp: Ramp;
+  /**
+   * One ramp per family, not one shared by all of them.
+   *
+   * Measured rather than assumed, and the assumption was wrong: the shipped
+   * bases sit at L 0.54 to 0.60, and rungs are offsets from their base, so
+   * `warning` runs 0.95–0.46 where `accent` runs 0.89–0.40. The offsets are
+   * identical; the absolute lightnesses are not. Under the absolute anchoring
+   * ADR-0033 settles these all become equal — which is a property to check once
+   * it lands, not an invariant to encode before it does.
+   */
+  readonly ramps: Readonly<Record<PaletteFamily, Ramp>>;
   /**
    * The two inks a fill may carry, as STEPS of the neutral ramp — not CSS
    * strings. A string here would be a reference into a scale this type never
@@ -161,11 +171,16 @@ export interface ThemeDefinition {
  *       name: 'base',
  *       selector: ':root',
  *       colorScheme: 'light',
- *       ramp: [
- *         { step: 100, lightness: 0.9, chromaFactor: 0.22 },
- *         { step: 500, lightness: 0.55, chromaFactor: 1 },
- *         { step: 900, lightness: 0.22, chromaFactor: 0.5 },
- *       ],
+ *       ramps: {
+ *         primary: [
+ *           { step: 100, lightness: 0.9, chromaFactor: 0.22 },
+ *           { step: 500, lightness: 0.55, chromaFactor: 1 },
+ *         ],
+ *         negative: [
+ *           { step: 100, lightness: 0.92, chromaFactor: 0.22 },
+ *           { step: 500, lightness: 0.57, chromaFactor: 1 },
+ *         ],
+ *       },
  *       inks: [0, 1000],
  *     },
  *   ],

@@ -20,33 +20,7 @@ import { REGISTERED_SECTIONS } from './registry.js';
  * committed files honest is an ordinary assertion — see `generate.test.ts`.
  */
 
-/**
- * Every `--fm-*: value` in a stylesheet, in source order.
- *
- * COMMENTS ARE REMOVED FIRST, and that is not tidiness. Anchoring on `^\s*`
- * only asks for the start of a LINE, so a role commented out during a retune —
- * the ordinary `/* off for now` around a block — reads as a declaration. Every
- * gate would then pass on a role the shipped CSS does not define: completeness
- * sees it, contrast reads its value out of the comment, and `properties.css`
- * registers it. The `:root` value being absent, it resolves to the `@property`
- * initial-value, `oklch(0 0 0)` — black, on every consumer, in both themes.
- */
-export function readVars(css: string): Map<string, string> {
-  const values = new Map<string, string>();
-  const live = css.replace(/\/\*[\s\S]*?\*\//g, '');
-
-  for (const [, name, value] of live.matchAll(
-    /^\s*(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/gm,
-  )) {
-    if (values.has(name as string)) {
-      throw new Error(
-        `Duplicate declaration of ${name}. Two values for one token in one file means the later one silently wins, and which is later is not something anybody reads a stylesheet to find out.`,
-      );
-    }
-    values.set(name as string, (value as string).trim().replace(/\s+/g, ' '));
-  }
-  return values;
-}
+export { readVars } from './read-vars.js';
 
 /**
  * A `<length>` the browser will accept as an `initial-value`: it has to be

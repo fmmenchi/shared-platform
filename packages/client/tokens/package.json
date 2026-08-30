@@ -41,6 +41,12 @@
       "import": "./dist/resolve.js",
       "default": "./dist/resolve.js"
     },
+    "./system": {
+      "@fmmenchi/source": "./src/system.ts",
+      "types": "./dist/system.d.ts",
+      "import": "./dist/system.js",
+      "default": "./dist/system.js"
+    },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
     "./styles/baseline.css": "./src/styles/baseline.css",
