@@ -710,6 +710,29 @@ Changing that channel edits the shipped `vars.css`, so it is a follow-up to
 decision. The solver is correct before and after, which is why it does not have to
 wait for it.
 
+### One theme, several bindings
+
+A generated theme has to reach consumers in the shape their tooling reads, and
+this package already ships three of those shapes over the same names: the CSS
+custom properties every styling library can read, the Tailwind bridge
+(`styles/tailwind.css`, `@theme inline`, names and no values), and `tokenVars`
+— the same names as TypeScript strings, for consumers whose styles are written
+in TS. A DTCG export for design tooling is wanted and deliberately absent, a
+first attempt having been removed the day it was written for emitting values the
+format does not accept.
+
+`@fmmenchi/tokens`' own rule draws the line and it holds here: **a generated
+ARTIFACT is allowed, a runtime dependency on a consumer's styling library is
+not.** Emitting a Tailwind bridge is fine; importing styled-components to build a
+theme object would make this package depend on a framework, which the workspace
+forbids outright.
+
+Which decides something about `buildPreset()`. Its return value is not "the CSS":
+it is the resolved theme, and each binding is a separate function FROM that value
+— one per shape, sharing the solve. That is why the output model is worth having
+at all, and why it should be shaped by the function that produces it rather than
+guessed at beforehand: it has more than one reader, and the readers are the point.
+
 ### Dark mode — two independent switches
 
 "Dark" means two different things in this app, and conflating them is the obvious
