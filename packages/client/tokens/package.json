@@ -30,22 +30,22 @@
       "default": "./dist/index.js"
     },
     "./validate": {
-      "@fmmenchi/source": "./src/validate.ts",
-      "types": "./dist/validate.d.ts",
-      "import": "./dist/validate.js",
-      "default": "./dist/validate.js"
+      "@fmmenchi/source": "./src/validations/validate.ts",
+      "types": "./dist/validations/validate.d.ts",
+      "import": "./dist/validations/validate.js",
+      "default": "./dist/validations/validate.js"
     },
     "./resolve": {
-      "@fmmenchi/source": "./src/resolve.ts",
-      "types": "./dist/resolve.d.ts",
-      "import": "./dist/resolve.js",
-      "default": "./dist/resolve.js"
+      "@fmmenchi/source": "./src/utils/resolve.ts",
+      "types": "./dist/utils/resolve.d.ts",
+      "import": "./dist/utils/resolve.js",
+      "default": "./dist/utils/resolve.js"
     },
     "./system": {
-      "@fmmenchi/source": "./src/system.ts",
-      "types": "./dist/system.d.ts",
-      "import": "./dist/system.js",
-      "default": "./dist/system.js"
+      "@fmmenchi/source": "./src/services/system.ts",
+      "types": "./dist/services/system.d.ts",
+      "import": "./dist/services/system.js",
+      "default": "./dist/services/system.js"
     },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",

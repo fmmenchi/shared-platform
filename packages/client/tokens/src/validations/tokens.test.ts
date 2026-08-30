@@ -13,10 +13,10 @@ import {
   TOKEN_VARS,
   colorVar,
   TEXT_TOKENS,
-} from './index.js';
+} from '../index.js';
 import { themeAdvisories, validateTheme } from './validate.js';
-import { readVars } from './generate.js';
-import { resolveValue } from './resolve.js';
+import { readVars } from '../services/generate.js';
+import { resolveValue } from '../utils/resolve.js';
 
 /**
  * Validation of the token contract — this is what makes a theme "allowed":
@@ -30,7 +30,7 @@ import { resolveValue } from './resolve.js';
  *    3:1). `-disabled` pairs are exempt (WCAG 1.4.3 exception).
  */
 
-const styles = dirname(fileURLToPath(import.meta.url)) + '/styles';
+const styles = dirname(fileURLToPath(import.meta.url)) + '/../styles';
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
 /**

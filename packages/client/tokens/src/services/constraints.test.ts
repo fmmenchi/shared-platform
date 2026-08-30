@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { FAMILY_CONSTRAINTS } from './constraints.js';
-import { readVars } from './read-vars.js';
-import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from './tokens.js';
+import { readVars } from '../utils/read-vars.js';
+import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from '../tokens.js';
 
 /**
  * A placement table is a claim ABOUT THE SHIPPED PALETTE — that `-hover` really
@@ -19,7 +19,7 @@ import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from './tokens.js';
  * decision, and the colour is downstream of it.
  */
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
+const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 const vars = readVars(readFileSync(join(styles, 'vars.css'), 'utf8'));
 
 /** `--fm-color-primary-hover: var(--fm-palette-primary-800)` → 800. */

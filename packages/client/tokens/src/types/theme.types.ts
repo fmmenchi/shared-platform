@@ -18,7 +18,7 @@
  * consumed it, while every type below that real code touched, real code
  * corrected. It comes back shaped by the function that returns it.
  */
-import type { PALETTE_FAMILIES } from './tokens.js';
+import type { PALETTE_FAMILIES } from '../tokens.js';
 import type { ColorRole } from './tokens.types.js';
 
 /** One of the seven families a ramp is generated for. */

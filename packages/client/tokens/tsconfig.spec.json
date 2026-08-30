@@ -9,9 +9,9 @@
   "include": [
     "vite.config.mts",
     "vitest.config.mts",
-    "types/**/*.d.ts",
-    "src/generate.ts",
-    "src/registry.ts",
+    "src/types/**/*.d.ts",
+    "src/services/generate.ts",
+    "src/services/registry.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts"
   ],

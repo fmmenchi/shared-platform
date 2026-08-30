@@ -12,8 +12,8 @@
   "exclude": [
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "src/generate.ts",
-    "src/registry.ts"
+    "src/services/generate.ts",
+    "src/services/registry.ts"
   ],
   "references": []
 }

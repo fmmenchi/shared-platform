@@ -13,7 +13,7 @@ import { describeSystem, type ThemeSource } from './system.js';
  * rather than passing quietly.
  */
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
+const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
 const SOURCES: readonly ThemeSource[] = [

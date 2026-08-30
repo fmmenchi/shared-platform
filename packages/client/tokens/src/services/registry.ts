@@ -7,7 +7,7 @@ import {
   STATUS_FAMILIES,
   STATUS_SUFFIXES,
   SURFACE_ROLES,
-} from './tokens.js';
+} from '../tokens.js';
 
 /** A run of variables registered together, with the type they share. */
 export interface RegisteredSection {

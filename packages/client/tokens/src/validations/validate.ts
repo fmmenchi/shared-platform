@@ -38,9 +38,9 @@ import {
 // browser importing the main entry never pulls the colour maths in; importing
 // `./index.js` ran that coupling backwards, so every addition to the barrel —
 // `tokenVars` was the latest — widened `@fmmenchi/tokens/validate` too.
-import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from './tokens.js';
-import type { ColorRole } from './tokens.types.js';
-import type { ThemeAdvisory, ThemeViolation } from './validate.types.js';
+import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from '../tokens.js';
+import type { ColorRole } from '../types/tokens.types.js';
+import type { ThemeAdvisory, ThemeViolation } from '../types/validate.types.js';
 
 /**
  * The DECLARED PAIRS — the only role combinations the design system
@@ -128,7 +128,7 @@ export const CONTRAST_PAIRS: ReadonlyArray<
 
 // `ThemeViolation` moved to `validate.types.ts` with every other type in this
 // package. Re-exported because it is part of this subpath's public API.
-export type { ThemeAdvisory, ThemeViolation } from './validate.types.js';
+export type { ThemeAdvisory, ThemeViolation } from '../types/validate.types.js';
 
 /** WCAG AA for text. The pairs declaring this are the ones APCA also judges. */
 const TEXT_RATIO = 4.5;
