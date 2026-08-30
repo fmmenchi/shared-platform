@@ -25,43 +25,12 @@
  * the same discipline `tokens.types.ts` follows: the runtime lists and the
  * compile-time shapes cannot drift.
  */
-import type {
-  COLOR_SCHEMES,
-  PALETTE_FAMILIES,
-  REFERENCE_PRESETS,
-} from './tokens.js';
-import type { ColorRole } from './tokens.types.js';
+import type { PALETTE_FAMILIES } from './tokens.js';
+import type { ColorRole, ColorScheme } from './tokens.types.js';
 import type { Unsatisfied } from './validate.types.js';
-
-/**
- * `base` is the `:root` scheme; `dark` is the `[data-theme='dark']` one.
- *
- * NOT `light` and `dark`. `base` names a position in the cascade, not a
- * lightness, and the two are not the same claim: a consumer is free to put a
- * dark palette on `:root`, at which point a scheme called `light` would be
- * lying about the theme it holds. The code already agrees — `validateTheme()`
- * derives a theme's polarity by MEASURING the background's lightness rather
- * than reading the preset's name — so naming the scheme `light` would copy that
- * fact into a second place, where it can be wrong.
- */
-export type Scheme = (typeof COLOR_SCHEMES)[number];
-
-/**
- * A scheme is currently also a reference preset. This alias is never used at a
- * value position — it exists so that a reference preset which is NOT a scheme
- * makes the assignment below fail to compile, instead of the two lists quietly
- * meaning different things.
- */
-type SchemesAreReferencePresets =
-  Scheme extends (typeof REFERENCE_PRESETS)[number] ? true : never;
-/** @internal Compile-time only. */
-export type SchemeCheck = SchemesAreReferencePresets;
 
 /** One of the seven families a ramp is generated for. */
 export type PaletteFamily = (typeof PALETTE_FAMILIES)[number];
-
-/** Per-scheme values, for the axes a theme has two of. */
-export type PerScheme<T> = Readonly<Record<Scheme, T>>;
 
 // ---------------------------------------------------------------------------
 // The SHAPE of a design system
@@ -90,17 +59,39 @@ export interface Rung {
 export type Ramp = readonly Rung[];
 
 /**
+ * One theme a system can build: where it applies, what it claims to be, and the
+ * ramp its rungs come from.
+ *
+ * A THEME IS A THEME. `dark` is not an axis with two values, it is a second
+ * entry here — a different selector and a ramp of its own (thirteen rungs where
+ * the base has nine). Nothing in the mechanism is special about it, so a third
+ * theme (a high-contrast variant, a second brand) is another entry rather than a
+ * type change. That is also why `colorScheme` is a FIELD: light and dark are
+ * genuinely two values, but of the CSS property a theme declares, not of the
+ * theme itself.
+ */
+export interface ThemeDefinition {
+  /** How a spec and a set of pins refer to it. */
+  readonly name: string;
+  /** How it is selected in CSS: `:root`, `[data-theme='dark']`, … */
+  readonly selector: string;
+  /** What it tells the browser it is, so native controls are painted to match. */
+  readonly colorScheme: ColorScheme;
+  readonly ramp: Ramp;
+  /** The two inks a fill may carry: the neutral scale's ends. */
+  readonly inks: readonly [lighter: string, darker: string];
+}
+
+/**
  * The design system as data — what a solver is TOLD, never what it makes.
  *
- * `ramps` is per scheme and shared by every family, which is what the shipped
- * palette does today. A system whose families each had their own ramp would
- * widen this field rather than change anything that reads it.
+ * One ramp per theme, shared by every family, which is what the shipped palette
+ * does. A system whose families each had their own ramp would widen
+ * `ThemeDefinition` rather than change anything that reads this.
  */
 export interface DesignSystem {
   readonly families: readonly PaletteFamily[];
-  readonly ramps: PerScheme<Ramp>;
-  /** The two inks a fill may carry: the neutral scale's ends, per scheme. */
-  readonly inks: PerScheme<readonly [lighter: string, darker: string]>;
+  readonly themes: readonly ThemeDefinition[];
 }
 
 // ---------------------------------------------------------------------------
@@ -129,11 +120,12 @@ export interface ThemeSpec {
   /** One CSS colour per family. Hue and chroma are read from these. */
   readonly brand: Partial<Record<PaletteFamily, string>>;
   /**
-   * Roles pinned to a rung, per scheme, overriding what the solver would pick.
-   * Per scheme because the ramps do not share step names — 9 rungs against 13 —
-   * so a pin means nothing without saying which scheme it belongs to.
+   * Roles pinned to a rung, keyed by `ThemeDefinition.name`, overriding what
+   * the solver would pick. Keyed per theme because ramps do not share step
+   * names — nine rungs against thirteen — so a pin means nothing without saying
+   * which theme it belongs to.
    */
-  readonly pins?: PerScheme<Partial<Record<ColorRole, number>>>;
+  readonly pins?: Readonly<Record<string, Partial<Record<ColorRole, number>>>>;
   readonly strategy?: RampStrategy;
 }
 
@@ -171,9 +163,9 @@ export interface FamilyPalette {
   readonly swatches: readonly Swatch[];
 }
 
-/** Levels 1 and 2 of the token architecture, resolved for one scheme. */
+/** Levels 1 and 2 of the token architecture, resolved for one theme. */
 export interface Palette {
-  readonly scheme: Scheme;
+  readonly theme: string;
   readonly families: readonly FamilyPalette[];
 }
 
@@ -214,15 +206,21 @@ export interface Assignment {
  * only teach people to route around the tool.
  */
 export interface Theme {
-  readonly scheme: Scheme;
+  readonly definition: ThemeDefinition;
   readonly palette: Palette;
   readonly assignments: readonly Assignment[];
   readonly unsatisfied: readonly Unsatisfied[];
 }
 
-/** Both schemes from one set of colours, plus the spec that produced them. */
+/**
+ * Every theme built from one set of colours, plus the spec that produced them.
+ *
+ * A list, not a light/dark pair: the brand's hues do not change between themes,
+ * only the ramp they are placed on does, so one spec yields as many themes as
+ * the design system defines.
+ */
 export interface Preset {
   readonly name: string;
-  readonly schemes: PerScheme<Theme>;
+  readonly themes: readonly Theme[];
   readonly spec: ThemeSpec;
 }

@@ -214,18 +214,22 @@ export const CONTAINER_BREAKPOINTS = {
   xl: '48rem',
 } as const;
 
-/** Presets the platform ships as reference themes. `base` is `:root`. */
-export const REFERENCE_PRESETS = ['base', 'dark'] as const;
-
 /**
- * The COLOR SCHEMES a theme is built for. Same two names as the reference
- * presets and deliberately a separate list: a preset is a stylesheet we ship,
- * a scheme is an axis a theme has. If a third reference preset ever ships that
- * is not a scheme — a high-contrast variant, say — these stop being the same
- * two values, and `schemesAreReferencePresets` below is what makes that
- * divergence a compile error rather than a surprise.
+ * The values of the CSS `color-scheme` property — what a theme tells the
+ * BROWSER it is, so native controls, scrollbars and form widgets are painted to
+ * match. Two values because the platform has two, not because we chose a pair.
+ *
+ * Distinct from the presets below, which is why both lists exist. A preset is a
+ * theme we ship and is named for its position in the cascade (`base` is
+ * `:root`); its `color-scheme` is a separate claim about lightness. They line up
+ * today and need not: a consumer is free to put a dark palette on `:root`, and
+ * `validateTheme()` already assumes nothing either way — it derives a theme's
+ * polarity by MEASURING the background's lightness, never by reading a name.
  */
-export const COLOR_SCHEMES = ['base', 'dark'] as const;
+export const COLOR_SCHEMES = ['light', 'dark'] as const;
+
+/** The themes this platform ships. `base` is `:root`. */
+export const REFERENCE_PRESETS = ['base', 'dark'] as const;
 
 /**
  * The seven PALETTE families — level 1 of the token architecture, the families

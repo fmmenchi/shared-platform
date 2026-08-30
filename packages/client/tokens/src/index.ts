@@ -38,6 +38,7 @@ export type {
   ColorRole,
   ThemeColors,
   ReferencePreset,
+  ColorScheme,
 } from './tokens.types.js';
 
 /**
@@ -46,11 +47,10 @@ export type {
  * Types only: nothing here adds a byte to a consumer's bundle.
  */
 export type {
-  Scheme,
   PaletteFamily,
-  PerScheme,
   Rung,
   Ramp,
+  ThemeDefinition,
   DesignSystem,
   RampStrategy,
   ThemeSpec,
