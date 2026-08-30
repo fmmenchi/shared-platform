@@ -111,24 +111,3 @@ export interface Constraint {
   readonly floors: readonly Floor[];
   readonly placement: Placement;
 }
-
-/**
- * A role no rung could satisfy.
- *
- * A field rather than a thrown error, deliberately: the requirement that a
- * solver SAY SO instead of returning a least-bad candidate is only enforceable
- * if there is somewhere for it to say it. `best` is what the closest rung
- * managed, so a builder can report how far off it was instead of only that it
- * failed.
- */
-export interface Unsatisfied {
-  readonly role: ColorRole;
-  readonly against: ColorRole;
-  readonly ratio: number | null;
-  readonly lc: number | null;
-  readonly best: {
-    readonly step: number;
-    readonly ratio: number;
-    readonly lc: number;
-  };
-}

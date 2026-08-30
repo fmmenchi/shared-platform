@@ -56,17 +56,9 @@ export type {
   DesignSystem,
   RampStrategy,
   ThemeSpec,
+  Base,
   RungKey,
   RolePin,
-  Base,
-  Swatch,
-  FamilyPalette,
-  Palette,
-  AssignmentEvidence,
-  AssignmentOrigin,
-  Assignment,
-  Theme,
-  Preset,
 } from './theme.types.js';
 
 export type {
@@ -76,5 +68,4 @@ export type {
   Placement,
   Floor,
   Constraint,
-  Unsatisfied,
 } from './validate.types.js';

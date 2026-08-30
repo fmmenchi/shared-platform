@@ -38,15 +38,24 @@ const base = system.themes.find((t) => t.name === 'base');
 const dark = system.themes.find((t) => t.name === 'dark');
 
 describe('describeSystem', () => {
-  it('finds the seven palette families', () => {
-    expect(system.families).toEqual([
+  it('finds the seven palette families, as the keys of each theme ramps', () => {
+    expect(Object.keys(base?.ramps ?? {}).sort()).toEqual([
+      'accent',
+      'info',
+      'negative',
       'primary',
       'secondary',
-      'accent',
-      'negative',
       'success',
       'warning',
+    ]);
+    expect(Object.keys(dark?.ramps ?? {}).sort()).toEqual([
+      'accent',
       'info',
+      'negative',
+      'primary',
+      'secondary',
+      'success',
+      'warning',
     ]);
   });
 

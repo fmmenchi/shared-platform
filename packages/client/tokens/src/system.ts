@@ -198,5 +198,5 @@ export function describeSystem(sources: readonly ThemeSource[]): DesignSystem {
   }
 
   if (neutral === undefined) throw new Error('no neutral scale declared');
-  return { families: [...PALETTE_FAMILIES], neutral, themes };
+  return { neutral, themes };
 }
