@@ -7,12 +7,27 @@
  *   expect(validateTheme(myBrandColors)).toEqual([]);
  *
  * A theme must assign every color role with a parsable color (RESOLVED
- * literals, not var() references) and every declared pair must meet WCAG AA.
+ * literals, not var() references), and every declared pair must clear BOTH hard
+ * floors: WCAG AA, and an APCA |Lc| of 45 on text pairs.
+ *
+ * APCA lives here rather than in a test, and that move is the point. The policy
+ * was always both — WCAG 2.x is a blunt instrument on dark themes, which is
+ * exactly the case a generated theme gets wrong — but only the WCAG half was in
+ * this function, while `tokens.test.ts` enforced the APCA floor separately. So
+ * the pipeline demanded more than the public verdict, and a generated theme
+ * could pass a builder calling `validateTheme()` and then fail the repository's
+ * own gate. One question, asked in one place, is what makes a preview's promise
+ * worth anything (ADR-0033).
+ *
+ * The |Lc| 60 body-text guideline stays ADVISORY and is reported by
+ * `themeAdvisories()`, not returned here: 60 is guidance for body copy, and the
+ * smallest text in this system is a medium-weight button label.
  * The reference presets pass this exact validator (see `tokens.test.ts`).
  *
  * Subpath entry (`@fmmenchi/tokens/validate`) so the browser import graph of
  * the main entry never pulls the color math in.
  */
+import { APCAcontrast, sRGBtoY } from 'apca-w3';
 import {
   converter,
   displayable,
@@ -25,7 +40,7 @@ import {
 // `tokenVars` was the latest — widened `@fmmenchi/tokens/validate` too.
 import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from './tokens.js';
 import type { ColorRole } from './tokens.types.js';
-import type { ThemeViolation } from './validate.types.js';
+import type { ThemeAdvisory, ThemeViolation } from './validate.types.js';
 
 /**
  * The DECLARED PAIRS — the only role combinations the design system
@@ -113,7 +128,64 @@ export const CONTRAST_PAIRS: ReadonlyArray<
 
 // `ThemeViolation` moved to `validate.types.ts` with every other type in this
 // package. Re-exported because it is part of this subpath's public API.
-export type { ThemeViolation } from './validate.types.js';
+export type { ThemeAdvisory, ThemeViolation } from './validate.types.js';
+
+/** WCAG AA for text. The pairs declaring this are the ones APCA also judges. */
+const TEXT_RATIO = 4.5;
+/** APCA hard floor: the large/bold tier, our smallest text being button labels. */
+const APCA_FLOOR = 45;
+/** APCA body-text guideline. Advisory — reported, never failed. */
+const APCA_GUIDELINE = 60;
+
+/**
+ * |Lc| for a foreground on a background, or `undefined` if either is unreadable.
+ *
+ * APCA takes sRGB bytes, so the colours are converted and clamped the way a
+ * display would. Absolute because only the magnitude is a floor; the sign
+ * encodes which way round the pair is.
+ */
+function lightnessContrast(
+  foreground: string | undefined,
+  background: string | undefined,
+): number | undefined {
+  if (foreground === undefined || background === undefined) return undefined;
+  const toRgb = converter('rgb');
+  const y = (value: string): number | undefined => {
+    const parsed = parseColor(value);
+    if (!parsed) return undefined;
+    const { r, g, b } = toRgb(parsed);
+    const byte = (x: number) => Math.min(255, Math.max(0, Math.round(x * 255)));
+    return sRGBtoY([byte(r), byte(g), byte(b)]);
+  };
+  const fg = y(foreground);
+  const bg = y(background);
+  if (fg === undefined || bg === undefined) return undefined;
+  return Math.abs(Number(APCAcontrast(fg, bg)));
+}
+
+/**
+ * Pairs that clear both hard floors but sit under the APCA body-text guideline.
+ *
+ * Separate from `validateTheme()` so that returning `[]` keeps meaning "allowed":
+ * an advisory is something to look at, not a reason to refuse a theme.
+ */
+export function themeAdvisories(
+  colors: Readonly<Record<string, string>>,
+): ThemeAdvisory[] {
+  const advisories: ThemeAdvisory[] = [];
+  for (const [bg, fg, minimum] of CONTRAST_PAIRS) {
+    if (minimum !== TEXT_RATIO) continue;
+    const lc = lightnessContrast(colors[fg], colors[bg]);
+    if (lc === undefined || lc < APCA_FLOOR || lc >= APCA_GUIDELINE) continue;
+    advisories.push({
+      pair: [bg, fg],
+      lc,
+      guideline: APCA_GUIDELINE,
+      message: `${bg} × ${fg}: |Lc| ${lc.toFixed(1)} (< ${APCA_GUIDELINE} body-text guideline)`,
+    });
+  }
+  return advisories;
+}
 
 /**
  * Validate a complete color-role assignment. Returns [] when the theme is
@@ -187,6 +259,21 @@ export function validateTheme(
         minimum,
         message: `${bg} × ${fg}: ${ratio.toFixed(2)} < ${minimum}`,
       });
+    }
+
+    // Text pairs carry the second floor. Ring and non-text pairs (minimum 3) do
+    // not: APCA's tiers are about reading, and a focus ring is not read.
+    if (minimum === TEXT_RATIO) {
+      const lc = lightnessContrast(colors[fg], colors[bg]);
+      if (lc !== undefined && lc < APCA_FLOOR) {
+        violations.push({
+          kind: 'apca',
+          pair: [bg, fg],
+          lc,
+          lcFloor: APCA_FLOOR,
+          message: `${bg} × ${fg}: |Lc| ${lc.toFixed(1)} < ${APCA_FLOOR}`,
+        });
+      }
     }
   }
 

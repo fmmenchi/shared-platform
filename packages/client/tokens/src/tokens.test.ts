@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { converter, parse as parseColor, wcagContrast } from 'culori';
-import { APCAcontrast, sRGBtoY } from 'apca-w3';
+import { parse as parseColor, wcagContrast } from 'culori';
 import {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
@@ -15,7 +14,7 @@ import {
   colorVar,
   TEXT_TOKENS,
 } from './index.js';
-import { CONTRAST_PAIRS, validateTheme } from './validate.js';
+import { themeAdvisories, validateTheme } from './validate.js';
 import { readVars } from './generate.js';
 import { resolveValue } from './resolve.js';
 
@@ -353,20 +352,16 @@ describe('perceivability advisories (logged, not gated)', () => {
 });
 
 describe('APCA (advisory + floor)', () => {
-  // WCAG 2.x ratios are a blunt instrument, especially on dark themes; APCA
-  // (the WCAG 3 draft metric) is more perceptually accurate. Policy: the HARD
-  // gate stays WCAG AA (the legal/standard bar) + an APCA FLOOR of |Lc| ≥ 45
-  // (large/bold-text tier — our smallest text is font-medium button labels);
-  // pairs under the body-text guideline (|Lc| < 60) are logged as advisory,
-  // not failed.
-  const toRgb = converter('rgb');
-  const Y = (value: string) => {
-    const c = toRgb(parseColor(value));
-    if (!c) throw new Error(`unparsable: ${value}`);
-    const ch = (x: number) => Math.min(255, Math.max(0, Math.round(x * 255)));
-    return sRGBtoY([ch(c.r), ch(c.g), ch(c.b)]);
-  };
-
+  /**
+   * The measurement moved into `validateTheme()`; this asserts the SHIPPED
+   * presets against it rather than repeating the arithmetic.
+   *
+   * It used to compute |Lc| here, which meant the pipeline enforced a floor the
+   * public verdict did not — so a theme could pass a builder calling
+   * `validateTheme()` and fail this file. One implementation, asked in one
+   * place; the policy is unchanged (hard floor |Lc| 45, the 60 body-text
+   * guideline advisory).
+   */
   const toTheme = (vars: Map<string, string>): Record<string, string> => {
     const theme: Record<string, string> = {};
     for (const role of COLOR_ROLES) {
@@ -382,17 +377,11 @@ describe('APCA (advisory + floor)', () => {
   ] as const) {
     it(`text pairs stay above the |Lc| 45 floor in ${name}`, () => {
       const theme = toTheme(vars);
-      const advisories: string[] = [];
-      const failures: string[] = [];
-      for (const [bg, fg, minimum] of CONTRAST_PAIRS) {
-        if (minimum !== 4.5) continue; // text pairs only
-        const lc = Math.abs(Number(APCAcontrast(Y(theme[fg]), Y(theme[bg]))));
-        if (lc < 45) failures.push(`${bg} × ${fg}: |Lc| ${lc.toFixed(1)} < 45`);
-        else if (lc < 60)
-          advisories.push(
-            `${bg} × ${fg}: |Lc| ${lc.toFixed(1)} (< 60 body-text guideline)`,
-          );
-      }
+      const failures = validateTheme(theme)
+        .filter((v) => v.kind === 'apca')
+        .map((v) => v.message);
+
+      const advisories = themeAdvisories(theme).map((a) => a.message);
       if (advisories.length > 0) {
         console.warn(`APCA advisory (${name}):\n  ${advisories.join('\n  ')}`);
       }

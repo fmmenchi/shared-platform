@@ -62,6 +62,7 @@
     ]
   },
   "dependencies": {
+    "apca-w3": "^0.1.9",
     "culori": "^4.0.2",
     "tslib": "^2.3.0"
   }
