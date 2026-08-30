@@ -63,32 +63,121 @@ system rather than a drawing of it.
 A pure function, no DOM, no React:
 
 ```ts
-/** The design system, as data. Not our palette — the SHAPE of a palette. */
-type DesignSystem = {
-  families: readonly string[];
-  /** Per scheme: each rung's name and where it sits. */
-  rungs: Record<Scheme, readonly { step: number; lightness: number; chroma: number }[]>;
-  /** Per role: what it is measured against, the floor, and which way to walk. */
-  roles: readonly {
-    role: ColorRole;
-    against: ColorRole | 'surface' | 'ink';
-    floor: number | 'exempt';
-    direction: 'toward-ink' | 'toward-surface' | 'anchor';
-  }[];
+type Scheme = 'light' | 'dark';
+
+// ---- the SHAPE of a design system: what the solver is told, not what it makes
+
+/** One rung of a ramp. */
+type Rung = {
+  /** Its name in the token surface: `700` in `--fm-palette-primary-700`. */
+  readonly step: number;
+  /** Where it sits — OKLCH lightness, 0–1, ABSOLUTE rather than an offset. */
+  readonly lightness: number;
+  /** How much of the base's chroma it keeps, 0–1. */
+  readonly chromaFactor: number;
 };
 
-buildPreset(
-  system: DesignSystem,
-  input: {
-    /** One hex per family — hue and chroma are read from here. */
-    brand: Partial<Record<Family, string>>;
-    /** Roles pinned to a rung for THIS scheme: the wizard's own edits. */
-    pins?: Partial<Record<ColorRole, number>>;
-    /** Constant step is the one that exists; constant contrast when it does. */
-    strategy?: 'constant-step' | 'constant-contrast';
-  },
-  opts?: { scheme: 'light' | 'dark' },
-): Preset;
+/** A scheme's ramp. Ordered lightest to darkest; `step` unique within it. */
+type Ramp = readonly Rung[];
+
+/** What one role must satisfy, and where the solver looks for it. */
+type Constraint = {
+  readonly role: ColorRole;
+  readonly against: ColorRole;
+  /** WCAG floor, or `null` where 1.4.3 exempts the pair (the disabled roles). */
+  readonly floor: number | null;
+  /** `anchor` is the fill — a choice, not a search. */
+  readonly direction: 'anchor' | 'toward-ink' | 'toward-surface';
+};
+
+type DesignSystem = {
+  readonly families: readonly string[];
+  readonly ramps: Readonly<Record<Scheme, Ramp>>;
+  readonly constraints: readonly Constraint[];
+  /** The two inks a fill may carry — the neutral scale's ends, per scheme. */
+  readonly inks: Readonly<Record<Scheme, readonly [light: string, dark: string]>>;
+};
+
+// ---- the STATE of a palette: level 1 and level 2, resolved
+
+/** A family's seed — what a brand actually contributes. */
+type Base = {
+  readonly hue: number;
+  readonly chroma: number;
+  readonly lightness: number;
+};
+
+/** One resolved colour of a ramp. */
+type Swatch = {
+  readonly step: number;
+  /** What gets declared, and what contrast was measured on. */
+  readonly css: string;
+  readonly lightness: number;
+  readonly chroma: number;
+  /** True where the gamut, not the curve, decided the chroma. */
+  readonly clamped: boolean;
+};
+
+type FamilyPalette = {
+  readonly family: string;
+  readonly base: Base;
+  readonly swatches: readonly Swatch[];
+};
+
+type Palette = {
+  readonly scheme: Scheme;
+  readonly families: readonly FamilyPalette[];
+};
+
+// ---- the STATE of a theme: level 3, with its reasons
+
+/** How one role got its value, and why. */
+type Assignment = {
+  readonly role: ColorRole;
+  readonly family: string;
+  readonly step: number;
+  /** `chosen` is the fill, `solved` met its constraint, `pinned` is a person's. */
+  readonly origin: 'chosen' | 'solved' | 'pinned';
+  /** The measurement that justified it — `null` only for an exempt role. */
+  readonly evidence:
+    | { readonly against: ColorRole; readonly floor: number; readonly measured: number }
+    | null;
+};
+
+/** A role no rung could satisfy. Reported, never silently approximated. */
+type Unsatisfied = {
+  readonly role: ColorRole;
+  readonly against: ColorRole;
+  readonly floor: number;
+  /** The best any rung managed, so the wizard can say how far off it is. */
+  readonly best: number;
+};
+
+type Theme = {
+  readonly scheme: Scheme;
+  readonly palette: Palette;
+  readonly assignments: readonly Assignment[];
+  readonly unsatisfied: readonly Unsatisfied[];
+};
+
+/** Both schemes from one set of colours, plus the spec that produced them. */
+type Preset = {
+  readonly name: string;
+  readonly light: Theme;
+  readonly dark: Theme;
+  readonly spec: ThemeSpec;
+};
+
+type ThemeSpec = {
+  /** One hex per family — hue and chroma are read from here. */
+  readonly brand: Partial<Record<Family, string>>;
+  /** Roles pinned to a rung, per scheme: the wizard's own edits. */
+  readonly pins?: Readonly<Record<Scheme, Partial<Record<ColorRole, number>>>>;
+  /** Constant step is the one that exists; constant contrast when it does. */
+  readonly strategy?: 'constant-step' | 'constant-contrast';
+};
+
+buildPreset(system: DesignSystem, spec: ThemeSpec): Preset;
 ```
 
 **`system` is why this is a solver and not our palette with a function around it.**
@@ -121,6 +210,49 @@ absent:
   stated anywhere.
 
 One table and one field, then, rather than a new contract.
+
+**The types come first, because more than one thing needs them.** The solver
+produces a `Theme`, the CSS emitter consumes one, the verdict reads
+`unsatisfied` and `evidence`, and the wizard's form is a view over `assignments` —
+so these are a shared vocabulary rather than one function's return shape. Getting
+them right is the first commit, ahead of any arithmetic.
+
+Three of them are carrying decisions rather than describing data, which is the point
+of writing them down:
+
+- `Rung.lightness` is **absolute**, not an offset, so the type states the anchoring
+  settled below instead of leaving it to convention;
+- `Assignment.origin` separates `chosen` from `solved` from `pinned`, which is
+  exactly what the form must show and what makes the state round-trip through the
+  generated CSS possible at all;
+- `Unsatisfied` is a **field, not an exception**. The requirement that the solver
+  say so rather than return a least-bad candidate is enforced by there being
+  somewhere for it to say it, and a `Theme` that carries entries here is one the
+  verdict must report on.
+
+**`ThemeSpec` is the wizard's form state.** Not a model that mirrors the form —
+the form itself. Its three fields are the whole of what a person can change: the
+brand hexes, the pins per scheme, and the strategy. Two things follow, and both are
+load-bearing rather than tidy. A control that cannot be expressed as a change to
+`ThemeSpec` **does not belong in the wizard**, which is the test that keeps nine
+steps from growing a tenth out of enthusiasm. And the round-trip closes exactly:
+`ThemeSpec` → `buildPreset()` → `Preset` → emitted CSS → `ThemeSpec` read back,
+because a role in that CSS is a reference to a rung and a base is a literal. The
+form, the preview and the file on disk are three views of one value.
+
+`Constraint.floor: null` is how exemption is expressed, because today an exempt pair
+is simply ABSENT from `CONTRAST_PAIRS` — yet a disabled role still needs a
+`direction` to be placed, so it needs an entry, and `null` distinguishes "no floor"
+from "floor not decided yet".
+
+**And the ramp table must not be hand-maintained.** `Ramp` describes the same rungs
+`vars.css` declares, so writing it out by hand makes two copies of the ramp — and a
+second copy is how a gate goes green on the wrong number, the exact failure
+`resolve.ts` exists to prevent and documents in its own header. Either **derive** it
+from the stylesheet at build time or **assert** it against the stylesheet in the
+contrast gate; a comment saying "keep in sync" is not one of the options. Per the
+repo's own rule all of these live in `*.types.ts`, with `index.ts` re-exporting
+them.
 
 `pins` is the parameter the wizard is made of. Without it the function derives a
 whole theme from seven hexes, which is the express route; with it, each family step
