@@ -63,8 +63,28 @@ system rather than a drawing of it.
 A pure function, no DOM, no React:
 
 ```ts
-buildPreset(brand: Partial<Record<Family, string>>, opts?: { scheme: 'light' | 'dark' }): Preset
+buildPreset(
+  input: {
+    /** One hex per family — hue and chroma are read from here. */
+    brand: Partial<Record<Family, string>>;
+    /** Roles pinned to a rung for THIS scheme: the wizard's own edits. */
+    pins?: Partial<Record<ColorRole, number>>;
+    /** Constant step is the one that exists; constant contrast when it does. */
+    strategy?: 'constant-step' | 'constant-contrast';
+  },
+  opts?: { scheme: 'light' | 'dark' },
+): Preset;
 ```
+
+`pins` is the parameter the wizard is made of. Without it the function derives a
+whole theme from seven hexes, which is the express route; with it, each family step
+contributes the assignments a person changed, and the per-role dark deviation has
+somewhere to live. It is also what closes the loop with the state decision below:
+the pins are recoverable from the generated CSS, because a role there is a reference
+to a rung.
+
+`strategy` is passed for the difference that is real — how the rungs are generated —
+and not for how a rung's lightness is written, which is settled.
 
 It does what was done by hand for the demo themes: hue and chroma from each hex; the base at the
 scheme's lightness, with chroma kept when it was a choice and raised when it was a gamut limit; the
