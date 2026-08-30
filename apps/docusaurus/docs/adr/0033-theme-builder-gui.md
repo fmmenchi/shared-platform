@@ -143,6 +143,29 @@ nothing to drift from — which is the same argument that rejected a hand-writte
 preview page, applied one level further down: not just the real components, but the
 real stylesheet.
 
+**The generated CSS is the state; the form is a projection of it.** The wizard
+keeps no parallel model of the theme. It **reads what was generated**, and the
+controls are populated from that file — so re-running generation is not "saving",
+it is the single act that updates both the demo app's theme and the wizard's own
+form. There is no synchronisation between them to get wrong, because there is only
+one artefact.
+
+This is only possible because of [ADR-0032](./0032-tokens-gain-a-primitive-layer.md).
+A generated preset holds its bases as literals (`--fm-palette-primary-base: oklch(55%
+0.19 27)`) and its roles as **references** to a rung: 83 of the 84 are a plain
+`var(--fm-palette-primary-700)`, and the 84th, `scrim`, is a rung with an alpha
+applied. **No role invents a colour.** So the inputs are recoverable from the output
+exactly: the bases give each family's hue and chroma, and the role references give
+the rung. When the roles held 84 literals this
+would have been impossible; you could read a theme's colours but never its
+decisions.
+
+Three things follow for free. Reloading on step 5 restores the wizard, because the
+state was never in the page. The undocked window and the docked iframe cannot
+disagree, because neither holds state. And "what you see is what you will get" is
+structural rather than maintained — the preview and the form are two views of the
+file the generator will hand back.
+
 **What that forces on a generated preset — measured, not assumed.** Each family
 step also shows components inline, inside the wizard's own document, where the
 theme is a container rather than a root. A custom property resolves where it is
@@ -343,6 +366,37 @@ coral would have raised instead of shipping a burgundy. And the numbers above ar
 **calibration, not a rule**: on today's bases the solver should land on 6 and 9, so
 they belong in the contrast gate as a fixture, where a retune that quietly moves
 them gets caught.
+
+#### One choice per family, seven solutions
+
+An action family declares eight roles, and exactly **one** of them is a choice.
+That is what makes "a theme is seven numbers" an honest description rather than a
+slogan.
+
+| role                   | how it is fixed                                                     | constraint                                                          |
+| ---------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| the fill               | **chosen** — the rung whose lightness is nearest the brand colour's | must be able to carry an ink at 4.5                                 |
+| `-foreground`          | solved                                                              | ≥ 4.5 against the fill; candidates are the neutral scale's two ends |
+| `-hover`               | solved                                                              | one rung along the scheme's direction, its ink still ≥ 4.5          |
+| `-active`              | solved                                                              | one rung beyond hover, its ink still ≥ 4.5                          |
+| `-subtle`              | solved                                                              | a tint at the far end, solved WITH its ink so the pair clears 4.5   |
+| `-subtle-foreground`   | solved                                                              | ≥ 4.5 against `-subtle`                                             |
+| `-disabled`            | solved                                                              | exempt — WCAG 1.4.3 places disabled controls outside the floor      |
+| `-disabled-foreground` | solved                                                              | exempt, likewise                                                    |
+
+The direction belongs to the **scheme**, not the family: light darkens for hover and
+active and takes the light end for `-subtle`; dark lightens and flips `-subtle` to a
+dark wash with light text, which is what the shipped dark preset already does.
+
+Two properties fall out of this shape. The brand's **lightness is spent on the fill
+choice**, which is the one place it belongs — the coral failure was spending it
+nowhere and pinning the fill to a fixed rung, so a colour at L 0.68 rendered at
+0.41. And every failure is **attributable**: the solver names the role, the pair and
+the floor it could not reach, instead of producing a theme that has to be
+interrogated afterwards to find which of 84 values is the bad one.
+
+So a family's whole input is three numbers — hue, chroma, and which rung the fill
+takes — and the seven families make the "seven numbers" of this ADR literal.
 
 #### Why theirs tabulates, and why that is not a fork
 
