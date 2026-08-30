@@ -295,6 +295,55 @@ one-way. What does have to change is mechanical: the release set is the glob
 `private: true` for the `publishConfig.registry` every published package here
 carries.
 
+### The default map is solved, not tabulated
+
+Which step a role points at is the wizard's real product: on the express route
+steps 2-8 are accepted as they come, so the defaults **are** the theme for most
+people. Two published systems answer this, and they answer it differently.
+
+[Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale)
+gives each of its twelve steps a fixed meaning — 9 solid background, 10 its hover,
+11 low-contrast text, 12 high-contrast text, 3/4/5 the UI backgrounds, 6/7/8 the
+borders. The guarantee does not come from the map: it comes from Radix hand-tuning
+all thirty of its scales until those meanings hold.
+[Material 3](https://m3.material.io/styles/color/roles) makes it arithmetic
+instead — tones are distributed so that **40 apart is at least 3:1 and 50 apart at
+least 4.5:1** — so a map written as tone distances is accessible by construction
+rather than by craftsmanship.
+
+**Neither transfers here as a table, and the reason is measured.** Our ramp is
+_offsets_ from the base (`calc(l + 0.35)`, `calc(c * 0.22)`), so a brand's
+lightness, chroma and hue all ride through it. Sweeping 245 bases — seven
+lightnesses by five chromas by seven hues — through the shipped light offsets:
+
+| what varies        | effect on the distance guaranteeing 4.5:1      |
+| ------------------ | ---------------------------------------------- |
+| hue                | none                                           |
+| chroma             | none                                           |
+| **base lightness** | **6 inside roughly L 0.45–0.68, 7 outside it** |
+
+174 of the 245 landed on 6 and 71 on 7. Worse for a table, the **dead zone** — the
+step that carries neither white nor dark ink at 4.5 — walks with the base: step 200
+at L 0.35, step 400 at 0.55, step 700 at 0.75, and at some lightnesses there is no
+dead step at all. A map of absolute step numbers is therefore only as good as the
+bases underneath it, and the bases are precisely what a brand changes.
+
+**So the default is a declared constraint and a solved step.** Each role carries
+what it must satisfy — this fill must carry its foreground at 4.5, this border must
+reach 3 against its surface — and `buildPreset()` walks the ramp for the nearest
+step that satisfies it **on the actual colours**. This is not Leonardo, which
+solves for the COLOUR given a target contrast and would mean a new colour engine;
+it solves for the STEP given a ramp we already have, which is arithmetic we already
+do in the gate.
+
+Two things follow. When no step satisfies a constraint — a pale brand where nothing
+carries white ink — the solver must **say so** rather than return the least-bad
+candidate: that is the moment this whole tool exists for, and it is the one the
+coral would have raised instead of shipping a burgundy. And the numbers above are a
+**calibration, not a rule**: on today's bases the solver should land on 6 and 9, so
+they belong in the contrast gate as a fixture, where a retune that quietly moves
+them gets caught.
+
 ### Dark mode — two independent switches
 
 "Dark" means two different things in this app, and conflating them is the obvious
