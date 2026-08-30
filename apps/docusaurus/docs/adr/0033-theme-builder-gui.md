@@ -344,38 +344,91 @@ coral would have raised instead of shipping a burgundy. And the numbers above ar
 they belong in the contrast gate as a fixture, where a retune that quietly moves
 them gets caught.
 
-#### Why theirs tabulates and ours does not
+#### Why theirs tabulates, and why that is not a fork
 
-Worth recording, because it is a fork someone will otherwise re-derive.
+Worth recording, because someone will otherwise re-derive it.
 
 [Radix](https://www.radix-ui.com/colors) publishes thirty hand-authored scales —
 you do not generate them — but the values are not arbitrary: steps 11 and 12 are
 guaranteed to **Lc 60 and Lc 90 APCA** above step 2 of the same scale, and their
 custom-palette tool reproduces comparable ratios for a new colour. The values are
 fixed; the _targets_ are the invariant.
-[Material 3](https://m3.material.io/styles/color/roles) generates instead: HCT's
-tone **is** CIELAB `L*`, with hue and chroma from CAM16 and chroma reduced until
-the colour fits the gamut. Because the tone axis IS absolute lightness, a distance
-in tone is a distance in lightness for any source colour — which is what lets the
-40 / 50 rule be published at all.
+[Material 3](https://m3.material.io/styles/color/roles) generates instead, and its
+invariant is structural: HCT's tone **is** CIELAB `L*`, hue and chroma come from
+CAM16, and chroma is reduced until the colour fits the gamut. Because the tone axis
+IS absolute lightness, a distance in tone is a distance in lightness for any source
+colour — which is the only reason the 40 / 50 rule can be published.
 
-Ours has a constant step like Material but anchors it like neither: **offsets from
-a per-family base**, so a step's absolute lightness moves with the base. Measured
-over 648 bases (9 lightnesses × 8 chromas × 9 hues), the same nine steps under the
-two anchorings:
+Ours has Material's constant step but anchors it as **offsets from a per-family
+base**, so a rung's absolute lightness moves with the base. Measured over 648 bases
+(9 lightnesses × 8 chromas × 9 hues), the same nine rungs under both anchorings:
 
 | anchoring                | gap guaranteeing 4.5:1  | dead zone                     |
 | ------------------------ | ----------------------- | ----------------------------- |
 | offset (today)           | 6 ×424, 7 ×224 — varies | moves across 200…700, or none |
 | absolute (Material-like) | **6 ×648 — invariant**  | stable at 400 (639 of 648)    |
 
-So the choice is real and it is **not this ADR's to make**: re-anchoring the ramp to
-absolute lightnesses would make the default map publishable as a table, at the cost
-that a base could no longer move its family's lightness — it would contribute hue
-and chroma only, exactly as a Material source colour does. That changes the ramp
-[ADR-0032](./0032-tokens-gain-a-primitive-layer.md) defines, so it needs an ADR of
-its own. Until then the solver above is what makes the default safe, and it stays
-correct under either anchoring.
+**A palette is a palette, so this is a strategy and not a schism.** What the design
+system consumes is a list of rungs per family; how a rung was computed — an offset,
+an absolute anchor, a hand-written literal, an uneven step — is the derivation's
+business and invisible downstream. `buildPreset()` already takes the strategy as a
+parameter, and the solver reads the ACTUAL colours, so it is correct on any rung
+list, evenly spaced or not.
+
+**And the two are not even exclusive.** Relative colour admits a literal channel,
+so a rung can anchor its lightness absolutely and still read hue and chroma from
+the base:
+
+```css
+--fm-palette-primary-700: oklch(
+  from var(--fm-palette-primary-base) 0.41 calc(c * 0.96) h
+);
+```
+
+Verified in a browser rather than in the resolver, since the browser is what ships
+(`scoped-theme.test.tsx`): that form resolves, it agrees with today's
+`calc(l - 0.14)` at a base of L 0.55, and it still follows the base's hue. So the
+lightness can be pinned — which is what makes the distance invariant — while the
+base keeps carrying hue and chroma, which is what keeps ADR-0032's promise that
+overriding a base moves the whole family. Nothing is traded.
+
+**Which reframes the freedom question.** The worry is that pinning lightness takes
+control away. It does not take it from the base, per the above; what it constrains
+is the set of lightnesses a family can reach. Sixteen published brand colours
+snapped to the nine rungs: **fifteen land within ΔL 0.05** (worst 0.048 — Airbnb
+Babu, Duolingo green), the theoretical worst case being 0.05, half the widest rung
+gap. The one real casualty is **pure black**: `#000000` sits ΔL 0.22 from the
+darkest rung, though brand "blacks" that are not literally black land within 0.023
+(Notion 0.213, Spotify 0.197). For scale, the coral failure this ADR opens with was
+ΔL **0.279** — its nearest rung is 0.011 away.
+
+So the constraint is the **range's ends, not its granularity**, and it is a question
+about which rungs exist rather than about the anchoring: a ramp whose floor is 0.22
+cannot reproduce black under either model. The freedom the shipped palette actually
+uses today is **0.06** — seven bases spanning L 0.54–0.60 out of the ~0.68 the ramp
+covers.
+
+**So: Radix's principle, Material's mechanism, one anchoring.** Radix's model
+cannot be adopted as a method — it needs a person tuning each scale until the
+targets hold, and a consumer's brand scale is generated at wizard time precisely
+because nobody is going to hand-tune it. What transfers is its _principle_, that a
+rung's meaning is a declared contrast target rather than a position, and that is
+already the decision above. Material contributes the mechanism that satisfies such
+a target by construction: pin the lightness.
+
+Both anchorings should NOT be kept as a product choice. The literal-channel form
+removes the reason to — it delivers the invariance and keeps the base carrying hue
+and chroma — and a knob that silently varies whether the contrast guarantee holds is
+a knob nobody can evaluate. This ADR already refuses the same shape twice: two
+wizard routes are one implementation, and two derivation algorithms are called out
+as two things to keep correct. The `strategy` parameter stays for the difference
+that is real — constant step against constant contrast — not for how a rung's
+lightness is written.
+
+Changing that channel edits the shipped `vars.css`, so it is a follow-up to
+[ADR-0032](./0032-tokens-gain-a-primitive-layer.md) rather than part of this
+decision. The solver is correct before and after, which is why it does not have to
+wait for it.
 
 ### Dark mode — two independent switches
 

@@ -105,6 +105,39 @@ describe('a preset scoped to a container', () => {
     expect(stepInside).toBe(stepOutside);
   });
 
+  it('takes a LITERAL lightness while still inheriting hue and chroma from the base', () => {
+    // The two derivation models are not a fork: relative colour allows a literal
+    // channel, so a rung can anchor its lightness absolutely — the property that
+    // makes a distance rule invariant — and STILL read hue and chroma from the
+    // base, which is what keeps "override the base and the family follows" true.
+    // Measured in the browser rather than in the resolver, because the browser is
+    // what ships.
+    const scoped = container({ class: 'anchored' });
+    appStylesheet(`.anchored {
+      --fm-palette-primary-base: oklch(55% 0.19 27);
+      --anchored-rung: oklch(from var(--fm-palette-primary-base) 0.41 calc(c * 0.96) h);
+      --offset-rung: oklch(
+        from var(--fm-palette-primary-base) calc(l - 0.14) calc(c * 0.96) h
+      );
+    }`);
+
+    // Same base at L 0.55: an absolute 0.41 and an offset of -0.14 must agree.
+    expect(resolveIn(scoped, '--anchored-rung')).toBe(
+      resolveIn(scoped, '--offset-rung'),
+    );
+
+    // And the literal form still follows the base's HUE — the freedom that a
+    // Material-style absolute tone would otherwise cost us.
+    const shifted = container({ class: 'anchored-shifted' });
+    appStylesheet(`.anchored-shifted {
+      --fm-palette-primary-base: oklch(55% 0.19 256);
+      --anchored-rung: oklch(from var(--fm-palette-primary-base) 0.41 calc(c * 0.96) h);
+    }`);
+    expect(resolveIn(shifted, '--anchored-rung')).not.toBe(
+      resolveIn(scoped, '--anchored-rung'),
+    );
+  });
+
   it('DOES re-derive when the base and the ramp are declared together', () => {
     // What a generated preset must therefore emit: the block, not just the seven
     // numbers. One step is enough to show the mechanic.
