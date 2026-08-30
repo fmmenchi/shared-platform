@@ -70,41 +70,30 @@ export interface Rung {
 export type Ramp = readonly Rung[];
 
 /**
- * One rung of the grey scale.
+ * The grey scale: a base the SYSTEM owns, on the same kind of ramp as a family.
  *
- * STRUCTURED, not a CSS string. The greys have a recipe of their own — the
- * shipped scale is hue 256 with a chroma that rises as it darkens, 0.004 at
- * L 98.5% to 0.016 at L 60%, and only its two endpoints are achromatic (pure
- * white and pure black). A string would hide that, and hiding it means nothing
- * can check it: the shipped `neutral-30` is `oklch(97% 0.014 256)` where its
- * neighbours at 98.5% and 96.5% are 0.004 and 0.006, which breaks the curve by a
- * factor of three and is invisible to every gate we have, since chroma that
- * small barely moves relative luminance and the contrast assertions pass either
- * way.
+ * There is no second rung type, because a hybrid needed a justification and did
+ * not have one. Everything derives from a base; the only difference is who owns
+ * the base. A family's comes from a brand, the greys' comes from us — and being
+ * ours is exactly why a brand cannot move it.
  *
- * Still a different type from `Rung`, and for the reason that survives: a
- * family's rung is a recipe COMPLETED BY A BRAND — it holds no colour until a
- * base arrives, and the browser finishes it at runtime — while a grey's recipe
- * is its own and already resolved. One is relative, one is absolute.
+ * The shipped scale fits this without bending: hue 256, chroma rising from 0.004
+ * at L 98.5% to a plateau of 0.02 from L 56% down to L 5%, so a base of
+ * `oklch(… 0.02 256)` and 36 rungs of `chromaFactor` describe it exactly — the
+ * two achromatic endpoints included, since pure white and pure black are
+ * `chromaFactor: 0` and a hue nothing multiplies is a hue that does not matter.
+ *
+ * Writing it as factors also makes the one defect legible. `neutral-30` ships as
+ * `oklch(97% 0.014 256)`, a factor of 0.7 between neighbours at 0.2 and 0.3 — the
+ * only rung that breaks the curve, used by `selection-foreground` in the dark
+ * theme, and invisible to every gate because chroma that small barely moves
+ * relative luminance.
  */
-export interface NeutralRung {
-  readonly step: number;
-  /** OKLCH lightness, 0–1. */
-  readonly lightness: number;
-  readonly chroma: number;
-  /** `undefined` where the rung is achromatic: the two endpoints. */
-  readonly hue: number | undefined;
+export interface NeutralDefinition {
+  /** Ours, not a brand's. Carries the hue and the maximum chroma. */
+  readonly base: Base;
+  readonly ramp: Ramp;
 }
-
-/**
- * The grey scale — shared by every theme, and not a brand's to change.
- *
- * System-wide rather than per theme, which the shipped files settle rather than
- * assume: `vars.css` declares 36 of these and `presets/dark.css` declares NONE,
- * referencing them instead. It sits here because it is what `ThemeDefinition.inks`
- * point into, and because every family measures its foreground against its ends.
- */
-export type NeutralScale = readonly NeutralRung[];
 
 /**
  * One theme a system can build: where it applies, what it claims to be, and the
@@ -127,14 +116,14 @@ export interface ThemeDefinition {
   readonly colorScheme: ColorScheme;
   readonly ramp: Ramp;
   /**
-   * The two inks a fill may carry, as STEPS of `DesignSystem.neutral` — not CSS
+   * The two inks a fill may carry, as STEPS of the neutral ramp — not CSS
    * strings. A string here would be a reference into a scale this type never
    * declares, so a typo or a retired rung would only surface as an unreadable
    * button; a step is resolvable, which makes it checkable.
    *
    * Two because a solver picks between them by measurement, and they differ per
-   * theme: the base theme inks its fills with pure white (step 0) while the dark
-   * theme uses an off-white (step 50), which is what the shipped presets do.
+   * theme: the base theme inks its fills with pure white while the dark theme
+   * uses an off-white, which is what the shipped presets do.
    */
   readonly inks: readonly [lighter: number, darker: number];
 }
@@ -159,11 +148,14 @@ export interface ThemeDefinition {
  * ```ts
  * const tiny: DesignSystem = {
  *   families: ['primary', 'negative'],
- *   neutral: [
- *     { step: 0, lightness: 1, chroma: 0, hue: undefined },
- *     { step: 500, lightness: 0.6, chroma: 0.016, hue: 256 },
- *     { step: 900, lightness: 0.2, chroma: 0.02, hue: 256 },
- *   ],
+ *   neutral: {
+ *     base: { hue: 256, chroma: 0.02, lightness: 0.6 },
+ *     ramp: [
+ *       { step: 0, lightness: 1, chromaFactor: 0 },
+ *       { step: 500, lightness: 0.6, chromaFactor: 0.8 },
+ *       { step: 1000, lightness: 0, chromaFactor: 0 },
+ *     ],
+ *   },
  *   themes: [
  *     {
  *       name: 'base',
@@ -174,7 +166,7 @@ export interface ThemeDefinition {
  *         { step: 500, lightness: 0.55, chromaFactor: 1 },
  *         { step: 900, lightness: 0.22, chromaFactor: 0.5 },
  *       ],
- *       inks: [0, 900],
+ *       inks: [0, 1000],
  *     },
  *   ],
  * };
@@ -191,7 +183,7 @@ export interface DesignSystem {
    * Shared, fixed, and not a brand's to change — in the wizard it is context,
    * never a control. What `ThemeDefinition.inks` index into.
    */
-  readonly neutral: NeutralScale;
+  readonly neutral: NeutralDefinition;
   /** What DOES vary per theme: the ramp its rungs sit on, and its inks. */
   readonly themes: readonly ThemeDefinition[];
 }
