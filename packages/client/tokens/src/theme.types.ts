@@ -374,6 +374,16 @@ export interface Theme {
 /**
  * Every theme built from one set of colours, plus the spec that produced them.
  *
+ * THIS IS THE WHOLE MATRIX — derived, with the spec's edits applied. Every rung
+ * of every family and every one of the 84 roles, resolved, each carrying whether
+ * it was derived or overridden and what was measured. `buildPreset()` returns it
+ * on demand from seven colours and a handful of edits.
+ *
+ * Which is the entire point of not storing it: the matrix is an OUTPUT, not a
+ * record. Persisting it would make a rebrand rewrite 168 declarations — 14 bases
+ * and 154 rungs, exactly the count ADR-0032 removed — where a spec of decisions
+ * rewrites the 14 and lets the browser re-derive the rest.
+ *
  * A list, not a light/dark pair: the brand's hues do not change between themes,
  * only the ramp they are placed on does, so one spec yields as many themes as
  * the design system defines.
