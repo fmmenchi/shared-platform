@@ -78,6 +78,16 @@ now a one-line change.
 **A second net already exists.** Every story runs axe in a real Chromium with `a11y: { test: 'error' }`,
 so a contrast regression that escaped the unit gate would fail the story suite too.
 
+**CSS toolchains do not all understand it yet**, and that is a second cost the
+waiver carries. Measured while configuring the docs site: `postcss-calc` emits
+`Lexical error … Unrecognized text` on every `calc(l - 0.3)` inside an
+`oklch(from …)`. It warns and passes the declaration through unchanged — the
+built stylesheet still contains the relative colour — but a minifier that decided
+to "fix" what it cannot parse would silently break the ramp, which is exactly how
+`:dir()` was once downlevelled into a language sniff (ADR-0023's guard exists for
+that). A consumer on an aggressive CSS pipeline should check its output, not
+assume it.
+
 **Relative colour is not gracefully degradable**, and that is what makes this a waiver rather than an
 enhancement. Where it is unsupported the declaration is invalid at computed-value time, the `var()`
 chain does not resolve, and components lose their colour outright — there is no "degraded" state.

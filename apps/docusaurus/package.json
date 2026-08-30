@@ -83,12 +83,15 @@
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.2",
-    "@docusaurus/preset-classic": "^3.10.2",
     "@docusaurus/plugin-content-docs": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
     "@docusaurus/types": "^3.10.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "@fmmenchi/nx-docusaurus": "workspace:*",
-    "@fmmenchi/tokens": "workspace:*"
+    "@fmmenchi/tokens": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@docusaurus/theme-mermaid": "^3.10.2"
   }
 }
