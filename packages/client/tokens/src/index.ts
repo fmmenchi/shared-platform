@@ -50,6 +50,8 @@ export type {
   PaletteFamily,
   Rung,
   Ramp,
+  NeutralRung,
+  NeutralScale,
   ThemeDefinition,
   DesignSystem,
   RampStrategy,

@@ -55,8 +55,31 @@ export interface Rung {
   readonly chromaFactor: number;
 }
 
-/** A scheme's ramp: ordered lightest to darkest, `step` unique within it. */
+/** A theme's ramp: ordered lightest to darkest, `step` unique within it. */
 export type Ramp = readonly Rung[];
+
+/**
+ * One rung of the grey scale: an ABSOLUTE colour, not derived from a base.
+ *
+ * A different kind of thing from a `Rung`, which is why it is a different type.
+ * A family's rung takes hue and chroma from a brand colour and only fixes where
+ * it sits; a grey has no brand to take them from, so it carries its own value.
+ */
+export interface NeutralRung {
+  readonly step: number;
+  /** The colour itself, e.g. `oklch(95% 0.007 256)`. */
+  readonly css: string;
+}
+
+/**
+ * The grey scale — shared by every theme, and not a brand's to change.
+ *
+ * System-wide rather than per theme, which the shipped files settle rather than
+ * assume: `vars.css` declares 36 of these and `presets/dark.css` declares NONE,
+ * referencing them instead. It sits here because it is what `ThemeDefinition.inks`
+ * point into, and because every family measures its foreground against its ends.
+ */
+export type NeutralScale = readonly NeutralRung[];
 
 /**
  * One theme a system can build: where it applies, what it claims to be, and the
@@ -78,8 +101,17 @@ export interface ThemeDefinition {
   /** What it tells the browser it is, so native controls are painted to match. */
   readonly colorScheme: ColorScheme;
   readonly ramp: Ramp;
-  /** The two inks a fill may carry: the neutral scale's ends. */
-  readonly inks: readonly [lighter: string, darker: string];
+  /**
+   * The two inks a fill may carry, as STEPS of `DesignSystem.neutral` — not CSS
+   * strings. A string here would be a reference into a scale this type never
+   * declares, so a typo or a retired rung would only surface as an unreadable
+   * button; a step is resolvable, which makes it checkable.
+   *
+   * Two because a solver picks between them by measurement, and they differ per
+   * theme: the base theme inks its fills with pure white (step 0) while the dark
+   * theme uses an off-white (step 50), which is what the shipped presets do.
+   */
+  readonly inks: readonly [lighter: number, darker: number];
 }
 
 /**
@@ -90,7 +122,15 @@ export interface ThemeDefinition {
  * `ThemeDefinition` rather than change anything that reads this.
  */
 export interface DesignSystem {
+  /**
+   * System-wide, not per theme: both shipped presets define exactly these seven
+   * and every theme must assign all of them, which is what completeness means.
+   * Putting them on a theme would duplicate a fact that provably does not vary.
+   */
   readonly families: readonly PaletteFamily[];
+  /** Shared and fixed. What `ThemeDefinition.inks` index into. */
+  readonly neutral: NeutralScale;
+  /** What DOES vary per theme: the ramp its rungs sit on, and its inks. */
   readonly themes: readonly ThemeDefinition[];
 }
 
