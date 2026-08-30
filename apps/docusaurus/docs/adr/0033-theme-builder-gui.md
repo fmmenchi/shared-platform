@@ -116,7 +116,28 @@ JSON fixture.
 installed contract, not ours. It reads the stylesheet it is pointed at, the same
 way the generator already reads the installed contract.
 
-**The wizard: eight steps.**
+**Two routes through it, one implementation.**
+
+_Express_ — two steps. Give the colours, see the preview and the verdict, export.
+Everything between is the derived default: the fill on the step nearest the
+brand's lightness, the ink measured, the dark half mirrored. This is the route for
+someone who wants their brand applied and trusts the derivation.
+
+_Full_ — the nine steps below, one family at a time.
+
+They are the SAME wizard: express is the full route with steps 2–8 accepted as
+they come. Not a second flow — a skip. Two flows would mean two sets of defaults
+to keep in agreement, and the moment they disagree the express route becomes a
+trap ("it looked right in the quick one").
+
+A third level is worth naming and not building yet: editing the CURVE itself —
+the lightness offsets and chroma coefficients, not just which step a role picks.
+That is the control a design-system owner wants and an app consumer does not, and
+it belongs behind the same door as the algorithm choice. Deferred until someone
+asks for it, because a knob that reshapes every family at once needs the
+whole-page preview to be trustworthy first.
+
+**The full route: nine steps.**
 
 _Step 1 — the palette._ Brand colours, the ALGORITHM, and the ramps drawn beside
 them. The algorithm is a real choice: _constant step_ (what ships — fixed
@@ -145,12 +166,29 @@ the swatch, and the floor it has to clear. A step that would drop a pair below A
 says so while the choice is being made, which is the difference between a wizard
 and a form.
 
+_Both schemes, from the same seven colours._ A brand's hues do not change between
+light and dark — what changes is where the bases sit (55% against 75%), the curve
+(0.10 against 0.05, because dark works against the lightness ceiling) and which
+step each role picks. So the wizard asks for the colours ONCE and derives both
+presets; asking twice would be asking a person to re-enter the same hexes.
+
+Every family step carries a light/dark toggle showing the same assignment in both,
+because an assignment that reads well in one can fail in the other: that is
+precisely how the dark preset produced 20 contrast regressions when it was first
+levelled. The neutral ramp is shared between the schemes and is shown once.
+
+Dark is DERIVED and then adjustable, not asked for. The default is the mirrored
+mapping — fill, then a step lighter for hover, a step lighter again for active,
+the wash at the far end — and a person can move any of it, in that step, with the
+contrast measured beside it.
+
 _Step 9 — the verdict._ Every declared pair with its ratio, and one sentence at
 the top: this theme is AA, or these pairs are not. Two levels, because they catch
 different things:
 
 - **the contract**, via the public `validateTheme()` — the same function the
-  `validate-themes` target runs in CI. Not a second implementation: if the
+  `validate-themes` target runs in CI, **on both schemes**: a theme is not AA
+  until its dark half is too. Not a second implementation: if the
   summary says AA and the pipeline disagrees, the summary is worthless, so it has
   to be the identical check.
 - **the page**, via axe on the rendered demo. This finds what the pair list
