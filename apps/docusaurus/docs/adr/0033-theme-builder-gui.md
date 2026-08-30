@@ -83,64 +83,106 @@ preset `buildPreset()` returns. The rest of the generator is unchanged: the file
 `validate-themes` target, the executor. Existing behaviour with no colour flags stays as it is, so
 the change is additive.
 
-### 3 · The GUI is a wizard, hosted in Storybook
+### 3 · The GUI is a published app, launched over npx
 
-Eight steps: one for the palette, then one per family. Each step shows the
-consequences of its own decisions and nothing else.
+`@fmmenchi/theme-builder` — its own package, with a `bin`, so it runs two ways:
 
-**Step 1 — the palette.** Pick the brand colours, pick the ALGORITHM, see the
-ramps. The algorithm is a real choice with real consequences, and the two we know
-work are:
+```bash
+nx g @fmmenchi/theme-generator:theme --name=acme --gui   # the generator launches it
+npx @fmmenchi/theme-builder                              # or a person runs it directly
+```
 
-- _constant step_ — what ships today: fixed lightness offsets per step. Families
-  line up with each other; contrast is verified afterwards by the gate.
-- _constant contrast_ — the Leonardo model: each step is defined by the ratio it
-  must clear, so a step IS a guarantee. Families line up in legibility instead of
-  lightness, and a fill that cannot carry its ink cannot be generated in the
-  first place.
+**Why not a Storybook story**, which was the earlier draft here: the story serves
+only this repository. `theme-generator` is a PUBLISHED plugin whose users are
+apps bringing their own brand, and those apps do not have our Storybook. A
+published app reaches them; a story does not. The story would also have grown into
+an eight-step application inside a `.stories.tsx`, which is the wrong container
+for it.
 
-They are not interchangeable and neither is better: one gives an even scale, the
-other gives leggibility by construction. Exposing the choice is more honest than
-picking one and hiding it — and it is the step where a person can see what each
-costs, because the ramps are drawn right there.
+**The contract between the two is a file, not a socket.** The generator creates a
+temp path, launches the builder with it, and waits:
 
-**Steps 2–8 — one per family** (`primary`, `secondary`, `accent`, `negative`,
-`success`, `warning`, `info`). Each step assigns that family's roles by **picking
-steps from the palette**, not by choosing free colours — which is the Radix
-model, and the thing that stops a theme from drifting off its own scale. Each
-step shows:
+```
+theme-builder --out <path>.json --tokens <resolved @fmmenchi/tokens dir> [--name acme]
+```
 
-- the family's ramp, with the current assignment marked;
-- the components that actually use those roles — buttons and their states for an
-  action family, alerts and badges for a status one — so a wrong assignment is
-  visible rather than deduced;
-- the measured contrast for each pair the step touches, live.
+The builder serves its own page, opens a browser, and on submit writes the JSON
+and exits. The generator reads the file and writes the preset into the workspace.
+No HTTP between processes, no port negotiation across a boundary, and each half is
+testable on its own: the builder against its JSON output, the generator against a
+JSON fixture.
 
-**The demo site**, available from step 1 onward: a single page assembled from
-real components — header, cards, a form, alerts — so the theme can be judged as a
-page and not as a swatch grid. This is where the failure this whole thing exists
-to catch shows up: Airbnb's `primary` and `destructive` are both warm reds, and
-the collision is invisible in a palette and obvious in a page with a submit
-button next to a delete button.
+`--tokens` matters: the builder shows the CURRENT palette of the consumer's
+installed contract, not ours. It reads the stylesheet it is pointed at, the same
+way the generator already reads the installed contract.
 
-**Output**, at any point: the CSS to paste, or the `nx g` command with the flags
-filled in. The wizard is not a gate to pass — it is a place to see, and you can
-leave with the answer at any step.
+**The wizard: eight steps.**
 
-**Where the code lives.** `packages/client/ui/src/docs/theme-builder/` — real
-modules with real tests, mounted by one story. Structured as an application,
-hosted in Storybook: it needs the components, and Storybook is where they run
-with the tokens loaded and both schemes switchable. Nothing there is a library
-entry, so nothing ships.
+_Step 1 — the palette._ Brand colours, the ALGORITHM, and the ramps drawn beside
+them. The algorithm is a real choice: _constant step_ (what ships — fixed
+lightness offsets, families aligned with each other, contrast verified afterwards
+by the gate) or _constant contrast_ (the Leonardo model — each step defined by the
+ratio it must clear, so a step IS a guarantee, and a fill that cannot carry its
+ink cannot be generated). Neither is better; exposing the choice beats picking one
+and hiding it, and this is the step where the cost of each is visible because the
+ramps are right there.
+
+_Steps 2–8 — one per family_ (`primary`, `secondary`, `accent`, `negative`,
+`success`, `warning`, `info`). Roles are assigned by **picking steps from the
+palette**, not by choosing free colours — the Radix model, and what stops a theme
+drifting off its own scale. Each step shows the family's ramp with the current
+assignment marked, the components that actually use those roles, and the measured
+contrast of every pair it touches.
+
+_The demo page_, from step 1 onward: header, cards, a form, alerts, assembled from
+real components, because a theme is judged as a page. It is where the failure this
+exists to catch appears — the coral theme's `primary` and `destructive` are both
+warm reds, invisible in a palette and obvious next to each other on a page.
+
+_Contrast is checked in every step, not only at the end._ Each family step
+measures the pairs it touches, live, as the assignment changes — the ratio beside
+the swatch, and the floor it has to clear. A step that would drop a pair below AA
+says so while the choice is being made, which is the difference between a wizard
+and a form.
+
+_Step 9 — the verdict._ Every declared pair with its ratio, and one sentence at
+the top: this theme is AA, or these pairs are not. Two levels, because they catch
+different things:
+
+- **the contract**, via the public `validateTheme()` — the same function the
+  `validate-themes` target runs in CI. Not a second implementation: if the
+  summary says AA and the pipeline disagrees, the summary is worthless, so it has
+  to be the identical check.
+- **the page**, via axe on the rendered demo. This finds what the pair list
+  cannot — a combination no pair declares, or two roles that pass individually
+  and are indistinguishable from each other. The coral theme's `primary` next to
+  its `destructive` is exactly that: both clear AA on their own, and a person
+  cannot tell the submit button from the delete button.
+
+The verdict is a report, not a lock. A theme with a failing pair can still be
+exported — the CSS is written, the failure is stated, and the CI gate will say
+the same thing. Refusing to export would only teach people to bypass the tool.
+
+_Exit at any step_ with the CSS or the `nx g` command. The wizard is a place to
+see, not a gate to pass.
+
+**Where it lives.** `packages/tools/theme-builder`, scope `tools`, published with
+a `bin`. It depends on `@fmmenchi/ui` and `@fmmenchi/tokens` — the components are
+the preview, and mounting the real ones is the whole point (the class names are
+hashed, so nothing else can). That dependency direction is fine: a tool may
+depend on the layers, and the module-boundary rule forbids the reverse.
 
 ### What is deliberately NOT built
 
-**The generator does not open a browser.** `nx g theme --gui` starting a local server, opening a page
-and waiting for a POST is the wizard in the literal sense, and it is the one part that can be added
-later at low cost once part 1 exists — the server would be a thin wrapper around `buildPreset()`.
-Building it now would mean owning an HTTP server, a port negotiation, a bundled page and a browser
-launch inside a generator, before knowing whether the Storybook flow is enough. It is a follow-up,
-not a rejection.
+**The generator does not host the GUI.** It launches a separate process and reads a
+file. Everything a browser needs — a server, a port, a bundled page — belongs to
+the builder, which is an application and can own those things; a generator that
+grew an HTTP server would be a generator with a second job.
+
+**No live round-trip.** The builder does not write into the workspace and the
+generator does not stay open while a person clicks. One handoff, one file. A
+watch mode where edits land in the repo as they happen is a different tool and a
+much larger promise.
 
 ## Consequences
 
@@ -173,5 +215,9 @@ palettes stay in the demo story and out of the package, for the reason recorded 
 - The generator's existing spec keeps passing with no colour flags.
 - The builder story renders, via the story test run.
 - The wizard's step logic is unit-tested where it decides something: which steps a
-  family may point at, and what the contrast of an assignment is. The rendering is
-  covered by the story running; the arithmetic is not left to it.
+  family may point at, and what the contrast of an assignment is.
+- The final verdict agrees with `validateTheme()` by construction, since it calls
+  it — asserted on a theme built to fail, so the summary is known to report a
+  failure rather than only to pass on good input.
+- The handoff: the builder's JSON against a schema, and the generator against a
+  JSON fixture. Each half testable without the other.
