@@ -49,9 +49,10 @@ parallel implementation of Button, Input, Alert and Card that nothing keeps in s
 ones. The moment they diverge the preview is lying, and a lying preview is worse than none.
 
 **A dedicated wizard app** (`apps/theme-builder`). Full control over a multi-step flow, real
-components, and the plugin stays dependency-free. Rejected for now on cost of ownership: it is a new
-app to build, test and keep alive, and the workspace admits application projects only as a stated
-exception (the docs site).
+components, and the plugin stays dependency-free. **Chosen** — the decision below. The cost of
+ownership is real and was what an earlier draft rejected it for: a new app to build, test and keep
+alive. It buys the one thing neither cheaper option can, which is that the preview _is_ the design
+system rather than a drawing of it.
 
 ## Decision
 
@@ -83,9 +84,23 @@ preset `buildPreset()` returns. The rest of the generator is unchanged: the file
 `validate-themes` target, the executor. Existing behaviour with no colour flags stays as it is, so
 the change is additive.
 
-### 3 · The GUI is a published app, launched over npx
+### 3 · The GUI is a real app in `apps/`, launched over npx
 
-`@fmmenchi/theme-builder` — its own package, with a `bin`, so it runs two ways:
+`apps/theme-builder` — a real application, built the way this workspace builds an
+app, not a preview harness bolted to the plugin. It consumes `@fmmenchi/ui` and
+`@fmmenchi/tokens` exactly as a consuming app does, mounts the preset under
+construction through the **same theme wrapper** a consumer would use, and gives
+**each step its own route** instead of hiding panels behind a stepper's internal
+state. A step is a page: linkable, reloadable, screenshot-testable, and debuggable
+without replaying the eight steps before it.
+
+That is not presentation. The wizard's whole claim is _this is what your theme
+looks like in our design system_, and the claim holds only if the thing rendering
+it is a real app running the shipped CSS. It is also what makes the preview
+impossible to counterfeit: `@fmmenchi/ui` content-hashes its class names, so
+nothing outside the package can reproduce them.
+
+It ships a `bin`, so it runs two ways:
 
 ```bash
 nx g @fmmenchi/theme-generator:theme --name=acme --gui   # the generator launches it
@@ -204,11 +219,25 @@ the same thing. Refusing to export would only teach people to bypass the tool.
 _Exit at any step_ with the CSS or the `nx g` command. The wizard is a place to
 see, not a gate to pass.
 
-**Where it lives.** `packages/tools/theme-builder`, scope `tools`, published with
-a `bin`. It depends on `@fmmenchi/ui` and `@fmmenchi/tokens` — the components are
-the preview, and mounting the real ones is the whole point (the class names are
-hashed, so nothing else can). That dependency direction is fine: a tool may
-depend on the layers, and the module-boundary rule forbids the reverse.
+**Where it lives.** `apps/theme-builder`, tag `scope:app` — and, unlike the two
+apps already there, **published**, with a `bin`. It depends on `@fmmenchi/ui` and
+`@fmmenchi/tokens`: an app sits at the top of the graph and may depend on any
+layer, while the module-boundary rule forbids the reverse, so nothing in the
+published layers can reach back into it.
+
+`packages/` was the other candidate and loses on both counts. The `tools` scope has
+**no members today**, so a tool-shaped home means standing a scope up for one
+project; and the thing genuinely is an application — a browser, routes, a server —
+which is what `apps/` exists to hold ([ADR-0020](./0020-where-things-live.md)).
+
+**This refines ADR-0020, it does not contradict it.** That decision draws its line
+at _layers_: `packages/` is the published **layer** surface and `apps/` is not a
+layer. Publishing a tool from `apps/` does not make it one — nothing imports it,
+the generator spawns it as a process, and the boundary rule keeps the graph
+one-way. What does have to change is mechanical: the release set is the glob
+`packages/*/*`, so this app needs its own release group in `nx.json` and must trade
+`private: true` for the `publishConfig.registry` every published package here
+carries.
 
 ### What is deliberately NOT built
 
@@ -238,7 +267,7 @@ graph TB
         exec["executor: validate<br/>the CI gate"]
     end
 
-    subgraph app["@fmmenchi/theme-builder — published app + bin"]
+    subgraph app["apps/theme-builder — real app, published with a bin"]
         wizard["wizard · 9 steps"]
         preview["preview · demo page"]
         verdict["verdict · validateTheme + axe"]
@@ -313,6 +342,17 @@ that pattern in `@fmmenchi/ci`. Decide when measuring the bundle, not before.
 
 **The plugin gains a dependency on `@fmmenchi/tokens`.** It generates themes for that contract, so it
 is not a foreign dependency; and it already reads the installed contract at generation time.
+
+**`apps/` gains its first published project.** `nx.json` grows a release group for
+`apps/theme-builder`, and the app trades `private: true` for a `publishConfig`
+registry. The release set stops being the single clean glob `packages/*/*` — that is
+the real price of this placement, and it is paid once. The docs site and the
+ports-validation app stay unpublished and stay outside the release set.
+
+**The wizard is an app to keep alive**, with its own build, tests and dependency
+surface. That is the cost the earlier draft rejected it for, and it is not
+recovered by cleverness — it is accepted, because a preview that is a separate
+implementation of Button and Input is a preview that lies the day it drifts.
 
 **Two algorithms mean two implementations to keep correct**, and the second one
 does not exist yet. `buildPreset()` takes the strategy as a parameter; constant
