@@ -344,6 +344,39 @@ coral would have raised instead of shipping a burgundy. And the numbers above ar
 they belong in the contrast gate as a fixture, where a retune that quietly moves
 them gets caught.
 
+#### Why theirs tabulates and ours does not
+
+Worth recording, because it is a fork someone will otherwise re-derive.
+
+[Radix](https://www.radix-ui.com/colors) publishes thirty hand-authored scales —
+you do not generate them — but the values are not arbitrary: steps 11 and 12 are
+guaranteed to **Lc 60 and Lc 90 APCA** above step 2 of the same scale, and their
+custom-palette tool reproduces comparable ratios for a new colour. The values are
+fixed; the _targets_ are the invariant.
+[Material 3](https://m3.material.io/styles/color/roles) generates instead: HCT's
+tone **is** CIELAB `L*`, with hue and chroma from CAM16 and chroma reduced until
+the colour fits the gamut. Because the tone axis IS absolute lightness, a distance
+in tone is a distance in lightness for any source colour — which is what lets the
+40 / 50 rule be published at all.
+
+Ours has a constant step like Material but anchors it like neither: **offsets from
+a per-family base**, so a step's absolute lightness moves with the base. Measured
+over 648 bases (9 lightnesses × 8 chromas × 9 hues), the same nine steps under the
+two anchorings:
+
+| anchoring                | gap guaranteeing 4.5:1  | dead zone                     |
+| ------------------------ | ----------------------- | ----------------------------- |
+| offset (today)           | 6 ×424, 7 ×224 — varies | moves across 200…700, or none |
+| absolute (Material-like) | **6 ×648 — invariant**  | stable at 400 (639 of 648)    |
+
+So the choice is real and it is **not this ADR's to make**: re-anchoring the ramp to
+absolute lightnesses would make the default map publishable as a table, at the cost
+that a base could no longer move its family's lightness — it would contribute hue
+and chroma only, exactly as a Material source colour does. That changes the ramp
+[ADR-0032](./0032-tokens-gain-a-primitive-layer.md) defines, so it needs an ADR of
+its own. Until then the solver above is what makes the default safe, and it stays
+correct under either anchoring.
+
 ### Dark mode — two independent switches
 
 "Dark" means two different things in this app, and conflating them is the obvious
