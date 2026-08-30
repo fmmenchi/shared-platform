@@ -565,6 +565,34 @@ coral would have raised instead of shipping a burgundy. And the numbers above ar
 they belong in the contrast gate as a fixture, where a retune that quietly moves
 them gets caught.
 
+#### The spec stores decisions, not the matrix
+
+A fair question is why `ThemeSpec` holds seven brand colours plus a handful of
+edits rather than the whole resolved matrix — all the rungs and all 84 roles,
+exactly what a person approved.
+
+**Because storing the matrix restores the problem this began with.**
+[ADR-0032](./0032-tokens-gain-a-primitive-layer.md) took 168 hand-maintained colour
+literals to zero, and the property that bought is the one `token-overrides.test.tsx`
+measures: change a base, the family follows. With a frozen matrix, changing a base
+does nothing — every value is already fixed — so a rebrand goes back to being 84
+edits instead of seven. `Swatch.origin` and `Assignment.origin` would lose their
+meaning too: if everything is stored, there is no way to tell a decision from a
+derivation.
+
+**And the matrix already exists.** It is the emitted CSS, committed in the
+consumer's repository. The spec is the INTENT; the CSS is the RESULT. Holding the
+matrix in both makes two sources of truth for one fact, which is the thing
+`@fmmenchi/tokens` refuses on principle — a file that only restates the contract is
+generated, a file that decides something is written.
+
+**The risk behind the question is real, though.** A spec of deltas re-derives, so a
+change to the solver moves a theme under whoever approved it. The answer is not a
+second copy of the values: it is to **diff the freshly derived matrix against the
+committed CSS and report what moved**. Same mechanism as the verdict, no new field,
+and it turns a silent drift into a reviewable one. A regeneration that changes
+nothing says so; one that moves eleven roles says which eleven.
+
 #### One choice per family, seven solutions
 
 An action family declares eight roles, and exactly **one** of them is a choice.
