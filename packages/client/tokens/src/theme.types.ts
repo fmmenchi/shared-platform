@@ -70,16 +70,30 @@ export interface Rung {
 export type Ramp = readonly Rung[];
 
 /**
- * One rung of the grey scale: an ABSOLUTE colour, not derived from a base.
+ * One rung of the grey scale.
  *
- * A different kind of thing from a `Rung`, which is why it is a different type.
- * A family's rung takes hue and chroma from a brand colour and only fixes where
- * it sits; a grey has no brand to take them from, so it carries its own value.
+ * STRUCTURED, not a CSS string. The greys have a recipe of their own — the
+ * shipped scale is hue 256 with a chroma that rises as it darkens, 0.004 at
+ * L 98.5% to 0.016 at L 60%, and only its two endpoints are achromatic (pure
+ * white and pure black). A string would hide that, and hiding it means nothing
+ * can check it: the shipped `neutral-30` is `oklch(97% 0.014 256)` where its
+ * neighbours at 98.5% and 96.5% are 0.004 and 0.006, which breaks the curve by a
+ * factor of three and is invisible to every gate we have, since chroma that
+ * small barely moves relative luminance and the contrast assertions pass either
+ * way.
+ *
+ * Still a different type from `Rung`, and for the reason that survives: a
+ * family's rung is a recipe COMPLETED BY A BRAND — it holds no colour until a
+ * base arrives, and the browser finishes it at runtime — while a grey's recipe
+ * is its own and already resolved. One is relative, one is absolute.
  */
 export interface NeutralRung {
   readonly step: number;
-  /** The colour itself, e.g. `oklch(95% 0.007 256)`. */
-  readonly css: string;
+  /** OKLCH lightness, 0–1. */
+  readonly lightness: number;
+  readonly chroma: number;
+  /** `undefined` where the rung is achromatic: the two endpoints. */
+  readonly hue: number | undefined;
 }
 
 /**
@@ -146,9 +160,9 @@ export interface ThemeDefinition {
  * const tiny: DesignSystem = {
  *   families: ['primary', 'negative'],
  *   neutral: [
- *     { step: 0, css: 'oklch(100% 0 0)' },
- *     { step: 500, css: 'oklch(60% 0.01 256)' },
- *     { step: 900, css: 'oklch(20% 0.01 256)' },
+ *     { step: 0, lightness: 1, chroma: 0, hue: undefined },
+ *     { step: 500, lightness: 0.6, chroma: 0.016, hue: 256 },
+ *     { step: 900, lightness: 0.2, chroma: 0.02, hue: 256 },
  *   ],
  *   themes: [
  *     {
