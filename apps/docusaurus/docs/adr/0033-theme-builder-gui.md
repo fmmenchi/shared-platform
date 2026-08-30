@@ -184,6 +184,87 @@ generator does not stay open while a person clicks. One handoff, one file. A
 watch mode where edits land in the repo as they happen is a different tool and a
 much larger promise.
 
+## Architecture
+
+```mermaid
+graph TB
+    subgraph contract["@fmmenchi/tokens — the contract"]
+        roles["COLOR_ROLES · TOKEN_VARS<br/>the roles a theme must assign"]
+        validate["validateTheme()<br/>public: completeness · gamut · AA"]
+        resolve["resolve.ts<br/>var() + relative colour"]
+        build["buildPreset()<br/>NEW · hex → bases + assignments"]
+    end
+
+    subgraph plugin["@fmmenchi/theme-generator — Nx plugin"]
+        gen["generator: theme<br/>writes the preset"]
+        exec["executor: validate<br/>the CI gate"]
+    end
+
+    subgraph app["@fmmenchi/theme-builder — published app + bin"]
+        wizard["wizard · 9 steps"]
+        preview["preview · demo page"]
+        verdict["verdict · validateTheme + axe"]
+    end
+
+    ui["@fmmenchi/ui<br/>the real components"]
+
+    build --> roles
+    build --> validate
+    gen --> build
+    exec --> validate
+    wizard --> build
+    verdict --> validate
+    preview --> ui
+    gen -. "spawns (npx), not imports" .-> app
+
+    style build fill:#dbeafe,stroke:#1e40af
+    style validate fill:#dcfce7,stroke:#166534
+```
+
+`buildPreset()` is the only place the arithmetic lives, and `validateTheme()` the
+only place the verdict does — both the wizard and CI call the same one, which is
+what stops the tool from promising what the pipeline refuses.
+
+The dashed edge is the important one: the generator **launches** the app as a
+process, it does not import it. That is what keeps a browser, a port and a bundle
+out of the plugin.
+
+## The flow
+
+```mermaid
+sequenceDiagram
+    actor dev as Developer
+    participant nx as theme-generator
+    participant tb as theme-builder
+    participant fs as temp .json
+    participant repo as workspace
+
+    dev->>nx: nx g theme --name=acme --gui
+    nx->>nx: resolve the INSTALLED tokens dir
+    nx->>tb: npx theme-builder --out <json> --tokens <dir>
+    tb->>tb: serve page · open browser
+
+    Note over dev,tb: step 1 — brand colours + algorithm<br/>ramps drawn beside the choice
+
+    loop steps 2–8, one per family
+        dev->>tb: assign roles by picking ramp steps
+        tb-->>dev: components using those roles<br/>+ measured contrast, live
+    end
+
+    Note over dev,tb: step 9 — verdict<br/>validateTheme() + axe on the demo page
+
+    dev->>tb: export
+    tb->>fs: write JSON · exit
+    nx->>fs: read
+    nx->>repo: write preset + wire validate-themes
+
+    Note over repo: CI runs the executor →<br/>the same validateTheme(), same answer
+```
+
+Exit is possible at any step: the wizard is a place to see, not a gate to pass.
+Contrast is measured in every family step, not only in the verdict — a choice
+that drops a pair below AA says so while it is being made.
+
 ## Consequences
 
 **`culori` becomes a runtime dependency of `@fmmenchi/tokens`**, which today has none. The gamut
