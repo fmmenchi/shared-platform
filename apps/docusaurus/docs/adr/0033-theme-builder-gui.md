@@ -83,17 +83,55 @@ preset `buildPreset()` returns. The rest of the generator is unchanged: the file
 `validate-themes` target, the executor. Existing behaviour with no colour flags stays as it is, so
 the change is additive.
 
-### 3 · The GUI lives in Storybook
+### 3 · The GUI is a wizard, hosted in Storybook
 
-A dedicated story — `Foundations/Theme builder` — with a colour input per family, the preview built
-from the **real** components, and two outputs: the CSS to paste, and the `nx g` command with the
-flags filled in.
+Eight steps: one for the palette, then one per family. Each step shows the
+consequences of its own decisions and nothing else.
 
-Storybook is where the real components already run, with the tokens loaded and both schemes
-switchable. Putting the builder there costs no new infrastructure and cannot drift from the
-components, because it _is_ the components.
+**Step 1 — the palette.** Pick the brand colours, pick the ALGORITHM, see the
+ramps. The algorithm is a real choice with real consequences, and the two we know
+work are:
 
-The story is a story, so `@storybook/addon-vitest` runs it: a builder that throws fails `nx test`.
+- _constant step_ — what ships today: fixed lightness offsets per step. Families
+  line up with each other; contrast is verified afterwards by the gate.
+- _constant contrast_ — the Leonardo model: each step is defined by the ratio it
+  must clear, so a step IS a guarantee. Families line up in legibility instead of
+  lightness, and a fill that cannot carry its ink cannot be generated in the
+  first place.
+
+They are not interchangeable and neither is better: one gives an even scale, the
+other gives leggibility by construction. Exposing the choice is more honest than
+picking one and hiding it — and it is the step where a person can see what each
+costs, because the ramps are drawn right there.
+
+**Steps 2–8 — one per family** (`primary`, `secondary`, `accent`, `negative`,
+`success`, `warning`, `info`). Each step assigns that family's roles by **picking
+steps from the palette**, not by choosing free colours — which is the Radix
+model, and the thing that stops a theme from drifting off its own scale. Each
+step shows:
+
+- the family's ramp, with the current assignment marked;
+- the components that actually use those roles — buttons and their states for an
+  action family, alerts and badges for a status one — so a wrong assignment is
+  visible rather than deduced;
+- the measured contrast for each pair the step touches, live.
+
+**The demo site**, available from step 1 onward: a single page assembled from
+real components — header, cards, a form, alerts — so the theme can be judged as a
+page and not as a swatch grid. This is where the failure this whole thing exists
+to catch shows up: Airbnb's `primary` and `destructive` are both warm reds, and
+the collision is invisible in a palette and obvious in a page with a submit
+button next to a delete button.
+
+**Output**, at any point: the CSS to paste, or the `nx g` command with the flags
+filled in. The wizard is not a gate to pass — it is a place to see, and you can
+leave with the answer at any step.
+
+**Where the code lives.** `packages/client/ui/src/docs/theme-builder/` — real
+modules with real tests, mounted by one story. Structured as an application,
+hosted in Storybook: it needs the components, and Storybook is where they run
+with the tokens loaded and both schemes switchable. Nothing there is a library
+entry, so nothing ships.
 
 ### What is deliberately NOT built
 
@@ -115,6 +153,13 @@ that pattern in `@fmmenchi/ci`. Decide when measuring the bundle, not before.
 **The plugin gains a dependency on `@fmmenchi/tokens`.** It generates themes for that contract, so it
 is not a foreign dependency; and it already reads the installed contract at generation time.
 
+**Two algorithms mean two implementations to keep correct**, and the second one
+does not exist yet. `buildPreset()` takes the strategy as a parameter; constant
+step is the one in use and the one the round-trip test pins. Constant contrast
+lands with the wizard or after it, and until it does the wizard offers one
+choice — which is honest, where a disabled radio button implying a missing
+feature would not be.
+
 **The story is a dev tool that ships nowhere**, like the rest of Storybook. The borrowed-brand
 palettes stay in the demo story and out of the package, for the reason recorded there.
 
@@ -127,3 +172,6 @@ palettes stay in the demo story and out of the package, for the reason recorded 
   include the two cases that break naive derivation (a pale fill, and two families sharing a hue).
 - The generator's existing spec keeps passing with no colour flags.
 - The builder story renders, via the story test run.
+- The wizard's step logic is unit-tested where it decides something: which steps a
+  family may point at, and what the contrast of an assignment is. The rendering is
+  covered by the story running; the arithmetic is not left to it.
