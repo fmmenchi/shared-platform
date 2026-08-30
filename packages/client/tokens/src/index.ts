@@ -48,6 +48,7 @@ export type {
  */
 export type {
   PaletteFamily,
+  PaletteSource,
   Rung,
   Ramp,
   NeutralRung,
@@ -56,6 +57,8 @@ export type {
   DesignSystem,
   RampStrategy,
   ThemeSpec,
+  SwatchOverride,
+  RolePin,
   Base,
   Swatch,
   FamilyPalette,

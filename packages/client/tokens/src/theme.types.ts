@@ -32,6 +32,17 @@ import type { Unsatisfied } from './validate.types.js';
 /** One of the seven families a ramp is generated for. */
 export type PaletteFamily = (typeof PALETTE_FAMILIES)[number];
 
+/**
+ * Which scale a value is taken from: one of the seven families, or the shared
+ * grey scale.
+ *
+ * Both, because the shipped roles use both freely — `ring` is `primary-600` and
+ * `link` is `primary-700`, while `background` is `neutral-15`, `card` is
+ * `neutral-0` and `border` is `neutral-90`. A type that only allowed a family
+ * could not express half the surface roles.
+ */
+export type PaletteSource = PaletteFamily | 'neutral';
+
 // ---------------------------------------------------------------------------
 // The SHAPE of a design system
 // ---------------------------------------------------------------------------
@@ -150,6 +161,51 @@ export interface DesignSystem {
 export type RampStrategy = 'constant-step' | 'constant-contrast';
 
 /**
+ * One rung of the palette written BY HAND, overriding what was derived.
+ *
+ * The derivation is a PROPOSAL. It exists because seven colours are a better
+ * thing to ask for than eighty-four, not because it knows better than the person
+ * looking at the result — so any rung can be replaced outright.
+ *
+ * A list rather than records nested three deep (theme, family, step): it is what
+ * a form renders and what serialises without empty branches.
+ */
+export interface SwatchOverride {
+  /** `ThemeDefinition.name` — a rung of one theme's ramp, not of all of them. */
+  readonly theme: string;
+  readonly family: PaletteFamily;
+  readonly step: number;
+  /** The colour, as authored. */
+  readonly css: string;
+}
+
+/**
+ * A semantic role pointed at a value of the palette by hand.
+ *
+ * Carries a SOURCE and not just a step, because a role is not confined to its
+ * own family: `ring` draws from `primary`, `background` from `neutral`, and a
+ * person choosing a value for a role is choosing from the whole palette. Per
+ * theme, because ramps do not share step names — nine rungs against thirteen —
+ * so a step means nothing without saying which theme it belongs to.
+ *
+ * A list, like the overrides above, so the two kinds of manual edit read and
+ * serialise the same way.
+ */
+export interface RolePin {
+  /** `ThemeDefinition.name`. Validated where a spec is applied. */
+  readonly theme: string;
+  readonly role: ColorRole;
+  readonly source: PaletteSource;
+  readonly step: number;
+  /**
+   * Opacity, 0–1, where a role is a translucent rung — `scrim` is `neutral-850`
+   * at 0.92. Always present, 1 meaning opaque, so there is no absent state to
+   * confuse with a cleared one.
+   */
+  readonly alpha: number;
+}
+
+/**
  * What a person asks for — and, unchanged, the theme builder's EDITABLE FORM.
  *
  * Not a model that mirrors the form: the form's state is a value of this type,
@@ -179,17 +235,21 @@ export interface ThemeSpec {
    */
   readonly brand: Record<PaletteFamily, string>;
   /**
-   * Roles pinned to a rung, keyed by `ThemeDefinition.name`, overriding what
-   * the solver would pick. Keyed per theme because ramps do not share step
-   * names — nine rungs against thirteen — so a pin means nothing without saying
-   * which theme it belongs to.
-   *
-   * `string` and not a union of our two theme names, so that a system defining a
-   * third theme needs no change here. The keys are validated against
-   * `DesignSystem.themes` where a spec is applied, which is the only place that
-   * knows them.
+   * Semantic roles pointed at a value of the palette by hand, overriding what
+   * the solver would pick. Empty where the solution was accepted.
    */
-  readonly pins: Readonly<Record<string, Partial<Record<ColorRole, number>>>>;
+  readonly pins: readonly RolePin[];
+  /**
+   * Rungs written by hand. Empty when the derivation was accepted as proposed,
+   * which is the common case and the whole point of deriving.
+   *
+   * Two consequences worth knowing before using one. An overridden rung stops
+   * following its base — the family moves around it when the brand colour
+   * changes — so it is a value maintained by hand from then on. And it can break
+   * a pair that used to pass, which is why the verdict still runs over the
+   * result rather than trusting the derivation that produced most of it.
+   */
+  readonly swatches: readonly SwatchOverride[];
   /** Present because the form has a control for it; there is no absent state. */
   readonly strategy: RampStrategy;
 }
@@ -220,6 +280,15 @@ export interface Swatch {
   readonly step: number;
   /** The colour the browser will resolve, and what contrast was measured on. */
   readonly css: string;
+  /**
+   * Whether this rung was derived from the base or written by hand.
+   *
+   * Recoverable from the emitted CSS without any metadata, which is why the
+   * round trip works: a derived rung is declared as a relative colour
+   * (`oklch(from var(--…-base) …)`) and an overridden one as a plain literal, so
+   * the form of the declaration IS the answer.
+   */
+  readonly origin: 'derived' | 'overridden';
   readonly lightness: number;
   readonly chroma: number;
   /**
@@ -273,8 +342,15 @@ export type AssignmentOrigin = 'chosen' | 'solved' | 'pinned';
 
 export interface Assignment {
   readonly role: ColorRole;
-  readonly family: PaletteFamily;
+  /**
+   * `PaletteSource`, not `PaletteFamily`: a role may point at the grey scale,
+   * and most surface roles do. Typing this as a family made `background`, `card`
+   * and `border` unrepresentable.
+   */
+  readonly source: PaletteSource;
   readonly step: number;
+  /** 1 unless the role is a translucent rung. */
+  readonly alpha: number;
   readonly origin: AssignmentOrigin;
   /** `null` only where the pair is exempt and nothing was required. */
   readonly evidence: AssignmentEvidence | null;
