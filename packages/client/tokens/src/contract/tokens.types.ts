@@ -13,7 +13,7 @@ import type {
   INPUT_ROLES,
   COLOR_SCHEMES,
   REFERENCE_PRESETS,
-} from '../tokens.js';
+} from './tokens.js';
 
 export type ActionFamily = (typeof ACTION_FAMILIES)[number];
 type ActionSuffix = (typeof ACTION_SUFFIXES)[number];

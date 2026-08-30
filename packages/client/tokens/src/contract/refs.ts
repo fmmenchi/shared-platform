@@ -1,3 +1,21 @@
+/**
+ * The contract's SECOND SHAPE: the same names, as TypeScript strings.
+ *
+ * `tokens.ts` enumerates the names; this maps each one to the `var()` that reads
+ * it, so `tokenVars.color.primary === 'var(--fm-color-primary)'`. For consumers
+ * whose styles are written in TS — styled-components, emotion, vanilla-extract,
+ * an inline `style` — and neither a port nor an adapter: CSS custom properties
+ * are already the universal surface, and every styling library on the web reads
+ * `var(--fm-*)` with nothing to inject.
+ *
+ * It adds no capability. What it adds is that a TYPO STOPS COMPILING instead of
+ * rendering nothing, which is the failure a string literal gives you silently.
+ *
+ * NOT for React Native, which has no custom properties, and not inside a media
+ * or container query, where `var()` is invalid in a feature value — the query
+ * compiles, is dropped whole, and never matches. Breakpoints ship as literals
+ * for that reason.
+ */
 import {
   BORDER_WIDTH_TOKENS,
   COLOR_ROLES,
@@ -13,7 +31,7 @@ import {
   TRANSITION_TOKENS,
   Z_TOKENS,
 } from './tokens.js';
-import type { TokenRefGroup } from './types/refs.types.js';
+import type { TokenRefGroup } from './refs.types.js';
 
 /** One group: every name in it, mapped to the `var()` that reads it. */
 const group = <const Names extends readonly string[]>(

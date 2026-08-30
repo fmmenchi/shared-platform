@@ -6,7 +6,11 @@ import { describe, expect, it } from 'vitest';
 
 import { FAMILY_CONSTRAINTS } from './constraints.js';
 import { readVars } from '../utils/read-vars.js';
-import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from '../tokens.js';
+import {
+  ACTION_FAMILIES,
+  COLOR_ROLES,
+  STATUS_FAMILIES,
+} from '../contract/tokens.js';
 
 /**
  * A placement table is a claim ABOUT THE SHIPPED PALETTE — that `-hover` really

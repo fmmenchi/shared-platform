@@ -13,7 +13,7 @@
  * verdict does — a generated theme can pass the builder and fail CI. These
  * types are the shape that lets the floor move where it belongs.
  */
-import type { ColorRole } from './tokens.types.js';
+import type { ColorRole } from '../contract/tokens.types.js';
 
 /** Why a theme was refused. */
 export type ViolationKind =

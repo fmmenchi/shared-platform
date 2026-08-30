@@ -27,10 +27,10 @@ export {
   REFERENCE_PRESETS,
   COLOR_SCHEMES,
   PALETTE_FAMILIES,
-} from './tokens.js';
+} from './contract/tokens.js';
 
-export { tokenVars } from './refs.js';
-export type { TokenRefGroup } from './types/refs.types.js';
+export { tokenVars } from './contract/refs.js';
+export type { TokenRefGroup } from './contract/refs.types.js';
 
 export type {
   ActionFamily,
@@ -39,7 +39,7 @@ export type {
   ThemeColors,
   ReferencePreset,
   ColorScheme,
-} from './types/tokens.types.js';
+} from './contract/tokens.types.js';
 
 /**
  * The theme MODEL (ADR-0033) — how a theme is declared and resolved, as
@@ -59,7 +59,7 @@ export type {
   Base,
   RungKey,
   RolePin,
-} from './types/theme.types.js';
+} from './services/theme.types.js';
 
 export type {
   ViolationKind,
@@ -68,4 +68,4 @@ export type {
   Placement,
   Floor,
   Constraint,
-} from './types/validate.types.js';
+} from './validations/validate.types.js';

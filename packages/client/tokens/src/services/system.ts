@@ -30,7 +30,7 @@ import { converter, parse as parseColor } from 'culori';
 
 import { readVars } from '../utils/read-vars.js';
 import { resolveAll } from '../utils/resolve.js';
-import { PALETTE_FAMILIES } from '../tokens.js';
+import { PALETTE_FAMILIES } from '../contract/tokens.js';
 import type {
   Base,
   DesignSystem,
@@ -39,7 +39,7 @@ import type {
   Ramp,
   Rung,
   ThemeDefinition,
-} from '../types/theme.types.js';
+} from './theme.types.js';
 
 const toOklch = converter('oklch');
 

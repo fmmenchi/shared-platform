@@ -7,7 +7,7 @@
  * Values live in `styles/vars.css` (reference light) and `styles/presets/*`
  * (overrides); consumers never import values from TS — components read `var(--fm-*)`.
  */
-import type { ColorRole } from './types/tokens.types.js';
+import type { ColorRole } from './tokens.types.js';
 
 /* ---------- Color roles ---------- */
 
