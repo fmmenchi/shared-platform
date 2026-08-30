@@ -132,8 +132,16 @@ export interface ThemeDefinition {
  * does. A system whose families each had their own ramp would widen
  * `ThemeDefinition` rather than change anything that reads this.
  *
+ * NOBODY AUTHORS ONE OF THESE. A real `DesignSystem` is DERIVED from the installed
+ * stylesheet — the ramps and the 36 neutral rungs read out of `vars.css` — under
+ * the same rule as the rung table: derive it, or assert it against the stylesheet,
+ * never maintain a second copy. So `neutral` is not an override and not a place to
+ * invent greys; it is the scale being DECLARED, so a solver measuring `inks`
+ * against a fill has real colours to measure with.
+ *
  * @example A synthetic system — two families, three rungs — deliberately not ours,
- * since a copy of the shipped ramp in a comment is a copy that can rot:
+ * since a copy of the shipped ramp in a comment is a copy that can rot. The shape
+ * is the point; a real one is 7 families, 36 greys and two themes:
  * ```ts
  * const tiny: DesignSystem = {
  *   families: ['primary', 'negative'],
@@ -165,7 +173,10 @@ export interface DesignSystem {
    * Putting them on a theme would duplicate a fact that provably does not vary.
    */
   readonly families: readonly PaletteFamily[];
-  /** Shared and fixed. What `ThemeDefinition.inks` index into. */
+  /**
+   * Shared, fixed, and not a brand's to change — in the wizard it is context,
+   * never a control. What `ThemeDefinition.inks` index into.
+   */
   readonly neutral: NeutralScale;
   /** What DOES vary per theme: the ramp its rungs sit on, and its inks. */
   readonly themes: readonly ThemeDefinition[];
