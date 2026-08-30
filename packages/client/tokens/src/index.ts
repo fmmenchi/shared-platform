@@ -25,6 +25,8 @@ export {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
   REFERENCE_PRESETS,
+  COLOR_SCHEMES,
+  PALETTE_FAMILIES,
 } from './tokens.js';
 
 export { tokenVars } from './refs.js';
@@ -37,3 +39,36 @@ export type {
   ThemeColors,
   ReferencePreset,
 } from './tokens.types.js';
+
+/**
+ * The theme MODEL (ADR-0033) — how a theme is declared and resolved, as
+ * distinct from `ThemeColors`, which is what a finished one looks like.
+ * Types only: nothing here adds a byte to a consumer's bundle.
+ */
+export type {
+  Scheme,
+  PaletteFamily,
+  PerScheme,
+  Rung,
+  Ramp,
+  DesignSystem,
+  RampStrategy,
+  ThemeSpec,
+  Base,
+  Swatch,
+  FamilyPalette,
+  Palette,
+  AssignmentEvidence,
+  AssignmentOrigin,
+  Assignment,
+  Theme,
+  Preset,
+} from './theme.types.js';
+
+export type {
+  ViolationKind,
+  ThemeViolation,
+  ThemeAdvisory,
+  Constraint,
+  Unsatisfied,
+} from './validate.types.js';

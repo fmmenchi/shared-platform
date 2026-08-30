@@ -216,3 +216,33 @@ export const CONTAINER_BREAKPOINTS = {
 
 /** Presets the platform ships as reference themes. `base` is `:root`. */
 export const REFERENCE_PRESETS = ['base', 'dark'] as const;
+
+/**
+ * The COLOR SCHEMES a theme is built for. Same two names as the reference
+ * presets and deliberately a separate list: a preset is a stylesheet we ship,
+ * a scheme is an axis a theme has. If a third reference preset ever ships that
+ * is not a scheme — a high-contrast variant, say — these stop being the same
+ * two values, and `schemesAreReferencePresets` below is what makes that
+ * divergence a compile error rather than a surprise.
+ */
+export const COLOR_SCHEMES = ['base', 'dark'] as const;
+
+/**
+ * The seven PALETTE families — level 1 of the token architecture, the families
+ * a ramp is generated for.
+ *
+ * Deliberately SEVEN where the role families are eight: `destructive` (an
+ * action) and `error` (a status) both draw from `negative`. Same red, different
+ * treatment — an action has hover and active, a status has a subtle wash and a
+ * border — so they are two role families over one palette family, and anything
+ * generating a ramp iterates THIS list, not `ACTION_FAMILIES`.
+ */
+export const PALETTE_FAMILIES = [
+  'primary',
+  'secondary',
+  'accent',
+  'negative',
+  'success',
+  'warning',
+  'info',
+] as const;

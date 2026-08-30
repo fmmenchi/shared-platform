@@ -25,6 +25,7 @@ import {
 // `tokenVars` was the latest — widened `@fmmenchi/tokens/validate` too.
 import { ACTION_FAMILIES, COLOR_ROLES, STATUS_FAMILIES } from './tokens.js';
 import type { ColorRole } from './tokens.types.js';
+import type { ThemeViolation } from './validate.types.js';
 
 /**
  * The DECLARED PAIRS — the only role combinations the design system
@@ -110,21 +111,9 @@ export const CONTRAST_PAIRS: ReadonlyArray<
   ),
 ] as ReadonlyArray<readonly [ColorRole, ColorRole, number]>;
 
-export interface ThemeViolation {
-  kind:
-    | 'missing-role'
-    | 'unknown-role'
-    | 'unparsable-color'
-    | 'out-of-gamut'
-    | 'contrast'
-    | 'state-ramp'
-    | 'indistinct-disabled';
-  role?: string;
-  pair?: readonly [string, string];
-  ratio?: number;
-  minimum?: number;
-  message: string;
-}
+// `ThemeViolation` moved to `validate.types.ts` with every other type in this
+// package. Re-exported because it is part of this subpath's public API.
+export type { ThemeViolation } from './validate.types.js';
 
 /**
  * Validate a complete color-role assignment. Returns [] when the theme is
