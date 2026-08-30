@@ -73,6 +73,8 @@ export type {
   ViolationKind,
   ThemeViolation,
   ThemeAdvisory,
+  Placement,
+  Floor,
   Constraint,
   Unsatisfied,
 } from './validate.types.js';
