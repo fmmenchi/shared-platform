@@ -150,23 +150,48 @@ export interface DesignSystem {
 export type RampStrategy = 'constant-step' | 'constant-contrast';
 
 /**
- * What a person asks for — and, unchanged, the theme builder's form state.
+ * What a person asks for — and, unchanged, the theme builder's EDITABLE FORM.
  *
- * Its three fields are the whole of what anyone can change, which gives the
- * wizard a real test: a control that cannot be expressed as a change to a
- * `ThemeSpec` does not belong in it.
+ * Not a model that mirrors the form: the form's state is a value of this type,
+ * which is why every field is plain, serialisable data. That is also what makes
+ * the round trip possible — `ThemeSpec` → `buildPreset()` → emitted CSS →
+ * `ThemeSpec` read back — since a role in that CSS is a reference to a rung and
+ * a base is a literal, so nothing a person chose is lost on the way out.
+ *
+ * It holds what a person changes about THE THEME, and deliberately nothing about
+ * how they are looking at it. Which theme the preview is showing, whether the
+ * preview is docked, which step is open: all view state, none of it here. A
+ * theme is not different because somebody scrolled.
  */
 export interface ThemeSpec {
-  /** One CSS colour per family. Hue and chroma are read from these. */
-  readonly brand: Partial<Record<PaletteFamily, string>>;
+  /** What the theme is called. Editable, and the only place it is held. */
+  readonly name: string;
+  /**
+   * One CSS colour per family; hue and chroma are read from these.
+   *
+   * TOTAL, not partial. A form has a value in every control, so the spec has one
+   * for every family: the builder seeds them from the installed
+   * `DesignSystem`'s own bases — which is what `--tokens` is for — and a family
+   * nobody touches simply carries the value it already had. An optional field
+   * would have made "unset" and "cleared" the same state, and the emitted CSS
+   * declares all seven bases regardless, so partiality bought nothing and cost
+   * the round trip its exactness.
+   */
+  readonly brand: Record<PaletteFamily, string>;
   /**
    * Roles pinned to a rung, keyed by `ThemeDefinition.name`, overriding what
    * the solver would pick. Keyed per theme because ramps do not share step
    * names — nine rungs against thirteen — so a pin means nothing without saying
    * which theme it belongs to.
+   *
+   * `string` and not a union of our two theme names, so that a system defining a
+   * third theme needs no change here. The keys are validated against
+   * `DesignSystem.themes` where a spec is applied, which is the only place that
+   * knows them.
    */
-  readonly pins?: Readonly<Record<string, Partial<Record<ColorRole, number>>>>;
-  readonly strategy?: RampStrategy;
+  readonly pins: Readonly<Record<string, Partial<Record<ColorRole, number>>>>;
+  /** Present because the form has a control for it; there is no absent state. */
+  readonly strategy: RampStrategy;
 }
 
 // ---------------------------------------------------------------------------
@@ -181,10 +206,19 @@ export interface Base {
   readonly lightness: number;
 }
 
-/** One resolved colour of a ramp. */
+/**
+ * One resolved colour of a ramp — computed to be MEASURED, not to be rendered.
+ *
+ * The app resolves the theme at runtime: the CSS declares the seven bases, and
+ * the browser derives every rung from them through relative colour, so changing
+ * a base moves its whole family with no rung rewritten. Nothing here is shipped
+ * in place of that. These values exist because contrast cannot be measured
+ * without them, and a solver that guessed at what the browser would compute
+ * would be asserting its own arithmetic.
+ */
 export interface Swatch {
   readonly step: number;
-  /** What gets declared, and what contrast was measured on. */
+  /** The colour the browser will resolve, and what contrast was measured on. */
   readonly css: string;
   readonly lightness: number;
   readonly chroma: number;
@@ -203,7 +237,16 @@ export interface FamilyPalette {
   readonly swatches: readonly Swatch[];
 }
 
-/** Levels 1 and 2 of the token architecture, resolved for one theme. */
+/**
+ * Levels 1 and 2 of the token architecture, resolved for one theme — and the
+ * DERIVED shape that shows the scale.
+ *
+ * Strictly output: nothing here is authored, every value is computed from a
+ * `ThemeSpec` and a `ThemeDefinition`. That separation is the point. An input a
+ * person edits and an output a solver produces are different kinds of data, and
+ * one structure serving both would make it impossible to say which of two
+ * disagreeing values a person actually chose.
+ */
 export interface Palette {
   readonly theme: string;
   readonly families: readonly FamilyPalette[];
@@ -260,7 +303,8 @@ export interface Theme {
  * the design system defines.
  */
 export interface Preset {
-  readonly name: string;
+  /** Every theme the design system defines, built from `spec`. */
   readonly themes: readonly Theme[];
+  /** What produced them. The name lives here, since a person edits it. */
   readonly spec: ThemeSpec;
 }
