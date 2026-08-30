@@ -63,7 +63,22 @@ system rather than a drawing of it.
 A pure function, no DOM, no React:
 
 ```ts
+/** The design system, as data. Not our palette — the SHAPE of a palette. */
+type DesignSystem = {
+  families: readonly string[];
+  /** Per scheme: each rung's name and where it sits. */
+  rungs: Record<Scheme, readonly { step: number; lightness: number; chroma: number }[]>;
+  /** Per role: what it is measured against, the floor, and which way to walk. */
+  roles: readonly {
+    role: ColorRole;
+    against: ColorRole | 'surface' | 'ink';
+    floor: number | 'exempt';
+    direction: 'toward-ink' | 'toward-surface' | 'anchor';
+  }[];
+};
+
 buildPreset(
+  system: DesignSystem,
   input: {
     /** One hex per family — hue and chroma are read from here. */
     brand: Partial<Record<Family, string>>;
@@ -75,6 +90,26 @@ buildPreset(
   opts?: { scheme: 'light' | 'dark' },
 ): Preset;
 ```
+
+**`system` is why this is a solver and not our palette with a function around it.**
+The rungs and the role constraints arrive as data, so the arithmetic knows nothing
+about seven families, nine rungs or the names we happen to use. Three things come
+from that, and the third is the one that mattered:
+
+- it is testable against a synthetic system — three rungs and two roles — instead of
+  only against the palette whose answers we already know;
+- it is reusable by a design system that is not this one, which is the bar
+  [ADR-0008](./0008-cross-app-framework-agnostic-layers.md) sets for anything living
+  here;
+- it settles what `--tokens` is for. The builder resolves the **consumer's
+  installed** contract into a `DesignSystem` and solves against that, so a consumer
+  whose ramp has different rungs gets their own rungs rather than ours silently
+  substituted. Version skew stops being a hazard and becomes the input.
+
+`@fmmenchi/tokens` already exports the first part of this — `ACTION_FAMILIES`,
+`STATUS_FAMILIES` and `COLOR_ROLES` enumerate the families and the roles. What it
+does not yet carry is the **rung table** and the **per-role constraints**, and those
+two additions are what turn the existing contract into a `DesignSystem` value.
 
 `pins` is the parameter the wizard is made of. Without it the function derives a
 whole theme from seven hexes, which is the express route; with it, each family step
