@@ -86,3 +86,19 @@ export function toCssVars(theme: Partial<Theme>, selector = ':root'): string {
 
   return `${selector} {\n${lines.join('\n')}\n}\n`;
 }
+
+/**
+ * The fourth primitive, defined in `validations/validate.ts` and re-exported
+ * here so all four are reachable from one import.
+ *
+ * It lives there because it is the CONTRACT's verdict — what makes a theme
+ * allowed is true of any theme however it was built, and a consumer validating a
+ * hand-written preset should not have to know where the parser lives. But
+ * splitting the four operations across two entry points made them hard to find,
+ * which is a worse problem than the one that split bought.
+ */
+export { validateTheme, themeAdvisories } from './validations/validate.js';
+export type {
+  ThemeViolation,
+  ThemeAdvisory,
+} from './validations/validate.types.js';
