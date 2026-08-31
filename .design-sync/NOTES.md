@@ -35,6 +35,29 @@ sync's output from the Nx cache even though the sources had changed. `.design-sy
 the build before the converter and is the safe habit for a manual cycle; the driver path needs the
 build run by hand.
 
+**AND `build` TOO, NOT ONLY `build-design` — this one drops a component in SILENCE.** `build-design`
+declares `dependsOn: ["^build"]`, which is the DEPENDENCIES' build, not the project's own, so
+`dist/` can sit at whatever a previous branch left there. The converter reads the `.d.ts` from
+`dist/`, so a component that exists everywhere else — source, barrel, vite entry, `dist-design/`,
+and the reference storybook — is dropped for having no types.
+
+Measured on the 2026-08-31 ColorPicker sync. The whole evidence was one line:
+
+    [TITLE_UNMAPPED] 1 storybook title(s) don't match a package export — dropped: ColorPicker.
+
+Everything else stayed green and reassuring: `ok: true`, validate clean, `added: []`,
+`unchanged: 56`, `57 components` from storybook against `[DTS] 56/56`. A re-sync that only looked at
+the verdict would have uploaded a perfect-looking bundle with the new component missing, and the
+anchor would then have vouched for it.
+
+`[TITLE_UNMAPPED]` names `cfg.titleMap` as the fix, and for a real naming mismatch it is — but
+**check `dist/` first**: when the dropped name is a component you just added, the answer is
+`pnpm nx build @fmmenchi/ui --skip-nx-cache`, not a config entry. A titleMap line would paper over a
+stale build and keep working until it didn't.
+
+**The habit, in order:** `nx build` → `nx build-design` → storybook reference → re-inject
+`baseline.css` → driver. Both builds with `--skip-nx-cache`.
+
 ## [GENERAL] `react/compiler-runtime` must be external in the LIBRARY build
 
 Separate from the above, and a real defect in the shipped package: it was missing from
@@ -277,16 +300,18 @@ small-type or subtle-fill delta** before calling it.
 
 ## Known validate warns — the 20 `[DOCS_UNMAPPED]` are expected
 
-Every run prints the same twenty and they are NOT a regression: AppLayout, ChoiceField, DateInput,
-DatePicker, DateRangePicker, FormChoice, FormCombobox, FormDateInput, FormDatePicker,
-FormDateRangePicker, FormErrorSummary, FormInput, FormSegmentedControl, FormSelect, FormSwitch,
-FormTextarea, InputGroup, SegmentedControl, ToastRegion, VisuallyHidden.
+Every run prints the same twenty-one and they are NOT a regression: AppLayout, ChoiceField,
+ColorPicker, DateInput, DatePicker, DateRangePicker, FormChoice, FormCombobox, FormDateInput,
+FormDatePicker, FormDateRangePicker, FormErrorSummary, FormInput, FormSegmentedControl, FormSelect,
+FormSwitch, FormTextarea, InputGroup, SegmentedControl, ToastRegion, VisuallyHidden.
 
 They are components whose prose lives in a sibling's `.mdx` (the `Form*` adapters in their base
 component's page) or that have no page of their own. Recorded here so the next run can do what the
 skill asks — diff the warn lines against a known list — instead of re-deriving twenty names.
-**A twenty-first name IS new: look at it.** Stepper, added on the 2026-08-31 sync, did not appear,
-which is the check working.
+**A twenty-SECOND name IS new: look at it.** The list grows only when a component is added whose
+prose is not under `cfg.docsDir`: Stepper joined the roster without appearing here (it has a mapped
+page), ColorPicker joined it and did appear. Both are the check working — what it cannot be is a
+name that shows up while nothing was added.
 
 ## Re-sync risks — what to watch next time
 
