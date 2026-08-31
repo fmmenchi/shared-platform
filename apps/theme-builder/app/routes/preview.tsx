@@ -7,6 +7,7 @@ import { Field } from '@fmmenchi/ui/field';
 import { FieldLabel } from '@fmmenchi/ui/field-label';
 import { Heading } from '@fmmenchi/ui/heading';
 import { Input } from '@fmmenchi/ui/input';
+import { ChoiceField } from '@fmmenchi/ui/choice-field';
 import { Switch } from '@fmmenchi/ui/switch';
 
 import { DraftThemeScope, useDraftTheme } from '../draft-theme';
@@ -78,7 +79,14 @@ export default function Preview() {
               <FieldLabel>Workspace name</FieldLabel>
               <Input defaultValue="Acme" />
             </Field>
-            <Switch>Ship on merge</Switch>
+            {/* `Switch` is a bare `<input>`; the label is `ChoiceField`'s. Writing
+                `<Switch>Ship on merge</Switch>` typechecks — React's `<input>`
+                props include `children` — and throws only on the server, where
+                a void element with children is a hard error. Found by rendering
+                the page rather than by any check in the repo. */}
+            <ChoiceField label="Ship on merge">
+              <Switch />
+            </ChoiceField>
           </Card>
 
           <Alert variant="error">

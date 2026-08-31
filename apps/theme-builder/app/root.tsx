@@ -4,6 +4,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
   type LinksFunction,
   type MetaFunction,
 } from 'react-router';
@@ -44,6 +45,13 @@ export const links: LinksFunction = () => [
  * argument that the design system can carry a real product.
  */
 export function Layout({ children }: { children: React.ReactNode }) {
+  // `current` PASSED EXPLICITLY, and it has to be. Without a `UiProvider` the
+  // design system's `NavLink` falls back to reading the location itself, which the
+  // server does not have — so the class and `aria-current` differed between the two
+  // renders and React reported a hydration mismatch on every navigation. Read from
+  // the router instead: it knows the path on both sides.
+  const { pathname } = useLocation();
+
   return (
     <html lang="en">
       <head>
@@ -59,8 +67,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </header>
           <AppLayoutNav label="Main">
             <Nav label="Main" orientation="vertical">
-              <NavLink href="/">Build</NavLink>
-              <NavLink href="/preview">Preview</NavLink>
+              <NavLink href="/" current={pathname !== '/preview'}>
+                Build
+              </NavLink>
+              <NavLink href="/preview" current={pathname === '/preview'}>
+                Preview
+              </NavLink>
             </Nav>
           </AppLayoutNav>
           <AppLayoutMain>{children}</AppLayoutMain>
