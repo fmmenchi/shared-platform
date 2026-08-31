@@ -16,6 +16,19 @@
 import type { ColorRole } from './tokens.types.js';
 
 /** Why a theme was refused. */
+/**
+ * Every `--fm-*` declaration a stylesheet makes: the name exactly as written, and
+ * its value unresolved — `var(--fm-palette-primary-700)` stays that, because a
+ * reader needs to see the reference before deciding what to do with it.
+ *
+ * IT HAS A NAME BECAUSE `ReadonlyMap<string, string>` HAS NONE. Three functions
+ * here take one, and spelled as a bare map the signature tells a caller nothing:
+ * not which stylesheet, not that `parseTheme` is where one comes from, and not that
+ * handing over half of a cascade (a dark preset alone, say) produces a wrong answer
+ * rather than an error. The type is the only place that can say so.
+ */
+export type Declarations = ReadonlyMap<string, string>;
+
 export type ViolationKind =
   | 'missing-role'
   | 'unknown-role'

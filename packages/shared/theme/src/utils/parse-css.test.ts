@@ -3,6 +3,7 @@ import { parse as parseColor } from 'culori';
 import {
   evaluateRelativeOklch,
   expandVars,
+  parseCssVars,
   resolveCssVar,
 } from './parse-css.js';
 
@@ -19,6 +20,54 @@ const vars = new Map<string, string>([
   ['--fm-loop-a', 'var(--fm-loop-b)'],
   ['--fm-loop-b', 'var(--fm-loop-a)'],
 ]);
+
+/**
+ * `parseCssVars` IS the parser every reader of a stylesheet goes through, and it
+ * had no test of its own here — its only two lived in `@fmmenchi/tokens`, asking
+ * about a function this package owns. Moved, because a test belongs with the code
+ * it constrains: the artefact test that happened to carry them could have been
+ * deleted without anybody noticing the parser had lost its coverage.
+ */
+describe('parseCssVars', () => {
+  it('reads a variable and its value, not the prose around them', () => {
+    const parsed = parseCssVars(`
+      /* --fm-color-fake: not-a-real-token; */
+      :root {
+        --fm-color-primary: oklch(41% 0.135 255);
+        --fm-space-inset-m:   1.5rem;
+      }
+    `);
+
+    expect(parsed.get('--fm-color-primary')).toBe('oklch(41% 0.135 255)');
+    // Whitespace normalised, so a reformat of a stylesheet cannot change a
+    // generated artefact and make its snapshot fail for nothing.
+    expect(parsed.get('--fm-space-inset-m')).toBe('1.5rem');
+    // A declaration inside a comment is not a declaration. It only matters
+    // because `vars.css` documents roles in prose above them.
+    expect(parsed.has('--fm-color-fake')).toBe(false);
+  });
+
+  it('does not read a role that has been commented OUT', () => {
+    // The shape that matters, and the one the single-line case above does not
+    // cover: a block comment around a real declaration, which is what a retune
+    // leaves behind. The declaration regex anchors on the start of a LINE.
+    const parsed = parseCssVars(`
+      :root {
+        /* off until the ramp is redone
+        --fm-color-primary: oklch(41% 0.135 255);
+        */
+        --fm-color-card: oklch(100% 0 0);
+      }
+    `);
+
+    // Read, it would pass every gate — completeness sees it, contrast reads its
+    // value out of the comment, `properties.css` registers it — while the
+    // shipped CSS defines nothing, so it resolves to the registered
+    // `initial-value`: black, on every consumer, in both themes.
+    expect(parsed.has('--fm-color-primary')).toBe(false);
+    expect(parsed.get('--fm-color-card')).toBe('oklch(100% 0 0)');
+  });
+});
 
 describe('expandVars', () => {
   it('substitutes a reference', () => {

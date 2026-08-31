@@ -12,7 +12,7 @@ import { converter, parse as parseColor, wcagContrast } from 'culori';
 
 import { ACTION_FAMILIES, STATUS_FAMILIES } from '../tokens.types.js';
 import type { ColorRole } from '../tokens.types.js';
-import type { ContrastAdvisory, ThemeViolation } from '../validate.types.js';
+import type { ContrastAdvisory, ThemeViolation } from '../theme.types.js';
 
 type Parsed = NonNullable<ReturnType<typeof parseColor>>;
 

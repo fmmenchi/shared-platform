@@ -16,6 +16,7 @@
  */
 import { converter, displayable, formatCss, parse as parseColor } from 'culori';
 
+import { resolveCssVar } from './utils/parse-css.js';
 import { PALETTE_FAMILIES } from './tokens.types.js';
 import type { PaletteFamily } from './tokens.types.js';
 
@@ -158,4 +159,43 @@ export function generatePalette(bases: Bases, ramp: Ramp): Palette {
   }
 
   return palette as Palette;
+}
+
+/**
+ * The rungs a stylesheet DECLARES, as a palette.
+ *
+ * The other way to get one, and the reason it exists is `neutral`. The greys are
+ * stated rather than derived (ADR-0032) — no single base can span 1.00 to 0.05 and
+ * still resolve the pale end — so `PALETTE_FAMILIES` is the seven CHROMATIC
+ * families and `generatePalette` cannot produce the eighth. Yet 34 of the 84 roles
+ * point at it: every surface, every input, the greys.
+ *
+ * So a complete palette is two halves, and a caller says so:
+ *
+ *     { ...toPalette(declared), ...generatePalette(bases, ramp) }
+ *
+ * the stated greys underneath, the brand's seven over the top. A brand hands over
+ * seven colours; the neutral scale is the design system's, and reading it is how it
+ * stays that way rather than being regenerated from a base nobody chose.
+ *
+ * Every rung is RESOLVED, because a declaration may reference a base and a ramp is
+ * relative colour — `resolveCssVar` follows both. Families outside the contract are
+ * skipped: a stylesheet may declare whatever it likes, and inventing a family from
+ * a name is how a typo becomes a palette.
+ */
+export function toPalette(
+  declared: ReadonlyMap<string, string>,
+): Readonly<Record<string, Readonly<Record<number, string>>>> {
+  const palette: Record<string, Record<number, string>> = {};
+
+  for (const [name, raw] of declared) {
+    const match = /^--fm-palette-([a-z]+)-(\d+)$/.exec(name);
+    if (!match) continue;
+
+    const family = match[1] as string;
+    const rungs = (palette[family] ??= {});
+    rungs[Number(match[2])] = resolveCssVar(raw, declared);
+  }
+
+  return palette;
 }

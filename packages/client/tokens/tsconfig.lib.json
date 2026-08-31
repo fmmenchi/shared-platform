@@ -9,11 +9,7 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/utils/generate-properties.ts"
-  ],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"],
   "references": [
     {
       "path": "../../shared/theme/tsconfig.lib.json"
