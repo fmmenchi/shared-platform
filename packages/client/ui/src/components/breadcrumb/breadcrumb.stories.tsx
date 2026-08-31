@@ -60,7 +60,14 @@ export const DeepTrail: Story = {
   ),
 };
 
-/** A trail that is a flow, not a hierarchy: the current crumb is a step. */
+/**
+ * A trail that is a flow, not a hierarchy: the current crumb is a step.
+ *
+ * This is the right shape only when every entry is a real link and no step has
+ * a STATUS. The moment steps are done / here / not-yet — or one has failed —
+ * reach for `Stepper`: `current` is a single-valued marker with nowhere to say
+ * "behind you", so a breadcrumb leaves that unsaid rather than unsaid-and-shown.
+ */
 export const WizardSteps: Story = {
   render: () => (
     <Breadcrumb aria-label="Checkout steps">

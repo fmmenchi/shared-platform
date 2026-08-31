@@ -168,6 +168,8 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'stepper-item': 'src/components/stepper-item/index.ts',
+        stepper: 'src/components/stepper/index.ts',
         'form-combobox': 'src/components/form-combobox/index.ts',
         combobox: 'src/components/combobox/index.ts',
         'form-date-range-picker':

@@ -56,6 +56,10 @@ A flow marks its current entry as a step rather than a page:
 
 <Canvas of={BreadcrumbStories.WizardSteps} />
 
+That shape holds while every entry is a real link and no step carries a status.
+When steps are done / here / not-yet — or one has failed — use `Stepper`
+instead: `current` is a single-valued marker with nowhere to say "behind you".
+
 ## Accessibility
 
 - The landmark carries a localized default name ("Breadcrumb"), so two

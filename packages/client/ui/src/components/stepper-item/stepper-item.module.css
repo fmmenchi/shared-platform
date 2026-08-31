@@ -1,0 +1,182 @@
+/*
+ * StepperItem styles — the STEP: its marker, the line that leaves it, and what
+ * each status looks like. The list owns only the arrangement
+ * (stepper.module.css).
+ *
+ * Colours ONLY through semantic role utilities, motion ONLY through
+ * var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate enforces both.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .item {
+    /* The connector below is positioned FROM this box. */
+    position: relative;
+    @apply flex;
+    @apply gap-internal-s;
+    /* START, not centre. Centred, a label that wraps to two lines drags the
+       marker down to sit between them — measured, and every mainstream stepper
+       aligns the marker to the first line instead. */
+    @apply items-start;
+    /* The label is the reader's, so it takes the readable colour; only the
+       marker carries the status as paint. */
+    @apply text-foreground;
+    /* The marker's diameter. Declared HERE, on the box that draws it: the
+       connector is positioned from the same file, so nothing crosses the
+       module boundary and there is no value for two stylesheets to drift on. */
+    --stepper-marker-size: 1.5rem;
+  }
+
+  /*
+   * The marker.
+   *
+   * TWO declarations, the ADR-0010 shape breadcrumb-link uses for its
+   * separator, and for the reason measured there and re-measured here: a plain
+   * `content: counter(…)` IS exposed to assistive tech (Chromium puts a
+   * `StaticText "1"` in the accessibility tree — verified by A/B against the
+   * alternative-text form). Exposed, it announces the position the `<ol>`
+   * already gives the reader, which is the duplication this component avoids
+   * a numbered `<span>` to prevent. The plain form first so every engine draws
+   * the digit; the empty alternative text then silences it wherever the syntax
+   * exists (Baseline Newly — an engine without it drops that declaration
+   * whole and keeps the first).
+   */
+  .item::before {
+    counter-increment: fm-step;
+    content: counter(fm-step);
+    content: counter(fm-step) / '';
+    /* BORDER-BOX, because the DS ships no reset (ADR-0022) and the initial
+       `content-box` sizes the circle by its content: the 1px ring then made it
+       26px and the current step's 2px ring made it 28px — so the state that
+       is meant to be carried by border WEIGHT was silently also carried by
+       SIZE, and `--stepper-marker-size / 2` stopped being the marker's centre.
+       Measured before this line existed. */
+    box-sizing: border-box;
+    inline-size: var(--stepper-marker-size);
+    block-size: var(--stepper-marker-size);
+    /* Never squeezed by a long label: the circle is the fixed part. */
+    flex: none;
+    @apply grid place-items-center rounded-full;
+    @apply text-xs;
+    border: var(--fm-border-width-default) solid var(--fm-color-border);
+    @apply text-muted-foreground;
+  }
+
+  /*
+   * The connector, drawn FROM the step it leaves and positioned into the
+   * list's own gap. It is a line, not an element, so it stays out of the
+   * accessibility tree by construction rather than by an `aria-hidden`
+   * somebody has to remember.
+   *
+   * Absolutely positioned, and that is the whole correctness argument: a
+   * pseudo-element of a flex container is a FLEX ITEM, so an in-flow `::after`
+   * lands inside the step's own row — beside the label — and can never reach
+   * the gap between steps. Measured, on the version that tried.
+   *
+   * Scoped to `.item`, not to `li`: a foreign `<li>` a consumer drops into the
+   * list then gets no line, which matches its getting no counter. Keyed off
+   * the list's `data-orientation` because the geometry is the one thing the
+   * step must know about its container — selected WITH the module class, never
+   * bare, for the reason separator.module.css gives.
+   *
+   * KNOWN LIMIT, stated rather than left to be discovered: `:not(:last-child)`
+   * is DOM order and wrapping is visual, so the last step on a wrapped row
+   * still draws a line into the break. CSS cannot express "last on its line" —
+   * there is no selector for it — so the choice is this or no wrapping at all,
+   * and a stepper that overflows its container is worse.
+   */
+  [data-orientation] .item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    @apply bg-border;
+  }
+
+  [data-orientation='horizontal'] .item:not(:last-child)::after {
+    inset-inline-start: 100%;
+    /* The marker's centre — exact, now that the marker is border-box and the
+       item is start-aligned. */
+    inset-block-start: calc(var(--stepper-marker-size) / 2);
+    margin-block-start: calc(var(--fm-border-width-divider) / -2);
+    inline-size: var(--fm-space-inline-m);
+    block-size: var(--fm-border-width-divider);
+  }
+
+  [data-orientation='vertical'] .item:not(:last-child)::after {
+    inset-block-start: 100%;
+    inset-inline-start: calc(var(--stepper-marker-size) / 2);
+    margin-inline-start: calc(var(--fm-border-width-divider) / -2);
+    inline-size: var(--fm-border-width-divider);
+    block-size: var(--fm-space-stack-s);
+  }
+
+  /* Behind the reader: filled, and the label steps back so the eye lands on
+     where they are now rather than on where they have been. */
+  .item[data-status='complete']::before {
+    @apply bg-accent text-accent-foreground;
+    border-color: var(--fm-color-accent);
+  }
+
+  .item[data-status='complete'] {
+    @apply text-muted-foreground;
+  }
+
+  /* Where the reader is. A different WEIGHT of the same accent rather than a
+     different hue: the two states are points on one journey, and a second
+     colour would read as a second meaning. The heavier border is what carries
+     the distinction where colour cannot — forced colours, and the readers for
+     whom accent-vs-accent-subtle is not a difference at all. */
+  .item[data-status='current']::before {
+    @apply bg-accent-subtle text-accent-subtle-foreground;
+    border-width: var(--fm-border-width-emphasis);
+    border-color: var(--fm-color-accent);
+  }
+
+  .item[data-status='current'] {
+    @apply font-medium;
+  }
+
+  /* A step the reader has to come back to. The one status that takes a second
+     hue, because it is the one that means something different rather than
+     somewhere different — and it is the state this component's whole argument
+     covers best, so it says its word too. */
+  .item[data-status='error']::before {
+    @apply bg-error-subtle text-error-subtle-foreground;
+    border-width: var(--fm-border-width-emphasis);
+    border-color: var(--fm-color-error-border);
+  }
+
+  .item[data-status='error'] {
+    @apply font-medium;
+  }
+
+  /*
+   * Forced colours flattens every background and border colour, so all four
+   * states would collapse into one shape. Each is restated in system colours —
+   * including `complete`'s border, which out-specifies the base rule and would
+   * otherwise keep the DS accent.
+   *
+   * NO `forced-color-adjust: none`. Measured with and without: the only value
+   * it changed was that leaked accent, which is now restated properly, so the
+   * declaration bought nothing and cost the reader their own palette. Calendar
+   * reached the same verdict, by the same measurement.
+   */
+  @media (forced-colors: active) {
+    .item[data-status='complete']::before {
+      background-color: CanvasText;
+      color: Canvas;
+      border-color: CanvasText;
+    }
+
+    .item[data-status='current']::before {
+      background-color: Highlight;
+      color: HighlightText;
+      border-color: Highlight;
+    }
+
+    .item[data-status='error']::before {
+      background-color: Canvas;
+      color: CanvasText;
+      border-color: CanvasText;
+    }
+  }
+}

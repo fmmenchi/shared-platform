@@ -664,6 +664,18 @@
       "types": "./dist/components/form-combobox/index.d.ts",
       "import": "./dist/form-combobox.js",
       "default": "./dist/form-combobox.js"
+    },
+    "./stepper": {
+      "@fmmenchi/source": "./src/components/stepper/index.ts",
+      "types": "./dist/components/stepper/index.d.ts",
+      "import": "./dist/stepper.js",
+      "default": "./dist/stepper.js"
+    },
+    "./stepper-item": {
+      "@fmmenchi/source": "./src/components/stepper-item/index.ts",
+      "types": "./dist/components/stepper-item/index.d.ts",
+      "import": "./dist/stepper-item.js",
+      "default": "./dist/stepper-item.js"
     }
   },
   "nx": {
