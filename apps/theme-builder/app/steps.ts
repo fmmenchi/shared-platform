@@ -1,3 +1,5 @@
+import type { StepperItemStatus } from '@fmmenchi/ui/stepper-item';
+
 /**
  * THE STEPS, DECLARED ONCE.
  *
@@ -49,19 +51,20 @@ export function slugOf(pathname: string): string {
 /**
  * Where a step stands relative to the one being shown.
  *
- * Behind is `done`, here is `current`, ahead is `upcoming` — which is exactly
- * `StepperItemStatus`, and deliberately not a richer idea. A wizard that also knew
- * "visited but skipped" or "has an error" would need somewhere to keep that, and
- * this function is the argument for not needing it yet: position is derivable, and
- * anything else is state.
+ * Behind is `complete`, here is `current`, ahead is `upcoming` — and the return type
+ * is `StepperItemStatus` itself rather than three strings that happen to match, so
+ * a status the design system adds or renames reaches this function through the
+ * compiler instead of through a broken page.
+ *
+ * `error` is the one it never returns, and that is the honest limit of deriving
+ * status from POSITION: a failure is not a place in a sequence, it is state, and
+ * this wizard does not keep any yet. When it does — a step whose contrast pairs
+ * fail, say — that is where `error` comes from.
  */
-export function statusOf(
-  step: Step,
-  currentSlug: string,
-): 'done' | 'current' | 'upcoming' {
+export function statusOf(step: Step, currentSlug: string): StepperItemStatus {
   const at = STEPS.findIndex((s) => s.slug === currentSlug);
   const mine = STEPS.indexOf(step);
 
   if (at === -1 || mine > at) return 'upcoming';
-  return mine === at ? 'current' : 'done';
+  return mine === at ? 'current' : 'complete';
 }

@@ -33,12 +33,16 @@ export default function Build() {
     >
       <Heading level={1}>Build a theme</Heading>
 
-      <Stepper label="Set up your theme">
+      {/* `aria-label` rather than a `label` prop: the design system's stepper
+          names itself from its own localized copy ("Progress") and takes an
+          override here, so a nameless landmark is impossible and a better name is
+          still possible. */}
+      <Stepper aria-label="Set up your theme">
         {STEPS.map((step) => {
           const status = statusOf(step, current);
           return (
             <StepperItem key={step.slug} status={status}>
-              {status === 'done' ? (
+              {status === 'complete' ? (
                 <NavLink to={pathOf(step)}>{step.label}</NavLink>
               ) : (
                 step.label
