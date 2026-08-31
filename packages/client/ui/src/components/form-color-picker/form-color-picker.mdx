@@ -1,0 +1,73 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as FormColorPickerStories from './form-color-picker.stories.tsx';
+
+<Meta of={FormColorPickerStories} />
+
+# FormColorPicker
+
+A labelled colour field, already bound to the form library in scope.
+
+```tsx
+<UiProvider adapters={useMyFormField}>
+  <FormColorPicker name="primary" label="Brand colour" />
+</UiProvider>
+```
+
+<Canvas of={FormColorPickerStories.Default} />
+
+## Props
+
+<Controls of={FormColorPickerStories.Default} />
+
+## Usage
+
+It is the assembled form of `<Field><ColorPicker /></Field>`. Drop to those when a
+field needs something this does not express — the two stay interchangeable, because
+this adds no markup of its own.
+
+Nothing below the provider names a form library, so swapping one is a single line in
+a single place. The adapter's props come first and a call-site prop still wins; what
+the binding **owns** is refused by the type and dropped anyway, with a development
+warning, because passing one does not override the binding — it severs it.
+
+That list includes **`defaultValue`**, which is worth pointing out because
+`ColorPicker` standalone takes one: bound, the starting colour comes from the form's
+`defaultValues`. Two places offering a default is how a form ends up showing one
+value and submitting another.
+
+### A colour field is never empty
+
+`<input type="color">` reports `#000000` before anyone touches it, so there is no
+"required" to validate: an untouched field is indistinguishable from a deliberate
+black. That is a fact about the control, not a gap in the adapter.
+
+What a schema can still say is whether the value is one a **theme** may hold — in
+gamut, far enough from its neighbours to tell apart, clearing the contrast pairs it
+takes part in. A colour often fails several of those at once, so each message is its
+own element: a screen reader announces them as separate statements and the eye reads
+a list.
+
+<Canvas of={FormColorPickerStories.WithErrors} />
+
+### Several of them are one question
+
+Seven brand colours are not seven questions. Group them in a `Fieldset` with one
+legend, and a screen reader announces it before each field — so "primary" is heard
+as _"Brand colours, primary"_ rather than as a word on its own.
+
+<Canvas of={FormColorPickerStories.AsAGroup} />
+
+## Accessibility
+
+- **The label is required**, and there is no arguing with it: a swatch has no text
+  and no placeholder, so without a label the control has no accessible name at all.
+- **`aria-invalid` follows the errors**, and the hint plus every message make up the
+  control's accessible description — in that order, whatever the count.
+- **One difference from `FormInput` worth knowing.** That adapter has to reconcile
+  `type`: the port types it as the platform does and `Input` accepts one member
+  fewer. Here there is nothing to reconcile, because `type` is not a prop of
+  `ColorPicker` — it _is_ the component, so a binding cannot hand one over.
+- **Forced colours takes the one thing this control exists to show.** See
+  [`ColorPicker`](?path=/docs/components-inputs-colorpicker--docs): the swatch is a
+  fill, and Windows High Contrast replaces every fill with a system colour. The
+  field stays visible, focusable and bounded; the value it holds is not showable.

@@ -503,3 +503,5 @@ export type {
 } from './components/stepper-item/stepper-item.types.js';
 export { ColorPicker } from './components/color-picker/color-picker.component.js';
 export type { ColorPickerProps } from './components/color-picker/color-picker.types.js';
+export { FormColorPicker } from './components/form-color-picker/form-color-picker.component.js';
+export type { FormColorPickerProps } from './components/form-color-picker/form-color-picker.types.js';

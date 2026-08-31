@@ -682,6 +682,12 @@
       "types": "./dist/components/color-picker/index.d.ts",
       "import": "./dist/color-picker.js",
       "default": "./dist/color-picker.js"
+    },
+    "./form-color-picker": {
+      "@fmmenchi/source": "./src/components/form-color-picker/index.ts",
+      "types": "./dist/components/form-color-picker/index.d.ts",
+      "import": "./dist/form-color-picker.js",
+      "default": "./dist/form-color-picker.js"
     }
   },
   "nx": {
