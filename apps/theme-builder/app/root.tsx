@@ -22,6 +22,7 @@ import { Separator } from '@fmmenchi/ui/separator';
 import {
   useRhfErrors,
   useRhfField,
+  useRhfOptionField,
 } from '@fmmenchi/ui-form-ports/react-hook-form';
 
 import { BasesProvider } from './bases';
@@ -186,7 +187,22 @@ export default function App() {
     <UiProvider
       adapters={{
         i18n: { locale: 'en' },
-        form: { field: useRhfField, errors: useRhfErrors },
+        /*
+         * ALL THREE HOOKS, and the missing one was found by rendering rather than by
+         * typechecking: `optionField` is what a group of controls sharing one name
+         * needs — a segmented control, a radio group — and without it
+         * `FormSegmentedControl` throws at render. The binding is a set, so taking
+         * two of its three parts is not a smaller binding, it is a broken one.
+         *
+         * The error said exactly that, which is why this cost a minute rather than
+         * an afternoon: "the form binding provides no `optionField` … every binding
+         * in @fmmenchi/ui-form-ports ships one".
+         */
+        form: {
+          field: useRhfField,
+          optionField: useRhfOptionField,
+          errors: useRhfErrors,
+        },
       }}
     >
       <BasesProvider>
