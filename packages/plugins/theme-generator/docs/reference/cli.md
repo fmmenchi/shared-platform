@@ -15,10 +15,34 @@ defaults.
 
 ### `theme`
 
-Scaffolds a complete `[data-theme='<name>']` preset — every color role — instantiated from the
-installed `@fmmenchi/tokens` contract, then (unless `--skipValidation`) calls the `validation`
-generator to wire the `validate-themes` target. The file is written to
-`<projectRoot>/<directory>/<name>.css`.
+Writes a complete `[data-theme='<name>']` preset — every color role — to
+`<projectRoot>/<directory>/<name>.css`, then (unless `--skipValidation`) calls the `validation`
+generator to wire the `validate-themes` target.
+
+**Two ways to get the values, one way to write them.**
+
+- **Without `--from`** it scaffolds from the installed `@fmmenchi/tokens` contract, so the starting
+  point is always in step with the tokens version the app uses. That scaffold is a **starting
+  point**: its values are `var(--fm-palette-…)` references, which resolve against `:root`, so
+  applying the theme changes nothing until you edit them.
+- **With `--from=<file.json>`** it installs a theme a builder exported, and that one is finished:
+  the values are resolved literals, and the theme is validated before anything is written.
+
+`--from` reads **only** the file's `colors` object:
+
+```json
+{
+  "colors": {
+    "primary": "oklch(41% 0.135 255)",
+    "primary-foreground": "oklch(100% 0 0)"
+  },
+  "source": { "bases": { "primary": "#635BFF" } }
+}
+```
+
+Every other key — `source` above, or whatever a builder keeps in order to reopen its own form — is
+carried by the file and ignored here. Unknown keys are not an error: that is what lets a builder
+change how it records its own state without this generator having to agree.
 
 **Usage**
 
@@ -34,13 +58,14 @@ pnpm nx g @fmmenchi/nx-theme-generator:theme <name> --project=<project> [options
 
 #### Options
 
-| Option             | Type      | Default      | Description                                                                                                    |
-| :----------------- | :-------- | :----------- | :------------------------------------------------------------------------------------------------------------- |
-| `--project`        | `string`  | **Required** | The project the theme belongs to (gets the `validate-themes` target).                                          |
-| `--directory`      | `string`  | `src/themes` | Directory for the theme file, relative to the project root.                                                    |
-| `--skipValidation` | `boolean` | `false`      | Do not wire the `validate-themes` target.                                                                      |
-| `--scheme`         | `string`  | `light`      | `light` or `dark` — emitted as `color-scheme`, so the parts the browser paints follow the theme.               |
-| `--tokensPath`     | `string`  | _(auto)_     | Advanced: explicit path to `@fmmenchi/tokens`' `vars.css`, when it cannot be resolved from the workspace root. |
+| Option             | Type      | Default      | Description                                                                                                                                        |
+| :----------------- | :-------- | :----------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--project`        | `string`  | **Required** | The project the theme belongs to (gets the `validate-themes` target).                                                                              |
+| `--directory`      | `string`  | `src/themes` | Directory for the theme file, relative to the project root.                                                                                        |
+| `--from`           | `string`  | _(none)_     | Install a theme exported by a builder instead of scaffolding. Only its `colors` object is read; the theme is validated before anything is written. |
+| `--skipValidation` | `boolean` | `false`      | Do not gate this theme: skips BOTH the `validate-themes` wiring and the pre-write check on a `--from` file.                                        |
+| `--scheme`         | `string`  | `light`      | `light` or `dark` — emitted as `color-scheme`, so the parts the browser paints follow the theme.                                                   |
+| `--tokensPath`     | `string`  | _(auto)_     | Advanced: explicit path to `@fmmenchi/tokens`' `vars.css`, when it cannot be resolved from the workspace root.                                     |
 
 :::tip[Interactive prompts]
 
