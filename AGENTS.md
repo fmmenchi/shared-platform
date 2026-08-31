@@ -102,8 +102,10 @@ A vulnerability left visible with a reason beats one hidden behind an override n
   `gh-actions`, tagged `gh-actions/v{version}` in its own release group). See
   [architecture](./.agents/doc/architecture.md).
 - **File layout:** every `index.ts` is a **barrel — re-exports only**, never implementation or
-  inline declarations. Implementation lives in `<name>.ts`; **types always in a separate
-  `<name>.types.ts`**. Structure the code into proper files and let `index.ts` just re-export the
+  inline declarations. Implementation lives in `<name>.ts`; **types live in a separate
+  `<name>.types.ts` once there is more than one or two of them**. A single type is
+  ceremony in a file of its own — and worse, it separates a declaration from the
+  code it describes, which is the same split that makes a `types/` folder unreadable. Structure the code into proper files and let `index.ts` just re-export the
   public surface.
 - **Commits:** Conventional Commits are mandatory (they drive `nx release`) and enforced by
   commitlint via a husky `commit-msg` hook. Keep the subject lowercase. Humans use `git cz`;

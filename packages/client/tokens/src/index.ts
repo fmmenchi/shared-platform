@@ -33,7 +33,7 @@ export {
 } from './tokens.js';
 
 export { tokenVars } from './tokenVars.js';
-export type { TokenRefGroup } from './tokenVars.types.js';
+export type { TokenRefGroup } from './tokenVars.js';
 
 export type {
   ActionFamily,

@@ -27,7 +27,16 @@ import {
   STATUS_SUFFIXES,
   SURFACE_ROLES,
 } from '../tokens.js';
-import type { RegisteredSection } from './properties.types.js';
+
+/** The shape of one section of the generated `properties.css`. */
+export interface RegisteredSection {
+  /** Rendered as the section comment. */
+  title: string;
+  /** A second line of it, where the reason needs saying. */
+  note?: string;
+  syntax: '<color>' | '<length>';
+  vars: readonly string[];
+}
 
 const colorVars = (roles: readonly string[]) =>
   roles.map((role) => `--fm-color-${role}`);
