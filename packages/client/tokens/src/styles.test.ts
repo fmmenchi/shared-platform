@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse as parseColor, wcagContrast } from 'culori';
+import { displayable, parse as parseColor, wcagContrast } from 'culori';
 import {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
@@ -463,5 +463,50 @@ describe('token references', () => {
     // if the error stops happening, which is the only way to assert it.
     // @ts-expect-error — `primry` is not a colour role.
     expect(tokenVars.color.primry).toBeUndefined();
+  });
+});
+
+/**
+ * ARE THE PALETTE RUNGS THEMSELVES DISPLAYABLE?
+ *
+ * The gamut rule is old and its reasoning is in AGENTS.md — an out-of-gamut
+ * oklch is mapped back by each browser its own way, so two people measuring the
+ * same theme get different answers and every contrast figure describes a colour
+ * nobody sees. What was missing is that the check only ever ran on
+ * `--fm-color-*`: a rung no role points at was declared, shipped, and never
+ * looked at by anything.
+ *
+ * That is not hypothetical. `--fm-palette-neutral-950` shipped as
+ * `oklch(5% 0.02 256)`, which is outside sRGB — 0.017 is the most that fits at
+ * that lightness — and it survived because it is one of the seventeen rungs no
+ * role uses. It surfaced only by regenerating the ramp and noticing the
+ * generated value differed, which is a roundabout way to learn something a
+ * direct assertion should say. This is that assertion.
+ */
+describe('palette rungs', () => {
+  const vars = parseTheme(read('vars.css'), read('presets/dark.css'));
+  const rungs = [...vars].filter(([name]) =>
+    /^--fm-palette-[a-z]+-\d+$/.test(name),
+  );
+
+  it('declares rungs at all (the suite below is worthless if not)', () => {
+    expect(rungs.length).toBeGreaterThan(50);
+  });
+
+  it('every declared rung resolves to a colour', () => {
+    const broken = rungs
+      .filter(([, raw]) => !parseColor(resolve(vars, raw)))
+      .map(([name]) => name);
+
+    expect(broken, broken.join('\n')).toEqual([]);
+  });
+
+  it('every declared rung is inside sRGB', () => {
+    const outside = rungs
+      .map(([name, raw]) => [name, resolve(vars, raw)] as const)
+      .filter(([, value]) => parseColor(value) && !displayable(value))
+      .map(([name, value]) => `${name}: ${value}`);
+
+    expect(outside, `out of gamut:\n  ${outside.join('\n  ')}`).toEqual([]);
   });
 });
