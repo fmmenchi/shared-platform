@@ -1,20 +1,28 @@
-import { PALETTE_FAMILIES } from '@fmmenchi/theme';
-import { Card } from '@fmmenchi/ui/card';
-import { CardTitle } from '@fmmenchi/ui/card-title';
 import { Heading } from '@fmmenchi/ui/heading';
+import { Stepper } from '@fmmenchi/ui/stepper';
+import { StepperItem } from '@fmmenchi/ui/stepper-item';
+import { NavLink, Outlet, useLocation } from 'react-router';
+
+import { STEPS, pathOf, slugOf, statusOf } from '../steps';
 
 /**
- * THE WIZARD — where a person chooses, on the reference theme.
+ * THE WIZARD — the chrome every step shares, on the reference theme.
  *
- * A shell for now: the eight families a brand hands over, listed from the
- * contract rather than typed out, so this page cannot fall behind
- * `PALETTE_FAMILIES` the way a hand-written list would. The controls, the
- * generation and the export land on top of it.
+ * The stepper is DRIVEN BY THE ROUTE. Which step is current comes from the path and
+ * not from state, so the back button, a bookmark and a reload all land on the step
+ * they say they do — and there is no second copy of "where am I" to keep in step
+ * with the URL.
  *
- * It renders under `:root` deliberately — see `root.tsx`. Nothing on this page is
- * wrapped in the draft.
+ * A completed step is a LINK and a step ahead is not, which is the honest reading of
+ * a process: you may go back over what you have done, and there is nothing yet to go
+ * forward to. `StepperItem` puts `aria-current` on the step itself rather than on a
+ * link inside it, so the current step announces its position whether or not it
+ * happens to be navigable — which is exactly the case that choice was made for.
  */
 export default function Build() {
+  const { pathname } = useLocation();
+  const current = slugOf(pathname);
+
   return (
     <div
       style={{
@@ -25,29 +33,22 @@ export default function Build() {
     >
       <Heading level={1}>Build a theme</Heading>
 
-      <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
-        Eight colours become a whole theme: a base per family, the ramp derived
-        from it, and every semantic role pointed at a rung. The preview renders
-        the design system under what you build; these controls never do, so a
-        theme that fails its own contrast floors cannot take them down with it.
-      </p>
+      <Stepper label="Set up your theme">
+        {STEPS.map((step) => {
+          const status = statusOf(step, current);
+          return (
+            <StepperItem key={step.slug} status={status}>
+              {status === 'done' ? (
+                <NavLink to={pathOf(step)}>{step.label}</NavLink>
+              ) : (
+                step.label
+              )}
+            </StepperItem>
+          );
+        })}
+      </Stepper>
 
-      <div
-        style={{
-          display: 'grid',
-          gap: 'var(--fm-space-inline-m)',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))',
-        }}
-      >
-        {PALETTE_FAMILIES.map((family) => (
-          <Card key={family}>
-            <CardTitle level={2}>{family}</CardTitle>
-            <p style={{ color: 'var(--fm-color-muted-foreground)' }}>
-              Base not chosen yet.
-            </p>
-          </Card>
-        ))}
-      </div>
+      <Outlet />
     </div>
   );
 }

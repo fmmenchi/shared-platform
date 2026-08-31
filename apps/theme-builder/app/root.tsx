@@ -14,6 +14,7 @@ import { AppLayoutNav } from '@fmmenchi/ui/app-layout-nav';
 import { Nav } from '@fmmenchi/ui/nav';
 import { NavLink } from '@fmmenchi/ui/nav-link';
 
+import { BasesProvider } from './bases';
 import { DraftThemeProvider } from './draft-theme';
 import stylesheet from '../styles.css?url';
 
@@ -71,10 +72,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Two stores, and both above the routes because both outlive a step: the bases a
+ * person picked must survive walking to the palette and back, and the draft has to
+ * be readable from the preview, which is a sibling route rather than a child.
+ */
 export default function App() {
   return (
-    <DraftThemeProvider>
-      <Outlet />
-    </DraftThemeProvider>
+    <BasesProvider>
+      <DraftThemeProvider>
+        <Outlet />
+      </DraftThemeProvider>
+    </BasesProvider>
   );
 }

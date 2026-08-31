@@ -1,18 +1,30 @@
-import { type RouteConfig, index, route } from '@react-router/dev/routes';
+import {
+  type RouteConfig,
+  index,
+  layout,
+  route,
+} from '@react-router/dev/routes';
 
 /**
- * TWO ROUTES, AND THE SPLIT IS THE POINT (ADR-0033).
+ * TWO THEME SCOPES, AND ONE PAGE PER STEP (ADR-0033).
  *
- * `/` is the wizard: it renders under the reference theme, so a draft that fails
- * its own contrast floors cannot take down the controls that would fix it.
- * `/preview` is the demo app: the same design system, rendered under the draft.
+ * The wizard is a LAYOUT route: it draws the stepper and the chrome once, under the
+ * reference theme, and each step is a child. `/preview` is outside it, because it
+ * is the one place the draft theme applies — a draft with a contrast pair below its
+ * floor must not take down the controls that would fix it.
  *
- * Two routes rather than one page with a panel, because the theme wrapper is a
- * property of the SUBTREE and a route is the cleanest subtree there is — and
- * because the preview has to be openable on its own, which is what makes it
- * usable on a small screen.
+ * The children are built by hand rather than from `STEPS`, and that is the one
+ * duplication kept on purpose: `routes.tsx` is read at BUILD time by React Router's
+ * config, so a loop over a runtime array would work and would also make the route
+ * table invisible to anyone reading this file. The list is held to `STEPS` by
+ * `steps.spec.ts` instead, which is the trade — one assertion for a legible file.
  */
 export default [
-  index('./routes/build.tsx'),
+  layout('./routes/build.tsx', [
+    index('./routes/steps/colours.tsx'),
+    route('palette', './routes/steps/palette.tsx'),
+    route('roles', './routes/steps/roles.tsx'),
+    route('review', './routes/steps/review.tsx'),
+  ]),
   route('preview', './routes/preview.tsx'),
 ] satisfies RouteConfig;
