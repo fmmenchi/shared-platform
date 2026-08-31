@@ -1,3 +1,10 @@
+## 0.7.9 (2026-08-31)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/tokens to 0.0.37
+- Updated @fmmenchi/theme to 0.0.4
+
 ## 0.7.8 (2026-08-31)
 
 ### 🚀 Features
