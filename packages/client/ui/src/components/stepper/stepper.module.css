@@ -1,0 +1,47 @@
+/*
+ * Stepper styles — the LIST, and only the list: how the steps are arranged.
+ * The marker and the line that leaves each step belong to the step
+ * (stepper-item.module.css), which is what lets the connector be positioned
+ * from the marker it starts at.
+ *
+ * Colours ONLY through semantic role utilities, motion ONLY through
+ * var(--fm-duration-*)/var(--fm-ease-*): the `lint-css` gate enforces both.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .list {
+    /* The DS ships no reset (ADR-0022): whatever the UA puts on an `<ol>` is
+       what a consumer's page sees — a left indent, block margins, and decimal
+       markers. All three are wrong here (the marker is drawn by the item, and
+       the indent pushes the first connector out of line), and all three are
+       VISIBLE to the suite, which renders on that same bare page. The test
+       asserts them, so deleting this line turns it red instead of shipping an
+       indented, doubly-numbered sequence to every consumer without a reset. */
+    @apply m-0 list-none p-0;
+    @apply flex;
+    @apply text-sm;
+    /* The visual index every item draws from. Named, so a stepper nested in
+       another one starts its own count instead of continuing its parent's. */
+    counter-reset: fm-step;
+  }
+
+  /* Selected WITH the module class, never bare `[data-orientation]` — that
+     attribute belongs to half the component libraries in the world. The items'
+     own stylesheet reads the same attribute from this ancestor, which is the
+     one thing a step needs to know about its container. */
+  .list[data-orientation='horizontal'] {
+    /* WRAPS: a long sequence on a narrow screen breaks after a step rather
+       than overflowing. The cost is stated where it is paid — see the
+       connector's KNOWN LIMIT in stepper-item.module.css. */
+    @apply flex-row flex-wrap items-start;
+    /* The gap the connector is positioned INTO. Change one and change the
+       other: the line's inline-size matches this on purpose. */
+    @apply gap-inline-m;
+  }
+
+  .list[data-orientation='vertical'] {
+    @apply flex-col;
+    @apply gap-stack-s;
+  }
+}

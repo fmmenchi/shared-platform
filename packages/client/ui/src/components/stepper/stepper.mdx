@@ -1,0 +1,149 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as StepperStories from './stepper.stories.tsx';
+
+<Meta of={StepperStories} />
+
+# Stepper
+
+Shows how far through a sequence the reader is: which steps are behind them,
+which one they are on, and which are still ahead. A named `<nav>` landmark
+around an ordered list, with each step's status **announced** as well as
+painted.
+
+## Anatomy
+
+```tsx
+<Stepper orientation="horizontal">
+  <StepperItem status="complete">Cart</StepperItem>
+  <StepperItem status="current">Shipping</StepperItem>
+  <StepperItem status="error">Payment</StepperItem>
+  <StepperItem status="upcoming">Review</StepperItem>
+</Stepper>
+```
+
+`Stepper` renders the landmark and the list (`<nav><ol>`) and takes
+`orientation` (`horizontal` | `vertical`, default `horizontal`).
+
+`StepperItem` is one list item and takes **`status`** — `complete`, `current`,
+`upcoming` (the default) or `error` — plus whatever you pass as its label. Its
+props table is here rather than below, because Storybook derives controls from
+the top-level component only.
+
+The number beside a step and the line between steps are painted by the
+stylesheet, not built as elements. The number carries empty CSS alternative
+text so engines that expose generated content announce nothing — without that
+it reaches the accessibility tree and repeats the position the `<ol>` already
+gives, which is measured, not assumed.
+
+## Props
+
+<Controls of={StepperStories.Default} />
+
+## Usage
+
+```tsx
+<Stepper>
+  <StepperItem status="complete">Cart</StepperItem>
+  <StepperItem status="current">Shipping</StepperItem>
+  <StepperItem>Payment</StepperItem>
+</Stepper>
+```
+
+<Canvas of={StepperStories.Default} />
+
+### Why not a Breadcrumb
+
+The DS already has a `Breadcrumb`, and its links accept `current="step"`. Use
+it for a **hierarchy**: a trail of places that exist, each one reachable, where
+the only distinction is which you are on.
+
+Use `Stepper` for a **process**. Its steps have a status — done, here, not yet —
+and the ones ahead are usually not reachable at all. Marking a wizard up as a
+breadcrumb claims the last step is a descendant of the first, and leaves the
+reader no way to hear that three of the five are already behind them.
+
+### A step that failed
+
+`status="error"` is exclusive with the other three, because a failure is more
+urgent than where the reader happens to be. When the failed step is also the
+one they are on, add `aria-current="step"` yourself — props spread after the
+internal ones precisely so you can.
+
+<Canvas of={StepperStories.WithAnError} />
+
+### Which steps are links
+
+That is yours to decide, because only the app knows which steps are reachable.
+Pass an `<a>` as the child of a step the reader may return to, and plain text
+for the rest.
+
+<Canvas of={StepperStories.WithLinksBack} />
+
+### Orientation
+
+`horizontal` by default; `vertical` for a sidebar beside a form. The geometry is
+written in logical properties, so a right-to-left page reverses the row and the
+connector follows it.
+
+<Canvas of={StepperStories.Vertical} />
+
+<Canvas of={StepperStories.RightToLeft} />
+
+## Accessibility
+
+**Status is said, not only shown.** This is the whole point of the component,
+and the part no automated check can verify for you: a filled circle means
+"done" to someone who can see it and nothing at all to anyone else.
+
+- **`current`** carries `aria-current="step"` and nothing more. Screen readers
+  render that in their own words and the reader's own language — a "current
+  step" label beside it would be the same fact twice, in a voice they did not
+  choose.
+- **`complete`** and **`error`** carry a visually hidden word — localized DS
+  copy, read after the label: _"Shipping, completed"_, _"Payment, has an
+  error"_.
+- **`upcoming`** carries nothing. It is the unmarked default, and "not started"
+  repeated down a ten-step wizard is noise that grows with the sequence.
+
+Only one step may be `current`. `aria-current` on more than one element in a
+set makes every one of them meaningless, and `Stepper` warns in development
+when more than one child claims it.
+
+The `<ol>` does the counting. "List, 3 items" and each step's position are
+announced by the element, which is why the visible number is a CSS counter and
+not a node — in the DOM it would be a second copy of what the reader has
+already been told.
+
+### The limit worth knowing before you ship a linked step
+
+When a step's child is a link, `aria-current` sits on the `<li>` and the status
+word is the link's **sibling**. Browse mode reads both; **tabbing** to the link
+announces "Cart, link" and neither. `StepperItem` cannot fix this from here —
+the `<a>` is yours, and APG puts `aria-current` on the anchor, which is what
+`BreadcrumbLink` does because it owns its own. If focus-mode status matters for
+your flow, put it in the link's text.
+
+### Forced colours
+
+Every background and border colour is flattened in forced-colours mode, which
+would collapse the four states into one shape. Each is restated in system
+colours: the current step takes `Highlight`, a completed one inverts, an errored
+one keeps its heavy ring, and an upcoming one stays a plain outline.
+
+There is deliberately **no `forced-color-adjust: none`**. Measured with and
+without it, the only value it changed was one leaked brand colour — which is now
+restated properly — so it bought nothing and cost the reader their own palette.
+`Calendar` reached the same verdict by the same measurement.
+
+## i18n
+
+Three keys, all DS-owned and overridable through the `messages` port on
+`UiProvider`:
+
+| key                    | en           | used for                        |
+| ---------------------- | ------------ | ------------------------------- |
+| `stepper.label`        | Progress     | the landmark's default name     |
+| `stepperItem.complete` | Completed    | a finished step's hidden status |
+| `stepperItem.error`    | Has an error | a failed step's hidden status   |
+
+`current` and `upcoming` have no copy on purpose — see above.

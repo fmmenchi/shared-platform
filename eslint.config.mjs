@@ -7,6 +7,11 @@ export default [
   {
     ignores: [
       '**/dist',
+      // The design-system EXPORT build (`nx build-design`) — same generated
+      // output as `dist`, in its own directory so it can never overwrite the
+      // artifact that gets published. Linting it reports thousands of
+      // prefer-const violations against a bundler's own output.
+      '**/dist-design',
       '**/out-tsc',
       '**/storybook-static',
       '**/vite.config.*.timestamp*',

@@ -491,3 +491,13 @@ export type {
 } from './components/combobox/combobox.types.js';
 export { FormCombobox } from './components/form-combobox/form-combobox.component.js';
 export type { FormComboboxProps } from './components/form-combobox/form-combobox.types.js';
+export { Stepper } from './components/stepper/stepper.component.js';
+export type {
+  StepperProps,
+  StepperOrientation,
+} from './components/stepper/stepper.types.js';
+export { StepperItem } from './components/stepper-item/stepper-item.component.js';
+export type {
+  StepperItemProps,
+  StepperItemStatus,
+} from './components/stepper-item/stepper-item.types.js';
