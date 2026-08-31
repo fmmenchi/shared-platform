@@ -56,9 +56,16 @@ system rather than a drawing of it.
 
 ## Decision
 
+> **Named `generateTheme`, not `buildPreset`.** In this repo a PRESET is the CSS
+> artefact — `REFERENCE_PRESETS` is `['base','dark']`, the files are
+> `styles/presets/*.css` — while a THEME is the role assignment, the `Theme` type
+> every operation already speaks in. This function returns the assignment, so it is
+> a theme it generates, and the name joins the family the package settled on:
+> `parseTheme`, `toTheme`, `toCssVars`, `validateTheme`, `generateProperties`.
+
 **Three parts, and the calculation is the one that matters.**
 
-### 1 · `buildPreset()` in `@fmmenchi/tokens`
+### 1 · `generateTheme()` in `@fmmenchi/tokens`
 
 A pure function, no DOM, no React:
 
@@ -177,7 +184,7 @@ type ThemeSpec = {
   readonly strategy?: 'constant-step' | 'constant-contrast';
 };
 
-buildPreset(system: DesignSystem, spec: ThemeSpec): Preset;
+generateTheme(system: DesignSystem, spec: ThemeSpec): Preset;
 ```
 
 **`system` is why this is a solver and not our palette with a function around it.**
@@ -236,7 +243,7 @@ brand hexes, the pins per scheme, and the strategy. Two things follow, and both 
 load-bearing rather than tidy. A control that cannot be expressed as a change to
 `ThemeSpec` **does not belong in the wizard**, which is the test that keeps nine
 steps from growing a tenth out of enthusiasm. And the round-trip closes exactly:
-`ThemeSpec` → `buildPreset()` → `Preset` → emitted CSS → `ThemeSpec` read back,
+`ThemeSpec` → `generateTheme()` → `Preset` → emitted CSS → `ThemeSpec` read back,
 because a role in that CSS is a reference to a rung and a base is a literal. The
 form, the preview and the file on disk are three views of one value.
 
@@ -278,7 +285,7 @@ This is the only place the arithmetic lives. Both consumers below call it.
 ### 2 · The generator emits seven bases
 
 `nx g @fmmenchi/theme-generator:theme --name=acme --primary=#635BFF --accent=#00D4FF` writes the
-preset `buildPreset()` returns. The rest of the generator is unchanged: the file layout, the
+preset `generateTheme()` returns. The rest of the generator is unchanged: the file layout, the
 `validate-themes` target, the executor. Existing behaviour with no colour flags stays as it is, so
 the change is additive.
 
@@ -372,7 +379,7 @@ bases on a container is **inert**: the ramp already settled at `:root` and does 
 re-derive. `packages/client/ui/src/docs/scoped-theme.test.tsx` measures both
 halves — a base override alone leaves every step unchanged, while the same override
 declared together with its ramp moves the family, and a sibling container keeps the
-root theme. So `buildPreset()` must emit the whole block (bases, ramp and roles)
+root theme. So `generateTheme()` must emit the whole block (bases, ramp and roles)
 under a selector that can sit on a container, which is the shape
 `[data-theme='dark']` already has. Seven numbers are what a person chooses; a block
 is what gets written.
@@ -551,7 +558,7 @@ bases underneath it, and the bases are precisely what a brand changes.
 
 **So the default is a declared constraint and a solved step.** Each role carries
 what it must satisfy — this fill must carry its foreground at 4.5, this border must
-reach 3 against its surface — and `buildPreset()` walks the ramp for the nearest
+reach 3 against its surface — and `generateTheme()` walks the ramp for the nearest
 step that satisfies it **on the actual colours**. This is not Leonardo, which
 solves for the COLOUR given a target contrast and would mean a new colour engine;
 it solves for the STEP given a ramp we already have, which is arithmetic we already
@@ -651,7 +658,7 @@ base**, so a rung's absolute lightness moves with the base. Measured over 648 ba
 **A palette is a palette, so this is a strategy and not a schism.** What the design
 system consumes is a list of rungs per family; how a rung was computed — an offset,
 an absolute anchor, a hand-written literal, an uneven step — is the derivation's
-business and invisible downstream. `buildPreset()` already takes the strategy as a
+business and invisible downstream. `generateTheme()` already takes the strategy as a
 parameter, and the solver reads the ACTUAL colours, so it is correct on any rung
 list, evenly spaced or not.
 
@@ -727,7 +734,7 @@ not.** Emitting a Tailwind bridge is fine; importing styled-components to build 
 theme object would make this package depend on a framework, which the workspace
 forbids outright.
 
-Which decides something about `buildPreset()`. Its return value is not "the CSS":
+Which decides something about `generateTheme()`. Its return value is not "the CSS":
 it is the resolved theme, and each binding is a separate function FROM that value
 — one per shape, sharing the solve. That is why the output model is worth having
 at all, and why it should be shaped by the function that produces it rather than
@@ -753,7 +760,7 @@ not the chrome's.
 from the same seven colours — a brand's hues do not change between them — so the
 person assigns once. What differs is the methodology, and it is not a shared
 number: the light ramp has 9 steps at 55% bases, the dark ramp has 13 at 75%, so
-"primary → 700" is meaningless across the two. `buildPreset()` therefore takes the
+"primary → 700" is meaningless across the two. `generateTheme()` therefore takes the
 scheme and emits a role-to-step map per scheme; the wizard shows the dark result
 and **measures its contrast in the same step where the choice is made**. That is
 the whole reason the toggle exists: an assignment that reads well in light and
@@ -825,7 +832,7 @@ graph TB
         roles["COLOR_ROLES · TOKEN_VARS<br/>the roles a theme must assign"]
         validate["validateTheme()<br/>public: completeness · gamut · AA"]
         resolve["resolve.ts<br/>var() + relative colour"]
-        build["buildPreset()<br/>NEW · hex → bases + assignments"]
+        build["generateTheme()<br/>NEW · hex → bases + assignments"]
     end
 
     subgraph plugin["@fmmenchi/theme-generator — Nx plugin"]
@@ -854,7 +861,7 @@ graph TB
     style validate fill:#dcfce7,stroke:#166534
 ```
 
-`buildPreset()` is the only place the arithmetic lives, and `validateTheme()` the
+`generateTheme()` is the only place the arithmetic lives, and `validateTheme()` the
 only place the verdict does — both the wizard and CI call the same one, which is
 what stops the tool from promising what the pipeline refuses.
 
@@ -928,7 +935,7 @@ that drops a pair below AA says so while it is being made.
 
 **`culori` becomes a runtime dependency of `@fmmenchi/tokens`**, which today has none. The gamut
 search and the contrast measurement need it, and reimplementing either is how a resolver starts
-asserting its own arithmetic. Two ways out if the weight is unacceptable: ship `buildPreset` from a
+asserting its own arithmetic. Two ways out if the weight is unacceptable: ship `generateTheme` from a
 subpath so importers of the token names do not pay for it, or move it to a `bin` — the workspace has
 that pattern in `@fmmenchi/ci`. Decide when measuring the bundle, not before.
 
@@ -947,7 +954,7 @@ recovered by cleverness — it is accepted, because a preview that is a separate
 implementation of Button and Input is a preview that lies the day it drifts.
 
 **Two algorithms mean two implementations to keep correct**, and the second one
-does not exist yet. `buildPreset()` takes the strategy as a parameter; constant
+does not exist yet. `generateTheme()` takes the strategy as a parameter; constant
 step is the one in use and the one the round-trip test pins. Constant contrast
 lands with the wizard or after it, and until it does the wizard offers one
 choice — which is honest, where a disabled radio button implying a missing
@@ -958,7 +965,7 @@ palettes stay in the demo story and out of the package, for the reason recorded 
 
 ## What gets tested
 
-- `buildPreset()` regenerates the presets this repo already ships, from their own brand colours. That
+- `generateTheme()` regenerates the presets this repo already ships, from their own brand colours. That
   is the test that matters: it ties the generator to a truth already in the repository rather than to
   a snapshot of itself.
 - Every preset it emits passes `validateTheme()` — asserted on the three demo brands, whose colours
@@ -969,7 +976,7 @@ palettes stay in the demo story and out of the package, for the reason recorded 
   container keeps the root theme, and a base override alone is inert — the
   cascade facts the wizard's two-theme document depends on
   (`scoped-theme.test.tsx`, written before the app exists because it constrains
-  what `buildPreset()` may emit).
+  what `generateTheme()` may emit).
 - The wizard's step logic is unit-tested where it decides something: which steps a
   family may point at, and what the contrast of an assignment is.
 - The final verdict agrees with `validateTheme()` by construction, since it calls
