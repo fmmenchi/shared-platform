@@ -30,10 +30,10 @@ export {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
   REFERENCE_PRESETS,
-} from './tokens.js';
+} from './tokens.types.js';
 
-export { tokenVars } from './tokenVars.js';
-export type { TokenRefGroup } from './tokenVars.js';
+export { tokenVars } from './tokens.types.js';
+export type { TokenRefGroup } from './tokens.types.js';
 
 export type {
   ActionFamily,

@@ -19,7 +19,7 @@
  * others on the way.
  */
 import { readVars, resolveValue } from './utils/css.js';
-import { COLOR_ROLES, colorVar } from './tokens.js';
+import { COLOR_ROLES, colorVar } from './tokens.types.js';
 import { contrastViolations } from './utils/contrast.js';
 import { parseColors } from './utils/roles.js';
 import { stateViolations } from './utils/states.js';

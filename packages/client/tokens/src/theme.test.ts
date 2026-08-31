@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { COLOR_ROLES } from './tokens.js';
+import { COLOR_ROLES } from './tokens.types.js';
 import { parseTheme, toCssVars, toTheme } from './theme.js';
 import { validateTheme } from './theme.js';
 

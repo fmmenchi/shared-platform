@@ -26,7 +26,7 @@ import {
   STATUS_FAMILIES,
   STATUS_SUFFIXES,
   SURFACE_ROLES,
-} from '../tokens.js';
+} from '../tokens.types.js';
 
 /** The shape of one section of the generated `properties.css`. */
 export interface RegisteredSection {

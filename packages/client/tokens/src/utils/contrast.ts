@@ -10,7 +10,7 @@
 import { APCAcontrast, sRGBtoY } from 'apca-w3';
 import { converter, parse as parseColor, wcagContrast } from 'culori';
 
-import { ACTION_FAMILIES, STATUS_FAMILIES } from '../tokens.js';
+import { ACTION_FAMILIES, STATUS_FAMILIES } from '../tokens.types.js';
 import type { ColorRole } from '../tokens.types.js';
 import type { ThemeAdvisory, ThemeViolation } from '../theme.types.js';
 
