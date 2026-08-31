@@ -17,18 +17,24 @@ name: Security
 # while the toolkit shipped v0.3.1, it was missing `packages: read`, and the first consumer to
 # read it declined it and wired the bricks by hand. Four steps are not worth a file that
 # nothing can release, test, or keep honest.
+# The last path is the scan itself. Without it a change to the action that RUNS this
+# workflow does not run this workflow, which is how a broken `nx --json` parse reached
+# main having never been executed: the scan silently stopped happening and only a
+# dependency change some commits later showed it.
 on:
   pull_request:
     paths:
       - 'pnpm-lock.yaml'
       - '**/package.json'
       - 'packages/plugins/trivy/**'
+      - 'packages/ops/gh-actions/actions/trivy-scan/**'
   push:
     branches: [main]
     paths:
       - 'pnpm-lock.yaml'
       - '**/package.json'
       - 'packages/plugins/trivy/**'
+      - 'packages/ops/gh-actions/actions/trivy-scan/**'
   workflow_dispatch:
 
 permissions:

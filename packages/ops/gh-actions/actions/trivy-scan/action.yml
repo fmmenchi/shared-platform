@@ -39,9 +39,39 @@ runs:
       id: host
       shell: bash
       run: |
+        # `--json` is not alone on stdout. With the daemon off — which is CI — every
+        # plugin loads in-process, and whatever they log shares this stream: React
+        # Router's five future-flag warnings, for one. Nx also drains stdout as it
+        # exits, so noise can land AFTER the result as well as before it, which is
+        # why neither `head` nor `tail` is the answer. The result is one line and it
+        # is a JSON array, so take the last line that parses as one; parsing the
+        # whole stream first keeps the clean case working if nx ever pretty-prints.
+        # Nothing parseable means nx failed, not that the target is missing — say so
+        # here rather than let the caller report a target nobody could have added.
         first() {
           pnpm nx show projects --with-target "$1" --json \
-            | node -p "(JSON.parse(require('fs').readFileSync(0,'utf8'))[0] ?? '')"
+            | node -e '
+              const asArray = (s) => {
+                try {
+                  const value = JSON.parse(s);
+                  return Array.isArray(value) ? value : null;
+                } catch {
+                  return null;
+                }
+              };
+              const text = require("fs").readFileSync(0, "utf8");
+              let projects = asArray(text);
+              if (!projects) {
+                for (const line of text.split("\n")) {
+                  projects = asArray(line.trim()) ?? projects;
+                }
+              }
+              if (!projects) {
+                console.error("`nx show projects --json` printed no JSON array. Its output was:\n" + text);
+                process.exit(1);
+              }
+              process.stdout.write(projects[0] ?? "");
+            '
         }
         vuln="$(first scan-docker)"
         if [ -z "$vuln" ]; then
