@@ -1,3 +1,7 @@
+## 0.0.11 (2026-08-31)
+
+This was a version bump only for @fmmenchi/analytics to align it with other projects, there were no code changes.
+
 ## 0.0.10 (2026-08-18)
 
 ### 🩹 Fixes

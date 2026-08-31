@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/nx-trivy",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Nx executor that runs Trivy security scans — workspace-wide dependency-vulnerability scanning by default.",
   "license": "UNLICENSED",
   "repository": {

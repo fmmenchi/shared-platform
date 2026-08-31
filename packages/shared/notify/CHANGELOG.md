@@ -1,3 +1,7 @@
+## 0.0.18 (2026-08-31)
+
+This was a version bump only for @fmmenchi/notify to align it with other projects, there were no code changes.
+
 ## 0.0.17 (2026-08-18)
 
 ### 🚀 Features

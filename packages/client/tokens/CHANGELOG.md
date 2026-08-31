@@ -1,3 +1,25 @@
+## 0.0.35 (2026-08-31)
+
+### 🚀 Features
+
+- **tokens:** generatePalette, and the interchange format it travels in ([a91eb07](https://github.com/fmmenchi/shared-platform/commit/a91eb07))
+- **tokens:** four primitives over a theme, and the engine package removed ([121335a](https://github.com/fmmenchi/shared-platform/commit/121335a))
+- **theme-engine:** a package for building themes, separate from the contract ([ecf8b18](https://github.com/fmmenchi/shared-platform/commit/ecf8b18))
+- **tokens:** describeSystem reads a DesignSystem out of the stylesheets ([fd36e21](https://github.com/fmmenchi/shared-platform/commit/fd36e21))
+
+### 🩹 Fixes
+
+- **tokens:** a palette rung shipped outside sRGB, and nothing was checking ([21e8231](https://github.com/fmmenchi/shared-platform/commit/21e8231))
+- **tokens:** validateTheme enforces the APCA floor, so CI and the verdict agree ([3871885](https://github.com/fmmenchi/shared-platform/commit/3871885))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/theme to 0.0.2
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.34 (2026-08-29)
 
 ### 🩹 Fixes

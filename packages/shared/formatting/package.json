@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/formatting",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Locale-aware formatting of dates, numbers and money — one answer per value, shared by the client and the server. Framework-agnostic, isomorphic, no dependencies beyond Intl.",
   "license": "UNLICENSED",
   "repository": {

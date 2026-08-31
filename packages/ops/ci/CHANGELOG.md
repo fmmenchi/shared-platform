@@ -1,3 +1,9 @@
+## 0.2.1 (2026-08-31)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/notify to 0.0.18
+
 ## 0.2.0 (2026-08-21)
 
 This was a version bump only for @fmmenchi/ci to align it with other projects, there were no code changes.

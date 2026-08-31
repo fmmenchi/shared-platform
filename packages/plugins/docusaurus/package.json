@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/nx-docusaurus",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "type": "commonjs",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
