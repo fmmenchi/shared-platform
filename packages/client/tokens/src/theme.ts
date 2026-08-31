@@ -1,16 +1,21 @@
 /**
- * THE ENTRYPOINTS — the four things you can do with a theme.
+ * THE ENTRYPOINTS — the five things you can do with a theme.
  *
- *   parseTheme(...css)   stylesheets  -> the `--fm-*` declarations in them
- *   toTheme(declared)    declarations -> a theme: every role, resolved
- *   toCssVars(theme)     a theme      -> a stylesheet
- *   validateTheme(theme) a theme      -> what is wrong with it
+ *   parseTheme(...css)      stylesheets  -> the `--fm-*` declarations in them
+ *   toTheme(declared)       declarations -> a theme: every role, resolved
+ *   generateTheme(palette)  a palette    -> a theme: every role, placed
+ *   toCssVars(theme)        a theme      -> a stylesheet
+ *   validateTheme(theme)    a theme      -> what is wrong with it
  *
- * A pipeline one way and one function back out. They are separate because the
- * middle step is where the interesting failure lives: a stylesheet can be read
- * fine and still not describe a theme, and a theme can be complete and still be
- * unusable. Collapsing parse and resolve into one call would hide which of the
- * two went wrong.
+ * TWO WAYS IN, one check, one way out. Reading an existing theme and building a
+ * new one arrive at the same `Theme`, which is what lets everything downstream
+ * treat a generated theme and a hand-written one alike — the wizard's output goes
+ * through the validator a hand-edited preset does, not a lenient cousin of it.
+ *
+ * They are separate because the middle step is where the interesting failure
+ * lives: a stylesheet can be read fine and still not describe a theme, and a
+ * theme can be complete and still be unusable. Collapsing parse and resolve into
+ * one call would hide which of the two went wrong.
  *
  * NOTHING IS IMPLEMENTED HERE beyond composing what `utils/` provides. That is
  * the point of the file: opening it should answer "what can I do", not "how does
@@ -18,13 +23,18 @@
  * contrast, judging states — so a reader looking for one is not reading the
  * others on the way.
  */
+import { assignRoles } from './utils/assign-roles.js';
 import { parseCssVars, resolveCssVar } from './utils/parse-css.js';
 import { COLOR_ROLES, colorVar } from './tokens.types.js';
 import { validateContrast } from './utils/validate-contrast.js';
 import { validateRoles } from './utils/validate-roles.js';
 import { validateStates } from './utils/validate-states.js';
+import type { ColorScheme } from './utils/assign-roles.js';
+import type { Palette } from './palette.js';
 import type { ColorRole, Theme } from './tokens.types.js';
 import type { ThemeViolation } from './theme.types.js';
+
+export type { ColorScheme } from './utils/assign-roles.js';
 
 /**
  * Every `--fm-*` declaration in one or more stylesheets.
@@ -70,6 +80,31 @@ export function toTheme(declared: ReadonlyMap<string, string>): Partial<Theme> {
     if (raw !== undefined) theme[role] = resolveCssVar(raw, declared);
   }
   return theme;
+}
+
+/**
+ * The theme a palette describes: every colour role, PLACED.
+ *
+ * The other way in. `toTheme` reads a theme somebody already wrote; this one
+ * builds a theme nobody has written yet, from the eight colours a brand actually
+ * hands over. Both land on the same `Theme`, so the wizard's output faces the
+ * same validator as a hand-edited preset.
+ *
+ * It is a lookup, not a solver, and that is a measured fact rather than a
+ * simplification: read off the shipped themes, all 84 roles land exactly on a
+ * rung. The rungs carry absolute lightness, so a placement that clears its
+ * contrast floor for one brand clears it for the next — which is why the search
+ * a builder would seem to need is not here. What can still go wrong is a base
+ * whose gamut clamps a rung out of reach, and that is what `validateTheme` is
+ * for: it judges the result, it does not produce it.
+ *
+ * THROWS when the palette lacks a rung a placement names, rather than returning
+ * a theme with holes. An undefined role resolves to its `@property`
+ * initial-value — opaque black, in both themes, with nothing falsy to detect —
+ * so the hole would survive every check that looks at what is present.
+ */
+export function generateTheme(palette: Palette, scheme: ColorScheme): Theme {
+  return assignRoles(palette, scheme);
 }
 
 /**

@@ -52,12 +52,3 @@ export interface ContrastAdvisory {
   guideline: number;
   message: string;
 }
-
-/**
- * What one role must satisfy, and where a solver looks for it.
- *
- * TWO metrics, not one. A single WCAG `floor` would let a solver satisfy the
- * public verdict and still produce a theme this repo's own gate rejects,
- * because the gate also enforces APCA. Carrying both is what makes "the wizard
- * and CI ask the same question" true rather than aspirational.
- */
