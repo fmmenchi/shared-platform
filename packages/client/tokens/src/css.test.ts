@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parse as parseColor } from 'culori';
-import { evaluateRelativeOklch, expandVars, resolveValue } from './resolve.js';
+import { evaluateRelativeOklch, expandVars, resolveValue } from './css.js';
 
 /**
  * The resolver is what keeps the contrast gate able to SEE the derived values

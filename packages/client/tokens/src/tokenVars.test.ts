@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { tokenVars } from './refs.js';
+import { tokenVars } from './tokenVars.js';
 import { TOKEN_VARS } from './tokens.js';
 
 /**

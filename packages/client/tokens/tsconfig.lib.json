@@ -9,11 +9,6 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/codegen/generate.ts",
-    "src/codegen/registry.ts"
-  ],
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts", "src/properties.ts"],
   "references": []
 }

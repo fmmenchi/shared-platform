@@ -31,7 +31,7 @@ import {
   TRANSITION_TOKENS,
   Z_TOKENS,
 } from './tokens.js';
-import type { TokenRefGroup } from './refs.types.js';
+import type { TokenRefGroup } from './tokenVars.types.js';
 
 /** One group: every name in it, mapped to the `var()` that reads it. */
 const group = <const Names extends readonly string[]>(

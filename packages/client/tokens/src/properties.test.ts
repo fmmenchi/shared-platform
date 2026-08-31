@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderProperties, toIndependentLength } from './generate.js';
-import { readVars } from '../theme/read-vars.js';
-import { REGISTERED_SECTIONS } from './registry.js';
+import { renderProperties, toIndependentLength } from './properties.js';
+import { readVars } from './css.js';
+import { REGISTERED_SECTIONS } from './properties.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(join(here, path), 'utf8');
-const values = readVars(read('../styles/vars.css'));
+const values = readVars(read('./styles/vars.css'));
 
 /**
  * THE COMMITTED FILES ARE WHAT THE CONTRACT WOULD WRITE.
@@ -28,10 +28,10 @@ describe('generated artifacts', () => {
     // ASKED SEPARATELY, because `toMatchFileSnapshot` WRITES a missing file and
     // reports a pass — measured, outside CI. So a deleted artifact would leave
     // the local suite green and the package shipping nothing.
-    expect(existsSync(join(here, '../styles/properties.css'))).toBe(true);
+    expect(existsSync(join(here, './styles/properties.css'))).toBe(true);
 
     await expect(renderProperties(values)).toMatchFileSnapshot(
-      '../styles/properties.css',
+      './styles/properties.css',
     );
   });
 });

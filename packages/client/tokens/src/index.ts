@@ -30,10 +30,10 @@ export {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
   REFERENCE_PRESETS,
-} from './contract/tokens.js';
+} from './tokens.js';
 
-export { tokenVars } from './contract/refs.js';
-export type { TokenRefGroup } from './contract/refs.types.js';
+export { tokenVars } from './tokenVars.js';
+export type { TokenRefGroup } from './tokenVars.types.js';
 
 export type {
   ActionFamily,
@@ -41,10 +41,10 @@ export type {
   ColorRole,
   Theme,
   ReferencePreset,
-} from './contract/tokens.types.js';
+} from './tokens.types.js';
 
 export type {
   ViolationKind,
   ThemeViolation,
   ThemeAdvisory,
-} from './theme/validate.types.js';
+} from './theme.types.js';

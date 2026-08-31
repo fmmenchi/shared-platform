@@ -1,31 +1,21 @@
 /**
- * Public theme validation — what makes a theme "allowed", as executable code.
+ * THE FOUR PRIMITIVES over a theme.
  *
- * Apps that ship a brand preset should run this in their own CI:
+ *   parseTheme(...css)   stylesheets  -> the `--fm-*` declarations in them
+ *   toTheme(declared)    declarations -> a theme: every role, resolved
+ *   toCssVars(theme)     a theme      -> a stylesheet
+ *   validateTheme(theme) a theme      -> what is wrong with it
  *
- *   import { validateTheme } from '@fmmenchi/tokens/validate';
- *   expect(validateTheme(myBrandColors)).toEqual([]);
+ * A pipeline in one direction and one function back out. They are separate
+ * because the middle step is where the interesting failure lives: a stylesheet
+ * can be read fine and still not describe a theme, and a theme can be complete
+ * and still be unusable. Collapsing parse and resolve into one call would have
+ * hidden which of the two went wrong.
  *
- * A theme must assign every color role with a parsable color (RESOLVED
- * literals, not var() references), and every declared pair must clear BOTH hard
- * floors: WCAG AA, and an APCA |Lc| of 45 on text pairs.
- *
- * APCA lives here rather than in a test, and that move is the point. The policy
- * was always both — WCAG 2.x is a blunt instrument on dark themes, which is
- * exactly the case a generated theme gets wrong — but only the WCAG half was in
- * this function, while `tokens.test.ts` enforced the APCA floor separately. So
- * the pipeline demanded more than the public verdict, and a generated theme
- * could pass a builder calling `validateTheme()` and then fail the repository's
- * own gate. One question, asked in one place, is what makes a preview's promise
- * worth anything (ADR-0033).
- *
- * The |Lc| 60 body-text guideline stays ADVISORY and is reported by
- * `themeAdvisories()`, not returned here: 60 is guidance for body copy, and the
- * smallest text in this system is a medium-weight button label.
- * The reference presets pass this exact validator (see `tokens.test.ts`).
- *
- * Subpath entry (`@fmmenchi/tokens/validate`) so the browser import graph of
- * the main entry never pulls the color math in.
+ * `toTheme` is not new work so much as work that was being done twice by hand:
+ * `tokens.test.ts` held two identical copies of it. Two copies of a resolve, in
+ * the file that guards the contract, is how a gate ends up checking something
+ * other than what ships.
  */
 import { APCAcontrast, sRGBtoY } from 'apca-w3';
 import {
@@ -34,17 +24,81 @@ import {
   parse as parseColor,
   wcagContrast,
 } from 'culori';
-// FROM THE MODULES, not from the barrel. This file is a separate subpath so a
-// browser importing the main entry never pulls the colour maths in; importing
-// `./index.js` ran that coupling backwards, so every addition to the barrel —
-// `tokenVars` was the latest — widened `@fmmenchi/tokens/validate` too.
+
+import { readVars, resolveValue } from './css.js';
 import {
   ACTION_FAMILIES,
   COLOR_ROLES,
   STATUS_FAMILIES,
-} from '../contract/tokens.js';
-import type { ColorRole } from '../contract/tokens.types.js';
-import type { ThemeAdvisory, ThemeViolation } from './validate.types.js';
+  colorVar,
+} from './tokens.js';
+import type { ColorRole, Theme } from './tokens.types.js';
+import type { ThemeAdvisory, ThemeViolation } from './theme.types.js';
+
+/**
+ * Every `--fm-*` declaration in one or more stylesheets.
+ *
+ * Sources are given in CASCADE ORDER and merged the way a browser merges them:
+ * a later declaration wins. That is what lets a preset be read as part of a
+ * whole — `presets/dark.css` overrides the roles it changes and references the
+ * greys it never redeclares.
+ *
+ * Comments are stripped before parsing. A role commented out during a retune
+ * would otherwise read as declared, and every gate would then pass on a role the
+ * shipped CSS does not define.
+ */
+export function parseTheme(...sources: readonly string[]): Map<string, string> {
+  const declared = new Map<string, string>();
+  for (const css of sources) {
+    for (const [name, value] of readVars(css)) declared.set(name, value);
+  }
+  return declared;
+}
+
+/**
+ * The theme those declarations describe: every colour role, RESOLVED.
+ *
+ * `var()` chains are followed and the relative-colour ramp is evaluated, because
+ * a role points at a palette rung and a rung is `oklch(from …)`. An unresolved
+ * theme cannot be measured, and a validator that cannot measure is worse than
+ * none — it reports nothing wrong.
+ *
+ * THROWS on a reference that nothing declares, rather than returning a theme
+ * with a hole in it. Reading `presets/dark.css` by itself does exactly that: it
+ * points at greys only `vars.css` declares. The refusal is deliberate — half a
+ * theme that looks whole is the one thing a caller cannot detect.
+ *
+ * A role that is simply ABSENT is different, and is left absent: that is the gap
+ * `validateTheme()` reports as `missing-role`, and inventing a value would hide
+ * it.
+ */
+export function toTheme(declared: ReadonlyMap<string, string>): Partial<Theme> {
+  const theme: Partial<Record<ColorRole, string>> = {};
+  for (const role of COLOR_ROLES) {
+    const raw = declared.get(colorVar(role));
+    if (raw !== undefined) theme[role] = resolveValue(raw, declared);
+  }
+  return theme;
+}
+
+/**
+ * Emit a theme as CSS custom properties.
+ *
+ * The first of the bindings, and the one the others are measured against:
+ * custom properties are the universal surface, so a Tailwind bridge or a DTCG
+ * file is an alternative rendering OF this, never a replacement for it.
+ *
+ * It decides nothing about colour — whatever `toTheme` resolved, or a generator
+ * computed, is what lands. That is what lets it round-trip, and what keeps two
+ * opinions about what a theme may hold out of two different files.
+ */
+export function toCssVars(theme: Partial<Theme>, selector = ':root'): string {
+  const lines = COLOR_ROLES.filter((role) => theme[role] !== undefined).map(
+    (role) => `  ${colorVar(role)}: ${theme[role] as string};`,
+  );
+
+  return `${selector} {\n${lines.join('\n')}\n}\n`;
+}
 
 /**
  * The DECLARED PAIRS — the only role combinations the design system
@@ -132,7 +186,7 @@ export const CONTRAST_PAIRS: ReadonlyArray<
 
 // `ThemeViolation` moved to `validate.types.ts` with every other type in this
 // package. Re-exported because it is part of this subpath's public API.
-export type { ThemeAdvisory, ThemeViolation } from './validate.types.js';
+export type { ThemeAdvisory, ThemeViolation } from './theme.types.js';
 
 /** WCAG AA for text. The pairs declaring this are the ones APCA also judges. */
 const TEXT_RATIO = 4.5;

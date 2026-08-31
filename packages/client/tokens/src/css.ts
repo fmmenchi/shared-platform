@@ -1,21 +1,40 @@
 /**
- * Resolve a token value the way a browser would: follow `var()` references and
- * evaluate the one relative-colour form the ramps use.
+ * READING A STYLESHEET — the two steps between CSS text and a colour you can
+ * measure.
  *
- * This exists because the CONTRAST GATE has to keep working. `tokens.test.ts`
- * reads the stylesheet and hands each value to culori, and
- * `parseColor('oklch(from var(--x) calc(l - 0.1) calc(c * 0.86) h)')` is
- * `undefined` — so without this every colour assertion would fail for the one
- * reason a test must never fail: it can no longer see what it is checking.
- * ADR-0032 makes AA a requirement of the derivation, and a requirement needs a
- * gate that can read the derived values.
- *
- * It is NOT a CSS engine and does not try to be. It handles the single shape
- * ADR-0032 introduces — a channel is either passed through or adjusted by one
- * `calc()` with one operation — and REFUSES anything else rather than guessing:
- * a resolver that silently mis-evaluates a colour would make the gate worse
- * than absent, because it would go green on the wrong number.
+ * `readVars` finds the `--fm-*` declarations; `resolveValue` turns one of them
+ * into the colour a browser would paint, following `var()` chains and evaluating
+ * the relative-colour ramp. Both live here because neither is useful without the
+ * other, and neither is a concept a caller needs a name for — they are how
+ * `theme.ts` does its job.
  */
+/**
+ * Every `--fm-*: value` in a stylesheet, in source order.
+ *
+ * COMMENTS ARE REMOVED FIRST, and that is not tidiness. Anchoring on `^\s*`
+ * only asks for the start of a LINE, so a role commented out during a retune —
+ * the ordinary `/* off for now` around a block — reads as a declaration. Every
+ * gate would then pass on a role the shipped CSS does not define: completeness
+ * sees it, contrast reads its value out of the comment, and `properties.css`
+ * registers it. The `:root` value being absent, it resolves to the `@property`
+ * initial-value, `oklch(0 0 0)` — black, on every consumer, in both themes.
+ */
+export function readVars(css: string): Map<string, string> {
+  const values = new Map<string, string>();
+  const live = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  for (const [, name, value] of live.matchAll(
+    /^\s*(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/gm,
+  )) {
+    if (values.has(name as string)) {
+      throw new Error(
+        `Duplicate declaration of ${name}. Two values for one token in one file means the later one silently wins, and which is later is not something anybody reads a stylesheet to find out.`,
+      );
+    }
+    values.set(name as string, (value as string).trim().replace(/\s+/g, ' '));
+  }
+  return values;
+}
 
 const VAR_PATTERN = /var\(\s*(--[a-z0-9-]+)\s*(?:,\s*([^)]*))?\)/i;
 

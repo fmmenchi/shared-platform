@@ -1,5 +1,3 @@
-import { REGISTERED_SECTIONS } from './registry.js';
-
 /**
  * THE FILES THAT ONLY RESTATE THE CONTRACT, WRITTEN BY THE CONTRACT.
  *
@@ -19,6 +17,55 @@ import { REGISTERED_SECTIONS } from './registry.js';
  * Rendered as strings rather than written to disk, so the test that keeps the
  * committed files honest is an ordinary assertion — see `generate.test.ts`.
  */
+import {
+  ACTION_FAMILIES,
+  ACTION_SUFFIXES,
+  INPUT_ROLES,
+  NEUTRAL_ROLES,
+  RADIUS_TOKENS,
+  STATUS_FAMILIES,
+  STATUS_SUFFIXES,
+  SURFACE_ROLES,
+} from './tokens.js';
+import type { RegisteredSection } from './properties.types.js';
+
+const colorVars = (roles: readonly string[]) =>
+  roles.map((role) => `--fm-color-${role}`);
+
+const family = (
+  families: readonly string[],
+  suffixes: readonly string[],
+): string[] => families.flatMap((f) => suffixes.map((s) => `${f}${s}`));
+
+export const REGISTERED_SECTIONS: readonly RegisteredSection[] = [
+  {
+    title: `Action families (${ACTION_FAMILIES.join(' · ')})`,
+    syntax: '<color>',
+    vars: colorVars(family(ACTION_FAMILIES, ACTION_SUFFIXES)),
+  },
+  {
+    title: `Status roles (${STATUS_FAMILIES.join(' · ')})`,
+    syntax: '<color>',
+    vars: colorVars(family(STATUS_FAMILIES, STATUS_SUFFIXES)),
+  },
+  {
+    title: 'Neutral + disabled',
+    syntax: '<color>',
+    vars: colorVars(NEUTRAL_ROLES),
+  },
+  {
+    title: 'Surfaces, text & focus',
+    syntax: '<color>',
+    vars: colorVars(SURFACE_ROLES),
+  },
+  { title: 'Form controls', syntax: '<color>', vars: colorVars(INPUT_ROLES) },
+  {
+    title: 'Radius',
+    note: '<length> initial-value must be computationally independent, so NO rem/em (the browser rejects the rule): px equivalents at the 16px root, converted from the real value rather than restated beside it.',
+    syntax: '<length>',
+    vars: RADIUS_TOKENS.map((token) => `--fm-radius-${token}`),
+  },
+];
 
 /**
  * A `<length>` the browser will accept as an `initial-value`: it has to be
