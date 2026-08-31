@@ -46,10 +46,11 @@ Read these. Nineteen decisions, grouped as they are actually made.
 
 Decided on paper, awaiting review — not yet in force.
 
-| ADR                                  | Title                                                       |
-| ------------------------------------ | ----------------------------------------------------------- |
-| [0027](./0027-dates-and-calendar.md) | Dates: a native field, and a Calendar for what it cannot do |
-| [0028](./0028-combobox.md)           | Combobox: the first control we draw ourselves, and its cost |
+| ADR                                  | Title                                                                 |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| [0027](./0027-dates-and-calendar.md) | Dates: a native field, and a Calendar for what it cannot do           |
+| [0028](./0028-combobox.md)           | Combobox: the first control we draw ourselves, and its cost           |
+| [0029](./0029-multi-combobox.md)     | MultiCombobox: a second component, a shared list, where N values ride |
 
 ## Superseded
 
