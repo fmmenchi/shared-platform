@@ -81,6 +81,28 @@ function assertNoLanguageSniffPlugin() {
   };
 }
 
+/**
+ * The design-system EXPORT build (`nx build-design`), consumed by the
+ * claude.ai/design sync. Identical to the published build in every way that is
+ * visible — same sources, same CSS, same emitted types, same public API — with
+ * exactly one difference: the React Compiler does not run.
+ *
+ * Why it has to differ. The compiler emits `import { c } from
+ * 'react/compiler-runtime'`; React 19 ships that module as CommonJS, and inside
+ * it does `require("react")`. Every real bundler resolves that against the app's
+ * React, which is why the published artifact is correct and stays memoized. The
+ * export harness instead serves React as a GLOBAL `<script>`, so there is no
+ * module `require` at all — and esbuild's `__require` fallback is captured in
+ * the bundle prologue, before any module body runs, so nothing loaded later can
+ * supply one. Measured: with the compiler, 0 of 55 component previews mount;
+ * without it, 55 of 55 render cleanly.
+ *
+ * Memoization is a performance transform — it changes no markup, no styles and
+ * no props — so the exported previews still show what consumers get. This flag
+ * exists so that stays true WITHOUT the published package losing the compiler.
+ */
+const DESIGN_EXPORT = process.env['FM_DESIGN_EXPORT'] === '1';
+
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/packages/client/ui',
@@ -106,10 +128,17 @@ export default defineConfig(() => ({
     // shipped, so compiling them buys nothing — while `panicThreshold` would
     // turn an inline component written for one assertion into a failed
     // transform, which reads as forty-five unrelated test failures. Measured.
-    babel({
-      presets: [reactCompilerPreset({ panicThreshold: 'all_errors' })],
-      exclude: [/\.test\.tsx?$/, /\.stories\.tsx?$/, /test-setup\.ts$/],
-    }),
+    //
+    // Omitted ONLY for the design-export build — see DESIGN_EXPORT above. The
+    // published build always compiles.
+    ...(DESIGN_EXPORT
+      ? []
+      : [
+          babel({
+            presets: [reactCompilerPreset({ panicThreshold: 'all_errors' })],
+            exclude: [/\.test\.tsx?$/, /\.stories\.tsx?$/, /test-setup\.ts$/],
+          }),
+        ]),
     tailwindcss(),
     combinedCssPlugin(),
     assertNoLanguageSniffPlugin(),
@@ -119,7 +148,9 @@ export default defineConfig(() => ({
     }),
   ],
   build: {
-    outDir: './dist',
+    // Its own directory, so the export build can never overwrite the artifact
+    // that gets published.
+    outDir: DESIGN_EXPORT ? './dist-design' : './dist',
     emptyOutDir: true,
     reportCompressedSize: true,
     // The package's own browser floor (ADR-0017: Baseline Widely), stated,
@@ -253,7 +284,24 @@ export default defineConfig(() => ({
       formats: ['es' as const],
     },
     rolldownOptions: {
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      // `react/compiler-runtime` belongs here for the same reason as the three
+      // beside it: it is part of the React 19 PEER, not something this package
+      // ships. Left off the list it gets BUNDLED — and React's copy of it is
+      // CommonJS, so rolldown inlines it behind its `require` interop and the
+      // dist grows a `require("react")` on a path that has no `require`. In a
+      // browser-ESM consumer that throws before a single component mounts.
+      //
+      // Found by loading the real dist outside this repo (the design-system
+      // export to claude.ai/design): every component failed with "Dynamic
+      // require of react is not supported". Nothing here could have caught it —
+      // no test imports dist, and the compiler runtime is only reached at
+      // render time. Same blind spot as the minifier defect in doc/known-issues.
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'react/compiler-runtime',
+      ],
     },
   },
   test: {

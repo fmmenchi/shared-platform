@@ -2,6 +2,7 @@
 
 # compiled output
 dist
+dist-design
 tmp
 out-tsc
 
@@ -62,3 +63,12 @@ storybook-static
 # vitest browser-mode artifacts
 .vitest-attachments/
 **/__screenshots__/
+
+# design-sync
+.design-sync/*.log
+.design-sync/sb-reference/
+.design-sync/learnings/
+.design-sync/.cache/
+.design-sync/node_modules
+.ds-sync/
+ds-bundle/

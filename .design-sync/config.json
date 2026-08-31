@@ -1,0 +1,48 @@
+{
+  "projectId": "b86743eb-5426-4976-896c-3ef8a15d8570",
+  "shape": "storybook",
+  "pkg": "@fmmenchi/ui",
+  "globalName": "FmmenchiUI",
+  "entry": "packages/client/ui/dist-design/index.js",
+  "buildCmd": "pnpm nx build-design @fmmenchi/ui",
+  "storybookConfigDir": "packages/client/ui/.storybook",
+  "storybookStatic": ".design-sync/sb-reference",
+  "tokensPkg": "@fmmenchi/tokens",
+  "tokensGlob": "src/styles/**/*.css",
+  "titleMap": {
+    "Toast": "ToastRegion",
+    "Colors": null,
+    "Rebrandinsevennumbers": null
+  },
+  "provider": {
+    "component": "UiProvider",
+    "props": {
+      "adapters": {
+        "i18n": {
+          "locale": "en"
+        }
+      }
+    }
+  },
+  "overrides": {
+    "Button": {
+      "cardMode": "column"
+    },
+    "Calendar": {
+      "cardMode": "column"
+    },
+    "Pagination": {
+      "cardMode": "column"
+    },
+    "Tooltip": {
+      "cardMode": "column"
+    },
+    "AppLayout": {
+      "cardMode": "column"
+    }
+  },
+  "storyImports": {
+    "shim": [".component.", "/src/i18n/provider", "/components/table/use-"]
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

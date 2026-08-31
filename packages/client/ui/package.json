@@ -691,6 +691,23 @@
           "command": "node .storybook/generate-manager-theme.mjs",
           "cwd": "{projectRoot}"
         }
+      },
+      "build-design": {
+        "executor": "nx:run-commands",
+        "cache": true,
+        "dependsOn": [
+          "^build"
+        ],
+        "outputs": [
+          "{projectRoot}/dist-design"
+        ],
+        "options": {
+          "command": "vite build",
+          "cwd": "{projectRoot}",
+          "env": {
+            "FM_DESIGN_EXPORT": "1"
+          }
+        }
       }
     }
   },
