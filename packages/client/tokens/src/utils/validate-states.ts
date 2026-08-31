@@ -24,7 +24,7 @@ const SAME_AS_REST = 0.02;
 /** Disabled is allowed to be subtle, but not invisible. */
 const SAME_AS_ENABLED = 0.03;
 
-export function stateViolations(
+export function validateStates(
   parsable: ReadonlyMap<string, Parsed>,
 ): ThemeViolation[] {
   const violations: ThemeViolation[] = [];

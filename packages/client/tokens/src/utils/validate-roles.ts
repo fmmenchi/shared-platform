@@ -13,7 +13,7 @@ import type { ThemeViolation } from '../theme.types.js';
 
 type Parsed = NonNullable<ReturnType<typeof parseColor>>;
 
-export interface ParsedColors {
+export interface ValidatedRoles {
   /** Every role that parsed, by name — what the contrast checks measure. */
   readonly parsable: ReadonlyMap<string, Parsed>;
   readonly violations: readonly ThemeViolation[];
@@ -27,9 +27,9 @@ export interface ParsedColors {
  * falsifies contrast maths — but dropping it would hide every pair it takes part
  * in behind a second, quieter failure.
  */
-export function parseColors(
+export function validateRoles(
   colors: Readonly<Record<string, string>>,
-): ParsedColors {
+): ValidatedRoles {
   const violations: ThemeViolation[] = [];
   const parsable = new Map<string, Parsed>();
   const known = new Set<string>(COLOR_ROLES);

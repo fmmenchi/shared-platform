@@ -164,7 +164,7 @@ export function themeAdvisories(
  * parse pass already said so, and a second complaint about the same value tells
  * a reader nothing new.
  */
-export function contrastViolations(
+export function validateContrast(
   colors: Readonly<Record<string, string>>,
   parsable: ReadonlyMap<string, Parsed>,
 ): ThemeViolation[] {

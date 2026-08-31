@@ -20,9 +20,9 @@
  */
 import { readVars, resolveValue } from './utils/css.js';
 import { COLOR_ROLES, colorVar } from './tokens.types.js';
-import { contrastViolations } from './utils/contrast.js';
-import { parseColors } from './utils/roles.js';
-import { stateViolations } from './utils/states.js';
+import { validateContrast } from './utils/validate-contrast.js';
+import { validateRoles } from './utils/validate-roles.js';
+import { validateStates } from './utils/validate-states.js';
 import type { ColorRole, Theme } from './tokens.types.js';
 import type { ThemeViolation } from './theme.types.js';
 
@@ -115,13 +115,13 @@ export type { ThemeAdvisory, ThemeViolation } from './theme.types.js';
 export function validateTheme(
   colors: Readonly<Record<string, string>>,
 ): ThemeViolation[] {
-  const { parsable, violations } = parseColors(colors);
+  const { parsable, violations } = validateRoles(colors);
 
   return [
     ...violations,
-    ...contrastViolations(colors, parsable),
-    ...stateViolations(parsable),
+    ...validateContrast(colors, parsable),
+    ...validateStates(parsable),
   ];
 }
 
-export { themeAdvisories, CONTRAST_PAIRS } from './utils/contrast.js';
+export { themeAdvisories, CONTRAST_PAIRS } from './utils/validate-contrast.js';
