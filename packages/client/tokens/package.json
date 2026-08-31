@@ -35,17 +35,11 @@
       "import": "./dist/palette.js",
       "default": "./dist/palette.js"
     },
-    "./theme": {
-      "@fmmenchi/source": "./src/theme.ts",
-      "types": "./dist/theme.d.ts",
-      "import": "./dist/theme.js",
-      "default": "./dist/theme.js"
-    },
     "./validate": {
-      "@fmmenchi/source": "./src/theme.ts",
-      "types": "./dist/theme.d.ts",
-      "import": "./dist/theme.js",
-      "default": "./dist/theme.js"
+      "@fmmenchi/source": "./src/validate.ts",
+      "types": "./dist/validate.d.ts",
+      "import": "./dist/validate.js",
+      "default": "./dist/validate.js"
     },
     "./resolve": {
       "@fmmenchi/source": "./src/utils/parse-css.ts",

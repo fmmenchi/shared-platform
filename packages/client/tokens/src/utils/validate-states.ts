@@ -13,7 +13,7 @@
 import { converter, parse as parseColor } from 'culori';
 
 import { ACTION_FAMILIES } from '../tokens.types.js';
-import type { ThemeViolation } from '../theme.types.js';
+import type { ThemeViolation } from '../validate.types.js';
 
 type Parsed = NonNullable<ReturnType<typeof parseColor>>;
 

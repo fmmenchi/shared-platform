@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { COLOR_ROLES } from './tokens.types.js';
-import { parseTheme, toCssVars, toTheme } from './theme.js';
-import { validateTheme } from './theme.js';
+import { parseTheme, toTheme } from './validate.js';
+import { validateTheme } from './validate.js';
 
 const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
@@ -57,32 +57,5 @@ describe('toTheme', () => {
   it('feeds validateTheme directly: both shipped themes are allowed', () => {
     expect(validateTheme(toTheme(parseTheme(VARS)))).toEqual([]);
     expect(validateTheme(toTheme(parseTheme(VARS, DARK)))).toEqual([]);
-  });
-});
-
-describe('toCssVars', () => {
-  it('round-trips through the whole pipeline', () => {
-    const theme = toTheme(parseTheme(VARS));
-    expect(toTheme(parseTheme(toCssVars(theme)))).toEqual(theme);
-  });
-
-  it('writes every declared role and nothing else', () => {
-    expect(toCssVars({ primary: 'oklch(41% 0.135 255)' })).toBe(
-      ':root {\n  --fm-color-primary: oklch(41% 0.135 255);\n}\n',
-    );
-  });
-
-  it('takes the selector a preset needs', () => {
-    const css = toCssVars(
-      { primary: 'oklch(75% 0.13 256)' },
-      "[data-theme='dark']",
-    );
-    expect(css.startsWith("[data-theme='dark'] {")).toBe(true);
-  });
-
-  it('decides nothing about colour — values land as given', () => {
-    // Deliberately not a colour: the emitter is not a validator, and pretending
-    // otherwise would put two opinions about what a theme may hold in two files.
-    expect(toCssVars({ primary: 'nonsense' })).toContain('primary: nonsense;');
   });
 });

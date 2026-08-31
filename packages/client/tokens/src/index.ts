@@ -40,4 +40,4 @@ export type {
   ViolationKind,
   ThemeViolation,
   ContrastAdvisory,
-} from './theme.types.js';
+} from './validate.types.js';

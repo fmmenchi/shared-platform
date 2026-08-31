@@ -3,7 +3,6 @@
  *
  *   parseTheme(...css)   stylesheets  -> the `--fm-*` declarations in them
  *   toTheme(declared)    declarations -> a theme: every role, resolved
- *   toCssVars(theme)     a theme      -> a stylesheet
  *   validateTheme(theme) a theme      -> what is wrong with it
  *
  * A pipeline one way and one function back out. They are separate because the
@@ -24,7 +23,7 @@ import { validateContrast } from './utils/validate-contrast.js';
 import { validateRoles } from './utils/validate-roles.js';
 import { validateStates } from './utils/validate-states.js';
 import type { ColorRole, Theme } from './tokens.types.js';
-import type { ThemeViolation } from './theme.types.js';
+import type { ThemeViolation } from './validate.types.js';
 
 /**
  * Every `--fm-*` declaration in one or more stylesheets.
@@ -72,28 +71,9 @@ export function toTheme(declared: ReadonlyMap<string, string>): Partial<Theme> {
   return theme;
 }
 
-/**
- * Emit a theme as CSS custom properties.
- *
- * The first of the bindings, and the one the others are measured against:
- * custom properties are the universal surface, so a Tailwind bridge or a DTCG
- * file is an alternative rendering OF this, never a replacement for it.
- *
- * It decides nothing about colour — whatever `toTheme` resolved, or a generator
- * computed, is what lands. That is what lets it round-trip, and what keeps two
- * opinions about what a theme may hold out of two different files.
- */
-export function toCssVars(theme: Partial<Theme>, selector = ':root'): string {
-  const lines = COLOR_ROLES.filter((role) => theme[role] !== undefined).map(
-    (role) => `  ${colorVar(role)}: ${theme[role] as string};`,
-  );
-
-  return `${selector} {\n${lines.join('\n')}\n}\n`;
-}
-
 // `ThemeViolation` moved to `validate.types.ts` with every other type in this
 // package. Re-exported because it is part of this subpath's public API.
-export type { ContrastAdvisory, ThemeViolation } from './theme.types.js';
+export type { ContrastAdvisory, ThemeViolation } from './validate.types.js';
 
 /**
  * Validate a complete color-role assignment. Returns [] when the theme is

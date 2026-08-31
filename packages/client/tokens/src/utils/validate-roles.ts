@@ -9,7 +9,7 @@
 import { displayable, parse as parseColor } from 'culori';
 
 import { COLOR_ROLES } from '../tokens.types.js';
-import type { ThemeViolation } from '../theme.types.js';
+import type { ThemeViolation } from '../validate.types.js';
 
 type Parsed = NonNullable<ReturnType<typeof parseColor>>;
 

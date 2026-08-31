@@ -14,7 +14,12 @@ import {
   colorVar,
   TEXT_TOKENS,
 } from './index.js';
-import { parseTheme, adviseContrast, toTheme, validateTheme } from './theme.js';
+import {
+  parseTheme,
+  adviseContrast,
+  toTheme,
+  validateTheme,
+} from './validate.js';
 import { tokenVars } from './tokens.types.js';
 import { resolveCssVar } from './utils/parse-css.js';
 

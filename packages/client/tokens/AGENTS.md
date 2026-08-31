@@ -17,17 +17,28 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
 ## Where this package stops
 
 It answers two questions and no others: **what is a theme** (the contract) and
-**what can I do with one** (parse it, generate it, validate it, emit it). Five
-operations, and the loop closes:
+**is this one allowed** (the gate). One question in, one verdict out:
 
 ```
 parseTheme(css) -> toTheme(declarations) -> a Theme
-generateTheme(...)                       -> a Theme
 validateTheme(theme)                     -> what is wrong with it
-toCssVars(theme)                         -> a stylesheet
 ```
 
-Two ways in, one check, one way out.
+`parseTheme` and `toTheme` are how that gate READS a stylesheet, and their only
+callers are this package's own tests. They are exported because a consumer
+validating a hand-written preset needs the same two steps, not because they are a
+surface anybody has asked for.
+
+**BUILDING a theme is NOT here**, and the file this section used to describe is
+gone. `toCssVars` was deleted for having no caller and for being narrower than the
+only plausible one: the Nx generator emits a `[data-theme]` block with a docblock,
+a `color-scheme` line and declarations at every layer, while `toCssVars` could only
+write the `--fm-color-*` rows. A generator that has to write its own template
+anyway gains nothing from a function that writes a third of it.
+
+`generatePalette` (`./palette`) is the one thing here with no caller at all. It
+stays because it is measured colour maths rather than a guessed shape — and it
+moves out the day the generation path is written, to wherever that path lives.
 
 **THE WIZARD'S MODEL IS NOT HERE.** The form, its types, the record of which rung a
 person pinned, the editing of a generated theme and the re-export at the end are

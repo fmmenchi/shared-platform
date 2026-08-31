@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseTheme, toTheme } from '../theme.js';
+import { parseTheme, toTheme } from '../validate.js';
 import { validateRoles } from './validate-roles.js';
 
 /**

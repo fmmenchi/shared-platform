@@ -1,6 +1,15 @@
 # ADR 0033 — A GUI for the theme generator
 
 - **Status:** proposed (2026-08-30)
+- **Revised 2026-08-31:** `generateTheme()` and the placement table were written, then
+  REVERTED — they had no caller (the plugin installs, the builder generates, and the
+  builder does not exist yet) and they put the role-to-rung mapping in a second place
+  beside the eighty-four `var()` lines already in `vars.css`. `toCssVars` was deleted
+  with them, for having no caller and being narrower than the only plausible one. What
+  the pipeline below says about WHERE generation lives is therefore not settled; what it
+  says about the handoff is: the Nx generator now takes `--from=<file.json>` and reads
+  its `declarations` — CSS custom properties at any layer, not the finished colours — so
+  a consumer's theme keeps the derivation ours has.
 - **Date:** 2026-08-30
 - **Deciders:** Fabio Menchicchi
 
@@ -61,7 +70,7 @@ system rather than a drawing of it.
 > `styles/presets/*.css` — while a THEME is the role assignment, the `Theme` type
 > every operation already speaks in. This function returns the assignment, so it is
 > a theme it generates, and the name joins the family the package settled on:
-> `parseTheme`, `toTheme`, `toCssVars`, `validateTheme`, `generateProperties`.
+> `parseTheme`, `toTheme`, `validateTheme`, `generateProperties`.
 
 **Three parts, and the calculation is the one that matters.**
 
@@ -874,7 +883,6 @@ graph TB
         genTheme["generateTheme(palette, …)<br/>NOT WRITTEN YET"]
         validate["validateTheme(theme)"]
         advise["adviseContrast(theme)"]
-        emit["toCssVars(theme, selector)"]
         parse["parseTheme(css) → toTheme()"]
     end
 
