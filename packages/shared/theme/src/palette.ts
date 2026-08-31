@@ -82,6 +82,46 @@ function fitChroma(lightness: number, chroma: number, hue: number): number {
 }
 
 /**
+ * ROUNDED, AND NOT FOR TIDINESS.
+ *
+ * Full-precision output is not stable across JavaScript engines. `fitChroma`'s
+ * bisection runs through culori's gamut conversions, which call `cbrt` and `pow` —
+ * and those are not required to be bit-exact between implementations. Measured:
+ * the same bases produced `oklch(0.9 0.015695460309523714 194.00079384283254)` in
+ * Chromium and `…523703 194.0007938428326` in Node, which React reported as a
+ * hydration mismatch the first time a page rendered a palette on the server.
+ *
+ * That is the small symptom. The real one is that a generated stylesheet would not
+ * be reproducible: emit it on one machine, validate it on another, and the values
+ * differ — for no visible reason, since these digits are far below anything an eye
+ * or a contrast ratio can tell apart.
+ *
+ * Four decimals on lightness and chroma, two on hue. A JND in oklch lightness is
+ * around 0.01, so four decimals is two orders of magnitude finer than perception,
+ * and the emitted CSS becomes readable as a bonus rather than as the point.
+ */
+function round(value: number, places: number): number {
+  const factor = 10 ** places;
+  return Math.round(value * factor) / factor;
+}
+
+/**
+ * CHROMA IS TRUNCATED, NOT ROUNDED, and a test caught the difference.
+ *
+ * `fitChroma` returns the largest chroma sRGB can show, so it lands ON the gamut
+ * boundary — and rounding a boundary value to the nearest four decimals moves it
+ * OUT half the time. The clamp then means nothing: the emitted colour is one a
+ * browser has to map back its own way, which is the whole failure the clamp exists
+ * to prevent. `@fmmenchi/tokens`' own rules warn about exactly this ("rounding can
+ * push a boundary value back out"), and the first version of this rounding did it
+ * anyway. Flooring can only move a value further inside.
+ */
+function floorTo(value: number, places: number): number {
+  const factor = 10 ** places;
+  return Math.floor(value * factor) / factor;
+}
+
+/**
  * Place every family on the ramp.
  *
  * Throws on a base that is not a colour, rather than emitting a family of
@@ -109,9 +149,9 @@ export function generatePalette(bases: Bases, ramp: Ramp): Palette {
       const wanted = c * rung.chromaFactor;
       rungs[rung.step] = formatCss({
         mode: 'oklch',
-        l: rung.lightness,
-        c: fitChroma(rung.lightness, wanted, hue),
-        h: hue,
+        l: round(rung.lightness, 4),
+        c: floorTo(fitChroma(rung.lightness, wanted, hue), 4),
+        h: round(hue, 2),
       });
     }
     palette[family] = rungs;
