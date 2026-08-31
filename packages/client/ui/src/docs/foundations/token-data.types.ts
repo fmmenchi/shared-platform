@@ -1,4 +1,4 @@
-import type { ColorRole } from '@fmmenchi/tokens';
+import type { ColorRole } from '@fmmenchi/theme';
 
 /** One role, with the custom property a consumer would actually write. */
 export type RoleEntry = {

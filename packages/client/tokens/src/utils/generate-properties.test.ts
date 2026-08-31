@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateProperties, toPixels } from './generate-properties.js';
-import { parseCssVars } from './parse-css.js';
+import { parseCssVars } from '@fmmenchi/theme';
 import { REGISTERED_SECTIONS } from './generate-properties.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

@@ -1,8 +1,15 @@
 # AGENTS.md — @fmmenchi/tokens
 
-The semantic token CONTRACT — the most delicate package of the platform: it defines the allowed
-themes. Part of `shared-platform`; workspace contract in [../../../AGENTS.md](../../../AGENTS.md).
-Scope `client`, type `util`.
+The token VALUES, and the stylesheets that carry them — the most delicate package of the platform:
+what it ships is what every consumer paints with. Part of `shared-platform`; workspace contract in
+[../../../AGENTS.md](../../../AGENTS.md). Scope `client`, type `util`.
+
+**The CONTRACT is not here.** What a theme IS and whether one is allowed live in
+[`@fmmenchi/theme`](../../shared/theme) — private, source-only, bundled into whoever uses it. The
+split is not tidiness: `@fmmenchi/nx-theme-generator` is `scope:plugins` and may not depend on a
+`scope:client` library, so as long as the contract lived here the generator could only reach it
+through `createRequire` and dynamic `import()`. `scope:shared` is the one scope a client library, a
+plugin and an app may all import.
 
 ## Commands
 
@@ -16,50 +23,46 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
 
 ## Where this package stops
 
-It answers two questions and no others: **what is a theme** (the contract) and
-**is this one allowed** (the gate). One question in, one verdict out:
+It owns **the values** and the artefacts rendered from them:
 
 ```
-parseTheme(css) -> toTheme(declarations) -> a Theme
-validateTheme(theme)                     -> what is wrong with it
+styles/vars.css            the values — hand-written, and the design work
+styles/presets/dark.css    the dark assignment
+styles/properties.css      GENERATED from the contract + vars.css
+styles/tailwind.css        a names-only bridge (no values -> no drift)
+styles/baseline.css        optional element rules
 ```
 
-`parseTheme` and `toTheme` are how that gate READS a stylesheet, and their only
-callers are this package's own tests. They are exported because a consumer
-validating a hand-written preset needs the same two steps, not because they are a
-surface anybody has asked for.
+Plus the suites that hold those stylesheets to the contract, and the emitter that renders
+`properties.css`.
 
-**BUILDING a theme is NOT here**, and the file this section used to describe is
-gone. `toCssVars` was deleted for having no caller and for being narrower than the
-only plausible one: the Nx generator emits a `[data-theme]` block with a docblock,
-a `color-scheme` line and declarations at every layer, while `toCssVars` could only
-write the `--fm-color-*` rows. A generator that has to write its own template
-anyway gains nothing from a function that writes a third of it.
+**THERE IS NO TS SURFACE.** This package exports stylesheets and nothing else — no `.` entry, no
+`dist`, no build target. `COLOR_ROLES`, `tokenVars` and the types come from `@fmmenchi/theme`, and
+everything in this workspace imports them from there directly.
 
-`generatePalette` (`./palette`) is the one thing here with no caller at all. It
-stays because it is measured colour maths rather than a guessed shape — and it
-moves out the day the generation path is written, to wherever that path lives.
+A re-export barrel was tried first, so that consumers would keep one import. It was removed for a
+measured reason: `@fmmenchi/theme` is private, so a published `dist` re-exporting it must INLINE it,
+and while Vite inlines the JavaScript, the declarations keep `export … from '@fmmenchi/theme'` —
+`rollupTypes`, `rollupConfig.bundledPackages` and the config `@nx/js:library --bundler=vite`
+generates all leave it there, because api-extractor treats anything in `node_modules` as external
+and a workspace link is in `node_modules`. A JS consumer would have worked and a TypeScript one
+would not have resolved a single name, with nothing in this repo failing.
 
-**THE WIZARD'S MODEL IS NOT HERE.** The form, its types, the record of which rung a
-person pinned, the editing of a generated theme and the re-export at the end are
-the APP's business. A theme is a `Record<ColorRole, string>`; an app that wants to
-remember how it got there keeps that itself.
+The cost is that an EXTERNAL consumer has no `tokenVars` and no types — and that cost is temporary
+by design rather than accepted. Those are not a contract to re-export; they are a BINDING, and a
+binding is **generated into the consumer's own repo and imported from there**, never exported from
+here — the same shape as the theme CSS: the generator writes the file, the consumer imports their
+own. So no package of ours needs to carry it, and re-exporting it would have been the wrong
+mechanism even if the declarations had inlined cleanly. Until that lands, a consumer reads
+`var(--fm-*)`, which is the universal surface and always was.
 
-The INTERCHANGE FORMAT is the same boundary seen from the other side. How a
-builder hands a theme to the generator — a JSON envelope with a name and the themes
-under it — is transport, and neither `name` nor "several themes under one name" is a
-concept this package has. It belongs to whichever of the two processes publishes the
-contract between them, which is the generator. What travels IS this package's:
-`Theme` and `Palette` are already plain JSON, so `JSON.stringify` is the whole of
-writing one.
-
-This was got wrong three times in one day — first by growing a `ThemeSpec`, a placement
-table and a stylesheet describer inside this package, then by moving the same
-three into a package of their own. Both times they had no consumer, because the
-consumer is an app that does not exist yet, and both times the shapes were guesses
-that real code corrected the moment it touched them. The rule that would have
-prevented it: **a model with no caller is a guess**, and a guess belongs in the
-place that will call it.
+**This package is on its way to becoming a generated artefact.** The direction settled on
+2026-08-31: one code path from bases to theme CSS, ours being an invocation of it with our bases,
+exactly as a consumer's is with theirs — so "our theme" and "their theme" cannot differ in kind. When
+that lands, `vars.css` stops being hand-written, the suites below that check the CSS against the
+contract stop being necessary (a generated file cannot drift), and the design reasoning currently in
+this file's comments has to move beside the data rather than disappear. Not yet, and nothing here
+should be written as though it had happened.
 
 ## Rules
 
@@ -92,17 +95,16 @@ place that will call it.
     or a `var()` makes the browser reject the WHOLE rule — silently, losing both the interpolation
     and the type guard. Nothing downstream can see it: Stylelint has no rule and `styles.test.ts`
     only greps for `rem`.
-  - **`parseVars` is THE parser for `--fm-*` declarations** — the contract suite shares it rather
-    than keeping a second one, which it did, anchored on nothing. It strips comments before parsing,
-    and everything reading `vars.css` must go through it.
+  - **`parseCssVars` (in `@fmmenchi/theme`) is THE parser for `--fm-*` declarations** — the contract
+    suite shares it rather than keeping a second one, which it did, anchored on nothing. It strips
+    comments before parsing, and everything reading `vars.css` must go through it.
     The declaration regex anchors on the start of a LINE, so a role commented OUT during a retune
     reads as a live declaration — completeness passes, contrast reads the value out of the comment,
     the registration is emitted, and the shipped CSS defines nothing, so the role resolves to the
     registered `initial-value`: black, on every consumer, in both themes. It also throws on a
     duplicate declaration, which is the check the second parser used to make.
-  - **`src/utils/generate-properties.ts` and `src/utils/generate-properties.ts` are build-time only** and excluded from
-    `tsconfig.lib.json`: nothing exports them, so shipping them to consumers is weight with no
-    surface.
+  - **`src/utils/generate-properties.ts` is build-time only** and excluded from
+    `tsconfig.lib.json`: nothing exports it, so shipping it to consumers is weight with no surface.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
   no runtime relative-color). `styles/properties.css` (imported at the top of `vars.css`)
   `@property`-registers the color roles + radius so they are TYPED and INTERPOLATABLE (theme
@@ -116,16 +118,17 @@ place that will call it.
   names-only `@theme inline` bridge (no values → no drift). `presets/dark.css` overrides EXACTLY
   every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black
   shadows vanish on a dark background — enforced by `styles.test.ts`).
-- **A theme = a complete assignment of every color role** (`ThemeColors` in `src/tokens.types.ts`).
+- **A theme = a complete assignment of every color role** (`Theme` in `@fmmenchi/theme`).
   Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape — apps
-  validate theirs with the PUBLIC `validateTheme()` (`@fmmenchi/tokens/validate`): completeness +
+  validate theirs with `validateTheme()` (re-exported here from `@fmmenchi/theme`): completeness +
   parseability + every `CONTRAST_PAIR`. The reference presets pass the same validator.
 - **Declared pairs are the usage contract.** A component may put a foreground on a background ONLY
-  in a pairing declared in `CONTRAST_PAIRS` (`src/validate.ts`); a component introducing a new
+  in a pairing declared in `CONTRAST_PAIRS` (`@fmmenchi/theme`); a component introducing a new
   pairing MUST add it there (all themes re-validate automatically).
-- **Changing the contract:** adding a role = update `src/tokens.types.ts` (the `as const` roles, which
-  drive the `src/tokens.types.ts` types) + `vars.css` + `presets/dark.css` + the bridge in
-  `tailwind.css` + the group in `src/tokens.types.ts` if the FAMILY is new, then `vitest -u` to re-render
+- **Changing the contract:** adding a role = update `tokens.types.ts` in **`@fmmenchi/theme`** (the
+  `as const` roles, which drive every type) + `vars.css` + `presets/dark.css` + the bridge in
+  `tailwind.css` + the re-export in `src/index.ts` if consumers should see it + the group in
+  `tokens.types.ts` if the FAMILY is new, then `vitest -u` to re-render
   `properties.css` — `styles.test.ts` fails until the first four agree, `styles.test.ts` until the
   fifth does, and `generate-properties.test.ts` until the derived file does,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
@@ -139,7 +142,7 @@ place that will call it.
   fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
 - **The contract ships in TWO shapes of the same names, and neither is a port.** CSS custom
   properties are the universal surface — every styling library on the web reads `var(--fm-*)`, so
-  there is nothing to adapt and nothing to inject. `tokenVars` (`src/tokens.types.ts`) is the same names as
+  there is nothing to adapt and nothing to inject. `tokenVars` (`@fmmenchi/theme`, re-exported here) is the same names as
   TypeScript strings, for consumers whose styles are written in TS (styled-components, emotion,
   vanilla-extract, inline `style`): `tokenVars.color.primary === 'var(--fm-color-primary)'`. It adds
   no capability, only the fact that a typo stops compiling instead of rendering nothing — which is
@@ -169,8 +172,8 @@ place that will call it.
     the stylesheet applies it returns the registered `initial-value`, opaque black, with nothing
     falsy to branch on; and a registered role serialises computed while an unregistered token comes
     back as the raw token stream, which Chrome and Safari prefix with a space.
-  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `tokenVars`; `styles.test.ts`
-    compares the two as sets and fails until they agree.
+  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `tokenVars` (both in
+    `@fmmenchi/theme`); `styles.test.ts` compares the two as sets and fails until they agree.
   - **A DTCG export is WANTED and is NOT here yet** — it is what Figma's tooling reads, and the one
     direction this package cannot talk in. A first attempt was written and removed the same day,
     because emitting the token values as-is is not "partial", it is a file that claims a format it

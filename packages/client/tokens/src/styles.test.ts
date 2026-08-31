@@ -19,9 +19,9 @@ import {
   adviseContrast,
   toTheme,
   validateTheme,
-} from './validate.js';
-import { tokenVars } from './tokens.types.js';
-import { resolveCssVar } from './utils/parse-css.js';
+} from '@fmmenchi/theme';
+import { tokenVars } from '@fmmenchi/theme';
+import { resolveCssVar } from '@fmmenchi/theme';
 
 /**
  * DO THE SHIPPED STYLESHEETS SATISFY THE CONTRACT?

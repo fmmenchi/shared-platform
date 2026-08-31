@@ -26,7 +26,7 @@ import {
   STATUS_FAMILIES,
   STATUS_SUFFIXES,
   SURFACE_ROLES,
-} from '../tokens.types.js';
+} from '@fmmenchi/theme';
 
 /** The shape of one section of the generated `properties.css`. */
 interface RegisteredSection {

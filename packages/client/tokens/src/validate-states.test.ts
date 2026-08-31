@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseTheme, toTheme } from '../validate.js';
-import { validateRoles } from './validate-roles.js';
-import { validateStates } from './validate-states.js';
+import { parseTheme, toTheme } from '@fmmenchi/theme';
+import { validateRoles } from '@fmmenchi/theme';
+import { validateStates } from '@fmmenchi/theme';
 
 /**
  * Polarity is MEASURED from the background, not declared, so the same delta is
@@ -15,7 +15,7 @@ import { validateStates } from './validate-states.js';
  * never false when a violation was due.
  */
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
+const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
 const light = toTheme(parseTheme(read('vars.css')));

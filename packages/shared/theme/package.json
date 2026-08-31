@@ -1,0 +1,31 @@
+{
+  "name": "@fmmenchi/theme",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "type:util"
+    ]
+  },
+  "dependencies": {
+    "apca-w3": "^0.1.9",
+    "culori": "^4.0.2",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/apca-w3": "^0.1.3"
+  }
+}

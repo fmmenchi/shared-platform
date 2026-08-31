@@ -53,6 +53,9 @@
     },
     {
       "path": "../tokens/tsconfig.lib.json"
+    },
+    {
+      "path": "../../shared/theme/tsconfig.lib.json"
     }
   ]
 }

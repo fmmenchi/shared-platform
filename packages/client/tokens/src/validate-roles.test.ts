@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseTheme, toTheme } from '../validate.js';
-import { validateRoles } from './validate-roles.js';
+import { parseTheme, toTheme } from '@fmmenchi/theme';
+import { validateRoles } from '@fmmenchi/theme';
 
 /**
  * `styles.test.ts` runs this through `validateTheme` against broken themes, which
@@ -15,7 +15,7 @@ import { validateRoles } from './validate-roles.js';
  * `unparsable-color`, because a fixture built from a real theme always parses.
  */
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
+const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
 const light = toTheme(parseTheme(read('vars.css')));

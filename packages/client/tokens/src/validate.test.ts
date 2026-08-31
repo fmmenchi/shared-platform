@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { COLOR_ROLES } from './tokens.types.js';
-import { parseTheme, toTheme } from './validate.js';
-import { validateTheme } from './validate.js';
+import { COLOR_ROLES } from '@fmmenchi/theme';
+import { parseTheme, toTheme } from '@fmmenchi/theme';
+import { validateTheme } from '@fmmenchi/theme';
 
 const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');

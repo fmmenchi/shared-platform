@@ -13,7 +13,10 @@
  * Wired as the `codegen` target that `build-storybook`/`storybook` depend on.
  */
 import { formatHex } from 'culori';
-import { resolveCssVar } from '@fmmenchi/tokens/resolve';
+// The CONTRACT is `@fmmenchi/theme` (private, source-only); the VALUES are
+// `@fmmenchi/tokens/styles/*`. This script needs both: the resolver to follow a
+// role down to the colour a browser would paint, and the stylesheets to read.
+import { resolveCssVar } from '@fmmenchi/theme';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

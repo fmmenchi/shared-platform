@@ -327,7 +327,7 @@ const group = <const Names extends readonly string[]>(
  * person to notice is looking at the screen. Written as `vars.color.primry` it
  * does not compile.
  *
- *     import { tokenVars } from '@fmmenchi/tokens';
+ *     import { tokenVars } from '@fmmenchi/theme';
  *
  *     const Panel = styled.section`
  *       background: ${tokenVars.color.card};

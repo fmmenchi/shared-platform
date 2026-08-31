@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { COLOR_ROLES, colorVar, type ColorRole } from '@fmmenchi/tokens';
+import { COLOR_ROLES, colorVar, type ColorRole } from '@fmmenchi/theme';
 import { MATRIX_FAMILIES, matrixSlots, slotLabel } from './token-data.js';
 import { useTokenValues } from './use-token-values.js';
 
