@@ -70,13 +70,26 @@ describe('slugOf', () => {
 });
 
 describe('statusOf', () => {
-  it('is done behind, current here, upcoming ahead', () => {
+  it('is complete behind, current here, upcoming ahead', () => {
+    // The words are the DESIGN SYSTEM'S — `StepperItemStatus` — not this app's, so
+    // they are asserted here rather than aliased: a rename upstream should fail a
+    // test in the app that renders it, not slip through a translation layer.
     const at = STEPS[2] as (typeof STEPS)[number];
 
-    expect(statusOf(STEPS[0] as typeof at, at.slug)).toBe('done');
-    expect(statusOf(STEPS[1] as typeof at, at.slug)).toBe('done');
+    expect(statusOf(STEPS[0] as typeof at, at.slug)).toBe('complete');
+    expect(statusOf(STEPS[1] as typeof at, at.slug)).toBe('complete');
     expect(statusOf(at, at.slug)).toBe('current');
     expect(statusOf(STEPS[3] as typeof at, at.slug)).toBe('upcoming');
+  });
+
+  it('never returns `error`, because position cannot know about failure', () => {
+    // The honest limit of deriving status from position, asserted so a later commit
+    // that starts keeping wizard state has to come back here on purpose.
+    for (const step of STEPS) {
+      for (const at of STEPS) {
+        expect(statusOf(step, at.slug)).not.toBe('error');
+      }
+    }
   });
 
   it('marks exactly one step current, wherever you are', () => {
