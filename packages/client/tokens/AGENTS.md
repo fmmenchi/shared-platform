@@ -14,13 +14,41 @@ pnpm nx test @fmmenchi/tokens      # contract validation (completeness, bridge, 
 pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after changing the contract
 ```
 
+## Where this package stops
+
+It answers two questions and no others: **what is a theme** (the contract) and
+**what can I do with one** (parse it, generate it, validate it, emit it). Five
+operations, and the loop closes:
+
+```
+parseTheme(css) -> toTheme(declarations) -> a Theme
+generateTheme(...)                       -> a Theme
+validateTheme(theme)                     -> what is wrong with it
+toCssVars(theme)                         -> a stylesheet
+```
+
+Two ways in, one check, one way out.
+
+**THE WIZARD'S MODEL IS NOT HERE.** The form, its types, the record of which rung a
+person pinned, the editing of a generated theme and the re-export at the end are
+the APP's business. A theme is a `Record<ColorRole, string>`; an app that wants to
+remember how it got there keeps that itself.
+
+This was got wrong twice in one day — first by growing a `ThemeSpec`, a placement
+table and a stylesheet describer inside this package, then by moving the same
+three into a package of their own. Both times they had no consumer, because the
+consumer is an app that does not exist yet, and both times the shapes were guesses
+that real code corrected the moment it touched them. The rule that would have
+prevented it: **a model with no caller is a guess**, and a guess belongs in the
+place that will call it.
+
 ## Rules
 
 - **Semantics wins over everything.** Components consume ONLY semantic roles (`--fm-color-primary`,
   `--fm-space-inset-m`, …) — never raw values, never a palette. The Tailwind bridge RESETS the
   default palette, so `bg-red-500` fails the build.
 - **`styles/properties.css` is GENERATED and must never be edited by hand.** It is rendered by
-  `src/generate.ts` from the contract + `vars.css`, and `generate.test.ts` compares it to what is on
+  `src/utils/generate-properties.ts` from the contract + `vars.css`, and `generate-properties.test.ts` compares it to what is on
   disk with `toMatchFileSnapshot` — so a hand edit fails the ordinary test run and a legitimate
   change is `vitest -u`. The existence of the file is asserted SEPARATELY, because
   `toMatchFileSnapshot` writes a missing file and reports a pass outside CI.
@@ -35,15 +63,15 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
     hand beside their rem originals with nothing to fail if they stopped agreeing (a `@property`
     whose `initial-value` is a `rem` is rejected outright, so those px cannot simply be dropped —
     they are now computed at the 16px root).
-  - **A new derived artifact is an emitter in `src/generate.ts` plus one `toMatchFileSnapshot`.**
+  - **A new derived artifact is an emitter in `src/utils/generate-properties.ts` plus one `toMatchFileSnapshot`.**
     It must be an artifact, never a runtime adapter — see the framework-agnostic rule below. And it
     must be added to `files` in `package.json`: only `dist` and `src/styles` are published, so an
     artifact written anywhere else resolves to nothing in an installed package (`npm pack
 --dry-run` is how to check, and how this was caught).
-  - **`toIndependentLength` THROWS on anything that is not px or rem**, and must keep doing so. An
+  - **`toPixels` THROWS on anything that is not px or rem**, and must keep doing so. An
     `@property` `initial-value` has to be computationally independent, so `em`, `calc()`, `clamp()`
     or a `var()` makes the browser reject the WHOLE rule — silently, losing both the interpolation
-    and the type guard. Nothing downstream can see it: Stylelint has no rule and `tokens.test.ts`
+    and the type guard. Nothing downstream can see it: Stylelint has no rule and `styles.test.ts`
     only greps for `rem`.
   - **`parseVars` is THE parser for `--fm-*` declarations** — the contract suite shares it rather
     than keeping a second one, which it did, anchored on nothing. It strips comments before parsing,
@@ -53,7 +81,7 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
     the registration is emitted, and the shipped CSS defines nothing, so the role resolves to the
     registered `initial-value`: black, on every consumer, in both themes. It also throws on a
     duplicate declaration, which is the check the second parser used to make.
-  - **`src/generate.ts` and `src/registry.ts` are build-time only** and excluded from
+  - **`src/utils/generate-properties.ts` and `src/utils/generate-properties.ts` are build-time only** and excluded from
     `tsconfig.lib.json`: nothing exports them, so shipping them to consumers is weight with no
     surface.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
@@ -64,11 +92,11 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
   drops the whole rule), so it is COMPUTED from the real value **assuming a 16px root** — which is a
   user preference, not a guarantee. It costs nothing in practice: `:root` plus `inherits: true`
   always cascades the real rem over the initial-value, which is only ever reached when the
-  stylesheet is not in effect. Coverage asserted by `tokens.test.ts`, agreement with the values by
-  `generate.test.ts`. `styles/tailwind.css` is a
+  stylesheet is not in effect. Coverage asserted by `styles.test.ts`, agreement with the values by
+  `generate-properties.test.ts`. `styles/tailwind.css` is a
   names-only `@theme inline` bridge (no values → no drift). `presets/dark.css` overrides EXACTLY
   every color role **plus the shadow tokens** (elevation is theme-dependent: light's 4-12% black
-  shadows vanish on a dark background — enforced by `tokens.test.ts`).
+  shadows vanish on a dark background — enforced by `styles.test.ts`).
 - **A theme = a complete assignment of every color role** (`ThemeColors` in `src/tokens.types.ts`).
   Non-color tokens inherit. Brand presets live in apps and must satisfy the same shape — apps
   validate theirs with the PUBLIC `validateTheme()` (`@fmmenchi/tokens/validate`): completeness +
@@ -76,11 +104,11 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
 - **Declared pairs are the usage contract.** A component may put a foreground on a background ONLY
   in a pairing declared in `CONTRAST_PAIRS` (`src/validate.ts`); a component introducing a new
   pairing MUST add it there (all themes re-validate automatically).
-- **Changing the contract:** adding a role = update `src/tokens.ts` (the `as const` roles, which
+- **Changing the contract:** adding a role = update `src/tokens.types.ts` (the `as const` roles, which
   drive the `src/tokens.types.ts` types) + `vars.css` + `presets/dark.css` + the bridge in
-  `tailwind.css` + the group in `src/refs.ts` if the FAMILY is new, then `vitest -u` to re-render
-  `properties.css` — `tokens.test.ts` fails until the first four agree, `refs.test.ts` until the
-  fifth does, and `generate.test.ts` until the derived file does,
+  `tailwind.css` + the group in `src/tokens.types.ts` if the FAMILY is new, then `vitest -u` to re-render
+  `properties.css` — `styles.test.ts` fails until the first four agree, `styles.test.ts` until the
+  fifth does, and `generate-properties.test.ts` until the derived file does,
   and every declared color pair must pass WCAG AA (4.5:1 text, 3:1 ring/invalid; `-disabled`
   exempt). New values: derive with the ramp methodology (base ± lightness, scaled chroma), ship the
   resolved literal.
@@ -92,7 +120,7 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
   fill (+5/+10 lightness pp, chroma ×0.94/×0.88) — never let a state ramp clamp to white.
 - **The contract ships in TWO shapes of the same names, and neither is a port.** CSS custom
   properties are the universal surface — every styling library on the web reads `var(--fm-*)`, so
-  there is nothing to adapt and nothing to inject. `tokenVars` (`src/refs.ts`) is the same names as
+  there is nothing to adapt and nothing to inject. `tokenVars` (`src/tokens.types.ts`) is the same names as
   TypeScript strings, for consumers whose styles are written in TS (styled-components, emotion,
   vanilla-extract, inline `style`): `tokenVars.color.primary === 'var(--fm-color-primary)'`. It adds
   no capability, only the fact that a typo stops compiling instead of rendering nothing — which is
@@ -122,7 +150,7 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
     the stylesheet applies it returns the registered `initial-value`, opaque black, with nothing
     falsy to branch on; and a registered role serialises computed while an unregistered token comes
     back as the raw token stream, which Chrome and Safari prefix with a space.
-  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `tokenVars`; `refs.test.ts`
+  - **Adding a token family** means adding it to `TOKEN_VARS` _and_ to `tokenVars`; `styles.test.ts`
     compares the two as sets and fails until they agree.
   - **A DTCG export is WANTED and is NOT here yet** — it is what Figma's tooling reads, and the one
     direction this package cannot talk in. A first attempt was written and removed the same day,

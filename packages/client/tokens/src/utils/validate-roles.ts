@@ -13,7 +13,7 @@ import type { ThemeViolation } from '../theme.types.js';
 
 type Parsed = NonNullable<ReturnType<typeof parseColor>>;
 
-export interface ValidatedRoles {
+interface ValidatedRoles {
   /** Every role that parsed, by name — what the contrast checks measure. */
   readonly parsable: ReadonlyMap<string, Parsed>;
   readonly violations: readonly ThemeViolation[];

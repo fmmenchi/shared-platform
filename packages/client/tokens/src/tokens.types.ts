@@ -213,9 +213,6 @@ export const CONTAINER_BREAKPOINTS = {
   xl: '48rem',
 } as const;
 
-/** The themes this platform ships. `base` is `:root`. */
-export const REFERENCE_PRESETS = ['base', 'dark'] as const;
-
 /* ---------- The contract as types, derived from the arrays above ---------- */
 
 /*
@@ -225,10 +222,12 @@ export const REFERENCE_PRESETS = ['base', 'dark'] as const;
  * list somebody maintains — it is what the arrays already say, read as a union.
  */
 
-export type ActionFamily = (typeof ACTION_FAMILIES)[number];
+// Not exported: these exist to build `ColorRole` below, and nothing outside
+// this file has ever needed either half on its own.
+type ActionFamily = (typeof ACTION_FAMILIES)[number];
 type ActionSuffix = (typeof ACTION_SUFFIXES)[number];
 
-export type StatusFamily = (typeof STATUS_FAMILIES)[number];
+type StatusFamily = (typeof STATUS_FAMILIES)[number];
 type StatusSuffix = (typeof STATUS_SUFFIXES)[number];
 
 export type ColorRole =
@@ -243,9 +242,6 @@ export type ColorRole =
  * allowed themes" means, and what presets in apps must satisfy.
  */
 export type Theme = Record<ColorRole, string>;
-
-/** A theme this platform ships. `base` is `:root`. */
-export type ReferencePreset = (typeof REFERENCE_PRESETS)[number];
 
 /* ---------- The same names, as TypeScript strings ---------- */
 

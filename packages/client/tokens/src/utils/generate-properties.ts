@@ -29,7 +29,7 @@ import {
 } from '../tokens.types.js';
 
 /** The shape of one section of the generated `properties.css`. */
-export interface RegisteredSection {
+interface RegisteredSection {
   /** Rendered as the section comment. */
   title: string;
   /** A second line of it, where the reason needs saying. */

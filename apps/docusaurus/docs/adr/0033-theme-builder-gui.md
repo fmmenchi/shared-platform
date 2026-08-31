@@ -57,7 +57,7 @@ system rather than a drawing of it.
 ## Decision
 
 > **Named `generateTheme`, not `buildPreset`.** In this repo a PRESET is the CSS
-> artefact — `REFERENCE_PRESETS` is `['base','dark']`, the files are
+> artefact — the files are
 > `styles/presets/*.css` — while a THEME is the role assignment, the `Theme` type
 > every operation already speaks in. This function returns the assignment, so it is
 > a theme it generates, and the name joins the family the package settled on:
@@ -184,8 +184,29 @@ type ThemeSpec = {
   readonly strategy?: 'constant-step' | 'constant-contrast';
 };
 
-generateTheme(system: DesignSystem, spec: ThemeSpec): Preset;
+/** Level 1 to level 2: seven colours become the rungs of every family. */
+generatePalette(system: DesignSystem, bases: Bases): Palette;
+
+/** Level 2 to level 3: the rungs become an assignment of all 84 roles. */
+generateTheme(system: DesignSystem, palette: Palette, pins?: Pins): Theme;
 ```
+
+**TWO steps, not one.** They are two different decisions and they fail differently.
+How a rung comes to exist is a question about curves, chroma and the sRGB
+boundary — get it wrong and a family is muddy or clipped. Which rung a role points
+at is a question about contrast — get that wrong and a button is unreadable while
+every rung is perfect. Folding them into one call would have produced a single
+failure for two unrelated causes.
+
+Splitting them also matches how the wizard reads. Its first step shows the PALETTE
+and nothing else: seven colours in, the ramps drawn, no roles assigned yet. That
+step is `generatePalette` on its own, and the family steps that follow are
+`generateTheme` over its result. And each is testable for what it is — a palette
+against the rungs it should produce, an assignment against the floors it must
+clear — instead of both through one return value.
+
+`Palette` therefore earns a type it did not have: it is a value something returns,
+not a word for the middle of a function.
 
 **`system` is why this is a solver and not our palette with a function around it.**
 The rungs and the role constraints arrive as data, so the arithmetic knows nothing
