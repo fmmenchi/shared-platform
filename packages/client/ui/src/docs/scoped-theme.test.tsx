@@ -155,3 +155,163 @@ describe('a preset scoped to a container', () => {
     expect(stepInside).not.toBe(stepOutside);
   });
 });
+
+/**
+ * CAN A PRESET BE JUST ITS BASES?
+ *
+ * The suite above measures the mechanic as the contract ships it: the ramp is
+ * declared on `:root`, so it settles there, and a container that overrides only a
+ * base inherits a value already computed from the ROOT's base. Inert. A preset
+ * therefore has to carry its bases AND its ramp AND its roles — ~150 lines, and a
+ * consumer's theme is a copy of ours rather than an instance of it.
+ *
+ * MEASURED AND NOT ADOPTED. Declaring the ramp and the roles on
+ * `:root, [data-theme]` instead of `:root` alone makes a themed element recompute
+ * the whole chain from its own base, and a preset collapses to the eight colours a
+ * brand hands over. It works — every case below passes — and the road was still
+ * refused, on grounds the tests cannot see: a preset that carries its values is
+ * something you can open and read, while one that carries eight numbers is legible
+ * only to someone who knows where a custom property resolves. A theme is
+ * regenerated from its source when its source changes; that is a build step, not a
+ * cascade trick, and a build step is inspectable when it goes wrong.
+ *
+ * They stay because the MECHANIC is worth pinning either way — the wizard has to
+ * know that a base-only override is inert — and because the next person to have
+ * this idea should find the measurement instead of repeating it.
+ *
+ * These tests build that arrangement from scratch on private `--probe-*` names
+ * rather than reconfiguring the shipped `--fm-*` ones: the question is whether
+ * the CSS mechanic works, and asking it of the real tokens would also be asking
+ * whether the rest of the suite still passes, which is a different question.
+ */
+describe('a preset that is only its bases', () => {
+  /** The shipped arrangement: ramp and role declared on the root alone. */
+  const onRootOnly = `
+    :root {
+      --probe-base: oklch(55% 0.14 255);
+      --probe-700: oklch(from var(--probe-base) calc(l - 0.14) calc(c * 0.96) h);
+      --probe-color: var(--probe-700);
+    }
+  `;
+
+  /** The proposal: the same declarations also apply to any themed element. */
+  const onRootAndTheme = `
+    :root,
+    [data-probe-theme] {
+      --probe-base: oklch(55% 0.14 255);
+      --probe-700: oklch(from var(--probe-base) calc(l - 0.14) calc(c * 0.96) h);
+      --probe-color: var(--probe-700);
+    }
+  `;
+
+  it('is INERT under the shipped arrangement — the ramp settled at :root', () => {
+    appStylesheet(onRootOnly);
+    appStylesheet(
+      `[data-probe-theme='acme'] { --probe-base: oklch(70% 0.2 30); }`,
+    );
+
+    const themed = container({ 'data-probe-theme': 'acme' });
+    const plain = container();
+
+    // The base itself does change on the container...
+    expect(resolveIn(themed, '--probe-base')).not.toBe(
+      resolveIn(plain, '--probe-base'),
+    );
+    // ...and nothing derived from it moves, which is the whole problem.
+    expect(resolveIn(themed, '--probe-700')).toBe(
+      resolveIn(plain, '--probe-700'),
+    );
+    expect(resolveIn(themed, '--probe-color')).toBe(
+      resolveIn(plain, '--probe-color'),
+    );
+  });
+
+  it('RE-DERIVES when the ramp is declared on `:root, [data-theme]` too', () => {
+    appStylesheet(onRootAndTheme);
+    appStylesheet(
+      `[data-probe-theme='acme'] { --probe-base: oklch(70% 0.2 30); }`,
+    );
+
+    const themed = container({ 'data-probe-theme': 'acme' });
+    const plain = container();
+
+    expect(resolveIn(themed, '--probe-700')).not.toBe(
+      resolveIn(plain, '--probe-700'),
+    );
+    expect(resolveIn(themed, '--probe-color')).not.toBe(
+      resolveIn(plain, '--probe-color'),
+    );
+  });
+
+  it('re-derives from the CONTAINER’s base, not from some average of the two', () => {
+    // The value must be exactly what the brand's base produces — otherwise the
+    // arrangement works by accident and the contrast measured on it is fiction.
+    appStylesheet(onRootAndTheme);
+    appStylesheet(
+      `[data-probe-theme='acme'] { --probe-base: oklch(70% 0.2 30); }`,
+    );
+    appStylesheet(
+      `[data-probe-check] { --probe-base: oklch(70% 0.2 30);
+         --probe-700: oklch(from var(--probe-base) calc(l - 0.14) calc(c * 0.96) h); }`,
+    );
+
+    const themed = container({ 'data-probe-theme': 'acme' });
+    const spelled = container({ 'data-probe-check': '' });
+
+    expect(resolveIn(themed, '--probe-700')).toBe(
+      resolveIn(spelled, '--probe-700'),
+    );
+  });
+
+  it('leaves a SIBLING on the root theme — still two themes, one document', () => {
+    appStylesheet(onRootAndTheme);
+    appStylesheet(
+      `[data-probe-theme='acme'] { --probe-base: oklch(70% 0.2 30); }`,
+    );
+
+    const themed = container({ 'data-probe-theme': 'acme' });
+    const chrome = container();
+
+    const rootValue = resolveIn(document.body, '--probe-color');
+    expect(resolveIn(chrome, '--probe-color')).toBe(rootValue);
+    expect(resolveIn(themed, '--probe-color')).not.toBe(rootValue);
+  });
+
+  it('lets a preset OVERRIDE one rung and keep deriving the rest', () => {
+    // The case that made `--from` too narrow: a person nudges one step by hand.
+    // It has to win without stopping everything else from deriving.
+    appStylesheet(onRootAndTheme);
+    appStylesheet(`
+      [data-probe-theme='acme'] {
+        --probe-base: oklch(70% 0.2 30);
+        --probe-700: oklch(45% 0.14 260);
+      }
+    `);
+
+    const themed = container({ 'data-probe-theme': 'acme' });
+
+    // The hand-set rung wins…
+    expect(resolveIn(themed, '--probe-700')).toBe('oklch(0.45 0.14 260)');
+    // …and the role still points through it.
+    expect(resolveIn(themed, '--probe-color')).toBe(
+      resolveIn(themed, '--probe-700'),
+    );
+  });
+
+  it('NESTS — a themed container inside a themed container', () => {
+    appStylesheet(onRootAndTheme);
+    appStylesheet(`
+      [data-probe-theme='acme'] { --probe-base: oklch(70% 0.2 30); }
+      [data-probe-theme='noir'] { --probe-base: oklch(30% 0.05 200); }
+    `);
+
+    const outer = container({ 'data-probe-theme': 'acme' });
+    const inner = document.createElement('div');
+    inner.setAttribute('data-probe-theme', 'noir');
+    outer.append(inner);
+
+    expect(resolveIn(inner, '--probe-color')).not.toBe(
+      resolveIn(outer, '--probe-color'),
+    );
+  });
+});
