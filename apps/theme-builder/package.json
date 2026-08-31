@@ -11,6 +11,9 @@
     ]
   },
   "dependencies": {
+    "@fmmenchi/theme": "workspace:*",
+    "@fmmenchi/tokens": "workspace:*",
+    "@fmmenchi/ui": "workspace:*",
     "@react-router/node": "^7.14.2",
     "@react-router/serve": "^7.14.2",
     "isbot": "^4.4.0",
@@ -20,6 +23,8 @@
   },
   "devDependencies": {
     "@react-router/dev": "^7.14.2",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/react": "16.3.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0"

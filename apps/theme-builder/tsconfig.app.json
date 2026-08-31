@@ -50,5 +50,16 @@
     "eslint.config.js",
     "eslint.config.cjs",
     "eslint.config.mjs"
+  ],
+  "references": [
+    {
+      "path": "../../packages/client/tokens/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/shared/theme/tsconfig.lib.json"
+    },
+    {
+      "path": "../../packages/client/ui/tsconfig.lib.json"
+    }
   ]
 }
