@@ -213,6 +213,25 @@ export const CONTAINER_BREAKPOINTS = {
   xl: '48rem',
 } as const;
 
+/**
+ * The seven PALETTE families — the families a ramp is generated for.
+ *
+ * SEVEN where the role families are eight: `destructive` (an action) and `error`
+ * (a status) both draw from `negative`. Same red, different treatment — an action
+ * has hover and active, a status has a subtle wash and a border — so they are two
+ * role families over one palette family, and anything generating a ramp iterates
+ * THIS list, not `ACTION_FAMILIES`.
+ */
+export const PALETTE_FAMILIES = [
+  'primary',
+  'secondary',
+  'accent',
+  'negative',
+  'success',
+  'warning',
+  'info',
+] as const;
+
 /* ---------- The contract as types, derived from the arrays above ---------- */
 
 /*
@@ -378,3 +397,6 @@ export const tokenVars = Object.freeze({
   transition: group('transition', TRANSITION_TOKENS),
   z: group('z', Z_TOKENS),
 } as const);
+
+/** One of the seven families a ramp is generated for. */
+export type PaletteFamily = (typeof PALETTE_FAMILIES)[number];
