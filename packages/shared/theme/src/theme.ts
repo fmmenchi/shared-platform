@@ -47,8 +47,15 @@ import type { Declarations, ThemeViolation } from './theme.types.js';
  * Comments are stripped before parsing. A role commented out during a retune
  * would otherwise read as declared, and every gate would then pass on a role the
  * shipped CSS does not define.
+ *
+ * IT RETURNS A MUTABLE `Map`, NOT `Declarations`, and the variance runs that way on
+ * purpose: this makes a fresh map the caller owns, while `Declarations` is the type
+ * for a function that only READS one. A `Map` already satisfies `Declarations`, so
+ * the narrow return type added nothing — and it broke `@fmmenchi/tokens`' own suite,
+ * which merges what this returns. Accept the read-only shape, hand back the
+ * writable one.
  */
-export function parseTheme(...sources: readonly string[]): Declarations {
+export function parseTheme(...sources: readonly string[]): Map<string, string> {
   const declared = new Map<string, string>();
   for (const css of sources) {
     for (const [name, value] of parseCssVars(css)) declared.set(name, value);
