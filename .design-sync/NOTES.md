@@ -134,13 +134,13 @@ it reads as a layout bug to anyone who does not know the cause.
 `packages/client/tokens/src/styles/baseline.css` is now injected into
 `.design-sync/sb-reference/iframe.html` as a `<style id="design-sync-baseline">` before `</head>`.
 The full file rather than the three rules the earlier plan named: the three were the ones the
-campaign had *measured*, but the file is what a consumer actually loads, and the Stepper's
+campaign had _measured_, but the file is what a consumer actually loads, and the Stepper's
 `WithLinksBack` story proved the shortlist incomplete — a bare `<a>` takes its colour from
 `baseline.css`'s `a { color: var(--fm-color-link) }`, so with only the three rules the reference
 would have painted UA blue against the preview's themed link and the story would have graded
 `mismatch` for a reason that is not a defect.
 
-Injecting more than planned was safe *because* the campaign was over: the 55 already-graded
+Injecting more than planned was safe _because_ the campaign was over: the 55 already-graded
 components are carried forward, not re-graded, so there is no seam inside one roster — and the
 driver noticed the reference had moved and auto-ordered a `[SPOT_CHECK]` of five carried
 components (AppLayout, Avatar, Calendar, Card, ChoiceField). All five still matched their recorded
