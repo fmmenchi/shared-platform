@@ -87,3 +87,15 @@ export { parseCssVars, expandVars, resolveCssVar } from './utils/parse-css.js';
 
 export { generatePalette } from './palette.js';
 export type { Rung, Ramp, Bases, Palette } from './palette.js';
+
+/**
+ * BUILDING a theme: a palette, plus the map of which rung each role points at.
+ *
+ * The map is READ rather than written — `toPlacements` takes a stylesheet's
+ * declarations, so the design work stays in the one file that has always held it
+ * and nothing here is frozen at this package's release. See `placements.ts` for
+ * what the first attempt got wrong.
+ */
+export { generateTheme } from './generate-theme.js';
+export { toPlacements } from './placements.js';
+export type { Placement, Placements } from './placements.js';
