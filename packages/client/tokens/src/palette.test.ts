@@ -2,7 +2,7 @@ import { converter, displayable, parse as parseColor } from 'culori';
 import { describe, expect, it } from 'vitest';
 
 import { generatePalette } from './palette.js';
-import type { Bases, Ramp, Ramps } from './palette.js';
+import type { Bases, Ramp } from './palette.js';
 import { PALETTE_FAMILIES } from './tokens.types.js';
 
 const toOklch = converter('oklch');
@@ -23,17 +23,11 @@ const BASES: Bases = {
   success: 'oklch(55% 0.12 150)',
   warning: 'oklch(55% 0.1 78)',
   info: 'oklch(55% 0.11 245)',
-  neutral: 'oklch(50% 0.02 256)',
 };
-
-/** The same ramp everywhere, when a case is not about the per-family ones. */
-const RAMPS: Ramps = Object.fromEntries(
-  PALETTE_FAMILIES.map((f) => [f, RAMP]),
-) as Ramps;
 
 describe('generatePalette', () => {
   it('places every family on the ramp, keyed for lookup', () => {
-    const palette = generatePalette(BASES, RAMPS);
+    const palette = generatePalette(BASES, RAMP);
 
     expect(Object.keys(palette).sort()).toEqual([...PALETTE_FAMILIES].sort());
     // The shape a caller reads: palette.primary[700].
@@ -46,14 +40,14 @@ describe('generatePalette', () => {
 
   it('takes the LIGHTNESS from the rung, not from the base', () => {
     // Every base above sits at 55%, and the rungs still land where they say.
-    const palette = generatePalette(BASES, RAMPS);
+    const palette = generatePalette(BASES, RAMP);
 
     expect(oklch(palette.primary[100] as string)?.l).toBeCloseTo(0.9, 4);
     expect(oklch(palette.primary[900] as string)?.l).toBeCloseTo(0.22, 4);
   });
 
   it('takes the HUE from the base, so a family keeps its colour', () => {
-    const palette = generatePalette(BASES, RAMPS);
+    const palette = generatePalette(BASES, RAMP);
 
     expect(oklch(palette.primary[500] as string)?.h).toBeCloseTo(255, 1);
     expect(oklch(palette.negative[500] as string)?.h).toBeCloseTo(27, 1);
@@ -61,7 +55,7 @@ describe('generatePalette', () => {
   });
 
   it('scales chroma by the factor, so a muted base gets a muted ramp', () => {
-    const palette = generatePalette(BASES, RAMPS);
+    const palette = generatePalette(BASES, RAMP);
 
     // secondary's base is 0.05, primary's 0.14: the same rung, proportionally.
     const primary = oklch(palette.primary[900] as string)?.c ?? 0;
@@ -75,7 +69,7 @@ describe('generatePalette', () => {
     // 0.4 chroma at that lightness is far outside sRGB; unclamped it would render
     // differently in every browser and falsify every contrast measured on it.
     const vivid: Bases = { ...BASES, primary: 'oklch(55% 0.4 145)' };
-    const palette = generatePalette(vivid, RAMPS);
+    const palette = generatePalette(vivid, RAMP);
 
     for (const step of [100, 500, 900]) {
       const value = palette.primary[step] as string;
@@ -88,67 +82,22 @@ describe('generatePalette', () => {
   it('holds lightness while chroma gives way', () => {
     // A rung that moved in lightness would leave the ramp it belongs to.
     const vivid: Bases = { ...BASES, primary: 'oklch(55% 0.4 145)' };
-    const palette = generatePalette(vivid, RAMPS);
+    const palette = generatePalette(vivid, RAMP);
 
     expect(oklch(palette.primary[500] as string)?.l).toBeCloseTo(0.55, 4);
   });
 
   it('gives an achromatic rung a factor of zero, whatever the base', () => {
-    const white: Ramp = [{ step: 0, lightness: 1, chromaFactor: 0 }];
-    const palette = generatePalette(
-      BASES,
-      Object.fromEntries(PALETTE_FAMILIES.map((f) => [f, white])) as Ramps,
-    );
+    const palette = generatePalette(BASES, [
+      { step: 0, lightness: 1, chromaFactor: 0 },
+    ]);
 
     expect(oklch(palette.primary[0] as string)?.c).toBe(0);
   });
 
-  it('gives each family ITS OWN ramp, at its own density', () => {
-    // The reason the parameter is per-family: `neutral` carries the surfaces,
-    // which crowd near white (background/card/muted/input/border sit within
-    // ΔL 0.09 of each other), while a chromatic fill separated from its hover
-    // by that little would read as one colour. Neither density serves both.
-    const dense: Ramp = [
-      { step: 0, lightness: 1, chromaFactor: 0 },
-      { step: 15, lightness: 0.985, chromaFactor: 0.2 },
-      { step: 35, lightness: 0.965, chromaFactor: 0.3 },
-      { step: 50, lightness: 0.95, chromaFactor: 0.35 },
-      { step: 90, lightness: 0.91, chromaFactor: 0.4 },
-    ];
-    const palette = generatePalette(BASES, { ...RAMPS, neutral: dense });
-
-    expect(Object.keys(palette.neutral).map(Number)).toEqual([
-      0, 15, 35, 50, 90,
-    ]);
-    // The chromatic families keep the coarse one — they are not dragged along.
-    expect(Object.keys(palette.primary).map(Number)).toEqual([100, 500, 900]);
-  });
-
-  it('carries the neutral family like any other, hue and all', () => {
-    // It ships in `vars.css` as hue 256 with chroma rising to a 0.02 plateau —
-    // a tinted grey, not an absence of colour, and the tint is the point: a
-    // pure grey reads as dead beside the brand.
-    const palette = generatePalette(BASES, RAMPS);
-
-    expect(oklch(palette.neutral[500] as string)?.h).toBeCloseTo(256, 1);
-    expect(oklch(palette.neutral[500] as string)?.c).toBeCloseTo(0.02, 3);
-  });
-
-  it('THROWS when a family has no ramp, naming the family', () => {
-    // Silently yielding an empty family would surface as ~28 missing roles in
-    // `validateTheme` — every violation a symptom, none of them the cause.
-    const missingNeutral = Object.fromEntries(
-      PALETTE_FAMILIES.filter((f) => f !== 'neutral').map((f) => [f, RAMP]),
-    ) as Ramps;
-
-    expect(() => generatePalette(BASES, missingNeutral)).toThrow(
-      /No ramp given for "neutral"/,
-    );
-  });
-
   it('accepts a hueless grey as a base', () => {
     const grey: Bases = { ...BASES, secondary: 'oklch(55% 0 0)' };
-    const palette = generatePalette(grey, RAMPS);
+    const palette = generatePalette(grey, RAMP);
 
     expect(oklch(palette.secondary[500] as string)?.c).toBe(0);
   });
@@ -157,7 +106,7 @@ describe('generatePalette', () => {
     // A family of NaN would look generated and paint nothing — the failure a
     // caller cannot see.
     expect(() =>
-      generatePalette({ ...BASES, primary: 'not-a-colour' }, RAMPS),
+      generatePalette({ ...BASES, primary: 'not-a-colour' }, RAMP),
     ).toThrow(/base for "primary" is not a colour/);
   });
 });

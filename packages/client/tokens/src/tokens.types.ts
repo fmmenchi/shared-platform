@@ -214,27 +214,13 @@ export const CONTAINER_BREAKPOINTS = {
 } as const;
 
 /**
- * The PALETTE families — the families a ramp is generated for.
+ * The seven PALETTE families — the families a ramp is generated for.
  *
- * The chromatic seven do not line up one-to-one with the role families:
- * `destructive` (an action) and `error` (a status) both draw from `negative`.
- * Same red, different treatment — an action has hover and active, a status has a
- * subtle wash and a border — so they are two role families over one palette
- * family, and anything generating a ramp iterates THIS list, not
- * `ACTION_FAMILIES`.
- *
- * `neutral` is the eighth, and it was missing here while shipping in `vars.css`
- * all along — which is not a bookkeeping slip but a hole with a measurable edge:
- * 28 of the 84 roles (every surface, every input, the greys) point at
- * `--fm-palette-neutral-*`, so a generator iterating a seven-family list could
- * not produce the ramp a third of the contract depends on.
- *
- * It is a real family, not a special case: hue 256 throughout, chroma rising
- * from 0 at the white end to a 0.02 plateau, lightness `1 - step/1000` exactly.
- * What sets it apart is DENSITY, not kind — its rungs crowd near white because
- * background, card, muted, input and border are large adjacent surfaces where a
- * ΔL of 0.015 is the whole elevation signal, while a fill needs no such
- * resolution. That is why a ramp is per-family rather than one shared list.
+ * SEVEN where the role families are eight: `destructive` (an action) and `error`
+ * (a status) both draw from `negative`. Same red, different treatment — an action
+ * has hover and active, a status has a subtle wash and a border — so they are two
+ * role families over one palette family, and anything generating a ramp iterates
+ * THIS list, not `ACTION_FAMILIES`.
  */
 export const PALETTE_FAMILIES = [
   'primary',
@@ -244,7 +230,6 @@ export const PALETTE_FAMILIES = [
   'success',
   'warning',
   'info',
-  'neutral',
 ] as const;
 
 /* ---------- The contract as types, derived from the arrays above ---------- */
