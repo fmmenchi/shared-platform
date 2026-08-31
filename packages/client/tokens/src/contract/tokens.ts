@@ -214,39 +214,5 @@ export const CONTAINER_BREAKPOINTS = {
   xl: '48rem',
 } as const;
 
-/**
- * The values of the CSS `color-scheme` property — what a theme tells the
- * BROWSER it is, so native controls, scrollbars and form widgets are painted to
- * match. Two values because the platform has two, not because we chose a pair.
- *
- * Distinct from the presets below, which is why both lists exist. A preset is a
- * theme we ship and is named for its position in the cascade (`base` is
- * `:root`); its `color-scheme` is a separate claim about lightness. They line up
- * today and need not: a consumer is free to put a dark palette on `:root`, and
- * `validateTheme()` already assumes nothing either way — it derives a theme's
- * polarity by MEASURING the background's lightness, never by reading a name.
- */
-export const COLOR_SCHEMES = ['light', 'dark'] as const;
-
 /** The themes this platform ships. `base` is `:root`. */
 export const REFERENCE_PRESETS = ['base', 'dark'] as const;
-
-/**
- * The seven PALETTE families — level 1 of the token architecture, the families
- * a ramp is generated for.
- *
- * Deliberately SEVEN where the role families are eight: `destructive` (an
- * action) and `error` (a status) both draw from `negative`. Same red, different
- * treatment — an action has hover and active, a status has a subtle wash and a
- * border — so they are two role families over one palette family, and anything
- * generating a ramp iterates THIS list, not `ACTION_FAMILIES`.
- */
-export const PALETTE_FAMILIES = [
-  'primary',
-  'secondary',
-  'accent',
-  'negative',
-  'success',
-  'warning',
-  'info',
-] as const;

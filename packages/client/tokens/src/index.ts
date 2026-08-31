@@ -12,8 +12,6 @@
 export {
   ACTION_FAMILIES,
   STATUS_FAMILIES,
-  ACTION_SUFFIXES,
-  STATUS_SUFFIXES,
   COLOR_ROLES,
   RADIUS_TOKENS,
   TEXT_TOKENS,
@@ -32,8 +30,6 @@ export {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
   REFERENCE_PRESETS,
-  COLOR_SCHEMES,
-  PALETTE_FAMILIES,
 } from './contract/tokens.js';
 
 export { tokenVars } from './contract/refs.js';
@@ -45,7 +41,6 @@ export type {
   ColorRole,
   Theme,
   ReferencePreset,
-  ColorScheme,
 } from './contract/tokens.types.js';
 
 export type {

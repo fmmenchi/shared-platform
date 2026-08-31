@@ -11,7 +11,6 @@ import type {
   NEUTRAL_ROLES,
   SURFACE_ROLES,
   INPUT_ROLES,
-  COLOR_SCHEMES,
   REFERENCE_PRESETS,
 } from './tokens.js';
 
@@ -33,9 +32,6 @@ export type ColorRole =
  * allowed themes" means, and what presets in apps must satisfy.
  */
 export type Theme = Record<ColorRole, string>;
-
-/** A CSS `color-scheme` value: what a theme tells the browser it is. */
-export type ColorScheme = (typeof COLOR_SCHEMES)[number];
 
 /** A theme this platform ships. `base` is `:root`. */
 export type ReferencePreset = (typeof REFERENCE_PRESETS)[number];
