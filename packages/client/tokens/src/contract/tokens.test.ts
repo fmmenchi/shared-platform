@@ -14,10 +14,10 @@ import {
   colorVar,
   TEXT_TOKENS,
 } from '../index.js';
-import { themeAdvisories, validateTheme } from './validate.js';
-import { readVars } from '../utils/read-vars.js';
-import { toTheme } from '../theme.js';
-import { resolveValue } from '../utils/resolve.js';
+import { themeAdvisories, validateTheme } from '../theme/validate.js';
+import { readVars } from '../theme/read-vars.js';
+import { toTheme } from '../theme/operations.js';
+import { resolveValue } from '../theme/resolve.js';
 
 /**
  * Validation of the token contract — this is what makes a theme "allowed":

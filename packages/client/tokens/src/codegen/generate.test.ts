@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { renderProperties, toIndependentLength } from './generate.js';
-import { readVars } from '../utils/read-vars.js';
+import { readVars } from '../theme/read-vars.js';
 import { REGISTERED_SECTIONS } from './registry.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

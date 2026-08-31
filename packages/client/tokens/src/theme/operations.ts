@@ -17,10 +17,10 @@
  * the file that guards the contract, is how a gate ends up checking something
  * other than what ships.
  */
-import { colorVar, COLOR_ROLES } from './contract/tokens.js';
-import type { ColorRole, Theme } from './contract/tokens.types.js';
-import { readVars } from './utils/read-vars.js';
-import { resolveValue } from './utils/resolve.js';
+import { colorVar, COLOR_ROLES } from '../contract/tokens.js';
+import type { ColorRole, Theme } from '../contract/tokens.types.js';
+import { readVars } from './read-vars.js';
+import { resolveValue } from './resolve.js';
 
 /**
  * Every `--fm-*` declaration in one or more stylesheets.
@@ -97,8 +97,5 @@ export function toCssVars(theme: Partial<Theme>, selector = ':root'): string {
  * splitting the four operations across two entry points made them hard to find,
  * which is a worse problem than the one that split bought.
  */
-export { validateTheme, themeAdvisories } from './validations/validate.js';
-export type {
-  ThemeViolation,
-  ThemeAdvisory,
-} from './validations/validate.types.js';
+export { validateTheme, themeAdvisories } from './validate.js';
+export type { ThemeViolation, ThemeAdvisory } from './validate.types.js';

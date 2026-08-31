@@ -10,8 +10,8 @@
     "vite.config.mts",
     "vitest.config.mts",
     "src/**/*.d.ts",
-    "src/services/generate.ts",
-    "src/services/registry.ts",
+    "src/codegen/generate.ts",
+    "src/codegen/registry.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts"
   ],

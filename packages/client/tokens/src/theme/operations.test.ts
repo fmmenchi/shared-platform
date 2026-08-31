@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { COLOR_ROLES } from './contract/tokens.js';
-import { parseTheme, toCssVars, toTheme } from './theme.js';
-import { validateTheme } from './validations/validate.js';
+import { COLOR_ROLES } from '../contract/tokens.js';
+import { parseTheme, toCssVars, toTheme } from './operations.js';
+import { validateTheme } from './validate.js';
 
-const styles = join(dirname(fileURLToPath(import.meta.url)), 'styles');
+const styles = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
 const VARS = read('vars.css');

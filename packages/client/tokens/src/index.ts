@@ -47,4 +47,4 @@ export type {
   ViolationKind,
   ThemeViolation,
   ThemeAdvisory,
-} from './validations/validate.types.js';
+} from './theme/validate.types.js';
