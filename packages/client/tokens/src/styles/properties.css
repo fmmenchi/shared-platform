@@ -2,9 +2,9 @@
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
- * GENERATED from the contract by `src/generate.ts`; `generate.test.ts` fails if
+ * GENERATED from the contract by `src/utils/generate-properties.ts`; its test fails if
  * this file and the contract disagree. Do not edit by hand — change the roles in
- * `src/tokens.ts` or the sections in `src/registry.ts` and re-run the suite
+ * `src/tokens.types.ts` or the sections in the generator and re-run the suite
  * with `-u`.
  *
  * Registering each `--fm-*` role gives the browser its TYPE, which unlocks two

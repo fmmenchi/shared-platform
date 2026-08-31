@@ -7,12 +7,10 @@
   "properties": {
     "themes": {
       "type": "array",
-      "items": { "type": "string" },
+      "items": {
+        "type": "string"
+      },
       "description": "Workspace-relative paths of the theme CSS files to validate."
-    },
-    "tokensPath": {
-      "type": "string",
-      "description": "Advanced: explicit path to @fmmenchi/tokens' validate module (when it cannot be resolved from the workspace root)."
     }
   },
   "required": ["themes"]

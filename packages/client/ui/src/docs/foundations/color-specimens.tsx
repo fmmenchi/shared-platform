@@ -1,4 +1,4 @@
-import { colorVar } from '@fmmenchi/tokens';
+import { colorVar } from '@fmmenchi/theme';
 import { contrast } from '../../test/contrast.js';
 import { declaredPairs } from './token-data.js';
 import { useTokenValues } from './use-token-values.js';

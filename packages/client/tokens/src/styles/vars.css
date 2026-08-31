@@ -14,7 +14,7 @@
  *   (not Baseline Widely). The roles ARE @property-registered — see
  *   `properties.css`, imported below (ADR-0012; @property is Baseline NEWLY,
  *   shipped as an ADR-0010 progressive enhancement — degrades to untyped).
- * - A THEME is a complete assignment of every color role (`ThemeColors` in
+ * - A THEME is a complete assignment of every color role (`Theme` in
  *   `src/index.ts`). Non-color tokens inherit unless a preset overrides them.
  * - Contrast is enforced by test: every declared pair is WCAG AA (4.5:1 text,
  *   3:1 focus ring); `-disabled` pairs are exempt (WCAG 1.4.3 exception).
@@ -80,7 +80,14 @@
   --fm-palette-neutral-800: oklch(20% 0.02 256);
   --fm-palette-neutral-850: oklch(15% 0.02 256);
   --fm-palette-neutral-900: oklch(10% 0.02 256);
-  --fm-palette-neutral-950: oklch(5% 0.02 256);
+  /* 0.017, NOT the 0.02 the plateau above carries: at L 5% that chroma is
+     outside sRGB, so each browser mapped it back its own way and no two agreed
+     on the colour. 0.017 is the most that fits at this lightness and hue.
+     It shipped for as long as it did because the gamut rule was only ever
+     checked on `--fm-color-*` roles, and this is one of the rungs no role
+     points at — declared, shipped, and looked at by nothing. `styles.test.ts`
+     now checks every rung, which is what should have caught it. */
+  --fm-palette-neutral-950: oklch(5% 0.017 256);
   --fm-palette-neutral-1000: oklch(0% 0 0);
 
   /* ==========================================================

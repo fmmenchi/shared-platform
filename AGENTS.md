@@ -102,8 +102,14 @@ A vulnerability left visible with a reason beats one hidden behind an override n
   `gh-actions`, tagged `gh-actions/v{version}` in its own release group). See
   [architecture](./.agents/doc/architecture.md).
 - **File layout:** every `index.ts` is a **barrel — re-exports only**, never implementation or
-  inline declarations. Implementation lives in `<name>.ts`; **types always in a separate
-  `<name>.types.ts`**. Structure the code into proper files and let `index.ts` just re-export the
+  inline declarations. Implementation lives in `<name>.ts`, and **a type stays WITH the code it is
+  derived from** — `type X = (typeof SOME_ARRAY)[number]` belongs beside the array,
+  since the two cannot be edited apart and a boundary between them buys nothing. A
+  lone type in a file of its own is ceremony. A `<name>.types.ts` is for types that
+  stand alone, and it may also be the file a contract lives in when the contract IS
+  a set of types plus the arrays they derive from (`@fmmenchi/tokens`
+  `tokens.types.ts`) — the name says what the file defines, not what kind of syntax
+  it contains. Structure the code into proper files and let `index.ts` just re-export the
   public surface.
 - **Commits:** Conventional Commits are mandatory (they drive `nx release`) and enforced by
   commitlint via a husky `commit-msg` hook. Keep the subject lowercase. Humans use `git cz`;

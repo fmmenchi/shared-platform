@@ -11,36 +11,14 @@
     "registry": "https://npm.pkg.github.com"
   },
   "files": [
-    "dist",
     "src/styles"
   ],
   "sideEffects": [
     "**/*.css"
   ],
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
-    ".": {
-      "@fmmenchi/source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./validate": {
-      "@fmmenchi/source": "./src/validate.ts",
-      "types": "./dist/validate.d.ts",
-      "import": "./dist/validate.js",
-      "default": "./dist/validate.js"
-    },
-    "./resolve": {
-      "@fmmenchi/source": "./src/resolve.ts",
-      "types": "./dist/resolve.d.ts",
-      "import": "./dist/resolve.js",
-      "default": "./dist/resolve.js"
-    },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",
     "./styles/baseline.css": "./src/styles/baseline.css",
@@ -55,8 +33,9 @@
       "doc:client"
     ]
   },
-  "dependencies": {
-    "culori": "^4.0.2",
-    "tslib": "^2.3.0"
+  "dependencies": {},
+  "devDependencies": {
+    "@fmmenchi/theme": "workspace:*",
+    "culori": "^4.0.2"
   }
 }

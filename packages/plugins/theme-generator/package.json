@@ -26,28 +26,13 @@
   "nx": {
     "targets": {
       "build": {
-        "executor": "@nx/js:tsc",
+        "executor": "nx:run-commands",
         "outputs": [
-          "{options.outputPath}"
+          "{projectRoot}/dist"
         ],
         "options": {
-          "outputPath": "packages/plugins/theme-generator/dist",
-          "main": "packages/plugins/theme-generator/src/index.ts",
-          "tsConfig": "packages/plugins/theme-generator/tsconfig.lib.json",
-          "rootDir": "packages/plugins/theme-generator/src",
-          "generatePackageJson": false,
-          "assets": [
-            {
-              "input": "./packages/plugins/theme-generator/src",
-              "glob": "**/!(*.ts)",
-              "output": "."
-            },
-            {
-              "input": "./packages/plugins/theme-generator/src",
-              "glob": "**/*.d.ts",
-              "output": "."
-            }
-          ]
+          "cwd": "packages/plugins/theme-generator",
+          "command": "vite build"
         }
       }
     },
@@ -59,6 +44,8 @@
   },
   "dependencies": {
     "@nx/devkit": "23.1.1",
+    "apca-w3": "^0.1.9",
+    "culori": "^4.0.2",
     "tslib": "^2.3.0"
   },
   "generators": "./generators.json",
@@ -68,5 +55,8 @@
     "generators.json",
     "executors.json"
   ],
-  "executors": "./executors.json"
+  "executors": "./executors.json",
+  "devDependencies": {
+    "@fmmenchi/theme": "workspace:*"
+  }
 }

@@ -1,5 +1,3 @@
-import { REGISTERED_SECTIONS } from './registry.js';
-
 /**
  * THE FILES THAT ONLY RESTATE THE CONTRACT, WRITTEN BY THE CONTRACT.
  *
@@ -17,43 +15,79 @@ import { REGISTERED_SECTIONS } from './registry.js';
  * with nothing to fail if the two stopped agreeing.
  *
  * Rendered as strings rather than written to disk, so the test that keeps the
- * committed files honest is an ordinary assertion — see `generate.test.ts`.
+ * committed files honest is an ordinary assertion — see `generate-properties.test.ts`.
  */
+import {
+  ACTION_FAMILIES,
+  ACTION_SUFFIXES,
+  INPUT_ROLES,
+  NEUTRAL_ROLES,
+  RADIUS_TOKENS,
+  STATUS_FAMILIES,
+  STATUS_SUFFIXES,
+  SURFACE_ROLES,
+} from '@fmmenchi/theme';
 
-/**
- * Every `--fm-*: value` in a stylesheet, in source order.
- *
- * COMMENTS ARE REMOVED FIRST, and that is not tidiness. Anchoring on `^\s*`
- * only asks for the start of a LINE, so a role commented out during a retune —
- * the ordinary `/* off for now` around a block — reads as a declaration. Every
- * gate would then pass on a role the shipped CSS does not define: completeness
- * sees it, contrast reads its value out of the comment, and `properties.css`
- * registers it. The `:root` value being absent, it resolves to the `@property`
- * initial-value, `oklch(0 0 0)` — black, on every consumer, in both themes.
- */
-export function readVars(css: string): Map<string, string> {
-  const values = new Map<string, string>();
-  const live = css.replace(/\/\*[\s\S]*?\*\//g, '');
-
-  for (const [, name, value] of live.matchAll(
-    /^\s*(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/gm,
-  )) {
-    if (values.has(name as string)) {
-      throw new Error(
-        `Duplicate declaration of ${name}. Two values for one token in one file means the later one silently wins, and which is later is not something anybody reads a stylesheet to find out.`,
-      );
-    }
-    values.set(name as string, (value as string).trim().replace(/\s+/g, ' '));
-  }
-  return values;
+/** The shape of one section of the generated `properties.css`. */
+interface RegisteredSection {
+  /** Rendered as the section comment. */
+  title: string;
+  /** A second line of it, where the reason needs saying. */
+  note?: string;
+  syntax: '<color>' | '<length>';
+  vars: readonly string[];
 }
 
+const colorVars = (roles: readonly string[]) =>
+  roles.map((role) => `--fm-color-${role}`);
+
+const family = (
+  families: readonly string[],
+  suffixes: readonly string[],
+): string[] => families.flatMap((f) => suffixes.map((s) => `${f}${s}`));
+
+export const REGISTERED_SECTIONS: readonly RegisteredSection[] = [
+  {
+    title: `Action families (${ACTION_FAMILIES.join(' · ')})`,
+    syntax: '<color>',
+    vars: colorVars(family(ACTION_FAMILIES, ACTION_SUFFIXES)),
+  },
+  {
+    title: `Status roles (${STATUS_FAMILIES.join(' · ')})`,
+    syntax: '<color>',
+    vars: colorVars(family(STATUS_FAMILIES, STATUS_SUFFIXES)),
+  },
+  {
+    title: 'Neutral + disabled',
+    syntax: '<color>',
+    vars: colorVars(NEUTRAL_ROLES),
+  },
+  {
+    title: 'Surfaces, text & focus',
+    syntax: '<color>',
+    vars: colorVars(SURFACE_ROLES),
+  },
+  { title: 'Form controls', syntax: '<color>', vars: colorVars(INPUT_ROLES) },
+  {
+    title: 'Radius',
+    note: '<length> initial-value must be computationally independent, so NO rem/em (the browser rejects the rule): px equivalents at the 16px root, converted from the real value rather than restated beside it.',
+    syntax: '<length>',
+    vars: RADIUS_TOKENS.map((token) => `--fm-radius-${token}`),
+  },
+];
+
 /**
- * A `<length>` the browser will accept as an `initial-value`: it has to be
- * computationally independent, which `rem` is not. Converted from the real
- * value at the 16px root rather than restated, so the two cannot disagree.
+ * The value in `px`, which is the only kind of `<length>` an `@property`
+ * `initial-value` will accept: it has to be COMPUTATIONALLY INDEPENDENT, and
+ * `rem` is not — a `rem` there makes the browser reject the whole rule, silently,
+ * losing both the interpolation and the type guard.
+ *
+ * Converted from the real value at the 16px root rather than restated beside it,
+ * so the two cannot disagree. Throws on anything that is neither `px` nor `rem`
+ * (`em`, `calc()`, `clamp()`, a `var()`) instead of emitting a rule the browser
+ * will discard.
  */
-export function toIndependentLength(value: string): string {
+export function toPixels(value: string): string {
   const trimmed = value.trim();
   if (/^-?\d+(\.\d+)?px$/.test(trimmed)) return trimmed;
 
@@ -92,9 +126,9 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
- * GENERATED from the contract by \`src/generate.ts\`; \`generate.test.ts\` fails if
+ * GENERATED from the contract by \`src/utils/generate-properties.ts\`; its test fails if
  * this file and the contract disagree. Do not edit by hand — change the roles in
- * \`src/tokens.ts\` or the sections in \`src/registry.ts\` and re-run the suite
+ * \`src/tokens.types.ts\` or the sections in the generator and re-run the suite
  * with \`-u\`.
  *
  * Registering each \`--fm-*\` role gives the browser its TYPE, which unlocks two
@@ -121,7 +155,7 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 `;
 
 /** `styles/properties.css`, in full. */
-export function renderProperties(values: Map<string, string>): string {
+export function generateProperties(values: Map<string, string>): string {
   const sections = REGISTERED_SECTIONS.map((section) => {
     // Wrapped by hand, because Prettier does not reflow a CSS comment and the
     // repo's own format gate would have accepted a 224-character line without
@@ -134,7 +168,7 @@ export function renderProperties(values: Map<string, string>): string {
       const initial =
         section.syntax === '<color>'
           ? 'oklch(0 0 0)'
-          : toIndependentLength(values.get(name) ?? '0px');
+          : toPixels(values.get(name) ?? '0px');
 
       return `@property ${name} {\n  syntax: '${section.syntax}';\n  inherits: true;\n  initial-value: ${initial};\n}`;
     });

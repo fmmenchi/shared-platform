@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readVars, renderProperties, toIndependentLength } from './generate.js';
-import { REGISTERED_SECTIONS } from './registry.js';
+import { generateProperties, toPixels } from './generate-properties.js';
+import { parseCssVars } from '@fmmenchi/theme';
+import { REGISTERED_SECTIONS } from './generate-properties.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(join(here, path), 'utf8');
-const values = readVars(read('./styles/vars.css'));
+const values = parseCssVars(read('../styles/vars.css'));
 
 /**
  * THE COMMITTED FILES ARE WHAT THE CONTRACT WOULD WRITE.
@@ -27,17 +28,17 @@ describe('generated artifacts', () => {
     // ASKED SEPARATELY, because `toMatchFileSnapshot` WRITES a missing file and
     // reports a pass — measured, outside CI. So a deleted artifact would leave
     // the local suite green and the package shipping nothing.
-    expect(existsSync(join(here, './styles/properties.css'))).toBe(true);
+    expect(existsSync(join(here, '../styles/properties.css'))).toBe(true);
 
-    await expect(renderProperties(values)).toMatchFileSnapshot(
-      './styles/properties.css',
+    await expect(generateProperties(values)).toMatchFileSnapshot(
+      '../styles/properties.css',
     );
   });
 });
 
 describe('the generator itself', () => {
   it('reads a variable and its value, not the prose around them', () => {
-    const parsed = readVars(`
+    const parsed = parseCssVars(`
       /* --fm-color-fake: not-a-real-token; */
       :root {
         --fm-color-primary: oklch(41% 0.135 255);
@@ -58,7 +59,7 @@ describe('the generator itself', () => {
     // The shape that matters, and the one the single-line case above does not
     // cover: a block comment around a real declaration, which is what a retune
     // leaves behind. Anchoring on `^\\s*` asks only for the start of a LINE.
-    const parsed = readVars(`
+    const parsed = parseCssVars(`
       :root {
         /* off until the ramp is redone
         --fm-color-primary: oklch(41% 0.135 255);
@@ -80,11 +81,11 @@ describe('the generator itself', () => {
     // option: the browser drops the WHOLE `@property` rule, silently, and the
     // token loses its type. Nothing downstream can see that — Stylelint has no
     // rule for it and the contract test only greps for `rem`.
-    expect(() => toIndependentLength('0.5em')).toThrow(/not absolute/);
-    expect(() => toIndependentLength('clamp(4px, 1vw, 8px)')).toThrow();
-    expect(() => toIndependentLength('calc(0.5rem + 2px)')).toThrow();
-    expect(() => toIndependentLength('var(--x)')).toThrow();
-    expect(() => toIndependentLength('1.2.3rem')).toThrow();
+    expect(() => toPixels('0.5em')).toThrow(/not absolute/);
+    expect(() => toPixels('clamp(4px, 1vw, 8px)')).toThrow();
+    expect(() => toPixels('calc(0.5rem + 2px)')).toThrow();
+    expect(() => toPixels('var(--x)')).toThrow();
+    expect(() => toPixels('1.2.3rem')).toThrow();
   });
 
   it('converts a length to one the browser will accept', () => {
@@ -93,11 +94,11 @@ describe('the generator itself', () => {
     // loses its type. Converted from the real value rather than restated beside
     // it — which is what the hand-written file did, with nothing to fail if the
     // two stopped agreeing.
-    expect(toIndependentLength('0.25rem')).toBe('4px');
-    expect(toIndependentLength('0.375rem')).toBe('6px');
-    expect(toIndependentLength('0.75rem')).toBe('12px');
+    expect(toPixels('0.25rem')).toBe('4px');
+    expect(toPixels('0.375rem')).toBe('6px');
+    expect(toPixels('0.75rem')).toBe('12px');
     // Already independent: left alone.
-    expect(toIndependentLength('4px')).toBe('4px');
+    expect(toPixels('4px')).toBe('4px');
   });
 
   it('registers every colour role and every radius, and nothing else', () => {

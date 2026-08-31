@@ -1,21 +1,47 @@
 /**
- * Resolve a token value the way a browser would: follow `var()` references and
- * evaluate the one relative-colour form the ramps use.
+ * READING A STYLESHEET — from CSS text to a colour you can measure.
  *
- * This exists because the CONTRAST GATE has to keep working. `tokens.test.ts`
- * reads the stylesheet and hands each value to culori, and
- * `parseColor('oklch(from var(--x) calc(l - 0.1) calc(c * 0.86) h)')` is
- * `undefined` — so without this every colour assertion would fail for the one
- * reason a test must never fail: it can no longer see what it is checking.
- * ADR-0032 makes AA a requirement of the derivation, and a requirement needs a
- * gate that can read the derived values.
+ * TWO of these are the API:
  *
- * It is NOT a CSS engine and does not try to be. It handles the single shape
- * ADR-0032 introduces — a channel is either passed through or adjusted by one
- * `calc()` with one operation — and REFUSES anything else rather than guessing:
- * a resolver that silently mis-evaluates a colour would make the gate worse
- * than absent, because it would go green on the wrong number.
+ *   parseCssVars(css)            the `--fm-*` declarations a stylesheet makes
+ *   resolveCssVar(value, vars) one of them, resolved to what a browser paints
+ *
+ * `expandVars` and `evaluateRelativeOklch` are the two halves of `resolveCssVar`.
+ * They stay exported because each has behaviour worth asserting head-on — a
+ * reference cycle, a missing variable with and without a fallback, a channel
+ * expression this deliberately refuses — and proving those through the composed
+ * function would only show that something went wrong, not which half.
+ *
+ * Published as `@fmmenchi/tokens/resolve`, which @fmmenchi/ui's Storybook imports
+ * to resolve the manager theme.
  */
+/**
+ * Every `--fm-*: value` in a stylesheet, in source order.
+ *
+ * COMMENTS ARE REMOVED FIRST, and that is not tidiness. Anchoring on `^\s*`
+ * only asks for the start of a LINE, so a role commented out during a retune —
+ * the ordinary `/* off for now` around a block — reads as a declaration. Every
+ * gate would then pass on a role the shipped CSS does not define: completeness
+ * sees it, contrast reads its value out of the comment, and `properties.css`
+ * registers it. The `:root` value being absent, it resolves to the `@property`
+ * initial-value, `oklch(0 0 0)` — black, on every consumer, in both themes.
+ */
+export function parseCssVars(css: string): Map<string, string> {
+  const values = new Map<string, string>();
+  const live = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  for (const [, name, value] of live.matchAll(
+    /^\s*(--fm-[a-z0-9-]+)\s*:\s*([^;]+);/gm,
+  )) {
+    if (values.has(name as string)) {
+      throw new Error(
+        `Duplicate declaration of ${name}. Two values for one token in one file means the later one silently wins, and which is later is not something anybody reads a stylesheet to find out.`,
+      );
+    }
+    values.set(name as string, (value as string).trim().replace(/\s+/g, ' '));
+  }
+  return values;
+}
 
 const VAR_PATTERN = /var\(\s*(--[a-z0-9-]+)\s*(?:,\s*([^)]*))?\)/i;
 
@@ -202,20 +228,9 @@ export function evaluateRelativeOklch(value: string): string {
  * expanded, then a relative colour evaluated if that is what it turned out to
  * be.
  */
-export function resolveValue(
+export function resolveCssVar(
   value: string,
   vars: ReadonlyMap<string, string>,
 ): string {
   return evaluateRelativeOklch(expandVars(value, vars));
-}
-
-/** Every declaration, resolved. Order-independent: each is resolved on demand. */
-export function resolveAll(
-  vars: ReadonlyMap<string, string>,
-): Map<string, string> {
-  const resolved = new Map<string, string>();
-  for (const [name, value] of vars) {
-    resolved.set(name, resolveValue(value, vars));
-  }
-  return resolved;
 }

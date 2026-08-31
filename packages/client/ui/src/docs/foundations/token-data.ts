@@ -4,7 +4,7 @@ import {
   STATUS_FAMILIES,
   colorVar,
   type ColorRole,
-} from '@fmmenchi/tokens';
+} from '@fmmenchi/theme';
 import type { ColorPair, RoleEntry, RoleGroup } from './token-data.types.js';
 
 /**

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { parse as parseColor } from 'culori';
-import { evaluateRelativeOklch, expandVars, resolveValue } from './resolve.js';
+import {
+  evaluateRelativeOklch,
+  expandVars,
+  resolveCssVar,
+} from './parse-css.js';
 
 /**
  * The resolver is what keeps the contrast gate able to SEE the derived values
@@ -124,9 +128,9 @@ describe('evaluateRelativeOklch', () => {
   });
 });
 
-describe('resolveValue', () => {
+describe('resolveCssVar', () => {
   it('resolves a ramp step end to end', () => {
-    const out = resolveValue(
+    const out = resolveCssVar(
       'oklch(from var(--fm-primary-base) calc(l - 0.19) calc(c * 0.53) h)',
       vars,
     );
@@ -134,7 +138,7 @@ describe('resolveValue', () => {
   });
 
   it('produces something culori can parse — the whole point', () => {
-    const out = resolveValue(
+    const out = resolveCssVar(
       'oklch(from var(--fm-alias) calc(l + 0.49) calc(c * 0.36) h)',
       vars,
     );

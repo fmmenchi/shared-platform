@@ -18,7 +18,12 @@ const config: Config = {
     // not be parsed as JSX); .mdx opts into MDX explicitly.
     format: 'detect',
     hooks: { onBrokenMarkdownLinks: 'warn' },
+    // ```mermaid fences render as diagrams. Added for ADR-0033, whose
+    // architecture and handoff are graphs: a module diagram written as prose is
+    // a diagram the reader has to draw themselves.
+    mermaid: true,
   },
+  themes: ['@docusaurus/theme-mermaid'],
   i18n: { defaultLocale: 'en', locales: ['en'] },
   presets: [
     [

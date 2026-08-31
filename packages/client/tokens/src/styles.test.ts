@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { converter, parse as parseColor, wcagContrast } from 'culori';
-import { APCAcontrast, sRGBtoY } from 'apca-w3';
+import { displayable, parse as parseColor, wcagContrast } from 'culori';
 import {
   BREAKPOINTS,
   CONTAINER_BREAKPOINTS,
@@ -14,12 +13,29 @@ import {
   TOKEN_VARS,
   colorVar,
   TEXT_TOKENS,
-} from './index.js';
-import { CONTRAST_PAIRS, validateTheme } from './validate.js';
-import { readVars } from './generate.js';
-import { resolveValue } from './resolve.js';
+} from '@fmmenchi/theme';
+import {
+  adviseContrast,
+  parseTheme,
+  resolveCssVar,
+  toTheme,
+  tokenVars,
+  validateTheme,
+} from '@fmmenchi/theme';
 
 /**
+ * DO THE SHIPPED STYLESHEETS SATISFY THE CONTRACT?
+ *
+ * Named for what it reads, not for the module it sits beside: every suite below
+ * but one opens `styles/*.css` and checks it against the arrays in
+ * `tokens.types.ts`. There is nothing else in that file to test at runtime — the
+ * types are the typechecker's job and an array has no behaviour.
+ *
+ * The one exception is `token references` at the end, which compares the
+ * contract's two TS shapes to each other. It rides along here because it is the
+ * only runtime assertion `tokens.types.ts` has, and a file holding one suite is
+ * what merging it away already removed once.
+ *
  * Validation of the token contract — this is what makes a theme "allowed":
  * 1. `vars.css` defines EXACTLY the contract (no missing, no stray vars).
  * 2. the `dark` preset assigns EXACTLY every color role (a theme = complete
@@ -35,21 +51,6 @@ const styles = dirname(fileURLToPath(import.meta.url)) + '/styles';
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
 
 /**
- * ONE PARSER, shared with the generator.
- *
- * This file had its own, and it was anchored on nothing — so it read a
- * declaration anywhere in the text, including one commented OUT during a retune.
- * Everything here then passed on a role the shipped CSS does not define:
- * completeness saw it, the contrast maths read its value out of the comment, and
- * the role resolved at runtime to the `@property` initial-value. Black, on every
- * consumer, in both themes, with the suite green.
- *
- * `readVars` strips comments and throws on a duplicate, which is what the local
- * one asserted.
- */
-const parseVars = readVars;
-
-/**
  * Resolve a declared value to the colour a browser would paint: references
  * expanded AND the relative-colour ramp evaluated.
  *
@@ -61,7 +62,7 @@ const parseVars = readVars;
  * any other rather than guessing.
  */
 function resolve(map: Map<string, string>, value: string): string {
-  return resolveValue(value, map);
+  return resolveCssVar(value, map);
 }
 
 /**
@@ -74,8 +75,8 @@ function resolve(map: Map<string, string>, value: string): string {
  */
 const isPrimitive = (name: string) => name.startsWith('--fm-palette-');
 
-const light = parseVars(read('vars.css'));
-const dark = parseVars(read('presets/dark.css'));
+const light = parseTheme(read('vars.css'));
+const dark = parseTheme(read('presets/dark.css'));
 const bridge = read('tailwind.css').replace(/\s+/g, '');
 
 /**
@@ -275,15 +276,6 @@ describe('reference presets pass the PUBLIC validator (allowed-themes gate)', ()
   // The exact validator apps run on their brand presets — completeness,
   // parseability and every CONTRAST_PAIR (AA text 4.5:1, ring/invalid 3:1;
   // `-disabled` pairs exempt per WCAG 1.4.3). Single source: validate.ts.
-  const toTheme = (vars: Map<string, string>): Record<string, string> => {
-    const theme: Record<string, string> = {};
-    for (const role of COLOR_ROLES) {
-      const raw = vars.get(colorVar(role));
-      if (raw !== undefined) theme[role] = resolve(vars, raw);
-    }
-    return theme;
-  };
-
   it('light (vars.css) is an allowed theme', () => {
     expect(validateTheme(toTheme(light))).toEqual([]);
   });
@@ -353,50 +345,173 @@ describe('perceivability advisories (logged, not gated)', () => {
 });
 
 describe('APCA (advisory + floor)', () => {
-  // WCAG 2.x ratios are a blunt instrument, especially on dark themes; APCA
-  // (the WCAG 3 draft metric) is more perceptually accurate. Policy: the HARD
-  // gate stays WCAG AA (the legal/standard bar) + an APCA FLOOR of |Lc| ≥ 45
-  // (large/bold-text tier — our smallest text is font-medium button labels);
-  // pairs under the body-text guideline (|Lc| < 60) are logged as advisory,
-  // not failed.
-  const toRgb = converter('rgb');
-  const Y = (value: string) => {
-    const c = toRgb(parseColor(value));
-    if (!c) throw new Error(`unparsable: ${value}`);
-    const ch = (x: number) => Math.min(255, Math.max(0, Math.round(x * 255)));
-    return sRGBtoY([ch(c.r), ch(c.g), ch(c.b)]);
-  };
-
-  const toTheme = (vars: Map<string, string>): Record<string, string> => {
-    const theme: Record<string, string> = {};
-    for (const role of COLOR_ROLES) {
-      const raw = vars.get(colorVar(role));
-      if (raw !== undefined) theme[role] = resolve(vars, raw);
-    }
-    return theme;
-  };
-
+  /**
+   * The measurement moved into `validateTheme()`; this asserts the SHIPPED
+   * presets against it rather than repeating the arithmetic.
+   *
+   * It used to compute |Lc| here, which meant the pipeline enforced a floor the
+   * public verdict did not — so a theme could pass a builder calling
+   * `validateTheme()` and fail this file. One implementation, asked in one
+   * place; the policy is unchanged (hard floor |Lc| 45, the 60 body-text
+   * guideline advisory).
+   */
   for (const [name, vars] of [
     ['light', light],
     ['dark', darkCascade],
   ] as const) {
     it(`text pairs stay above the |Lc| 45 floor in ${name}`, () => {
       const theme = toTheme(vars);
-      const advisories: string[] = [];
-      const failures: string[] = [];
-      for (const [bg, fg, minimum] of CONTRAST_PAIRS) {
-        if (minimum !== 4.5) continue; // text pairs only
-        const lc = Math.abs(Number(APCAcontrast(Y(theme[fg]), Y(theme[bg]))));
-        if (lc < 45) failures.push(`${bg} × ${fg}: |Lc| ${lc.toFixed(1)} < 45`);
-        else if (lc < 60)
-          advisories.push(
-            `${bg} × ${fg}: |Lc| ${lc.toFixed(1)} (< 60 body-text guideline)`,
-          );
-      }
+      const failures = validateTheme(theme)
+        .filter((v) => v.kind === 'apca')
+        .map((v) => v.message);
+
+      const advisories = adviseContrast(theme).map((a) => a.message);
       if (advisories.length > 0) {
         console.warn(`APCA advisory (${name}):\n  ${advisories.join('\n  ')}`);
       }
       expect(failures, failures.join('\n')).toEqual([]);
     });
   }
+});
+
+/**
+ * THE REFERENCES AND THE CONTRACT ARE THE SAME LIST, and this is the only place
+ * that can say so.
+ *
+ * `vars` is derived from the same `as const` arrays `TOKEN_VARS` is derived
+ * from, so the two cannot disagree about the names WITHIN a group. What they
+ * can disagree about is which groups exist: adding a token family to
+ * `TOKEN_VARS` and forgetting it here leaves a whole group of tokens with no
+ * typed reference and nothing to say so — the drift this export exists to
+ * prevent, reappearing one level up.
+ */
+const flatten = (): string[] =>
+  Object.values(tokenVars).flatMap((group) => Object.values(group));
+
+describe('token references', () => {
+  it('reads back every variable the contract requires', () => {
+    // Set equality both ways: a missing group fails the first, an invented one
+    // fails the second. Sorted, because neither list promises an order.
+    const referenced = flatten().sort();
+    const required = TOKEN_VARS.map((name) => `var(${name})`).sort();
+
+    expect(referenced).toEqual(required);
+  });
+
+  it('holds no duplicates', () => {
+    const referenced = flatten();
+    // Two groups sharing a prefix would silently answer for each other's
+    // tokens — `text` and `leading` are built from the SAME name list and are
+    // the shape that makes this possible.
+    expect(new Set(referenced).size).toBe(referenced.length);
+  });
+
+  it('is a reference, never a value', () => {
+    // The distinction the whole export rests on: a reference re-points when
+    // `[data-theme]` changes, a value copied at build time does not.
+    for (const reference of flatten()) {
+      expect(reference).toMatch(/^var\(--fm-[a-z0-9-]+\)$/);
+    }
+  });
+
+  it('spells its keys the way the tokens are spelled', () => {
+    // No second vocabulary. `primary-foreground` finds the CSS, the contract
+    // and the call site, because all three spell it the same.
+    expect(tokenVars.color['primary-foreground']).toBe(
+      'var(--fm-color-primary-foreground)',
+    );
+    expect(tokenVars.space['inset-m']).toBe('var(--fm-space-inset-m)');
+    expect(tokenVars['font-weight'].semibold).toBe(
+      'var(--fm-font-weight-semibold)',
+    );
+    expect(tokenVars['border-width'].emphasis).toBe(
+      'var(--fm-border-width-emphasis)',
+    );
+  });
+
+  it('keeps the type pair together, and the two halves apart', () => {
+    // `--fm-text-<step>` ships with `--fm-leading-<step>`, so a consumer
+    // reaching for one has the other under the same key.
+    expect(Object.keys(tokenVars.text)).toEqual(Object.keys(tokenVars.leading));
+
+    // AND EACH POINTS AT ITS OWN HALF. The two groups are built from the SAME
+    // name list, so transposing their prefixes produces an identical multiset
+    // of strings — set equality, no-duplicates and the shape check all stay
+    // green, and `tokenVars.text.lg` quietly returns a LEADING. A `1.75`
+    // line-height ratio applied as a font-size, on every consumer, in a patch
+    // release. These two lines are the only thing that can see it.
+    expect(tokenVars.text.lg).toBe('var(--fm-text-lg)');
+    expect(tokenVars.leading.lg).toBe('var(--fm-leading-lg)');
+  });
+
+  it('cannot be written to, at the type level or at runtime', () => {
+    // The emitted `.d.ts` says `readonly`, which `as const` alone does not
+    // make true: without the freeze a single consumer doing what they think is
+    // a theming hook corrupts the module singleton for every other importer in
+    // the process.
+    expect(Object.isFrozen(tokenVars)).toBe(true);
+    // The groups too: freezing only the outer object leaves writable every
+    // surface anybody would actually reach for.
+    for (const group of Object.values(tokenVars)) {
+      expect(Object.isFrozen(group)).toBe(true);
+    }
+    expect(() => {
+      // @ts-expect-error — readonly, and this asserts the type says so.
+      tokenVars.color.primary = 'oops';
+    }).toThrow();
+  });
+
+  it('rejects a name that is not a token', () => {
+    // THE ONE BENEFIT THIS EXPORT EXISTS FOR, and every other test here is a
+    // runtime one that would still pass if `TokenRefGroup` were relaxed to
+    // `Record<string, string>`. `@ts-expect-error` fails the `typecheck` target
+    // if the error stops happening, which is the only way to assert it.
+    // @ts-expect-error — `primry` is not a colour role.
+    expect(tokenVars.color.primry).toBeUndefined();
+  });
+});
+
+/**
+ * ARE THE PALETTE RUNGS THEMSELVES DISPLAYABLE?
+ *
+ * The gamut rule is old and its reasoning is in AGENTS.md — an out-of-gamut
+ * oklch is mapped back by each browser its own way, so two people measuring the
+ * same theme get different answers and every contrast figure describes a colour
+ * nobody sees. What was missing is that the check only ever ran on
+ * `--fm-color-*`: a rung no role points at was declared, shipped, and never
+ * looked at by anything.
+ *
+ * That is not hypothetical. `--fm-palette-neutral-950` shipped as
+ * `oklch(5% 0.02 256)`, which is outside sRGB — 0.017 is the most that fits at
+ * that lightness — and it survived because it is one of the seventeen rungs no
+ * role uses. It surfaced only by regenerating the ramp and noticing the
+ * generated value differed, which is a roundabout way to learn something a
+ * direct assertion should say. This is that assertion.
+ */
+describe('palette rungs', () => {
+  const vars = parseTheme(read('vars.css'), read('presets/dark.css'));
+  const rungs = [...vars].filter(([name]) =>
+    /^--fm-palette-[a-z]+-\d+$/.test(name),
+  );
+
+  it('declares rungs at all (the suite below is worthless if not)', () => {
+    expect(rungs.length).toBeGreaterThan(50);
+  });
+
+  it('every declared rung resolves to a colour', () => {
+    const broken = rungs
+      .filter(([, raw]) => !parseColor(resolve(vars, raw)))
+      .map(([name]) => name);
+
+    expect(broken, broken.join('\n')).toEqual([]);
+  });
+
+  it('every declared rung is inside sRGB', () => {
+    const outside = rungs
+      .map(([name, raw]) => [name, resolve(vars, raw)] as const)
+      .filter(([, value]) => parseColor(value) && !displayable(value))
+      .map(([name, value]) => `${name}: ${value}`);
+
+    expect(outside, `out of gamut:\n  ${outside.join('\n  ')}`).toEqual([]);
+  });
 });

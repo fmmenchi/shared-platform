@@ -27,7 +27,7 @@
     },
     "skipValidation": {
       "type": "boolean",
-      "description": "Do not wire the validate-themes target.",
+      "description": "Do not gate this theme: skips BOTH wiring the validate-themes target and the pre-write check on a --from file. One flag, one meaning — an escape hatch for installing a theme you already know is not finished.",
       "default": false
     },
     "scheme": {
@@ -35,6 +35,10 @@
       "enum": ["light", "dark"],
       "description": "Whether this is a light or a dark theme — emitted as `color-scheme`, so the parts the browser paints (a select's popup, a native checkbox) follow the theme. Without it a dark brand theme ships white native lists on Safari and Firefox.",
       "default": "light"
+    },
+    "from": {
+      "type": "string",
+      "description": "Path to a theme file to install (as exported by a theme builder) instead of scaffolding from the reference contract. Only its `declarations` object is read — a flat map of `--fm-*` custom property to value, at whatever layer, so a base and a ramp step are as installable as a role. Every other key the file carries, including whatever the builder keeps to reopen its own form, is ignored. The theme is validated before anything is written."
     },
     "tokensPath": {
       "type": "string",

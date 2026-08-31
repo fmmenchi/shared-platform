@@ -20,7 +20,20 @@ export default [
         'error',
         {
           enforceBuildableLibDependency: true,
-          allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+          allow: [
+            '^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$',
+            // A STYLESHEET IS NOT A MODULE DEPENDENCY. `@fmmenchi/tokens` ships
+            // CSS and nothing else — no `dist`, no build target — since the
+            // contract moved to `@fmmenchi/theme`. That makes it "non-buildable"
+            // to `enforceBuildableLibDependency`, which then refuses every
+            // `import '@fmmenchi/tokens/styles/*.css'` from a buildable project.
+            // The rule guards against a published `dist` requiring a package
+            // that resolves to nothing; a CSS asset has no such failure mode —
+            // the bundler inlines the file or the import breaks loudly at build
+            // time. Scoped to the styles subpath so a CODE import of tokens,
+            // which would be the real mistake, still errors.
+            '^@fmmenchi/tokens/styles/.*$',
+          ],
           depConstraints: [
             {
               sourceTag: 'scope:shared',

@@ -13,7 +13,10 @@
  * Wired as the `codegen` target that `build-storybook`/`storybook` depend on.
  */
 import { formatHex } from 'culori';
-import { resolveValue } from '@fmmenchi/tokens/resolve';
+// The CONTRACT is `@fmmenchi/theme` (private, source-only); the VALUES are
+// `@fmmenchi/tokens/styles/*`. This script needs both: the resolver to follow a
+// role down to the colour a browser would paint, and the stylesheets to read.
+import { resolveCssVar } from '@fmmenchi/theme';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -46,7 +49,7 @@ function readColorRoles(cssPath, inherited = new Map()) {
   const map = {};
   for (const [name, value] of declared) {
     const role = /^--fm-color-([a-z0-9-]+)$/.exec(name);
-    if (role) map[role[1]] = resolveValue(value, declared);
+    if (role) map[role[1]] = resolveCssVar(value, declared);
   }
   return { roles: map, declared };
 }
