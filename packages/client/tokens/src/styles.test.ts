@@ -14,13 +14,28 @@ import {
   colorVar,
   TEXT_TOKENS,
 } from './index.js';
-import { themeAdvisories, validateTheme } from './theme.js';
+import {
+  parseTheme,
+  themeAdvisories,
+  toTheme,
+  validateTheme,
+} from './theme.js';
 import { tokenVars } from './tokens.types.js';
-import { readVars } from './utils/css.js';
-import { toTheme } from './theme.js';
 import { resolveValue } from './utils/css.js';
 
 /**
+ * DO THE SHIPPED STYLESHEETS SATISFY THE CONTRACT?
+ *
+ * Named for what it reads, not for the module it sits beside: every suite below
+ * but one opens `styles/*.css` and checks it against the arrays in
+ * `tokens.types.ts`. There is nothing else in that file to test at runtime — the
+ * types are the typechecker's job and an array has no behaviour.
+ *
+ * The one exception is `token references` at the end, which compares the
+ * contract's two TS shapes to each other. It rides along here because it is the
+ * only runtime assertion `tokens.types.ts` has, and a file holding one suite is
+ * what merging it away already removed once.
+ *
  * Validation of the token contract — this is what makes a theme "allowed":
  * 1. `vars.css` defines EXACTLY the contract (no missing, no stray vars).
  * 2. the `dark` preset assigns EXACTLY every color role (a theme = complete
@@ -34,21 +49,6 @@ import { resolveValue } from './utils/css.js';
 
 const styles = dirname(fileURLToPath(import.meta.url)) + '/styles';
 const read = (p: string) => readFileSync(join(styles, p), 'utf8');
-
-/**
- * ONE PARSER, shared with the generator.
- *
- * This file had its own, and it was anchored on nothing — so it read a
- * declaration anywhere in the text, including one commented OUT during a retune.
- * Everything here then passed on a role the shipped CSS does not define:
- * completeness saw it, the contrast maths read its value out of the comment, and
- * the role resolved at runtime to the `@property` initial-value. Black, on every
- * consumer, in both themes, with the suite green.
- *
- * `readVars` strips comments and throws on a duplicate, which is what the local
- * one asserted.
- */
-const parseVars = readVars;
 
 /**
  * Resolve a declared value to the colour a browser would paint: references
@@ -75,8 +75,8 @@ function resolve(map: Map<string, string>, value: string): string {
  */
 const isPrimitive = (name: string) => name.startsWith('--fm-palette-');
 
-const light = parseVars(read('vars.css'));
-const dark = parseVars(read('presets/dark.css'));
+const light = parseTheme(read('vars.css'));
+const dark = parseTheme(read('presets/dark.css'));
 const bridge = read('tailwind.css').replace(/\s+/g, '');
 
 /**
