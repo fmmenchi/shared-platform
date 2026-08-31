@@ -132,7 +132,7 @@ withdrawn.
 
 **Both declarations: a static fallback, then the derived override.** Genuinely degradable, and it
 keeps the gate readable in Node with no resolver. Rejected for now on cost: the fallbacks must be
-generated from the formula to avoid becoming a second source of truth, `readVars` throws on duplicate
+generated from the formula to avoid becoming a second source of truth, `parseVars` throws on duplicate
 declarations by design, and that is a build-time generator plus a change to a guard that exists for a
 good reason. Reconsider if a consumer needs the older floor.
 

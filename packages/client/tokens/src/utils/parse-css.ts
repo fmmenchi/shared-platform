@@ -1,12 +1,19 @@
 /**
- * READING A STYLESHEET — the two steps between CSS text and a colour you can
- * measure.
+ * READING A STYLESHEET — from CSS text to a colour you can measure.
  *
- * `readVars` finds the `--fm-*` declarations; `resolveValue` turns one of them
- * into the colour a browser would paint, following `var()` chains and evaluating
- * the relative-colour ramp. Both live here because neither is useful without the
- * other, and neither is a concept a caller needs a name for — they are how
- * `theme.ts` does its job.
+ * TWO of these are the API:
+ *
+ *   parseCssVars(css)            the `--fm-*` declarations a stylesheet makes
+ *   resolveCssVar(value, vars) one of them, resolved to what a browser paints
+ *
+ * `expandVars` and `evaluateRelativeOklch` are the two halves of `resolveCssVar`.
+ * They stay exported because each has behaviour worth asserting head-on — a
+ * reference cycle, a missing variable with and without a fallback, a channel
+ * expression this deliberately refuses — and proving those through the composed
+ * function would only show that something went wrong, not which half.
+ *
+ * Published as `@fmmenchi/tokens/resolve`, which @fmmenchi/ui's Storybook imports
+ * to resolve the manager theme.
  */
 /**
  * Every `--fm-*: value` in a stylesheet, in source order.
@@ -19,7 +26,7 @@
  * registers it. The `:root` value being absent, it resolves to the `@property`
  * initial-value, `oklch(0 0 0)` — black, on every consumer, in both themes.
  */
-export function readVars(css: string): Map<string, string> {
+export function parseCssVars(css: string): Map<string, string> {
   const values = new Map<string, string>();
   const live = css.replace(/\/\*[\s\S]*?\*\//g, '');
 
@@ -221,20 +228,9 @@ export function evaluateRelativeOklch(value: string): string {
  * expanded, then a relative colour evaluated if that is what it turned out to
  * be.
  */
-export function resolveValue(
+export function resolveCssVar(
   value: string,
   vars: ReadonlyMap<string, string>,
 ): string {
   return evaluateRelativeOklch(expandVars(value, vars));
-}
-
-/** Every declaration, resolved. Order-independent: each is resolved on demand. */
-export function resolveAll(
-  vars: ReadonlyMap<string, string>,
-): Map<string, string> {
-  const resolved = new Map<string, string>();
-  for (const [name, value] of vars) {
-    resolved.set(name, resolveValue(value, vars));
-  }
-  return resolved;
 }

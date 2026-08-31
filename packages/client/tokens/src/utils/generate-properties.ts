@@ -15,7 +15,7 @@
  * with nothing to fail if the two stopped agreeing.
  *
  * Rendered as strings rather than written to disk, so the test that keeps the
- * committed files honest is an ordinary assertion — see `generate-css-properties.test.ts`.
+ * committed files honest is an ordinary assertion — see `generate-properties.test.ts`.
  */
 import {
   ACTION_FAMILIES,
@@ -126,7 +126,7 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
- * GENERATED from the contract by \`src/utils/generate-css-properties.ts\`; its test fails if
+ * GENERATED from the contract by \`src/utils/generate-properties.ts\`; its test fails if
  * this file and the contract disagree. Do not edit by hand — change the roles in
  * \`src/tokens.types.ts\` or the sections in the generator and re-run the suite
  * with \`-u\`.
@@ -155,7 +155,7 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 `;
 
 /** `styles/properties.css`, in full. */
-export function generateCssProperties(values: Map<string, string>): string {
+export function generateProperties(values: Map<string, string>): string {
   const sections = REGISTERED_SECTIONS.map((section) => {
     // Wrapped by hand, because Prettier does not reflow a CSS comment and the
     // repo's own format gate would have accepted a 224-character line without

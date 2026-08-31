@@ -45,7 +45,7 @@ pnpm nx test @fmmenchi/tokens -- -u # regenerate styles/properties.css after cha
     or a `var()` makes the browser reject the WHOLE rule — silently, losing both the interpolation
     and the type guard. Nothing downstream can see it: Stylelint has no rule and `tokens.test.ts`
     only greps for `rem`.
-  - **`readVars` is THE parser for `--fm-*` declarations** — the contract suite shares it rather
+  - **`parseVars` is THE parser for `--fm-*` declarations** — the contract suite shares it rather
     than keeping a second one, which it did, anchored on nothing. It strips comments before parsing,
     and everything reading `vars.css` must go through it.
     The declaration regex anchors on the start of a LINE, so a role commented OUT during a retune

@@ -16,7 +16,7 @@ import {
 } from './index.js';
 import { parseTheme, adviseContrast, toTheme, validateTheme } from './theme.js';
 import { tokenVars } from './tokens.types.js';
-import { resolveValue } from './utils/css.js';
+import { resolveCssVar } from './utils/parse-css.js';
 
 /**
  * DO THE SHIPPED STYLESHEETS SATISFY THE CONTRACT?
@@ -57,7 +57,7 @@ const read = (p: string) => readFileSync(join(styles, p), 'utf8');
  * any other rather than guessing.
  */
 function resolve(map: Map<string, string>, value: string): string {
-  return resolveValue(value, map);
+  return resolveCssVar(value, map);
 }
 
 /**

@@ -2,13 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateCssProperties, toPixels } from './generate-css-properties.js';
-import { readVars } from './css.js';
-import { REGISTERED_SECTIONS } from './generate-css-properties.js';
+import { generateProperties, toPixels } from './generate-properties.js';
+import { parseCssVars } from './parse-css.js';
+import { REGISTERED_SECTIONS } from './generate-properties.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(join(here, path), 'utf8');
-const values = readVars(read('../styles/vars.css'));
+const values = parseCssVars(read('../styles/vars.css'));
 
 /**
  * THE COMMITTED FILES ARE WHAT THE CONTRACT WOULD WRITE.
@@ -30,7 +30,7 @@ describe('generated artifacts', () => {
     // the local suite green and the package shipping nothing.
     expect(existsSync(join(here, '../styles/properties.css'))).toBe(true);
 
-    await expect(generateCssProperties(values)).toMatchFileSnapshot(
+    await expect(generateProperties(values)).toMatchFileSnapshot(
       '../styles/properties.css',
     );
   });
@@ -38,7 +38,7 @@ describe('generated artifacts', () => {
 
 describe('the generator itself', () => {
   it('reads a variable and its value, not the prose around them', () => {
-    const parsed = readVars(`
+    const parsed = parseCssVars(`
       /* --fm-color-fake: not-a-real-token; */
       :root {
         --fm-color-primary: oklch(41% 0.135 255);
@@ -59,7 +59,7 @@ describe('the generator itself', () => {
     // The shape that matters, and the one the single-line case above does not
     // cover: a block comment around a real declaration, which is what a retune
     // leaves behind. Anchoring on `^\\s*` asks only for the start of a LINE.
-    const parsed = readVars(`
+    const parsed = parseCssVars(`
       :root {
         /* off until the ramp is redone
         --fm-color-primary: oklch(41% 0.135 255);

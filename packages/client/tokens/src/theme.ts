@@ -18,7 +18,7 @@
  * contrast, judging states — so a reader looking for one is not reading the
  * others on the way.
  */
-import { readVars, resolveValue } from './utils/css.js';
+import { parseCssVars, resolveCssVar } from './utils/parse-css.js';
 import { COLOR_ROLES, colorVar } from './tokens.types.js';
 import { validateContrast } from './utils/validate-contrast.js';
 import { validateRoles } from './utils/validate-roles.js';
@@ -41,7 +41,7 @@ import type { ThemeViolation } from './theme.types.js';
 export function parseTheme(...sources: readonly string[]): Map<string, string> {
   const declared = new Map<string, string>();
   for (const css of sources) {
-    for (const [name, value] of readVars(css)) declared.set(name, value);
+    for (const [name, value] of parseCssVars(css)) declared.set(name, value);
   }
   return declared;
 }
@@ -67,7 +67,7 @@ export function toTheme(declared: ReadonlyMap<string, string>): Partial<Theme> {
   const theme: Partial<Record<ColorRole, string>> = {};
   for (const role of COLOR_ROLES) {
     const raw = declared.get(colorVar(role));
-    if (raw !== undefined) theme[role] = resolveValue(raw, declared);
+    if (raw !== undefined) theme[role] = resolveCssVar(raw, declared);
   }
   return theme;
 }

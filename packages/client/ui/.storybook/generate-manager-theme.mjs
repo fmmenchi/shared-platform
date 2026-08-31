@@ -13,7 +13,7 @@
  * Wired as the `codegen` target that `build-storybook`/`storybook` depend on.
  */
 import { formatHex } from 'culori';
-import { resolveValue } from '@fmmenchi/tokens/resolve';
+import { resolveCssVar } from '@fmmenchi/tokens/resolve';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -46,7 +46,7 @@ function readColorRoles(cssPath, inherited = new Map()) {
   const map = {};
   for (const [name, value] of declared) {
     const role = /^--fm-color-([a-z0-9-]+)$/.exec(name);
-    if (role) map[role[1]] = resolveValue(value, declared);
+    if (role) map[role[1]] = resolveCssVar(value, declared);
   }
   return { roles: map, declared };
 }

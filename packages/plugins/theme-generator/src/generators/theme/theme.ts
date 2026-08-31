@@ -48,7 +48,7 @@ export async function themeGenerator(
     }
   }
 
-  // COMMENTS STRIPPED FIRST, for the reason `@fmmenchi/tokens`' own `readVars`
+  // COMMENTS STRIPPED FIRST, for the reason `@fmmenchi/tokens`' own `parseCssVars`
   // documents at length: a role commented out during a retune still matches the
   // regex, and the scaffold would then carry a token the shipped CSS does not
   // define — the theme starts life already ahead of the contract it claims to

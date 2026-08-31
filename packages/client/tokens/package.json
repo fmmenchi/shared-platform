@@ -42,10 +42,10 @@
       "default": "./dist/theme.js"
     },
     "./resolve": {
-      "@fmmenchi/source": "./src/utils/css.ts",
-      "types": "./dist/utils/css.d.ts",
-      "import": "./dist/utils/css.js",
-      "default": "./dist/utils/css.js"
+      "@fmmenchi/source": "./src/utils/parse-css.ts",
+      "types": "./dist/utils/parse-css.d.ts",
+      "import": "./dist/utils/parse-css.js",
+      "default": "./dist/utils/parse-css.js"
     },
     "./styles/tailwind.css": "./src/styles/tailwind.css",
     "./styles/vars.css": "./src/styles/vars.css",

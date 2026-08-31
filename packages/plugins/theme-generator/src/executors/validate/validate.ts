@@ -48,7 +48,7 @@ const runExecutor: PromiseExecutor<ValidateExecutorSchema> = async (
     // regex, so before this the validator scored contrast on a value the
     // shipped CSS does not define — and completeness passed on a role that
     // resolves to the `@property` initial-value, black, in production. The
-    // same defence, with the full reasoning, is `readVars` in
+    // same defence, with the full reasoning, is `parseCssVars` in
     // `@fmmenchi/tokens`; inlined here because the tokens module this executor
     // resolves is the INSTALLED one, whose version may predate any export.
     const css = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
