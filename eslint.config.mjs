@@ -16,6 +16,8 @@ export default [
       '**/storybook-static',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
+      '**/build',
+      '**/.react-router',
     ],
   },
   {
