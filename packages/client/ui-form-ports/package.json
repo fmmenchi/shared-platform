@@ -1,6 +1,6 @@
 {
   "name": "@fmmenchi/ui-form-ports",
-  "version": "0.0.69",
+  "version": "0.0.70",
   "private": false,
   "type": "module",
   "exports": {

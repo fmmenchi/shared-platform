@@ -1,3 +1,14 @@
+## 0.4.3 (2026-08-31)
+
+### 🩹 Fixes
+
+- **gh-actions:** the scan reads nx's json out of a shared stream ([16e11a8](https://github.com/fmmenchi/shared-platform/commit/16e11a8))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.4.2 (2026-08-31)
 
 This was a version bump only for @fmmenchi/gh-actions to align it with other projects, there were no code changes.

@@ -1,3 +1,18 @@
+## 0.7.8 (2026-08-31)
+
+### 🚀 Features
+
+- **ui:** a bound colour field, so a colour sits in a form like everything else ([f963af2](https://github.com/fmmenchi/shared-platform/commit/f963af2))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/tokens to 0.0.36
+- Updated @fmmenchi/theme to 0.0.3
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.7.7 (2026-08-31)
 
 ### 🚀 Features
