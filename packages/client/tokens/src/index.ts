@@ -1,13 +1,22 @@
 /**
  * `@fmmenchi/tokens` — the token contract. Values live in `styles/*.css`
- * (consumers read `var(--fm-*)`); this TS surface enumerates the roles and
- * types a theme must satisfy. Implementation: `contract/tokens.ts`; types:
- * `contract/tokens.types.ts`; theme validation: `validations/validate.ts`.
+ * (consumers read `var(--fm-*)`); this TS surface enumerates the roles and types
+ * a theme must satisfy, and the operations over one: `./palette`, `./theme`,
+ * `./validate`, `./resolve`.
  *
- * BUILDING a theme is not here. The model a theme is derived from, and the
- * solver over it, live in `@fmmenchi/theme-engine`, which depends on this — the
- * one direction that is allowed. This package says what a theme must satisfy;
- * that one says how one is arrived at.
+ * BUILDING a theme is here, and belongs here for a reason that is easy to get
+ * backwards: it looks like the Nx plugin's job, and it cannot be. The plugin
+ * resolves this package from the CONSUMER's workspace at run time, precisely so
+ * the gate tracks the contract they installed rather than the one the plugin was
+ * compiled against — so a generator shipped inside the plugin would be frozen at
+ * its release, placing yesterday's roles and emitting themes that today's
+ * resolved validator rejects. It also could not read the contract at all:
+ * `scope:plugins` may not depend on `scope:client`. Generating and validating are
+ * two halves of one truth, and they read the same `CONTRAST_PAIRS`.
+ *
+ * This barrel deliberately imports no colour library: the operations that need
+ * one are reached through their own subpaths, so a consumer here for `tokenVars`
+ * ships none of it.
  */
 export {
   ACTION_FAMILIES,

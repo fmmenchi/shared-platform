@@ -1,5 +1,5 @@
 /**
- * GENERATING A PALETTE — seven colours become the rungs of every family.
+ * GENERATING A PALETTE — eight colours become the rungs of every family.
  *
  * Level 1 to level 2 of the token architecture (ADR-0032): a brand hands over one
  * colour per family, and this places the whole ramp under each of them. What comes
@@ -36,8 +36,22 @@ export interface Rung {
   readonly chromaFactor: number;
 }
 
-/** A ramp, ordered lightest to darkest. Every family is placed on the same one. */
+/** A ramp, ordered lightest to darkest. */
 export type Ramp = readonly Rung[];
+
+/**
+ * One ramp per family, because the families do not want the same one.
+ *
+ * The chromatic seven ship nine rungs; `neutral` ships far more, crowded at the
+ * white end — `background`, `card`, `muted`, `input` and `border` are large
+ * adjacent surfaces where a ΔL of 0.015 IS the elevation signal, while a fill
+ * separated from its hover by that little would read as one colour. A single
+ * shared ramp can serve one of those needs or the other, never both: dense
+ * enough for the surfaces, it gives every chromatic family dozens of rungs no
+ * role points at; coarse enough for the fills, it cannot express the surfaces at
+ * all.
+ */
+export type Ramps = Readonly<Record<PaletteFamily, Ramp>>;
 
 /** One colour per family: what a brand actually hands over. */
 export type Bases = Readonly<Record<PaletteFamily, string>>;
@@ -88,7 +102,7 @@ function fitChroma(lightness: number, chroma: number, hue: number): number {
  * `NaN`: a palette that looks generated and paints nothing is the failure a
  * caller cannot see.
  */
-export function generatePalette(bases: Bases, ramp: Ramp): Palette {
+export function generatePalette(bases: Bases, ramps: Ramps): Palette {
   const palette: Record<string, Record<number, string>> = {};
 
   for (const family of PALETTE_FAMILIES) {
@@ -98,6 +112,15 @@ export function generatePalette(bases: Bases, ramp: Ramp): Palette {
       throw new Error(
         `The base for "${family}" is not a colour: ${JSON.stringify(declared)}.`,
       );
+    }
+
+    // An EMPTY ramp is refused rather than quietly yielding a family with no
+    // rungs: every role pointing into it would resolve to nothing, and a theme
+    // whose roles are undefined is the one failure `validateTheme` reports as
+    // eighty violations instead of the single missing ramp that caused them.
+    const ramp = ramps[family];
+    if (!ramp || ramp.length === 0) {
+      throw new Error(`No ramp given for "${family}".`);
     }
 
     const { c, h } = toOklch(parsed);
