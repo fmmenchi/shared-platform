@@ -18,6 +18,23 @@ So `vite.config.mts` gained `FM_DESIGN_EXPORT=1` → skip the compiler, emit to 
 memoization transform differs, and that changes no markup. **Do not "fix" this by disabling the
 compiler in the published build** — its comment documents two real incidents.
 
+## [GENERAL] `resync.mjs` does NOT run the repo's build — you do, and Nx will cache a stale one
+
+The driver's `build` stage is the CONVERTER, not `cfg.buildCmd`. Its own header says the agent runs
+"the repo's own build when source may have changed", and it is easy to read the green `build` stage
+as covering that. It does not.
+
+Cost the 2026-08-31 sync one full cycle: the driver ran clean against a `dist-design/` that predated
+the new component, the diff correctly listed `Stepper` as added (it reads STORIES), and validate then
+failed the only way it could — `[BUNDLE_EXPORT] 1/56 not a component on window.FmmenchiUI: Stepper`
+plus `[RENDER] root empty`. The symptom points at the component; the cause is an unbuilt artifact.
+
+**So: `pnpm nx build-design @fmmenchi/ui --skip-nx-cache` before every driver run**, and mind the
+flag — `build-design` declares `cache: true` with no `inputs`, and a plain run served the previous
+sync's output from the Nx cache even though the sources had changed. `.design-sync/rebuild.sh` runs
+the build before the converter and is the safe habit for a manual cycle; the driver path needs the
+build run by hand.
+
 ## [GENERAL] `react/compiler-runtime` must be external in the LIBRARY build
 
 Separate from the above, and a real defect in the shipped package: it was missing from
@@ -113,20 +130,33 @@ font: Times `0` is 8.0px against system-ui's ~8.8px, which moves the column boun
 while total table height stays identical (163px on both — that equality is the tell). At that size
 it reads as a layout bug to anyone who does not know the cause.
 
-**The injection planned for the next sync therefore needs THREE rules**, not two:
-`body{font-family:var(--fm-font-sans)}`, `*,::before,::after{box-sizing:border-box}`, and
-`button,input,optgroup,select,textarea{font:inherit}`. Injecting only the first two leaves the bare
-native controls wrong.
+**DONE — applied on the 2026-08-31 re-sync, and it must be RE-APPLIED every sync.** The whole of
+`packages/client/tokens/src/styles/baseline.css` is now injected into
+`.design-sync/sb-reference/iframe.html` as a `<style id="design-sync-baseline">` before `</head>`.
+The full file rather than the three rules the earlier plan named: the three were the ones the
+campaign had *measured*, but the file is what a consumer actually loads, and the Stepper's
+`WithLinksBack` story proved the shortlist incomplete — a bare `<a>` takes its colour from
+`baseline.css`'s `a { color: var(--fm-color-link) }`, so with only the three rules the reference
+would have painted UA blue against the preview's themed link and the story would have graded
+`mismatch` for a reason that is not a defect.
 
-**Deliberately NOT fixed mid-campaign.** The sanctioned lever is injecting the baseline rules into
-`.design-sync/sb-reference/iframe.html` — a verification-only change that leaves the repo's
-Storybook alone. It was not applied because changing the oracle halfway would split the roster's
-methodology between components graded before and after. Do it at the START of the next sync, and
-**inject BOTH `body{font-family:var(--fm-font-sans)}` AND `*,::before,::after{box-sizing:border-box}`**
-— fixing only the font leaves the geometric half of the gap in place. Do NOT "fix" it by importing
-`baseline.css` into `.storybook/preview.tsx`: ADR-0022 deliberately starts that canvas at "token
-values, our component CSS, and whatever the browser does". And never compensate per-component by
-pinning widths — that bakes the under-styled side's metrics into the shipping artifact.
+Injecting more than planned was safe *because* the campaign was over: the 55 already-graded
+components are carried forward, not re-graded, so there is no seam inside one roster — and the
+driver noticed the reference had moved and auto-ordered a `[SPOT_CHECK]` of five carried
+components (AppLayout, Avatar, Calendar, Card, ChoiceField). All five still matched their recorded
+grades, and **Card's 402px-vs-352px geometry gap closed**: the same widths on both panels now.
+That is the measured proof the injection does what this section says it would.
+
+`sb-reference/` is GITIGNORED and rebuilt from scratch by `build-reference.sh`, so the injection
+does not survive — **re-inject right after every reference build, before any grading**. The script
+is idempotent: it no-ops when the `design-sync-baseline` id is already present. A sync that forgets
+it does not fail; it just silently grades against the under-styled oracle again, which is how this
+whole section came to exist.
+
+Do NOT "fix" it by importing `baseline.css` into `.storybook/preview.tsx`: ADR-0022 deliberately
+starts that canvas at "token values, our component CSS, and whatever the browser does". And never
+compensate per-component by pinning widths — that bakes the under-styled side's metrics into the
+shipping artifact.
 
 **Also framing, same family:** the preview harness hardcodes an UNLAYERED
 `body{margin:0;padding:24px;background:#fff}` (`.ds-sync/lib/emit.mjs`), which beats
@@ -245,6 +275,19 @@ The downscaled sheets are actively misleading for small type — a shared grey f
 white-vs-grey on FormCombobox, and "Rome" read as "Roma" on FormSelect. **Open `raw/` for any
 small-type or subtle-fill delta** before calling it.
 
+## Known validate warns — the 20 `[DOCS_UNMAPPED]` are expected
+
+Every run prints the same twenty and they are NOT a regression: AppLayout, ChoiceField, DateInput,
+DatePicker, DateRangePicker, FormChoice, FormCombobox, FormDateInput, FormDatePicker,
+FormDateRangePicker, FormErrorSummary, FormInput, FormSegmentedControl, FormSelect, FormSwitch,
+FormTextarea, InputGroup, SegmentedControl, ToastRegion, VisuallyHidden.
+
+They are components whose prose lives in a sibling's `.mdx` (the `Form*` adapters in their base
+component's page) or that have no page of their own. Recorded here so the next run can do what the
+skill asks — diff the warn lines against a known list — instead of re-deriving twenty names.
+**A twenty-first name IS new: look at it.** Stepper, added on the 2026-08-31 sync, did not appear,
+which is the check working.
+
 ## Re-sync risks — what to watch next time
 
 - **`dist-design/` must be rebuilt with the DS.** `cfg.buildCmd` does it, but a hand-run
@@ -256,6 +299,11 @@ small-type or subtle-fill delta** before calling it.
   will still call it clean. The compare sheet is the only thing that sees it.
 - **Story caps.** Button (13 stories) and Table (15) were compared on the first 6; the tail is
   verified-by-upload, not individually graded. Raise `--max-stories` if those tails carry variants
-  worth checking.
+  worth checking. Stepper has 7, so every re-sync of it needs `--max-stories 12` or its last story
+  (`Right To Left` — the one that proves the logical properties work) silently drops out of the grade.
+- **The baseline injection does not survive a reference rebuild.** `sb-reference/` is gitignored and
+  rebuilt from scratch; re-inject `baseline.css` into its `iframe.html` immediately afterwards and
+  before any grading (see the UA-serif section). Forgetting it fails nothing — it just grades
+  against the under-styled oracle.
 - **Storybook 9 factory API.** If `.storybook/preview.tsx` grows real runtime behaviour beyond the
   i18n provider, `cfg.provider` must be updated by hand — decorators still cannot be bundled.
