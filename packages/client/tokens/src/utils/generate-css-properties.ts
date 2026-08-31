@@ -149,7 +149,7 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 `;
 
 /** `styles/properties.css`, in full. */
-export function renderProperties(values: Map<string, string>): string {
+export function generateCssProperties(values: Map<string, string>): string {
   const sections = REGISTERED_SECTIONS.map((section) => {
     // Wrapped by hand, because Prettier does not reflow a CSS comment and the
     // repo's own format gate would have accepted a 224-character line without

@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { renderProperties, toIndependentLength } from './properties.js';
+import {
+  generateCssProperties,
+  toIndependentLength,
+} from './generate-css-properties.js';
 import { readVars } from './css.js';
-import { REGISTERED_SECTIONS } from './properties.js';
+import { REGISTERED_SECTIONS } from './generate-css-properties.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(join(here, path), 'utf8');
@@ -30,7 +33,7 @@ describe('generated artifacts', () => {
     // the local suite green and the package shipping nothing.
     expect(existsSync(join(here, '../styles/properties.css'))).toBe(true);
 
-    await expect(renderProperties(values)).toMatchFileSnapshot(
+    await expect(generateCssProperties(values)).toMatchFileSnapshot(
       '../styles/properties.css',
     );
   });

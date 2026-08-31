@@ -10,7 +10,7 @@
     "vite.config.mts",
     "vitest.config.mts",
     "src/**/*.d.ts",
-    "src/utils/properties.ts",
+    "src/utils/generate-css-properties.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts"
   ],
