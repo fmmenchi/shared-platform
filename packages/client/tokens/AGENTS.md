@@ -34,7 +34,15 @@ person pinned, the editing of a generated theme and the re-export at the end are
 the APP's business. A theme is a `Record<ColorRole, string>`; an app that wants to
 remember how it got there keeps that itself.
 
-This was got wrong twice in one day — first by growing a `ThemeSpec`, a placement
+The INTERCHANGE FORMAT is the same boundary seen from the other side. How a
+builder hands a theme to the generator — a JSON envelope with a name and the themes
+under it — is transport, and neither `name` nor "several themes under one name" is a
+concept this package has. It belongs to whichever of the two processes publishes the
+contract between them, which is the generator. What travels IS this package's:
+`Theme` and `Palette` are already plain JSON, so `JSON.stringify` is the whole of
+writing one.
+
+This was got wrong three times in one day — first by growing a `ThemeSpec`, a placement
 table and a stylesheet describer inside this package, then by moving the same
 three into a package of their own. Both times they had no consumer, because the
 consumer is an app that does not exist yet, and both times the shapes were guesses

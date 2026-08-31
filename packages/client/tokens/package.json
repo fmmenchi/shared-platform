@@ -35,12 +35,6 @@
       "import": "./dist/palette.js",
       "default": "./dist/palette.js"
     },
-    "./exchange": {
-      "@fmmenchi/source": "./src/exchange.ts",
-      "types": "./dist/exchange.d.ts",
-      "import": "./dist/exchange.js",
-      "default": "./dist/exchange.js"
-    },
     "./theme": {
       "@fmmenchi/source": "./src/theme.ts",
       "types": "./dist/theme.d.ts",
