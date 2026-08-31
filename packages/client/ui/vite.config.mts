@@ -103,6 +103,67 @@ function assertNoLanguageSniffPlugin() {
  */
 const DESIGN_EXPORT = process.env['FM_DESIGN_EXPORT'] === '1';
 
+/**
+ * THE DIST MUST BE REAL ESM, and nothing else here can tell.
+ *
+ * This package declares `"type": "module"`, and a bundler that inlines a CJS
+ * dependency does not fail — it emits a `require()` shim that works under any
+ * bundler and throws the moment the file is loaded as actual ESM. Which is every
+ * SSR consumer, and none of this repo's checks: the suite runs in a browser through
+ * Vite, and a consumer's own build bundles the shim away.
+ *
+ * It has already happened once. `react/compiler-runtime` was missing from
+ * `external`, so every component — the React Compiler is on, so every component
+ * imports it — pulled in a chunk whose first lines are a `require` proxy. The first
+ * app in this workspace to render on the server got a 500 on every route.
+ *
+ * So: no emitted chunk may contain a `require(` call. The check is on the ARTIFACT
+ * rather than on the config, because the config is where the mistake is easy and
+ * the artifact is where it is visible.
+ */
+function assertNoRequireShimPlugin() {
+  let enabled = false;
+  return {
+    name: 'fm-no-require-shim',
+    configResolved(config: { build?: { lib?: unknown } }) {
+      // Only the LIBRARY artifact ships; Storybook's preview build shares these
+      // plugins and is dev-facing.
+      enabled = Boolean(config.build?.lib);
+    },
+    writeBundle(_options: { dir?: string }, bundle: Record<string, unknown>) {
+      if (!enabled) return;
+      const offenders = [];
+      for (const chunk of Object.values(bundle)) {
+        const asset = chunk as {
+          type?: string;
+          fileName?: string;
+          code?: unknown;
+        };
+        const code = asset.type === 'chunk' ? asset.code : undefined;
+        // THE SHIM NEVER WRITES `require(` LITERALLY, which is how the first
+        // version of this guard passed while the defect sat in the dist. It emits
+        // `typeof require < "u" ? require : …` and `require.apply(this, …)`, so
+        // those are the markers. Found by reading the emitted chunk instead of
+        // trusting the pattern — the same lesson the language-sniff guard above
+        // records.
+        if (
+          typeof code === 'string' &&
+          /\btypeof require\b|\brequire\.apply\b|\brequire\s*\(/.test(code)
+        ) {
+          offenders.push(asset.fileName as string);
+        }
+      }
+      if (offenders.length > 0) {
+        throw new Error(
+          `@fmmenchi/ui: ${offenders.length} emitted chunk(s) contain a require() ` +
+            `call, so this package is not loadable as ESM:\n  ${offenders.join('\n  ')}\n` +
+            'A CJS dependency was inlined — add it to `external` in this file.',
+        );
+      }
+    },
+  };
+}
+
 export default defineConfig(() => ({
   root: import.meta.dirname,
   cacheDir: '../../../node_modules/.vite/packages/client/ui',
@@ -142,6 +203,7 @@ export default defineConfig(() => ({
     tailwindcss(),
     combinedCssPlugin(),
     assertNoLanguageSniffPlugin(),
+    assertNoRequireShimPlugin(),
     dts({
       entryRoot: 'src',
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
@@ -168,6 +230,7 @@ export default defineConfig(() => ({
       // One entry per public subpath: the barrel (`.`) + each component
       // (`./button`). New components add an entry here.
       entry: {
+        'color-picker': 'src/components/color-picker/index.ts',
         'stepper-item': 'src/components/stepper-item/index.ts',
         stepper: 'src/components/stepper/index.ts',
         'form-combobox': 'src/components/form-combobox/index.ts',

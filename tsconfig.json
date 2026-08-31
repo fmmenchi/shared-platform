@@ -50,6 +50,9 @@
     },
     {
       "path": "./packages/shared/theme"
+    },
+    {
+      "path": "./apps/theme-builder"
     }
   ],
   "compilerOptions": {}

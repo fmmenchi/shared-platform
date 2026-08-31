@@ -1,0 +1,16 @@
+/*
+ * THE DESIGN SYSTEM, IN THE ORDER IT HAS TO ARRIVE.
+ *
+ * `tailwind.css` brings the token bridge (names only — it defines no values, so
+ * it cannot drift from `vars.css`) and, with it, `vars.css` itself: the reference
+ * theme on `:root`. `baseline.css` is optional and taken on purpose — it is what
+ * applies the theme to the PAGE rather than to components, which every component
+ * normalises for itself. Then the components' own styles.
+ *
+ * This app consumes the design system exactly as a product would, because that is
+ * the only way a builder can show what it is building. Nothing here reaches for a
+ * palette rung or a raw value; every rule below is a semantic role.
+ */
+@import '@fmmenchi/tokens/styles/tailwind.css';
+@import '@fmmenchi/tokens/styles/baseline.css';
+@import '@fmmenchi/ui/style.css';

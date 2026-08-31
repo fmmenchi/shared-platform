@@ -501,3 +501,5 @@ export type {
   StepperItemProps,
   StepperItemStatus,
 } from './components/stepper-item/stepper-item.types.js';
+export { ColorPicker } from './components/color-picker/color-picker.component.js';
+export type { ColorPickerProps } from './components/color-picker/color-picker.types.js';

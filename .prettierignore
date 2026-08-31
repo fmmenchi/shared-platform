@@ -14,6 +14,14 @@ coverage
 /apps/docusaurus/build
 /apps/docusaurus/.docusaurus
 
+# React Router's output and its generated route types, for the same reason as the
+# line above and found the same way: `nx format:write` reformatted
+# `build/server/index.js` the first time the app had been built. Gitignored, so it
+# never reached a commit — but it makes `format:check --all` depend on whether a
+# build has run, which is how an ordering-dependent red main starts.
+/apps/theme-builder/build
+/apps/theme-builder/.react-router
+
 # Generated at build time and gitignored, so `format:check --all` flags it locally
 # (where a build has produced it) but not in CI, where the check runs first — an
 # ordering-dependent red main waiting to happen.
