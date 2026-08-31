@@ -2,10 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  generateCssProperties,
-  toIndependentLength,
-} from './generate-css-properties.js';
+import { generateCssProperties, toPixels } from './generate-css-properties.js';
 import { readVars } from './css.js';
 import { REGISTERED_SECTIONS } from './generate-css-properties.js';
 
@@ -84,11 +81,11 @@ describe('the generator itself', () => {
     // option: the browser drops the WHOLE `@property` rule, silently, and the
     // token loses its type. Nothing downstream can see that — Stylelint has no
     // rule for it and the contract test only greps for `rem`.
-    expect(() => toIndependentLength('0.5em')).toThrow(/not absolute/);
-    expect(() => toIndependentLength('clamp(4px, 1vw, 8px)')).toThrow();
-    expect(() => toIndependentLength('calc(0.5rem + 2px)')).toThrow();
-    expect(() => toIndependentLength('var(--x)')).toThrow();
-    expect(() => toIndependentLength('1.2.3rem')).toThrow();
+    expect(() => toPixels('0.5em')).toThrow(/not absolute/);
+    expect(() => toPixels('clamp(4px, 1vw, 8px)')).toThrow();
+    expect(() => toPixels('calc(0.5rem + 2px)')).toThrow();
+    expect(() => toPixels('var(--x)')).toThrow();
+    expect(() => toPixels('1.2.3rem')).toThrow();
   });
 
   it('converts a length to one the browser will accept', () => {
@@ -97,11 +94,11 @@ describe('the generator itself', () => {
     // loses its type. Converted from the real value rather than restated beside
     // it — which is what the hand-written file did, with nothing to fail if the
     // two stopped agreeing.
-    expect(toIndependentLength('0.25rem')).toBe('4px');
-    expect(toIndependentLength('0.375rem')).toBe('6px');
-    expect(toIndependentLength('0.75rem')).toBe('12px');
+    expect(toPixels('0.25rem')).toBe('4px');
+    expect(toPixels('0.375rem')).toBe('6px');
+    expect(toPixels('0.75rem')).toBe('12px');
     // Already independent: left alone.
-    expect(toIndependentLength('4px')).toBe('4px');
+    expect(toPixels('4px')).toBe('4px');
   });
 
   it('registers every colour role and every radius, and nothing else', () => {

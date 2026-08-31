@@ -15,7 +15,7 @@
  * with nothing to fail if the two stopped agreeing.
  *
  * Rendered as strings rather than written to disk, so the test that keeps the
- * committed files honest is an ordinary assertion — see `generate.test.ts`.
+ * committed files honest is an ordinary assertion — see `generate-css-properties.test.ts`.
  */
 import {
   ACTION_FAMILIES,
@@ -77,11 +77,17 @@ export const REGISTERED_SECTIONS: readonly RegisteredSection[] = [
 ];
 
 /**
- * A `<length>` the browser will accept as an `initial-value`: it has to be
- * computationally independent, which `rem` is not. Converted from the real
- * value at the 16px root rather than restated, so the two cannot disagree.
+ * The value in `px`, which is the only kind of `<length>` an `@property`
+ * `initial-value` will accept: it has to be COMPUTATIONALLY INDEPENDENT, and
+ * `rem` is not — a `rem` there makes the browser reject the whole rule, silently,
+ * losing both the interpolation and the type guard.
+ *
+ * Converted from the real value at the 16px root rather than restated beside it,
+ * so the two cannot disagree. Throws on anything that is neither `px` nor `rem`
+ * (`em`, `calc()`, `clamp()`, a `var()`) instead of emitting a rule the browser
+ * will discard.
  */
-export function toIndependentLength(value: string): string {
+export function toPixels(value: string): string {
   const trimmed = value.trim();
   if (/^-?\d+(\.\d+)?px$/.test(trimmed)) return trimmed;
 
@@ -120,9 +126,9 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
- * GENERATED from the contract by \`src/generate.ts\`; \`generate.test.ts\` fails if
+ * GENERATED from the contract by \`src/utils/generate-css-properties.ts\`; its test fails if
  * this file and the contract disagree. Do not edit by hand — change the roles in
- * \`src/tokens.ts\` or the sections in \`src/registry.ts\` and re-run the suite
+ * \`src/tokens.types.ts\` or the sections in the generator and re-run the suite
  * with \`-u\`.
  *
  * Registering each \`--fm-*\` role gives the browser its TYPE, which unlocks two
@@ -162,7 +168,7 @@ export function generateCssProperties(values: Map<string, string>): string {
       const initial =
         section.syntax === '<color>'
           ? 'oklch(0 0 0)'
-          : toIndependentLength(values.get(name) ?? '0px');
+          : toPixels(values.get(name) ?? '0px');
 
       return `@property ${name} {\n  syntax: '${section.syntax}';\n  inherits: true;\n  initial-value: ${initial};\n}`;
     });
