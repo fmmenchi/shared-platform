@@ -1,0 +1,72 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as ColorPickerStories from './color-picker.stories.tsx';
+
+<Meta of={ColorPickerStories} />
+
+# ColorPicker
+
+Pick a colour. It is `<input type="color">` — the OS picker, with an eyedropper on
+the desktops that offer one, keyboard-reachable because the browser made it so.
+
+<Canvas of={ColorPickerStories.Default} />
+
+## Props
+
+<Controls of={ColorPickerStories.Default} />
+
+## Usage
+
+### Why it exists, when `<Input type="color">` already typechecks
+
+It adds no element and no behaviour — only the styling `Input` cannot carry. A
+colour input's box **is** its value: the swatch is painted by the browser inside
+`::-webkit-color-swatch` and `::-moz-color-swatch`, which none of `Input`'s
+text-shaped rules reaches, and left alone WebKit insets it behind its own padding
+and outlines it in a black nobody chose. Same element, different stylesheet — that
+is the whole of its earn.
+
+It shares the four things that make it one of the controls: the family radius, the
+`input-border` role, the focus ring, and the forced-colors block. It shares none of
+`control-box`, because `w-full` with `px-3` and a text colour is a field box, and
+this is a swatch.
+
+### In a Field
+
+<Canvas of={ColorPickerStories.InAField} />
+
+### It holds an sRGB hex
+
+`value` is always `#rrggbb`, lowercased, with no alpha — the platform's decision,
+not this component's. A consumer working in oklch converts on the way in and out,
+and the design system does not hide that: a component pretending to speak oklch
+would be lying about what the browser hands it.
+
+### There is no hex field inside it
+
+A value you can type is a second control holding the same value, and two controls
+holding one value is a synchronisation problem an app then owns — which one wins
+mid-keystroke, what `#63` means, what happens on blur. The native control has one
+value and one source of truth.
+
+An app that wants both composes them and owns that decision.
+
+<Canvas of={ColorPickerStories.WithATypedValue} />
+
+## Accessibility
+
+- **Labelled like any control.** `aria-label` standalone, or a `FieldLabel` inside a
+  `Field`, which also gives it its description — the consumer's own props win over
+  either.
+- **The DOM holds the value.** There is no controlled/uncontrolled mirror here,
+  because the browser paints this control; a component that mirrored its value would
+  break `form.reset()`, which is measured. It submits under its `name` like any
+  input, and resets with its form.
+- **Forced colours takes the one thing it cannot give back.** A colour input exists
+  to show a colour, and Windows High Contrast replaces every fill with a system
+  colour. Nothing can fix that. What the stylesheet does is keep it a visible,
+  focusable, clearly-bounded control rather than an empty rectangle — and this is
+  the case to know about before shipping a flow that depends on reading a swatch.
+- **Disabled dims rather than greys.** The colour stays recognisable, which matters
+  when the disabled value is what a person is trying to read.
+
+<Canvas of={ColorPickerStories.Several} />

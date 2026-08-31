@@ -676,6 +676,12 @@
       "types": "./dist/components/stepper-item/index.d.ts",
       "import": "./dist/stepper-item.js",
       "default": "./dist/stepper-item.js"
+    },
+    "./color-picker": {
+      "@fmmenchi/source": "./src/components/color-picker/index.ts",
+      "types": "./dist/components/color-picker/index.d.ts",
+      "import": "./dist/color-picker.js",
+      "default": "./dist/color-picker.js"
     }
   },
   "nx": {

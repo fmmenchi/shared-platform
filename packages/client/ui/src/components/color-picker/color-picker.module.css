@@ -1,0 +1,74 @@
+/*
+ * A COLOUR INPUT IS NOT A FIELD BOX, which is the whole reason this component has
+ * a stylesheet of its own rather than reusing `control-box`.
+ *
+ * `control-box` is `w-full` with `px-3` and a text colour, because an `Input`, a
+ * `Select` and a `Combobox` on one row of one form should look like each other.
+ * None of that is true here: the box IS the value, so it is square, it has no
+ * padding to speak of, and there is no text in it to colour. What it does share is
+ * the family's radius, border role, focus ring and forced-colors block — the four
+ * things that make it recognisably one of the controls.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .picker {
+    @apply control-base;
+    @apply size-9 rounded-md border p-1;
+    @apply bg-input border-input-border;
+    @apply transition;
+
+    &:focus-visible {
+      @apply outline-ring outline-2 outline-offset-2;
+    }
+
+    /* Matches `control-md`'s 36px, so a picker and an `Input` on one row line up
+       — the reason `control-*` states those heights in one place. Square rather
+       than `w-full`: a swatch stretched across a form reads as a banner, and the
+       thing a person clicks is the colour itself. */
+
+    /* THE UA PAINTS THE SWATCH INSIDE, in a wrapper this is the only way to
+       reach. Left alone, WebKit gives the wrapper its own padding and the swatch
+       a 1px black border, so the colour arrives inset and outlined by something
+       no token chose. Firefox needs the same said its own way — `::-moz-` is not
+       an alias, and a rule naming both selectors is dropped WHOLE by both
+       engines, so they are two rules on purpose. */
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+
+    &::-webkit-color-swatch {
+      @apply rounded-sm;
+      border: none;
+    }
+
+    &::-moz-color-swatch {
+      @apply rounded-sm;
+      border: none;
+    }
+
+    @apply control-forced-colors;
+  }
+
+  .picker:disabled {
+    @apply control-disabled;
+    /* `control-disabled` dims text and the border; a swatch has neither to dim,
+       so the colour itself has to say it. Opacity rather than a filter: the
+       colour stays recognisable, which matters when the disabled value is the
+       thing a person is trying to read. */
+    opacity: 0.5;
+  }
+
+  @media (forced-colors: active) {
+    /* THE SWATCH IS THE ONE THING FORCED COLOURS TAKES AND CANNOT GIVE BACK. A
+       colour input's whole purpose is to show a colour, and forced colours
+       replaces every fill with a system colour — so the control keeps its box and
+       its bounds, and the value it holds is not showable. Nothing here can fix
+       that; what it can do is stay a visible, focusable, clearly-bounded control
+       rather than becoming an empty rectangle. */
+    .picker {
+      border-width: 1px;
+    }
+  }
+}
