@@ -12,7 +12,7 @@ import { converter, parse as parseColor, wcagContrast } from 'culori';
 
 import { ACTION_FAMILIES, STATUS_FAMILIES } from '../tokens.types.js';
 import type { ColorRole } from '../tokens.types.js';
-import type { ThemeAdvisory, ThemeViolation } from '../theme.types.js';
+import type { ContrastAdvisory, ThemeViolation } from '../theme.types.js';
 
 type Parsed = NonNullable<ReturnType<typeof parseColor>>;
 
@@ -139,10 +139,10 @@ function lightnessContrast(
  * Separate from `validateTheme()` so that returning `[]` keeps meaning "allowed":
  * an advisory is something to look at, not a reason to refuse a theme.
  */
-export function themeAdvisories(
+export function adviseContrast(
   colors: Readonly<Record<string, string>>,
-): ThemeAdvisory[] {
-  const advisories: ThemeAdvisory[] = [];
+): ContrastAdvisory[] {
+  const advisories: ContrastAdvisory[] = [];
   for (const [bg, fg, minimum] of CONTRAST_PAIRS) {
     if (minimum !== TEXT_RATIO) continue;
     const lc = lightnessContrast(colors[fg], colors[bg]);

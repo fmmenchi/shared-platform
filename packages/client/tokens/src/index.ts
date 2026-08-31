@@ -46,5 +46,5 @@ export type {
 export type {
   ViolationKind,
   ThemeViolation,
-  ThemeAdvisory,
+  ContrastAdvisory,
 } from './theme.types.js';

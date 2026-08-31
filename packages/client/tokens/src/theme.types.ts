@@ -46,7 +46,7 @@ export interface ThemeViolation {
  * guideline. Reported, never failed: |Lc| 60 is guidance for body copy, and the
  * smallest text in this system is a medium-weight button label.
  */
-export interface ThemeAdvisory {
+export interface ContrastAdvisory {
   pair: readonly [ColorRole, ColorRole];
   lc: number;
   guideline: number;

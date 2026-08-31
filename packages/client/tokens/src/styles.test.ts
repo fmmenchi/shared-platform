@@ -14,12 +14,7 @@ import {
   colorVar,
   TEXT_TOKENS,
 } from './index.js';
-import {
-  parseTheme,
-  themeAdvisories,
-  toTheme,
-  validateTheme,
-} from './theme.js';
+import { parseTheme, adviseContrast, toTheme, validateTheme } from './theme.js';
 import { tokenVars } from './tokens.types.js';
 import { resolveValue } from './utils/css.js';
 
@@ -365,7 +360,7 @@ describe('APCA (advisory + floor)', () => {
         .filter((v) => v.kind === 'apca')
         .map((v) => v.message);
 
-      const advisories = themeAdvisories(theme).map((a) => a.message);
+      const advisories = adviseContrast(theme).map((a) => a.message);
       if (advisories.length > 0) {
         console.warn(`APCA advisory (${name}):\n  ${advisories.join('\n  ')}`);
       }

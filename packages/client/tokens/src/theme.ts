@@ -93,7 +93,7 @@ export function toCssVars(theme: Partial<Theme>, selector = ':root'): string {
 
 // `ThemeViolation` moved to `validate.types.ts` with every other type in this
 // package. Re-exported because it is part of this subpath's public API.
-export type { ThemeAdvisory, ThemeViolation } from './theme.types.js';
+export type { ContrastAdvisory, ThemeViolation } from './theme.types.js';
 
 /**
  * Validate a complete color-role assignment. Returns [] when the theme is
@@ -108,7 +108,7 @@ export type { ThemeAdvisory, ThemeViolation } from './theme.types.js';
  * look like states. The first produces what the other two measure, which is why
  * it is not merely first but a dependency.
  *
- * Advisories are NOT here — `themeAdvisories()` reports those. `[]` from this
+ * Advisories are NOT here — `adviseContrast()` reports those. `[]` from this
  * function has to keep meaning "allowed", and something worth a look is not a
  * reason to refuse a theme.
  */
@@ -124,4 +124,4 @@ export function validateTheme(
   ];
 }
 
-export { themeAdvisories, CONTRAST_PAIRS } from './utils/validate-contrast.js';
+export { adviseContrast, CONTRAST_PAIRS } from './utils/validate-contrast.js';
