@@ -26,22 +26,30 @@ Three pieces sharing one target name, `validate-themes`. Full arguments/options/
   way to write them.** Without `--from` it scaffolds from the **installed** `@fmmenchi/tokens`
   `vars.css` (resolved at run time via `createRequire` from the consumer workspace root;
   `--tokensPath` escape hatch), and the file header records the tokens version. With
-  `--from=<file.json>` it installs a theme a builder exported, reading **only its `colors` object**
-  and VALIDATING before it writes anything. Then, unless `--skipValidation`, CALLS the `validation`
+  `--from=<file.json>` it installs a theme a builder exported, reading **only its `declarations`
+  object** and VALIDATING before it writes anything. Then, unless `--skipValidation`, CALLS the `validation`
   generator.
-  - **`--from` reads `colors` and nothing else.** A builder needs more than the finished colours to
-    reopen its own form — which rung each role took, which ones a person overrode — and all of that
-    travels in the same file under keys this generator never looks at. Two contracts in one
-    document: `colors` is small, stable, and this package's; the rest is the builder's and may
+  - **`--from` reads DECLARATIONS, not colours** — a flat map of `--fm-*` property to value, at
+    whatever layer. That is what keeps a consumer's theme the same KIND of thing as the reference
+    one: three layers (a base, a ramp derived from it, a role pointing at a rung), so a base change
+    recomputes what is under it. A handoff of the eighty-four finished colours would be a photograph
+    of that — same pixels, nothing left to recompute from. It also lets a builder ship a theme with
+    a rung nudged by hand or a role re-pointed, since those are declarations too and nothing here
+    has to recognise them. The generator does not know what a base, a ramp or a role IS: to it they
+    are lines.
+  - **And it reads that key and nothing else.** Whatever a builder keeps in order to reopen its own
+    form travels in the same file under keys this generator never looks at. Two contracts in one
+    document: `declarations` is small, stable, and this package's; the rest is the builder's and may
     change shape without a version negotiation across two packages. Unknown keys are not an error,
     and that is the point.
   - **It validates BEFORE writing**, with the installed `validateTheme()` — the same function
     `validate-themes` runs in CI, so a builder cannot promise a theme the pipeline would refuse.
     Failing here costs one command; failing in CI costs a round trip. It also catches the mistake an
-    exporter is most likely to make: emitting `var(--fm-palette-…)` instead of resolved literals.
-    Those references resolve against `:root`, so such a theme installs cleanly, satisfies any check
-    that only counts roles, and changes not one colour on the page — which is exactly what the
-    SCAFFOLD path produces on purpose, its output being a starting point to be edited by hand.
+    exporter is most likely to make: a reference pointing at nothing. Roles are RESOLVED against the
+    file's own declarations first — `var(--fm-palette-…)` is CORRECT here when the file also carries
+    that rung — so what the check catches is the dangling one, which would otherwise install a role
+    falling back to its `@property` initial-value: opaque black, in both themes, with nothing falsy
+    for any later check to notice.
   - **`--skipValidation` means "do not gate this theme"** — it skips both the target wiring and the
     pre-write check. One flag, one meaning.
 - **generator `validation`** — adds/updates the `validate-themes` target on the `--project` (points

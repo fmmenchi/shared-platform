@@ -38,7 +38,7 @@
     },
     "from": {
       "type": "string",
-      "description": "Path to a theme file to install (as exported by a theme builder) instead of scaffolding from the reference contract. Only its `colors` object is read: every other key the file carries — including whatever the builder keeps to reopen its own form — is ignored, so the builder can change that half without ever touching this generator. The theme is validated before anything is written."
+      "description": "Path to a theme file to install (as exported by a theme builder) instead of scaffolding from the reference contract. Only its `declarations` object is read — a flat map of `--fm-*` custom property to value, at whatever layer, so a base and a ramp step are as installable as a role. Every other key the file carries, including whatever the builder keeps to reopen its own form, is ignored. The theme is validated before anything is written."
     },
     "tokensPath": {
       "type": "string",

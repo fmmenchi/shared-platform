@@ -25,24 +25,33 @@ generator to wire the `validate-themes` target.
   point is always in step with the tokens version the app uses. That scaffold is a **starting
   point**: its values are `var(--fm-palette-…)` references, which resolve against `:root`, so
   applying the theme changes nothing until you edit them.
-- **With `--from=<file.json>`** it installs a theme a builder exported, and that one is finished:
-  the values are resolved literals, and the theme is validated before anything is written.
+- **With `--from=<file.json>`** it installs a theme a builder exported, and validates it before
+  writing anything.
 
-`--from` reads **only** the file's `colors` object:
+`--from` reads **only** the file's `declarations` object — a flat map of `--fm-*` custom property to
+value, at **whatever layer**:
 
 ```json
 {
-  "colors": {
-    "primary": "oklch(41% 0.135 255)",
-    "primary-foreground": "oklch(100% 0 0)"
+  "declarations": {
+    "--fm-palette-primary-base": "#635BFF",
+    "--fm-palette-primary-700": "oklch(from var(--fm-palette-primary-base) calc(l - 0.14) calc(c * 0.96) h)",
+    "--fm-color-primary": "var(--fm-palette-primary-700)"
   },
-  "source": { "bases": { "primary": "#635BFF" } }
+  "source": { "pinned": ["ring"] }
 }
 ```
 
+That is deliberate, and it is what keeps a consumer's theme the same KIND of thing as the reference
+one. The reference theme is three layers — a base, a ramp derived from it, a role pointing at a rung
+— so changing a base recomputes everything under it. A handoff carrying only the finished colours
+would be a photograph of that: the same pixels, with nothing left to recompute from. Taking
+declarations also means a builder can ship a theme with one rung nudged by hand or a role
+re-pointed, because those are declarations too and nothing here has to recognise them.
+
 Every other key — `source` above, or whatever a builder keeps in order to reopen its own form — is
-carried by the file and ignored here. Unknown keys are not an error: that is what lets a builder
-change how it records its own state without this generator having to agree.
+carried by the file and ignored. Unknown keys are not an error: that is what lets a builder change
+how it records its own state without this generator having to agree.
 
 **Usage**
 
@@ -58,14 +67,14 @@ pnpm nx g @fmmenchi/nx-theme-generator:theme <name> --project=<project> [options
 
 #### Options
 
-| Option             | Type      | Default      | Description                                                                                                                                        |
-| :----------------- | :-------- | :----------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--project`        | `string`  | **Required** | The project the theme belongs to (gets the `validate-themes` target).                                                                              |
-| `--directory`      | `string`  | `src/themes` | Directory for the theme file, relative to the project root.                                                                                        |
-| `--from`           | `string`  | _(none)_     | Install a theme exported by a builder instead of scaffolding. Only its `colors` object is read; the theme is validated before anything is written. |
-| `--skipValidation` | `boolean` | `false`      | Do not gate this theme: skips BOTH the `validate-themes` wiring and the pre-write check on a `--from` file.                                        |
-| `--scheme`         | `string`  | `light`      | `light` or `dark` — emitted as `color-scheme`, so the parts the browser paints follow the theme.                                                   |
-| `--tokensPath`     | `string`  | _(auto)_     | Advanced: explicit path to `@fmmenchi/tokens`' `vars.css`, when it cannot be resolved from the workspace root.                                     |
+| Option             | Type      | Default      | Description                                                                                                                                                                                        |
+| :----------------- | :-------- | :----------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--project`        | `string`  | **Required** | The project the theme belongs to (gets the `validate-themes` target).                                                                                                                              |
+| `--directory`      | `string`  | `src/themes` | Directory for the theme file, relative to the project root.                                                                                                                                        |
+| `--from`           | `string`  | _(none)_     | Install a theme exported by a builder instead of scaffolding. Only its `declarations` object is read (`--fm-*` property → value, at any layer); the theme is validated before anything is written. |
+| `--skipValidation` | `boolean` | `false`      | Do not gate this theme: skips BOTH the `validate-themes` wiring and the pre-write check on a `--from` file.                                                                                        |
+| `--scheme`         | `string`  | `light`      | `light` or `dark` — emitted as `color-scheme`, so the parts the browser paints follow the theme.                                                                                                   |
+| `--tokensPath`     | `string`  | _(auto)_     | Advanced: explicit path to `@fmmenchi/tokens`' `vars.css`, when it cannot be resolved from the workspace root.                                                                                     |
 
 :::tip[Interactive prompts]
 

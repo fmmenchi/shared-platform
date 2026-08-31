@@ -18,6 +18,13 @@ interface ValidateModule {
     colors: Readonly<Record<string, string>>,
   ): { message: string }[];
 }
+interface ResolveModule {
+  resolveCssVar(value: string, declared: ReadonlyMap<string, string>): string;
+}
+interface TokensModules {
+  resolveCssVar: ResolveModule['resolveCssVar'];
+  validateTheme: ValidateModule['validateTheme'];
+}
 /** One `--fm-color-*` declaration: the variable name and the value to emit. */
 type RoleDeclaration = readonly [name: string, value: string];
 
@@ -47,21 +54,32 @@ function readReferenceTheme(varsPath: string): RoleDeclaration[] {
 /**
  * A theme somebody else built — the install path.
  *
- * ONLY `colors` IS READ, and that is the whole contract this generator has with
- * whatever wrote the file. A builder needs more than the finished colours to
- * reopen its own form — which rung each role was pointed at, which ones a person
- * overrode by hand — and all of that travels in the same file under keys this
- * generator never looks at. Two contracts in one document: `colors` is small and
+ * IT READS DECLARATIONS, NOT COLOURS, and that is the whole of why a consumer's
+ * theme behaves like ours rather than merely looking like it. Ours is three
+ * layers — a base, a ramp derived from it in relative colour, a role pointing at
+ * a rung — so changing one base recomputes everything under it. A file carrying
+ * only the eighty-four finished colours is a photograph of that: same pixels, and
+ * nothing left to recompute from. So the file lists CSS custom properties with
+ * their values, at whatever layer, and this writes them out unchanged.
+ *
+ * The generator therefore does not know what a base, a ramp or a role IS, and
+ * does not need to: to it they are lines. That is also what lets a builder ship a
+ * theme with a rung nudged by hand or a role re-pointed — those are declarations
+ * too, and nothing here has to recognise them.
+ *
+ * ONLY `declarations` IS READ. A builder needs more than the theme to reopen its
+ * own form, and all of that travels in the same file under keys this generator
+ * never looks at. Two contracts in one document: `declarations` is small and
  * stable and belongs here; the rest belongs to the builder and may change shape
  * whenever it likes without a version negotiation across two packages.
  *
  * VALIDATED BEFORE ANYTHING IS WRITTEN, with the `validateTheme()` of the
  * INSTALLED tokens — the same function `validate-themes` runs in CI, so a builder
- * cannot promise a theme the pipeline would refuse. It also catches the mistake
- * an exporter is most likely to make: emitting `var(--fm-palette-…)` references
- * rather than resolved literals. Those parse as nothing, so the check reports
- * them — and they would otherwise install a theme that resolves against `:root`
- * and changes no colour at all.
+ * cannot promise a theme the pipeline would refuse. The roles are RESOLVED first,
+ * against the file's own declarations, because a role here legitimately points at
+ * a rung the file also carries; that resolution is what catches the reference
+ * pointing at nothing, which would otherwise install a role that falls back to
+ * its `@property` initial-value — opaque black, with nothing falsy to detect.
  */
 async function readExportedTheme(
   from: string,
@@ -79,59 +97,100 @@ async function readExportedTheme(
     );
   }
 
-  const colors = (parsed as { colors?: unknown } | null)?.colors;
-  if (!colors || typeof colors !== 'object' || Array.isArray(colors)) {
+  const declared = (parsed as { declarations?: unknown } | null)?.declarations;
+  if (!declared || typeof declared !== 'object' || Array.isArray(declared)) {
     throw new Error(
-      `${path} has no "colors" object. A theme file is ` +
-        `{ "colors": { "<role>": "<value>", … } }; anything else in it is ignored.`,
+      `${path} has no "declarations" object. A theme file is ` +
+        `{ "declarations": { "--fm-color-primary": "<value>", … } }; ` +
+        `anything else in it is ignored.`,
     );
   }
-  const entries = Object.entries(colors as Record<string, unknown>);
+  const entries = Object.entries(declared as Record<string, unknown>);
   if (entries.length === 0) {
-    throw new Error(`${path} declares no colors.`);
+    throw new Error(`${path} declares nothing.`);
   }
   const nonString = entries.filter(([, v]) => typeof v !== 'string');
   if (nonString.length > 0) {
     throw new Error(
-      `${path}: these roles are not strings: ${nonString
+      `${path}: these declarations are not strings: ${nonString
         .map(([k]) => k)
         .join(', ')}.`,
     );
   }
-  const theme = Object.fromEntries(entries) as Record<string, string>;
+  const stray = entries.filter(([k]) => !k.startsWith('--fm-'));
+  if (stray.length > 0) {
+    throw new Error(
+      `${path}: these are not tokens of this contract: ${stray
+        .map(([k]) => k)
+        .join(', ')}.`,
+    );
+  }
+  const roles = entries as RoleDeclaration[];
 
-  // Resolution failure is not fatal: the `validate-themes` target this generator
-  // wires still gates the theme in CI. Writing nothing because the check could
-  // not be loaded would be worse than writing something CI will judge.
-  let validateTheme: ValidateModule['validateTheme'] | undefined;
+  if (validate) await validateExported(path, roles, req);
+  return roles;
+}
+
+/**
+ * Refuse a theme the pipeline would refuse, before it reaches the repo.
+ *
+ * Resolution failure is not fatal: the `validate-themes` target this generator
+ * wires still gates the theme in CI. Writing nothing because the check could not
+ * be LOADED would be worse than writing something CI will judge.
+ */
+async function validateExported(
+  path: string,
+  roles: RoleDeclaration[],
+  req: ReturnType<typeof createRequire>,
+): Promise<void> {
+  let tokens: TokensModules | undefined;
   try {
-    if (!validate) throw new Error('--skipValidation');
-    const modulePath = req.resolve('@fmmenchi/tokens/validate');
-    ({ validateTheme } = (await import(
-      pathToFileURL(modulePath).href
-    )) as ValidateModule);
+    tokens = {
+      resolveCssVar: (
+        (await import(
+          pathToFileURL(req.resolve('@fmmenchi/tokens/resolve')).href
+        )) as ResolveModule
+      ).resolveCssVar,
+      validateTheme: (
+        (await import(
+          pathToFileURL(req.resolve('@fmmenchi/tokens/validate')).href
+        )) as ValidateModule
+      ).validateTheme,
+    };
   } catch {
-    if (validate) {
-      logger.warn(
-        `Could not resolve @fmmenchi/tokens/validate — ${path} was installed ` +
-          'unchecked. `nx run <project>:validate-themes` will still gate it.',
-      );
-    }
+    logger.warn(
+      `Could not resolve @fmmenchi/tokens — ${path} was installed unchecked. ` +
+        '`nx run <project>:validate-themes` will still gate it.',
+    );
+    return;
   }
 
-  if (validateTheme) {
-    const violations = validateTheme(theme);
-    if (violations.length > 0) {
+  const map = new Map(roles);
+  const colors: Record<string, string> = {};
+  for (const [name, value] of roles) {
+    if (!name.startsWith('--fm-color-')) continue;
+    try {
+      colors[name.slice('--fm-color-'.length)] = tokens.resolveCssVar(
+        value,
+        map,
+      );
+    } catch (error) {
+      // A reference to something the file never declares. Left alone it installs
+      // a role that falls back to its `@property` initial-value — opaque black,
+      // in both themes, with nothing falsy for a check to notice.
       throw new Error(
-        `${path} is not a valid theme, so nothing was written:\n  ` +
-          violations.map((v) => v.message).join('\n  '),
+        `${path}: ${name} does not resolve — ${(error as Error).message}`,
       );
     }
   }
 
-  return entries.map(
-    ([role, value]) => [`--fm-color-${role}`, value as string] as const,
-  );
+  const violations = tokens.validateTheme(colors);
+  if (violations.length > 0) {
+    throw new Error(
+      `${path} is not a valid theme, so nothing was written:\n  ` +
+        violations.map((v) => v.message).join('\n  '),
+    );
+  }
 }
 
 /**

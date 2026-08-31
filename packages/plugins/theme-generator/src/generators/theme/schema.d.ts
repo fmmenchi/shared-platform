@@ -15,9 +15,10 @@ export interface ThemeGeneratorSchema {
   /**
    * Path to a theme file to install, instead of scaffolding from the contract.
    *
-   * Only its `colors` object is read — every other key, including whatever the
-   * builder that wrote it keeps to reopen its own form, is carried by the file
-   * and ignored here.
+   * Only its `declarations` object is read — a flat map of `--fm-*` custom
+   * property to value, at whatever layer: a base, a ramp step and a role are all
+   * declarations, and this generator does not tell them apart. Every other key,
+   * including whatever the builder keeps to reopen its own form, is ignored.
    */
   from?: string;
   /** Advanced: explicit path to @fmmenchi/tokens' vars.css. */

@@ -153,30 +153,27 @@ describe('theme generator', () => {
 /**
  * INSTALLING A THEME SOMEBODY ELSE BUILT.
  *
- * The consumer-facing half of the pipeline: a builder decides the colours, this
- * puts them in the repo. The interesting assertions are not that it copies a
- * JSON blob — they are the two boundaries. It reads ONLY `colors`, so the
- * builder can carry whatever it needs to reopen its own form in the same file
- * without this generator having an opinion about it; and it refuses to write a
- * theme that would not survive the gate it is about to wire.
+ * The consumer-facing half: a builder decides the theme, this puts it in the repo.
+ * The assertions worth making are not that JSON survives a round trip — they are
+ * the two boundaries. It reads DECLARATIONS, not finished colours, so a consumer's
+ * theme keeps the shape ours has (a base, a ramp derived from it, a role pointing
+ * at a rung) instead of being a photograph of it. And it reads only that key, so
+ * the builder can carry whatever it needs to reopen its own form in the same file.
  */
 describe('theme generator — --from', () => {
   let tree: Tree;
   let dir: string;
 
-  const write = (name: string, contents: unknown) => {
-    const path = join(dir, name);
+  const write = (contents: unknown) => {
+    const path = join(dir, 'brand.json');
     writeFileSync(path, JSON.stringify(contents));
     return path;
   };
 
-  /** A complete theme: every role the contract names, one paintable value. */
-  const completeColors = () =>
+  /** Every role the contract names, one flat value. Deliberately unreadable. */
+  const flatRoles = () =>
     Object.fromEntries(
-      [...new Set(contractRoles)].map((v) => [
-        v.replace('--fm-color-', ''),
-        'oklch(50% 0.02 256)',
-      ]),
+      [...new Set(contractRoles)].map((v) => [v, 'oklch(50% 0.02 256)']),
     );
 
   beforeEach(() => {
@@ -185,8 +182,16 @@ describe('theme generator — --from', () => {
     dir = mkdtempSync(join(tmpdir(), 'fm-theme-from-'));
   });
 
-  it('installs the colors from the file', async () => {
-    const from = write('brand.json', { colors: completeColors() });
+  it('writes the declarations, whatever layer they belong to', async () => {
+    // The point of taking declarations rather than roles: a base and a ramp step
+    // are as installable as a role, and this generator does not tell them apart.
+    const from = write({
+      declarations: {
+        ...flatRoles(),
+        '--fm-palette-primary-base': 'oklch(55% 0.14 255)',
+        '--fm-palette-primary-700': 'oklch(41% 0.135 255)',
+      },
+    });
 
     await themeGenerator(tree, {
       name: 'acme',
@@ -198,19 +203,17 @@ describe('theme generator — --from', () => {
     const css = tree.read('apps/web/src/themes/acme.css', 'utf-8') as string;
 
     expect(css).toContain("[data-theme='acme']");
+    expect(css).toContain('--fm-palette-primary-base: oklch(55% 0.14 255);');
+    expect(css).toContain('--fm-palette-primary-700: oklch(41% 0.135 255);');
     expect(css).toContain('--fm-color-primary: oklch(50% 0.02 256);');
   });
 
-  it('IGNORES every key but `colors`, so the builder owns the rest', () => {
-    // The property this generator's stability rests on: a builder that changes
-    // how it records its own state — which rung a role took, what a person
-    // overrode — must never need this package to agree.
-    const from = write('brand.json', {
-      colors: completeColors(),
-      source: {
-        bases: { primary: '#635BFF' },
-        overrides: { ring: 'whatever' },
-      },
+  it('IGNORES every key but `declarations`, so the builder owns the rest', () => {
+    // What this generator's stability rests on: a builder that changes how it
+    // records its own state must never need this package to agree.
+    const from = write({
+      declarations: flatRoles(),
+      source: { bases: { primary: '#635BFF' }, pinned: ['ring'] },
       somethingInventedNextYear: [1, 2, 3],
     });
 
@@ -226,10 +229,13 @@ describe('theme generator — --from', () => {
   });
 
   it('does not fall back to the reference theme when --from is given', async () => {
-    // A silent fallback would install OUR colours under THEIR name, and the
-    // failure is invisible: a complete, valid, entirely wrong theme.
-    const from = write('brand.json', {
-      colors: { ...completeColors(), primary: 'oklch(70% 0.1 30)' },
+    // A silent fallback would install OUR colours under THEIR name: a complete,
+    // valid, entirely wrong theme, and nothing on screen to suggest it.
+    const from = write({
+      declarations: {
+        ...flatRoles(),
+        '--fm-color-primary': 'oklch(70% 0.1 30)',
+      },
     });
 
     await themeGenerator(tree, {
@@ -245,30 +251,42 @@ describe('theme generator — --from', () => {
     expect(css).not.toContain('var(--fm-palette-');
   });
 
-  it('REFUSES a file with no `colors`, saying what one looks like', async () => {
-    const from = write('brand.json', { theme: completeColors() });
+  it('REFUSES a file with no `declarations`, saying what one looks like', async () => {
+    const from = write({ colors: flatRoles() });
 
     await expect(
       themeGenerator(tree, { name: 'acme', project: 'web', from }),
-    ).rejects.toThrow(/no "colors" object/);
+    ).rejects.toThrow(/no "declarations" object/);
   });
 
-  it('REFUSES a role whose value is not a string, naming it', async () => {
-    const from = write('brand.json', {
-      colors: { ...completeColors(), primary: { l: 50 } },
+  it('REFUSES a declaration that is not a string, naming it', async () => {
+    const from = write({
+      declarations: { ...flatRoles(), '--fm-color-primary': { l: 50 } },
     });
 
     await expect(
       themeGenerator(tree, { name: 'acme', project: 'web', from }),
-    ).rejects.toThrow(/not strings: primary/);
+    ).rejects.toThrow(/not strings: --fm-color-primary/);
   });
 
-  it('REFUSES an empty `colors`', async () => {
-    const from = write('brand.json', { colors: {} });
+  it('REFUSES a name that is not a token of this contract', async () => {
+    // A theme file is not a stylesheet: anything outside `--fm-*` either lands in
+    // the consumer's CSS doing nothing, or does something nobody asked for.
+    const from = write({
+      declarations: { ...flatRoles(), '--brand-shadow': '0 0 4px red' },
+    });
 
     await expect(
       themeGenerator(tree, { name: 'acme', project: 'web', from }),
-    ).rejects.toThrow(/declares no colors/);
+    ).rejects.toThrow(/not tokens of this contract: --brand-shadow/);
+  });
+
+  it('REFUSES an empty `declarations`', async () => {
+    const from = write({ declarations: {} });
+
+    await expect(
+      themeGenerator(tree, { name: 'acme', project: 'web', from }),
+    ).rejects.toThrow(/declares nothing/);
   });
 
   it('says which file it could not read', async () => {
@@ -282,7 +300,7 @@ describe('theme generator — --from', () => {
   });
 
   it('writes NOTHING when the file is refused', async () => {
-    const from = write('brand.json', { colors: {} });
+    const from = write({ declarations: {} });
 
     await expect(
       themeGenerator(tree, { name: 'acme', project: 'web', from }),
@@ -294,16 +312,11 @@ describe('theme generator — --from', () => {
 /**
  * THE GATE, BEFORE ANYTHING IS WRITTEN.
  *
- * The reason `--from` validates rather than trusting its input: the theme lands
- * in a consumer's repo, and the check that would otherwise catch it runs in CI —
- * after the commit, after the review, on somebody else's branch. Refusing here
- * costs one command; refusing there costs a round trip.
- *
- * The fixture used by the install cases above is deliberately one flat colour for
- * every role, which is exactly what this refuses: a complete theme where nothing
- * can be read on anything. That is why those cases pass `skipValidation` — the
- * flag means "do not gate this theme", and it now means it for both the target it
- * would have wired and the check it would have run.
+ * `--from` is the one place foreign input enters the pipeline, which is why it is
+ * the one place worth checking before touching the repo. The roles are RESOLVED
+ * against the file's own declarations first — a role here legitimately points at a
+ * rung the file also carries, and that is the whole reason the handoff is
+ * declarations rather than finished colours.
  */
 describe('theme generator — --from validates first', () => {
   let tree: Tree;
@@ -315,22 +328,19 @@ describe('theme generator — --from validates first', () => {
     dir = mkdtempSync(join(tmpdir(), 'fm-theme-gate-'));
   });
 
-  const writeTheme = (colors: Record<string, unknown>) => {
+  const write = (declarations: Record<string, unknown>) => {
     const path = join(dir, 'brand.json');
-    writeFileSync(path, JSON.stringify({ colors }));
+    writeFileSync(path, JSON.stringify({ declarations }));
     return path;
   };
 
-  const flat = () =>
+  const flatRoles = () =>
     Object.fromEntries(
-      [...new Set(contractRoles)].map((v) => [
-        v.replace('--fm-color-', ''),
-        'oklch(50% 0.02 256)',
-      ]),
+      [...new Set(contractRoles)].map((v) => [v, 'oklch(50% 0.02 256)']),
     );
 
   it('REFUSES a theme whose declared pairs cannot be read, and writes nothing', async () => {
-    const from = writeTheme(flat());
+    const from = write(flatRoles());
 
     await expect(
       themeGenerator(tree, {
@@ -343,20 +353,18 @@ describe('theme generator — --from validates first', () => {
     expect(tree.exists('apps/web/src/themes/acme.css')).toBe(false);
   });
 
-  it('CATCHES an exporter that emitted var() references instead of literals', async () => {
-    // The trap this closes, and it is the one the scaffold path still has: a
-    // `[data-theme]` block full of `var(--fm-palette-…)` resolves against the
-    // ROOT palette, so it installs cleanly, validates as complete by any check
-    // that only counts roles, and changes not one colour on the page.
-    const from = writeTheme(
-      Object.fromEntries(
-        [...new Set(contractRoles)].map((v) => [
-          v.replace('--fm-color-', ''),
-          'var(--fm-palette-primary-700)',
-        ]),
-      ),
-    );
+  it('RESOLVES a role through the file’s own palette before judging it', async () => {
+    // The case a colours-only handoff could not express, and the reason the gate
+    // resolves rather than parsing: `var()` here is correct, not a mistake.
+    const from = write({
+      ...flatRoles(),
+      '--fm-palette-brand-500': 'oklch(50% 0.02 256)',
+      '--fm-color-primary': 'var(--fm-palette-brand-500)',
+    });
 
+    // It still fails — one flat colour cannot satisfy contrast — but on the
+    // CONTRAST complaint, which proves the reference was followed rather than
+    // reported as unparsable.
     await expect(
       themeGenerator(tree, {
         name: 'acme',
@@ -365,12 +373,36 @@ describe('theme generator — --from validates first', () => {
         tokensPath: varsPath,
       }),
     ).rejects.toThrow(/is not a valid theme/);
+    await expect(
+      themeGenerator(tree, {
+        name: 'acme',
+        project: 'web',
+        from,
+        tokensPath: varsPath,
+      }),
+    ).rejects.not.toThrow(/--fm-color-primary does not resolve/);
+  });
+
+  it('CATCHES a reference pointing at nothing', async () => {
+    // Left alone it installs a role that falls back to its `@property`
+    // initial-value — opaque black, in both themes, with nothing falsy to detect.
+    const from = write({
+      ...flatRoles(),
+      '--fm-color-primary': 'var(--fm-palette-absent-500)',
+    });
+
+    await expect(
+      themeGenerator(tree, {
+        name: 'acme',
+        project: 'web',
+        from,
+        tokensPath: varsPath,
+      }),
+    ).rejects.toThrow(/--fm-color-primary does not resolve/);
   });
 
   it('reports every violation at once, not the first', async () => {
-    // A person fixing a theme wants the list. Reporting one at a time turns one
-    // conversation into as many round trips as there are mistakes.
-    const from = writeTheme(flat());
+    const from = write(flatRoles());
 
     await expect(
       themeGenerator(tree, {
