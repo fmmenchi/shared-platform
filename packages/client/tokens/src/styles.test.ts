@@ -13,15 +13,15 @@ import {
   TOKEN_VARS,
   colorVar,
   TEXT_TOKENS,
-} from './index.js';
+} from '@fmmenchi/theme';
 import {
-  parseTheme,
   adviseContrast,
+  parseTheme,
+  resolveCssVar,
   toTheme,
+  tokenVars,
   validateTheme,
 } from '@fmmenchi/theme';
-import { tokenVars } from '@fmmenchi/theme';
-import { resolveCssVar } from '@fmmenchi/theme';
 
 /**
  * DO THE SHIPPED STYLESHEETS SATISFY THE CONTRACT?

@@ -1,30 +1,16 @@
 import {
   formatFiles,
   joinPathFragments,
-  logger,
   readProjectConfiguration,
   type Tree,
 } from '@nx/devkit';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { isAbsolute, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { resolveCssVar, validateTheme } from '@fmmenchi/theme';
 import { validationGenerator } from '../validation/validation';
 import type { ThemeGeneratorSchema } from './schema';
 
-/** What this generator needs from the installed tokens package. */
-interface ValidateModule {
-  validateTheme(
-    colors: Readonly<Record<string, string>>,
-  ): { message: string }[];
-}
-interface ResolveModule {
-  resolveCssVar(value: string, declared: ReadonlyMap<string, string>): string;
-}
-interface TokensModules {
-  resolveCssVar: ResolveModule['resolveCssVar'];
-  validateTheme: ValidateModule['validateTheme'];
-}
 /** One `--fm-color-*` declaration: the variable name and the value to emit. */
 type RoleDeclaration = readonly [name: string, value: string];
 
@@ -81,11 +67,7 @@ function readReferenceTheme(varsPath: string): RoleDeclaration[] {
  * pointing at nothing, which would otherwise install a role that falls back to
  * its `@property` initial-value — opaque black, with nothing falsy to detect.
  */
-async function readExportedTheme(
-  from: string,
-  req: ReturnType<typeof createRequire>,
-  validate: boolean,
-): Promise<RoleDeclaration[]> {
+function readExportedTheme(from: string, validate: boolean): RoleDeclaration[] {
   const path = isAbsolute(from) ? from : join(process.cwd(), from);
 
   let parsed: unknown;
@@ -127,53 +109,28 @@ async function readExportedTheme(
   }
   const roles = entries as RoleDeclaration[];
 
-  if (validate) await validateExported(path, roles, req);
+  if (validate) validateExported(path, roles);
   return roles;
 }
 
 /**
  * Refuse a theme the pipeline would refuse, before it reaches the repo.
  *
- * Resolution failure is not fatal: the `validate-themes` target this generator
- * wires still gates the theme in CI. Writing nothing because the check could not
- * be LOADED would be worse than writing something CI will judge.
+ * The rules come from `@fmmenchi/theme`, IMPORTED — not resolved from the
+ * consumer's workspace, which is what this used to do with `createRequire`, a
+ * dynamic `import()`, an escape-hatch option and a "could not resolve" branch
+ * that installed the theme unchecked. The contract is code, so it travels with
+ * this plugin; only the STYLESHEET is read from the consumer's install, because
+ * that is a file and theirs is the one that matters.
  */
-async function validateExported(
-  path: string,
-  roles: RoleDeclaration[],
-  req: ReturnType<typeof createRequire>,
-): Promise<void> {
-  let tokens: TokensModules | undefined;
-  try {
-    tokens = {
-      resolveCssVar: (
-        (await import(
-          pathToFileURL(req.resolve('@fmmenchi/tokens/resolve')).href
-        )) as ResolveModule
-      ).resolveCssVar,
-      validateTheme: (
-        (await import(
-          pathToFileURL(req.resolve('@fmmenchi/tokens/validate')).href
-        )) as ValidateModule
-      ).validateTheme,
-    };
-  } catch {
-    logger.warn(
-      `Could not resolve @fmmenchi/tokens — ${path} was installed unchecked. ` +
-        '`nx run <project>:validate-themes` will still gate it.',
-    );
-    return;
-  }
-
+function validateExported(path: string, roles: RoleDeclaration[]): void {
   const map = new Map(roles);
   const colors: Record<string, string> = {};
+
   for (const [name, value] of roles) {
     if (!name.startsWith('--fm-color-')) continue;
     try {
-      colors[name.slice('--fm-color-'.length)] = tokens.resolveCssVar(
-        value,
-        map,
-      );
+      colors[name.slice('--fm-color-'.length)] = resolveCssVar(value, map);
     } catch (error) {
       // A reference to something the file never declares. Left alone it installs
       // a role that falls back to its `@property` initial-value — opaque black,
@@ -184,7 +141,7 @@ async function validateExported(
     }
   }
 
-  const violations = tokens.validateTheme(colors);
+  const violations = validateTheme(colors);
   if (violations.length > 0) {
     throw new Error(
       `${path} is not a valid theme, so nothing was written:\n  ` +
@@ -243,7 +200,7 @@ export async function themeGenerator(
   // package resolved here is the INSTALLED one, whose version may predate the
   // export; two lines beat a version negotiation.
   const roles = options.from
-    ? await readExportedTheme(options.from, req, !options.skipValidation)
+    ? readExportedTheme(options.from, !options.skipValidation)
     : readReferenceTheme(varsPath);
 
   const project = readProjectConfiguration(tree, options.project);

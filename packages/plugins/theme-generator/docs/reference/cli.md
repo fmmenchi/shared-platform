@@ -141,10 +141,9 @@ The `validate-themes` target is the one wired by the `theme` / `validation` gene
 
 #### Options
 
-| Option       | Type       | Default      | Description                                                                                                           |
-| :----------- | :--------- | :----------- | :-------------------------------------------------------------------------------------------------------------------- |
-| `themes`     | `string[]` | **Required** | Workspace-relative paths of the theme CSS files to validate.                                                          |
-| `tokensPath` | `string`   | _(auto)_     | Advanced: explicit path to `@fmmenchi/tokens`' `validate` module, when it cannot be resolved from the workspace root. |
+| Option   | Type       | Default      | Description                                                  |
+| :------- | :--------- | :----------- | :----------------------------------------------------------- |
+| `themes` | `string[]` | **Required** | Workspace-relative paths of the theme CSS files to validate. |
 
 #### What `validateTheme` checks
 
