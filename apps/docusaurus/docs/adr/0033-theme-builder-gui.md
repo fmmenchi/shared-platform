@@ -188,7 +188,7 @@ type ThemeSpec = {
 generatePalette(system: DesignSystem, bases: Bases): Palette;
 
 /** Level 2 to level 3: the rungs become an assignment of all 84 roles. */
-generateTheme(system: DesignSystem, palette: Palette, pins?: Pins): Theme;
+generateTheme(system: DesignSystem, palette: Palette): Theme;
 ```
 
 **TWO steps, not one.** They are two different decisions and they fail differently.
@@ -282,12 +282,20 @@ contrast gate; a comment saying "keep in sync" is not one of the options. Per th
 repo's own rule all of these live in `*.types.ts`, with `index.ts` re-exporting
 them.
 
-`pins` is the parameter the wizard is made of. Without it the function derives a
-whole theme from seven hexes, which is the express route; with it, each family step
-contributes the assignments a person changed, and the per-role dark deviation has
-somewhere to live. It is also what closes the loop with the state decision below:
-the pins are recoverable from the generated CSS, because a role there is a reference
-to a rung.
+**PINS ARE NOT A PARAMETER.** An earlier draft passed the wizard's manual
+assignments into this function, so that a role a person had pointed somewhere by
+hand came back already applied. That put the wizard's model inside the contract,
+which is the boundary this ADR draws everywhere else.
+
+They do not need to be here. A `Theme` is a `Record<ColorRole, string>` and the app
+already holds the `Palette`, so applying a pin is `{ ...theme, link: palette.primary[700] }`
+— and the app keeps the record of WHICH rung it chose, in its own model, which is
+the only place that record is meaningful. `validateTheme` then judges the theme the
+person actually assembled rather than one this function guessed at.
+
+The same goes for `ThemeSpec` further down: it is the wizard's form, described here
+because the flow needs describing, and it is the app's type to define. The package
+takes colours and gives back a theme.
 
 `strategy` is passed for the difference that is real — how the rungs are generated —
 and not for how a rung's lightness is written, which is settled.
