@@ -49,7 +49,14 @@ export const REFERENCE_BASES: Bases = {
 
 interface BasesStore {
   readonly bases: Bases;
-  readonly setBase: (family: PaletteFamily, hex: string) => void;
+  /**
+   * The whole set at once, which is what a validated form hands over. A per-field
+   * write is deliberately NOT here: the seven are one answer, and half of what can
+   * be wrong with them is a fact about the SET — two families a person could not
+   * tell apart, or a theme these seven cannot make readable. A store that accepted
+   * one colour at a time would invite writing an unchecked value into it.
+   */
+  readonly setBases: (bases: Bases) => void;
   readonly reset: () => void;
 }
 
@@ -58,15 +65,12 @@ const BasesContext = createContext<BasesStore | undefined>(undefined);
 export function BasesProvider({ children }: { children: ReactNode }) {
   const [bases, setBases] = useState<Bases>(REFERENCE_BASES);
 
-  const setBase = useCallback((family: PaletteFamily, hex: string) => {
-    setBases((current) => ({ ...current, [family]: hex }));
-  }, []);
-
+  const replace = useCallback((next: Bases) => setBases(next), []);
   const reset = useCallback(() => setBases(REFERENCE_BASES), []);
 
   const value = useMemo(
-    () => ({ bases, setBase, reset }),
-    [bases, setBase, reset],
+    () => ({ bases, setBases: replace, reset }),
+    [bases, replace, reset],
   );
 
   return (

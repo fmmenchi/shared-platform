@@ -1,9 +1,25 @@
 import { Heading } from '@fmmenchi/ui/heading';
 import { Stepper } from '@fmmenchi/ui/stepper';
 import { StepperItem } from '@fmmenchi/ui/stepper-item';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { NavLink, Outlet, useLoaderData, useLocation } from 'react-router';
 
+import {
+  DeclarationsProvider,
+  type SerializedDeclarations,
+} from '../declarations';
+import { readDeclarations } from '../declarations.server';
 import { STEPS, pathOf, slugOf, statusOf } from '../steps';
+
+/**
+ * THE DECLARATIONS ARE LOADED ONCE, HERE, because every step builds from the same
+ * ones and this is the route they all sit under.
+ *
+ * They are read from `vars.css` on the server rather than shipped as a generated
+ * JSON file. See `declarations.server.ts` for why the file was the wrong answer.
+ */
+export function loader() {
+  return readDeclarations();
+}
 
 /**
  * THE WIZARD — the chrome every step shares, on the reference theme.
@@ -22,37 +38,40 @@ import { STEPS, pathOf, slugOf, statusOf } from '../steps';
 export default function Build() {
   const { pathname } = useLocation();
   const current = slugOf(pathname);
+  const declarations = useLoaderData<SerializedDeclarations>();
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gap: 'var(--fm-space-stack-l)',
-        padding: 'var(--fm-space-inset-l)',
-      }}
-    >
-      <Heading level={1}>Build a theme</Heading>
+    <DeclarationsProvider declarations={declarations}>
+      <div
+        style={{
+          display: 'grid',
+          gap: 'var(--fm-space-stack-l)',
+          padding: 'var(--fm-space-inset-l)',
+        }}
+      >
+        <Heading level={1}>Build a theme</Heading>
 
-      {/* `aria-label` rather than a `label` prop: the design system's stepper
+        {/* `aria-label` rather than a `label` prop: the design system's stepper
           names itself from its own localized copy ("Progress") and takes an
           override here, so a nameless landmark is impossible and a better name is
           still possible. */}
-      <Stepper aria-label="Set up your theme">
-        {STEPS.map((step) => {
-          const status = statusOf(step, current);
-          return (
-            <StepperItem key={step.slug} status={status}>
-              {status === 'complete' ? (
-                <NavLink to={pathOf(step)}>{step.label}</NavLink>
-              ) : (
-                step.label
-              )}
-            </StepperItem>
-          );
-        })}
-      </Stepper>
+        <Stepper aria-label="Set up your theme">
+          {STEPS.map((step) => {
+            const status = statusOf(step, current);
+            return (
+              <StepperItem key={step.slug} status={status}>
+                {status === 'complete' ? (
+                  <NavLink to={pathOf(step)}>{step.label}</NavLink>
+                ) : (
+                  step.label
+                )}
+              </StepperItem>
+            );
+          })}
+        </Stepper>
 
-      <Outlet />
-    </div>
+        <Outlet />
+      </div>
+    </DeclarationsProvider>
   );
 }

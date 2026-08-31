@@ -9,6 +9,7 @@ import {
   type MetaFunction,
 } from 'react-router';
 
+import { UiProvider } from '@fmmenchi/ui';
 import { AppLayout } from '@fmmenchi/ui/app-layout';
 import { AppLayoutMain } from '@fmmenchi/ui/app-layout-main';
 import { AppLayoutNav } from '@fmmenchi/ui/app-layout-nav';
@@ -17,6 +18,11 @@ import { Nav } from '@fmmenchi/ui/nav';
 import { NavGroup } from '@fmmenchi/ui/nav-group';
 import { NavLink } from '@fmmenchi/ui/nav-link';
 import { Separator } from '@fmmenchi/ui/separator';
+
+import {
+  useRhfErrors,
+  useRhfField,
+} from '@fmmenchi/ui-form-ports/react-hook-form';
 
 import { BasesProvider } from './bases';
 import { DraftThemeProvider } from './draft-theme';
@@ -174,10 +180,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
  */
 export default function App() {
   return (
-    <BasesProvider>
-      <DraftThemeProvider>
-        <Outlet />
-      </DraftThemeProvider>
-    </BasesProvider>
+    // THE FORM BINDING IS GIVEN ONCE, like i18n or a Link — so every form below
+    // works with nothing further to wire, and nothing below this line names
+    // react-hook-form. Swapping the library is these two functions.
+    <UiProvider
+      adapters={{
+        i18n: { locale: 'en' },
+        form: { field: useRhfField, errors: useRhfErrors },
+      }}
+    >
+      <BasesProvider>
+        <DraftThemeProvider>
+          <Outlet />
+        </DraftThemeProvider>
+      </BasesProvider>
+    </UiProvider>
   );
 }
