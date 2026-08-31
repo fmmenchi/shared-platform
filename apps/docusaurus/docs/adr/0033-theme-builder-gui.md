@@ -853,6 +853,71 @@ CONSUMER's repository is written exactly once, by the generator, from the JSON t
 builder leaves behind on exit. Two very different files, and only one of them is
 somebody's source tree.
 
+## Who does what
+
+Three parties, and the line between them is the one this ADR keeps getting wrong.
+The package knows what a theme IS; the app knows what a person WANTS; the generator
+knows where files GO. Nothing crosses.
+
+```mermaid
+graph TB
+    subgraph app["THE APP — the wizard, scope:app"]
+        form["the form<br/>its types, its state"]
+        pickBases["choose the 7 bases<br/>and the ramp"]
+        editPalette["edit a rung by hand"]
+        editTheme["point a role elsewhere<br/>(and remember which rung)"]
+        write["write the handoff file"]
+    end
+
+    subgraph pkg["@fmmenchi/tokens — the contract"]
+        genPalette["generatePalette(bases, ramp)"]
+        genTheme["generateTheme(palette, …)<br/>NOT WRITTEN YET"]
+        validate["validateTheme(theme)"]
+        advise["adviseContrast(theme)"]
+        emit["toCssVars(theme, selector)"]
+        parse["parseTheme(css) → toTheme()"]
+    end
+
+    subgraph gen["@fmmenchi/nx-theme-generator — the plugin"]
+        read["read the handoff file"]
+        install["write the preset into<br/>the consumer's repo"]
+    end
+
+    pickBases --> genPalette
+    genPalette -->|"Palette"| editPalette
+    editPalette --> genTheme
+    genTheme -->|"Theme"| editTheme
+    editTheme --> validate
+    editTheme --> advise
+    validate -->|"violations"| form
+    advise -.->|"what is worth a look"| form
+    editTheme --> write
+    write -->|"JSON"| read
+    read --> validate
+    read --> emit
+    emit -->|"CSS text"| install
+    install -.->|"read back"| parse
+```
+
+**What the arrows say, and what they deliberately do not.**
+
+Every value crossing a boundary is plain data — a `Palette` is families of rungs, a
+`Theme` is `Record<ColorRole, string>` — which is what lets the app edit between the
+two generate steps without the package knowing it happened.
+
+`validateTheme` is called TWICE, by the app and by the generator, and that is the
+point rather than a duplication: the wizard cannot promise what the pipeline would
+refuse, because it is the same function asking.
+
+The handoff file has no arrow into the package. Its shape — a name, several themes
+under it — is the app's and the generator's contract, and neither concept exists
+here.
+
+And `generateTheme` needs one thing that does not exist yet: the table saying which
+rung each role may point at and what it must clear. That table was written and
+deleted today along with the package that held it; it comes back with this function,
+which is its first caller.
+
 ## Architecture
 
 ```mermaid
