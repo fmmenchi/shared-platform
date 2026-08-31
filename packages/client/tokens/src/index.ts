@@ -43,7 +43,7 @@ export type {
   ActionFamily,
   StatusFamily,
   ColorRole,
-  ThemeColors,
+  Theme,
   ReferencePreset,
   ColorScheme,
 } from './contract/tokens.types.js';

@@ -14,7 +14,7 @@
  *   (not Baseline Widely). The roles ARE @property-registered — see
  *   `properties.css`, imported below (ADR-0012; @property is Baseline NEWLY,
  *   shipped as an ADR-0010 progressive enhancement — degrades to untyped).
- * - A THEME is a complete assignment of every color role (`ThemeColors` in
+ * - A THEME is a complete assignment of every color role (`Theme` in
  *   `src/index.ts`). Non-color tokens inherit unless a preset overrides them.
  * - Contrast is enforced by test: every declared pair is WCAG AA (4.5:1 text,
  *   3:1 focus ring); `-disabled` pairs are exempt (WCAG 1.4.3 exception).

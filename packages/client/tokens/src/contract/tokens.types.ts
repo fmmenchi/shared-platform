@@ -29,10 +29,10 @@ export type ColorRole =
   | (typeof INPUT_ROLES)[number];
 
 /**
- * A THEME is a complete assignment of every color role — this is what "the
- * allowed themes" means. Presets in apps must satisfy this shape.
+ * A THEME: every colour role assigned a resolved colour. This is what "the
+ * allowed themes" means, and what presets in apps must satisfy.
  */
-export type ThemeColors = Record<ColorRole, string>;
+export type Theme = Record<ColorRole, string>;
 
 /** A CSS `color-scheme` value: what a theme tells the browser it is. */
 export type ColorScheme = (typeof COLOR_SCHEMES)[number];

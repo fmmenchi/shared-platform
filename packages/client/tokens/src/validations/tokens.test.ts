@@ -16,6 +16,7 @@ import {
 } from '../index.js';
 import { themeAdvisories, validateTheme } from './validate.js';
 import { readVars } from '../utils/read-vars.js';
+import { toTheme } from '../theme.js';
 import { resolveValue } from '../utils/resolve.js';
 
 /**
@@ -274,15 +275,6 @@ describe('reference presets pass the PUBLIC validator (allowed-themes gate)', ()
   // The exact validator apps run on their brand presets — completeness,
   // parseability and every CONTRAST_PAIR (AA text 4.5:1, ring/invalid 3:1;
   // `-disabled` pairs exempt per WCAG 1.4.3). Single source: validate.ts.
-  const toTheme = (vars: Map<string, string>): Record<string, string> => {
-    const theme: Record<string, string> = {};
-    for (const role of COLOR_ROLES) {
-      const raw = vars.get(colorVar(role));
-      if (raw !== undefined) theme[role] = resolve(vars, raw);
-    }
-    return theme;
-  };
-
   it('light (vars.css) is an allowed theme', () => {
     expect(validateTheme(toTheme(light))).toEqual([]);
   });
@@ -362,15 +354,6 @@ describe('APCA (advisory + floor)', () => {
    * place; the policy is unchanged (hard floor |Lc| 45, the 60 body-text
    * guideline advisory).
    */
-  const toTheme = (vars: Map<string, string>): Record<string, string> => {
-    const theme: Record<string, string> = {};
-    for (const role of COLOR_ROLES) {
-      const raw = vars.get(colorVar(role));
-      if (raw !== undefined) theme[role] = resolve(vars, raw);
-    }
-    return theme;
-  };
-
   for (const [name, vars] of [
     ['light', light],
     ['dark', darkCascade],

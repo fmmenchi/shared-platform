@@ -345,18 +345,6 @@ importers:
         specifier: ^7.18.2
         version: 7.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
-  packages/client/theme-engine:
-    dependencies:
-      '@fmmenchi/tokens':
-        specifier: workspace:*
-        version: link:../tokens
-      culori:
-        specifier: ^4.0.2
-        version: 4.0.2
-      tslib:
-        specifier: ^2.3.0
-        version: 2.8.1
-
   packages/client/tokens:
     dependencies:
       apca-w3:

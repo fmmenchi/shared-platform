@@ -29,17 +29,17 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./theme": {
+      "@fmmenchi/source": "./src/theme.ts",
+      "types": "./dist/theme.d.ts",
+      "import": "./dist/theme.js",
+      "default": "./dist/theme.js"
+    },
     "./validate": {
       "@fmmenchi/source": "./src/validations/validate.ts",
       "types": "./dist/validations/validate.d.ts",
       "import": "./dist/validations/validate.js",
       "default": "./dist/validations/validate.js"
-    },
-    "./read-vars": {
-      "@fmmenchi/source": "./src/utils/read-vars.ts",
-      "types": "./dist/utils/read-vars.d.ts",
-      "import": "./dist/utils/read-vars.js",
-      "default": "./dist/utils/read-vars.js"
     },
     "./resolve": {
       "@fmmenchi/source": "./src/utils/resolve.ts",
