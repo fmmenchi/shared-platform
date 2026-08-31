@@ -300,17 +300,19 @@ small-type or subtle-fill delta** before calling it.
 
 ## Known validate warns — the 20 `[DOCS_UNMAPPED]` are expected
 
-Every run prints the same twenty-one and they are NOT a regression: AppLayout, ChoiceField,
-ColorPicker, DateInput, DatePicker, DateRangePicker, FormChoice, FormCombobox, FormDateInput,
-FormDatePicker, FormDateRangePicker, FormErrorSummary, FormInput, FormSegmentedControl, FormSelect,
-FormSwitch, FormTextarea, InputGroup, SegmentedControl, ToastRegion, VisuallyHidden.
+Every run prints the same twenty-two and they are NOT a regression: AppLayout, ChoiceField,
+ColorPicker, DateInput, DatePicker, DateRangePicker, FormChoice, FormColorPicker, FormCombobox,
+FormDateInput, FormDatePicker, FormDateRangePicker, FormErrorSummary, FormInput,
+FormSegmentedControl, FormSelect, FormSwitch, FormTextarea, InputGroup, SegmentedControl,
+ToastRegion, VisuallyHidden.
 
 They are components whose prose lives in a sibling's `.mdx` (the `Form*` adapters in their base
 component's page) or that have no page of their own. Recorded here so the next run can do what the
 skill asks — diff the warn lines against a known list — instead of re-deriving twenty names.
-**A twenty-SECOND name IS new: look at it.** The list grows only when a component is added whose
+**A twenty-THIRD name IS new: look at it.** The list grows only when a component is added whose
 prose is not under `cfg.docsDir`: Stepper joined the roster without appearing here (it has a mapped
-page), ColorPicker joined it and did appear. Both are the check working — what it cannot be is a
+page), ColorPicker and FormColorPicker joined it and did appear — every `Form*` adapter does, since
+its prose lives with the base component. All three are the check working; what it cannot be is a
 name that shows up while nothing was added.
 
 ## Re-sync risks — what to watch next time
