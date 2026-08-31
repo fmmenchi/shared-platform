@@ -15,9 +15,9 @@ import {
   TEXT_TOKENS,
 } from './index.js';
 import { themeAdvisories, validateTheme } from './theme.js';
-import { readVars } from './css.js';
+import { readVars } from './utils/css.js';
 import { toTheme } from './theme.js';
-import { resolveValue } from './css.js';
+import { resolveValue } from './utils/css.js';
 
 /**
  * Validation of the token contract — this is what makes a theme "allowed":

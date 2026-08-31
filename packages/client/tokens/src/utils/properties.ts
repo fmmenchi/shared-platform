@@ -26,7 +26,7 @@ import {
   STATUS_FAMILIES,
   STATUS_SUFFIXES,
   SURFACE_ROLES,
-} from './tokens.js';
+} from '../tokens.js';
 import type { RegisteredSection } from './properties.types.js';
 
 const colorVars = (roles: readonly string[]) =>

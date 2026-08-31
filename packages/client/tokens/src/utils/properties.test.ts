@@ -8,7 +8,7 @@ import { REGISTERED_SECTIONS } from './properties.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(join(here, path), 'utf8');
-const values = readVars(read('./styles/vars.css'));
+const values = readVars(read('../styles/vars.css'));
 
 /**
  * THE COMMITTED FILES ARE WHAT THE CONTRACT WOULD WRITE.
@@ -28,10 +28,10 @@ describe('generated artifacts', () => {
     // ASKED SEPARATELY, because `toMatchFileSnapshot` WRITES a missing file and
     // reports a pass — measured, outside CI. So a deleted artifact would leave
     // the local suite green and the package shipping nothing.
-    expect(existsSync(join(here, './styles/properties.css'))).toBe(true);
+    expect(existsSync(join(here, '../styles/properties.css'))).toBe(true);
 
     await expect(renderProperties(values)).toMatchFileSnapshot(
-      './styles/properties.css',
+      '../styles/properties.css',
     );
   });
 });
