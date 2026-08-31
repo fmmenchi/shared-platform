@@ -1,21 +1,39 @@
 /**
- * THE FILES THAT ONLY RESTATE THE CONTRACT, WRITTEN BY THE CONTRACT.
+ * `styles/properties.css`, RENDERED FROM THE CONTRACT.
  *
- * `styles/vars.css` holds the values and stays hand-written: those 159 numbers
- * are the design work, they live in exactly one place already, and the prose
- * around them is the reasoning for them. Nothing is gained by moving that into
- * an array.
+ * WHY THE EMITTER IS HERE AND THE FILE IT WRITES IS NOT. `@fmmenchi/tokens` is an
+ * ARTEFACT: it ships values and stylesheets, and the emitter that renders one of
+ * those stylesheets is not a value — it is knowledge about the contract, which is
+ * this package's whole subject. So the rule the two packages divide on:
  *
- * `styles/properties.css` is the opposite kind of file — 481 lines, not one of
- * them a value, every block identical but for a name. What it says is entirely
- * derivable from the contract, so it is derived; the drift it could hide is the
- * kind that never announces itself. Two examples that were live when this was
- * written: a section heading naming three status families out of four, and four
- * radius `initial-value`s in px maintained by hand beside their rem originals,
- * with nothing to fail if the two stopped agreeing.
+ *   this package knows HOW an artefact is rendered;
+ *   `@fmmenchi/tokens` owns the values that go into it, and the test that pins the
+ *   rendered result to them.
  *
- * Rendered as strings rather than written to disk, so the test that keeps the
- * committed files honest is an ordinary assertion — see `generate-properties.test.ts`.
+ * That test cannot move here, and not by preference: it reads
+ * `tokens/src/styles/vars.css`, and `scope:shared` may not depend on
+ * `scope:client`. The asymmetry is the boundary rules', not a taste.
+ *
+ * And it BUYS something rather than merely tidying. `@fmmenchi/nx-theme-generator`
+ * is `scope:plugins`, which may not import a `scope:client` library either — so
+ * while this lived in tokens, a consumer running the generator could not emit
+ * their own `properties.css` at all. Here, they can: the same code path renders
+ * ours and theirs, which is the direction tokens' own AGENTS.md asks for.
+ *
+ * WHAT IS GENERATED AND WHAT IS NOT. `vars.css` holds the values and stays
+ * hand-written: those numbers are the design work, they live in exactly one place
+ * already, and the prose around them is the reasoning for them. `properties.css`
+ * is the opposite kind of file — 481 lines, not one of them a value, every block
+ * identical but for a name. The rule: a file that only RESTATES the contract is
+ * generated; a file that DECIDES something is written.
+ *
+ * The drift it hides is the kind that never announces itself. Two examples that
+ * were live when this was first turned on: a section heading naming three status
+ * families out of four, and four radius `initial-value`s in px maintained by hand
+ * beside their rem originals, with nothing to fail if the two stopped agreeing.
+ *
+ * Returns a string rather than writing to disk, so the test that keeps the
+ * committed file honest is an ordinary assertion.
  */
 import {
   ACTION_FAMILIES,
@@ -26,7 +44,7 @@ import {
   STATUS_FAMILIES,
   STATUS_SUFFIXES,
   SURFACE_ROLES,
-} from '@fmmenchi/theme';
+} from '../tokens.types.js';
 
 /** The shape of one section of the generated `properties.css`. */
 interface RegisteredSection {
@@ -126,10 +144,10 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
- * GENERATED from the contract by \`src/utils/generate-properties.ts\`; its test fails if
- * this file and the contract disagree. Do not edit by hand — change the roles in
- * \`src/tokens.types.ts\` or the sections in the generator and re-run the suite
- * with \`-u\`.
+ * GENERATED from the contract by \`emitProperties\` in \`@fmmenchi/theme\`; the test
+ * beside this file fails if the two disagree. Do not edit by hand — change the
+ * roles in that package's \`tokens.types.ts\`, or the sections in the emitter, and
+ * re-run the suite with \`-u\`.
  *
  * Registering each \`--fm-*\` role gives the browser its TYPE, which unlocks two
  * things a plain custom property cannot do:
@@ -154,8 +172,16 @@ const HEADER = `/* eslint-disable css/use-baseline -- progressive: @property deg
  */
 `;
 
-/** `styles/properties.css`, in full. */
-export function generateProperties(values: Map<string, string>): string {
+/**
+ * `styles/properties.css`, in full.
+ *
+ * `emit` rather than `generate`, because this package now has four verbs and they
+ * had started to mean the same thing: `parse` takes CSS text to declarations, `to`
+ * takes declarations to a typed structure, `generate` takes data to data, and
+ * `emit` takes data to the TEXT OF A FILE. `generateProperties` sat under the
+ * third name while doing the fourth thing.
+ */
+export function emitProperties(values: Map<string, string>): string {
   const sections = REGISTERED_SECTIONS.map((section) => {
     // Wrapped by hand, because Prettier does not reflow a CSS comment and the
     // repo's own format gate would have accepted a 224-character line without

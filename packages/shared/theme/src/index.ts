@@ -60,13 +60,27 @@ export type {
   TokenRefGroup,
 } from './tokens.types.js';
 
+/**
+ * A THEME: read one, build one, judge one. All four verbs on one subject, in one
+ * file — the pattern `palette.ts` already follows.
+ *
+ * `generateTheme` TAKES EVERYTHING: the stylesheet's declarations, the brand's seven
+ * bases, and the ramp. It used to take an assembled palette and an alias map, which
+ * left four steps to the caller and got misused on its first day — the wizard
+ * omitted the stated greys, and since 34 of the 84 roles point at them the function
+ * threw for every possible input. Nothing outside needs to hold the alias concept
+ * now, so `toPlacements`, `Placement` and `Placements` are gone from this surface;
+ * the reader is `utils/read-aliases.ts`, and the alias as something a PERSON edits
+ * is an app's concept, for an app's form.
+ */
 export {
   parseTheme,
   toTheme,
+  generateTheme,
   validateTheme,
   adviseContrast,
   CONTRAST_PAIRS,
-} from './validate.js';
+} from './theme.js';
 
 /**
  * The three passes `validateTheme` composes, exported individually because they
@@ -78,24 +92,49 @@ export { validateContrast } from './utils/validate-contrast.js';
 export { validateStates } from './utils/validate-states.js';
 
 export type {
+  Declarations,
   ViolationKind,
   ThemeViolation,
   ContrastAdvisory,
-} from './validate.types.js';
+} from './theme.types.js';
 
 export { parseCssVars, expandVars, resolveCssVar } from './utils/parse-css.js';
 
+/**
+ * A PALETTE. `generatePalette` is exported because a caller may want the ramps
+ * themselves — the wizard shows them as a grid of swatches before any role is
+ * pointed at one. `toPalette` is NOT: its only reader is `generateTheme`, which now
+ * does that half itself.
+ */
 export { generatePalette } from './palette.js';
 export type { Rung, Ramp, Bases, Palette } from './palette.js';
 
 /**
- * BUILDING a theme: a palette, plus the map of which rung each role points at.
+ * EMITTING an artefact: contract in, the text of a file out.
  *
- * The map is READ rather than written — `toPlacements` takes a stylesheet's
- * declarations, so the design work stays in the one file that has always held it
- * and nothing here is frozen at this package's release. See `placements.ts` for
- * what the first attempt got wrong.
+ * The fourth verb. `parse` takes CSS text to declarations, `to` takes declarations
+ * to a typed structure, `generate` takes data to data, and `emit` takes data to the
+ * TEXT OF A FILE — which `generateProperties` did while sitting under the third
+ * name.
+ *
+ * NO RAMP AND NO VALUES OF ANY KIND live in this package, and the emitter proves
+ * the rule rather than bending it: it renders `properties.css`, a file of 481 lines
+ * with not one value in it, from the contract's own names. The moment something
+ * here needs a NUMBER a designer chose, it is in the wrong package — a `RAMP` const
+ * was added and removed the same hour for exactly that.
+ *
+ * The emitters are here and the files they write are NOT: `@fmmenchi/tokens` is an
+ * artefact package, and the code that renders an artefact is knowledge about the
+ * contract. The test that pins a rendered file to `vars.css` stays over there,
+ * because it has to read that stylesheet and `scope:shared` may not depend on
+ * `scope:client`.
+ *
+ * It also buys the thing the split was for: `@fmmenchi/nx-theme-generator` is
+ * `scope:plugins` and may not import a client library either, so while this lived
+ * in tokens a consumer could not emit their own `properties.css` at all.
  */
-export { generateTheme } from './generate-theme.js';
-export { toPlacements } from './placements.js';
-export type { Placement, Placements } from './placements.js';
+export {
+  emitProperties,
+  toPixels,
+  REGISTERED_SECTIONS,
+} from './utils/emit-properties.js';

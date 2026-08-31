@@ -33,8 +33,30 @@ styles/tailwind.css        a names-only bridge (no values -> no drift)
 styles/baseline.css        optional element rules
 ```
 
-Plus the suites that hold those stylesheets to the contract, and the emitter that renders
-`properties.css`.
+Plus the suites that hold those stylesheets to the contract. **Nothing else** — `src/` contains
+`styles/` and test files, and that is the whole of it.
+
+**IT IS AN ARTEFACT PACKAGE, AND THAT IS A RULE ABOUT WHAT MAY LIVE HERE.** It ships values and the
+files rendered from them. The code that RENDERS one of those files is not a value — it is knowledge
+about the contract — so it belongs in [`@fmmenchi/theme`](../../shared/theme):
+
+```
+@fmmenchi/theme     knows HOW an artefact is rendered   (emitProperties, toPixels)
+@fmmenchi/tokens    owns the values that go into it, and the test that pins the result to them
+```
+
+The asymmetry is not taste. That test has to read `styles/vars.css`, and `scope:shared` may not
+depend on `scope:client`, so it can only be made from this side. And the emitter has to be reachable
+by `@fmmenchi/nx-theme-generator`, which is `scope:plugins` and may not import a client library
+either — while the emitter lived here, a consumer running the generator could not render their own
+`properties.css` at all.
+
+Two emitters were briefly added here and removed the same day (`placements.json`, `rungs.json`).
+They were wrong twice over: they had no business in an artefact package, and the artefacts themselves
+were a round trip — contract written in TypeScript, transcribed to CSS, parsed back out, serialised
+to JSON, loaded back into TypeScript. **If a file only exists so that something can read back what
+was already known one step earlier, do not ship the file.** What the theme-builder needed was a
+server-side read of `vars.css`; see `apps/theme-builder/app/theme-contract.server.ts`.
 
 **THERE IS NO TS SURFACE.** This package exports stylesheets and nothing else — no `.` entry, no
 `dist`, no build target. `COLOR_ROLES`, `tokenVars` and the types come from `@fmmenchi/theme`, and
@@ -70,9 +92,9 @@ should be written as though it had happened.
   `--fm-space-inset-m`, …) — never raw values, never a palette. The Tailwind bridge RESETS the
   default palette, so `bg-red-500` fails the build.
 - **`styles/properties.css` is GENERATED and must never be edited by hand.** It is rendered by
-  `src/utils/generate-properties.ts` from the contract + `vars.css`, and `generate-properties.test.ts` compares it to what is on
-  disk with `toMatchFileSnapshot` — so a hand edit fails the ordinary test run and a legitimate
-  change is `vitest -u`. The existence of the file is asserted SEPARATELY, because
+  `emitProperties` in **`@fmmenchi/theme`** from the contract + `vars.css`, and `src/properties.test.ts`
+  compares it to what is on disk with `toMatchFileSnapshot` — so a hand edit fails the ordinary test
+  run and a legitimate change is `vitest -u`. The existence of the file is asserted SEPARATELY, because
   `toMatchFileSnapshot` writes a missing file and reports a pass outside CI.
   - **What is generated and what is not, and why.** `vars.css` holds the values and stays
     hand-written: those numbers are the design work, they already live in exactly one place, and
@@ -85,12 +107,18 @@ should be written as though it had happened.
     hand beside their rem originals with nothing to fail if they stopped agreeing (a `@property`
     whose `initial-value` is a `rem` is rejected outright, so those px cannot simply be dropped —
     they are now computed at the 16px root).
-  - **A new derived artifact is an emitter in `src/utils/generate-properties.ts` plus one `toMatchFileSnapshot`.**
-    It must be an artifact, never a runtime adapter — see the framework-agnostic rule below. And it
-    must be added to `files` in `package.json`: only `dist` and `src/styles` are published, so an
-    artifact written anywhere else resolves to nothing in an installed package (`npm pack
---dry-run` is how to check, and how this was caught).
-  - **`toPixels` THROWS on anything that is not px or rem**, and must keep doing so. An
+  - **A new derived artifact is an emitter in `@fmmenchi/theme` plus one `toMatchFileSnapshot` here.**
+    The emitter never lives in this package — see the artefact rule above. It must be an artifact,
+    never a runtime adapter — see the framework-agnostic rule below. And it must be added to `files`
+    in `package.json`: only `src/styles` is published, so an artifact written anywhere else resolves
+    to nothing in an installed package (`npm pack --dry-run` is how to check, and how this was
+    caught).
+    - **First ask whether the artifact is needed at all.** A file whose only purpose is to let
+      something read back what was already known one step earlier is a round trip, not an artifact:
+      `properties.css` earns its place because a BROWSER must read it, while `placements.json` did
+      not, because its only reader was our own app and a server-side read of `vars.css` answers that
+      without a file.
+  - **`toPixels` (in `@fmmenchi/theme`) THROWS on anything that is not px or rem**, and must keep doing so. An
     `@property` `initial-value` has to be computationally independent, so `em`, `calc()`, `clamp()`
     or a `var()` makes the browser reject the WHOLE rule — silently, losing both the interpolation
     and the type guard. Nothing downstream can see it: Stylelint has no rule and `styles.test.ts`
@@ -102,9 +130,10 @@ should be written as though it had happened.
     reads as a live declaration — completeness passes, contrast reads the value out of the comment,
     the registration is emitted, and the shipped CSS defines nothing, so the role resolves to the
     registered `initial-value`: black, on every consumer, in both themes. It also throws on a
-    duplicate declaration, which is the check the second parser used to make.
-  - **`src/utils/generate-properties.ts` is build-time only** and excluded from
-    `tsconfig.lib.json`: nothing exports it, so shipping it to consumers is weight with no surface.
+    duplicate declaration, which is the check the second parser used to make. **Its own tests live
+    in `@fmmenchi/theme`**, beside it. They were here, asking about a function this package does not
+    own — which meant the parser's only coverage sat inside a test about something else, and would
+    have gone with it.
 - **Single source of values: `src/styles/vars.css`** (`--fm-*`, static oklch literals — Baseline:
   no runtime relative-color). `styles/properties.css` (imported at the top of `vars.css`)
   `@property`-registers the color roles + radius so they are TYPED and INTERPOLATABLE (theme

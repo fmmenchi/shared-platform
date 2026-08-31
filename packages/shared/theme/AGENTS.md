@@ -29,20 +29,55 @@ contract lives here and everything reaches it by a plain import.
 
 ## Where this package stops
 
-It answers two questions:
+It answers three questions:
 
 ```
 what a theme IS        the as-const arrays, and every type derived from them
 is this one allowed    parseTheme -> toTheme -> validateTheme
+how is one BUILT       generateTheme(declared, bases, ramp) — aliases and greys read from CSS
 ```
 
 Plus the colour maths those answers need — `resolveCssVar` (which evaluates the relative-colour
-ramp), the sRGB gamut fit, WCAG and APCA — and `generatePalette`, which is measured colour maths
-with no caller yet.
+ramp), the sRGB gamut fit, WCAG and APCA.
+
+**FOUR VERBS, AND EACH MEANS ONE THING.** They had started to overlap, which is how an emitter ended
+up named like a builder:
+
+```
+parse*      CSS text          -> declarations      parseTheme, parseCssVars
+to*         declarations      -> a typed structure  toTheme, toPalette, readAliases
+generate*   data              -> data               generatePalette, generateTheme
+emit*       data              -> the TEXT OF A FILE emitProperties
+```
+
+**THE EMITTERS LIVE HERE AND THE FILES THEY WRITE DO NOT.** `@fmmenchi/tokens` is an ARTEFACT
+package: it ships values and stylesheets, and the code that renders one of those stylesheets is
+knowledge about the contract, which is this package's subject. The test that pins a rendered file to
+`vars.css` stays over there, because it must read that stylesheet and `scope:shared` may not depend
+on `scope:client`. It also buys the thing the split was for: `@fmmenchi/nx-theme-generator` is
+`scope:plugins` and may not import a client library either, so while `emitProperties` lived in tokens
+a consumer could not render their own `properties.css`.
 
 **THE VALUES ARE NOT HERE.** `@fmmenchi/tokens` owns `styles/*.css`: those numbers are the design
 work, and this package has no opinion about them. It says what a theme must satisfy; that one says
 what ours is.
+
+**AND THAT INCLUDES A RAMP.** A `RAMP` const was added here and removed the same hour, and the two
+reasons it failed are the tests to apply to the next candidate:
+
+- **it was eighteen numbers a designer chose** — the same kind of thing as `vars.css`, and this
+  package has no file of values at all. `tokens.types.ts` holds NAMES; `emitProperties` renders 481
+  lines with not one value in them. The moment something here needs a number somebody picked, it is
+  in the wrong package.
+- **and its only caller was an app.** The move was justified by "the generator needs it too", which
+  is false: the generator takes a theme file with `--from` and injects declarations — it does not
+  build palettes. So the const had no caller in this package's audience, which is the failure named
+  below: _a model with no caller is a guess, and a guess belongs in the place that will call it._
+
+It lives in `apps/theme-builder/app/ramp.ts`, with the measured divergence between its absolute
+lightnesses (ADR-0033) and the offsets `vars.css` writes — they agree only for a family based at
+0.55, and `warning` is out by ΔL 0.05. That resolves when `vars.css` is emitted from a ramp rather
+than writing its own offsets, and the ramp then belongs wherever that emitter's inputs live.
 
 **THE WIZARD'S MODEL IS NOT HERE EITHER** — the form, its state, the record of which rung a person
 pinned. That was got wrong four times in one day by four different routes (a `ThemeSpec`, a package
@@ -70,10 +105,50 @@ place that will call it.**
   derived from it and those suites become unnecessary. Not yet: it lands with the Tailwind and
   styled-components bindings.
 - **A type stays WITH the code it is derived from.** `tokens.types.ts` holds the arrays AND the types
-  read off them, because the two cannot be edited apart. `validate.types.ts` is the exception the
+  read off them, because the two cannot be edited apart. `theme.types.ts` is the exception the
   rule allows: those types stand alone (`ThemeViolation`, `ContrastAdvisory`) and the file name says
   what it defines.
 - **Every `index.ts` is a barrel — re-exports only.**
+- **A FUNCTION HERE TAKES WHAT IT NEEDS, NOT WHAT IT NEEDS ASSEMBLED.** `generateTheme` first took
+  `(palette, aliases)` and was misused on its first day: assembling a palette means merging the greys
+  the stylesheet STATES with the brand's generated ramps, in that order, and the wizard omitted the
+  first half — so with 34 of the 84 roles pointing at `neutral` it threw for every possible set of
+  bases, the shipped ones included. It takes `(declared, bases, ramp)` now and does the assembly
+  itself. **A signature that can be assembled wrongly will be**, and the cost lands on a consumer
+  rather than here.
+  - The corollary is that a concept only a consumer's assembly needed stops being public.
+    `toPlacements`, `Placement` and `Placements` are gone from the barrel; the reader is
+    `utils/read-aliases.ts`. And the name went with them — "placement" meant nothing in this domain,
+    while `Placement` was already taken workspace-wide by `@fmmenchi/ui` for where an anchored
+    surface sits. What a stylesheet declares is an ALIAS: a token holding no value of its own, only a
+    reference to another, which is what DTCG calls it too.
+  - **An alias as something a PERSON edits is an app's concept.** Re-pointing `--fm-color-primary`
+    at rung 600 is a decision made in a form, so the app that grows that form defines the shape it
+    needs. Nothing here is that shape.
+- **THE LAYOUT: root is a SUBJECT, `utils/` is a PIECE, and the test sits beside the code.** It came
+  over from `@fmmenchi/tokens` at the split and was written down nowhere, so it was carried badly
+  twice — `emit-properties.ts` landed at the root when its predecessor had always been
+  `utils/generate-properties.ts`, and the alias reader arrived at the root with no test at all.
+
+  ```
+  src/theme.ts  theme.types.ts  tokens.types.ts  palette.ts
+  src/utils/  parse-css · read-aliases · validate-roles · -contrast · -states · emit-properties
+  ```
+
+  A file at the root answers one of the package's questions and is exported by name. A file in
+  `utils/` is something a root subject composes — exported too, where a caller has reason to run one
+  pass alone, but it is not a subject of its own. There is no `contract/`, `read/`, `build/`,
+  `emit/` split: it was proposed, and five directories for a package of eleven files is a filing
+  system nobody needs.
+
+- **Every subject has a test, and a subject whose test needs a stylesheet has it in
+  `@fmmenchi/tokens`** — `theme.ts`, `validate-roles.ts`, `-contrast.ts` and `-states.ts` take the
+  SHIPPED theme as their fixture, which is what makes them worth having, and a `scope:shared` package
+  must not reach into a `scope:client` one even by file path. Everything whose fixture it can build
+  itself is tested here. **Check both places before concluding something is untested** — and check
+  that a test which lives here is not asking about code that lives elsewhere, which is how
+  `parseCssVars` ended up with its only two assertions inside a test about an emitter, in another
+  package.
 - **`validateRoles`, `validateContrast` and `validateStates` are exported individually** as well as
   composed by `validateTheme`: they are what a test exercises one at a time, and a caller measuring
   only contrast should not have to run completeness to get there.

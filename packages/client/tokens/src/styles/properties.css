@@ -2,10 +2,10 @@
 /**
  * TYPED TOKEN REGISTRATIONS — @property for the semantic roles.
  *
- * GENERATED from the contract by `src/utils/generate-properties.ts`; its test fails if
- * this file and the contract disagree. Do not edit by hand — change the roles in
- * `src/tokens.types.ts` or the sections in the generator and re-run the suite
- * with `-u`.
+ * GENERATED from the contract by `emitProperties` in `@fmmenchi/theme`; the test
+ * beside this file fails if the two disagree. Do not edit by hand — change the
+ * roles in that package's `tokens.types.ts`, or the sections in the emitter, and
+ * re-run the suite with `-u`.
  *
  * Registering each `--fm-*` role gives the browser its TYPE, which unlocks two
  * things a plain custom property cannot do:
