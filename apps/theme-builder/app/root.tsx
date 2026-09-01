@@ -15,7 +15,6 @@ import { AppLayoutMain } from '@fmmenchi/ui/app-layout-main';
 import { AppLayoutNav } from '@fmmenchi/ui/app-layout-nav';
 import { Badge } from '@fmmenchi/ui/badge';
 import { Nav } from '@fmmenchi/ui/nav';
-import { NavGroup } from '@fmmenchi/ui/nav-group';
 import { NavLink } from '@fmmenchi/ui/nav-link';
 import { Separator } from '@fmmenchi/ui/separator';
 
@@ -126,27 +125,39 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <AppLayoutNav label="Main">
             <Nav label="Main" orientation="vertical">
-              {/* THERE IS NO "BUILD" LINK, and there was one. It pointed at `/`,
+              {/* THE STEPS ARE FLAT, and they were inside a `NavGroup` until it was
+                  looked at in a browser. `NavGroup` is a DISCLOSURE — its own docs
+                  say "a set of links that opens" — and in a sidebar it renders
+                  `hidden` and starts closed. So the four steps were in the DOM and
+                  invisible, behind a click, while the comment right here claimed the
+                  sidebar existed "so the wizard is navigable without the stepper".
+                  It was not.
+
+                  A disclosure is right for a section you collapse AWAY from
+                  something. There is nothing else in this sidebar: the steps are its
+                  content. Four links and a preview do not need a lid, and there is
+                  no `defaultOpen` to ask for — which is the correct API for that
+                  component and the wrong component for this job.
+
+                  THERE IS ALSO NO "BUILD" LINK, and there was one. It pointed at `/`,
                   which was step one's route — so it and "Brand colours" were two
                   items for one page, and its `current={!onPreview}` made it claim
-                  `aria-current` on EVERY step: measured in a browser, two current
-                  pages announced in one nav. The group label below is what named
-                  this section, and it still does.
+                  `aria-current` on EVERY step: measured, two current pages announced
+                  in one nav.
 
-                  The steps are repeated here so the wizard is navigable without the
-                  stepper — which is chrome for ORIENTATION and reads best as a row.
-                  Two views of one list, both from `STEPS`. */}
-              <NavGroup label="Steps">
-                {STEPS.map((step) => (
-                  <NavLink
-                    key={step.slug}
-                    href={pathOf(step)}
-                    current={!onPreview && step.slug === currentStep}
-                  >
-                    {step.label}
-                  </NavLink>
-                ))}
-              </NavGroup>
+                  The steps are repeated here at all because the stepper is chrome for
+                  ORIENTATION and reads best as a row. Two views of one list, both
+                  from `STEPS`. */}
+              {STEPS.map((step) => (
+                <NavLink
+                  key={step.slug}
+                  href={pathOf(step)}
+                  current={!onPreview && step.slug === currentStep}
+                >
+                  {step.label}
+                </NavLink>
+              ))}
+              <Separator />
               <NavLink href="/preview" current={onPreview}>
                 Preview
               </NavLink>
