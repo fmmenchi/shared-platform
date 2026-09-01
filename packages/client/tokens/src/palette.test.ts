@@ -45,8 +45,8 @@ const toOklch = converter('oklch');
  * The first test below is the one that keeps it that way.
  */
 const RAMP: Ramp = [
-  { step: 25, lightness: 0.975, chromaFactor: 0.066 },
-  { step: 50, lightness: 0.95, chromaFactor: 0.135 },
+  { step: 25, lightness: 0.975, chroma: 0.01 },
+  { step: 50, lightness: 0.95, chroma: 0.021 },
   { step: 100, lightness: 0.9, chromaFactor: 0.27 },
   { step: 200, lightness: 0.82, chromaFactor: 0.54 },
   { step: 300, lightness: 0.74, chromaFactor: 0.85 },
@@ -143,24 +143,29 @@ describe('the palette layer', () => {
     // shouted while the blue and the red whispered. A rung a ROLE points at — and
     // `-subtle` now points here — has to be comparable across families first.
     //
-    // So this asserts the SPREAD rather than the ceiling: the pale rungs must be no
-    // less even than the 100 they sit above.
+    // So this asserts the SPREAD, and asserts it across ALL SEVEN rather than the four
+    // an Alert happens to use: an absolute target makes them exactly uniform, which is
+    // stronger than "no worse than the 100" and is the property the third attempt
+    // bought. The 100 itself stays proportional and is 3.5x across seven — that is
+    // correct there, and the contrast is the point of asserting both.
     const spreadAt = (step: number) => {
-      const status = ['negative', 'success', 'warning', 'info'] as const;
-      const chromas = status.map((family) => resolved(family, step)?.c ?? 0);
+      const chromas = PALETTE_FAMILIES.map(
+        (family) => resolved(family, step)?.c ?? 0,
+      );
       return Math.max(...chromas) / Math.min(...chromas);
     };
 
-    const reference = spreadAt(100);
     for (const step of [25, 50]) {
-      expect(
-        spreadAt(step),
-        `step ${step} spread ${spreadAt(step).toFixed(2)}x vs the 100's ${reference.toFixed(2)}x`,
-      ).toBeLessThanOrEqual(reference + 0.05);
+      expect(spreadAt(step), `step ${step}`).toBeCloseTo(1, 2);
     }
+
+    expect(
+      spreadAt(100),
+      'the 100 is a PROPORTION of each base and must stay uneven',
+    ).toBeGreaterThan(2);
   });
 
-  it('keeps every STATUS family reading as itself at the 50, not as the grey', () => {
+  it('keeps EVERY family reading as itself at the 50, not as the grey', () => {
     // The other half of the pale end's job, and the reason the shared factor is the
     // CEILING rather than some safe number below it. A status wash that reads neutral
     // is a defect with a real consequence: an error Alert whose fill looks like a
@@ -169,21 +174,16 @@ describe('the palette layer', () => {
     // `neutral-50` is STATED at the same lightness as the chromatic 50, so it is the
     // honest thing to compare against rather than "is the chroma above zero".
     //
-    // ASSERTED ON THE STATUS FAMILIES ONLY, and the exclusions are a measured fact
-    // about the bases rather than a convenience. Against neutral-50's chroma the
-    // ratios are: negative 3.5x, primary 2.7x, success 2.3x, info 2.1x, warning 1.9x
-    // — then accent 1.4x and secondary 1.0x. `secondary` is a deliberately muted
-    // grey-blue (base chroma 0.052) and `accent` nearly so, and a fixed fraction of a
-    // nearly-grey base is a grey. So `secondary-50` IS `neutral-50` to the eye, which
-    // means `secondary-subtle` and `neutral-subtle` now render alike. That is a
-    // consequence worth knowing and not worth forcing: raising the factor to separate
-    // them would push `negative-50` out of sRGB, and giving secondary its own factor
-    // is the per-family policy this rung was just moved off.
+    // ASSERTED ON ALL SEVEN, and it could not be while the rung was a proportion.
+    // Under a shared x0.135 the ratios ran negative 3.5x, primary 2.7x, success 2.3x,
+    // info 2.1x, warning 1.9x — then accent 1.4x and `secondary` at exactly 1.0x, the
+    // grey itself, because a fixed fraction of a deliberately muted grey-blue base IS
+    // a grey. An absolute target puts every family at 3.0x.
     const grey = toOklch(
       parse(declared.get('--fm-palette-neutral-50') as string),
     );
 
-    for (const family of ['negative', 'success', 'warning', 'info'] as const) {
+    for (const family of PALETTE_FAMILIES) {
       expect(
         resolved(family, 50)?.c ?? 0,
         `${family}-50 chroma vs neutral-50's ${grey?.c?.toFixed(4)}`,

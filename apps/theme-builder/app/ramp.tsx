@@ -47,8 +47,8 @@ import {
  * whole 0.05 darker for no reason but a missing rung. That is also why the 50's chroma
  * is a shared factor and not a per-hue ceiling; see the comment on it below.
  *
- * AND 0.95 IS WHERE A SUBTLE FILL BELONGS, which is the argument that settles it and
- * does not rest on our own greys having got there first. Read off Radix's published
+ * AND 0.95 IS WHERE A SUBTLE FILL BELONGS, which is the argument that settles the
+ * LIGHTNESS and does not rest on our own greys having got there first. Read off Radix's published
  * light blue: steps 3–5 are its component backgrounds at lightness 0.96, 0.94 and
  * 0.91, and step 6 — the first BORDER — is 0.86. Our old 100 sat at 0.90, between
  * their last fill and their first border; the 50 at 0.95 sits squarely inside the
@@ -102,30 +102,33 @@ import {
  * `PALETTE_FAMILIES` is the seven chromatic families and this ramp is for them.
  */
 export const REFERENCE_RAMP: Ramp = [
-  // THE PALE END FOLLOWS THE SAME RULE AS EVERY OTHER RUNG — a SHARED factor, set to
-  // the gamut ceiling over the tightest of the seven hues — and it shipped for one day
-  // not doing that. It went out as `chromaFactor: 1`, which at these lightnesses means
-  // "whatever each hue's own ceiling allows", on the argument that a shared number up
-  // here would have to be the tightest hue's and everything would come out grey.
+  // THE PALE END STATES AN ABSOLUTE CHROMA, and it is the only part of the ramp that
+  // does. It took three attempts to get here and each was driven by a measurement, so
+  // the reasoning is worth keeping whole:
   //
-  // MEASURED, THAT ARGUMENT WAS BACKWARDS ABOUT WHICH COST MATTERS. Per-family
-  // ceilings maximise tint and destroy comparability, because sRGB does not hand out
-  // pale chroma evenly: at L 0.95 green's ceiling is 0.083 and blue's is 0.024. Across
-  // the four families an Alert actually paints side by side, the chroma spread went
-  // from 1.85x at the 100 to 3.35x at the 50 — rendered, the green and the orange
-  // shouted while the blue and the red whispered, and four alert variants stopped
-  // reading as one family of washes. A rung a ROLE points at has to be comparable
-  // across families; "as tinted as possible" is the wrong thing to optimise for it.
+  //   1. PER-FAMILY CEILINGS (`chromaFactor: 1`). Maximum tint, and it destroys
+  //      comparability: sRGB does not hand out pale chroma evenly, so at L 0.95
+  //      green's ceiling is 0.083 and blue's is 0.024. Across the four families an
+  //      Alert paints side by side the spread went from 1.85x at the 100 to 3.35x at
+  //      the 50 — rendered, green and orange shouted while blue and red whispered.
+  //   2. A SHARED FRACTION (x0.135). Spread back to 1.84x, matching the 100's — but a
+  //      fraction of a nearly-grey base is a grey, and `secondary-50` landed on
+  //      EXACTLY `neutral-50`'s chroma while `accent-50` reached only 1.4x it. Two
+  //      roles rendering alike is the cost, and it is not one worth paying for a rung
+  //      the `-subtle` roles point at.
+  //   3. AN ABSOLUTE TARGET. Every family takes the same chroma, capped by the gamut
+  //      AND by its own base. Spread 1.00x, and 3.0x the stated grey at worst.
   //
-  // A shared factor brings the spread back to 1.84x, identical to the 100's, and it is
-  // NOT grey: `primary-50` lands at chroma 0.019 against `neutral-50`'s 0.007, so it
-  // is nearly three times the tint of the stated grey at the same lightness.
+  // The numbers are the tightest hue's ceiling with a tenth to spare, floored: 0.0241
+  // at L 0.95 (secondary) gives 0.021, and 0.0119 at L 0.975 gives 0.010.
   //
-  // The numbers are the tightest hue's ceiling (negative, both times), rounded down —
-  // and they land within a thousandth of simply continuing the ramp's own slope
-  // upward, which is not a coincidence: every factor below was derived the same way.
-  { step: 25, lightness: 0.975, chromaFactor: 0.066 },
-  { step: 50, lightness: 0.95, chromaFactor: 0.135 },
+  // WHY A PROPORTION IS RIGHT EVERYWHERE ELSE AND WRONG HERE. Below the 100 there is
+  // room for a vivid brand to have a vivid ramp, and carrying the brand's intensity is
+  // the point. Near white there is no room: the ceiling is a tenth of what it is in the
+  // middle, so a proportion of it does not carry intensity, it carries whether the base
+  // happened to be muted.
+  { step: 25, lightness: 0.975, chroma: 0.01 },
+  { step: 50, lightness: 0.95, chroma: 0.021 },
   { step: 100, lightness: 0.9, chromaFactor: 0.27 },
   { step: 200, lightness: 0.82, chromaFactor: 0.54 },
   { step: 300, lightness: 0.74, chromaFactor: 0.85 },

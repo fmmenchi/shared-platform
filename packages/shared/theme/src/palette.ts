@@ -25,17 +25,55 @@ const toOklch = converter('oklch');
 /**
  * One rung of a ramp: where it sits, and how much of the base's chroma it keeps.
  *
- * `lightness` is absolute, 0–1. `chromaFactor` is a proportion, so a family with
- * a muted base gets a muted ramp and one with a vivid base gets a vivid one — the
- * shape is shared, the intensity is the brand's.
+ * `lightness` is absolute, 0–1. The chroma is stated one of two ways: `chromaFactor`
+ * is a proportion, so a family with a muted base gets a muted ramp and one with a
+ * vivid base gets a vivid one — the shape is shared, the intensity is the brand's.
+ * `chroma` is an absolute target for the rungs near white, where a proportion stops
+ * meaning that; see `AbsoluteRung`.
  */
-export interface Rung {
+interface RungPosition {
   /** Its name in the token surface: `700` in `--fm-palette-primary-700`. */
   readonly step: number;
   readonly lightness: number;
+}
+
+/**
+ * A rung whose chroma is a PROPORTION of its base's — the ordinary case, and what
+ * makes a vivid brand's ramp vivid and a muted one's muted.
+ */
+interface ProportionalRung extends RungPosition {
   /** 0–1. Zero makes the rung achromatic whatever the base. */
   readonly chromaFactor: number;
+  readonly chroma?: never;
 }
+
+/**
+ * A rung whose chroma is an ABSOLUTE target, the same for every family.
+ *
+ * WHY THIS EXISTS, and it is one narrow case rather than an alternative style. Near
+ * white a proportion stops meaning what it means elsewhere: sRGB allows so little
+ * chroma up there that a fraction of a muted base lands ON the stated grey. Measured
+ * at lightness 0.95, a shared x0.135 puts `secondary` at exactly `neutral-50`'s
+ * chroma — so `secondary-subtle` and `neutral-subtle` rendered as the same colour,
+ * and `accent-subtle` was 1.4x the grey. An absolute target gives all seven the same
+ * chroma, which is what "an equally present tint of each family" requires: spread
+ * 1.00x, and 3x the grey at worst.
+ *
+ * STILL CAPPED BY THE BASE. A wash must never out-saturate the brand colour it comes
+ * from, so the target is a ceiling and not a floor — a genuinely grey brand gets a
+ * genuinely grey wash rather than an invented tint.
+ */
+interface AbsoluteRung extends RungPosition {
+  /** The chroma every family takes here, clamped by the gamut AND by the base. */
+  readonly chroma: number;
+  readonly chromaFactor?: never;
+}
+
+/**
+ * One step of the ramp, stated either way — and the two are mutually exclusive in the
+ * type, because a rung carrying both would have a silent winner.
+ */
+export type Rung = ProportionalRung | AbsoluteRung;
 
 /** A ramp, ordered lightest to darkest. Every family is placed on the same one. */
 export type Ramp = readonly Rung[];
@@ -160,7 +198,12 @@ export function generatePalette(bases: Bases, ramp: Ramp): Palette {
 
     const rungs: Record<number, string> = {};
     for (const rung of ramp) {
-      const wanted = c * rung.chromaFactor;
+      // An absolute target is capped by the base as well as by the gamut: a wash must
+      // not be more saturated than the colour it is a wash OF.
+      const wanted =
+        rung.chroma === undefined
+          ? c * rung.chromaFactor
+          : Math.min(rung.chroma, c);
       rungs[rung.step] = formatCss({
         mode: 'oklch',
         l: round(rung.lightness, 4),
