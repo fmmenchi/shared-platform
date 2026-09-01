@@ -1,3 +1,23 @@
+## 0.0.40 (2026-09-01)
+
+### 🚀 Features
+
+- **theme:** the dark bases become derived, not hand-picked ([4ac0b16](https://github.com/fmmenchi/shared-platform/commit/4ac0b16))
+
+### 🩹 Fixes
+
+- **tokens:** the neutral ramp's rule was written down, and it was wrong ([73a2638](https://github.com/fmmenchi/shared-platform/commit/73a2638))
+- **tokens:** the pale rungs state an ABSOLUTE chroma, so every family reads as itself ([06f36d8](https://github.com/fmmenchi/shared-platform/commit/06f36d8))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/theme to 0.0.5
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.39 (2026-09-01)
 
 ### 🚀 Features
