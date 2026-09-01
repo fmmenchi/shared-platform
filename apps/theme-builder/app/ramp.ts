@@ -72,6 +72,16 @@ import type { Ramp } from '@fmmenchi/theme';
  * `PALETTE_FAMILIES` is the seven chromatic families and this ramp is for them.
  */
 export const WIZARD_RAMP: Ramp = [
+  // THE PALE END TAKES WHATEVER ITS HUE ALLOWS — `chromaFactor: 1` here does not
+  // mean "full chroma", it means "the maximum", because `generatePalette` clamps
+  // into sRGB while holding lightness and at these lightnesses the clamp is what
+  // decides. A SHARED factor cannot work up here: the ceiling at 0.975 runs from
+  // x0.07 (negative) to x0.50 (accent), so one number for all seven would have to be
+  // 0.07 and every family would come out grey — which is exactly why `vars.css` had
+  // refused a step 50 ("a step that can only be grey is not a step"). Per family it
+  // is a real tint: #f1f7ff, #dcfffe, #fff4f2, #e5ffe9, #fff5e7.
+  { step: 25, lightness: 0.975, chromaFactor: 1 },
+  { step: 50, lightness: 0.95, chromaFactor: 1 },
   { step: 100, lightness: 0.9, chromaFactor: 0.27 },
   { step: 200, lightness: 0.82, chromaFactor: 0.54 },
   { step: 300, lightness: 0.74, chromaFactor: 0.85 },

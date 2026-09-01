@@ -3,12 +3,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   PALETTE_FAMILIES,
+  generatePalette,
   parseCssVars,
   resolveCssVar,
   toTheme,
   validateTheme,
+  type Bases,
+  type Ramp,
 } from '@fmmenchi/theme';
-import { converter, displayable, parse } from 'culori';
+import { clampChroma, converter, displayable, parse } from 'culori';
 import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -16,7 +19,53 @@ const declared = parseCssVars(
   readFileSync(join(here, 'styles/vars.css'), 'utf8'),
 );
 const toOklch = converter('oklch');
-const rung = (family: string, step: number) =>
+
+/**
+ * THE PALETTE LAYER — eleven rungs under seven bases, and what makes them a scale.
+ *
+ * Level 2 of the token architecture (ADR-0032). The rungs are relative colour off
+ * their base and they stay that way for a reason worth stating: it is what makes a
+ * rebrand SEVEN NUMBERS rather than seventy-seven. Override
+ * `--fm-palette-primary-base` in your own stylesheet and every rung and every role
+ * above it follows, live, in the browser — `@fmmenchi/ui`'s
+ * `token-overrides.test.tsx` is the test that defends it, and rewriting these as
+ * static literals (tried, reverted) is what breaks it.
+ *
+ * THE OFFSETS AND THE CHROMA FACTORS ARE BOTH PER FAMILY, which is the opposite of
+ * how this layer started. One shared curve was the defect: the bases sit between 0.54
+ * and 0.60, so a shared `calc(l - 0.33)` put step 900 at 0.22 for `accent` and 0.27
+ * for `warning`. "The 900" was not a lightness, it was seven of them — and a contrast
+ * floor cleared by one family said nothing about the next, which is what ADR-0033 says
+ * a guarantee must not do.
+ *
+ * AND THE NUMBERS ARE NOT HAND-WRITTEN. Each is the ratio `generatePalette` actually
+ * produced, read back out: that function clamps into sRGB while holding lightness, so
+ * a rung is not `base.c × factor` but whatever survived, and the ratio of the result
+ * resolves to precisely the same colour with nothing left for the browser to clamp.
+ * The first test below is the one that keeps it that way.
+ */
+const RAMP: Ramp = [
+  { step: 25, lightness: 0.975, chromaFactor: 1 },
+  { step: 50, lightness: 0.95, chromaFactor: 1 },
+  { step: 100, lightness: 0.9, chromaFactor: 0.27 },
+  { step: 200, lightness: 0.82, chromaFactor: 0.54 },
+  { step: 300, lightness: 0.74, chromaFactor: 0.85 },
+  { step: 400, lightness: 0.66, chromaFactor: 1 },
+  { step: 500, lightness: 0.58, chromaFactor: 1 },
+  { step: 600, lightness: 0.5, chromaFactor: 1 },
+  { step: 700, lightness: 0.42, chromaFactor: 0.87 },
+  { step: 800, lightness: 0.34, chromaFactor: 0.7 },
+  { step: 900, lightness: 0.26, chromaFactor: 0.53 },
+];
+
+const bases = Object.fromEntries(
+  PALETTE_FAMILIES.map((family) => [
+    family,
+    declared.get(`--fm-palette-${family}-base`) as string,
+  ]),
+) as Bases;
+
+const resolved = (family: string, step: number) =>
   toOklch(
     parse(
       resolveCssVar(
@@ -26,65 +75,38 @@ const rung = (family: string, step: number) =>
     ),
   );
 
-/**
- * THE PALETTE LAYER — nine rungs under seven bases, and what makes them a scale.
- *
- * Level 2 of the token architecture (ADR-0032). The rungs are relative colour off
- * their base, and they stay that way for a reason worth stating: it is what makes a
- * rebrand SEVEN NUMBERS rather than sixty-three. Override
- * `--fm-palette-primary-base` in your own stylesheet and every rung and every role
- * above it follows, live, in the browser —
- * `@fmmenchi/ui`'s `token-overrides.test.tsx` is the test that defends it, and
- * rewriting these as static literals (tried, reverted) is what breaks it.
- *
- * WHAT CHANGED IS THE OFFSETS, WHICH ARE NOW PER FAMILY. They used to be one shared
- * curve, and that is the defect: the bases sit between 0.54 and 0.60, so a shared
- * `calc(l - 0.33)` put `-900` at 0.22 for `accent` and 0.27 for `warning`. "The 900"
- * was not a lightness, it was seven of them — and a contrast floor cleared by one
- * family said nothing about the next, which is exactly what ADR-0033 says a
- * guarantee must not do. Each family now carries the offsets that land it on the
- * SAME absolute lightness.
- *
- * AND THE STEPS ARE EVEN. Measured on the old curve, the gaps ran 0.10 0.10 0.10
- * 0.05 0.05 0.09 0.10 0.09 — rungs 400, 500 and 600 half a step apart, rendering as
- * one colour three times. Nine rungs where six were distinguishable. Every gap is
- * 0.08 now.
- *
- * THE DARK END IS 0.26, and it is as light as the contract allows. Material's 900 is
- * L 0.42 and Tailwind's 0.38; generated across 144 synthetic brands, the declared
- * pairs fail for 120 of them at 0.34 and 60 at 0.30, while 0.26 fails none. The pair
- * that gives way first is always `input × input-invalid`, the tightest floor in the
- * contract at 3:1. So the darkness is not a preference — it is what buys the promise
- * that a pair clearing its floor for one brand clears it for every brand. Material
- * and Tailwind sit lighter because they hand-tune each palette and promise nothing
- * about a brand they have not seen.
- *
- * CHROMA FACTORS ARE THE GAMUT CEILING, and here that is load-bearing rather than
- * tidy: a relative colour is clamped by the BROWSER, differently per engine, so a
- * factor over the ceiling would make the shipped colour depend on who is rendering
- * it — and `validateTheme` would be measuring a colour no user sees. Solved by
- * bisection at each lightness, over the tightest of the seven hues.
- */
-const RAMP = [
-  { step: 100, lightness: 0.9, chroma: 0.27 },
-  { step: 200, lightness: 0.82, chroma: 0.54 },
-  { step: 300, lightness: 0.74, chroma: 0.85 },
-  { step: 400, lightness: 0.66, chroma: 1 },
-  { step: 500, lightness: 0.58, chroma: 1 },
-  { step: 600, lightness: 0.5, chroma: 1 },
-  { step: 700, lightness: 0.42, chroma: 0.87 },
-  { step: 800, lightness: 0.34, chroma: 0.7 },
-  { step: 900, lightness: 0.26, chroma: 0.53 },
-] as const;
-
 describe('the palette layer', () => {
+  it('resolves to exactly what generatePalette produces', () => {
+    // THE ONE THAT KEEPS THE DERIVATION HONEST. A rung edited by hand, a base retuned
+    // without recomputing its offsets, or a ramp changed in one place and not the
+    // other, all land here. Compared as colour rather than as text: the stylesheet
+    // says `oklch(90% …)` after resolution and the generator says `oklch(0.9 …)`.
+    const palette = generatePalette(bases, RAMP);
+    const apart: string[] = [];
+
+    for (const family of PALETTE_FAMILIES) {
+      for (const { step } of RAMP) {
+        const mine = toOklch(
+          parse((palette[family] as Record<number, string>)[step] as string),
+        );
+        const theirs = resolved(family, step);
+        const delta = Math.max(
+          Math.abs((mine?.l ?? 0) - (theirs?.l ?? 0)),
+          Math.abs((mine?.c ?? 0) - (theirs?.c ?? 0)),
+        );
+        if (delta > 0.0015) {
+          apart.push(`${family}-${step}: Δ${delta.toFixed(4)}`);
+        }
+      }
+    }
+
+    expect(apart, apart.slice(0, 8).join('\n')).toEqual([]);
+  });
+
   it('puts every family on the SAME lightness at a given rung', () => {
-    // The defect the shared offsets had. This is the assertion that keeps the
-    // per-family offsets honest: retune a base without recomputing its offsets and
-    // that family drifts off the scale, here.
     for (const { step, lightness } of RAMP) {
       for (const family of PALETTE_FAMILIES) {
-        expect(rung(family, step)?.l, `${family}-${step}`).toBeCloseTo(
+        expect(resolved(family, step)?.l, `${family}-${step}`).toBeCloseTo(
           lightness,
           2,
         );
@@ -92,20 +114,51 @@ describe('the palette layer', () => {
     }
   });
 
-  it('steps evenly, so nine rungs are nine colours', () => {
-    const gaps = RAMP.slice(1).map((r, i) =>
-      Number(
-        ((RAMP[i] as { lightness: number }).lightness - r.lightness).toFixed(4),
-      ),
-    );
+  it('steps evenly from 100 down, and compresses above it', () => {
+    // Two shapes on purpose. Below 100 an even step is what makes nine rungs nine
+    // colours. Above it the gamut runs out — there is less and less room toward white
+    // — so an even step would spend it on nothing, and the two pale rungs close in
+    // the way Radix's do.
+    const scale = RAMP.map((r) => r.lightness);
+    const main = scale.slice(2);
+    const gaps = main
+      .slice(1)
+      .map((l, i) => Number(((main[i] as number) - l).toFixed(4)));
 
     expect(new Set(gaps), `gaps: ${gaps.join(' ')}`).toEqual(new Set([0.08]));
+    expect(scale[0]).toBeCloseTo(0.975, 4);
+    expect(scale[1]).toBeCloseTo(0.95, 4);
+  });
+
+  it('keeps the pale end a TINT rather than a grey', () => {
+    // The reason this file refused a step 50 for so long, and the reason it can have
+    // one now: with a shared chroma coefficient the ceiling at 0.975 is x0.07 and
+    // everything comes out grey. Per family it is a real tint — so this asserts each
+    // pale rung sits at its own hue's ceiling rather than at the shared floor.
+    for (const step of [25, 50]) {
+      for (const family of PALETTE_FAMILIES) {
+        const base = toOklch(parse(bases[family]));
+        const ceiling = clampChroma(
+          {
+            mode: 'oklch',
+            l: (RAMP.find((r) => r.step === step) as { lightness: number })
+              .lightness,
+            c: 0.5,
+            h: base?.h ?? 0,
+          },
+          'oklch',
+        ).c;
+
+        // At its ceiling, within the rounding the emitted factor carries.
+        expect(resolved(family, step)?.c, `${family}-${step}`).toBeCloseTo(
+          Math.min(ceiling, base?.c ?? 0),
+          3,
+        );
+      }
+    }
   });
 
   it('keeps the rungs DERIVED, which is what makes a rebrand seven numbers', () => {
-    // Static literals were tried here and reverted: they fix the scale and break the
-    // capability. A rung must still name its base, or overriding one number stops
-    // moving the family and a consumer is back to sixty-three.
     for (const family of PALETTE_FAMILIES) {
       for (const { step } of RAMP) {
         expect(
@@ -116,45 +169,14 @@ describe('the palette layer', () => {
     }
   });
 
-  it('asks for no more chroma than sRGB has at that lightness', () => {
-    // Load-bearing, not tidy: relative colour is clamped by the BROWSER, per engine.
-    // Over the ceiling and the shipped colour depends on who renders it, while the
-    // validator measures something else.
-    const ceiling = (lightness: number, hue: number) => {
-      let low = 0;
-      let high = 0.45;
-      for (let i = 0; i < 40; i++) {
-        const mid = (low + high) / 2;
-        if (displayable(`oklch(${lightness} ${mid} ${hue})`)) low = mid;
-        else high = mid;
-      }
-      return low;
-    };
-
-    for (const { step, lightness, chroma } of RAMP) {
-      for (const family of PALETTE_FAMILIES) {
-        const base = toOklch(
-          parse(declared.get(`--fm-palette-${family}-base`) as string),
-        );
-        const room = ceiling(lightness, base?.h ?? 0) / (base?.c ?? 1);
-        expect(
-          chroma,
-          `${family}-${step}: asks x${chroma}, ceiling x${room.toFixed(3)}`,
-        ).toBeLessThanOrEqual(Math.max(room, 1));
-      }
-    }
-  });
-
   it('resolves to a colour a browser can paint, at every rung', () => {
     for (const family of PALETTE_FAMILIES) {
       for (const { step } of RAMP) {
-        const resolved = resolveCssVar(
+        const value = resolveCssVar(
           declared.get(`--fm-palette-${family}-${step}`) as string,
           declared,
         );
-        expect(displayable(resolved), `${family}-${step}: ${resolved}`).toBe(
-          true,
-        );
+        expect(displayable(value), `${family}-${step}: ${value}`).toBe(true);
       }
     }
   });

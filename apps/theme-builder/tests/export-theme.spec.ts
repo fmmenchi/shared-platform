@@ -123,10 +123,13 @@ describe('buildThemeFile', () => {
       WIZARD_RAMP,
     );
 
+    // Every number the file writes, wherever it sits: a base is a literal and a rung
+    // is now an offset and a factor inside `calc()`, so scan for numbers rather than
+    // for a shape.
     for (const [name, value] of Object.entries(declarations)) {
-      if (!name.includes('-palette-') || !value.startsWith('oklch(')) continue;
-      for (const channel of value.slice(6, -1).split(/[\s/]+/)) {
-        const places = (channel.split('.')[1] ?? '').length;
+      if (!name.includes('-palette-')) continue;
+      for (const number of value.match(/[0-9]*\.[0-9]+/g) ?? []) {
+        const places = (number.split('.')[1] ?? '').length;
         expect(places, `${name}: ${value}`).toBeLessThanOrEqual(4);
       }
     }

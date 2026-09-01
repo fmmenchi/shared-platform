@@ -51,20 +51,33 @@ const GRID = (() => {
 })();
 
 describe('the ramp', () => {
-  it('is EVENLY spaced', () => {
-    // The defect this pins: the previous numbers ran 0.10 0.10 0.10 then 0.05 0.05
-    // then 0.09 0.10 0.09, so three mid rungs sat half a step apart and read as one
-    // colour repeated. A ramp whose steps are not the same size is a ramp whose
-    // middle is wasted.
-    const gaps = WIZARD_RAMP.slice(1).map((rung, i) =>
-      Number(
-        (
-          (WIZARD_RAMP[i] as { lightness: number }).lightness - rung.lightness
-        ).toFixed(4),
-      ),
+  it('is EVENLY spaced from 100 down, and compresses above it', () => {
+    // TWO SHAPES ON PURPOSE. Below 100 an even step is what makes nine rungs nine
+    // colours — the previous numbers ran 0.10 0.10 0.10 then 0.05 0.05 then 0.09 0.10
+    // 0.09, so three mid rungs sat half a step apart and read as one colour repeated.
+    //
+    // Above 100 the gamut runs out: toward white there is less and less room, so an
+    // even step would spend it on nothing. 0.08 → 0.05 → 0.025, which is the shape
+    // Radix's pale end has for the same reason.
+    const main = WIZARD_RAMP.filter((rung) => rung.step >= 100);
+    const gaps = main
+      .slice(1)
+      .map((rung, i) =>
+        Number(
+          (
+            (main[i] as { lightness: number }).lightness - rung.lightness
+          ).toFixed(4),
+        ),
+      );
+
+    expect(new Set(gaps), `gaps below 100: ${gaps.join(' ')}`).toEqual(
+      new Set([0.08]),
     );
 
-    expect(new Set(gaps), `gaps: ${gaps.join(' ')}`).toEqual(new Set([0.08]));
+    const pale = WIZARD_RAMP.filter((rung) => rung.step < 100).map(
+      (rung) => rung.lightness,
+    );
+    expect(pale).toEqual([0.975, 0.95]);
   });
 
   it('keeps the guarantee for every brand on the grid', () => {
