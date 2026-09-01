@@ -1,11 +1,47 @@
 /**
  * `dark` reference preset — a complete assignment of every COLOR role under
- * `[data-theme='dark']` (non-color tokens inherit). Values are static oklch
- * literals resolved from the dark ramp methodology: bright fills
- * on dark ink (foreground = near-black), hover/active LIGHTEN, subtle flips to
- * a dark wash with a light text. The completeness and the AA contrast of every
- * declared pair are enforced by `src/tokens.test.ts` — a preset that misses a
- * role or fails a pair does not pass the gate ("i temi ammessi").
+ * `[data-theme='dark']` (non-color tokens inherit): bright fills on dark ink
+ * (foreground = near-black), hover/active LIGHTEN, and `-subtle` flipped to a dark
+ * wash carrying light text.
+ *
+ * IT STATES ITS OWN BASES AND ITS OWN RAMP, which is the thing to understand before
+ * changing anything here. A custom property resolves WHERE IT IS DECLARED, so a
+ * `[data-theme]` block that overrode only the bases would be inert — the rungs would
+ * already have settled at `:root` against light's bases. Every rung is therefore
+ * redeclared, off bases that all sit at lightness 0.75 rather than light's 0.54–0.60.
+ *
+ * THE RUNGS ARE RELATIVE COLOUR, not literals, and this header claimed otherwise for
+ * a while. `oklch(from var(--base) …)` is what keeps a rebrand seven numbers per
+ * theme: override a base and every rung and role above it follows, live, in the
+ * browser.
+ *
+ * SEVENTEEN RUNGS, AND THE SHAPE IS NOT LIGHT'S. Below the 100 the offsets step 0.05
+ * — half light's 0.08 — so the scale runs L 0.95 down to 0.25 in thirteen even
+ * strides, and the factors below the base are a straight line: 1.000 at the 500 then
+ * -1/15 a rung. The two ends were added later and each fills the end its own theme
+ * actually uses:
+ *
+ *     the 25 and the 50      pale washes, which in a DARK theme are text colours
+ *     the 1400 and the 1500  dark fills, which is where a dark UI's surfaces live
+ *
+ * THE 1400 IS WHY THE DARK END EXISTS. The scale used to stop at the 1300 (L 0.35),
+ * so `-subtle` had to use the very last rung — while `--fm-color-neutral-subtle`
+ * points at `neutral-690` at L 0.31. The same role, 0.04 apart, purely because the
+ * chromatic ramp had nothing at 0.30: a Badge soft neutral read visibly darker than a
+ * Badge soft primary beside it. The 1400 lands at 0.30 and closes that, exactly as the
+ * 50 closed the mirror gap in `vars.css`. The 1500 is headroom, like light's 25 — no
+ * role points at it.
+ *
+ * The dark end is NOT chosen by symmetry with light, and it is worth saying why: light
+ * puts `-subtle` 0.035 from its page while dark puts it 0.090, and that looks like an
+ * inconsistency until you measure a system that hand-tunes both. Radix's component
+ * fills sit 0.03–0.08 from its light page and 0.08–0.18 from its dark one — a wider
+ * spread in dark, because there is no room to lighten near white and plenty near
+ * black. Both of ours are inside their respective ranges.
+ *
+ * Completeness, the sRGB gamut and AA on every declared pair are enforced from
+ * `src/theme.test.ts` (which merges this file over `vars.css`, the way a browser sees
+ * it), `src/styles.test.ts` and `src/palette.test.ts`.
  */
 [data-theme='dark'] {
   /* ---------- LEVEL 1 — dark bases ---------- */
@@ -17,7 +53,8 @@
   --fm-palette-warning-base: oklch(75% 0.132 82);
   --fm-palette-info-base: oklch(75% 0.1338 245);
 
-  /* ---------- LEVEL 2 — the dark ramp ---------- */
+  /* ---------- LEVEL 2 — the dark ramp: 25 -> 1500, evenly 0.05 apart
+     below the 100, compressing above it ---------- */
 
   /* primary */
   --fm-palette-primary-25: oklch(
@@ -62,6 +99,12 @@
   );
   --fm-palette-primary-1300: oklch(
     from var(--fm-palette-primary-base) calc(l - 0.4) calc(c * 0.467) h
+  );
+  --fm-palette-primary-1400: oklch(
+    from var(--fm-palette-primary-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-primary-1500: oklch(
+    from var(--fm-palette-primary-base) calc(l - 0.5) calc(c * 0.333) h
   );
 
   /* secondary */
@@ -108,6 +151,12 @@
   --fm-palette-secondary-1300: oklch(
     from var(--fm-palette-secondary-base) calc(l - 0.4) calc(c * 0.467) h
   );
+  --fm-palette-secondary-1400: oklch(
+    from var(--fm-palette-secondary-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-secondary-1500: oklch(
+    from var(--fm-palette-secondary-base) calc(l - 0.5) calc(c * 0.333) h
+  );
 
   /* accent */
   --fm-palette-accent-25: oklch(
@@ -152,6 +201,12 @@
   );
   --fm-palette-accent-1300: oklch(
     from var(--fm-palette-accent-base) calc(l - 0.4) calc(c * 0.467) h
+  );
+  --fm-palette-accent-1400: oklch(
+    from var(--fm-palette-accent-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-accent-1500: oklch(
+    from var(--fm-palette-accent-base) calc(l - 0.5) calc(c * 0.333) h
   );
 
   /* negative */
@@ -198,6 +253,12 @@
   --fm-palette-negative-1300: oklch(
     from var(--fm-palette-negative-base) calc(l - 0.4) calc(c * 0.467) h
   );
+  --fm-palette-negative-1400: oklch(
+    from var(--fm-palette-negative-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-negative-1500: oklch(
+    from var(--fm-palette-negative-base) calc(l - 0.5) calc(c * 0.333) h
+  );
 
   /* success */
   --fm-palette-success-25: oklch(
@@ -242,6 +303,12 @@
   );
   --fm-palette-success-1300: oklch(
     from var(--fm-palette-success-base) calc(l - 0.4) calc(c * 0.467) h
+  );
+  --fm-palette-success-1400: oklch(
+    from var(--fm-palette-success-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-success-1500: oklch(
+    from var(--fm-palette-success-base) calc(l - 0.5) calc(c * 0.333) h
   );
 
   /* warning */
@@ -288,6 +355,12 @@
   --fm-palette-warning-1300: oklch(
     from var(--fm-palette-warning-base) calc(l - 0.4) calc(c * 0.467) h
   );
+  --fm-palette-warning-1400: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-warning-1500: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.5) calc(c * 0.333) h
+  );
 
   /* info */
   --fm-palette-info-25: oklch(
@@ -333,6 +406,12 @@
   --fm-palette-info-1300: oklch(
     from var(--fm-palette-info-base) calc(l - 0.4) calc(c * 0.467) h
   );
+  --fm-palette-info-1400: oklch(
+    from var(--fm-palette-info-base) calc(l - 0.45) calc(c * 0.4) h
+  );
+  --fm-palette-info-1500: oklch(
+    from var(--fm-palette-info-base) calc(l - 0.5) calc(c * 0.333) h
+  );
 
   /* The one declaration here that is not a token, and it has to be here: the
      parts of a form control the UA paints itself — a `<select>`'s open list, a
@@ -353,7 +432,7 @@
   --fm-color-primary-foreground: var(--fm-palette-neutral-760);
   --fm-color-primary-hover: var(--fm-palette-primary-400);
   --fm-color-primary-active: var(--fm-palette-primary-300);
-  --fm-color-primary-subtle: var(--fm-palette-primary-1300);
+  --fm-color-primary-subtle: var(--fm-palette-primary-1400);
   --fm-color-primary-subtle-foreground: var(--fm-palette-primary-100);
   --fm-color-primary-disabled: var(--fm-palette-primary-1100);
   --fm-color-primary-disabled-foreground: var(--fm-palette-primary-1300);
@@ -362,7 +441,7 @@
   --fm-color-secondary-foreground: var(--fm-palette-neutral-760);
   --fm-color-secondary-hover: var(--fm-palette-secondary-400);
   --fm-color-secondary-active: var(--fm-palette-secondary-300);
-  --fm-color-secondary-subtle: var(--fm-palette-secondary-1300);
+  --fm-color-secondary-subtle: var(--fm-palette-secondary-1400);
   --fm-color-secondary-subtle-foreground: var(--fm-palette-secondary-100);
   --fm-color-secondary-disabled: var(--fm-palette-secondary-1100);
   --fm-color-secondary-disabled-foreground: var(--fm-palette-secondary-1300);
@@ -371,7 +450,7 @@
   --fm-color-accent-foreground: var(--fm-palette-neutral-760);
   --fm-color-accent-hover: var(--fm-palette-accent-400);
   --fm-color-accent-active: var(--fm-palette-accent-300);
-  --fm-color-accent-subtle: var(--fm-palette-accent-1300);
+  --fm-color-accent-subtle: var(--fm-palette-accent-1400);
   --fm-color-accent-subtle-foreground: var(--fm-palette-accent-100);
   --fm-color-accent-disabled: var(--fm-palette-accent-1100);
   --fm-color-accent-disabled-foreground: var(--fm-palette-accent-1300);
@@ -380,7 +459,7 @@
   --fm-color-destructive-foreground: var(--fm-palette-neutral-760);
   --fm-color-destructive-hover: var(--fm-palette-negative-400);
   --fm-color-destructive-active: var(--fm-palette-negative-300);
-  --fm-color-destructive-subtle: var(--fm-palette-negative-1300);
+  --fm-color-destructive-subtle: var(--fm-palette-negative-1400);
   --fm-color-destructive-subtle-foreground: var(--fm-palette-negative-100);
   --fm-color-destructive-disabled: var(--fm-palette-negative-1100);
   --fm-color-destructive-disabled-foreground: var(--fm-palette-negative-1300);
@@ -388,25 +467,25 @@
   /* Status vocabulary */
   --fm-color-success: var(--fm-palette-success-500);
   --fm-color-success-foreground: var(--fm-palette-neutral-760);
-  --fm-color-success-subtle: var(--fm-palette-success-1300);
+  --fm-color-success-subtle: var(--fm-palette-success-1400);
   --fm-color-success-subtle-foreground: var(--fm-palette-success-100);
   --fm-color-success-border: var(--fm-palette-success-500);
 
   --fm-color-warning: var(--fm-palette-warning-500);
   --fm-color-warning-foreground: var(--fm-palette-neutral-760);
-  --fm-color-warning-subtle: var(--fm-palette-warning-1300);
+  --fm-color-warning-subtle: var(--fm-palette-warning-1400);
   --fm-color-warning-subtle-foreground: var(--fm-palette-warning-100);
   --fm-color-warning-border: var(--fm-palette-warning-500);
 
   --fm-color-info: var(--fm-palette-info-500);
   --fm-color-info-foreground: var(--fm-palette-neutral-760);
-  --fm-color-info-subtle: var(--fm-palette-info-1300);
+  --fm-color-info-subtle: var(--fm-palette-info-1400);
   --fm-color-info-subtle-foreground: var(--fm-palette-info-100);
   --fm-color-info-border: var(--fm-palette-info-500);
 
   --fm-color-error: var(--fm-palette-negative-500);
   --fm-color-error-foreground: var(--fm-palette-neutral-760);
-  --fm-color-error-subtle: var(--fm-palette-negative-1300);
+  --fm-color-error-subtle: var(--fm-palette-negative-1400);
   --fm-color-error-subtle-foreground: var(--fm-palette-negative-100);
   --fm-color-error-border: var(--fm-palette-negative-500);
 

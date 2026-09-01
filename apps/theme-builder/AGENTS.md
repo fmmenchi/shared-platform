@@ -87,8 +87,9 @@ State lives in providers wired in `root.tsx`: `bases.tsx`, `ramp.tsx`, `role-ove
   ONE theme. Step 4's `--scheme` is handed to the generator, which emits it as the `color-scheme`
   line and nothing else — so choosing `dark` produces light-derived colours labelled dark, and
   native controls go dark on a light theme. A dark theme is not a second ramp on the same bases: the
-  dark preset states its own bases at lightness 0.75 and its own 15-rung scale, and its `-subtle`
-  points at the DARKEST rung where light's points at a pale one.
+  dark preset states its own bases at lightness 0.75 and its own 17-rung scale stepping 0.05 where
+  light steps 0.08, and its `-subtle` points at a DARK rung (the 1400) where light's points at a pale
+  one (the 50).
 - **The 25 has no role pointing at it.** The 50 does — the eight chromatic `-subtle` roles — so the
   pale end of step 2 is no longer entirely free: dropping to `paleRungs: 0` makes those roles name a
   rung that does not exist, and `probeShape` reports that as an unavailable option rather than
