@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { generateTheme, parseTheme, validateTheme } from '@fmmenchi/theme';
+import {
+  generatePalette,
+  generateTheme,
+  parseTheme,
+  resolveCssVar,
+  validateTheme,
+} from '@fmmenchi/theme';
+import { converter, parse } from 'culori';
 import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_BASES } from '../app/bases';
@@ -23,6 +30,7 @@ const declared = parseTheme(
   readFileSync(require.resolve('@fmmenchi/tokens/styles/vars.css'), 'utf8'),
 );
 
+const toOklch = converter('oklch');
 const families = Object.keys(REFERENCE_BASES);
 const brandsAt = (css: string) =>
   Object.fromEntries(families.map((f) => [f, css])) as typeof REFERENCE_BASES;
@@ -102,6 +110,45 @@ describe('the ramp', () => {
       broken.length,
       'a ramp 0.04 lighter throughout passes everywhere — then this one is darker than it needs to be',
     ).toBeGreaterThan(0);
+  });
+
+  it('REPRODUCES the shipped stylesheet, fed the shipped bases', () => {
+    // The claim that was a direction for months and is now a fact. `vars.css` writes
+    // its rungs as relative colour off each base, this states them absolutely, and
+    // the two must land on the same colour — otherwise "ours is an invocation of the
+    // same code path as a consumer's" is a story rather than a property.
+    //
+    // It failed before this: the stylesheet's offsets were shared while its bases sit
+    // at 0.54–0.60, so five of the seven families came out somewhere else.
+    const generated = generatePalette(REFERENCE_BASES, WIZARD_RAMP);
+    const mismatches: string[] = [];
+
+    for (const family of Object.keys(REFERENCE_BASES)) {
+      for (const { step } of WIZARD_RAMP) {
+        const shipped = resolveCssVar(
+          declared.get(`--fm-palette-${family}-${step}`) as string,
+          declared,
+        );
+        const ours = (generated as Record<string, Record<number, string>>)[
+          family
+        ]?.[step] as string;
+
+        const a = toOklch(parse(shipped));
+        const b = toOklch(parse(ours));
+        // Compared as colour rather than as text: one side is `oklch(90% …)` from CSS
+        // and the other `oklch(0.9 …)` from the generator, and a string compare would
+        // fail on the notation while the colours agreed.
+        const apart = Math.max(
+          Math.abs((a?.l ?? 0) - (b?.l ?? 0)),
+          Math.abs((a?.c ?? 0) - (b?.c ?? 0)),
+        );
+        if (apart > 0.002) {
+          mismatches.push(`${family}-${step}: ${shipped} vs ${ours}`);
+        }
+      }
+    }
+
+    expect(mismatches, mismatches.slice(0, 6).join('\n')).toEqual([]);
   });
 
   it('reaches the rung the roles actually rely on', () => {
