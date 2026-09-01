@@ -41,6 +41,19 @@ import {
  * Above the 100 the two pale rungs close in, because the gamut runs out toward white
  * and an even step would spend it on nothing.
  *
+ * THE PALE RUNGS HAVE A CONSUMER, which is what they are shaped for. The eight
+ * chromatic `-subtle` roles point at the 50 — `neutral-subtle` had pointed at
+ * `neutral-50` all along, so the chromatic families were the odd ones out, sitting a
+ * whole 0.05 darker for no reason but a missing rung. That is also why the 50's chroma
+ * is a shared factor and not a per-hue ceiling; see the comment on it below.
+ *
+ * AND 0.95 IS WHERE A SUBTLE FILL BELONGS, which is the argument that settles it and
+ * does not rest on our own greys having got there first. Read off Radix's published
+ * light blue: steps 3–5 are its component backgrounds at lightness 0.96, 0.94 and
+ * 0.91, and step 6 — the first BORDER — is 0.86. Our old 100 sat at 0.90, between
+ * their last fill and their first border; the 50 at 0.95 sits squarely inside the
+ * range they reserve for filling a component.
+ *
  * THE DARK END IS 0.26, AND IT IS AS LIGHT AS THE CONTRACT ALLOWS *UNIVERSALLY*.
  * Generated for 144 brands — 24 hues x 3 chroma levels x 2 lightnesses, every family
  * given the same base, which is harsher than any real brand — and put through the
@@ -89,16 +102,30 @@ import {
  * `PALETTE_FAMILIES` is the seven chromatic families and this ramp is for them.
  */
 export const REFERENCE_RAMP: Ramp = [
-  // THE PALE END TAKES WHATEVER ITS HUE ALLOWS — `chromaFactor: 1` here does not
-  // mean "full chroma", it means "the maximum", because `generatePalette` clamps
-  // into sRGB while holding lightness and at these lightnesses the clamp is what
-  // decides. A SHARED factor cannot work up here: the ceiling at 0.975 runs from
-  // x0.07 (negative) to x0.50 (accent), so one number for all seven would have to be
-  // 0.07 and every family would come out grey — which is exactly why `vars.css` had
-  // refused a step 50 ("a step that can only be grey is not a step"). Per family it
-  // is a real tint: #f1f7ff, #dcfffe, #fff4f2, #e5ffe9, #fff5e7.
-  { step: 25, lightness: 0.975, chromaFactor: 1 },
-  { step: 50, lightness: 0.95, chromaFactor: 1 },
+  // THE PALE END FOLLOWS THE SAME RULE AS EVERY OTHER RUNG — a SHARED factor, set to
+  // the gamut ceiling over the tightest of the seven hues — and it shipped for one day
+  // not doing that. It went out as `chromaFactor: 1`, which at these lightnesses means
+  // "whatever each hue's own ceiling allows", on the argument that a shared number up
+  // here would have to be the tightest hue's and everything would come out grey.
+  //
+  // MEASURED, THAT ARGUMENT WAS BACKWARDS ABOUT WHICH COST MATTERS. Per-family
+  // ceilings maximise tint and destroy comparability, because sRGB does not hand out
+  // pale chroma evenly: at L 0.95 green's ceiling is 0.083 and blue's is 0.024. Across
+  // the four families an Alert actually paints side by side, the chroma spread went
+  // from 1.85x at the 100 to 3.35x at the 50 — rendered, the green and the orange
+  // shouted while the blue and the red whispered, and four alert variants stopped
+  // reading as one family of washes. A rung a ROLE points at has to be comparable
+  // across families; "as tinted as possible" is the wrong thing to optimise for it.
+  //
+  // A shared factor brings the spread back to 1.84x, identical to the 100's, and it is
+  // NOT grey: `primary-50` lands at chroma 0.019 against `neutral-50`'s 0.007, so it
+  // is nearly three times the tint of the stated grey at the same lightness.
+  //
+  // The numbers are the tightest hue's ceiling (negative, both times), rounded down —
+  // and they land within a thousandth of simply continuing the ramp's own slope
+  // upward, which is not a coincidence: every factor below was derived the same way.
+  { step: 25, lightness: 0.975, chromaFactor: 0.066 },
+  { step: 50, lightness: 0.95, chromaFactor: 0.135 },
   { step: 100, lightness: 0.9, chromaFactor: 0.27 },
   { step: 200, lightness: 0.82, chromaFactor: 0.54 },
   { step: 300, lightness: 0.74, chromaFactor: 0.85 },
@@ -168,11 +195,27 @@ export const DARK_END_CHOICES: readonly number[] = [0.34, 0.3, 0.26];
 /** The pale ends, in the order the control shows them. */
 export const PALE_END_CHOICES: readonly RampShape['paleRungs'][] = [0, 1, 2];
 
-/** The lightnesses the pale rungs take, in the order they are added. */
-const PALE_RUNGS: readonly { step: number; lightness: number }[] = [
-  { step: 50, lightness: 0.95 },
-  { step: 25, lightness: 0.975 },
-];
+/**
+ * The pale rungs, in the order they are ADDED — the 50 first, because a scale that
+ * stopped at 0.975 would have a gap where its own next step belongs.
+ *
+ * Read out of `REFERENCE_RAMP` rather than restated, so the pale end cannot end up
+ * with one chroma factor here and another there. It carried a hardcoded
+ * `chromaFactor: 1` until the pale end stopped being ceiling-based, at which point
+ * this was the second place holding that policy.
+ */
+const PALE_RUNGS: readonly {
+  step: number;
+  lightness: number;
+  chromaFactor: number;
+}[] = [50, 25].map(
+  (step) =>
+    REFERENCE_RAMP.find((rung) => rung.step === step) as {
+      step: number;
+      lightness: number;
+      chromaFactor: number;
+    },
+);
 
 /** The rungs from the 100 down, which never change in number. */
 const MAIN_STEPS: readonly number[] = [
@@ -209,9 +252,7 @@ export function buildRamp(shape: RampShape): Ramp {
     // Reversed so the pale rungs read 25 then 50 — the ramp is ordered lightest
     // first, and `paleRungs: 1` has to mean the 50 rather than the 25, because a
     // scale that stops at 0.975 has a gap where its own next step should be.
-    ...PALE_RUNGS.slice(0, shape.paleRungs)
-      .map(({ step, lightness }) => ({ step, lightness, chromaFactor: 1 }))
-      .reverse(),
+    ...PALE_RUNGS.slice(0, shape.paleRungs).slice().reverse(),
     ...MAIN_STEPS.map((step, i) => ({
       step,
       lightness: Number((MAIN_TOP - gap * i).toFixed(4)),

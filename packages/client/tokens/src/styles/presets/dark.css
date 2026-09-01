@@ -21,10 +21,10 @@
 
   /* primary */
   --fm-palette-primary-25: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.235) calc(c * 0.0562) h
+    from var(--fm-palette-primary-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-primary-50: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.22) calc(c * 0.1132) h
+    from var(--fm-palette-primary-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-primary-100: oklch(
     from var(--fm-palette-primary-base) calc(l + 0.2) calc(c * 0.165) h
@@ -66,10 +66,10 @@
 
   /* secondary */
   --fm-palette-secondary-25: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.235) calc(c * 0.1775) h
+    from var(--fm-palette-secondary-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-secondary-50: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.22) calc(c * 0.3575) h
+    from var(--fm-palette-secondary-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-secondary-100: oklch(
     from var(--fm-palette-secondary-base) calc(l + 0.2) calc(c * 0.165) h
@@ -111,10 +111,10 @@
 
   /* accent */
   --fm-palette-accent-25: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.235) calc(c * 0.1927) h
+    from var(--fm-palette-accent-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-accent-50: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.22) calc(c * 0.3955) h
+    from var(--fm-palette-accent-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-accent-100: oklch(
     from var(--fm-palette-accent-base) calc(l + 0.2) calc(c * 0.165) h
@@ -156,10 +156,10 @@
 
   /* negative */
   --fm-palette-negative-25: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.235) calc(c * 0.0492) h
+    from var(--fm-palette-negative-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-negative-50: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.22) calc(c * 0.0999) h
+    from var(--fm-palette-negative-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-negative-100: oklch(
     from var(--fm-palette-negative-base) calc(l + 0.2) calc(c * 0.165) h
@@ -201,10 +201,10 @@
 
   /* success */
   --fm-palette-success-25: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.235) calc(c * 0.1674) h
+    from var(--fm-palette-success-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-success-50: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.22) calc(c * 0.3426) h
+    from var(--fm-palette-success-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-success-100: oklch(
     from var(--fm-palette-success-base) calc(l + 0.2) calc(c * 0.165) h
@@ -246,10 +246,10 @@
 
   /* warning */
   --fm-palette-warning-25: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.235) calc(c * 0.1076) h
+    from var(--fm-palette-warning-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-warning-50: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.22) calc(c * 0.2174) h
+    from var(--fm-palette-warning-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-warning-100: oklch(
     from var(--fm-palette-warning-base) calc(l + 0.2) calc(c * 0.165) h
@@ -291,10 +291,10 @@
 
   /* info */
   --fm-palette-info-25: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.235) calc(c * 0.0561) h
+    from var(--fm-palette-info-base) calc(l + 0.235) calc(c * 0.049) h
   );
   --fm-palette-info-50: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.22) calc(c * 0.1136) h
+    from var(--fm-palette-info-base) calc(l + 0.22) calc(c * 0.1) h
   );
   --fm-palette-info-100: oklch(
     from var(--fm-palette-info-base) calc(l + 0.2) calc(c * 0.165) h
