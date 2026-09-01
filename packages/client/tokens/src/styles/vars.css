@@ -8,10 +8,12 @@
  *
  * Rules of the contract (validated by `src/tokens.test.ts`):
  * - Components consume ONLY semantic roles ("la semantica vince su tutto").
- *   There are no primitive ramps here: values are STATIC oklch literals,
- *   resolved at authoring time from the ramp methodology
- *   (base ± lightness, scaled chroma). No runtime relative-color syntax yet
- *   (not Baseline Widely). The roles ARE @property-registered — see
+ *   The BASES and the neutral scale are static oklch literals; the chromatic
+ *   RUNGS are relative colour off their base (LEVEL 2 below), which is what
+ *   makes a rebrand seven numbers rather than sixty-three — override one base
+ *   and every rung and role above it follows, live. `@fmmenchi/ui`'s
+ *   `token-overrides.test.tsx` is the test that defends it. The roles ARE
+ *   @property-registered — see
  *   `properties.css`, imported below (ADR-0012; @property is Baseline NEWLY,
  *   shipped as an ADR-0010 progressive enhancement — degrades to untyped).
  * - A THEME is a complete assignment of every color role (`Theme` in
@@ -106,19 +108,47 @@
   /* ==========================================================
      LEVEL 2 — THE PALETTE, derived with relative colour.
 
-     LIGHTNESS is one curve for every family, and it was already
-     there: measured, every family followed it step for step (hover
-     = fill - 0.10, active - 0.19, subtle + 0.49, disabled + 0.39).
-     The bases are the fills undone, so step 700 reproduces the fill
-     each family shipped before this layer existed.
+     LIGHTNESS IS ABSOLUTE AND THE OFFSETS ARE PER FAMILY, which is
+     the opposite of how this layer started. The offsets used to be
+     one shared curve, and that was the defect: the bases sit between
+     0.54 and 0.60, so a shared `calc(l - 0.33)` put step 900 at 0.22
+     for accent and 0.27 for warning. "The 900" was not a lightness,
+     it was seven of them — and a contrast floor cleared by one
+     family then said nothing about the next, which is exactly what
+     ADR-0033 says a guarantee must not do. Every family now carries
+     the offsets that land it on the same absolute lightness:
 
-     CHROMA is one curve too, and its coefficients ARE the gamut.
-     Solved numerically, the most the tightest hue can take at each
-     lightness is 100 x0.22, 200 x0.55, 700 x0.96, 800 x0.72, 900
-     x0.50 — the red binding the pale end, the teal the dark one.
-     Those land within a hundredth of the literals this file used to
-     hold: whoever chose them had already pushed every step to the
-     edge of sRGB, which is why they looked irregular.
+       100 0.90  200 0.82  300 0.74  400 0.66  500 0.58
+       600 0.50  700 0.42  800 0.34  900 0.26
+
+     EVENLY, at 0.08. The old curve ran 0.10 0.10 0.10 then 0.05 0.05
+     then 0.09 0.10 0.09, so rungs 400, 500 and 600 sat half a step
+     apart and rendered as the same colour three times. Nine rungs
+     where six were distinguishable.
+
+     THE DARK END IS 0.26 BECAUSE THAT IS AS LIGHT AS THE CONTRACT
+     ALLOWS. Material's 900 is L 0.42 and Tailwind's 0.38, and going
+     there breaks us: generated across 144 synthetic brands, the
+     declared pairs fail for 120 of them at 0.34 and 60 at 0.30,
+     while 0.26 fails none. The pair that gives way first is always
+     `input x input-invalid`, the tightest floor here at 3:1. The
+     darkness is what buys brand-independence; the two systems above
+     sit lighter because they hand-tune each palette and promise
+     nothing about a brand they have not seen.
+
+     CHROMA is one curve, and its coefficients ARE the gamut, rounded
+     down with a hundredth to spare. Solved at each lightness over
+     the tightest of the seven hues: x0.285 at 0.90 (negative),
+     x0.554 at 0.82, x0.869 at 0.74, unbounded through the middle,
+     x0.884 at 0.42 (warning), x0.716 at 0.34, x0.547 at 0.26.
+
+     That ceiling is load-bearing rather than tidy, and rounding it
+     UP costs correctness: at x0.30, negative-100 resolves to
+     `oklch(90% 0.0547 27)`, which is outside sRGB. A static literal
+     would be clamped here; a relative colour is clamped by the
+     BROWSER, differently per engine — so the shipped colour would
+     depend on who was rendering it while the validator measured
+     something else.
 
      The cost of ONE curve is that a family with room to spare does
      not use it: accent and success could carry more chroma at 100
@@ -135,191 +165,205 @@
 
   /* primary */
   --fm-palette-primary-100: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-primary-base) calc(l + 0.35) calc(c * 0.27) h
   );
   --fm-palette-primary-200: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-primary-base) calc(l + 0.27) calc(c * 0.54) h
   );
   --fm-palette-primary-300: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-primary-base) calc(l + 0.19) calc(c * 0.85) h
   );
   --fm-palette-primary-400: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.05) c h
+    from var(--fm-palette-primary-base) calc(l + 0.11) c h
   );
-  --fm-palette-primary-500: var(--fm-palette-primary-base);
+  --fm-palette-primary-500: oklch(
+    from var(--fm-palette-primary-base) calc(l + 0.03) c h
+  );
   --fm-palette-primary-600: oklch(
     from var(--fm-palette-primary-base) calc(l - 0.05) c h
   );
   --fm-palette-primary-700: oklch(
-    from var(--fm-palette-primary-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-primary-base) calc(l - 0.13) calc(c * 0.87) h
   );
   --fm-palette-primary-800: oklch(
-    from var(--fm-palette-primary-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-primary-base) calc(l - 0.21) calc(c * 0.7) h
   );
   --fm-palette-primary-900: oklch(
-    from var(--fm-palette-primary-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-primary-base) calc(l - 0.29) calc(c * 0.53) h
   );
 
   /* secondary */
   --fm-palette-secondary-100: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-secondary-base) calc(l + 0.33) calc(c * 0.27) h
   );
   --fm-palette-secondary-200: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-secondary-base) calc(l + 0.25) calc(c * 0.54) h
   );
   --fm-palette-secondary-300: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-secondary-base) calc(l + 0.17) calc(c * 0.85) h
   );
   --fm-palette-secondary-400: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.05) c h
+    from var(--fm-palette-secondary-base) calc(l + 0.09) c h
   );
-  --fm-palette-secondary-500: var(--fm-palette-secondary-base);
+  --fm-palette-secondary-500: oklch(
+    from var(--fm-palette-secondary-base) calc(l + 0.01) c h
+  );
   --fm-palette-secondary-600: oklch(
-    from var(--fm-palette-secondary-base) calc(l - 0.05) c h
+    from var(--fm-palette-secondary-base) calc(l - 0.07) c h
   );
   --fm-palette-secondary-700: oklch(
-    from var(--fm-palette-secondary-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-secondary-base) calc(l - 0.15) calc(c * 0.87) h
   );
   --fm-palette-secondary-800: oklch(
-    from var(--fm-palette-secondary-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-secondary-base) calc(l - 0.23) calc(c * 0.7) h
   );
   --fm-palette-secondary-900: oklch(
-    from var(--fm-palette-secondary-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-secondary-base) calc(l - 0.31) calc(c * 0.53) h
   );
 
   /* accent */
   --fm-palette-accent-100: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-accent-base) calc(l + 0.36) calc(c * 0.27) h
   );
   --fm-palette-accent-200: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-accent-base) calc(l + 0.28) calc(c * 0.54) h
   );
   --fm-palette-accent-300: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-accent-base) calc(l + 0.2) calc(c * 0.85) h
   );
   --fm-palette-accent-400: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.05) c h
+    from var(--fm-palette-accent-base) calc(l + 0.12) c h
   );
-  --fm-palette-accent-500: var(--fm-palette-accent-base);
+  --fm-palette-accent-500: oklch(
+    from var(--fm-palette-accent-base) calc(l + 0.04) c h
+  );
   --fm-palette-accent-600: oklch(
-    from var(--fm-palette-accent-base) calc(l - 0.05) c h
+    from var(--fm-palette-accent-base) calc(l - 0.04) c h
   );
   --fm-palette-accent-700: oklch(
-    from var(--fm-palette-accent-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-accent-base) calc(l - 0.12) calc(c * 0.87) h
   );
   --fm-palette-accent-800: oklch(
-    from var(--fm-palette-accent-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-accent-base) calc(l - 0.2) calc(c * 0.7) h
   );
   --fm-palette-accent-900: oklch(
-    from var(--fm-palette-accent-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-accent-base) calc(l - 0.28) calc(c * 0.53) h
   );
 
   /* destructive */
   --fm-palette-negative-100: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-negative-base) calc(l + 0.33) calc(c * 0.27) h
   );
   --fm-palette-negative-200: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-negative-base) calc(l + 0.25) calc(c * 0.54) h
   );
   --fm-palette-negative-300: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-negative-base) calc(l + 0.17) calc(c * 0.85) h
   );
   --fm-palette-negative-400: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.05) c h
+    from var(--fm-palette-negative-base) calc(l + 0.09) c h
   );
-  --fm-palette-negative-500: var(--fm-palette-negative-base);
+  --fm-palette-negative-500: oklch(
+    from var(--fm-palette-negative-base) calc(l + 0.01) c h
+  );
   --fm-palette-negative-600: oklch(
-    from var(--fm-palette-negative-base) calc(l - 0.05) c h
+    from var(--fm-palette-negative-base) calc(l - 0.07) c h
   );
   --fm-palette-negative-700: oklch(
-    from var(--fm-palette-negative-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-negative-base) calc(l - 0.15) calc(c * 0.87) h
   );
   --fm-palette-negative-800: oklch(
-    from var(--fm-palette-negative-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-negative-base) calc(l - 0.23) calc(c * 0.7) h
   );
   --fm-palette-negative-900: oklch(
-    from var(--fm-palette-negative-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-negative-base) calc(l - 0.31) calc(c * 0.53) h
   );
 
   /* success */
   --fm-palette-success-100: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-success-base) calc(l + 0.35) calc(c * 0.27) h
   );
   --fm-palette-success-200: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-success-base) calc(l + 0.27) calc(c * 0.54) h
   );
   --fm-palette-success-300: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-success-base) calc(l + 0.19) calc(c * 0.85) h
   );
   --fm-palette-success-400: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.05) c h
+    from var(--fm-palette-success-base) calc(l + 0.11) c h
   );
-  --fm-palette-success-500: var(--fm-palette-success-base);
+  --fm-palette-success-500: oklch(
+    from var(--fm-palette-success-base) calc(l + 0.03) c h
+  );
   --fm-palette-success-600: oklch(
     from var(--fm-palette-success-base) calc(l - 0.05) c h
   );
   --fm-palette-success-700: oklch(
-    from var(--fm-palette-success-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-success-base) calc(l - 0.13) calc(c * 0.87) h
   );
   --fm-palette-success-800: oklch(
-    from var(--fm-palette-success-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-success-base) calc(l - 0.21) calc(c * 0.7) h
   );
   --fm-palette-success-900: oklch(
-    from var(--fm-palette-success-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-success-base) calc(l - 0.29) calc(c * 0.53) h
   );
 
   /* warning */
   --fm-palette-warning-100: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-warning-base) calc(l + 0.3) calc(c * 0.27) h
   );
   --fm-palette-warning-200: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-warning-base) calc(l + 0.22) calc(c * 0.54) h
   );
   --fm-palette-warning-300: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-warning-base) calc(l + 0.14) calc(c * 0.85) h
   );
   --fm-palette-warning-400: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.05) c h
+    from var(--fm-palette-warning-base) calc(l + 0.06) c h
   );
-  --fm-palette-warning-500: var(--fm-palette-warning-base);
+  --fm-palette-warning-500: oklch(
+    from var(--fm-palette-warning-base) calc(l - 0.02) c h
+  );
   --fm-palette-warning-600: oklch(
-    from var(--fm-palette-warning-base) calc(l - 0.05) c h
+    from var(--fm-palette-warning-base) calc(l - 0.1) c h
   );
   --fm-palette-warning-700: oklch(
-    from var(--fm-palette-warning-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-warning-base) calc(l - 0.18) calc(c * 0.87) h
   );
   --fm-palette-warning-800: oklch(
-    from var(--fm-palette-warning-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-warning-base) calc(l - 0.26) calc(c * 0.7) h
   );
   --fm-palette-warning-900: oklch(
-    from var(--fm-palette-warning-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-warning-base) calc(l - 0.34) calc(c * 0.53) h
   );
 
   /* info */
   --fm-palette-info-100: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.35) calc(c * 0.22) h
+    from var(--fm-palette-info-base) calc(l + 0.34) calc(c * 0.27) h
   );
   --fm-palette-info-200: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.25) calc(c * 0.55) h
+    from var(--fm-palette-info-base) calc(l + 0.26) calc(c * 0.54) h
   );
   --fm-palette-info-300: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.15) calc(c * 0.95) h
+    from var(--fm-palette-info-base) calc(l + 0.18) calc(c * 0.85) h
   );
   --fm-palette-info-400: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.05) c h
+    from var(--fm-palette-info-base) calc(l + 0.1) c h
   );
-  --fm-palette-info-500: var(--fm-palette-info-base);
+  --fm-palette-info-500: oklch(
+    from var(--fm-palette-info-base) calc(l + 0.02) c h
+  );
   --fm-palette-info-600: oklch(
-    from var(--fm-palette-info-base) calc(l - 0.05) c h
+    from var(--fm-palette-info-base) calc(l - 0.06) c h
   );
   --fm-palette-info-700: oklch(
-    from var(--fm-palette-info-base) calc(l - 0.14) calc(c * 0.96) h
+    from var(--fm-palette-info-base) calc(l - 0.14) calc(c * 0.87) h
   );
   --fm-palette-info-800: oklch(
-    from var(--fm-palette-info-base) calc(l - 0.24) calc(c * 0.72) h
+    from var(--fm-palette-info-base) calc(l - 0.22) calc(c * 0.7) h
   );
   --fm-palette-info-900: oklch(
-    from var(--fm-palette-info-base) calc(l - 0.33) calc(c * 0.5) h
+    from var(--fm-palette-info-base) calc(l - 0.3) calc(c * 0.53) h
   );
 
   /* ==========================================================

@@ -1,63 +1,86 @@
 import type { Ramp } from '@fmmenchi/theme';
 
 /**
- * THE RAMP, AND WHY THE APP OWNS IT.
+ * THE RAMP — how far each rung sits from white, and how much of the base's chroma it
+ * keeps. Nine rungs, and every number in it was chosen by measurement.
  *
- * `generatePalette` takes a base and a ramp and places one under the other. The
- * base is the brand's; the ramp is a POLICY — how far each rung sits from white,
- * how much of the base's chroma it keeps — and policy belongs to whatever decides
- * it. Right now that is this wizard.
+ * IT IS THE SAME RAMP `vars.css` USES, and that is new. It began as the shipped
+ * offsets resolved at one base's lightness — an anchor picked by hand, which put five
+ * of the seven families somewhere else — so the wizard fed the reference bases did
+ * NOT reproduce the shipped stylesheet, and the claim "ours is an invocation of the
+ * same code path as a consumer's" was a direction rather than a fact. Both sides now
+ * state the same nine lightnesses and the same nine chroma factors, and
+ * `ramp.spec.ts` asserts the result: every rung this produces from the reference
+ * bases equals the rung `vars.css` resolves to. The claim is a fact.
  *
- * AND IT STAYS IN THE APP rather than moving to `@fmmenchi/theme`, which was tried
- * and reverted the same hour. Two reasons, both of them the package's own written
- * rules: these are eighteen numbers a designer chose, and theme holds no values of
- * any kind ("THE VALUES ARE NOT HERE"); and the generator — the other caller that
- * would have justified the move — does not build palettes at all, it takes a theme
- * file with `--from` and injects declarations. A ramp there would have had no caller
- * in that package's audience, which is the failure its AGENTS.md already names: *a
- * model with no caller is a guess, and a guess belongs in the place that will call
- * it*.
+ * IT STAYS IN THE APP rather than moving to `@fmmenchi/theme`, which was tried and
+ * reverted. Two reasons, both that package's own rules: these are eighteen numbers a
+ * designer chose, and theme holds no values of any kind ("THE VALUES ARE NOT HERE");
+ * and the generator — the other caller that would justify the move — does not build
+ * palettes, it takes a theme file with `--from` and injects declarations.
  *
- * `vars.css` writes the same ramp as offsets from the base (`calc(l + 0.35)`,
- * `calc(c * 0.22)`), while a `Rung` states lightness ABSOLUTELY — that is ADR-0033's
- * choice: measured across 648 bases, an offset-anchored ramp's guaranteeing contrast
- * distance moves with the base while an absolute one does not, and a guarantee that
- * shifts under you is not one.
+ * ABSOLUTE LIGHTNESS, NOT AN OFFSET (ADR-0033). Measured across 648 bases, an
+ * offset-anchored ramp's contrast distance MOVES with the base while an absolute one
+ * does not, and a guarantee that shifts under you is not one. `vars.css` still writes
+ * offsets because a rung there must stay derived from its base — overriding one
+ * number is what makes a rebrand seven numbers rather than sixty-three — but its
+ * offsets are now computed PER FAMILY so that every family lands on the absolute
+ * lightnesses below.
  *
- * SO THE TWO SPELLINGS DO NOT AGREE, and it is worth knowing by how much rather
- * than assuming they do. All seven chromatic families share one ramp SHAPE in
- * `vars.css`, but their bases sit at 0.54–0.60, so resolving those offsets needs an
- * anchor chosen by hand. Anchored at 0.55, measured per family:
+ * EVENLY SPACED AT 0.08. The previous curve ran 0.10 0.10 0.10 then 0.05 0.05 then
+ * 0.09 0.10 0.09, so rungs 400, 500 and 600 sat half a step apart and rendered as
+ * the same colour three times — nine rungs where six were distinguishable.
  *
- *     primary    0.55   ΔL 0.000   <- the anchor
- *     success    0.55   ΔL 0.000
- *     accent     0.54   ΔL 0.010
- *     info       0.56   ΔL 0.010
- *     secondary  0.57   ΔL 0.020
- *     negative   0.57   ΔL 0.020
- *     warning    0.60   ΔL 0.050   <- worst, at step 300
+ * THE DARK END IS 0.26, AND IT IS AS LIGHT AS THE CONTRACT ALLOWS. In OKLCH
+ * lightness, off their published hexes:
  *
- * The honest consequence: this wizard, fed the reference bases, does NOT reproduce
- * the shipped stylesheet. Five families land within ΔL 0.02 and `warning` within
- * 0.05. So "ours is an invocation of the same code path as a consumer's" is the
- * DIRECTION and not yet the fact — it becomes the fact when `vars.css` is emitted
- * from a ramp instead of writing its own offsets, and then this comment goes away.
+ *     step   ours   Material   Tailwind
+ *      100   0.90     0.88       0.93
+ *      500   0.58     0.66       0.62
+ *      900   0.26     0.42       0.38     (Tailwind's 950 is 0.28)
+ *
+ * Generated for 144 brands — 24 hues × 3 chroma levels × 2 lightnesses, every family
+ * given the same base, which is harsher than any real brand — and put through the
+ * real contract:
+ *
+ *     dark end 0.34   120 of 144 brands FAIL
+ *     dark end 0.30    60 of 144 brands FAIL
+ *     dark end 0.26     0 fail
+ *     dark end 0.22     0 fail   (the value before this)
+ *
+ * There is a cliff between 0.30 and 0.26, and the pair that gives way first is always
+ * `input × input-invalid`, the tightest floor in the contract at 3:1. So the darkness
+ * is not a preference: it is what buys ADR-0033's promise that a pair clearing its
+ * floor for one brand clears it for every brand. Material and Tailwind sit lighter
+ * because they hand-tune each palette and promise nothing about a brand they have not
+ * seen.
+ *
+ * THE CHROMA FACTORS ARE THE GAMUT CEILING, rounded down with a hundredth to spare.
+ * Solved with `clampChroma` at each lightness over the tightest of the seven hues:
+ * ×0.285 at 0.90 (negative), ×0.554 at 0.82, ×0.869 at 0.74, unbounded through the
+ * middle, ×0.884 at 0.42 (warning), ×0.716 at 0.34, ×0.547 at 0.26.
+ *
+ * Here that is load-bearing rather than tidy, and it cost a wrong turn to learn: my
+ * first attempt rounded 0.285 UP to 0.30, and `negative-100` came out
+ * `oklch(90% 0.0547 27)` — outside sRGB. `generatePalette` clamps, so the wizard
+ * would have survived it; `vars.css` uses CSS relative colour, where the clamp is the
+ * BROWSER's and differs per engine, so the shipped colour would have depended on who
+ * was rendering it while the validator measured something else.
  *
  * WHAT THIS IS NOT: the neutral ramp. The greys are stated rather than derived
- * (ADR-0032) — no single base can span 1.00 to 0.05 and still resolve the pale end
- * — so `PALETTE_FAMILIES` is the seven chromatic families and this ramp is for
- * them.
+ * (ADR-0032) — no single base spans 1.00 to 0.05 and still resolves the pale end — so
+ * `PALETTE_FAMILIES` is the seven chromatic families and this ramp is for them.
  */
 export const WIZARD_RAMP: Ramp = [
-  { step: 100, lightness: 0.9, chromaFactor: 0.22 },
-  { step: 200, lightness: 0.8, chromaFactor: 0.55 },
-  { step: 300, lightness: 0.7, chromaFactor: 0.95 },
-  { step: 400, lightness: 0.6, chromaFactor: 1 },
-  { step: 500, lightness: 0.55, chromaFactor: 1 },
+  { step: 100, lightness: 0.9, chromaFactor: 0.27 },
+  { step: 200, lightness: 0.82, chromaFactor: 0.54 },
+  { step: 300, lightness: 0.74, chromaFactor: 0.85 },
+  { step: 400, lightness: 0.66, chromaFactor: 1 },
+  { step: 500, lightness: 0.58, chromaFactor: 1 },
   { step: 600, lightness: 0.5, chromaFactor: 1 },
-  { step: 700, lightness: 0.41, chromaFactor: 0.96 },
-  { step: 800, lightness: 0.31, chromaFactor: 0.72 },
-  { step: 900, lightness: 0.22, chromaFactor: 0.5 },
+  { step: 700, lightness: 0.42, chromaFactor: 0.87 },
+  { step: 800, lightness: 0.34, chromaFactor: 0.7 },
+  { step: 900, lightness: 0.26, chromaFactor: 0.53 },
 ];
 
 /** The steps, for a caller that wants to label a row of swatches. */
