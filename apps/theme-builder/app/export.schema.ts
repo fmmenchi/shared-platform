@@ -36,7 +36,18 @@ export const exportSchema = z.object({
       /^[a-z][a-z0-9-]*$/,
       'Lowercase letters, digits and dashes, starting with a letter. It goes inside [data-theme=…], where anything else silently matches nothing.',
     ),
-  scheme: z.enum(['light', 'dark']),
 });
+
+/*
+ * `scheme` USED TO BE HERE AND WAS A FALSE CHOICE. The wizard read `vars.css` only,
+ * so both settings produced the same light-derived colours — and the generator emits
+ * `--scheme` as nothing but the `color-scheme` line, so picking "dark" shipped light
+ * colours with dark native controls: a select's popup and a native checkbox inverted
+ * against everything around them. A control that changes the label and not the thing
+ * is worse than no control.
+ *
+ * The wizard builds BOTH themes now, so there is nothing to choose: the scheme of
+ * each file is a fact about which one it is.
+ */
 
 export type ExportValues = z.infer<typeof exportSchema>;

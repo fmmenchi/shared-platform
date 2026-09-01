@@ -60,7 +60,7 @@ target name (`validate-themes`).
 
 3. **`validate` executor (the gate).** For each registered file it parses the `--fm-color-*`
    declarations into a role map and runs the `validateTheme()` of the installed `@fmmenchi/tokens`
-   (a dynamic `import()` of the `@fmmenchi/tokens/validate` subpath — tokens is ESM). It prints
+   (a dynamic `import()` of the `@fmmenchi/theme`, bundled into this plugin). It prints
    `✓ <path> — allowed theme` per passing file and, for a failing one, `✗ <path> is NOT an allowed
 theme:` followed by one line per violation. Any violation fails the target.
 

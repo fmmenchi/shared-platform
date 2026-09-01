@@ -44,24 +44,50 @@
  * it), `src/styles.test.ts` and `src/palette.test.ts`.
  */
 [data-theme='dark'] {
-  /* ---------- LEVEL 1 — dark bases ---------- */
-  --fm-palette-primary-base: oklch(75% 0.1263 256);
-  --fm-palette-secondary-base: oklch(75% 0.04 256);
-  --fm-palette-accent-base: oklch(75% 0.11 195);
-  --fm-palette-negative-base: oklch(75% 0.1462 27);
-  --fm-palette-success-base: oklch(75% 0.141 150);
-  --fm-palette-warning-base: oklch(75% 0.132 82);
-  --fm-palette-info-base: oklch(75% 0.1338 245);
+  /* ---------- LEVEL 1 — dark bases, DERIVED from the light ones ----------
+   *
+   * They were seven hand-picked colours until they were not. Measured, they followed
+   * no rule at all — neither a fraction of the gamut ceiling at this lightness (3.16x
+   * spread across the seven) nor a fraction of the light base's chroma (2.02x) — which
+   * is exactly what made a dark theme impossible to GENERATE: a wizard handed a
+   * brand's seven light colours had nothing to compute the other seven from.
+   *
+   * `deriveDarkBases` in `@fmmenchi/theme` is that computation, and the rule was found
+   * by measuring the LIGHT bases rather than chosen: six of the seven sit between
+   * 77.6% and 79.2% of the chroma sRGB allows at their lightness (`secondary` is the
+   * deliberate exception at 26.8%, being a muted grey-blue). That SHARE is what "how
+   * saturated is this brand" means, and it is what carries across a change of
+   * lightness — an absolute chroma does not, since 0.14 is 78% of the ceiling at
+   * L 0.55 and about 54% of it at 0.75.
+   *
+   * WHAT CHANGED HERE, so nobody has to diff to find out. Against the hand-picked
+   * values the rule lands within 20% on every family: primary, negative and info lose
+   * about a fifth of their chroma, `success` gains 13%, and `warning`'s hue returns to
+   * the light base's 78 from a hand-nudged 82. Contrast against the dark page is
+   * unchanged in practice, and the whole contract re-validates.
+   *
+   * What this bought: `apps/theme-builder` can build a dark theme from the same seven
+   * colours it already asks for, and THIS preset is what it produces from the
+   * reference bases. Before, "ours is an invocation of the same code path as a
+   * consumer's" was true of light only.
+   */
+  --fm-palette-primary-base: oklch(0.75 0.1013 255);
+  --fm-palette-secondary-base: oklch(0.75 0.0348 256);
+  --fm-palette-accent-base: oklch(0.75 0.0983 195);
+  --fm-palette-negative-base: oklch(0.75 0.1182 27);
+  --fm-palette-success-base: oklch(0.75 0.1591 150);
+  --fm-palette-warning-base: oklch(0.75 0.1237 78);
+  --fm-palette-info-base: oklch(0.75 0.107 245);
 
   /* ---------- LEVEL 2 — the dark ramp: 25 -> 1500, evenly 0.05 apart
      below the 100, compressing above it ---------- */
 
   /* primary */
   --fm-palette-primary-25: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-primary-base) calc(l + 0.235) calc(c * 0.0592) h
   );
   --fm-palette-primary-50: oklch(
-    from var(--fm-palette-primary-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-primary-base) calc(l + 0.22) calc(c * 0.1185) h
   );
   --fm-palette-primary-100: oklch(
     from var(--fm-palette-primary-base) calc(l + 0.2) calc(c * 0.165) h
@@ -109,10 +135,10 @@
 
   /* secondary */
   --fm-palette-secondary-25: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-secondary-base) calc(l + 0.235) calc(c * 0.1724) h
   );
   --fm-palette-secondary-50: oklch(
-    from var(--fm-palette-secondary-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-secondary-base) calc(l + 0.22) calc(c * 0.3448) h
   );
   --fm-palette-secondary-100: oklch(
     from var(--fm-palette-secondary-base) calc(l + 0.2) calc(c * 0.165) h
@@ -160,10 +186,10 @@
 
   /* accent */
   --fm-palette-accent-25: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-accent-base) calc(l + 0.235) calc(c * 0.061) h
   );
   --fm-palette-accent-50: oklch(
-    from var(--fm-palette-accent-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-accent-base) calc(l + 0.22) calc(c * 0.1221) h
   );
   --fm-palette-accent-100: oklch(
     from var(--fm-palette-accent-base) calc(l + 0.2) calc(c * 0.165) h
@@ -211,10 +237,10 @@
 
   /* negative */
   --fm-palette-negative-25: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-negative-base) calc(l + 0.235) calc(c * 0.0508) h
   );
   --fm-palette-negative-50: oklch(
-    from var(--fm-palette-negative-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-negative-base) calc(l + 0.22) calc(c * 0.1015) h
   );
   --fm-palette-negative-100: oklch(
     from var(--fm-palette-negative-base) calc(l + 0.2) calc(c * 0.165) h
@@ -262,10 +288,10 @@
 
   /* success */
   --fm-palette-success-25: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-success-base) calc(l + 0.235) calc(c * 0.0377) h
   );
   --fm-palette-success-50: oklch(
-    from var(--fm-palette-success-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-success-base) calc(l + 0.22) calc(c * 0.0754) h
   );
   --fm-palette-success-100: oklch(
     from var(--fm-palette-success-base) calc(l + 0.2) calc(c * 0.165) h
@@ -313,10 +339,10 @@
 
   /* warning */
   --fm-palette-warning-25: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-warning-base) calc(l + 0.235) calc(c * 0.0485) h
   );
   --fm-palette-warning-50: oklch(
-    from var(--fm-palette-warning-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-warning-base) calc(l + 0.22) calc(c * 0.097) h
   );
   --fm-palette-warning-100: oklch(
     from var(--fm-palette-warning-base) calc(l + 0.2) calc(c * 0.165) h
@@ -364,10 +390,10 @@
 
   /* info */
   --fm-palette-info-25: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.235) calc(c * 0.049) h
+    from var(--fm-palette-info-base) calc(l + 0.235) calc(c * 0.0561) h
   );
   --fm-palette-info-50: oklch(
-    from var(--fm-palette-info-base) calc(l + 0.22) calc(c * 0.1) h
+    from var(--fm-palette-info-base) calc(l + 0.22) calc(c * 0.1121) h
   );
   --fm-palette-info-100: oklch(
     from var(--fm-palette-info-base) calc(l + 0.2) calc(c * 0.165) h
@@ -513,7 +539,7 @@
   --fm-color-link: var(--fm-palette-primary-500);
   --fm-color-link-hover: var(--fm-palette-primary-400);
   --fm-color-selection: var(--fm-palette-primary-1200);
-  --fm-color-selection-foreground: var(--fm-palette-neutral-30);
+  --fm-color-selection-foreground: var(--fm-palette-neutral-35);
   --fm-color-tooltip: var(--fm-palette-neutral-50);
   --fm-color-tooltip-foreground: var(--fm-palette-neutral-760);
 

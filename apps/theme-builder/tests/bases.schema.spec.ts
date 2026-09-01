@@ -25,7 +25,7 @@ import { readDeclarations } from '../app/declarations.server';
  * every assertion below a statement about the fixture: "the shipped brand passes"
  * only means something if the roles and the greys are the ones that ship.
  */
-const schema = makeBasesSchema(hydrateDeclarations(readDeclarations()));
+const schema = makeBasesSchema(hydrateDeclarations(readDeclarations()).light);
 
 const issuesOf = (values: Record<string, string>) => {
   const result = schema.safeParse(values);

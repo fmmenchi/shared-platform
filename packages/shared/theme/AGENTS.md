@@ -35,6 +35,7 @@ It answers three questions:
 what a theme IS        the as-const arrays, and every type derived from them
 is this one allowed    parseTheme -> toTheme -> validateTheme
 how is one BUILT       generateTheme(declared, bases, ramp) — aliases and greys read from CSS
+what its DARK half is  deriveDarkBases(bases) — the seven a brand does not hand over
 ```
 
 Plus the colour maths those answers need — `resolveCssVar` (which evaluates the relative-colour
@@ -74,7 +75,7 @@ reasons it failed are the tests to apply to the next candidate:
   build palettes. So the const had no caller in this package's audience, which is the failure named
   below: _a model with no caller is a guess, and a guess belongs in the place that will call it._
 
-It lives in `apps/theme-builder/app/ramp.ts`, with the measured divergence between its absolute
+It lives in `apps/theme-builder/app/ramp.tsx`, with the measured divergence between its absolute
 lightnesses (ADR-0033) and the offsets `vars.css` writes — they agree only for a family based at
 0.55, and `warning` is out by ΔL 0.05. That resolves when `vars.css` is emitted from a ramp rather
 than writing its own offsets, and the ramp then belongs wherever that emitter's inputs live.
@@ -156,6 +157,19 @@ place that will call it.**
   beside the stylesheets they read, because a `scope:shared` package must not reach into a
   `scope:client` one even by file path. What is tested here needs no fixture from outside:
   `palette.test.ts` builds its own bases, `parse-css.test.ts` its own CSS.
+- **`deriveDarkBases` IS A RULE, NOT A VALUE, which is why it may live here.** It takes no number a
+  designer chose: it reads each base's SHARE of the chroma sRGB allows at its lightness and restates
+  it at another lightness. The target lightness is an argument with a default, because 0.75 is a
+  value and belongs to `@fmmenchi/tokens` — passing it is the caller's job.
+  - The rule was found by MEASURING the shipped light bases, not picked: six of the seven sit between
+    77.6% and 79.2% of their ceiling (`secondary` is the deliberate exception at 26.8%). Two rival
+    rules were measured against the seven dark bases a designer had hand-picked — "keep the chroma"
+    is out by 19% mean / 36% worst, "a fixed share of the ceiling" by 37% / 193%, this one by
+    14.5% / 20%.
+  - **The shipped dark preset is now what it produces**, asserted by
+    `@fmmenchi/tokens`' `palette-dark.test.ts`. That is what extends "ours is an invocation of the
+    same code path as a consumer's" to the dark theme — it had been true of light only, because the
+    dark bases followed no rule at all and a wizard had nothing to compute them from.
 - **`resolveCssVar` evaluates exactly one relative-colour form** and refuses any other rather than
   guessing. The shipped ramp is `oklch(from var(--base) calc(l - 0.14) calc(c * 0.96) h)`; a
   validator that cannot follow that reference reports nothing wrong, which is worse than no

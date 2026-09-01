@@ -15,7 +15,7 @@
 
 ## Context and problem statement
 
-`@fmmenchi/theme-generator:theme` scaffolds a brand preset and wires its CI validation. It is
+`@fmmenchi/nx-theme-generator:theme` scaffolds a brand preset and wires its CI validation. It is
 headless, as an Nx generator is, and it emits **the 84 semantic roles copied from the light theme**
 with an instruction to edit the values by hand.
 
@@ -232,11 +232,13 @@ from that, and the third is the one that mattered:
   whose ramp has different rungs gets their own rungs rather than ours silently
   substituted. Version skew stops being a hazard and becomes the input.
 
-Most of this already exists. `@fmmenchi/tokens` exports the families
-(`ACTION_FAMILIES`, `STATUS_FAMILIES`), the roles (`COLOR_ROLES`), and — through
-`@fmmenchi/tokens/validate` — the constraints themselves as `CONTRAST_PAIRS`,
-`[bg, fg, minimum]` triples derived from the family lists. Two things are genuinely
-absent:
+Most of this already exists, though not where this ADR said it did. The families
+(`ACTION_FAMILIES`, `STATUS_FAMILIES`), the roles (`COLOR_ROLES`) and the constraints
+themselves — `CONTRAST_PAIRS`, `[bg, fg, minimum]` triples derived from the family
+lists — all live in **`@fmmenchi/theme`**, which did not exist when this was written.
+`@fmmenchi/tokens` has no TypeScript surface at all any more: it ships stylesheets, and
+the subpath this ADR named (`@fmmenchi/tokens/validate`) is gone. Two things are
+genuinely absent:
 
 - **the rung table.** Which rungs exist and where they sit lives only as CSS text in
   `vars.css`. The proof is that measuring any of the numbers in this ADR required
@@ -322,7 +324,7 @@ This is the only place the arithmetic lives. Both consumers below call it.
 
 ### 2 · The generator emits seven bases
 
-`nx g @fmmenchi/theme-generator:theme --name=acme --primary=#635BFF --accent=#00D4FF` writes the
+`nx g @fmmenchi/nx-theme-generator:theme --name=acme --primary=#635BFF --accent=#00D4FF` writes the
 preset `generateTheme()` returns. The rest of the generator is unchanged: the file layout, the
 `validate-themes` target, the executor. Existing behaviour with no colour flags stays as it is, so
 the change is additive.
@@ -425,7 +427,7 @@ is what gets written.
 It ships a `bin`, so it runs two ways:
 
 ```bash
-nx g @fmmenchi/theme-generator:theme --name=acme --gui   # the generator launches it
+nx g @fmmenchi/nx-theme-generator:theme --name=acme --gui   # the generator launches it
 npx @fmmenchi/theme-builder                              # or a person runs it directly
 ```
 
@@ -937,7 +939,7 @@ graph TB
         build["generateTheme()<br/>NEW · hex → bases + assignments"]
     end
 
-    subgraph plugin["@fmmenchi/theme-generator — Nx plugin"]
+    subgraph plugin["@fmmenchi/nx-theme-generator — Nx plugin"]
         gen["generator: theme<br/>writes the preset"]
         exec["executor: validate<br/>the CI gate"]
     end

@@ -1,5 +1,6 @@
 import { generatePalette } from '@fmmenchi/theme';
 import { Button } from '@fmmenchi/ui/button';
+import { ColorPicker } from '@fmmenchi/ui/color-picker';
 import { Fieldset } from '@fmmenchi/ui/fieldset';
 import { FieldsetContent } from '@fmmenchi/ui/fieldset-content';
 import { FieldsetLegend } from '@fmmenchi/ui/fieldset-legend';
@@ -7,12 +8,14 @@ import { Heading } from '@fmmenchi/ui/heading';
 import { SegmentedControl } from '@fmmenchi/ui/segmented-control';
 import { SegmentedControlItem } from '@fmmenchi/ui/segmented-control-item';
 import { Link } from 'react-router';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 
 import { FAMILIES, useBases } from '../../bases';
+import type { Scheme } from '../../declarations';
 import { probeShape, type ShapeVerdict } from '../../ramp-probe';
 import {
   DARK_END_CHOICES,
+  DARK_REFERENCE_RAMP,
   PALE_END_CHOICES,
   REFERENCE_SHAPE,
   useRamp,
@@ -163,8 +166,16 @@ function RampEnd({
  * a value that did not exist when the stylesheet was written.
  */
 export default function Palette() {
-  const { bases } = useBases();
+  const { bases, darkBases, setDarkBases, deriveFromLight } = useBases();
   const { shape, ramp, setShape } = useRamp();
+
+  /**
+   * WHICH THEME THIS STEP IS SHOWING, and it lives here rather than in a provider
+   * because nothing else needs it: steps three and four each read the scheme they
+   * are about. A provider would be a shared piece of state with one reader.
+   */
+  const [scheme, setScheme] = useState<Scheme>('light');
+  const dark = scheme === 'dark';
   // THE RE-POINTED ones: an override is a changed declaration, so a person who
   // walked back from step three must be probed against what they actually have.
   const declared = useThemedDeclarations();
@@ -172,8 +183,13 @@ export default function Palette() {
   // Recomputed only when a base or the shape moves. `generatePalette` clamps each
   // rung into sRGB with a bisection, so it is not free — and it runs seventy-seven
   // times per call.
-  const palette = useMemo(() => generatePalette(bases, ramp), [bases, ramp]);
-  const steps = useMemo(() => ramp.map((rung) => rung.step), [ramp]);
+  const shown = dark ? DARK_REFERENCE_RAMP : ramp;
+  const shownBases = dark ? darkBases : bases;
+  const palette = useMemo(
+    () => generatePalette(shownBases, shown),
+    [shownBases, shown],
+  );
+  const steps = useMemo(() => shown.map((rung) => rung.step), [shown]);
 
   // ONE PROBE PER OPTION, and each option is probed against the shape it would
   // produce FROM THE CURRENT OTHER END — which is why this depends on `shape` and has
@@ -210,45 +226,129 @@ export default function Palette() {
       </p>
 
       <Fieldset>
-        <FieldsetLegend>The ramp</FieldsetLegend>
-        <FieldsetContent orientation="horizontal">
-          <RampEnd
-            legend="Darkest rung"
-            name="dark-end"
-            value={String(shape.darkEnd)}
-            onChange={(next) => setShape({ ...shape, darkEnd: Number(next) })}
-            options={DARK_END_CHOICES}
-            labelOf={(option) => Number(option).toFixed(2)}
-            idOf={(option) => `dark-${option}`}
-            verdicts={verdicts.dark}
+        <FieldsetLegend>Which theme</FieldsetLegend>
+        <FieldsetContent>
+          <div
+            style={{
+              display: 'grid',
+              justifyItems: 'start',
+              gap: 'var(--fm-space-stack-s)',
+            }}
           >
-            How dark the bottom of every ramp goes, as OKLCH lightness. The
-            design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)}, which is
-            what the harshest of 144 test brands needs — your seven colours may
-            allow more.
-          </RampEnd>
-
-          <RampEnd
-            legend="Pale end"
-            name="pale-end"
-            value={String(shape.paleRungs)}
-            onChange={(next) =>
-              setShape({
-                ...shape,
-                paleRungs: Number(next) as RampShape['paleRungs'],
-              })
-            }
-            options={PALE_END_CHOICES}
-            labelOf={(option) => PALE_LABELS[Number(option)] as string}
-            idOf={(option) => `pale-${option}`}
-            verdicts={verdicts.pale}
-          >
-            How far above the 100 the scale reaches — washes for page and
-            component backgrounds. Radix ships twelve steps, Material ten; the
-            design system ships eleven.
-          </RampEnd>
+            <SegmentedControl
+              name="scheme"
+              value={scheme}
+              onValueChange={(next) => setScheme(next as Scheme)}
+            >
+              <SegmentedControlItem value="light">Light</SegmentedControlItem>
+              <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
+            </SegmentedControl>
+            <p style={note}>
+              Both are exported. A dark theme is not the light one inverted: it
+              restates its bases at lightness 0.75, takes seventeen rungs of
+              0.05 where light takes eleven, and points <code>-subtle</code> at
+              a dark rung where light points at a pale one.
+            </p>
+          </div>
         </FieldsetContent>
       </Fieldset>
+
+      {dark && (
+        <Fieldset>
+          <FieldsetLegend>The dark seven</FieldsetLegend>
+          <FieldsetContent orientation="horizontal">
+            {FAMILIES.map((family) => (
+              <label
+                key={family}
+                style={{
+                  display: 'grid',
+                  gap: 'var(--fm-space-stack-s)',
+                  fontSize: 'var(--fm-text-sm)',
+                }}
+              >
+                {family}
+                <ColorPicker
+                  value={darkBases[family]}
+                  onChange={(event) =>
+                    setDarkBases({
+                      ...darkBases,
+                      [family]: event.currentTarget.value,
+                    })
+                  }
+                />
+              </label>
+            ))}
+          </FieldsetContent>
+          <div
+            style={{
+              display: 'grid',
+              gap: 'var(--fm-space-stack-s)',
+              marginBlockStart: 'var(--fm-space-stack-s)',
+              justifyItems: 'start',
+            }}
+          >
+            <p style={note}>
+              Suggested from your light colours — same hue, restated at
+              lightness 0.75, keeping each one&rsquo;s share of the chroma sRGB
+              allows there. That share is what &ldquo;how saturated is this
+              brand&rdquo; means; an absolute chroma is not, since the same
+              number is 78% of the ceiling at 0.55 and about 54% of it at 0.75.
+              Edit any of them: a brand with a real dark palette has colours of
+              its own.
+            </p>
+            <Button type="button" variant="secondary" onClick={deriveFromLight}>
+              Re-derive from the light colours
+            </Button>
+          </div>
+        </Fieldset>
+      )}
+
+      {/* THE RAMP CONTROL IS LIGHT-ONLY, and saying so beats hiding it silently. The
+          dark ramp's two ends have no role pointing at them — the 25 and the 1500 are
+          both headroom there — so a control over them would probe two matrices to
+          move nothing. */}
+      {!dark && (
+        <Fieldset>
+          <FieldsetLegend>The ramp</FieldsetLegend>
+          <FieldsetContent orientation="horizontal">
+            <RampEnd
+              legend="Darkest rung"
+              name="dark-end"
+              value={String(shape.darkEnd)}
+              onChange={(next) => setShape({ ...shape, darkEnd: Number(next) })}
+              options={DARK_END_CHOICES}
+              labelOf={(option) => Number(option).toFixed(2)}
+              idOf={(option) => `dark-${option}`}
+              verdicts={verdicts.dark}
+            >
+              How dark the bottom of every ramp goes, as OKLCH lightness. The
+              design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)}, which is
+              what the harshest of 144 test brands needs — your seven colours
+              may allow more.
+            </RampEnd>
+
+            <RampEnd
+              legend="Pale end"
+              name="pale-end"
+              value={String(shape.paleRungs)}
+              onChange={(next) =>
+                setShape({
+                  ...shape,
+                  paleRungs: Number(next) as RampShape['paleRungs'],
+                })
+              }
+              options={PALE_END_CHOICES}
+              labelOf={(option) => PALE_LABELS[Number(option)] as string}
+              idOf={(option) => `pale-${option}`}
+              verdicts={verdicts.pale}
+            >
+              How far above the 100 the scale reaches — washes for page and
+              component backgrounds. Radix ships twelve steps, Material ten; the
+              design system ships eleven.
+            </RampEnd>
+          </FieldsetContent>
+        </Fieldset>
+      )}
 
       <table
         style={{
@@ -264,9 +364,9 @@ export default function Palette() {
             paddingTop: 'var(--fm-space-stack-s)',
           }}
         >
-          The generated palette — seven families, {steps.length} rungs each,
-          lightness {ramp[0]?.lightness.toFixed(3)} down to{' '}
-          {shape.darkEnd.toFixed(2)}.
+          The generated {scheme} palette — seven families, {steps.length} rungs
+          each, lightness {shown[0]?.lightness.toFixed(3)} down to{' '}
+          {(shown.at(-1)?.lightness ?? 0).toFixed(2)}.
         </caption>
         <thead>
           <tr>
@@ -302,6 +402,12 @@ export default function Palette() {
                       inlineSize: 'var(--fm-space-inline-l)',
                       blockSize: 'var(--fm-space-inline-l)',
                       borderRadius: 'var(--fm-radius-sm)',
+                      // A HAIRLINE, and it is load-bearing rather than decoration.
+                      // The palest rungs sit at the same lightness as the page —
+                      // dark's 25 is 0.985 and so is `--fm-color-background` — so
+                      // without a border a whole column rendered as empty cells.
+                      // Seen only by looking at the page.
+                      border: '1px solid var(--fm-color-border)',
                       background: palette[family][step],
                     }}
                   />

@@ -16,17 +16,34 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react';
  * were omitted, and every set of bases failed. `generateTheme` takes the raw
  * declarations now, so the app carries no derived shape at all.
  */
-export type SerializedDeclarations = ReadonlyArray<readonly [string, string]>;
+export type SerializedEntries = ReadonlyArray<readonly [string, string]>;
 
-const DeclarationsContext = createContext<ReadonlyMap<string, string> | null>(
-  null,
-);
+/** Which stylesheet a step is reading. */
+export type Scheme = 'light' | 'dark';
+
+/**
+ * BOTH SCHEMES CROSS THE WIRE, because a dark theme is not the light one inverted.
+ * `presets/dark.css` restates its bases and every rung, and — the part that decides
+ * this shape — it restates the ALIAS MAP too: in dark `-subtle` points at a dark rung
+ * where in light it points at a pale one. So "which rung does this role use" has two
+ * answers, and a single map could only ever have carried one of them.
+ */
+export type SerializedDeclarations = Readonly<
+  Record<Scheme, SerializedEntries>
+>;
+
+type Hydrated = Readonly<Record<Scheme, ReadonlyMap<string, string>>>;
+
+const DeclarationsContext = createContext<Hydrated | null>(null);
 
 /** Entries back into a Map. One function, because the schema's suite needs it too. */
 export function hydrateDeclarations(
   serialized: SerializedDeclarations,
-): ReadonlyMap<string, string> {
-  return new Map(serialized);
+): Hydrated {
+  return {
+    light: new Map(serialized.light),
+    dark: new Map(serialized.dark),
+  };
 }
 
 /**
@@ -52,7 +69,17 @@ export function DeclarationsProvider({
   );
 }
 
-export function useDeclarations(): ReadonlyMap<string, string> {
+/**
+ * The declarations of one scheme, `light` unless asked otherwise.
+ *
+ * DEFAULTED RATHER THAN REQUIRED, and that is deliberate: every step that existed
+ * before dark did reads the light contract, and making the argument mandatory would
+ * have been a rename disguised as a feature — the same call at every site, plus a
+ * chance to pass the wrong one.
+ */
+export function useDeclarations(
+  scheme: Scheme = 'light',
+): ReadonlyMap<string, string> {
   const declarations = useContext(DeclarationsContext);
 
   // THROWS rather than returning an empty Map. An empty one generates an empty
@@ -64,5 +91,5 @@ export function useDeclarations(): ReadonlyMap<string, string> {
     );
   }
 
-  return declarations;
+  return declarations[scheme];
 }

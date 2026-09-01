@@ -27,7 +27,7 @@ import { REFERENCE_RAMP } from '../app/ramp';
  * reason a fixture could not: "the shipped brand exports cleanly" only means
  * something if the roles and the greys are the ones that ship.
  */
-const declared = hydrateDeclarations(readDeclarations());
+const declared = hydrateDeclarations(readDeclarations()).light;
 
 const asMap = (declarations: Record<string, string>) =>
   new Map(Object.entries(declarations));

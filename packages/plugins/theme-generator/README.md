@@ -77,9 +77,17 @@ Idempotent: re-running merges and dedupes the theme list.
 }
 ```
 
-For each file it parses the `--fm-color-*` declarations and runs the `validateTheme()` of the
-**installed** `@fmmenchi/tokens` (dynamic import of `@fmmenchi/tokens/validate`). A theme passes
-only if it is:
+For each file it parses the `--fm-color-*` declarations, resolves any `var(--fm-palette-…)` they
+point at — against the file's own declarations first and the installed `@fmmenchi/tokens`
+underneath, the way a browser sees it — and runs `validateTheme()`.
+
+**The rules travel with this plugin; the values stay with you.** `validateTheme` is a static
+import of `@fmmenchi/theme`, bundled in — it used to be a dynamic import of an
+`@fmmenchi/tokens/validate` subpath resolved from your workspace, which cost two escape hatches
+and a failure mode where the target refused to run. Your `@fmmenchi/tokens` is still what supplies
+the palette, because that is a stylesheet and yours is the one your app paints with.
+
+A theme passes only if it is:
 
 - **complete** — every color role assigned, no unknown roles;
 - **parsable** — every value is a real color;
