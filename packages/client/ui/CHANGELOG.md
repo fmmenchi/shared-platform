@@ -1,3 +1,9 @@
+## 0.7.11 (2026-09-01)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/tokens to 0.0.39
+
 ## 0.7.10 (2026-09-01)
 
 ### 🧱 Updated Dependencies

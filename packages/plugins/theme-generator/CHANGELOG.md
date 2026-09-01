@@ -1,3 +1,14 @@
+## 0.0.20 (2026-09-01)
+
+### 🩹 Fixes
+
+- **nx-theme-generator:** the validate executor rejected its own generator's output ([e602d8a](https://github.com/fmmenchi/shared-platform/commit/e602d8a))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.19 (2026-08-31)
 
 ### 🧱 Updated Dependencies

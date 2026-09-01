@@ -1,3 +1,19 @@
+## 0.0.39 (2026-09-01)
+
+### 🚀 Features
+
+- **tokens:** a dark end on the dark theme's chromatic ramps ([6e7ecfa](https://github.com/fmmenchi/shared-platform/commit/6e7ecfa))
+- **tokens:** a pale end on every chromatic ramp ([5d507d3](https://github.com/fmmenchi/shared-platform/commit/5d507d3))
+
+### 🩹 Fixes
+
+- **tokens:** the pale rungs get a consumer, and stop being maximally tinted ([4a28c6a](https://github.com/fmmenchi/shared-platform/commit/4a28c6a))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.38 (2026-09-01)
 
 ### 🚀 Features
