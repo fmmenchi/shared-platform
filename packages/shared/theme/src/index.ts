@@ -107,6 +107,18 @@ export { parseCssVars, expandVars, resolveCssVar } from './utils/parse-css.js';
  * does that half itself.
  */
 export { generatePalette } from './palette.js';
+
+/**
+ * THE DARK COUNTERPART of a set of bases. Exported for the same reason
+ * `generatePalette` is: a caller collects seven brand colours and needs fourteen,
+ * because a dark theme restates its bases rather than inverting the light ones.
+ *
+ * The rule is measured off this design system's own bases — six of the seven light
+ * ones sit at 77.6–79.2% of the chroma sRGB allows at their lightness — and it
+ * carries that SHARE rather than the number, since the same chroma means something
+ * different at 0.75 than at 0.55.
+ */
+export { deriveDarkBases } from './palette.js';
 export type { Rung, Ramp, Bases, Palette } from './palette.js';
 
 /**

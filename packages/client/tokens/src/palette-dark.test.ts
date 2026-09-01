@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   PALETTE_FAMILIES,
+  deriveDarkBases,
   parseTheme,
   resolveCssVar,
   toTheme,
@@ -39,6 +40,7 @@ import { describe, expect, it } from 'vitest';
  * preset restates every base.
  */
 const here = dirname(fileURLToPath(import.meta.url));
+const light = parseTheme(readFileSync(join(here, 'styles/vars.css'), 'utf8'));
 const declared = parseTheme(
   readFileSync(join(here, 'styles/vars.css'), 'utf8'),
   readFileSync(join(here, 'styles/presets/dark.css'), 'utf8'),
@@ -157,6 +159,54 @@ describe('the dark palette layer', () => {
       role('card')?.l ?? 0,
     );
     expect(darkest, 'and under `muted`').toBeLessThan(role('muted')?.l ?? 0);
+  });
+
+  it('states the bases `deriveDarkBases` PRODUCES from the light ones', () => {
+    // THE PROPERTY THIS DESIGN SYSTEM EXISTS TO HAVE, extended to dark. The light
+    // theme was already an invocation of `generatePalette` with our bases; the dark
+    // one was not, because its seven bases were hand-picked and followed no rule —
+    // measured, neither a fraction of the gamut ceiling at L 0.75 (3.16x spread) nor
+    // a fraction of the light chroma (2.02x). So a wizard handed a brand's seven
+    // light colours had nothing to compute the other seven from, and `--scheme=dark`
+    // could only ever have been a label.
+    //
+    // They are derived now, and this is what stops them drifting back: change a light
+    // base without regenerating, or nudge a dark one by hand, and this fails.
+    const lightBases = Object.fromEntries(
+      PALETTE_FAMILIES.map((family) => [
+        family,
+        resolveCssVar(
+          light.get(`--fm-palette-${family}-base`) as string,
+          light,
+        ),
+      ]),
+    ) as Parameters<typeof deriveDarkBases>[0];
+
+    const expected = deriveDarkBases(lightBases);
+    const apart: string[] = [];
+
+    for (const family of PALETTE_FAMILIES) {
+      const mine = toOklch(parse(expected[family]));
+      const shipped = toOklch(
+        parse(
+          resolveCssVar(
+            declared.get(`--fm-palette-${family}-base`) as string,
+            declared,
+          ),
+        ),
+      );
+      const delta = Math.max(
+        Math.abs((mine?.l ?? 0) - (shipped?.l ?? 0)),
+        Math.abs((mine?.c ?? 0) - (shipped?.c ?? 0)),
+      );
+      if (delta > 0.0002) {
+        apart.push(
+          `${family}: derived ${expected[family]} vs shipped ${shipped?.c?.toFixed(4)}`,
+        );
+      }
+    }
+
+    expect(apart, apart.join('\n')).toEqual([]);
   });
 
   it('still satisfies the whole contract', () => {

@@ -44,14 +44,40 @@
  * it), `src/styles.test.ts` and `src/palette.test.ts`.
  */
 [data-theme='dark'] {
-  /* ---------- LEVEL 1 — dark bases ---------- */
-  --fm-palette-primary-base: oklch(75% 0.1263 256);
-  --fm-palette-secondary-base: oklch(75% 0.04 256);
-  --fm-palette-accent-base: oklch(75% 0.11 195);
-  --fm-palette-negative-base: oklch(75% 0.1462 27);
-  --fm-palette-success-base: oklch(75% 0.141 150);
-  --fm-palette-warning-base: oklch(75% 0.132 82);
-  --fm-palette-info-base: oklch(75% 0.1338 245);
+  /* ---------- LEVEL 1 — dark bases, DERIVED from the light ones ----------
+   *
+   * They were seven hand-picked colours until they were not. Measured, they followed
+   * no rule at all — neither a fraction of the gamut ceiling at this lightness (3.16x
+   * spread across the seven) nor a fraction of the light base's chroma (2.02x) — which
+   * is exactly what made a dark theme impossible to GENERATE: a wizard handed a
+   * brand's seven light colours had nothing to compute the other seven from.
+   *
+   * `deriveDarkBases` in `@fmmenchi/theme` is that computation, and the rule was found
+   * by measuring the LIGHT bases rather than chosen: six of the seven sit between
+   * 77.6% and 79.2% of the chroma sRGB allows at their lightness (`secondary` is the
+   * deliberate exception at 26.8%, being a muted grey-blue). That SHARE is what "how
+   * saturated is this brand" means, and it is what carries across a change of
+   * lightness — an absolute chroma does not, since 0.14 is 78% of the ceiling at
+   * L 0.55 and about 54% of it at 0.75.
+   *
+   * WHAT CHANGED HERE, so nobody has to diff to find out. Against the hand-picked
+   * values the rule lands within 20% on every family: primary, negative and info lose
+   * about a fifth of their chroma, `success` gains 13%, and `warning`'s hue returns to
+   * the light base's 78 from a hand-nudged 82. Contrast against the dark page is
+   * unchanged in practice, and the whole contract re-validates.
+   *
+   * What this bought: `apps/theme-builder` can build a dark theme from the same seven
+   * colours it already asks for, and THIS preset is what it produces from the
+   * reference bases. Before, "ours is an invocation of the same code path as a
+   * consumer's" was true of light only.
+   */
+  --fm-palette-primary-base: oklch(0.75 0.1013 255);
+  --fm-palette-secondary-base: oklch(0.75 0.0348 256);
+  --fm-palette-accent-base: oklch(0.75 0.0983 195);
+  --fm-palette-negative-base: oklch(0.75 0.1182 27);
+  --fm-palette-success-base: oklch(0.75 0.1591 150);
+  --fm-palette-warning-base: oklch(0.75 0.1237 78);
+  --fm-palette-info-base: oklch(0.75 0.107 245);
 
   /* ---------- LEVEL 2 — the dark ramp: 25 -> 1500, evenly 0.05 apart
      below the 100, compressing above it ---------- */
