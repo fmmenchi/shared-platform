@@ -12,7 +12,7 @@ import { wcagContrast } from 'culori';
 import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_BASES } from '../app/bases';
-import { WIZARD_RAMP } from '../app/ramp';
+import { REFERENCE_RAMP } from '../app/ramp';
 import {
   ROLE_GROUPS,
   UNGROUPED_PAIRS,
@@ -59,7 +59,7 @@ describe('the role groups', () => {
 });
 
 describe('what the page shows and what the gate says', () => {
-  const theme = generateTheme(declared, REFERENCE_BASES, WIZARD_RAMP);
+  const theme = generateTheme(declared, REFERENCE_BASES, REFERENCE_RAMP);
 
   /** Exactly the computation the page performs, per row. */
   const shownAsFailing = () =>
@@ -87,7 +87,7 @@ describe('what the page shows and what the gate says', () => {
       ...declared,
       [colorVar('primary'), 'var(--fm-palette-primary-200)'],
     ]);
-    const brokenTheme = generateTheme(broken, REFERENCE_BASES, WIZARD_RAMP);
+    const brokenTheme = generateTheme(broken, REFERENCE_BASES, REFERENCE_RAMP);
 
     const shown = CONTRAST_PAIRS.filter(([bg, fg, minimum]) => {
       const ratio = wcagContrast(brokenTheme[bg], brokenTheme[fg]);

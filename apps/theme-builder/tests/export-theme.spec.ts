@@ -11,7 +11,7 @@ import { REFERENCE_BASES } from '../app/bases';
 import { readDeclarations } from '../app/declarations.server';
 import { hydrateDeclarations } from '../app/declarations';
 import { buildThemeFile } from '../app/export-theme';
-import { WIZARD_RAMP } from '../app/ramp';
+import { REFERENCE_RAMP } from '../app/ramp';
 
 /**
  * THE HANDOFF, TESTED FROM THE READER'S END.
@@ -41,7 +41,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       declared,
       REFERENCE_BASES,
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     const violations = validateTheme(
@@ -58,7 +58,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       declared,
       REFERENCE_BASES,
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     const roles = COLOR_ROLES.map((role) => declarations[colorVar(role)]);
@@ -76,7 +76,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       declared,
       REFERENCE_BASES,
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     for (const family of PALETTE_FAMILIES) {
@@ -103,7 +103,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       declared,
       { ...REFERENCE_BASES, primary: '#ff00ff' },
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     expect(declarations['--fm-palette-primary-base']).not.toBe(
@@ -120,7 +120,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       declared,
       REFERENCE_BASES,
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     // Every number the file writes, wherever it sits: a base is a literal and a rung
@@ -149,7 +149,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       repointed,
       REFERENCE_BASES,
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     expect(declarations[colorVar('primary')]).toBe(
@@ -177,7 +177,7 @@ describe('buildThemeFile', () => {
     const { declarations } = buildThemeFile(
       repointed,
       REFERENCE_BASES,
-      WIZARD_RAMP,
+      REFERENCE_RAMP,
     );
 
     expect(declarations[colorVar('scrim')]).toContain('neutral-500');
@@ -185,10 +185,10 @@ describe('buildThemeFile', () => {
   });
 
   it('keeps what the builder needs to reopen it, where the generator will not read it', () => {
-    const file = buildThemeFile(declared, REFERENCE_BASES, WIZARD_RAMP);
+    const file = buildThemeFile(declared, REFERENCE_BASES, REFERENCE_RAMP);
 
     expect(file.builder.bases).toEqual(REFERENCE_BASES);
-    expect(file.builder.ramp).toEqual(WIZARD_RAMP);
+    expect(file.builder.ramp).toEqual(REFERENCE_RAMP);
     // `declarations` is the generator's whole contract, so the record above cannot
     // reach it and cannot become a token nobody declared.
     expect(

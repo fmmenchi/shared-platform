@@ -13,7 +13,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
-import { WIZARD_RAMP } from '../../ramp';
+import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
 import {
   useRoleOverrides,
@@ -50,18 +50,19 @@ export default function Roles() {
   const { bases } = useBases();
   const declared = useThemedDeclarations();
   const { overrides, setOverride, reset, count } = useRoleOverrides();
+  const { ramp } = useRamp();
   const families = useRungOptions();
 
   const { theme, violations } = useMemo(() => {
     try {
-      const generated = generateTheme(declared, bases, WIZARD_RAMP);
+      const generated = generateTheme(declared, bases, ramp);
       return { theme: generated, violations: validateTheme(generated) };
     } catch {
       // A hole the earlier steps report in detail. The groups still render, because
       // this is where a person would fix it.
       return { theme: {} as Record<string, string>, violations: [] };
     }
-  }, [declared, bases]);
+  }, [declared, bases, ramp]);
 
   const failing = useMemo(
     () =>

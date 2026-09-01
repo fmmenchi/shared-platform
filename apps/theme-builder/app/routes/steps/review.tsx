@@ -18,7 +18,7 @@ import { useBases } from '../../bases';
 import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
-import { WIZARD_RAMP } from '../../ramp';
+import { useRamp } from '../../ramp';
 
 /**
  * STEP FOUR — read what the theme measures, then hand it over.
@@ -42,6 +42,9 @@ import { WIZARD_RAMP } from '../../ramp';
  */
 export default function Review() {
   const { bases } = useBases();
+  // THE SHAPE CHOSEN ON STEP TWO, not the reference: the file a person downloads has
+  // to be the theme they were shown.
+  const { ramp } = useRamp();
   // THE RE-POINTED ones, or the export would quietly ignore step three.
   const declared = useThemedDeclarations();
   const [downloaded, setDownloaded] = useState<string | null>(null);
@@ -54,19 +57,19 @@ export default function Review() {
    */
   const verdict = useMemo(() => {
     try {
-      const theme = generateTheme(declared, bases, WIZARD_RAMP);
+      const theme = generateTheme(declared, bases, ramp);
       return { theme, violations: validateTheme(theme), error: null };
     } catch (error) {
       return { theme: null, violations: [], error: (error as Error).message };
     }
-  }, [declared, bases]);
+  }, [declared, bases, ramp]);
 
   const schema = useMemo(() => exportSchema, []);
 
   const passes = verdict.error === null && verdict.violations.length === 0;
 
   const download = (values: ExportValues) => {
-    const file = buildThemeFile(declared, bases, WIZARD_RAMP);
+    const file = buildThemeFile(declared, bases, ramp);
     const name = `${values.name}.theme.json`;
 
     // The scheme rides along for the person to pass to the generator; the file's own

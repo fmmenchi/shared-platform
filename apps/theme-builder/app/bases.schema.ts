@@ -9,7 +9,7 @@ import {
 } from '@fmmenchi/theme';
 import { z } from 'zod';
 
-import { WIZARD_RAMP } from './ramp';
+import { REFERENCE_RAMP } from './ramp';
 
 /**
  * WHAT A SCHEMA CAN SAY ABOUT SEVEN COLOURS, AND WHAT IT CANNOT.
@@ -126,7 +126,7 @@ export function makeBasesSchema(declared: Declarations) {
       // declarations and generates the brand's ramps itself — the app assembled that
       // by hand for a while and got it wrong, omitting the greys, which made every
       // set of bases fail.
-      theme = generateTheme(declared, bases, WIZARD_RAMP);
+      theme = generateTheme(declared, bases, REFERENCE_RAMP);
     } catch (error) {
       // A rung the ramp does not reach. Not attributable to one field, so it goes
       // on the form rather than being pinned to a colour that may be blameless.
