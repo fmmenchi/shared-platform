@@ -44,17 +44,27 @@ export function readDeclarations(): SerializedDeclarations {
   // Resolved through the package's own `exports` rather than by walking up the
   // tree: the app must not know where in the workspace tokens happens to live.
   const varsPath = require.resolve('@fmmenchi/tokens/styles/vars.css');
-  const declared = parseTheme(readFileSync(varsPath, 'utf8'));
+  const darkPath = require.resolve('@fmmenchi/tokens/styles/presets/dark.css');
+
+  const vars = readFileSync(varsPath, 'utf8');
+  const light = parseTheme(vars);
 
   // A stylesheet that parsed to nothing is a broken build, not an empty theme. Left
   // alone it surfaces as `generateTheme` producing no roles and the validator
   // reporting all 84 missing — which says nothing about the actual mistake, and is
   // exactly how the `?raw` dead end wasted an afternoon.
-  if (declared.size === 0) {
+  if (light.size === 0) {
     throw new Error(
       `No --fm-* declarations found in ${varsPath}. The theme-builder cannot generate anything without them.`,
     );
   }
 
-  return [...declared];
+  // THE PRESET GOES OVER `vars.css`, NOT INSTEAD OF IT, which is the whole reason
+  // `parseTheme` takes several sources: read alone the dark preset does not resolve —
+  // it points at greys only `vars.css` declares, and `toTheme` refuses it by design
+  // rather than returning a theme with a hole. Merged in cascade order it is what a
+  // browser sees under `[data-theme='dark']`.
+  const dark = parseTheme(vars, readFileSync(darkPath, 'utf8'));
+
+  return { light: [...light], dark: [...dark] };
 }

@@ -7,18 +7,17 @@ import { FieldsetContent } from '@fmmenchi/ui/fieldset-content';
 import { FieldsetLegend } from '@fmmenchi/ui/fieldset-legend';
 import { FormErrorSummary } from '@fmmenchi/ui/form-error-summary';
 import { FormInput } from '@fmmenchi/ui/form-input';
-import { FormSegmentedControl } from '@fmmenchi/ui/form-segmented-control';
 import { Heading } from '@fmmenchi/ui/heading';
-import { SegmentedControlItem } from '@fmmenchi/ui/segmented-control-item';
 import { RhfForm } from '@fmmenchi/ui-form-ports/react-hook-form';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
+import { useDeclarations } from '../../declarations';
 import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
-import { useRamp } from '../../ramp';
+import { DARK_REFERENCE_RAMP, useRamp } from '../../ramp';
 
 /**
  * STEP FOUR — read what the theme measures, then hand it over.
@@ -41,12 +40,17 @@ import { useRamp } from '../../ramp';
  * asking a person to find out from CI.
  */
 export default function Review() {
-  const { bases } = useBases();
+  const { bases, darkBases } = useBases();
   // THE SHAPE CHOSEN ON STEP TWO, not the reference: the file a person downloads has
   // to be the theme they were shown.
   const { ramp } = useRamp();
   // THE RE-POINTED ones, or the export would quietly ignore step three.
   const declared = useThemedDeclarations();
+  // THE DARK ALIAS MAP, unmodified. Step three's re-pointings are light-only — the
+  // dark preset points its roles at different rungs (`-subtle` at the 1400 where
+  // light's is at the 50), so a light override cannot be carried across without
+  // meaning something else. Stated as a limitation below rather than half-applied.
+  const darkDeclared = useDeclarations('dark');
   const [downloaded, setDownloaded] = useState<string | null>(null);
 
   /**
@@ -57,37 +61,61 @@ export default function Review() {
    */
   const verdict = useMemo(() => {
     try {
-      const theme = generateTheme(declared, bases, ramp);
-      return { theme, violations: validateTheme(theme), error: null };
+      const light = generateTheme(declared, bases, ramp);
+      const dark = generateTheme(darkDeclared, darkBases, DARK_REFERENCE_RAMP);
+      return {
+        violations: [
+          ...validateTheme(light).map((v) => ({ ...v, scheme: 'light' })),
+          ...validateTheme(dark).map((v) => ({ ...v, scheme: 'dark' })),
+        ],
+        error: null,
+      };
     } catch (error) {
-      return { theme: null, violations: [], error: (error as Error).message };
+      return { violations: [], error: (error as Error).message };
     }
-  }, [declared, bases, ramp]);
+  }, [declared, darkDeclared, bases, darkBases, ramp]);
 
   const schema = useMemo(() => exportSchema, []);
 
   const passes = verdict.error === null && verdict.violations.length === 0;
 
+  /**
+   * TWO FILES, because a theme is two themes.
+   *
+   * The generator writes one `[data-theme]` block per invocation, which is the right
+   * shape — light and dark ARE two blocks — so the handoff is two files and two
+   * commands rather than one file the generator would have to learn a new key for.
+   * Nothing in the plugin changes.
+   *
+   * Both from one gesture, which a browser may ask about once ("download multiple
+   * files?"). The alternative was two buttons and a piece of state to remember which
+   * had been pressed, for a pair a person always wants together.
+   */
   const download = (values: ExportValues) => {
-    const file = buildThemeFile(declared, bases, ramp);
-    const name = `${values.name}.theme.json`;
+    const files = [
+      [`${values.name}.theme.json`, buildThemeFile(declared, bases, ramp)],
+      [
+        `${values.name}-dark.theme.json`,
+        buildThemeFile(darkDeclared, darkBases, DARK_REFERENCE_RAMP),
+      ],
+    ] as const;
 
-    // The scheme rides along for the person to pass to the generator; the file's own
-    // contract is `declarations`, which the generator reads and nothing else.
-    const blob = new Blob([`${JSON.stringify(file, null, 2)}\n`], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = name;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    for (const [name, file] of files) {
+      const blob = new Blob([`${JSON.stringify(file, null, 2)}\n`], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = name;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    }
 
-    setDownloaded(`${values.name}|${values.scheme}`);
+    setDownloaded(values.name);
   };
 
-  const [savedName, savedScheme] = (downloaded ?? '').split('|');
+  const savedName = downloaded;
 
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
@@ -134,7 +162,7 @@ export default function Review() {
 
       <RhfForm<ExportValues>
         options={{
-          defaultValues: { name: 'acme', scheme: 'light' },
+          defaultValues: { name: 'acme' },
           resolver: zodResolver(schema),
         }}
         onSubmit={download}
@@ -150,15 +178,6 @@ export default function Review() {
               label="Theme name"
               hint="Becomes the data-theme value and the file name. Lowercase, digits and dashes."
             />
-
-            <FormSegmentedControl
-              name="scheme"
-              label="Colour scheme"
-              hint="What the browser paints its own controls from — a select's popup, a native checkbox. It reads nothing from the roles, so a dark theme claiming light ships white native lists."
-            >
-              <SegmentedControlItem value="light">Light</SegmentedControlItem>
-              <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
-            </FormSegmentedControl>
           </FieldsetContent>
         </Fieldset>
 
@@ -170,7 +189,7 @@ export default function Review() {
           }}
         >
           <Button type="submit" disabled={!passes}>
-            Download the theme file
+            Download both theme files
           </Button>
           <Button as={Link} to="/roles" variant="secondary">
             Back to the roles
@@ -203,8 +222,13 @@ export default function Review() {
             <code>
               {`npx nx g @fmmenchi/nx-theme-generator:theme ${savedName} \\
   --project=<your-app> \\
-  --scheme=${savedScheme} \\
-  --from=./${savedName}.theme.json`}
+  --scheme=light \\
+  --from=./${savedName}.theme.json
+
+npx nx g @fmmenchi/nx-theme-generator:theme ${savedName}-dark \\
+  --project=<your-app> \\
+  --scheme=dark \\
+  --from=./${savedName}-dark.theme.json`}
             </code>
           </pre>
         </div>

@@ -81,22 +81,36 @@ State lives in providers wired in `root.tsx`: `bases.tsx`, `ramp.tsx`, `role-ove
   `ramp-shape.spec.ts`. A second copy would be a second definition of "harsh", free to drift, and a
   claim proved on one would be quoted about the other.
 
+## Both themes
+
+The wizard builds **two** themes and exports two files. That is only possible because the dark
+preset's seven bases stopped being hand-picked: `deriveDarkBases` in `@fmmenchi/theme` computes them
+from the light seven, and `@fmmenchi/tokens`' `palette-dark.test.ts` asserts the shipped preset IS
+what it produces. Before that they followed no rule at all — measured, neither a fraction of the
+gamut ceiling at L 0.75 (3.16x spread) nor a fraction of the light chroma (2.02x) — so there was
+nothing to compute a brand's dark colours from.
+
+- **The dark bases are EDITABLE**, on step 2 beside the palette they produce, defaulting to the
+  derivation. `deriveFromLight()` is an explicit action and never automatic: re-deriving on every
+  light change would silently discard dark colours a person had typed.
+- **`DARK_REFERENCE_RAMP` is stated whole**, not offered as a `RampShape`. Its two ends have no role
+  pointing at them, so a control over them would probe two matrices to move nothing.
+- **`tests/dark.spec.ts` holds the claim**: the app's default dark bases are the shipped ones, the
+  dark ramp reproduces every one of the seventeen shipped rungs, and the theme validates.
+- **Step 4's `--scheme` field is gone.** It was a false choice — the generator emits `--scheme` as
+  the `color-scheme` line and nothing else, so picking `dark` shipped light colours with dark native
+  controls. There is nothing to choose now: each file's scheme is a fact about which file it is.
+
 ## Known gaps
 
-- **DARK IS NOT IN THE WIZARD.** It reads `vars.css` only, never `presets/dark.css`, so it builds
-  ONE theme. Step 4's `--scheme` is handed to the generator, which emits it as the `color-scheme`
-  line and nothing else — so choosing `dark` produces light-derived colours labelled dark, and
-  native controls go dark on a light theme. A dark theme is not a second ramp on the same bases: the
-  dark preset states its own bases at lightness 0.75 and its own 17-rung scale stepping 0.05 where
-  light steps 0.08, and its `-subtle` points at a DARK rung (the 1400) where light's points at a pale
-  one (the 50).
-- **The 25 has no role pointing at it.** The 50 does — the eight chromatic `-subtle` roles — so the
-  pale end of step 2 is no longer entirely free: dropping to `paleRungs: 0` makes those roles name a
-  rung that does not exist, and `probeShape` reports that as an unavailable option rather than
-  letting it through. The 25 remains headroom.
-- **`secondary-50` and `neutral-50` render alike.** A shared chroma fraction of a deliberately
-  muted grey-blue base is a grey; measured, `secondary-50` lands exactly on `neutral-50`'s chroma
-  (`accent-50` is only 1.4x it). So `secondary-subtle` and `neutral-subtle` are the same colour to
-  the eye. Forcing them apart would push `negative-50` out of sRGB.
+- **STEP THREE'S OVERRIDES ARE LIGHT-ONLY.** A role re-pointed there is not carried into the dark
+  theme, and it must not be: the dark preset points its roles at different rungs — `-subtle` at the
+  1400 where light's is at the 50 — so "primary-subtle goes to the 200" means a different colour in
+  each theme and carrying it across would be a guess. The dark theme uses the design system's own
+  dark alias map unchanged. Step 4 validates BOTH and labels which scheme each violation is from.
+- **The 25 (light) and the 1500 (dark) have no role pointing at them.** Deliberate headroom, and
+  what makes the pale end of step 2 nearly free: the only thing `paleRungs: 0` breaks is the eight
+  chromatic `-subtle` roles that now name the 50, which `probeShape` reports as an unavailable
+  option rather than letting through.
 
 `CLAUDE.md` is a symlink to this file — edit `AGENTS.md` only.

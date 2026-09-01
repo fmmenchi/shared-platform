@@ -60,8 +60,23 @@ Declarations at **every layer**, which is what keeps a rebrand seven numbers:
 A file carrying only the 84 finished colours would be a photograph of a theme: same pixels, nothing
 left to recompute.
 
+## Both themes
+
+It builds **two**, and exports two files:
+
+```bash
+npx nx g @fmmenchi/nx-theme-generator:theme acme      --from=./acme.theme.json      --scheme=light
+npx nx g @fmmenchi/nx-theme-generator:theme acme-dark --from=./acme-dark.theme.json --scheme=dark
+```
+
+A dark theme is not the light one inverted. It restates its bases at lightness 0.75, takes
+seventeen rungs of 0.05 where light takes eleven, and points `-subtle` at a dark rung where light
+points at a pale one. The dark seven are **suggested** from your light seven — same hue, keeping
+each one's share of the chroma sRGB allows at that lightness — and then editable on step 2, because
+a brand with a real dark palette has colours of its own.
+
 ## Limitations
 
-- **It builds the light theme.** The dark preset has its own bases and its own scale, and the wizard
-  does not read it — see the known gaps in [AGENTS.md](./AGENTS.md).
-- **The 25 has no role pointing at it yet.** The 50 is what the `-subtle` roles use.
+- **Step 3's role overrides are light-only.** The two themes point their roles at different rungs,
+  so a light override cannot be carried across without meaning something else.
+- **The 25 (light) and the 1500 (dark) have no role pointing at them yet** — deliberate headroom.

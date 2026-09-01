@@ -141,6 +141,52 @@ export const REFERENCE_RAMP: Ramp = [
 ];
 
 /**
+ * THE DARK RAMP — seventeen rungs, and not the light one mirrored.
+ *
+ * `presets/dark.css`'s own structure, stated here so the wizard can produce the dark
+ * theme with the same `generatePalette` call it uses for light. Three things differ
+ * from `REFERENCE_RAMP` and each is a fact about where the bases sit, not a taste:
+ *
+ *   THE STEP IS 0.05, not 0.08. Dark's bases are at lightness 0.75 and the scale has
+ *   to cover ground in both directions from there, so it takes thirteen strides below
+ *   the 100 where light takes nine, and each is smaller.
+ *
+ *   THE BASE IS THE 500, not a rung near the middle by accident. Above it the factors
+ *   climb toward the gamut ceiling as the lightness rises; below it they fall on a
+ *   straight line, 1.000 then -1/15 a rung, which is what made the 1400 and the 1500
+ *   arithmetic rather than a decision.
+ *
+ *   THE PALE END IS A TEXT COLOUR HERE. In a dark theme the rungs at the top are what
+ *   sits ON a fill, so the 25 and the 50 are not washes — which is also why their
+ *   absolute chroma targets are lower than light's: at L 0.97 and 0.985 the gamut
+ *   allows about half what it does at 0.95 and 0.975.
+ *
+ * IT IS NOT OFFERED AS A SHAPE. `RampShape` moves the two ends of the LIGHT ramp,
+ * probed against the contract; the dark ramp is stated whole. Offering both would be
+ * four controls and two probe matrices for a scale whose ends have no role pointing at
+ * them in dark — the 25 and the 1500 are both headroom there.
+ */
+export const DARK_REFERENCE_RAMP: Ramp = [
+  { step: 25, lightness: 0.985, chroma: 0.006 },
+  { step: 50, lightness: 0.97, chroma: 0.012 },
+  { step: 100, lightness: 0.95, chromaFactor: 0.165 },
+  { step: 200, lightness: 0.9, chromaFactor: 0.345 },
+  { step: 300, lightness: 0.85, chromaFactor: 0.543 },
+  { step: 400, lightness: 0.8, chromaFactor: 0.76 },
+  { step: 500, lightness: 0.75, chromaFactor: 1 },
+  { step: 600, lightness: 0.7, chromaFactor: 0.933 },
+  { step: 700, lightness: 0.65, chromaFactor: 0.866 },
+  { step: 800, lightness: 0.6, chromaFactor: 0.8 },
+  { step: 900, lightness: 0.55, chromaFactor: 0.733 },
+  { step: 1000, lightness: 0.5, chromaFactor: 0.667 },
+  { step: 1100, lightness: 0.45, chromaFactor: 0.6 },
+  { step: 1200, lightness: 0.4, chromaFactor: 0.533 },
+  { step: 1300, lightness: 0.35, chromaFactor: 0.467 },
+  { step: 1400, lightness: 0.3, chromaFactor: 0.4 },
+  { step: 1500, lightness: 0.25, chromaFactor: 0.333 },
+];
+
+/**
  * The two ends a person may move, and deliberately not the eleven rungs.
  *
  * WHAT IS EXPOSED AND WHAT IS NOT is the whole design of this control, and the line
