@@ -1,3 +1,13 @@
+## 0.0.38 (2026-09-01)
+
+### 🚀 Features
+
+- **tokens:** the palette is one scale — even steps, one lightness per rung ([eaa6563](https://github.com/fmmenchi/shared-platform/commit/eaa6563))
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.37 (2026-08-31)
 
 ### 🧱 Updated Dependencies
