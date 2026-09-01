@@ -7,7 +7,7 @@ import {
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { isAbsolute, join } from 'node:path';
-import { resolveCssVar, validateTheme } from '@fmmenchi/theme';
+import { judgeTheme } from '../../lib/judge';
 import { validationGenerator } from '../validation/validation';
 import type { ThemeGeneratorSchema } from './schema';
 
@@ -116,36 +116,23 @@ function readExportedTheme(from: string, validate: boolean): RoleDeclaration[] {
 /**
  * Refuse a theme the pipeline would refuse, before it reaches the repo.
  *
- * The rules come from `@fmmenchi/theme`, IMPORTED — not resolved from the
- * consumer's workspace, which is what this used to do with `createRequire`, a
- * dynamic `import()`, an escape-hatch option and a "could not resolve" branch
- * that installed the theme unchecked. The contract is code, so it travels with
- * this plugin; only the STYLESHEET is read from the consumer's install, because
- * that is a file and theirs is the one that matters.
+ * `judgeTheme` IS THE EXECUTOR'S OWN FUNCTION, which it had a hand-written twin of
+ * until the two disagreed. Both ask "is this an allowed theme", and the answer has a
+ * shape that is easy to get subtly wrong twice: completeness is judged on the roles
+ * the theme itself declares, while a `var()` may resolve from wider context.
+ *
+ * HERE THE CONTEXT IS THE FILE ALONE, which is the difference from the executor and
+ * is deliberate. A `--from` handoff carries its own three layers — bases, rungs,
+ * roles — so it must stand up by itself; a reference it cannot satisfy is a hole in
+ * the export, not something to paper over with the reference stylesheet.
  */
 function validateExported(path: string, roles: RoleDeclaration[]): void {
-  const map = new Map(roles);
-  const colors: Record<string, string> = {};
+  const { ok, problems } = judgeTheme(new Map(roles));
 
-  for (const [name, value] of roles) {
-    if (!name.startsWith('--fm-color-')) continue;
-    try {
-      colors[name.slice('--fm-color-'.length)] = resolveCssVar(value, map);
-    } catch (error) {
-      // A reference to something the file never declares. Left alone it installs
-      // a role that falls back to its `@property` initial-value — opaque black,
-      // in both themes, with nothing falsy for a check to notice.
-      throw new Error(
-        `${path}: ${name} does not resolve — ${(error as Error).message}`,
-      );
-    }
-  }
-
-  const violations = validateTheme(colors);
-  if (violations.length > 0) {
+  if (!ok) {
     throw new Error(
       `${path} is not a valid theme, so nothing was written:\n  ` +
-        violations.map((v) => v.message).join('\n  '),
+        problems.join('\n  '),
     );
   }
 }

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/schema",
   "version": 2,
   "title": "Validate @fmmenchi/ui themes",
-  "description": "Validates [data-theme] CSS files against the INSTALLED @fmmenchi/tokens contract (completeness, parsable colors, sRGB gamut, WCAG contrast on every declared pair).",
+  "description": "Validates [data-theme] CSS files against the INSTALLED @fmmenchi/tokens contract (completeness, parsable colors, sRGB gamut, WCAG contrast on every declared pair). Palette references are resolved against the reference stylesheet underneath, so a theme may point its roles at rungs.",
   "type": "object",
   "properties": {
     "themes": {
@@ -11,6 +11,10 @@
         "type": "string"
       },
       "description": "Workspace-relative paths of the theme CSS files to validate."
+    },
+    "tokensPath": {
+      "type": "string",
+      "description": "Path to the reference vars.css, for when @fmmenchi/tokens cannot be resolved from the workspace root. Escape hatch only — normally the installed package is used."
     }
   },
   "required": ["themes"]

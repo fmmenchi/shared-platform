@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import type { ExecutorContext } from '@nx/devkit';
-import { parseTheme, toTheme } from '@fmmenchi/theme';
+import { COLOR_ROLES, parseTheme, toTheme } from '@fmmenchi/theme';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -38,6 +38,45 @@ beforeAll(() => {
     .map(([role, value]) => `  --fm-color-${role}: ${value as string};`)
     .join('\n');
   writeFileSync(join(dir, 'good.css'), `[data-theme='x'] {\n${rows}\n}\n`);
+
+  // THE CASE THIS EXECUTOR USED TO REFUSE. A theme whose roles POINT at palette
+  // rungs, carrying the palette with it — which is exactly the three-layer file
+  // `theme --from` writes, and the whole reason the handoff is declarations rather
+  // than eighty-four finished colours. Measured as written, `var(--fm-palette-…)` is
+  // not a colour, so every role came back unparsable and the tool's own output was
+  // rejected by the tool's own gate.
+  const referenceDeclared = parseTheme(readFileSync(varsPath, 'utf8'));
+  const carried = [...referenceDeclared]
+    .filter(([name]) => name.startsWith('--fm-palette-'))
+    .map(([name, value]) => `  ${name}: ${value};`)
+    .join('\n');
+  const pointing = COLOR_ROLES.map(
+    (role) =>
+      `  --fm-color-${role}: ${referenceDeclared.get(`--fm-color-${role}`) as string};`,
+  ).join('\n');
+  writeFileSync(
+    join(dir, 'pointing.css'),
+    `[data-theme='x'] {\n${carried}\n${pointing}\n}\n`,
+  );
+
+  // The same thing WITHOUT the palette underneath it: the roles point at rungs the
+  // file never declares. In the cascade that is fine — `vars.css` is at `:root` — so
+  // the executor resolves against the installed contract and this must pass too.
+  writeFileSync(
+    join(dir, 'pointing-bare.css'),
+    `[data-theme='x'] {\n${pointing}\n}\n`,
+  );
+
+  // A role pointing at a rung NOBODY declares — not the file, not the reference.
+  // This is the mistake an exporter actually makes, and it must be named rather
+  // than reported as an unparsable colour.
+  writeFileSync(
+    join(dir, 'dangling.css'),
+    `[data-theme='x'] {\n${pointing.replace(
+      /--fm-color-primary: [^;]+;/,
+      '--fm-color-primary: var(--fm-palette-primary-4200);',
+    )}\n}\n`,
+  );
 
   writeFileSync(
     join(dir, 'bad.css'),
@@ -82,6 +121,55 @@ describe('validate executor', () => {
 
   it('does not read a role out of a comment', async () => {
     const out = await executor({ themes: ['commented.css'] }, context());
+    expect(out.success).toBe(false);
+  });
+
+  it('ALLOWS a theme whose roles point at rungs it carries', async () => {
+    // The regression this executor shipped with. `theme --from` writes exactly this
+    // file and validates it in memory before writing; the gate then refused it,
+    // complaining about unparsable colours rather than about the reference it had
+    // not followed. Every role said `var(--fm-palette-…)`, and a `var()` is not a
+    // colour until somebody resolves it.
+    const out = await executor(
+      { themes: ['pointing.css'], tokensPath: varsPath },
+      context(),
+    );
+
+    expect(out.success).toBe(true);
+  });
+
+  it('resolves against the REFERENCE stylesheet when the theme omits the palette', async () => {
+    // A theme block sits over `vars.css` in the cascade, so pointing at a rung the
+    // reference declares is correct and needs no copy of the palette. The executor
+    // has to see what the browser sees.
+    const out = await executor(
+      { themes: ['pointing-bare.css'], tokensPath: varsPath },
+      context(),
+    );
+
+    expect(out.success).toBe(true);
+  });
+
+  it('still refuses a reference NOTHING declares, and names it', async () => {
+    const out = await executor(
+      { themes: ['dangling.css'], tokensPath: varsPath },
+      context(),
+    );
+
+    expect(out.success).toBe(false);
+  });
+
+  it('does NOT let the reference stylesheet complete an incomplete theme', async () => {
+    // THE TRAP IN THE OBVIOUS FIX, and the reason `judgeTheme` takes two maps. Merge
+    // the reference underneath and every role the theme FORGOT resolves out of it —
+    // so a one-role stylesheet reports as an allowed theme, which is the single
+    // verdict nothing downstream can recover from. Completeness is judged on the
+    // theme's own roles; only resolution looks wider.
+    const out = await executor(
+      { themes: ['bad.css'], tokensPath: varsPath },
+      context(),
+    );
+
     expect(out.success).toBe(false);
   });
 });
