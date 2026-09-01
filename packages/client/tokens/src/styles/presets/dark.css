@@ -539,7 +539,7 @@
   --fm-color-link: var(--fm-palette-primary-500);
   --fm-color-link-hover: var(--fm-palette-primary-400);
   --fm-color-selection: var(--fm-palette-primary-1200);
-  --fm-color-selection-foreground: var(--fm-palette-neutral-30);
+  --fm-color-selection-foreground: var(--fm-palette-neutral-35);
   --fm-color-tooltip: var(--fm-palette-neutral-50);
   --fm-color-tooltip-foreground: var(--fm-palette-neutral-760);
 

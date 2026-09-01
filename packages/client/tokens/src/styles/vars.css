@@ -32,25 +32,61 @@
   /* ==========================================================
      THE NEUTRAL RAMP — written out, not derived (ADR-0032).
 
-     REGULAR: rungs 50 apart, lightness = 1 - n/1000, so the number
-     is the reading. A single base cannot produce this — no curve
-     coarse enough to span 1.00 to 0.05 also resolves the pale end —
-     so the greys are stated while the brand ramps are derived.
+     THE NUMBER IS THE READING: lightness = 1 - n/1000, exactly, for
+     every step. That is a better naming rule than the chromatic
+     families have, where `700` is an ordinal that means nothing
+     without the ramp beside it — and it is worth keeping.
 
-     PLUS 25 and 75, the declared exception. The surfaces sit 0.015
-     apart up there (card 1.00, background 0.985, muted 0.965), so on
-     a 0.05 grid `background` would land on white beside `card` and
-     the page/sheet distinction would vanish. Three roles collided
-     when this was tried without them.
+     A single base cannot produce this ramp: no curve coarse enough to
+     span 1.00 to 0.05 also resolves the pale end. So the greys are
+     stated while the brand ramps are derived, and ONE neutral scale
+     serves both themes — the dark preset restates not a single grey.
+     That is Material's model (one tonal palette, both schemes) rather
+     than Radix's (two 12-step scales), and it is the right one here:
+     the contract validates both themes against the same declarations.
 
-     The cast is ~0.02 chroma at hue 256, taken from the greys already
-     in use: it keeps them from reading as dead beside the brand blue.
-     Step 0 is the one exception — a tinted white is a colour cast
-     across the entire page.
+     A 50-APART GRID OF 21, PLUS 15 STEPS BETWEEN THEM. The comment
+     here used to claim two exceptions ("25 and 75" — neither of which
+     exists) and the real count is fifteen: 15, 30, 35, 90, 180, 260,
+     420, 440, 540, 620, 660, 690, 740, 760, 790. The reason the pale
+     ones exist is still true and worth keeping: the surfaces sit 0.015
+     apart up there (card 1.00, background 0.985, muted 0.965), so on a
+     bare 0.05 grid `background` would land on white beside `card` and
+     the page/sheet distinction would vanish. The rest are values a role
+     wanted. THAT IS ALLOWED — 36 steps are the vocabulary the theme
+     builder offers for re-pointing any of the 84 roles, and a step no
+     role uses today is the one somebody picks tomorrow. Do not prune
+     them for being unreferenced.
+
+     THE CAST, and this comment used to have it wrong. It said "~0.02
+     chroma at hue 256" with step 0 as the only exception. The hue is
+     right; the chroma is a CURVE, and the curve has a reason in each
+     of its three parts:
+
+       above L 0.95   the gamut forbids 0.02 — at L 0.985 sRGB allows
+                      only 0.0071 at this hue — so the cast is what
+                      fits, and deliberately less than that: it reads
+                      far stronger on a pale surface than on a dark one
+                      (steps 15 and 35 sit at 56% and 36% of their own
+                      ceilings)
+       0.95 to 0.10   0.02 is available, and the cast climbs to it,
+                      holding it from L 0.56 down (18 of the 36 steps)
+       below L 0.10   the gamut forbids it again — step 950 sits at
+                      99.7% of its ceiling
+
+     Both pure ends are achromatic on purpose: a tinted white is a
+     colour cast across the entire page, and a tinted black is the same
+     thing under it.
+
+     THE INVARIANT IS THAT THE CAST NEVER DECREASES as the grey darkens,
+     until the gamut clamps it. `neutral.test.ts` asserts it, and it is
+     what step 30 broke — 0.014 between neighbours at 0.004 and 0.006,
+     pushed to 97.8% of its ceiling where they sit at 56% and 36%. It
+     was removed and its one role re-pointed at 35, five thousandths of
+     a lightness away and below a JND.
      ========================================================== */
   --fm-palette-neutral-0: oklch(100% 0 0);
   --fm-palette-neutral-15: oklch(98.5% 0.004 256);
-  --fm-palette-neutral-30: oklch(97% 0.014 256);
   --fm-palette-neutral-35: oklch(96.5% 0.006 256);
   --fm-palette-neutral-50: oklch(95% 0.007 256);
   --fm-palette-neutral-90: oklch(91% 0.008 256);
