@@ -118,7 +118,7 @@ pnpm nx g @fmmenchi/nx-theme-generator:validation <project> [options]
 
 Validates one or more `[data-theme]` CSS files against the **installed** `@fmmenchi/tokens`
 contract. For each file it parses the `--fm-color-*` declarations and runs the contract's
-`validateTheme()` (a dynamic import of the `@fmmenchi/tokens/validate` subpath). The target fails if
+`validateTheme()` (a dynamic import of the `@fmmenchi/theme`, bundled into this plugin). The target fails if
 any file has a violation; it prints `✓ <path> — allowed theme` per passing file and
 `✗ <path> is NOT an allowed theme:` with one line per violation otherwise.
 

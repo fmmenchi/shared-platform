@@ -130,11 +130,18 @@ completeness, parsable colors, sRGB gamut, and WCAG contrast on every pairing th
 uses — reporting exact ratios on failure (e.g. `primary × primary-foreground: 3.9 < 4.5`): fix the
 value, don't lower the bar. Import the CSS and apply with `<html data-theme="acme">`.
 
-Under the hood it's the public validator, also usable directly in any test runner:
+Under the hood it is the same validator the design system gates itself with, and the
+target is how you reach it: **there is no importable validator today.** It lives in
+`@fmmenchi/theme`, which is private and unpublished, and the Nx plugin bundles it — so
+`validate-themes` carries the rules into your repo while `@fmmenchi/tokens` ships only
+stylesheets. Point the target at your theme files and let CI run it:
 
-```ts
-import { validateTheme } from '@fmmenchi/tokens/validate';
-expect(validateTheme(brandColors)).toEqual([]); // role -> resolved color literal
+```jsonc
+// project.json
+"validate-themes": {
+  "executor": "@fmmenchi/nx-theme-generator:validate",
+  "options": { "themes": ["src/themes/acme.css"] }
+}
 ```
 
 Versions follow each package's own changelog (`packages/<scope>/<name>/CHANGELOG.md` in this

@@ -90,11 +90,17 @@ tokens come back as the raw text, which Chrome and Safari prefix with a space; h
 
 ### Validating a theme
 
-A theme is a **complete** assignment of every color role. Gate yours in CI:
+A theme is a **complete** assignment of every color role. Gate yours in CI — and note
+that **this package exports no TypeScript**, only stylesheets: the validator lives in
+the private `@fmmenchi/theme`, and the Nx plugin bundles it so the rules travel with
+the tool rather than with the values.
 
-```ts
-import { validateTheme } from '@fmmenchi/tokens/validate';
-expect(validateTheme(brandColors)).toEqual([]);
+```jsonc
+// project.json — added for you by the `validation` generator
+"validate-themes": {
+  "executor": "@fmmenchi/nx-theme-generator:validate",
+  "options": { "themes": ["src/themes/acme.css"] }
+}
 ```
 
 Checks: completeness · parsable colors · sRGB gamut · WCAG contrast on every declared pair
