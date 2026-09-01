@@ -132,6 +132,55 @@ describe('buildThemeFile', () => {
     }
   });
 
+  it('carries a RE-POINTED role, because an override is just a changed declaration', () => {
+    // The claim step three rests on. Re-pointing a role is replacing its one
+    // declaration, so nothing downstream needs to know overrides exist —
+    // `generateTheme` reads the aliases out of what it is handed, and this copies
+    // the role layer verbatim. If that stopped being true, the wizard would show a
+    // change it did not export.
+    const repointed = new Map([
+      ...declared,
+      [colorVar('primary'), 'var(--fm-palette-accent-600)'],
+    ]);
+
+    const { declarations } = buildThemeFile(
+      repointed,
+      REFERENCE_BASES,
+      WIZARD_RAMP,
+    );
+
+    expect(declarations[colorVar('primary')]).toBe(
+      'var(--fm-palette-accent-600)',
+    );
+    // And the theme it describes still passes, since the rung it now points at is a
+    // real one.
+    expect(
+      validateTheme(toTheme(asMap(declarations)) as Record<string, string>),
+    ).toEqual([]);
+  });
+
+  it('carries a re-pointed SCRIM with its alpha intact', () => {
+    // `scrim` is the one role written as a rung seen THROUGH something, and it was
+    // the one row of 84 with no control until the second spelling was handled.
+    // Re-pointing it must not turn a wash into an opaque slab.
+    const repointed = new Map([
+      ...declared,
+      [
+        colorVar('scrim'),
+        'oklch(from var(--fm-palette-neutral-500) l c h / 0.92)',
+      ],
+    ]);
+
+    const { declarations } = buildThemeFile(
+      repointed,
+      REFERENCE_BASES,
+      WIZARD_RAMP,
+    );
+
+    expect(declarations[colorVar('scrim')]).toContain('neutral-500');
+    expect(declarations[colorVar('scrim')]).toContain('/ 0.92');
+  });
+
   it('keeps what the builder needs to reopen it, where the generator will not read it', () => {
     const file = buildThemeFile(declared, REFERENCE_BASES, WIZARD_RAMP);
 

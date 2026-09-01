@@ -15,7 +15,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
-import { useDeclarations } from '../../declarations';
+import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
 import { WIZARD_RAMP } from '../../ramp';
@@ -42,7 +42,8 @@ import { WIZARD_RAMP } from '../../ramp';
  */
 export default function Review() {
   const { bases } = useBases();
-  const declared = useDeclarations();
+  // THE RE-POINTED ones, or the export would quietly ignore step three.
+  const declared = useThemedDeclarations();
   const [downloaded, setDownloaded] = useState<string | null>(null);
 
   /**
