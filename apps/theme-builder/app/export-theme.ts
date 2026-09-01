@@ -29,17 +29,18 @@ import { converter, parse as parseColor } from 'culori';
  *   every RUNG             what the ramp places under each base
  *   every ROLE             `var(--fm-palette-…)`, so re-pointing one still works
  *
- * WHY THE RUNGS ARE LITERALS AND NOT RELATIVE COLOURS, which is where this differs
- * from `vars.css` and it is not an oversight. `vars.css` writes
- * `oklch(from var(--base) calc(l + 0.35) …)`, an OFFSET from the base — and ADR-0033
- * chose absolute lightness instead, because an offset-anchored ramp's contrast
- * distance moves with the base while an absolute one does not. A rung here is
- * therefore not a function of its base in any way CSS relative colour can express:
- * it takes the base's hue, its own stated lightness, and whatever chroma survives
- * the gamut clamp. Emitting a relative colour would be emitting a different ramp.
+ * THE RUNGS ARE RELATIVE COLOUR, exactly as `vars.css` writes them, and they used
+ * not to be. Emitting literals here made a wizard-built theme WORSE than the design
+ * system's own: change `--fm-palette-primary-base` in a theme from `vars.css` and
+ * every rung and role above it follows, live in the browser; change it in a theme
+ * this wizard had exported and nothing moved, because the rungs no longer named it.
+ * The file boasted about not being a photograph at the role layer while being one at
+ * the rung layer.
  *
- * The layer that IS still derived — role to rung — is preserved, which is the one a
- * person edits by hand afterwards.
+ * It was not fixable while the two ramps disagreed — ours stated lightness absolutely
+ * and the stylesheet stated offsets — and it is now, because they are the same ramp.
+ * The offset is simply (rung lightness − base lightness), which is computable for any
+ * brand.
  *
  * AND THE GREYS TRAVEL TOO. A custom property resolves WHERE IT IS DECLARED, so a
  * `[data-theme]` block that overrides only the bases is inert: the rungs already
@@ -67,6 +68,13 @@ const brandFamilies = new Set<string>(PALETTE_FAMILIES);
 const toOklch = converter('oklch');
 
 /**
+ * Rounded, and the reason is measured rather than tidy: unrounded, the same brand
+ * produced values differing at the seventeenth decimal between Node and Chromium, so
+ * the file a person downloaded was not byte-identical to the one a test generated.
+ */
+const round = (n: number, places: number) => Number(n.toFixed(places));
+
+/**
  * A hex from the colour input, as the oklch literal a stylesheet should carry.
  *
  * ROUNDED, and the reason is measured rather than tidy: unrounded, the same brand
@@ -81,9 +89,6 @@ function toOklchLiteral(hex: string): string {
   if (!parsed) {
     throw new Error(`Not a colour: ${JSON.stringify(hex)}.`);
   }
-
-  const round = (n: number, places: number) =>
-    Number(n.toFixed(places)).toString();
 
   // `h` is undefined for an achromatic colour — black, white, any grey a person
   // picks — and `oklch(l c )` is not a colour. Zero is the conventional hue there,
@@ -111,11 +116,42 @@ export function buildThemeFile(
     declarations[`--fm-palette-${family}-base`] = toOklchLiteral(bases[family]);
   }
 
-  // LAYER TWO — the rungs the ramp places under them, resolved.
+  // LAYER TWO — the rungs, written as relative colour off their own base.
+  //
+  // THIS IS WHAT KEEPS A REBRAND SEVEN NUMBERS. It used to emit resolved literals,
+  // and that quietly made a wizard-built theme worse than the design system's own:
+  // change `--fm-palette-primary-base` in a theme from `vars.css` and every rung and
+  // role above it follows, live, in the browser — `@fmmenchi/ui`'s
+  // `token-overrides.test.tsx` is the test that defends it. Change it in a theme this
+  // wizard had exported and nothing happened, because the rungs no longer named it.
+  // The file boasted about not being a photograph at the ROLE layer while being one
+  // at this layer.
+  //
+  // THE OFFSET AND THE FACTOR ARE READ BACK OUT OF THE GENERATED RUNG rather than
+  // recomputed from the ramp, and that is what makes this exact. `generatePalette`
+  // clamps chroma into sRGB while holding lightness, so a vivid brand's rung is NOT
+  // `base.c * ramp.chromaFactor` — it is whatever survived. Taking the ratio of what
+  // it produced gives a relative colour that resolves to precisely that colour, with
+  // no second implementation of the clamp and nothing for the browser to clamp again.
   const palette = generatePalette(bases, ramp);
-  for (const [family, rungs] of Object.entries(palette)) {
-    for (const [step, value] of Object.entries(rungs)) {
-      declarations[`--fm-palette-${family}-${step}`] = value;
+  for (const family of PALETTE_FAMILIES) {
+    const base = toOklch(parseColor(bases[family]));
+    const rungs = palette[family] as Record<number, string>;
+
+    for (const step of Object.keys(rungs)) {
+      const rung = toOklch(parseColor(rungs[Number(step)] as string));
+      const offset = round((rung?.l ?? 0) - (base?.l ?? 0), 4);
+      const factor =
+        (base?.c ?? 0) < 1e-6 ? 1 : round((rung?.c ?? 0) / (base?.c ?? 1), 4);
+
+      const l =
+        offset === 0
+          ? 'l'
+          : `calc(l ${offset > 0 ? '+' : '-'} ${Math.abs(offset)})`;
+      const c = factor === 1 ? 'c' : `calc(c * ${factor})`;
+
+      declarations[`--fm-palette-${family}-${step}`] =
+        `oklch(from var(--fm-palette-${family}-base) ${l} ${c} h)`;
     }
   }
 

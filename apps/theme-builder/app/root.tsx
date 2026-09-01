@@ -27,6 +27,7 @@ import {
 
 import { BasesProvider } from './bases';
 import { DraftThemeProvider } from './draft-theme';
+import { RampProvider } from './ramp';
 import { RoleOverridesProvider } from './role-overrides';
 import { STEPS, pathOf, slugOf } from './steps';
 import stylesheet from '../styles.css?url';
@@ -207,11 +208,13 @@ export default function App() {
       }}
     >
       <BasesProvider>
-        <RoleOverridesProvider>
-          <DraftThemeProvider>
-            <Outlet />
-          </DraftThemeProvider>
-        </RoleOverridesProvider>
+        <RampProvider>
+          <RoleOverridesProvider>
+            <DraftThemeProvider>
+              <Outlet />
+            </DraftThemeProvider>
+          </RoleOverridesProvider>
+        </RampProvider>
       </BasesProvider>
     </UiProvider>
   );

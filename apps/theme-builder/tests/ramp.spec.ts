@@ -1,9 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import {
   generatePalette,
   generateTheme,
-  parseTheme,
   resolveCssVar,
   validateTheme,
 } from '@fmmenchi/theme';
@@ -11,7 +8,8 @@ import { converter, parse } from 'culori';
 import { describe, expect, it } from 'vitest';
 
 import { REFERENCE_BASES } from '../app/bases';
-import { WIZARD_RAMP } from '../app/ramp';
+import { REFERENCE_RAMP } from '../app/ramp';
+import { DECLARED, GRID } from './grid';
 
 /**
  * WHAT THE RAMP'S NUMBERS ARE FOR, held so they cannot drift back.
@@ -20,51 +18,40 @@ import { WIZARD_RAMP } from '../app/ramp';
  * means both need a test, or the next person retuning a rung has no way to know what
  * they are spending.
  *
- * The grid below is 144 brands: 24 hues × 3 chroma levels × 2 lightnesses, with
- * EVERY family given the same base. That last part is what makes it harsh — no
- * family can borrow contrast from a neighbour happening to be different — and it is
- * the case a real brand never quite reaches.
+ * The 144-brand grid these are measured on lives in `grid.ts`, shared with
+ * `ramp-shape.spec.ts` — a second copy would be a second definition of "harsh",
+ * free to drift, and a claim proved on one would be quoted about the other.
  */
-const require = createRequire(import.meta.url);
-const declared = parseTheme(
-  readFileSync(require.resolve('@fmmenchi/tokens/styles/vars.css'), 'utf8'),
-);
-
 const toOklch = converter('oklch');
-const families = Object.keys(REFERENCE_BASES);
-const brandsAt = (css: string) =>
-  Object.fromEntries(families.map((f) => [f, css])) as typeof REFERENCE_BASES;
-
-const GRID = (() => {
-  const brands: Array<readonly [string, typeof REFERENCE_BASES]> = [];
-  for (let hue = 0; hue < 360; hue += 15) {
-    for (const chroma of [0.05, 0.15, 0.3]) {
-      for (const lightness of [0.35, 0.65]) {
-        brands.push([
-          `oklch(${lightness} ${chroma} ${hue})`,
-          brandsAt(`oklch(${lightness} ${chroma} ${hue})`),
-        ]);
-      }
-    }
-  }
-  return brands;
-})();
 
 describe('the ramp', () => {
-  it('is EVENLY spaced', () => {
-    // The defect this pins: the previous numbers ran 0.10 0.10 0.10 then 0.05 0.05
-    // then 0.09 0.10 0.09, so three mid rungs sat half a step apart and read as one
-    // colour repeated. A ramp whose steps are not the same size is a ramp whose
-    // middle is wasted.
-    const gaps = WIZARD_RAMP.slice(1).map((rung, i) =>
-      Number(
-        (
-          (WIZARD_RAMP[i] as { lightness: number }).lightness - rung.lightness
-        ).toFixed(4),
-      ),
+  it('is EVENLY spaced from 100 down, and compresses above it', () => {
+    // TWO SHAPES ON PURPOSE. Below 100 an even step is what makes nine rungs nine
+    // colours — the previous numbers ran 0.10 0.10 0.10 then 0.05 0.05 then 0.09 0.10
+    // 0.09, so three mid rungs sat half a step apart and read as one colour repeated.
+    //
+    // Above 100 the gamut runs out: toward white there is less and less room, so an
+    // even step would spend it on nothing. 0.08 → 0.05 → 0.025, which is the shape
+    // Radix's pale end has for the same reason.
+    const main = REFERENCE_RAMP.filter((rung) => rung.step >= 100);
+    const gaps = main
+      .slice(1)
+      .map((rung, i) =>
+        Number(
+          (
+            (main[i] as { lightness: number }).lightness - rung.lightness
+          ).toFixed(4),
+        ),
+      );
+
+    expect(new Set(gaps), `gaps below 100: ${gaps.join(' ')}`).toEqual(
+      new Set([0.08]),
     );
 
-    expect(new Set(gaps), `gaps: ${gaps.join(' ')}`).toEqual(new Set([0.08]));
+    const pale = REFERENCE_RAMP.filter((rung) => rung.step < 100).map(
+      (rung) => rung.lightness,
+    );
+    expect(pale).toEqual([0.975, 0.95]);
   });
 
   it('keeps the guarantee for every brand on the grid', () => {
@@ -74,7 +61,7 @@ describe('the ramp', () => {
 
     for (const [name, bases] of GRID) {
       const violations = validateTheme(
-        generateTheme(declared, bases, WIZARD_RAMP),
+        generateTheme(DECLARED, bases, REFERENCE_RAMP),
       );
       if (violations.length > 0) {
         failures.push(`${name}: ${violations[0]?.message}`);
@@ -96,14 +83,14 @@ describe('the ramp', () => {
     //
     // So this asserts the cliff rather than the number: one step lighter must break,
     // or 0.26 is leaving contrast unspent and the comment above is wrong.
-    const lighter = WIZARD_RAMP.map((rung) => ({
+    const lighter = REFERENCE_RAMP.map((rung) => ({
       ...rung,
       lightness: Number((rung.lightness + 0.04).toFixed(4)),
     }));
 
     const broken = GRID.filter(
       ([, bases]) =>
-        validateTheme(generateTheme(declared, bases, lighter)).length > 0,
+        validateTheme(generateTheme(DECLARED, bases, lighter)).length > 0,
     );
 
     expect(
@@ -120,14 +107,14 @@ describe('the ramp', () => {
     //
     // It failed before this: the stylesheet's offsets were shared while its bases sit
     // at 0.54–0.60, so five of the seven families came out somewhere else.
-    const generated = generatePalette(REFERENCE_BASES, WIZARD_RAMP);
+    const generated = generatePalette(REFERENCE_BASES, REFERENCE_RAMP);
     const mismatches: string[] = [];
 
     for (const family of Object.keys(REFERENCE_BASES)) {
-      for (const { step } of WIZARD_RAMP) {
+      for (const { step } of REFERENCE_RAMP) {
         const shipped = resolveCssVar(
-          declared.get(`--fm-palette-${family}-${step}`) as string,
-          declared,
+          DECLARED.get(`--fm-palette-${family}-${step}`) as string,
+          DECLARED,
         );
         const ours = (generated as Record<string, Record<number, string>>)[
           family
@@ -155,7 +142,7 @@ describe('the ramp', () => {
     // `--fm-color-primary` points at 700. It was L 0.410 under the old numbers and is
     // 0.420 under these — the role that matters most barely moved, which is why this
     // re-spacing is not a visual redesign.
-    const seven = WIZARD_RAMP.find((rung) => rung.step === 700);
+    const seven = REFERENCE_RAMP.find((rung) => rung.step === 700);
 
     expect(seven?.lightness).toBeCloseTo(0.42, 3);
   });
