@@ -126,12 +126,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <AppLayoutNav label="Main">
             <Nav label="Main" orientation="vertical">
-              <NavLink href="/" current={!onPreview}>
-                Build
-              </NavLink>
-              {/* The steps repeated in the sidebar, so the wizard is navigable
-                  without the stepper — which is chrome for ORIENTATION and reads
-                  best as a row. Two views of one list, both from `STEPS`. */}
+              {/* THERE IS NO "BUILD" LINK, and there was one. It pointed at `/`,
+                  which was step one's route — so it and "Brand colours" were two
+                  items for one page, and its `current={!onPreview}` made it claim
+                  `aria-current` on EVERY step: measured in a browser, two current
+                  pages announced in one nav. The group label below is what named
+                  this section, and it still does.
+
+                  The steps are repeated here so the wizard is navigable without the
+                  stepper — which is chrome for ORIENTATION and reads best as a row.
+                  Two views of one list, both from `STEPS`. */}
               <NavGroup label="Steps">
                 {STEPS.map((step) => (
                   <NavLink

@@ -22,6 +22,7 @@ import {
   type RampShape,
 } from '../../ramp';
 import { useThemedDeclarations } from '../../role-overrides';
+import { stepPath } from '../../steps';
 
 /**
  * What each pale-end option is called. Numbers would be honest and useless: "2" does
@@ -419,10 +420,10 @@ export default function Palette() {
       </table>
 
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-        <Button as={Link} to="/">
+        <Button as={Link} to={stepPath('brand-colours')}>
           Back to the colours
         </Button>
-        <Button as={Link} to="/roles">
+        <Button as={Link} to={stepPath('roles')}>
           Point the roles
         </Button>
       </div>
