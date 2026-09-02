@@ -25,7 +25,6 @@ import {
 } from '@fmmenchi/ui-form-ports/react-hook-form';
 
 import { BasesProvider } from './bases';
-import { DraftThemeProvider } from './draft-theme';
 import { RampProvider } from './ramp';
 import { RoleOverridesProvider } from './role-overrides';
 import { STEPS, pathOf, slugOf } from './steps';
@@ -225,9 +224,7 @@ export default function App() {
       <BasesProvider>
         <RampProvider>
           <RoleOverridesProvider>
-            <DraftThemeProvider>
-              <Outlet />
-            </DraftThemeProvider>
+            <Outlet />
           </RoleOverridesProvider>
         </RampProvider>
       </BasesProvider>
