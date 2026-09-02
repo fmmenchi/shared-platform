@@ -40,24 +40,36 @@ design system was not wrong to render an anchor — it reads the router off `UiP
 sidebar renders in `Layout`, ABOVE the route tree, so the port can never be in scope there. Hence
 `asChild` with React Router's own `Link` per call, and `current` stays the app's.
 
-**THE PREVIEW OPENS BESIDE THE WORK.** `theme-preview.tsx` is the design system under the theme being
-built, and it is ONE component rendered in two places: a `SidePanel` beside a step (`?preview=1` on
-`routes/build.tsx`), and the `/preview` route at full width for reading all eleven sections. It
+**THE PREVIEW IS A DOCKED RAIL.** `theme-preview.tsx` is the design system under the theme being
+built, and it is ONE component rendered in two places: an `<aside>` region of `AppLayout` (opened
+with `?preview=1`), and the `/preview` route at full width for reading all eleven sections. It
 renders no heading of its own and takes `sectionLevel`, so the outline is honest under a page's `h1`
-and under the panel's `h2` alike.
+and under the rail's `h2` alike, and it brings no padding — a page insets its content and `SidePanel`
+insets itself.
 
-- **The panel is NON-MODAL, and that is the point** — [ADR-0034](../../doc/adr/0034-a-side-panel-is-not-a-drawer.md),
-  written for this. A drawer (`Dialog` + `side`) makes the page inert, so it would take away the very
-  control the preview is about. Verified in a browser: with the panel open, a role select behind it
-  has no `inert` ancestor and re-pointing one moves the panel's swatches.
-- **Two columns from `repeat(auto-fit, minmax(30rem, 1fr))`**, no media query. Measured first: every
-  step reflows to 620px of column with the page never scrolling sideways, so the narrow case costs
-  height only and the panel simply stacks under the step.
-- **The app supplies the bound.** `SidePanel` brings the scroll; sticky-to-the-viewport plus a
-  `max-block-size` is layout, and only this file knows what the panel should be as tall as.
-- **One control per state.** The page opens it; the panel closes itself. It used to say "Hide the
-  preview" up top while the panel had its own Hide four inches away, and "Full width" was at the
-  BOTTOM of a ~3300px strip — a link nobody would reach.
+- **A REGION, NOT A BOX IN THE CONTENT.** It was a second grid column inside `main` first, and it
+  read as a card floating in the page. `AppLayout` has had an `<aside>` region all along: it places
+  it by what it IS (`.layout > aside`), sizes it with `--fm-size-aside`, makes the grid
+  `nav main aside` when both are present, and stacks it under `main` below its `@xl` container
+  query. None of that is this app's to write and none of it is a media query here. Measured across
+  widths: 1500px → rail 288px / main 956px; 900px → main 356px; 700px → rail full width, stacked.
+  Never a sideways scroll.
+- **Which is why the loader and the stores are in `root.tsx`.** A region has to be a direct child of
+  the shell, so it cannot read a route's loader — and that collapsed the duplicate loader
+  `routes/preview.tsx` was carrying. `Stores` wraps the declarations conditionally because `Layout`
+  renders the error shell too, where there is no data. `UiProvider` came up with them, which also
+  fixed a pre-existing oddity: the sidebar and footer were outside it.
+- **`SidePanel` IS the region, not something in it** — it renders an `<aside>` — and it brings the
+  four things the region has no opinion about: the surface, its own scroll, the required name, the
+  tab stop a scroll container needs ([ADR-0034](../../doc/adr/0034-a-side-panel-is-not-a-drawer.md)).
+  It is NON-MODAL, which is the whole reason it can be there: verified in a browser, with the rail
+  open a role select behind it has no `inert` ancestor and re-pointing one moves the rail's swatches.
+- **The app supplies `align-self: start`, `position: sticky` and `max-block-size: 100dvh`.** Without
+  them the rail was 9313px tall with `scrollHeight === clientHeight`: `SidePanel`'s
+  `max-block-size: 100%` has nothing to resolve against in a grid row sized by its tallest item, so
+  it stretched the page instead of scrolling. Placement is the app's, per the ADR.
+- **One control per state.** The step opens it (`routes/build.tsx`); the rail closes itself.
+  `preview-open.ts` owns the param name, because the opener and the rail live in different files.
 
 **THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
 holds the MODE — `Building` / `Preview` — as two links marked with `current`. The preview was a fifth

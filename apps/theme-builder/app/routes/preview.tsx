@@ -1,70 +1,39 @@
 import { Heading } from '@fmmenchi/ui/heading';
-import { useLoaderData } from 'react-router';
 
-import {
-  DeclarationsProvider,
-  type SerializedDeclarations,
-} from '../declarations';
-import { readDeclarations } from '../declarations.server';
 import { ThemePreview } from '../theme-preview';
 
 /**
- * THE DEMO APP — the design system under the theme being built, in either scheme.
+ * THE PREVIEW AT FULL WIDTH — the same component the docked rail renders, given the
+ * whole page.
  *
- * ONE SECTION PER ROLE GROUP, in the same order and with the same titles as step
- * three, which is what makes this page evidence rather than a gallery. `ROLE_GROUPS`
- * is built from the contract's own partition, so the sections here cannot drift from
- * the roles they are showing: add a family to the contract and a section appears.
+ * The rail is for choosing: it sits beside the step so a colour and its consequence
+ * are on screen together. This is for READING — eleven sections of real components,
+ * where an Alert gets its own line and three fields sit in a row, which a 18rem rail
+ * cannot give them. One component, two widths; nothing is rendered twice.
  *
- * WHAT EACH SECTION SHOWS IS CHOSEN FOR THE PAIRS IT EXERCISES. The four ACTION
- * families carry hover and active, so they get a real button — the thing you press.
- * The four STATUS families do not, so they get an Alert and a Badge — the thing you
- * read, on its wash, inside its border. Then the greys, the surfaces with the focus
- * ring that has to clear 3:1 on every one of them, and a field at rest, invalid and
- * disabled.
+ * IT LOADS NOTHING, and it used to load the declarations itself.
  *
- * IT RENDERS THE DRAFT NOW, WHICH IT DID NOT BEFORE. The page said "No draft yet" for
- * every possible set of bases, because the draft was a CSS string and nothing in the
- * app ever produced one — see `theme-scope.tsx` for the whole story. The theme is
- * derived here from the same three inputs the export uses, so what is on screen and
- * what is in the file cannot disagree.
+ * The old reason was real: `/preview` sits outside the wizard layout on purpose, so
+ * it could not reach the declarations that layout loaded — measured as a 500 saying
+ * "useDeclarations must be used inside the wizard layout", which is why this page was
+ * a stub for as long as it was. The answer then was a second loader here.
  *
- * THE HEADING AND THE CONTROLS STAY OUTSIDE THE SCOPE. They are chrome: a theme whose
- * contrast fails must not take down the toggle that would switch away from it.
+ * The rail removed the need for it. A region of `AppLayout` has to be a direct child
+ * of the shell, so the declarations moved to the ROOT loader to reach it — and the
+ * root is above this route as well. Two copies of one loader became none, and no
+ * layout is shared to get there.
  */
-/**
- * THE PREVIEW LOADS THE DECLARATIONS ITSELF, and it has to.
- *
- * `/preview` sits OUTSIDE the wizard layout on purpose — a theme whose contrast pair
- * is below its floor must not take down the controls that would fix it — and the
- * layout is where the declarations were loaded. So this route could not reach them:
- * `useDeclarations` threw, and that is the architectural reason the page was a stub
- * for as long as it was. Measured after wiring it up: a 500 saying
- * "useDeclarations must be used inside the wizard layout".
- *
- * Reading them twice costs nothing worth naming — it is one file read on the server,
- * and both routes need the same answer. Sharing a loader would mean sharing a layout,
- * which is the thing being deliberately avoided.
- */
-export function loader() {
-  return readDeclarations();
-}
-
 export default function Preview() {
-  const declarations = useLoaderData<SerializedDeclarations>();
-
   return (
-    <DeclarationsProvider declarations={declarations}>
-      <div
-        style={{
-          display: 'grid',
-          gap: 'var(--fm-space-stack-l)',
-          padding: 'var(--fm-space-inset-l)',
-        }}
-      >
-        <Heading level={1}>Preview</Heading>
-        <ThemePreview sectionLevel={2} />
-      </div>
-    </DeclarationsProvider>
+    <div
+      style={{
+        display: 'grid',
+        gap: 'var(--fm-space-stack-l)',
+        padding: 'var(--fm-space-inset-l)',
+      }}
+    >
+      <Heading level={1}>Preview</Heading>
+      <ThemePreview sectionLevel={2} />
+    </div>
   );
 }
