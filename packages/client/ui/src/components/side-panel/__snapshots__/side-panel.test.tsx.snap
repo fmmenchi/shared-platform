@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SidePanel > matches the rendered snapshot 1`] = `
+<aside
+  aria-label="Preview"
+  class="_sidePanel_1654y_3"
+  tabindex="0"
+>
+  Content
+</aside>
+`;
