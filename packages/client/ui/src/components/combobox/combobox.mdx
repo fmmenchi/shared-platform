@@ -105,6 +105,23 @@ with a value already chosen still submits it; it simply cannot be changed. That
 exception is scoped to this component — `Input`, `Select`, `Textarea`,
 `Checkbox`, `Radio`, `Switch` and `Slider` are unchanged.
 
+### The rows are not in the DOM until you open it
+
+The `listbox` element is always rendered — the field's `aria-controls` names it, and
+an id that resolves to nothing is a broken IDREF (WCAG 4.1.2). Its **rows** are not:
+they appear when the list opens and go when it closes.
+
+That matters in two places. A test that reaches for an option must open the list
+first — `getByRole('option')` on a closed combobox finds nothing, which is the
+correct answer rather than a flake. And a page holding many of these no longer pays
+for rows nobody has looked at: measured on a screen with 168 comboboxes of 133
+options each, the server-rendered HTML fell from 9.8MB to 385KB, which is also a
+fifth of what the same screen cost with a native `<select>` — that renders every
+`<option>` eagerly.
+
+Nothing derived moves with them. The live region still counts what a search found,
+`aria-setsize` is still the whole list, and the empty message still knows it is empty.
+
 ### In a form, bound
 
 `FormCombobox` is this inside a `Field`, wired to the form library in scope —
