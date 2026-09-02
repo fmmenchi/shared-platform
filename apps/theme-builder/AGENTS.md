@@ -170,6 +170,21 @@ nothing to compute a brand's dark colours from.
 
 ## Known gaps
 
+- **STEP ONE IS HALF COMMITTED AND HALF LIVE, and that is the next thing to decide.** The light seven
+  are RHF fields written to the store by "Check and continue"; the dark seven are store-backed and
+  change as you type. Two consequences, both real: the dark seven cannot follow a light edit until
+  you continue (which made "Re-derive from the light seven" look broken — it was disabled against a
+  store the person was not looking at), and **the preview rail cannot show a light edit at all**
+  until the step is submitted, which is a hole in the feature the rail exists for.
+  The fix is to let the light seven reach the store as they change while the SET validation keeps
+  gating the advance — the objection on record ("a store that accepted one colour at a time would
+  invite writing an unchecked value into it") is about the set-level checks, and a colour input
+  cannot produce a malformed colour. It contradicts a documented decision, so it is written down here
+  rather than taken.
+- **`/preview` is reachable by URL only.** `Building`, the step's own button and the rail's
+  `Full width` were all removed in favour of one control; nothing links to the page now. Either give
+  it an entry point or delete it — an orphan route is the worst of the three.
+
 - **A role's rung menu offers EVERY family, not just the role's own.** Deliberate: a role
   legitimately points outside its family — every `-foreground` is `neutral-0`, and `background`,
   `border` and `muted` are neutral too — so filtering to one family would make the commonest case
