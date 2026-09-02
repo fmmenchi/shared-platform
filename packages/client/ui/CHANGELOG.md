@@ -1,3 +1,22 @@
+## 0.7.13 (2026-09-02)
+
+### 🚀 Features
+
+- **ui:** a side panel, for the surface a drawer must not be ([f9f2b83](https://github.com/fmmenchi/shared-platform/commit/f9f2b83))
+
+### 🩹 Fixes
+
+- **ui:** the side panel is the containing block its own note promises ([a8ae2ae](https://github.com/fmmenchi/shared-platform/commit/a8ae2ae))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/tokens to 0.0.41
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.7.12 (2026-09-01)
 
 ### 🧱 Updated Dependencies

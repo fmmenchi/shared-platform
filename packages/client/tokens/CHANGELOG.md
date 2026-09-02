@@ -1,3 +1,14 @@
+## 0.0.41 (2026-09-02)
+
+### 🚀 Features
+
+- **theme-builder:** step three gets its dark tab, and dark's scrim becomes an alias ([3f9ac8a](https://github.com/fmmenchi/shared-platform/commit/3f9ac8a))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.40 (2026-09-01)
 
 ### 🚀 Features
