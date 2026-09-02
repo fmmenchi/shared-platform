@@ -7,12 +7,17 @@ import {
 import { Alert } from '@fmmenchi/ui/alert';
 import { Button } from '@fmmenchi/ui/button';
 import { Heading } from '@fmmenchi/ui/heading';
+import { Tab } from '@fmmenchi/ui/tab';
+import { TabList } from '@fmmenchi/ui/tab-list';
+import { TabPanel } from '@fmmenchi/ui/tab-panel';
+import { Tabs } from '@fmmenchi/ui/tabs';
 import { Select } from '@fmmenchi/ui/select';
 import { wcagContrast } from 'culori';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
+import type { Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
 import { stepPath } from '../../steps';
@@ -47,23 +52,67 @@ import {
  * invented here, which would need keeping in step with a contract that already has
  * them.
  */
+/**
+ * STEP THREE — every role, in a tab per theme.
+ *
+ * IT SHOWED LIGHT ONLY, which made it the odd step out once steps one and two became
+ * a tab per theme — and the gap was not cosmetic. The two themes point their roles at
+ * different rungs, so the pairs a person needs to SEE measured are different: dark's
+ * `-subtle` is the 1400 against a light foreground, light's is the 50 against a dark
+ * one. A page that showed one of them was hiding half the theme it was about to hand
+ * over.
+ *
+ * EACH PANEL IS ENTIRELY ITS OWN — its overrides, its rung options, its measured
+ * ratios. The rung options especially: light declares eleven steps per chromatic
+ * family and dark seventeen, so offering one scale's menu for the other theme's role
+ * would let somebody point at a rung that does not exist there.
+ */
 export default function Roles() {
-  const { bases } = useBases();
-  const declared = useThemedDeclarations();
-  const { overrides, setOverride, reset, count } = useRoleOverrides();
+  return (
+    <section style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
+      <Heading level={2}>Semantic roles</Heading>
+
+      <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
+        A role exists to be one half of a pairing: a fill something sits on, or
+        the something. Each pair below shows a real sample, the contrast it
+        measures and the floor it has to clear — the same numbers CI checks.
+        Move a role to another rung and watch its pairs move with it.
+      </p>
+
+      <Tabs defaultValue="light">
+        <TabList aria-label="Theme">
+          <Tab value="light">Light</Tab>
+          <Tab value="dark">Dark</Tab>
+        </TabList>
+        <TabPanel value="light">
+          <RolesPanel scheme="light" />
+        </TabPanel>
+        <TabPanel value="dark">
+          <RolesPanel scheme="dark" />
+        </TabPanel>
+      </Tabs>
+    </section>
+  );
+}
+
+function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
+  const { bases, darkBases } = useBases();
+  const theBases = scheme === 'dark' ? darkBases : bases;
+  const declared = useThemedDeclarations(scheme);
+  const { overrides, setOverride, reset, count } = useRoleOverrides(scheme);
   const { ramps } = useRamp();
-  const families = useRungOptions();
+  const families = useRungOptions(scheme);
 
   const { theme, violations } = useMemo(() => {
     try {
-      const generated = generateTheme(declared, bases, ramps.light);
+      const generated = generateTheme(declared, theBases, ramps[scheme]);
       return { theme: generated, violations: validateTheme(generated) };
     } catch {
       // A hole the earlier steps report in detail. The groups still render, because
       // this is where a person would fix it.
       return { theme: {} as Record<string, string>, violations: [] };
     }
-  }, [declared, bases, ramps]);
+  }, [declared, theBases, ramps, scheme]);
 
   const failing = useMemo(
     () =>
@@ -78,15 +127,6 @@ export default function Roles() {
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-l)' }}>
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-        <Heading level={2}>Semantic roles</Heading>
-
-        <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
-          A role exists to be one half of a pairing: a fill something sits on,
-          or the something. Each pair below shows a real sample, the contrast it
-          measures and the floor it has to clear — the same numbers CI checks.
-          Move a role to another rung and watch its pairs move with it.
-        </p>
-
         <div
           style={{
             display: 'flex',

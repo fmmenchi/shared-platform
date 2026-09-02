@@ -19,7 +19,6 @@ import { useLoaderData } from 'react-router';
 import { useBases } from '../bases';
 import {
   DeclarationsProvider,
-  useDeclarations,
   type Scheme,
   type SerializedDeclarations,
 } from '../declarations';
@@ -92,7 +91,8 @@ function PreviewPage() {
   // — the two point their roles at different rungs, so a light override means a
   // different colour there and carrying it across would be a guess.
   const lightDeclared = useThemedDeclarations();
-  const darkDeclared = useDeclarations('dark');
+  // THE RE-POINTED ones for dark too, since step three has a dark tab now.
+  const darkDeclared = useThemedDeclarations('dark');
 
   const [scheme, setScheme] = useState<Scheme>('light');
 

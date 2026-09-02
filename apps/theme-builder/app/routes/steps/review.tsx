@@ -13,7 +13,6 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
-import { useDeclarations } from '../../declarations';
 import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
@@ -51,7 +50,9 @@ export default function Review() {
   // dark preset points its roles at different rungs (`-subtle` at the 1400 where
   // light's is at the 50), so a light override cannot be carried across without
   // meaning something else. Stated as a limitation below rather than half-applied.
-  const darkDeclared = useDeclarations('dark');
+  // THE RE-POINTED ones for dark too, since step three has a dark tab now: an
+  // override settable and then ignored is worse than one that cannot be set.
+  const darkDeclared = useThemedDeclarations('dark');
   const [downloaded, setDownloaded] = useState<string | null>(null);
 
   /**
