@@ -1,4 +1,8 @@
 import type { StepperItemStatus } from '@fmmenchi/ui/stepper-item';
+import { useCallback } from 'react';
+import { useLocation } from 'react-router';
+
+import { isPreviewOpen, withPreview } from './preview-open';
 
 /**
  * THE STEPS, DECLARED ONCE.
@@ -76,6 +80,30 @@ export function stepPath(slug: string): string {
     );
   }
   return pathOf(found);
+}
+
+/**
+ * WHERE A STEP LIVES, FROM WHERE YOU ARE — `stepPath` plus the rail's state.
+ *
+ * Whether the preview is open is a fact about the URL (`preview-open.ts`), which is
+ * what makes it linkable and reload-proof. It is also what made every step button
+ * close it: `stepPath` returns a BARE PATHNAME, so navigating dropped the query and
+ * took the rail with it. The rail exists to be watched while the theme changes, and
+ * changing step is when it changes most.
+ *
+ * CENTRALISED rather than a `useLocation()` in each of the seven callers, for exactly
+ * the reason `stepPath` itself exists: a decision spelled seven times is seven places
+ * for the eighth caller to forget it. The whole search is carried, not just the one
+ * param — `withPreview` already keeps everything else, and `preview` is the only thing
+ * living there today.
+ */
+export function useStepLink(): (slug: string) => string {
+  const { search } = useLocation();
+  return useCallback(
+    (slug: string) =>
+      withPreview(stepPath(slug), search, isPreviewOpen(search)),
+    [search],
+  );
 }
 
 /**

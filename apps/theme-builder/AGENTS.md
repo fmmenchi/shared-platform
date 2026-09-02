@@ -92,9 +92,9 @@ existed only for that second host and went with it.
   can do it — middle-click, no JavaScript. `preview-open.ts` owns the param's spelling, because it is
   a fact about the URL rather than about the shell.
 
-**THE SHELL FOLLOWS THE SYSTEM'S THEME, UNLESS PINNED.** `theme-choice.ts` holds a three-way choice —
-`system` (default) / `light` / `dark` — in `localStorage`, and applies it as `[data-theme='dark']` on
-`<html>` (light is the attribute's ABSENCE: `:root` is the light theme). The shell was the reference
+**THE SHELL FOLLOWS THE SYSTEM'S THEME, UNLESS PINNED.** `theme-choice.ts` holds `Scheme | null` in
+`localStorage` — `null`, nothing stored, meaning follow the OS — and applies the resolution as
+`[data-theme='dark']` on `<html>` (light is the attribute's ABSENCE: `:root` is the light theme). The shell was the reference
 theme, light, always, argued from "a draft whose contrast fails must not take down the controls" —
 right about the DRAFT, silent about dark mode, and the dark preset was not even imported
 (`styles.css` does now). Two readers of the choice, kept in step by `tests/theme-choice.spec.tsx`:
@@ -103,21 +103,38 @@ right about the DRAFT, silent about dark mode, and the dark preset was not even 
   light. It is built from the same constants (key, values, query) as the TypeScript, and the spec
   RUNS the string in jsdom against `resolveScheme` for every choice × system preference. `<html>`
   carries `suppressHydrationWarning` because the script has set the attribute before React looks.
-- **`useThemeChoice`**, a `useSyncExternalStore` over storage (server snapshot `system`, so hydration
-  renders what the server did), with an effect that applies the resolved scheme and follows
-  `matchMedia` while the choice is `system`. Not `useState` seeded from storage: that is state set in
-  an effect and a hydration mismatch, both.
+- **`useScheme`**, `useSyncExternalStore` TWICE — over storage (server snapshot `null`) and over
+  `matchMedia` (server snapshot light) — returning the RESOLVED scheme, with an effect that only
+  applies it to the document. The media query is a store rather than an effect because the toggle has
+  no `system` state left to render, so the resolution has to happen during render; the primitive
+  renders the server snapshot during hydration and re-renders with the real value straight after, so
+  there is no mismatch to suppress. Not `useState` seeded from storage: that is state set in an
+  effect and a hydration mismatch, both.
 - **The preview is untouched**: `ThemeScope` sets the roles inline and inline beats a preset, and no
   component stylesheet reads a palette rung directly (checked). The rail shows THEIR dark while the
   shell wears the design system's.
 
 **THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
-holds the two things that are not steps: the theme switcher (`theme-switcher.tsx`, a
-`SegmentedControl` — it answers a question, so this time the radio group IS the right component) and
-the preview toggle. The preview was a fifth sidebar item
-under a hairline rule, the same shape as the steps, while a `Badge` in the header reported which
-mode you were in without being able to change it: one concept in two places, and the preview reading
-as a step it is not (nothing is decided there, and it is reachable at any time).
+holds the two things that are not steps: the theme switcher (`theme-switcher.tsx`, an icon `Button`)
+and the preview toggle.
+
+- **TWO STATES, NOT THREE.** It was a `SegmentedControl` over `system` / `light` / `dark`, argued as
+  "`system` is a real state a person must be able to return to". It is a real state — it is just not
+  a real CHOICE, because it is what you get by not choosing, so a third of the control was spent on
+  the case nobody clicks. `system` moved from the control to the storage. THE COST, recorded: once a
+  person pins, this UI cannot put them back to following the OS.
+- **THE ICON SHOWS THE ACTION, NOT THE STATE** — a sun while dark — and that is what makes it a
+  `Button` rather than a `Toggle`. A face that advertises its action is a button; a face that
+  advertises its state is a toggle and carries `aria-pressed`. An action icon ON a toggle would show
+  a sun while a screen reader announced "Dark theme, pressed": two accounts of one control
+  disagreeing, the ADR-0024 defect that is invisible until somebody listens to it. The accessible
+  name says what the icon says ("Switch to light theme") and changes with the state, which is right
+  precisely because there is no `aria-pressed` here for it to contradict.
+
+The preview was a fifth sidebar item under a hairline rule, the same shape as the steps, while a
+`Badge` in the header reported which mode you were in without being able to change it: one concept
+in two places, and the preview reading as a step it is not (nothing is decided there, and it is
+reachable at any time).
 
 - **A link, NOT a `SegmentedControl`**, which is what a mode switch looks like and the wrong
   component: that is a radio group (ADR-0025) and the design system draws the line itself — "a tab

@@ -19,7 +19,7 @@ import { FAMILIES, useBases } from '../../bases';
 import { makeBasesSchema, type BasesValues } from '../../bases.schema';
 import { useDeclarations, type Scheme } from '../../declarations';
 import { BackToReference, LiveBases } from '../../live-bases';
-import { stepPath } from '../../steps';
+import { useStepLink } from '../../steps';
 
 /**
  * STEP ONE — the fourteen colours a brand hands over, ONE TAB PER THEME.
@@ -57,6 +57,7 @@ import { stepPath } from '../../steps';
  * so that set is store-backed and the schema checks it as a closed-over value.
  */
 export default function BrandColours() {
+  const stepLink = useStepLink();
   const { bases, darkBases, setDarkBases, deriveFromLight, darkFollowsLight } =
     useBases();
   const navigate = useNavigate();
@@ -94,7 +95,7 @@ export default function BrandColours() {
         // move of every step under `/steps/`, so submitting went to a 404 — and the
         // walk-the-routes check did not see it, because it visited pages and never
         // submitted a form.
-        onSubmit={() => void navigate(stepPath('palette'))}
+        onSubmit={() => void navigate(stepLink('palette'))}
         style={{ display: 'grid', gap: 'var(--fm-space-stack-l)' }}
       >
         {/* FIRST, and it is where a person lands after a failed submit: a list of
@@ -112,7 +113,10 @@ export default function BrandColours() {
           </TabList>
 
           <TabPanel value="light">
-            <FieldsetContent orientation="horizontal">
+            <FieldsetContent
+              orientation="horizontal"
+              className="theme-builder-bases"
+            >
               {FAMILIES.map((family) => (
                 <FormColorPicker key={family} name={family} label={family} />
               ))}
@@ -121,7 +125,10 @@ export default function BrandColours() {
 
           <TabPanel value="dark">
             <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
-              <FieldsetContent orientation="horizontal">
+              <FieldsetContent
+                orientation="horizontal"
+                className="theme-builder-bases"
+              >
                 {FAMILIES.map((family) => (
                   <Field key={family} label={family}>
                     <ColorPicker

@@ -1,5 +1,6 @@
 import {
   colorVar,
+  generatePalette,
   generateTheme,
   validateTheme,
   type ColorRole,
@@ -11,7 +12,7 @@ import { Tab } from '@fmmenchi/ui/tab';
 import { TabList } from '@fmmenchi/ui/tab-list';
 import { TabPanel } from '@fmmenchi/ui/tab-panel';
 import { Tabs } from '@fmmenchi/ui/tabs';
-import { Select } from '@fmmenchi/ui/select';
+import { Combobox } from '@fmmenchi/ui/combobox';
 import { wcagContrast } from 'culori';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
@@ -20,7 +21,7 @@ import { useBases } from '../../bases';
 import { useDeclarations, type Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
-import { stepPath } from '../../steps';
+import { useStepLink } from '../../steps';
 import {
   homeFamilyOf,
   orderRungOptions,
@@ -98,6 +99,7 @@ export default function Roles() {
 }
 
 function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
+  const stepLink = useStepLink();
   const { bases, darkBases } = useBases();
   const theBases = scheme === 'dark' ? darkBases : bases;
   const declared = useThemedDeclarations(scheme);
@@ -120,6 +122,26 @@ function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
       return { theme: {} as Record<string, string>, violations: [] };
     }
   }, [declared, theBases, ramps, scheme]);
+
+  /**
+   * EVERY RUNG'S COLOUR, so the menu can show them and not just name them.
+   *
+   * Computed rather than read off a `var()`: this step is the wizard's CHROME, which
+   * renders on the reference theme, so `var(--fm-palette-secondary-600)` here would
+   * paint the design system's blue and not the secondary somebody is building. The
+   * swatch beside each role already resolves this way; the menu now does too.
+   *
+   * The same `try` as the theme above, for the same reason — `generatePalette` throws
+   * on a base that is not a colour, which is a hole the earlier steps report, and a
+   * throw here would take down the page where a person would go to fix it.
+   */
+  const palette = useMemo(() => {
+    try {
+      return generatePalette(theBases, ramps[scheme]);
+    } catch {
+      return {} as ReturnType<typeof generatePalette>;
+    }
+  }, [theBases, ramps, scheme]);
 
   const failing = useMemo(
     () =>
@@ -200,6 +222,7 @@ function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
             overrides={overrides}
             setOverride={setOverride}
             families={families}
+            palette={palette}
           />
         </section>
       ))}
@@ -212,10 +235,10 @@ function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
       )}
 
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-        <Button as={Link} to={stepPath('palette')} variant="secondary">
+        <Button as={Link} to={stepLink('palette')} variant="secondary">
           Back to the palette
         </Button>
-        <Button as={Link} to={stepPath('review')}>
+        <Button as={Link} to={stepLink('review')}>
           Review and export
         </Button>
       </div>
@@ -331,7 +354,32 @@ function Pairs({
 }
 
 /**
- * One select per role: where it points, and everywhere it could.
+ * A colour, one square centimetre of it. `aria-hidden` because it is never the only
+ * statement of what it shows: beside a role the name is right there, and inside a
+ * menu row the label says `secondary-600`. A swatch that announced itself would read
+ * the same fact twice.
+ *
+ * Extracted when the menu grew swatches of its own — two copies of a bordered square
+ * would be two places to change the border the day it changes.
+ */
+function Swatch({ colour }: { readonly colour: string | undefined }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        inlineSize: '1rem',
+        blockSize: '1rem',
+        flexShrink: 0,
+        borderRadius: 'var(--fm-radius-sm)',
+        border: 'var(--fm-border-width-default) solid var(--fm-color-border)',
+        background: colour ?? 'transparent',
+      }}
+    />
+  );
+}
+
+/**
+ * One combobox per role: where it points, and everywhere it could.
  *
  * EVERYWHERE, IN THE ORDER THIS ROLE READS IT. The menu offers every family — a role
  * legitimately points outside its own, every `-foreground` being `neutral-0` — but it
@@ -349,6 +397,7 @@ function Knobs({
   overrides,
   setOverride,
   families,
+  palette,
 }: {
   roles: readonly ColorRole[];
   theme: Record<string, string>;
@@ -357,6 +406,7 @@ function Knobs({
   overrides: Readonly<Record<string, string>>;
   setOverride: (role: ColorRole, rung: string) => void;
   families: ReadonlyArray<readonly [string, readonly string[]]>;
+  palette: Readonly<Record<string, Readonly<Record<number, string>>>>;
 }) {
   return (
     <div
@@ -378,9 +428,20 @@ function Knobs({
         const alpha = withAlpha?.[2];
         const overridden = overrides[colorVar(role)] !== undefined;
         const colour = theme[role];
-        const menu = orderRungOptions(
+        // FLAT, because `Combobox` takes one list and draws no group headers. What
+        // `rung-options.spec.ts` actually holds is the ORDER — the role's home family
+        // first, `neutral` second, the rest alphabetical — and that survives
+        // flattening intact; only the `<optgroup>` captions go, and every label
+        // already names its family.
+        const options = orderRungOptions(
           families,
           homeFamilyOf(pristine.get(colorVar(role))),
+        ).flatMap(([family, steps]) =>
+          steps.map((step) => ({
+            token: `--fm-palette-${family}-${step}`,
+            label: `${family}-${step}`,
+            colour: palette[family]?.[Number(step)],
+          })),
         );
 
         return (
@@ -393,17 +454,7 @@ function Knobs({
               gap: 'var(--fm-space-inline-s)',
             }}
           >
-            <span
-              aria-hidden="true"
-              style={{
-                inlineSize: '1rem',
-                blockSize: '1rem',
-                borderRadius: 'var(--fm-radius-sm)',
-                border:
-                  'var(--fm-border-width-default) solid var(--fm-color-border)',
-                background: colour ?? 'transparent',
-              }}
-            />
+            <Swatch colour={colour} />
             <span style={{ display: 'grid', gap: '0.125rem' }}>
               <code style={{ fontSize: 'var(--fm-text-xs)' }}>{role}</code>
               {current === '' ? (
@@ -412,35 +463,41 @@ function Knobs({
                 // colour into a pointer.
                 <code style={{ fontSize: 'var(--fm-text-xs)' }}>{flat}</code>
               ) : (
-                <Select
+                <Combobox
+                  items={options}
+                  getKey={(option) => option.token}
+                  getLabel={(option) => option.label}
+                  renderItem={(option) => (
+                    <span
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 'var(--fm-space-inline-s)',
+                      }}
+                    >
+                      <Swatch colour={option.colour} />
+                      {option.label}
+                    </span>
+                  )}
                   value={current}
-                  onChange={(event) =>
+                  onValueChange={(next) => {
+                    // `null` is the cleared state, and a role always points
+                    // somewhere: nothing to write, and writing `var()` would be a
+                    // declaration that resolves to nothing.
+                    if (next === null) return;
                     setOverride(
                       role,
                       alpha === undefined
-                        ? `var(${event.target.value})`
-                        : `oklch(from var(${event.target.value}) l c h / ${alpha})`,
-                    )
-                  }
+                        ? `var(${next})`
+                        : `oklch(from var(${next}) l c h / ${alpha})`,
+                    );
+                  }}
                   style={
                     overridden
                       ? { borderColor: 'var(--fm-color-primary)' }
                       : undefined
                   }
-                >
-                  {menu.map(([family, steps]) => (
-                    <optgroup key={family} label={family}>
-                      {steps.map((step) => (
-                        <option
-                          key={step}
-                          value={`--fm-palette-${family}-${step}`}
-                        >
-                          {family}-{step}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </Select>
+                />
               )}
             </span>
           </label>

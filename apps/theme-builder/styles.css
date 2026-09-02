@@ -88,3 +88,67 @@
     max-block-size: 100%;
   }
 }
+
+/*
+ * THE SEVEN BASES, ON A RHYTHM. `FieldsetContent orientation="horizontal"` is a
+ * wrapping FLEX row, which is right for what it was built for — checkboxes and radios,
+ * where the label IS the item's width and a ragged row reads as prose. These items are
+ * the opposite shape: a fixed-width swatch under a label that is anything from `info`
+ * to `secondary`, so flex sized every column by its caption and the swatches landed at
+ * seven unrelated offsets under a row of headings that looked like a table.
+ *
+ * A grid of EQUAL columns puts them back on a rhythm. `auto-fit` rather than
+ * `repeat(7, …)` because the seven families are a fact about the theme, not about how
+ * many fit — at a narrow shell this wraps to rows that are still aligned, where a fixed
+ * seven would squeeze the swatches instead.
+ *
+ * THE TRACK IS A FIXED WIDTH, NOT `1fr`, and that is the second half of the fix. `1fr`
+ * aligned them and then spread the seven across the whole shell — related colours
+ * reading as seven unrelated fields, "non cosi distanti". A fixed track plus
+ * `justify-content: start` keeps the columns equal AND packed, so the row stays as wide
+ * as its contents and the component's own `gap` is what separates them.
+ *
+ * `6rem` is the width of the longest caption (`secondary`) with room to breathe, which
+ * is the only thing here that is a measurement rather than a rule — the swatch is half
+ * that. It is a raw length on purpose: there is no token for "as wide as this word", and
+ * inventing one would put a fact about this form into the contract.
+ *
+ * IT IS THE APP'S TO WRITE, not the design system's: `horizontal` promises a wrapping
+ * row and delivers one. Which layout a fixed-width control wants is a fact about this
+ * form. The gap stays the component's — `gap` means the same thing to grid as to flex,
+ * so only `display`, the tracks and the packing are restated.
+ */
+.theme-builder-bases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 6rem);
+  justify-content: start;
+}
+
+/*
+ * THE MENU'S EDGE RUNS THE WHOLE HEIGHT. `AppLayoutNav`'s column draws the rule
+ * between menu and page as its own `border-inline-end`, and the column is
+ * `align-self: start` with a `100dvh` cap — a PAIR the design system measured and
+ * documented, because dropping either one makes a long navigation unreachable at some
+ * scroll position. So the column is as tall as its four links, and the rule stopped
+ * with them, a third of the way down the page.
+ *
+ * NOT A DESIGN SYSTEM FIX, for that reason: `align-self: start` is correct for the
+ * shape it was written for, a page that scrolls under a sticky column. THIS app is the
+ * other shape and already says so above — the grid is pinned to `100dvh` and `main`
+ * scrolls, so the row is DEFINITE and a stretched column is exactly one screen. That
+ * is the only condition under which stretching is safe, which is why this sits inside
+ * the same `@variant @xl` as the swap that creates it. Below the swap the nav is the
+ * drawer's trigger in the header, with no edge to run.
+ *
+ * `max-block-size: 100%` replaces the `100dvh` cap for the same reason the rail's does:
+ * the row is now the bound, and `overflow: auto` on the column still lets a longer
+ * navigation scroll inside its own full-height box. Reached by the design system's own
+ * data attributes because the class is hashed in its module — the same hook its
+ * stylesheet selects on.
+ */
+@variant @xl {
+  .theme-builder-shell [data-region='nav'][data-form='column'] {
+    align-self: stretch;
+    max-block-size: 100%;
+  }
+}

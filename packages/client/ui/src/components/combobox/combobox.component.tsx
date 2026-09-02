@@ -632,52 +632,77 @@ function Combobox<T>(props: ComboboxProps<T>) {
           aria-label={t('list')}
           className={styles.list}
         >
-          {shown.map((item, index) => (
-            <div
-              key={getKey(item)}
-              id={optionId(index)}
-              role="option"
-              aria-selected={getKey(item) === chosen}
-              aria-setsize={rows}
-              aria-posinset={index + 1}
-              data-active={index === highlighted ? '' : undefined}
-              className={styles.option}
-              onMouseDown={(event) => {
-                // The field keeps the focus: without this the mousedown blurred
-                // it, and `aria-activedescendant` on a field nobody is in
-                // points at nothing.
-                event.preventDefault();
-                pick(index);
-              }}
-            >
-              {renderItem ? renderItem(item) : getLabel(item)}
-            </div>
-          ))}
-          {/* THE OFFER IS AN OPTION, and lives inside the listbox with the
-              rest: that is what gives it the arrows, the highlight and the
-              announcement without a line of its own. Outside, it would be
-              content a `listbox` may not own AND a target only a pointer could
-              reach. It is a COMMAND wearing an option's role, which the docs
-              say plainly — every mainstream library makes the same trade, and
-              the compensation owed for it is that activating it announces
-              what happened. */}
-          {creatable ? (
-            <div
-              id={optionId('create')}
-              role="option"
-              aria-selected={false}
-              aria-setsize={rows}
-              aria-posinset={rows}
-              data-active={highlighted === 'create' ? '' : undefined}
-              data-create=""
-              className={styles.option}
-              onMouseDown={(event) => {
-                event.preventDefault();
-                pick('create');
-              }}
-            >
-              {t('create', { query: typed })}
-            </div>
+          {/*
+            THE ROWS EXIST ONLY WHILE THE LIST IS OPEN, and the LISTBOX ITSELF
+            ALWAYS DOES. The split is the whole point: `aria-controls` on the
+            field names `listId`, so removing the element would leave every
+            combobox on a page pointing at an id that resolves to nothing —
+            the defect `TabPanel` stays mounted to avoid, in the same words.
+            The element is cheap; its rows are not.
+
+            WHY IT IS WORTH A CONDITION. The surface is a `popover`, so the
+            platform was already hiding these rows — but hidden is not absent,
+            and the cost is paid at render and in bytes whatever the popover
+            does with them afterwards. Measured on the theme builder's step
+            three, which puts 168 of these on one page at 133 options each: the
+            server-rendered HTML went from 2.0MB with a native `<select>` to
+            9.8MB, for 22,344 rows that no one had opened.
+
+            NOTHING DERIVED MOVES. `shown` and `rows` are still computed from
+            the items every render, so the live region still counts what a
+            search found, `aria-setsize` is still the whole list, and the empty
+            message still knows it is empty. Only the DOM waits.
+          */}
+          {showing ? (
+            <>
+              {shown.map((item, index) => (
+                <div
+                  key={getKey(item)}
+                  id={optionId(index)}
+                  role="option"
+                  aria-selected={getKey(item) === chosen}
+                  aria-setsize={rows}
+                  aria-posinset={index + 1}
+                  data-active={index === highlighted ? '' : undefined}
+                  className={styles.option}
+                  onMouseDown={(event) => {
+                    // The field keeps the focus: without this the mousedown blurred
+                    // it, and `aria-activedescendant` on a field nobody is in
+                    // points at nothing.
+                    event.preventDefault();
+                    pick(index);
+                  }}
+                >
+                  {renderItem ? renderItem(item) : getLabel(item)}
+                </div>
+              ))}
+              {/* THE OFFER IS AN OPTION, and lives inside the listbox with the
+                  rest: that is what gives it the arrows, the highlight and the
+                  announcement without a line of its own. Outside, it would be
+                  content a `listbox` may not own AND a target only a pointer could
+                  reach. It is a COMMAND wearing an option's role, which the docs
+                  say plainly — every mainstream library makes the same trade, and
+                  the compensation owed for it is that activating it announces
+                  what happened. */}
+              {creatable ? (
+                <div
+                  id={optionId('create')}
+                  role="option"
+                  aria-selected={false}
+                  aria-setsize={rows}
+                  aria-posinset={rows}
+                  data-active={highlighted === 'create' ? '' : undefined}
+                  data-create=""
+                  className={styles.option}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    pick('create');
+                  }}
+                >
+                  {t('create', { query: typed })}
+                </div>
+              ) : null}
+            </>
           ) : null}
         </div>
         {/* OUTSIDE the listbox: ARIA 1.2 lets a `listbox` own `option` and

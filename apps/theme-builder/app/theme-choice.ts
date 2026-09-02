@@ -11,13 +11,22 @@ import type { Scheme } from './declarations';
  * about light versus dark — the design system's own dark preset is a finished theme,
  * and a builder that ignored the system's dark mode was the one product in the
  * workspace that did. So the shell follows `prefers-color-scheme` by default, and a
- * switcher in the header can pin it either way.
+ * toggle in the header can pin it either way.
  *
- * THREE CHOICES, NOT TWO. `system` is a real state, not "no choice": it means the
- * page will change when the OS does, which neither pinned value promises, and a person
- * who pinned dark and later wants to follow the system again needs something to
- * choose. It is also the default, so a person who never touches the switcher gets the
- * page they asked their OS for.
+ * TWO STATES IN THE UI, THREE IN THE MODEL, and the difference is the whole design.
+ * An earlier version offered `system` as a THIRD BUTTON, on the argument that
+ * following the OS is a real state a person must be able to return to. It is a real
+ * state — it is just not a real CHOICE, because it is what you get by not choosing.
+ * Spending a third of a control on the default is paying for the case nobody clicks.
+ *
+ * So `system` moved from the control to the STORAGE: nothing stored means follow the
+ * OS, which is where a person starts and where they stay until they touch the toggle.
+ * `ThemeChoice` is `Scheme | null` and the `null` is that state, spelled once.
+ *
+ * WHAT THAT COSTS, recorded because it is a real trade and not an oversight: once a
+ * person pins, they cannot go back to following the OS from this UI. The page stops
+ * changing when the OS does. That is the behaviour of nearly every dark toggle on the
+ * web, and it is the price of the button we did not spend.
  *
  * THE PRESET IS SELECTED BY `[data-theme='dark']`, on `<html>`, which is how the design
  * system says a preset is applied — `presets/dark.css` is "a complete assignment of
@@ -31,18 +40,16 @@ import type { Scheme } from './declarations';
  * properties on its subtree, and inline wins over any stylesheet rule, so the theme
  * being built stays the theme being built whichever preset the shell wears around it.
  * `tests/theme-choice.spec.tsx` asserts the boot script and the hook agree with
- * `resolveScheme`, and that a stored value that is not a choice falls back to
- * `system` rather than throwing.
+ * `resolveScheme`, and that a stored value that is not a scheme falls back to
+ * following the system rather than throwing.
  */
-export const THEME_CHOICES = ['system', 'light', 'dark'] as const;
-export type ThemeChoice = (typeof THEME_CHOICES)[number];
+export const SCHEMES = ['light', 'dark'] as const;
 
-/** What the switcher shows for each choice. */
-export const THEME_CHOICE_LABELS: Readonly<Record<ThemeChoice, string>> = {
-  system: 'System',
-  light: 'Light',
-  dark: 'Dark',
-};
+/**
+ * What the person pinned — or `null`, which is not "no value" but the third state:
+ * follow whatever the OS currently prefers, and keep following it when it changes.
+ */
+export type ThemeChoice = Scheme | null;
 
 /**
  * ONE KEY, spelled here and nowhere else. The boot script is built from this constant
@@ -51,8 +58,8 @@ export const THEME_CHOICE_LABELS: Readonly<Record<ThemeChoice, string>> = {
  */
 export const STORAGE_KEY = 'fm-theme-builder:theme';
 
-export function isThemeChoice(value: unknown): value is ThemeChoice {
-  return (THEME_CHOICES as readonly unknown[]).includes(value);
+export function isScheme(value: unknown): value is Scheme {
+  return (SCHEMES as readonly unknown[]).includes(value);
 }
 
 /** Which preset a choice means, given what the system currently prefers. */
@@ -60,8 +67,7 @@ export function resolveScheme(
   choice: ThemeChoice,
   systemPrefersDark: boolean,
 ): Scheme {
-  if (choice === 'system') return systemPrefersDark ? 'dark' : 'light';
-  return choice;
+  return choice ?? (systemPrefersDark ? 'dark' : 'light');
 }
 
 /**
@@ -88,6 +94,9 @@ const DARK_QUERY = '(prefers-color-scheme: dark)';
  * spec runs this string in jsdom against the TypeScript functions and fails if the
  * two ever answer differently. `try` because storage access throws in some private
  * modes, and a theme switcher must never be what breaks the page.
+ *
+ * Note it already encoded the two-state model before the UI did: anything that is
+ * not `dark` or `light` falls through to the media query.
  */
 export const BOOT_SCRIPT =
   `(function(){try{` +
@@ -103,9 +112,9 @@ const CHANGE_EVENT = 'fm-theme-builder:theme-change';
 function readChoice(): ThemeChoice {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return isThemeChoice(stored) ? stored : 'system';
+    return isScheme(stored) ? stored : null;
   } catch {
-    return 'system';
+    return null;
   }
 }
 
@@ -118,40 +127,63 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** On the server, and during hydration, there is no choice yet: the default. */
-const serverSnapshot = (): ThemeChoice => 'system';
+/** On the server, and during hydration, nothing is pinned: follow the system. */
+const choiceServerSnapshot = (): ThemeChoice => null;
 
 /**
- * The current choice, and a setter that persists it.
+ * WHAT THE OS PREFERS, AS A STORE rather than as an effect. `matchMedia` is external
+ * state with a subscription, which is exactly what `useSyncExternalStore` is for, and
+ * reading it this way is what makes the two-state UI possible at all: the toggle has
+ * to render the RESOLVED scheme (there is no `system` button left to render instead),
+ * so the resolution has to happen during render.
  *
- * `useSyncExternalStore` rather than `useState` seeded from storage, because the
- * store IS external — `localStorage` — and because hydration has to render what the
- * server rendered (`system`) before it may show the stored value. The primitive does
- * both; a `useState` + effect would set state in an effect, which is the cascading
- * render the lint rule refuses, and would still mismatch on the first client render.
- *
- * The effect below APPLIES the resolved scheme and keeps applying it while the OS
- * changes its mind. It touches the DOM, not state.
+ * The server cannot know the preference, so it reports light — and the primitive
+ * handles the rest by design: it renders `getServerSnapshot` during hydration and
+ * re-renders with the real value immediately after, so there is no hydration mismatch
+ * to suppress. The page itself never flashes, because `BOOT_SCRIPT` painted the right
+ * preset before React existed; only `aria-pressed` settles a tick later.
  */
-export function useThemeChoice(): readonly [
-  ThemeChoice,
-  (next: ThemeChoice) => void,
-] {
-  const choice = useSyncExternalStore(subscribe, readChoice, serverSnapshot);
+function subscribeSystem(onChange: () => void): () => void {
+  const media = window.matchMedia(DARK_QUERY);
+  media.addEventListener('change', onChange);
+  return () => media.removeEventListener('change', onChange);
+}
+
+const readSystemPrefersDark = (): boolean =>
+  window.matchMedia(DARK_QUERY).matches;
+
+const systemServerSnapshot = (): boolean => false;
+
+/**
+ * The scheme in force, and a setter that pins one.
+ *
+ * `useSyncExternalStore` twice rather than `useState` seeded from storage, because
+ * both sources ARE external — `localStorage` and `matchMedia` — and because hydration
+ * has to render what the server rendered before it may show the real values.
+ *
+ * The effect below only APPLIES the resolved scheme to the document. It touches the
+ * DOM, not state: keeping the media query in a store rather than in an effect is what
+ * leaves it with that single job.
+ */
+export function useScheme(): readonly [Scheme, (next: Scheme) => void] {
+  const choice = useSyncExternalStore(
+    subscribe,
+    readChoice,
+    choiceServerSnapshot,
+  );
+  const systemPrefersDark = useSyncExternalStore(
+    subscribeSystem,
+    readSystemPrefersDark,
+    systemServerSnapshot,
+  );
+
+  const scheme = resolveScheme(choice, systemPrefersDark);
 
   useEffect(() => {
-    const media = window.matchMedia(DARK_QUERY);
-    const apply = () =>
-      applyScheme(
-        document.documentElement,
-        resolveScheme(choice, media.matches),
-      );
-    apply();
-    media.addEventListener('change', apply);
-    return () => media.removeEventListener('change', apply);
-  }, [choice]);
+    applyScheme(document.documentElement, scheme);
+  }, [scheme]);
 
-  const setChoice = useCallback((next: ThemeChoice) => {
+  const setScheme = useCallback((next: Scheme) => {
     try {
       window.localStorage.setItem(STORAGE_KEY, next);
     } catch {
@@ -161,5 +193,5 @@ export function useThemeChoice(): readonly [
     window.dispatchEvent(new Event(CHANGE_EVENT));
   }, []);
 
-  return [choice, setChoice] as const;
+  return [scheme, setScheme] as const;
 }
