@@ -40,6 +40,25 @@ design system was not wrong to render an anchor — it reads the router off `UiP
 sidebar renders in `Layout`, ABOVE the route tree, so the port can never be in scope there. Hence
 `asChild` with React Router's own `Link` per call, and `current` stays the app's.
 
+**THE PREVIEW OPENS BESIDE THE WORK.** `theme-preview.tsx` is the design system under the theme being
+built, and it is ONE component rendered in two places: a `SidePanel` beside a step (`?preview=1` on
+`routes/build.tsx`), and the `/preview` route at full width for reading all eleven sections. It
+renders no heading of its own and takes `sectionLevel`, so the outline is honest under a page's `h1`
+and under the panel's `h2` alike.
+
+- **The panel is NON-MODAL, and that is the point** — [ADR-0034](../../doc/adr/0034-a-side-panel-is-not-a-drawer.md),
+  written for this. A drawer (`Dialog` + `side`) makes the page inert, so it would take away the very
+  control the preview is about. Verified in a browser: with the panel open, a role select behind it
+  has no `inert` ancestor and re-pointing one moves the panel's swatches.
+- **Two columns from `repeat(auto-fit, minmax(30rem, 1fr))`**, no media query. Measured first: every
+  step reflows to 620px of column with the page never scrolling sideways, so the narrow case costs
+  height only and the panel simply stacks under the step.
+- **The app supplies the bound.** `SidePanel` brings the scroll; sticky-to-the-viewport plus a
+  `max-block-size` is layout, and only this file knows what the panel should be as tall as.
+- **One control per state.** The page opens it; the panel closes itself. It used to say "Hide the
+  preview" up top while the panel had its own Hide four inches away, and "Full width" was at the
+  BOTTOM of a ~3300px strip — a link nobody would reach.
+
 **THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
 holds the MODE — `Building` / `Preview` — as two links marked with `current`. The preview was a fifth
 sidebar item under a hairline rule, the same shape as the steps, while a `Badge` in the header
