@@ -92,11 +92,20 @@ interface BasesStore {
    */
   readonly darkBases: Bases;
   /**
-   * The whole set at once, which is what a validated form hands over. A per-field
-   * write is deliberately NOT here: the seven are one answer, and half of what can
-   * be wrong with them is a fact about the SET — two families a person could not
-   * tell apart, or a theme these seven cannot make readable. A store that accepted
-   * one colour at a time would invite writing an unchecked value into it.
+   * The whole set at once, AS IT CHANGES. A per-field write is deliberately NOT
+   * here: the seven are one answer, and the caller hands the answer over whole —
+   * step one does so on every edit (`live-bases.tsx`), after checking the shape.
+   *
+   * It used to be written on submit only, and the objection on record was that a
+   * store accepting colours as they change "would invite writing an unchecked value
+   * into it". That objection was about the SET-level checks — two families nobody
+   * could tell apart, a theme these seven cannot make readable — and those still gate
+   * the advance to step two, on submit. They never gated the write, because nothing a
+   * colour input produces is malformed, and a theme that fails a contrast floor is
+   * still a theme: the preview rail exists to show exactly that, while it is being
+   * fixed. Committed on submit, the rail could not show a light edit at all, and the
+   * dark seven could not follow one, which made "re-derive" look broken against a
+   * store the person was not looking at.
    */
   readonly setBases: (bases: Bases) => void;
   /** The dark set at once, for the same reason the light one is written at once. */

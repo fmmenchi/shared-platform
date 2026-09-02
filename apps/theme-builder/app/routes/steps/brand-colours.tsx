@@ -15,14 +15,10 @@ import { RhfForm, useRhfErrors } from '@fmmenchi/ui-form-ports/react-hook-form';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import {
-  FAMILIES,
-  REFERENCE_BASES,
-  REFERENCE_DARK_BASES,
-  useBases,
-} from '../../bases';
+import { FAMILIES, useBases } from '../../bases';
 import { makeBasesSchema, type BasesValues } from '../../bases.schema';
 import { useDeclarations, type Scheme } from '../../declarations';
+import { BackToReference, LiveBases } from '../../live-bases';
 import { stepPath } from '../../steps';
 
 /**
@@ -47,6 +43,13 @@ import { stepPath } from '../../steps';
  * cannot be checked as you type. So it is checked on submit, and BOTH themes are
  * generated and validated then, each against its own alias map and its own ramp.
  *
+ * BUT THE STORE SEES EVERY EDIT. The light seven used to reach it on submit only, and
+ * that left the step half committed and half live: the dark seven — store-backed —
+ * could not follow a light edit until you continued, and the preview rail could not
+ * show one at all. `LiveBases` writes the form's values to the store as they change;
+ * the set check above still decides whether you may LEAVE. See `live-bases.tsx` for
+ * why the objection to a live store was about the check that stayed.
+ *
  * THE DARK SEVEN ARE NOT FORM FIELDS. `FormColorPicker` omits `onChange` and `value`
  * on purpose — winning them at a call site severs the binding rather than overriding
  * it — and its own docs say what to do when you need them: compose the control and
@@ -54,14 +57,8 @@ import { stepPath } from '../../steps';
  * so that set is store-backed and the schema checks it as a closed-over value.
  */
 export default function BrandColours() {
-  const {
-    bases,
-    darkBases,
-    setBases,
-    setDarkBases,
-    deriveFromLight,
-    darkFollowsLight,
-  } = useBases();
+  const { bases, darkBases, setDarkBases, deriveFromLight, darkFollowsLight } =
+    useBases();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState<Scheme>('light');
@@ -89,14 +86,15 @@ export default function BrandColours() {
 
       <RhfForm<BasesValues>
         options={{ defaultValues: bases, resolver: zodResolver(schema) }}
-        onSubmit={(values) => {
-          setBases(values);
-          // `stepPath` AND NOT A LITERAL. This line said `/palette` and survived the
-          // move of every step under `/steps/`, so submitting went to a 404 — and the
-          // walk-the-routes check did not see it, because it visited pages and never
-          // submitted a form.
-          void navigate(stepPath('palette'));
-        }}
+        // NO WRITE HERE: the values are already in the store, because `LiveBases`
+        // put them there as they changed. Getting this far means the resolver passed
+        // the set, so all that is left of "check and continue" is the continue.
+        //
+        // `stepPath` AND NOT A LITERAL. This line said `/palette` and survived the
+        // move of every step under `/steps/`, so submitting went to a 404 — and the
+        // walk-the-routes check did not see it, because it visited pages and never
+        // submitted a form.
+        onSubmit={() => void navigate(stepPath('palette'))}
         style={{ display: 'grid', gap: 'var(--fm-space-stack-l)' }}
       >
         {/* FIRST, and it is where a person lands after a failed submit: a list of
@@ -105,6 +103,7 @@ export default function BrandColours() {
             link into a hidden panel focuses nothing. */}
         <FormErrorSummary labelFor={(name) => name} />
         <ShowTheFailingTab onFieldError={() => setTab('light')} />
+        <LiveBases />
 
         <Tabs value={tab} onValueChange={(next) => setTab(next as Scheme)}>
           <TabList aria-label="Theme">
@@ -151,11 +150,10 @@ export default function BrandColours() {
                   <>
                     These <strong>follow the light seven</strong> — same hue,
                     restated at lightness 0.75, keeping each one&rsquo;s share
-                    of the chroma sRGB allows there. They move when you{' '}
-                    <strong>check and continue</strong>, which is when the light
-                    seven are committed — until then a light edit is not in them
-                    yet. Edit one here and they stop following, because a brand
-                    with a real dark palette has colours of its own.
+                    of the chroma sRGB allows there. Change a light colour and
+                    they move with it. Edit one here and they stop following,
+                    because a brand with a real dark palette has colours of its
+                    own.
                   </>
                 ) : (
                   <>
@@ -167,27 +165,24 @@ export default function BrandColours() {
                 )}
               </p>
 
-              {/* IN THIS PANEL because it is about these colours, and NEVER DISABLED
-                  — it was, while the dark seven still followed, on the grounds that
-                  re-deriving would then change nothing.
+              {/* IN THIS PANEL because it is about these colours, and DISABLED WHILE
+                  THEY FOLLOW: re-deriving what is already the derivation changes
+                  nothing, and the sentence above says so.
 
-                  That reasoning was about the STORE and the person is looking at the
-                  FORM. The light seven are form fields, committed by "Check and
-                  continue"; the dark seven are store-backed and live. So editing a
-                  light colour leaves the store untouched, the dark seven correctly
-                  unchanged, and this button correctly disabled — while the screen
-                  plainly shows new light colours and stale dark ones. Reported as
-                  exactly that: "bloccato anche quando modifico i light".
-
-                  A control somebody believes should work and cannot is worse than one
-                  that occasionally changes nothing, so the honest state is enabled.
-                  The asymmetry underneath it — one half of this step committed on
-                  submit, the other live — is the real defect, and it is recorded in
-                  AGENTS.md rather than papered over here. */}
+                  It was enabled unconditionally for one commit, and why is worth
+                  keeping. The light seven were committed on submit while the dark
+                  seven were live, so a light edit left the store untouched, the dark
+                  seven correctly unchanged and this button correctly disabled — while
+                  the screen plainly showed new light colours and stale dark ones.
+                  Reported as "bloccato anche quando modifico i light". Enabling it
+                  papered over the asymmetry; `LiveBases` removed the asymmetry, so
+                  the store IS what the person is looking at, and a disabled state is
+                  honest again. */}
               <Button
                 type="button"
                 variant="secondary"
                 onClick={deriveFromLight}
+                disabled={darkFollowsLight}
                 style={{ justifySelf: 'start' }}
               >
                 Re-derive from the light seven
@@ -207,16 +202,15 @@ export default function BrandColours() {
           }}
         >
           <Button type="submit">Check and continue</Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setBases(REFERENCE_BASES);
-              setDarkBases(REFERENCE_DARK_BASES);
-            }}
-          >
-            Back to the reference colours
-          </Button>
+          {/* Resets the FORM as well as the store — see `live-bases.tsx` for the
+              state the old two-write version left the wizard in. */}
+          <BackToReference>
+            {(onClick) => (
+              <Button type="button" variant="ghost" onClick={onClick}>
+                Back to the reference colours
+              </Button>
+            )}
+          </BackToReference>
         </div>
       </RhfForm>
     </section>

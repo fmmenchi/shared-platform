@@ -76,6 +76,21 @@ export type BasesValues = z.infer<typeof basesObject>;
 export type SchemeBases = z.infer<typeof basesObject>;
 
 /**
+ * THE SHAPE ALONE — seven lowercase hexes, none of the set-level checks.
+ *
+ * This is what the live write into the store asks before it writes (`live-bases.tsx`):
+ * the objection on record against a store that accepts colours as they change was
+ * about writing an UNCHECKED value into it, and this is the check that objection was
+ * actually about. The contrast floors are a different question — whether these seven
+ * make a theme that can be READ — and that one stays on submit, in `makeBasesSchema`,
+ * where it gates the advance to step two rather than the write. A theme that fails a
+ * floor is still a theme, and the preview rail exists to show it failing.
+ */
+export function parseBasesShape(values: unknown) {
+  return basesObject.safeParse(values);
+}
+
+/**
  * THE DARK SEVEN ARE CHECKED, NOT TYPED IN HERE, and the split is the design system's
  * own instruction rather than a shortcut.
  *
