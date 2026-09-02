@@ -110,6 +110,19 @@ describe('SidePanel', () => {
       expect(style.overflowY).toBe('auto');
       expect(style.overscrollBehaviorBlock).toBe('contain');
     });
+
+    it('is the containing block its own note promises, so abspos children are clipped', () => {
+      // A scroll container does not clip an absolutely positioned descendant
+      // whose containing block is outside it, and a `static` element is not one.
+      // The panel was static while its stylesheet told whoever styles a child
+      // that it "becomes the containing block for absolutely positioned ones" —
+      // measured in a consumer, a visually-hidden span inside it hung off the
+      // ROOT and gave the page a scrollbar for content the panel had clipped.
+      render(<SidePanel label="Preview">Content</SidePanel>);
+      const panel = screen.getByRole('complementary', { name: 'Preview' });
+
+      expect(getComputedStyle(panel).position).toBe('relative');
+    });
   });
 
   it('merges a consumer class rather than replacing its own', () => {

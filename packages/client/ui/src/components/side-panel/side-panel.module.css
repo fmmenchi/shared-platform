@@ -28,6 +28,17 @@
        neither is obvious. */
     max-block-size: 100%;
     overflow-y: auto;
+    /* WHAT MAKES THE SECOND HALF OF THAT NOTE TRUE, and it was missing while
+       the note claimed it. A scroll container does NOT clip an absolutely
+       positioned descendant whose containing block is outside it, and a
+       `static` element is not a containing block for one — so an abspos child
+       (a visually-hidden span, a native control an input paints under) resolved
+       against the initial containing block and hung off the ROOT. Measured in a
+       consumer: the panel scrolled correctly, `body` measured 900px, and
+       `html.scrollHeight` was 2029 — a page scrollbar for content the panel
+       believed it had clipped. `relative` with no offsets moves nothing; it only
+       makes the panel the containing block it says it is. */
+    position: relative;
     /* The page behind must not start scrolling when the panel reaches its end.
        That chaining is the one way a non-modal panel can still disturb the
        content it sits beside. */
