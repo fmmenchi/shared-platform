@@ -18,6 +18,7 @@ import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
 import { DARK_REFERENCE_RAMP, useRamp } from '../../ramp';
+import { stepPath } from '../../steps';
 
 /**
  * STEP FOUR — read what the theme measures, then hand it over.
@@ -135,9 +136,17 @@ export default function Review() {
             The generator refuses to write a theme that does not pass, so these
             have to be fixed on the earlier steps first.
           </p>
+          {/* THE SCHEME IS SHOWN, and it has to be: the two themes are validated
+              together, so a bare message leaves a person guessing which of the two
+              files to fix — and `-subtle` failing in dark means a different rung
+              from `-subtle` failing in light. The scheme was attached to each
+              violation for this and then not printed, which is the same defect as
+              not attaching it. */}
           <ul>
             {verdict.violations.slice(0, 8).map((violation, i) => (
-              <li key={i}>{violation.message}</li>
+              <li key={i}>
+                <strong>{violation.scheme}</strong> — {violation.message}
+              </li>
             ))}
           </ul>
         </Alert>
@@ -145,15 +154,24 @@ export default function Review() {
 
       {passes && (
         <Alert variant="success">
-          Every colour role is assigned and every declared contrast pair clears
-          its floor — measured with <code>validateTheme</code>, the same
-          function CI runs and the generator runs before it writes.
+          <strong>Both themes pass.</strong> Every colour role is assigned in
+          each, and every declared contrast pair clears its floor — measured
+          with <code>validateTheme</code>, the same function CI runs and the
+          generator runs before it writes.
         </Alert>
       )}
 
       <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
-        The file carries <strong>declarations at every layer</strong> — your
-        seven bases, every rung the ramp places under them, and every role still
+        <strong>Two files, one per theme.</strong> The generator writes one{' '}
+        <code>[data-theme]</code> block per run and light and dark ARE two
+        blocks, so the handoff is two files and two commands — and the dark one
+        carries its own seven bases, its own seventeen rungs and its own role
+        map, because a dark theme is not the light one inverted.
+      </p>
+
+      <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
+        Each file carries <strong>declarations at every layer</strong> — the
+        bases, every rung the ramp places under them, and every role still
         pointing at a rung — rather than the 84 finished colours. A file of
         finished colours is a photograph of a theme: the same pixels, with
         nothing left to recompute when somebody changes one base or re-points
@@ -191,7 +209,7 @@ export default function Review() {
           <Button type="submit" disabled={!passes}>
             Download both theme files
           </Button>
-          <Button as={Link} to="/roles" variant="secondary">
+          <Button as={Link} to={stepPath('roles')} variant="secondary">
             Back to the roles
           </Button>
         </div>

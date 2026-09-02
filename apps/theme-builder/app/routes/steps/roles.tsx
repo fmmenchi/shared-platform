@@ -15,6 +15,7 @@ import { Link } from 'react-router';
 import { useBases } from '../../bases';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
+import { stepPath } from '../../steps';
 import {
   useRoleOverrides,
   useRungOptions,
@@ -163,10 +164,10 @@ export default function Roles() {
       )}
 
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-        <Button as={Link} to="/palette" variant="secondary">
+        <Button as={Link} to={stepPath('palette')} variant="secondary">
           Back to the palette
         </Button>
-        <Button as={Link} to="/review">
+        <Button as={Link} to={stepPath('review')}>
           Review and export
         </Button>
       </div>
