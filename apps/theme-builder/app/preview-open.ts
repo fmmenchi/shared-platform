@@ -3,13 +3,13 @@
  *
  * In state it would be worse three ways: it dies on a reload, it is not a link
  * somebody can send, and the control that changes it would have to be a button with a
- * handler instead of an anchor that works with no JavaScript. The `?from=` beside it
- * is in the URL for the same reasons.
+ * handler instead of an anchor that works with no JavaScript.
  *
- * HERE RATHER THAN IN EITHER CALLER, because there are two: the rail is rendered by
- * `root.tsx` (it has to be a direct child of `AppLayout` to be a region of it) and the
- * control that opens it lives on the step, in `routes/build.tsx`. A param name spelled
- * out in both is one decision in two places, obliged to agree forever.
+ * ITS OWN FILE, although `root.tsx` is now the only caller — the header link opens
+ * the rail and the rail closes itself, both there. It was two callers when the opener
+ * lived on the step, and it stays out because the param's spelling is a fact about the
+ * URL rather than about the shell: a step that wanted to open the rail again would
+ * import this, not `root.tsx`.
  */
 const PARAM = 'preview';
 

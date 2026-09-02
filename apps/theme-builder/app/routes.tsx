@@ -6,12 +6,21 @@ import {
 } from '@react-router/dev/routes';
 
 /**
- * TWO THEME SCOPES, AND ONE PAGE PER STEP (ADR-0033).
+ * ONE PAGE PER STEP (ADR-0033), AND NOTHING ELSE.
  *
  * The wizard is a LAYOUT route: it draws the stepper and the chrome once, under the
- * reference theme, and each step is a child. `/preview` is outside it, because it
- * is the one place the draft theme applies — a draft with a contrast pair below its
- * floor must not take down the controls that would fix it.
+ * reference theme, and each step is a child. The preview is not a route: it is a rail
+ * beside whichever step you are on, opened with `?preview=1` (`preview-open.ts`), and
+ * the theme being built applies to that subtree alone — a draft with a contrast pair
+ * below its floor must not take down the controls that would fix it.
+ *
+ * THERE WAS A `/preview` ROUTE, the same component at full width, and it was deleted
+ * rather than given a link. Once the rail existed nothing pointed at the page — the
+ * `Building`/`Preview` mode links, the step's own button and the rail's `Full width`
+ * had all gone in favour of one control — and a route reachable by URL alone is the
+ * worst of the three options (link it, delete it, leave it). What it offered, reading
+ * all eleven sections at a width where an Alert gets its own line, the rail now gives
+ * at 32rem; and a second host was the only reason the preview took a heading level.
  *
  * `/` IS A REDIRECT INTO THE SEQUENCE, not a step. It used to be step one's own
  * route, which made `/` and any unknown URL the same thing to the stepper and gave
@@ -32,5 +41,4 @@ export default [
     route('steps/roles', './routes/steps/roles.tsx'),
     route('steps/review', './routes/steps/review.tsx'),
   ]),
-  route('preview', './routes/preview.tsx'),
 ] satisfies RouteConfig;

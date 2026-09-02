@@ -23,37 +23,31 @@ import { useThemedDeclarations } from './role-overrides';
 import { ThemeScope } from './theme-scope';
 
 /**
- * THE DESIGN SYSTEM UNDER THE THEME BEING BUILT — the whole of it, rendered twice in
- * two places and written once.
+ * THE DESIGN SYSTEM UNDER THE THEME BEING BUILT — the whole of it, in the rail.
  *
  * It is a component rather than a page because the preview's job is FEEDBACK: the
  * question it answers is "what does this colour do", and whoever is asking is
  * mid-choice, looking at the control they just moved. A page took that control away
- * at the moment the answer arrived. So the same thing is now a `SidePanel` beside a
- * step AND the `/preview` route at full width — one for choosing, one for reading all
- * eleven sections. ADR-0034 is the boundary that made the panel possible: a non-modal
- * surface, so the step's controls keep working behind it.
+ * at the moment the answer arrived. So it is a `SidePanel` beside the step, and
+ * ADR-0034 is the boundary that made that possible: a non-modal surface, so the
+ * step's controls keep working behind it.
  *
- * IT RENDERS NO HEADING OF ITS OWN. Each host names itself — "Preview" as a page's
- * `h1`, "Your theme" as the panel's `h2` — and passes `sectionLevel` so the outline
- * below stays honest in both. A component that hardcoded `h2` would be an `h2` under
- * an `h2` in one of the two.
+ * IT WAS ALSO A `/preview` ROUTE at full width, for reading all eleven sections, and
+ * that is gone: nothing linked to it once the rail existed, and the rail is wide
+ * enough now to give an Alert its own line. With one host the `sectionLevel` prop it
+ * took went too — the outline below is fixed at the level under the rail's `h2`, and
+ * a card inside a section takes the next one down.
  *
- * THE HEADING AND THE CONTROLS STAY OUTSIDE THE SCOPE. They are chrome: a theme whose
- * contrast fails must not take down the toggle that would switch away from it. That
- * is also what makes the panel safe rather than the route being separate — see
- * `theme-scope.tsx`, and `tests/theme-scope.spec.tsx` for the assertion.
+ * IT RENDERS NO HEADING OF ITS OWN — the rail names itself, "Your theme", and that
+ * heading is what labels the region — and it brings no padding, because `SidePanel`
+ * insets itself.
+ *
+ * THE CONTROLS STAY OUTSIDE THE SCOPE. They are chrome: a theme whose contrast fails
+ * must not take down the toggle that would switch away from it. That is what makes
+ * the panel safe beside the step — see `theme-scope.tsx`, and
+ * `tests/theme-scope.spec.tsx` for the assertion.
  */
-export function ThemePreview({
-  sectionLevel = 2,
-}: {
-  /**
-   * The level the section headings take. `2` under a page's `h1`, `3` under the
-   * panel's `h2` — and a card inside a section takes the next one down, which is why
-   * this is one number rather than two props that could disagree.
-   */
-  readonly sectionLevel?: 2 | 3;
-}) {
+export function ThemePreview() {
   const { bases, darkBases } = useBases();
   const { ramps } = useRamp();
   // Step three's re-pointings, for light. Dark uses the design system's own alias map
@@ -120,12 +114,7 @@ export function ThemePreview({
         }}
       >
         {ROLE_GROUPS.map((group) => (
-          <Section
-            key={group.title}
-            level={sectionLevel}
-            title={group.title}
-            note={group.note}
-          >
+          <Section key={group.title} title={group.title} note={group.note}>
             {DEMOS[group.title] ?? <Fallback title={group.title} />}
           </Section>
         ))}
@@ -134,21 +123,25 @@ export function ThemePreview({
   );
 }
 
-/** One group's worth of components, titled the way step three titles it. */
+/**
+ * One group's worth of components, titled the way step three titles it.
+ *
+ * `h3`, because the rail's own heading is the `h2` — see `root.tsx` — and this is the
+ * only place the preview renders now. The level was a prop while a full-width page
+ * hosted it too.
+ */
 function Section({
-  level,
   title,
   note,
   children,
 }: {
-  readonly level: 2 | 3;
   readonly title: string;
   readonly note: string;
   readonly children: ReactNode;
 }) {
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
-      <Heading level={level}>{title}</Heading>
+      <Heading level={3}>{title}</Heading>
       <p
         style={{
           margin: 0,

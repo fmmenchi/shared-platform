@@ -22,11 +22,13 @@ A theme built here is therefore the same KIND of object as the reference one, no
 
 ## The four steps
 
-1. **Brand colours** — the seven a brand hands over, as one form. They are checked as a set on
-   submit, because half of what can be wrong with seven colours is a fact about the set: two
-   families nobody could tell apart, or a base whose ramp cannot carry its own button label. The
-   greys are not asked for — the design system states them, since no single base spans white to
-   near-black and still resolves the pale end.
+1. **Brand colours** — the seven a brand hands over, as one form, with the dark seven in a tab
+   beside them. Every edit is live: the dark seven follow the light ones as you change them (until
+   you edit a dark one by hand), and the preview rail shows the change as you make it. The set is
+   checked when you continue, because half of what can be wrong with seven colours is a fact about
+   the set: a base whose ramp cannot carry its own button label. The greys are not asked for — the
+   design system states them, since no single base spans white to near-black and still resolves
+   the pale end.
 
 2. **Palette** — the eleven rungs each colour produces, and the two ends of the ramp you may move.
    The darkest rung is offered because it decides how much contrast the ramp can reach; the pale end
@@ -72,11 +74,13 @@ npx nx g @fmmenchi/nx-theme-generator:theme acme-dark --from=./acme-dark.theme.j
 A dark theme is not the light one inverted. It restates its bases at lightness 0.75, takes
 seventeen rungs of 0.05 where light takes eleven, and points `-subtle` at a dark rung where light
 points at a pale one. The dark seven are **suggested** from your light seven — same hue, keeping
-each one's share of the chroma sRGB allows at that lightness — and then editable on step 2, because
-a brand with a real dark palette has colours of its own.
+each one's share of the chroma sRGB allows at that lightness — and then editable in their own tab on
+step 1, because a brand with a real dark palette has colours of its own. They follow the light seven
+until you edit one; "Re-derive from the light seven" puts them back to following.
 
 ## Limitations
 
-- **Step 3's role overrides are light-only.** The two themes point their roles at different rungs,
-  so a light override cannot be carried across without meaning something else.
+- **Step 3's role overrides are per theme.** A role re-pointed under the light tab is not carried
+  into dark: the two themes point their roles at different rungs, so the same choice would mean a
+  different colour there.
 - **The 25 (light) and the 1500 (dark) have no role pointing at them yet** — deliberate headroom.

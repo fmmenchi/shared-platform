@@ -26,8 +26,8 @@ import { STEPS, pathOf, slugOf, statusOf } from '../steps';
  * the shell places one. A rail rendered in here would be a box inside `main`, which
  * is what it was, and it read as a card floating in the page rather than as a side of
  * the window. Rendering it above meant the stores and the declarations had to be
- * above too, which collapsed the second copy of this loader that `routes/preview.tsx`
- * was carrying.
+ * above too, which collapsed the second copy of this loader that the full-width
+ * `/preview` route was carrying (that route is gone since; the rail is the preview).
  *
  * What is left here is the step's own chrome and nothing else. The control that opens
  * the rail went up to the header too: it was a button in this heading row beside

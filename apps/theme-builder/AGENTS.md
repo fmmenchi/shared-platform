@@ -40,12 +40,23 @@ design system was not wrong to render an anchor — it reads the router off `UiP
 sidebar renders in `Layout`, ABOVE the route tree, so the port can never be in scope there. Hence
 `asChild` with React Router's own `Link` per call, and `current` stays the app's.
 
-**THE PREVIEW IS A DOCKED RAIL.** `theme-preview.tsx` is the design system under the theme being
-built, and it is ONE component rendered in two places: an `<aside>` region of `AppLayout` (opened
-with `?preview=1`), and the `/preview` route at full width for reading all eleven sections. It
-renders no heading of its own and takes `sectionLevel`, so the outline is honest under a page's `h1`
-and under the rail's `h2` alike, and it brings no padding — a page insets its content and `SidePanel`
-insets itself.
+**THE PREVIEW IS A DOCKED RAIL, AND ONLY THAT.** `theme-preview.tsx` is the design system under the
+theme being built, rendered as an `<aside>` region of `AppLayout` (opened with `?preview=1`). It
+renders no heading of its own — the rail's `h2` names the region — and brings no padding, because
+`SidePanel` insets itself. There WAS a `/preview` route, the same component at full width, and it
+was deleted rather than linked: once the rail existed nothing pointed at it (the `Building` /
+`Preview` mode links, the step's button and the rail's `Full width` had all gone in favour of one
+control), and an orphan route is the worst of link-it / delete-it / leave-it. The `sectionLevel` prop
+existed only for that second host and went with it.
+
+- **THE RAIL IS `clamp(26rem, 40cqi, 32rem)` WIDE**, retuned through `--fm-size-aside` on
+  `AppLayout` (a token so a consumer can). Not 18rem: at 288px the preview's own buttons wrapped
+  onto three lines. Not 26rem either — asked for wider twice, with a screenshot of `soft` still on a
+  line of its own — and the arithmetic says why: `SidePanel` insets 1.5rem a side and the scope
+  2rem, so 7rem of the rail is padding, leaving 288px for a row that measures ~290. 32rem leaves
+  ~384px. CLAMPED to 40% of the shell because the rail is taken out of `main`: 32rem flat at a
+  1024px shell would leave the step 256px. `cqi` resolves against `AppLayout`'s outer element (the
+  container; the token is not `@property`-registered, so the unit resolves where it is used).
 
 - **A REGION, NOT A BOX IN THE CONTENT.** It was a second grid column inside `main` first, and it
   read as a card floating in the page. `AppLayout` has had an `<aside>` region all along: it places
@@ -68,22 +79,21 @@ insets itself.
   them the rail was 9313px tall with `scrollHeight === clientHeight`: `SidePanel`'s
   `max-block-size: 100%` has nothing to resolve against in a grid row sized by its tallest item, so
   it stretched the page instead of scrolling. Placement is the app's, per the ADR.
-- **One control per state.** The step opens it (`routes/build.tsx`); the rail closes itself.
-  `preview-open.ts` owns the param name, because the opener and the rail live in different files.
+- **One control per state.** The header's `Show the preview` link opens it (marked `current` while
+  it is open); the rail's `×` closes it. Both are LINKS that add or drop `?preview=1`, so the browser
+  can do it — middle-click, no JavaScript. `preview-open.ts` owns the param's spelling, because it is
+  a fact about the URL rather than about the shell.
 
 **THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
-holds the MODE — `Building` / `Preview` — as two links marked with `current`. The preview was a fifth
-sidebar item under a hairline rule, the same shape as the steps, while a `Badge` in the header
-reported which mode you were in without being able to change it: one concept in two places, and the
-preview reading as a step it is not (nothing is decided there, and it is reachable at any time).
+holds the one thing that is not a step, the preview toggle. The preview was a fifth sidebar item
+under a hairline rule, the same shape as the steps, while a `Badge` in the header reported which
+mode you were in without being able to change it: one concept in two places, and the preview reading
+as a step it is not (nothing is decided there, and it is reachable at any time).
 
-- **Links, NOT a `SegmentedControl`**, which is what a mode switch looks like and the wrong component:
-  that is a radio group (ADR-0025) and the design system draws the line itself — "a tab list navigates
-  the page, a radio group answers a question". `Tabs` is out for the other half of the same sentence.
-- **`/preview?from=<slug>` is how "Building" gets you back to the step you left.** In state it was
-  worse twice: `setState` in an effect is the cascading-render anti-pattern the lint rule refuses, and
-  a memory here dies on a reload or a shared `/preview` link. The param is validated against `STEPS`,
-  so `?from=whatever` lands on step one rather than throwing.
+- **A link, NOT a `SegmentedControl`**, which is what a mode switch looks like and the wrong
+  component: that is a radio group (ADR-0025) and the design system draws the line itself — "a tab
+  list navigates the page, a radio group answers a question". `Tabs` is out for the other half of
+  the same sentence.
 
 ## Rules
 
@@ -168,31 +178,37 @@ nothing to compute a brand's dark colours from.
   the `color-scheme` line and nothing else, so picking `dark` shipped light colours with dark native
   controls. There is nothing to choose now: each file's scheme is a fact about which file it is.
 
+## Step one is live, and the set check gates the advance
+
+The light seven reach the store AS THEY CHANGE (`live-bases.tsx`, a `watch` subscription on the
+form), and "Check and continue" runs the SET validation and then only navigates. Step one used to be
+half committed and half live — light on submit, dark as you type — with two consequences both
+watched happening: the dark seven could not follow a light edit until you continued (so "Re-derive
+from the light seven" looked broken, disabled against a store the person was not looking at), and
+the preview rail could not show a light edit at all, a hole in the feature the rail exists for.
+
+This contradicts an earlier decision and the contradiction is deliberate. The objection on record —
+"a store that accepted one colour at a time would invite writing an unchecked value into it" — was
+about the set-level checks (a theme these seven cannot make readable), and those still run where they
+did, on submit, gating step two. They never gated the WRITE, and nothing a colour input produces is
+malformed; `parseBasesShape` checks the shape anyway before the store is touched. A theme that fails
+a contrast floor is still a theme, and showing it failing while it is fixed is what the rail is for.
+`tests/live-bases.spec.tsx` holds the boundary: the store moves on a valid edit, the dark seven move
+with it, a malformed value is refused, and "Back to the reference colours" resets the FORM as well as
+the store (through the store's own `reset`, which keeps the follow — the two-write version it
+replaced stopped the dark seven from following, a hand edit as far as the store could tell).
+
 ## Known gaps
 
-- **STEP ONE IS HALF COMMITTED AND HALF LIVE, and that is the next thing to decide.** The light seven
-  are RHF fields written to the store by "Check and continue"; the dark seven are store-backed and
-  change as you type. Two consequences, both real: the dark seven cannot follow a light edit until
-  you continue (which made "Re-derive from the light seven" look broken — it was disabled against a
-  store the person was not looking at), and **the preview rail cannot show a light edit at all**
-  until the step is submitted, which is a hole in the feature the rail exists for.
-  The fix is to let the light seven reach the store as they change while the SET validation keeps
-  gating the advance — the objection on record ("a store that accepted one colour at a time would
-  invite writing an unchecked value into it") is about the set-level checks, and a colour input
-  cannot produce a malformed colour. It contradicts a documented decision, so it is written down here
-  rather than taken.
-- **`/preview` is reachable by URL only.** `Building`, the step's own button and the rail's
-  `Full width` were all removed in favour of one control; nothing links to the page now. Either give
-  it an entry point or delete it — an orphan route is the worst of the three.
-
-- **A role's rung menu offers EVERY family, not just the role's own.** Deliberate: a role
-  legitimately points outside its family — every `-foreground` is `neutral-0`, and `background`,
-  `border` and `muted` are neutral too — so filtering to one family would make the commonest case
-  impossible. It is also not derivable from the name: `--fm-color-error` and `--fm-color-destructive`
-  both point into `negative`, so a filter would need a role→family table, a second home for a
-  relation `vars.css` already states. The plausible family IS readable from the declaration a role
-  starts on, so ORDERING the menu by it (own family, then neutral, then the rest) would answer the
-  complaint without forbidding a deliberate cross-family choice. Not done yet.
+- **A role's rung menu offers EVERY family, ordered by the role.** Every family, deliberately: a
+  role legitimately points outside its own — every `-foreground` is `neutral-0`, and `background`,
+  `border` and `muted` are neutral too — so a filter would make the commonest case impossible, and
+  the family is not derivable from the name (`--fm-color-error` and `--fm-color-destructive` both
+  point into `negative`), so a filter would need a role→family table, a second home for a relation
+  `vars.css` already states. `orderRungOptions` puts the family the role STARTS in first (read off
+  the design system's own declaration with `homeFamilyOf`, not the re-pointed one, so the menu does
+  not reshuffle under a choice), `neutral` second, the rest alphabetical. `tests/rung-options.spec.ts`
+  asserts the order and that nothing is dropped.
 - **The 25 (light) and the 1500 (dark) have no role pointing at them.** Deliberate headroom, and
   what makes the pale end of step 2 nearly free: the only thing `paleRungs: 0` breaks is the eight
   chromatic `-subtle` roles that now name the 50, which `probeShape` reports as an unavailable

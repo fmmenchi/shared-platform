@@ -95,7 +95,7 @@ export const links: LinksFunction = () => [
  * here, above every route — and it cannot read a loader that belongs to one of them.
  *
  * Which also collapsed a duplication rather than adding one. `routes/build.tsx` and
- * `routes/preview.tsx` each carried the same loader, because the preview sat outside
+ * the then `/preview` route each carried the same loader, because the preview sat outside
  * the wizard layout on purpose and so could not share its data. Neither needs one now:
  * the root is above both, so there is a single read of `vars.css` per request and no
  * layout is shared to get it.
@@ -144,7 +144,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // the server does not have — so the class and `aria-current` would differ between
   // the two renders. Read from the router instead: it knows the path on both sides.
   const { pathname, search } = useLocation();
-  const onPreview = pathname === '/preview';
   const currentStep = slugOf(pathname);
 
   // `useRouteLoaderData` rather than `useLoaderData`, because this component also
@@ -153,9 +152,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const declarations = useRouteLoaderData('root') as
     SerializedDeclarations | undefined;
 
-  // NOT ON THE PREVIEW PAGE. That route IS the preview at full width; a rail of the
-  // same thing beside it would be the same component twice on one screen.
-  const railOpen = !onPreview && isPreviewOpen(search);
+  const railOpen = isPreviewOpen(search);
 
   return (
     <html lang="en">
@@ -204,8 +201,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 18rem is right for a details pane and wrong for this: at 288px the
                 preview's own buttons wrapped, so `Confirm`, `Disabled`, `solid` and
                 `soft` came out on three lines and a row of components stopped looking
-                like a row. 26rem holds them. */}
-            <AppLayout style={{ '--fm-size-aside': '26rem' } as CSSProperties}>
+                like a row. 26rem was the first answer and it was not enough either —
+                asked for wider twice, with a screenshot of `soft` still on a line of
+                its own. The arithmetic says why: `SidePanel` insets 1.5rem a side and
+                the scope another 2rem, so 7rem of a 26rem rail is padding and the
+                scrollbar takes a little more; 288px was left for a row that measures
+                ~290px. 32rem leaves ~384px, which holds that row with room and gives
+                an Alert a line of its own — what the deleted full-width page was for.
+
+                CLAMPED TO THE SHELL rather than fixed, because the rail is taken OUT
+                of `main`: at 32rem flat, a 1024px shell (where the layout still puts
+                the three columns side by side) would leave 256px for the step. `cqi`
+                is the shell's own inline size — `AppLayout`'s outer element is the
+                container, and the token is not `@property`-registered, so the unit
+                resolves where it is used — so the rail is 40% of the shell between
+                its old width and its new one: 512px from 1280px up, 416px below
+                1040px, and the step keeps 60% of the shell minus the nav in between.
+                Under the shell's own `@xl` the rail stacks under `main` anyway. */}
+            <AppLayout
+              style={
+                {
+                  '--fm-size-aside': 'clamp(26rem, 40cqi, 32rem)',
+                } as CSSProperties
+              }
+            >
               <header
                 style={{
                   display: 'flex',
@@ -279,14 +298,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 have one: a page with two unnamed navigations gives a screen reader
                 user a list of things all called "navigation". */}
                 <Nav label="View">
-                  <NavLink asChild current={onPreview || railOpen}>
-                    <Link
-                      to={
-                        onPreview
-                          ? '/preview'
-                          : withPreview(pathname, search, !railOpen)
-                      }
-                    >
+                  <NavLink asChild current={railOpen}>
+                    <Link to={withPreview(pathname, search, !railOpen)}>
                       Show the preview
                     </Link>
                   </NavLink>
@@ -343,7 +356,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <NavLink
                       key={step.slug}
                       asChild
-                      current={!onPreview && step.slug === currentStep}
+                      current={step.slug === currentStep}
                     >
                       <Link to={pathOf(step)}>{step.label}</Link>
                     </NavLink>
@@ -433,7 +446,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     </Button>
                   </div>
 
-                  <ThemePreview sectionLevel={3} />
+                  <ThemePreview />
                 </SidePanel>
               )}
 
