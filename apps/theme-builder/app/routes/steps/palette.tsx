@@ -5,6 +5,7 @@ import { FieldsetContent } from '@fmmenchi/ui/fieldset-content';
 import { FieldsetLegend } from '@fmmenchi/ui/fieldset-legend';
 import { Heading } from '@fmmenchi/ui/heading';
 import { SegmentedControl } from '@fmmenchi/ui/segmented-control';
+import { Separator } from '@fmmenchi/ui/separator';
 import { SegmentedControlItem } from '@fmmenchi/ui/segmented-control-item';
 import { Link } from 'react-router';
 import { useMemo, useState, type ReactNode } from 'react';
@@ -15,24 +16,11 @@ import { probeShape, type ShapeVerdict } from '../../ramp-probe';
 import {
   DARK_END_CHOICES,
   DARK_REFERENCE_RAMP,
-  PALE_END_CHOICES,
   REFERENCE_SHAPE,
   useRamp,
-  type RampShape,
 } from '../../ramp';
 import { useThemedDeclarations } from '../../role-overrides';
 import { stepPath } from '../../steps';
-
-/**
- * What each pale-end option is called. Numbers would be honest and useless: "2" does
- * not say that the scale gains a 25 and a 50, and the steps are what a person reads
- * off the table underneath.
- */
-const PALE_LABELS: Readonly<Record<number, string>> = {
-  0: 'None',
-  1: '+ 50',
-  2: '+ 50 and 25',
-};
 
 /** Small print — a description, or a refusal. */
 const note = {
@@ -191,26 +179,19 @@ export default function Palette() {
   );
   const steps = useMemo(() => shown.map((rung) => rung.step), [shown]);
 
-  // ONE PROBE PER OPTION, and each option is probed against the shape it would
-  // produce FROM THE CURRENT OTHER END — which is why this depends on `shape` and has
-  // to. "Is 0.34 allowed" is not a question with a single answer: it depends on the
-  // pale end sitting beside it, and the honest question a control answers is "if I
-  // pick this, from here, does it hold?".
+  // ONE PROBE PER OPTION, and it no longer depends on the shape — there is one end
+  // to move, so "is 0.34 allowed" has a single answer for a given set of bases. It
+  // used to depend on the pale end sitting beside it, which is what made this a
+  // matrix; that control is gone, and with it the reason to re-probe on every click.
   //
-  // That makes moving either control re-probe both, which is a real cost — six
-  // themes, eighty-four roles each, every palette bisected into sRGB. Acceptable
-  // because it happens on a click and not on a keystroke; the colour pickers on step
-  // one are the ones that fire continuously, and they do not reach this.
+  // Three themes, eighty-four roles each, every palette bisected into sRGB. Paid once
+  // per change of bases rather than once per click.
   const verdicts = useMemo(
-    () => ({
-      dark: DARK_END_CHOICES.map((darkEnd) =>
-        probeShape(declared, bases, { ...shape, darkEnd }),
+    () =>
+      DARK_END_CHOICES.map((darkEnd) =>
+        probeShape(declared, bases, { darkEnd }),
       ),
-      pale: PALE_END_CHOICES.map((paleRungs) =>
-        probeShape(declared, bases, { ...shape, paleRungs }),
-      ),
-    }),
-    [declared, bases, shape],
+    [declared, bases],
   );
 
   return (
@@ -225,80 +206,75 @@ export default function Palette() {
         belongs to.
       </p>
 
+      {/* ALWAYS VISIBLE, AND NAMED FOR THE RAMP IT SHAPES. It used to vanish when a
+          person switched the view to dark, which is wrong twice over: a VALUE control
+          should not be switched off by a VIEW control, and a section that disappears
+          reads as a bug rather than as "not applicable". Dark's ramp is stated whole
+          — its two ends have no role pointing at them, so a control over them would
+          move nothing.
+
+          Named "The light ramp" for the same reason: under the dark view this panel
+          is still about light, and a legend that says so beats a panel that hides. */}
       <Fieldset>
-        <FieldsetLegend>Which theme</FieldsetLegend>
-        <FieldsetContent>
-          <div
-            style={{
-              display: 'grid',
-              justifyItems: 'start',
-              gap: 'var(--fm-space-stack-s)',
-            }}
+        <FieldsetLegend>The light ramp</FieldsetLegend>
+        <FieldsetContent orientation="horizontal">
+          <RampEnd
+            legend="Darkest rung"
+            name="dark-end"
+            value={String(shape.darkEnd)}
+            onChange={(next) => setShape({ ...shape, darkEnd: Number(next) })}
+            options={DARK_END_CHOICES}
+            labelOf={(option) => Number(option).toFixed(2)}
+            idOf={(option) => `dark-${option}`}
+            verdicts={verdicts}
           >
-            <SegmentedControl
-              name="scheme"
-              value={scheme}
-              onValueChange={(next) => setScheme(next as Scheme)}
-            >
-              <SegmentedControlItem value="light">Light</SegmentedControlItem>
-              <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
-            </SegmentedControl>
-            <p style={note}>
-              Both are exported. A dark theme is not the light one inverted: it
-              restates its bases at lightness 0.75, takes seventeen rungs of
-              0.05 where light takes eleven, and points <code>-subtle</code> at
-              a dark rung where light points at a pale one.
-            </p>
-          </div>
+            How dark the bottom of every ramp goes, as OKLCH lightness. The
+            design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)}, which is
+            what the harshest of 144 test brands needs — your seven colours may
+            allow more.
+          </RampEnd>
         </FieldsetContent>
       </Fieldset>
 
-      {/* THE RAMP CONTROL IS LIGHT-ONLY, and saying so beats hiding it silently. The
-          dark ramp's two ends have no role pointing at them — the 25 and the 1500 are
-          both headroom there — so a control over them would probe two matrices to
-          move nothing. */}
-      {!dark && (
-        <Fieldset>
-          <FieldsetLegend>The ramp</FieldsetLegend>
-          <FieldsetContent orientation="horizontal">
-            <RampEnd
-              legend="Darkest rung"
-              name="dark-end"
-              value={String(shape.darkEnd)}
-              onChange={(next) => setShape({ ...shape, darkEnd: Number(next) })}
-              options={DARK_END_CHOICES}
-              labelOf={(option) => Number(option).toFixed(2)}
-              idOf={(option) => `dark-${option}`}
-              verdicts={verdicts.dark}
-            >
-              How dark the bottom of every ramp goes, as OKLCH lightness. The
-              design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)}, which is
-              what the harshest of 144 test brands needs — your seven colours
-              may allow more.
-            </RampEnd>
+      {/* A RULE BETWEEN THE VALUE AND THE VIEW. Without it the two controls read as
+          one group of settings, which is the confusion this whole rearrangement was
+          about: one of them changes the theme, the other only changes what is on
+          screen. */}
+      <Separator />
 
-            <RampEnd
-              legend="Pale end"
-              name="pale-end"
-              value={String(shape.paleRungs)}
-              onChange={(next) =>
-                setShape({
-                  ...shape,
-                  paleRungs: Number(next) as RampShape['paleRungs'],
-                })
-              }
-              options={PALE_END_CHOICES}
-              labelOf={(option) => PALE_LABELS[Number(option)] as string}
-              idOf={(option) => `pale-${option}`}
-              verdicts={verdicts.pale}
-            >
-              How far above the 100 the scale reaches — washes for page and
-              component backgrounds. Radix ships twelve steps, Material ten; the
-              design system ships eleven.
-            </RampEnd>
-          </FieldsetContent>
-        </Fieldset>
-      )}
+      {/* THE SCHEME TOGGLE BELONGS TO THE TABLE, and it sat above the ramp control
+          until somebody looked at the page. Two different kinds of thing were
+          adjacent: "how far does the ramp go" is a VALUE a person is choosing, and
+          "which palette am I looking at" is a VIEW. Worse, picking dark made the
+          whole ramp panel disappear, because that panel shapes the light ramp only —
+          so a view control was silently switching a value control off.
+
+          Now it is where what it changes is: beside the swatches. The ramp control
+          stays put and says which ramp it shapes. */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          gap: 'var(--fm-space-inline-s)',
+        }}
+      >
+        <SegmentedControl
+          label="Palette shown"
+          name="scheme"
+          value={scheme}
+          onValueChange={(next) => setScheme(next as Scheme)}
+        >
+          <SegmentedControlItem value="light">Light</SegmentedControlItem>
+          <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
+        </SegmentedControl>
+        <p style={note}>
+          Both themes are exported. A dark theme is not the light one inverted:
+          it restates its bases at lightness 0.75 and takes seventeen rungs of
+          0.05 where light takes eleven — those fourteen colours are on step
+          one, and its ramp is stated whole rather than offered.
+        </p>
+      </div>
 
       <table
         style={{

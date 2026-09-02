@@ -197,11 +197,11 @@ export const DARK_REFERENCE_RAMP: Ramp = [
  *                     change (0.26 is nearly black) and the one that can break the
  *                     contract. Both facts point the same way: offer it, and probe
  *                     every option against the real validator before offering it.
- *   the PALE END      exposed, free. Nothing points at the 25 or the 50 yet — the
- *                     `-subtle` roles all name the 100 — so moving it cannot move a
- *                     contrast pair. It is the shape of the scale, which is a product
- *                     decision: Radix ships twelve steps, Material ten, we ship
- *                     eleven, and a house with an existing design has to remap.
+ *   the PALE END      NOT exposed, and it was for a day. Nine roles point at the 50,
+ *                     so "no pale end" is impossible for every brand rather than for
+ *                     some — and once that option goes, the only freedom left is
+ *                     whether to add the 25, which no role reads. See the note where
+ *                     `PALE_END_CHOICES` used to be.
  *   the CHROMA        NOT exposed. Every factor is the sRGB ceiling at its lightness,
  *                     and in `vars.css` the clamp is the BROWSER's, differing per
  *                     engine — so a factor above the ceiling means the colour a
@@ -220,12 +220,10 @@ export interface RampShape {
    * re-space themselves evenly to reach it, so this is one number rather than nine.
    */
   readonly darkEnd: number;
-  /** How many rungs sit above the 100 — the 50, then the 25. */
-  readonly paleRungs: 0 | 1 | 2;
 }
 
 /** What the design system itself ships, and what the wizard opens on. */
-export const REFERENCE_SHAPE: RampShape = { darkEnd: 0.26, paleRungs: 2 };
+export const REFERENCE_SHAPE: RampShape = { darkEnd: 0.26 };
 
 /**
  * The dark ends worth offering, lightest first.
@@ -241,8 +239,22 @@ export const REFERENCE_SHAPE: RampShape = { darkEnd: 0.26, paleRungs: 2 };
  */
 export const DARK_END_CHOICES: readonly number[] = [0.34, 0.3, 0.26];
 
-/** The pale ends, in the order the control shows them. */
-export const PALE_END_CHOICES: readonly RampShape['paleRungs'][] = [0, 1, 2];
+/*
+ * THE PALE END WAS A CONTROL AND IS NOT ANY MORE, and it was removed for a reason
+ * that only became true when the 50 got a consumer.
+ *
+ * It offered three options — none, the 50, the 50 and the 25 — and NINE roles now
+ * point at the 50 (`-subtle`, in every family plus the grey). So "none" cannot be
+ * chosen by anybody: it is not a brand-dependent refusal, it is impossible by
+ * construction. The probe said so correctly and the page then explained it with an
+ * eight-role error dump under an option a person could see and never use. An option
+ * that is structurally unavailable is not a choice with a caveat, it is a trap with a
+ * footnote.
+ *
+ * That left "with or without the 25" as the whole freedom, and the 25 has no role
+ * pointing at it — a control whose only meaningful setting adds a rung nothing reads.
+ * Both pale rungs are unconditional now.
+ */
 
 /**
  * The pale rungs, in the order they are ADDED — the 50 first, because a scale that
@@ -301,7 +313,7 @@ export function buildRamp(shape: RampShape): Ramp {
     // Reversed so the pale rungs read 25 then 50 — the ramp is ordered lightest
     // first, and `paleRungs: 1` has to mean the 50 rather than the 25, because a
     // scale that stops at 0.975 has a gap where its own next step should be.
-    ...PALE_RUNGS.slice(0, shape.paleRungs).slice().reverse(),
+    ...PALE_RUNGS.slice().reverse(),
     ...MAIN_STEPS.map((step, i) => ({
       step,
       lightness: Number((MAIN_TOP - gap * i).toFixed(4)),
