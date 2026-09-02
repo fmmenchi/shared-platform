@@ -123,3 +123,32 @@
   grid-template-columns: repeat(auto-fit, 6rem);
   justify-content: start;
 }
+
+/*
+ * THE MENU'S EDGE RUNS THE WHOLE HEIGHT. `AppLayoutNav`'s column draws the rule
+ * between menu and page as its own `border-inline-end`, and the column is
+ * `align-self: start` with a `100dvh` cap — a PAIR the design system measured and
+ * documented, because dropping either one makes a long navigation unreachable at some
+ * scroll position. So the column is as tall as its four links, and the rule stopped
+ * with them, a third of the way down the page.
+ *
+ * NOT A DESIGN SYSTEM FIX, for that reason: `align-self: start` is correct for the
+ * shape it was written for, a page that scrolls under a sticky column. THIS app is the
+ * other shape and already says so above — the grid is pinned to `100dvh` and `main`
+ * scrolls, so the row is DEFINITE and a stretched column is exactly one screen. That
+ * is the only condition under which stretching is safe, which is why this sits inside
+ * the same `@variant @xl` as the swap that creates it. Below the swap the nav is the
+ * drawer's trigger in the header, with no edge to run.
+ *
+ * `max-block-size: 100%` replaces the `100dvh` cap for the same reason the rail's does:
+ * the row is now the bound, and `overflow: auto` on the column still lets a longer
+ * navigation scroll inside its own full-height box. Reached by the design system's own
+ * data attributes because the class is hashed in its module — the same hook its
+ * stylesheet selects on.
+ */
+@variant @xl {
+  .theme-builder-shell [data-region='nav'][data-form='column'] {
+    align-self: stretch;
+    max-block-size: 100%;
+  }
+}
