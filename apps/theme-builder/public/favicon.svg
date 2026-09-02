@@ -1,0 +1,12 @@
+<!--
+  The default favicon: the accent as it ships (yellow).
+
+  A favicon is a static file — it cannot read the page's CSS custom properties,
+  so it cannot follow <html data-accent>. The AccentSwitcher rewrites the icon
+  link at runtime with the current accent instead; this file is what the browser
+  shows before that happens, and what a feed reader or a bookmark keeps.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="oklch(21% 0.02 256)"/>
+  <text x="32" y="46" font-family="'JetBrains Mono', ui-monospace, monospace" font-weight="700" font-size="42" text-anchor="middle" fill="oklch(86% 0.16 95)">F</text>
+</svg>

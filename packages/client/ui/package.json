@@ -688,6 +688,12 @@
       "types": "./dist/components/form-color-picker/index.d.ts",
       "import": "./dist/form-color-picker.js",
       "default": "./dist/form-color-picker.js"
+    },
+    "./side-panel": {
+      "@fmmenchi/source": "./src/components/side-panel/index.ts",
+      "types": "./dist/components/side-panel/index.d.ts",
+      "import": "./dist/side-panel.js",
+      "default": "./dist/side-panel.js"
     }
   },
   "nx": {

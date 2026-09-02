@@ -6,7 +6,6 @@ import { REFERENCE_BASES } from '../app/bases';
 import { probeShape } from '../app/ramp-probe';
 import {
   DARK_END_CHOICES,
-  PALE_END_CHOICES,
   REFERENCE_RAMP,
   REFERENCE_SHAPE,
   buildRamp,
@@ -44,9 +43,7 @@ describe('the ramp shape', () => {
 
   it('keeps the rung COUNT below the 100, re-spacing to reach the new end', () => {
     for (const darkEnd of DARK_END_CHOICES) {
-      const main = buildRamp({ darkEnd, paleRungs: 2 }).filter(
-        (rung) => rung.step >= 100,
-      );
+      const main = buildRamp({ darkEnd }).filter((rung) => rung.step >= 100);
 
       // THE COUNT IS NOT A CHOICE. The alias map in `vars.css` names steps by number,
       // so dropping the 300 would not restyle the scale — it would leave
@@ -78,21 +75,22 @@ describe('the ramp shape', () => {
     }
   });
 
-  it('adds the 50 before the 25, and orders the ramp lightest first', () => {
-    // `paleRungs: 1` has to mean the 50. A scale that stopped at 0.975 would have a
-    // gap where its own next step belongs — the 25 is an extra on top of the 50, not
-    // an alternative to it.
-    expect(buildRamp({ darkEnd: 0.26, paleRungs: 0 })[0]?.step).toBe(100);
-    expect(
-      buildRamp({ darkEnd: 0.26, paleRungs: 1 })
-        .map((rung) => rung.step)
-        .slice(0, 2),
-    ).toEqual([50, 100]);
-    expect(
-      buildRamp({ darkEnd: 0.26, paleRungs: 2 })
-        .map((rung) => rung.step)
-        .slice(0, 3),
-    ).toEqual([25, 50, 100]);
+  it('always carries both pale rungs, ordered lightest first', () => {
+    // THE PALE END STOPPED BEING A CHOICE, and the test changed with it. It used to
+    // assert that `paleRungs: 1` meant the 50 rather than the 25 — a real property of
+    // a control that no longer exists, because nine roles point at the 50 and "no
+    // pale end" is therefore impossible for every brand rather than for some.
+    //
+    // What is left to hold is the ORDER: the ramp reads lightest first, so the 25
+    // comes before the 50 even though the 50 is the one that was added first.
+    for (const darkEnd of DARK_END_CHOICES) {
+      expect(
+        buildRamp({ darkEnd })
+          .map((rung) => rung.step)
+          .slice(0, 3),
+        `dark end ${darkEnd}`,
+      ).toEqual([25, 50, 100]);
+    }
   });
 
   it('keeps every offered shape inside sRGB, for every brand on the grid', () => {
@@ -106,23 +104,19 @@ describe('the ramp shape', () => {
     const outside: string[] = [];
 
     for (const darkEnd of DARK_END_CHOICES) {
-      for (const paleRungs of PALE_END_CHOICES) {
-        const ramp = buildRamp({ darkEnd, paleRungs });
+      const ramp = buildRamp({ darkEnd });
 
-        for (const [label, bases] of GRID) {
-          const palette = generatePalette(bases, ramp) as Record<
-            string,
-            Record<number, string>
-          >;
+      for (const [label, bases] of GRID) {
+        const palette = generatePalette(bases, ramp) as Record<
+          string,
+          Record<number, string>
+        >;
 
-          for (const family of FAMILY_NAMES) {
-            for (const { step } of ramp) {
-              const value = palette[family]?.[step] as string;
-              if (!displayable(value)) {
-                outside.push(
-                  `${darkEnd}/${paleRungs} ${label} ${family}-${step}: ${value}`,
-                );
-              }
+        for (const family of FAMILY_NAMES) {
+          for (const { step } of ramp) {
+            const value = palette[family]?.[step] as string;
+            if (!displayable(value)) {
+              outside.push(`${darkEnd} ${label} ${family}-${step}: ${value}`);
             }
           }
         }
@@ -135,7 +129,11 @@ describe('the ramp shape', () => {
 
 describe('probing a shape against real bases', () => {
   it('allows the shipped shape for the shipped bases', () => {
-    const verdict = probeShape(DECLARED, REFERENCE_BASES, REFERENCE_SHAPE);
+    const verdict = probeShape(
+      DECLARED,
+      REFERENCE_BASES,
+      buildRamp(REFERENCE_SHAPE),
+    );
 
     // The reason is read first: a bare `allowed` failure says nothing, and the
     // validator's own message is the whole diagnosis.
@@ -151,7 +149,7 @@ describe('probing a shape against real bases', () => {
       ([label, bases]) =>
         [
           label,
-          probeShape(DECLARED, bases, { darkEnd: 0.34, paleRungs: 2 }),
+          probeShape(DECLARED, bases, buildRamp({ darkEnd: 0.34 })),
         ] as const,
     ).filter(([, verdict]) => !verdict.allowed);
 
@@ -170,29 +168,38 @@ describe('probing a shape against real bases', () => {
     // control is meant to discover that, not to have it pinned. What must hold is
     // that a verdict comes back at all: `generateTheme` throws on a hole, and a probe
     // that propagated it would crash the page instead of greying out one segment.
-    const lighter = probeShape(DECLARED, REFERENCE_BASES, {
-      darkEnd: 0.3,
-      paleRungs: 2,
-    });
+    const lighter = probeShape(
+      DECLARED,
+      REFERENCE_BASES,
+      buildRamp({ darkEnd: 0.3 }),
+    );
 
     expect(typeof lighter.allowed).toBe('boolean');
     expect(lighter.allowed || Boolean(lighter.reason)).toBe(true);
   });
 
   it('turns a shape that cannot be BUILT into an unavailable option', () => {
-    // A shape naming no pale rungs, against an alias map that needs one. Provoked by
-    // re-pointing `-subtle` at the 50 — which is exactly the change the design system
-    // would make to give the pale end a consumer — so this keeps holding when that
-    // lands rather than only describing today.
+    // `generateTheme` throws on a hole, correctly, and the probe has to turn that into
+    // an unavailable option rather than a crash on step two.
+    //
+    // PROVOKED DIFFERENTLY THAN IT WAS. The old provocation was `paleRungs: 0` against
+    // an alias map naming the 50 — a real case until the pale end stopped being a
+    // choice, at which point it could not be constructed at all. So this points a role
+    // at the 1500, which exists in the DARK ramp and not in light's: a plausible
+    // mistake, since the two ramps do not have the same steps.
     const repointed = new Map(DECLARED);
-    repointed.set('--fm-color-primary-subtle', 'var(--fm-palette-primary-50)');
+    repointed.set(
+      '--fm-color-primary-subtle',
+      'var(--fm-palette-primary-1500)',
+    );
 
-    const verdict = probeShape(repointed, REFERENCE_BASES, {
-      darkEnd: 0.26,
-      paleRungs: 0,
-    });
+    const verdict = probeShape(
+      repointed,
+      REFERENCE_BASES,
+      buildRamp({ darkEnd: 0.26 }),
+    );
 
     expect(verdict.allowed).toBe(false);
-    expect(verdict.reason).toContain('primary-50');
+    expect(verdict.reason).toContain('primary-1500');
   });
 });

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { useDeclarations } from './declarations';
+import { useDeclarations, type Scheme } from './declarations';
 
 /**
  * RE-POINTING A ROLE — and the whole trick is that an override is not a new concept.
@@ -30,54 +30,76 @@ import { useDeclarations } from './declarations';
  * choice a person makes is per role, and offering only one family's rungs would
  * make the common case impossible.
  *
+ * AND ONE MAP PER SCHEME, which was one map. Step three showed light only, and that
+ * made it the odd step out once steps one and two became a tab per theme. A single
+ * map could not have been shared even if it wanted to be: the two themes point their
+ * roles at DIFFERENT rungs — `-subtle` is the 1400 in dark and the 50 in light — so
+ * "primary-subtle goes to the 200" means a different colour in each, and carrying a
+ * choice across would be a guess dressed as a convenience.
+ *
  * NO SUBMIT. A change applies immediately, because the answer to "what does rung 600
  * look like here" is the swatch next to it, and a form that made you submit to find
  * out would be asking you to guess first. The contract check that matters is not
- * per-keystroke either: the export step generates the whole theme and runs
+ * per-keystroke either: the export step generates both themes and runs
  * `validateTheme` before it hands over a file.
  */
 type Overrides = Readonly<Record<string, string>>;
 
 interface RoleOverrides {
+  /** This scheme's re-pointings. */
   readonly overrides: Overrides;
   /** Point a role at a rung. Passing `undefined` puts it back to the design system's. */
   readonly setOverride: (role: ColorRole, rung: string | undefined) => void;
+  /** Clear this scheme's. */
   readonly reset: () => void;
+  /** How many this scheme has. */
   readonly count: number;
 }
 
-const RoleOverridesContext = createContext<RoleOverrides | undefined>(
+interface RoleOverridesStore {
+  readonly perScheme: Readonly<Record<Scheme, Overrides>>;
+  readonly setOverride: (
+    scheme: Scheme,
+    role: ColorRole,
+    rung: string | undefined,
+  ) => void;
+  readonly reset: (scheme: Scheme) => void;
+}
+
+const RoleOverridesContext = createContext<RoleOverridesStore | undefined>(
   undefined,
 );
 
 export function RoleOverridesProvider({ children }: { children: ReactNode }) {
-  const [overrides, setOverrides] = useState<Overrides>({});
+  const [perScheme, setPerScheme] = useState<Record<Scheme, Overrides>>({
+    light: {},
+    dark: {},
+  });
 
   const setOverride = useCallback(
-    (role: ColorRole, rung: string | undefined) => {
-      setOverrides((current) => {
-        const next = { ...current };
+    (scheme: Scheme, role: ColorRole, rung: string | undefined) => {
+      setPerScheme((current) => {
+        const next = { ...current[scheme] };
         // REMOVED rather than set to the declared value, so "back to default" leaves
         // no trace: the count a person sees, and the file they export, then say the
         // same thing as the form.
         if (rung === undefined) delete next[colorVar(role)];
         else next[colorVar(role)] = rung;
-        return next;
+        return { ...current, [scheme]: next };
       });
     },
     [],
   );
 
-  const reset = useCallback(() => setOverrides({}), []);
+  const reset = useCallback(
+    (scheme: Scheme) =>
+      setPerScheme((current) => ({ ...current, [scheme]: {} })),
+    [],
+  );
 
   const value = useMemo(
-    () => ({
-      overrides,
-      setOverride,
-      reset,
-      count: Object.keys(overrides).length,
-    }),
-    [overrides, setOverride, reset],
+    () => ({ perScheme, setOverride, reset }),
+    [perScheme, setOverride, reset],
   );
 
   return (
@@ -87,26 +109,47 @@ export function RoleOverridesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useRoleOverrides(): RoleOverrides {
-  const value = useContext(RoleOverridesContext);
-  if (!value) {
+/**
+ * One scheme's overrides, `light` unless asked otherwise.
+ *
+ * DEFAULTED RATHER THAN REQUIRED, the same way `useDeclarations` is: every caller
+ * that existed before dark did means light, and making the argument mandatory would
+ * be a rename disguised as a feature — the same edit at every site plus a chance to
+ * pass the wrong one.
+ */
+export function useRoleOverrides(scheme: Scheme = 'light'): RoleOverrides {
+  const store = useContext(RoleOverridesContext);
+  if (!store) {
     throw new Error(
       'useRoleOverrides must be used inside a RoleOverridesProvider.',
     );
   }
-  return value;
+
+  const overrides = store.perScheme[scheme];
+  const { setOverride, reset } = store;
+
+  return useMemo(
+    () => ({
+      overrides,
+      setOverride: (role: ColorRole, rung: string | undefined) =>
+        setOverride(scheme, role, rung),
+      reset: () => reset(scheme),
+      count: Object.keys(overrides).length,
+    }),
+    [overrides, scheme, setOverride, reset],
+  );
 }
 
 /**
- * The design system's declarations with this brand's re-pointings applied — which is
- * what every step downstream should read instead of the raw ones.
+ * One scheme's declarations with this brand's re-pointings applied — which is what
+ * every step downstream should read instead of the raw ones.
  *
  * A new Map rather than a mutation, because the loader's declarations are shared by
  * every step and a step that quietly rewrote them would change what the others see.
  */
-export function useThemedDeclarations(): Declarations {
-  const declared = useDeclarations();
-  const { overrides } = useRoleOverrides();
+export function useThemedDeclarations(scheme: Scheme = 'light'): Declarations {
+  const declared = useDeclarations(scheme);
+  const { overrides } = useRoleOverrides(scheme);
 
   return useMemo(() => {
     if (Object.keys(overrides).length === 0) return declared;
@@ -115,18 +158,65 @@ export function useThemedDeclarations(): Declarations {
 }
 
 /**
- * Every rung the stylesheet declares, by family, in step order — the options a role
- * can be pointed at.
+ * THE FAMILY A DECLARATION POINTS INTO — `primary` for `var(--fm-palette-primary-700)`
+ * and for `oklch(from var(--fm-palette-primary-700) l c h / 0.4)` alike — or nothing,
+ * for a colour stated outright.
+ *
+ * Read off the design system's OWN declaration of a role, this is the family the role
+ * "belongs to" as far as anything can be said to: not derivable from the name
+ * (`--fm-color-error` and `--fm-color-destructive` both point into `negative`), and not
+ * worth a table here, because `vars.css` already states the relation and a table would
+ * be its second home.
+ */
+export function homeFamilyOf(
+  declaration: string | undefined,
+): string | undefined {
+  if (declaration === undefined) return undefined;
+  return /--fm-palette-([a-z]+)-\d+/.exec(declaration)?.[1];
+}
+
+/**
+ * ONE ROLE'S MENU: the same families, put in the order that role reads them.
+ *
+ * The menu offers EVERY family, and that is deliberate — a role legitimately points
+ * outside its own: every `-foreground` is `neutral-0`, and `background`, `border` and
+ * `muted` are neutral too, so a filter would make the commonest case impossible. But
+ * a flat alphabetical list buried the answer a person nearly always wants under
+ * `accent`, `info`, `negative`… So the role's own family comes first, `neutral` second
+ * (the family a role most often reaches across to), and the rest keep the order they
+ * arrived in. Nothing is hidden; the same options, sorted by likelihood.
+ *
+ * A pure function on the shared list rather than a hook per role, because the options
+ * are one scheme's fact and the order is one role's — computing the list eighty-four
+ * times would be the two conflated.
+ */
+export function orderRungOptions<
+  T extends readonly [family: string, ...unknown[]],
+>(families: readonly T[], home: string | undefined): readonly T[] {
+  const rank = (family: string) =>
+    family === home ? 0 : family === 'neutral' ? 1 : 2;
+  // A copy, then `sort`, which is stable (ES2019), so the rest keep their incoming
+  // alphabetical order. Not `toSorted`: the app's `lib` is ES2019.
+  return [...families].sort(([a], [b]) => rank(a) - rank(b));
+}
+
+/**
+ * Every rung one scheme's stylesheet declares, by family, in step order — the options
+ * a role can be pointed at.
  *
  * READ from the declarations rather than composed from the families and a list of
- * steps, because the two do not line up: `neutral` declares 36 rungs where a
- * chromatic family declares 9, and a hardcoded list of steps would offer rungs that
- * do not exist for some families and miss the ones that do.
+ * steps, because the two do not line up: `neutral` declares 35 rungs where a
+ * chromatic family declares 11 in light and 17 in dark, and a hardcoded list would
+ * offer rungs that do not exist for some families and miss the ones that do.
+ *
+ * PER SCHEME for exactly that reason. Offering light's steps for a dark role would
+ * let somebody point `-subtle` at a 1400 light does not have, or hide the 1400 that
+ * dark's own `-subtle` already uses — a menu of rungs from the wrong scale.
  */
-export function useRungOptions(): ReadonlyArray<
-  readonly [family: string, steps: readonly string[]]
-> {
-  const declared = useDeclarations();
+export function useRungOptions(
+  scheme: Scheme = 'light',
+): ReadonlyArray<readonly [family: string, steps: readonly string[]]> {
+  const declared = useDeclarations(scheme);
 
   return useMemo(() => {
     const byFamily = new Map<string, string[]>();

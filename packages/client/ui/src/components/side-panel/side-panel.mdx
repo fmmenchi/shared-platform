@@ -1,0 +1,97 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+import * as SidePanelStories from './side-panel.stories.tsx';
+
+<Meta of={SidePanelStories} />
+
+# SidePanel
+
+A surface beside the content, which the content is still usable behind. It is an `<aside>` — a
+complementary landmark — in the page rather than above it, so what sits next to it **reflows**
+instead of being covered.
+
+**Not a drawer.** `Dialog` with `side` is the drawer, and it is a modal: the focus is trapped, the
+page is inert, there is a backdrop and the scroll is locked. This is the other half of that
+boundary, decided in [ADR-0034](/docs/adr/0034-a-side-panel-is-not-a-drawer).
+
+## Props
+
+<Controls of={SidePanelStories.Default} />
+
+## Which one?
+
+One question, asked of the use case rather than of the design: **is the content beside it still
+usable while it is open?**
+
+| what you are building                                                             | reach for                       |
+| --------------------------------------------------------------------------------- | ------------------------------- |
+| a preview, an inspector, a details pane, filters you tune while watching the list | `SidePanel`                     |
+| a confirmation, a form that must be finished or abandoned, navigation on a phone  | `Dialog` + `DialogContent side` |
+| a surface anchored to the thing that opened it, floating above the page           | `Popover`                       |
+| a set of panels where only one shows at a time, in place                          | `Tabs` + `TabPanel`             |
+
+There is no third answer to the question: `inert` is a boolean the platform sets, so a surface either
+takes the page away or it does not.
+
+## Usage
+
+### Beside the work
+
+<Canvas of={SidePanelStories.BesideTheContent} />
+
+The two columns are `grid-template-columns: repeat(auto-fit, minmax(…, 1fr))`, so the panel drops
+below the content when there is no room for both — no media query, no breakpoint in JavaScript. If
+the content below is not worth reaching on a narrow screen, show the drawer there instead; that is
+the component this one leaves untouched.
+
+### Named by a heading you already show
+
+<Canvas of={SidePanelStories.NamedByItsHeading} />
+
+### Its own scroll
+
+<Canvas of={SidePanelStories.ScrollsOnItsOwn} />
+
+The panel brings `overflow-y: auto` and `max-block-size: 100%`; **the app brings the bound**, because
+only the app knows what the panel should be as tall as. `position: sticky` with a `max-block-size` in
+viewport units is the usual answer. Unbounded, the panel simply grows, which is the honest behaviour
+— there is nothing to scroll within.
+
+Two things to know before styling a child: this is a scroll container, so it clips a
+`position: sticky` descendant to itself, and it becomes the containing block for an absolutely
+positioned one.
+
+## What it does not have
+
+- **No `open`.** Whether a panel exists right now is the app's state; the app renders one or does
+  not. Keep that answer in the URL where you can — linkable, survives a reload, correct with no
+  JavaScript.
+- **No `side`.** A panel takes the column the layout gives it. `Dialog`'s `side` exists because a
+  modal has no column to be given.
+- **No close button.** What closes the panel is the app's, and a link that drops a search param does
+  it without JavaScript. A part here could only be a button calling back into state this component
+  does not hold.
+- **No parts at all.** A title is a `Heading`; a `SidePanelTitle` would be that plus a class, and
+  `CardTitle` earns its place by adding the whole-card link layer, which has no analogue here.
+
+## Accessibility
+
+- **A named complementary landmark.** `<aside>` is a landmark, so the name is required rather than
+  nice: two unnamed ones are offered to a screen reader user as two entries both called
+  "complementary". `Nav` requires one for the same reason.
+- **`aria-labelledby` wins.** `aria-label` is written before the prop spread, so a consumer pointing
+  at a visible heading outranks it — and then the announced name is the name on screen.
+- **Nothing is inert and no focus moves.** Opening a panel is rendering an element: focus stays where
+  the reader put it, so there is no trap to escape, no restore to get wrong, and `Escape` keeps
+  whatever meaning the page already gave it. Everything beside the panel stays reachable by `Tab`,
+  which is the property the component exists for.
+- **The panel is focusable, because it scrolls.** A scrolling region holding nothing focusable cannot
+  be scrolled by a keyboard at all — no tab stop to land on, so the arrow keys have nowhere to go
+  (axe's `scrollable-region-focusable`, which is what caught it here: eight cards of plain text, and
+  nothing about it looked broken). So the panel takes one tab stop, and a screen reader announces it
+  by name when focus arrives. Pass `tabIndex={-1}` to drop it if you can prove the panel never
+  scrolls.
+- **The overscroll is contained.** `overscroll-behavior-block: contain` stops the page behind
+  scrolling on when the panel reaches its end — the one way a non-modal surface can still disturb
+  what it sits beside. A modal uses a scroll lock instead.
+- **Forced colours keep the edge.** `background-color` is discarded there, so the border is restated
+  in `CanvasText`: a panel with no edge reads as part of the page next to it.

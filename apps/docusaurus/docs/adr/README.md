@@ -41,6 +41,7 @@ Read these. Nineteen decisions, grouped as they are actually made.
 | [0031](./0031-being-describable-is-a-fact.md)         | Being describable is a fact; the release record decides who gets an SBOM |
 | [0032](./0032-tokens-gain-a-primitive-layer.md)       | Tokens gain a primitive layer, derived with relative colour              |
 | [0033](./0033-theme-builder-gui.md)                   | A GUI for the theme generator (proposed)                                 |
+| [0034](./0034-a-side-panel-is-not-a-drawer.md)        | A non-modal side panel is not a drawer (proposed)                        |
 
 ## Proposed
 

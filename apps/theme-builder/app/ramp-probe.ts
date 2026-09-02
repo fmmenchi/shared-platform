@@ -4,8 +4,9 @@ import {
   type Declarations,
 } from '@fmmenchi/theme';
 
+import type { Ramp } from '@fmmenchi/theme';
+
 import type { Bases } from './bases';
-import { buildRamp, type RampShape } from './ramp';
 
 /**
  * ASKING THE CONTRACT, RATHER THAN ASSERTING WHAT IT WOULD SAY.
@@ -22,14 +23,19 @@ import { buildRamp, type RampShape } from './ramp';
  * black dark end; a brand whose bases are not is told so, by the same function CI
  * runs, with the failing pair named.
  *
- * THE SAME PROBE ANSWERS BOTH ENDS, which is why this is one function rather than
- * two. The pale end cannot currently fail — nothing points at the 25 or the 50, the
- * `-subtle` roles all name the 100 — but "cannot currently" is a fact about today's
- * alias map, not a property of the wizard. Re-point `-subtle` at the 50 and a shape
- * with `paleRungs: 0` starts naming a rung that does not exist; `generateTheme` throws
- * for exactly that, and this reports it as an unavailable option instead of as a crash
- * on step 3. A control that keeps itself right when the design system changes is worth
- * more than one that is right today.
+ * THE SAME PROBE ANSWERS BOTH SCHEMES, which is why it takes a ramp rather than a
+ * shape. It also answers a question that cannot fail today and will one day: an
+ * option naming a rung the ramp does not reach. `generateTheme` throws for exactly
+ * that, and this reports it as an unavailable option instead of as a crash on the
+ * next step — a control that keeps itself right when the design system changes is
+ * worth more than one that is right today.
+ *
+ * IT TAKES A BUILT RAMP RATHER THAN A SHAPE, and that is what lets it serve both
+ * schemes. It used to call `buildRamp` itself, which hard-wired it to the light
+ * scale — so the dark ramp could not be probed at all, and the control over it was
+ * left out on the argument that it would "move nothing". That argument was wrong:
+ * moving dark's end re-spaces every rung between it and the 100, and `-subtle` there
+ * points at the 1400.
  *
  * IT IS NOT CHEAP and it is not meant to be called per render. `generateTheme` builds
  * a whole palette — `generatePalette` bisects each rung into sRGB — and
@@ -37,7 +43,8 @@ import { buildRamp, type RampShape } from './ramp';
  * eighty-four roles. Memoise on the bases, which is what `palette.tsx` does.
  */
 export interface ShapeVerdict {
-  readonly shape: RampShape;
+  /** The ramp that was tried — kept so a caller can label the option it belongs to. */
+  readonly ramp: Ramp;
   /** Whether a theme built on this shape passes the contract for THESE bases. */
   readonly allowed: boolean;
   /**
@@ -63,17 +70,15 @@ export interface ShapeVerdict {
 export function probeShape(
   declared: Declarations,
   bases: Bases,
-  shape: RampShape,
+  ramp: Ramp,
 ): ShapeVerdict {
   let violations;
 
   try {
-    violations = validateTheme(
-      generateTheme(declared, bases, buildRamp(shape)),
-    );
+    violations = validateTheme(generateTheme(declared, bases, ramp));
   } catch (error) {
     return {
-      shape,
+      ramp,
       allowed: false,
       reason: error instanceof Error ? error.message : String(error),
     };
@@ -82,6 +87,6 @@ export function probeShape(
   const first = violations[0];
 
   return first
-    ? { shape, allowed: false, reason: first.message }
-    : { shape, allowed: true };
+    ? { ramp, allowed: false, reason: first.message }
+    : { ramp, allowed: true };
 }

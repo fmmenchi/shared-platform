@@ -535,7 +535,13 @@
   --fm-color-muted-foreground: var(--fm-palette-neutral-260);
   --fm-color-border: var(--fm-palette-neutral-660);
   --fm-color-ring: var(--fm-palette-primary-500);
-  --fm-color-scrim: oklch(10% 0.02 256 / 0.94);
+  /* AN ALIAS, and it was a hand-written copy of `neutral-900` — `oklch(10% 0.02
+     256 / 0.94)`, the same three numbers, written out. Light's scrim has always
+     been `oklch(from var(--fm-palette-neutral-850) l c h / 0.92)`, so the same
+     role was derived in one theme and stated in the other: a rebrand moved one
+     and not the other, and the theme builder could offer a rung for one and not
+     the other (84 selects in light, 83 in dark — which is how this was found). */
+  --fm-color-scrim: oklch(from var(--fm-palette-neutral-900) l c h / 0.94);
   --fm-color-link: var(--fm-palette-primary-500);
   --fm-color-link-hover: var(--fm-palette-primary-400);
   --fm-color-selection: var(--fm-palette-primary-1200);

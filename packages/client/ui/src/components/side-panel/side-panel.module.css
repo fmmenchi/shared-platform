@@ -1,0 +1,56 @@
+/* A surface beside the content, scrolling on its own. */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+@reference '../../styles/utilities.css';
+
+@layer fmmenchi {
+  .sidePanel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fm-space-internal-m);
+    padding: var(--fm-space-inset-m);
+    border: var(--fm-border-width-default) solid var(--fm-color-border);
+    border-radius: var(--fm-radius-lg);
+    background-color: var(--fm-color-card);
+    color: var(--fm-color-card-foreground);
+
+    /* ITS OWN SCROLL, and the pair is what makes it one: `overflow` alone does
+       nothing without a bound, and a bound alone clips. `100%` resolves against
+       whatever box the app gives it, so a panel in an unbounded column simply
+       grows — the honest behaviour, since there is nothing to scroll within.
+
+       The app supplies the bound, because only the app knows what the panel
+       should be as tall as: `position: sticky` plus a `max-block-size` in
+       viewport units is the usual answer, and it is layout rather than surface.
+
+       NOTE for whoever styles a child: this is a scroll container, so it clips
+       a `position: sticky` descendant to itself and becomes the containing
+       block for absolutely positioned ones. Both are what a panel wants and
+       neither is obvious. */
+    max-block-size: 100%;
+    overflow-y: auto;
+    /* WHAT MAKES THE SECOND HALF OF THAT NOTE TRUE, and it was missing while
+       the note claimed it. A scroll container does NOT clip an absolutely
+       positioned descendant whose containing block is outside it, and a
+       `static` element is not a containing block for one — so an abspos child
+       (a visually-hidden span, a native control an input paints under) resolved
+       against the initial containing block and hung off the ROOT. Measured in a
+       consumer: the panel scrolled correctly, `body` measured 900px, and
+       `html.scrollHeight` was 2029 — a page scrollbar for content the panel
+       believed it had clipped. `relative` with no offsets moves nothing; it only
+       makes the panel the containing block it says it is. */
+    position: relative;
+    /* The page behind must not start scrolling when the panel reaches its end.
+       That chaining is the one way a non-modal panel can still disturb the
+       content it sits beside. */
+    overscroll-behavior-block: contain;
+  }
+
+  @media (forced-colors: active) {
+    /* `background-color` is discarded in forced colours, so the border is the
+       only thing that can still say where the panel begins — and here it has
+       to, because a panel with no edge reads as part of the page beside it. */
+    .sidePanel {
+      border: var(--fm-border-width-default) solid CanvasText;
+    }
+  }
+}

@@ -7,16 +7,23 @@ import {
 import { Alert } from '@fmmenchi/ui/alert';
 import { Button } from '@fmmenchi/ui/button';
 import { Heading } from '@fmmenchi/ui/heading';
+import { Tab } from '@fmmenchi/ui/tab';
+import { TabList } from '@fmmenchi/ui/tab-list';
+import { TabPanel } from '@fmmenchi/ui/tab-panel';
+import { Tabs } from '@fmmenchi/ui/tabs';
 import { Select } from '@fmmenchi/ui/select';
 import { wcagContrast } from 'culori';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
+import { useDeclarations, type Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
 import { stepPath } from '../../steps';
 import {
+  homeFamilyOf,
+  orderRungOptions,
   useRoleOverrides,
   useRungOptions,
   useThemedDeclarations,
@@ -47,23 +54,72 @@ import {
  * invented here, which would need keeping in step with a contract that already has
  * them.
  */
+/**
+ * STEP THREE — every role, in a tab per theme.
+ *
+ * IT SHOWED LIGHT ONLY, which made it the odd step out once steps one and two became
+ * a tab per theme — and the gap was not cosmetic. The two themes point their roles at
+ * different rungs, so the pairs a person needs to SEE measured are different: dark's
+ * `-subtle` is the 1400 against a light foreground, light's is the 50 against a dark
+ * one. A page that showed one of them was hiding half the theme it was about to hand
+ * over.
+ *
+ * EACH PANEL IS ENTIRELY ITS OWN — its overrides, its rung options, its measured
+ * ratios. The rung options especially: light declares eleven steps per chromatic
+ * family and dark seventeen, so offering one scale's menu for the other theme's role
+ * would let somebody point at a rung that does not exist there.
+ */
 export default function Roles() {
-  const { bases } = useBases();
-  const declared = useThemedDeclarations();
-  const { overrides, setOverride, reset, count } = useRoleOverrides();
-  const { ramp } = useRamp();
-  const families = useRungOptions();
+  return (
+    <section style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
+      <Heading level={2}>Semantic roles</Heading>
+
+      <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
+        A role exists to be one half of a pairing: a fill something sits on, or
+        the something. Each pair below shows a real sample, the contrast it
+        measures and the floor it has to clear — the same numbers CI checks.
+        Move a role to another rung and watch its pairs move with it.
+      </p>
+
+      <Tabs defaultValue="light">
+        <TabList aria-label="Theme">
+          <Tab value="light">Light</Tab>
+          <Tab value="dark">Dark</Tab>
+        </TabList>
+        <TabPanel value="light">
+          <RolesPanel scheme="light" />
+        </TabPanel>
+        <TabPanel value="dark">
+          <RolesPanel scheme="dark" />
+        </TabPanel>
+      </Tabs>
+    </section>
+  );
+}
+
+function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
+  const { bases, darkBases } = useBases();
+  const theBases = scheme === 'dark' ? darkBases : bases;
+  const declared = useThemedDeclarations(scheme);
+  // THE DESIGN SYSTEM'S OWN declarations too, not just the re-pointed ones: a role's
+  // menu is ordered by the family it STARTS in, and that must not move when a person
+  // re-points it — a menu that reshuffled under the choice just made would be worse
+  // than one with no order at all.
+  const pristine = useDeclarations(scheme);
+  const { overrides, setOverride, reset, count } = useRoleOverrides(scheme);
+  const { ramps } = useRamp();
+  const families = useRungOptions(scheme);
 
   const { theme, violations } = useMemo(() => {
     try {
-      const generated = generateTheme(declared, bases, ramp);
+      const generated = generateTheme(declared, theBases, ramps[scheme]);
       return { theme: generated, violations: validateTheme(generated) };
     } catch {
       // A hole the earlier steps report in detail. The groups still render, because
       // this is where a person would fix it.
       return { theme: {} as Record<string, string>, violations: [] };
     }
-  }, [declared, bases, ramp]);
+  }, [declared, theBases, ramps, scheme]);
 
   const failing = useMemo(
     () =>
@@ -78,15 +134,6 @@ export default function Roles() {
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-l)' }}>
       <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
-        <Heading level={2}>Semantic roles</Heading>
-
-        <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
-          A role exists to be one half of a pairing: a fill something sits on,
-          or the something. Each pair below shows a real sample, the contrast it
-          measures and the floor it has to clear — the same numbers CI checks.
-          Move a role to another rung and watch its pairs move with it.
-        </p>
-
         <div
           style={{
             display: 'flex',
@@ -149,6 +196,7 @@ export default function Roles() {
             roles={group.roles}
             theme={theme}
             declared={declared}
+            pristine={pristine}
             overrides={overrides}
             setOverride={setOverride}
             families={families}
@@ -282,11 +330,22 @@ function Pairs({
   );
 }
 
-/** One select per role: where it points, and everywhere it could. */
+/**
+ * One select per role: where it points, and everywhere it could.
+ *
+ * EVERYWHERE, IN THE ORDER THIS ROLE READS IT. The menu offers every family — a role
+ * legitimately points outside its own, every `-foreground` being `neutral-0` — but it
+ * used to list them alphabetically, so `primary`'s own rungs sat under `accent`,
+ * `info`, `negative` and `neutral`. `orderRungOptions` puts the family the role starts
+ * in first and `neutral` second; nothing is filtered. "Starts in" is read off
+ * `pristine`, the design system's declaration, so re-pointing a role does not
+ * reshuffle the menu under the choice just made.
+ */
 function Knobs({
   roles,
   theme,
   declared,
+  pristine,
   overrides,
   setOverride,
   families,
@@ -294,6 +353,7 @@ function Knobs({
   roles: readonly ColorRole[];
   theme: Record<string, string>;
   declared: ReadonlyMap<string, string>;
+  pristine: ReadonlyMap<string, string>;
   overrides: Readonly<Record<string, string>>;
   setOverride: (role: ColorRole, rung: string) => void;
   families: ReadonlyArray<readonly [string, readonly string[]]>;
@@ -318,6 +378,10 @@ function Knobs({
         const alpha = withAlpha?.[2];
         const overridden = overrides[colorVar(role)] !== undefined;
         const colour = theme[role];
+        const menu = orderRungOptions(
+          families,
+          homeFamilyOf(pristine.get(colorVar(role))),
+        );
 
         return (
           <label
@@ -364,7 +428,7 @@ function Knobs({
                       : undefined
                   }
                 >
-                  {families.map(([family, steps]) => (
+                  {menu.map(([family, steps]) => (
                     <optgroup key={family} label={family}>
                       {steps.map((step) => (
                         <option
