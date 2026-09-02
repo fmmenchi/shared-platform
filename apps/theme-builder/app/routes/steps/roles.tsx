@@ -51,19 +51,19 @@ export default function Roles() {
   const { bases } = useBases();
   const declared = useThemedDeclarations();
   const { overrides, setOverride, reset, count } = useRoleOverrides();
-  const { ramp } = useRamp();
+  const { ramps } = useRamp();
   const families = useRungOptions();
 
   const { theme, violations } = useMemo(() => {
     try {
-      const generated = generateTheme(declared, bases, ramp);
+      const generated = generateTheme(declared, bases, ramps.light);
       return { theme: generated, violations: validateTheme(generated) };
     } catch {
       // A hole the earlier steps report in detail. The groups still render, because
       // this is where a person would fix it.
       return { theme: {} as Record<string, string>, violations: [] };
     }
-  }, [declared, bases, ramp]);
+  }, [declared, bases, ramps]);
 
   const failing = useMemo(
     () =>

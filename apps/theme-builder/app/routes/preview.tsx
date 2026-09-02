@@ -24,7 +24,7 @@ import {
   type SerializedDeclarations,
 } from '../declarations';
 import { readDeclarations } from '../declarations.server';
-import { DARK_REFERENCE_RAMP, useRamp } from '../ramp';
+import { useRamp } from '../ramp';
 import { ROLE_GROUPS } from '../role-groups';
 import { useThemedDeclarations } from '../role-overrides';
 import { ThemeScope } from '../theme-scope';
@@ -87,7 +87,7 @@ export default function Preview() {
  */
 function PreviewPage() {
   const { bases, darkBases } = useBases();
-  const { ramp } = useRamp();
+  const { ramps } = useRamp();
   // Step three's re-pointings, for light. Dark uses the design system's own alias map
   // — the two point their roles at different rungs, so a light override means a
   // different colour there and carrying it across would be a guess.
@@ -101,8 +101,8 @@ function PreviewPage() {
       return {
         theme:
           scheme === 'dark'
-            ? generateTheme(darkDeclared, darkBases, DARK_REFERENCE_RAMP)
-            : generateTheme(lightDeclared, bases, ramp),
+            ? generateTheme(darkDeclared, darkBases, ramps.dark)
+            : generateTheme(lightDeclared, bases, ramps.light),
         error: null,
       };
     } catch (cause) {
@@ -110,7 +110,7 @@ function PreviewPage() {
       // the reference theme rather than showing a page of black.
       return { theme: null as Theme | null, error: (cause as Error).message };
     }
-  }, [scheme, lightDeclared, darkDeclared, bases, darkBases, ramp]);
+  }, [scheme, lightDeclared, darkDeclared, bases, darkBases, ramps]);
 
   return (
     <div

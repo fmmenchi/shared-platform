@@ -17,7 +17,7 @@ import { useDeclarations } from '../../declarations';
 import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
-import { DARK_REFERENCE_RAMP, useRamp } from '../../ramp';
+import { useRamp } from '../../ramp';
 import { stepPath } from '../../steps';
 
 /**
@@ -44,7 +44,7 @@ export default function Review() {
   const { bases, darkBases } = useBases();
   // THE SHAPE CHOSEN ON STEP TWO, not the reference: the file a person downloads has
   // to be the theme they were shown.
-  const { ramp } = useRamp();
+  const { ramps } = useRamp();
   // THE RE-POINTED ones, or the export would quietly ignore step three.
   const declared = useThemedDeclarations();
   // THE DARK ALIAS MAP, unmodified. Step three's re-pointings are light-only — the
@@ -62,8 +62,8 @@ export default function Review() {
    */
   const verdict = useMemo(() => {
     try {
-      const light = generateTheme(declared, bases, ramp);
-      const dark = generateTheme(darkDeclared, darkBases, DARK_REFERENCE_RAMP);
+      const light = generateTheme(declared, bases, ramps.light);
+      const dark = generateTheme(darkDeclared, darkBases, ramps.dark);
       return {
         violations: [
           ...validateTheme(light).map((v) => ({ ...v, scheme: 'light' })),
@@ -74,7 +74,7 @@ export default function Review() {
     } catch (error) {
       return { violations: [], error: (error as Error).message };
     }
-  }, [declared, darkDeclared, bases, darkBases, ramp]);
+  }, [declared, darkDeclared, bases, darkBases, ramps]);
 
   const schema = useMemo(() => exportSchema, []);
 
@@ -94,10 +94,13 @@ export default function Review() {
    */
   const download = (values: ExportValues) => {
     const files = [
-      [`${values.name}.theme.json`, buildThemeFile(declared, bases, ramp)],
+      [
+        `${values.name}.theme.json`,
+        buildThemeFile(declared, bases, ramps.light),
+      ],
       [
         `${values.name}-dark.theme.json`,
-        buildThemeFile(darkDeclared, darkBases, DARK_REFERENCE_RAMP),
+        buildThemeFile(darkDeclared, darkBases, ramps.dark),
       ],
     ] as const;
 

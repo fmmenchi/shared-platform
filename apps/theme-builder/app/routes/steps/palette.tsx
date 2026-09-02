@@ -1,22 +1,28 @@
-import { generatePalette } from '@fmmenchi/theme';
+import { generatePalette, type Ramp } from '@fmmenchi/theme';
 import { Button } from '@fmmenchi/ui/button';
 import { Fieldset } from '@fmmenchi/ui/fieldset';
 import { FieldsetContent } from '@fmmenchi/ui/fieldset-content';
 import { FieldsetLegend } from '@fmmenchi/ui/fieldset-legend';
 import { Heading } from '@fmmenchi/ui/heading';
 import { SegmentedControl } from '@fmmenchi/ui/segmented-control';
-import { Separator } from '@fmmenchi/ui/separator';
 import { SegmentedControlItem } from '@fmmenchi/ui/segmented-control-item';
+import { Tab } from '@fmmenchi/ui/tab';
+import { TabList } from '@fmmenchi/ui/tab-list';
+import { TabPanel } from '@fmmenchi/ui/tab-panel';
+import { Tabs } from '@fmmenchi/ui/tabs';
 import { Link } from 'react-router';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import { FAMILIES, useBases } from '../../bases';
-import type { Scheme } from '../../declarations';
-import { probeShape, type ShapeVerdict } from '../../ramp-probe';
+import { useDeclarations, type Scheme } from '../../declarations';
+import { probeShape } from '../../ramp-probe';
 import {
   DARK_END_CHOICES,
-  DARK_REFERENCE_RAMP,
+  DARK_REFERENCE_SHAPE,
+  DARK_SCHEME_END_CHOICES,
   REFERENCE_SHAPE,
+  buildDarkRamp,
+  buildRamp,
   useRamp,
 } from '../../ramp';
 import { useThemedDeclarations } from '../../role-overrides';
@@ -32,249 +38,213 @@ const note = {
 } as const;
 
 /**
- * ONE END OF THE RAMP, as a labelled group of probed options.
+ * STEP TWO — the ramps those colours produce, ONE TAB PER THEME.
  *
- * EXTRACTED BECAUSE THE TWO ENDS WERE A NEAR-COPY — the same fieldset, the same
- * control, the same description-plus-refusals block, differing only in a legend, a
- * list and a formatter. Two copies of a control whose job is to show WHY an option is
- * unavailable is two places for that wiring to fall out of step, and the wiring is the
- * whole point of the control.
+ * TABS RATHER THAN A TOGGLE BESIDE THE CONTROLS, and getting here took three shapes.
+ * The first put a "which theme" segmented control above a ramp panel that applied to
+ * light only, so picking dark made the panel vanish — a VIEW control switching a
+ * VALUE control off. The second moved the toggle down to the table and left the panel
+ * always visible, named "The light ramp": nothing disappeared any more, and a person
+ * was still looking at a dark palette above a control for the other theme.
  *
- * ITS OWN `<fieldset>` WITH A VISIBLE LEGEND, and not `SegmentedControl`'s `label`
- * prop, which was the first version and was wrong. `label` is an `aria-label`: the
- * group had a name in the accessibility tree and NONE on screen, so a sighted person
- * saw two anonymous rows of buttons and a paragraph underneath each, and had to infer
- * which paragraph belonged to which row. A control named for a screen reader and
- * unnamed for everyone else is not accessible, it is half-built. The legend names it
- * once, for both — which is what that prop's own documentation says to do when
- * something around it can carry the name.
- */
-function RampEnd({
-  legend,
-  name,
-  value,
-  onChange,
-  options,
-  labelOf,
-  idOf,
-  verdicts,
-  children,
-}: {
-  readonly legend: string;
-  readonly name: string;
-  readonly value: string;
-  readonly onChange: (value: string) => void;
-  readonly options: readonly (string | number)[];
-  readonly labelOf: (option: string | number) => string;
-  readonly idOf: (option: string | number) => string;
-  readonly verdicts: readonly ShapeVerdict[];
-  /** The description — prose, so the caller writes it rather than passing strings. */
-  readonly children: ReactNode;
-}) {
-  return (
-    <Fieldset>
-      <FieldsetLegend>{legend}</FieldsetLegend>
-      <FieldsetContent>
-        {/* `justify-items: start` because the track is `inline-flex` and a grid item
-            STRETCHES by default — without it the three segments spread across the
-            whole column and read as a toolbar rather than as a choice. */}
-        <div
-          style={{
-            display: 'grid',
-            justifyItems: 'start',
-            gap: 'var(--fm-space-stack-s)',
-          }}
-        >
-          <SegmentedControl name={name} value={value} onValueChange={onChange}>
-            {options.map((option, i) => (
-              <SegmentedControlItem
-                key={option}
-                value={String(option)}
-                disabled={!verdicts[i]?.allowed}
-                // THE REASON IS ASSOCIATED WITH THE INPUT rather than merely
-                // printed near it: a disabled segment says nothing on its own, and
-                // "why is this greyed out" is the question the control has to answer.
-                aria-describedby={
-                  verdicts[i]?.allowed ? undefined : idOf(option)
-                }
-              >
-                {labelOf(option)}
-              </SegmentedControlItem>
-            ))}
-          </SegmentedControl>
-
-          <p style={note}>{children}</p>
-
-          {options
-            .map((option, i) => [option, verdicts[i]] as const)
-            .filter(([, verdict]) => verdict && !verdict.allowed)
-            .map(([option, verdict]) => (
-              <p key={option} id={idOf(option)} style={note}>
-                <strong>{labelOf(option)}</strong> is not available for your
-                colours: {verdict?.reason}
-              </p>
-            ))}
-        </div>
-      </FieldsetContent>
-    </Fieldset>
-  );
-}
-
-/**
- * STEP TWO — the ramps those seven colours produce, and the two ends a person may
- * move.
+ * A TAB SETTLES IT BY CONSTRUCTION. Everything inside a panel is about that theme —
+ * its ramp, its palette, its refusals — so "which control applies to what" stops
+ * being a question. Both earlier shapes were trying to answer with layout something
+ * that is really about scope.
  *
- * `generatePalette` from `@fmmenchi/theme`, and this page is its first caller. The
- * function was written a day before anything used it, and reverted alongside a
- * placement table that had no caller at all — the difference between the two is
- * exactly this file.
+ * AND DARK GETS A RAMP CONTROL, which it did not have. The argument for leaving it
+ * out was that dark's two ends "have no role pointing at them, so a control over them
+ * would move nothing" — true of the 25 and the 1500 themselves, and beside the point:
+ * moving the end RE-SPACES every rung between it and the 100, and `-subtle` in dark
+ * points at the 1400. It moves plenty.
  *
- * A base contributes its HUE and its CHROMA and not its lightness: every rung states
- * its own, absolutely (ADR-0033). So a lighter brand colour does not slide the whole
- * ramp upward — it changes the tint of rungs that stay where they are, which is what
- * makes a contrast guarantee hold across brands rather than moving with each one.
- *
- * THE ENDS ARE OFFERED, THE MIDDLE IS NOT, and the line is drawn in `ramp.tsx` where
- * the reasoning for each number lives. What matters here is how they are offered:
- * every option is PROBED against the real validator for these bases, and an option
- * that would produce a theme the contract refuses is disabled with the reason. So the
- * control cannot hand a person a theme that fails on step four, and it does not have
- * to guess — it asks the same function CI runs.
- *
- * WHY THERE IS ANYTHING TO OFFER AT ALL. The design system's dark end is 0.26 because
- * it ships to brands it has not seen, and 0.26 is what the harshest of 144 synthetic
- * brands requires. This wizard knows the seven actual bases, so it can find out what
- * THOSE allow — and measured, all three offered ends pass for the shipped bases while
- * 0.34 fails 120 of the 144. Same contract, better information; the gap between those
- * two answers is the whole reason a person wants a control here rather than a number
- * in a file.
- *
- * The swatches are painted with inline `background`, which is the one place in this
- * app that is right: these are GENERATED colours, not roles, and a token cannot name
- * a value that did not exist when the stylesheet was written.
+ * THE TWO SCALES ARE NOT THE SAME SHAPE, which is why each panel carries its own
+ * builder and its own options: dark's 100 sits at 0.95 where light's is at 0.90, it
+ * takes fifteen rungs below that where light takes nine, and its base is ON the scale
+ * at the 500.
  */
 export default function Palette() {
   const { bases, darkBases } = useBases();
-  const { shape, ramp, setShape } = useRamp();
-
-  /**
-   * WHICH THEME THIS STEP IS SHOWING, and it lives here rather than in a provider
-   * because nothing else needs it: steps three and four each read the scheme they
-   * are about. A provider would be a shared piece of state with one reader.
-   */
-  const [scheme, setScheme] = useState<Scheme>('light');
-  const dark = scheme === 'dark';
-  // THE RE-POINTED ones: an override is a changed declaration, so a person who
-  // walked back from step three must be probed against what they actually have.
-  const declared = useThemedDeclarations();
-
-  // Recomputed only when a base or the shape moves. `generatePalette` clamps each
-  // rung into sRGB with a bisection, so it is not free — and it runs seventy-seven
-  // times per call.
-  const shown = dark ? DARK_REFERENCE_RAMP : ramp;
-  const shownBases = dark ? darkBases : bases;
-  const palette = useMemo(
-    () => generatePalette(shownBases, shown),
-    [shownBases, shown],
-  );
-  const steps = useMemo(() => shown.map((rung) => rung.step), [shown]);
-
-  // ONE PROBE PER OPTION, and it no longer depends on the shape — there is one end
-  // to move, so "is 0.34 allowed" has a single answer for a given set of bases. It
-  // used to depend on the pale end sitting beside it, which is what made this a
-  // matrix; that control is gone, and with it the reason to re-probe on every click.
-  //
-  // Three themes, eighty-four roles each, every palette bisected into sRGB. Paid once
-  // per change of bases rather than once per click.
-  const verdicts = useMemo(
-    () =>
-      DARK_END_CHOICES.map((darkEnd) =>
-        probeShape(declared, bases, { darkEnd }),
-      ),
-    [declared, bases],
-  );
+  const { shapes, ramps, setShape } = useRamp();
+  // THE RE-POINTED ones for light: an override is a changed declaration, so a person
+  // who walked back from step three must be probed against what they actually have.
+  // Dark uses the design system's own alias map — the two point their roles at
+  // different rungs, so a light override means a different colour there.
+  const lightDeclared = useThemedDeclarations();
+  const darkDeclared = useDeclarations('dark');
 
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
       <Heading level={2}>Palette</Heading>
 
       <p style={{ maxWidth: 'var(--fm-size-prose)' }}>
-        {steps.length} rungs per family, derived from your colours. Each rung
-        takes its lightness from the ramp and its hue and chroma from your base
-        — and clamps into sRGB holding that lightness, so a vivid brand loses
-        saturation rather than drifting lighter or darker than the rung it
-        belongs to.
+        Every rung takes its lightness from the ramp and its hue and chroma from
+        your base — and clamps into sRGB holding that lightness, so a vivid
+        brand loses saturation rather than drifting lighter or darker than the
+        rung it belongs to. Both themes are exported; the fourteen colours
+        behind them are on step one.
       </p>
 
-      {/* ALWAYS VISIBLE, AND NAMED FOR THE RAMP IT SHAPES. It used to vanish when a
-          person switched the view to dark, which is wrong twice over: a VALUE control
-          should not be switched off by a VIEW control, and a section that disappears
-          reads as a bug rather than as "not applicable". Dark's ramp is stated whole
-          — its two ends have no role pointing at them, so a control over them would
-          move nothing.
+      <Tabs defaultValue="light">
+        <TabList aria-label="Theme">
+          <Tab value="light">Light</Tab>
+          <Tab value="dark">Dark</Tab>
+        </TabList>
 
-          Named "The light ramp" for the same reason: under the dark view this panel
-          is still about light, and a legend that says so beats a panel that hides. */}
-      <Fieldset>
-        <FieldsetLegend>The light ramp</FieldsetLegend>
-        <FieldsetContent orientation="horizontal">
-          <RampEnd
-            legend="Darkest rung"
-            name="dark-end"
-            value={String(shape.darkEnd)}
-            onChange={(next) => setShape({ ...shape, darkEnd: Number(next) })}
-            options={DARK_END_CHOICES}
-            labelOf={(option) => Number(option).toFixed(2)}
-            idOf={(option) => `dark-${option}`}
-            verdicts={verdicts}
+        <TabPanel value="light">
+          <SchemePanel
+            scheme="light"
+            bases={bases}
+            declared={lightDeclared}
+            ramp={ramps.light}
+            darkEnd={shapes.light.darkEnd}
+            choices={DARK_END_CHOICES}
+            shipped={REFERENCE_SHAPE.darkEnd}
+            build={buildRamp}
+            onDarkEnd={(darkEnd) => setShape('light', { darkEnd })}
           >
-            How dark the bottom of every ramp goes, as OKLCH lightness. The
-            design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)}, which is
-            what the harshest of 144 test brands needs — your seven colours may
-            allow more.
-          </RampEnd>
+            Eleven rungs, evenly 0.08 apart below the 100 and compressing above
+            it. The design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)} at
+            the bottom, which is what the harshest of 144 test brands needs —
+            your own colours may allow more.
+          </SchemePanel>
+        </TabPanel>
+
+        <TabPanel value="dark">
+          <SchemePanel
+            scheme="dark"
+            bases={darkBases}
+            declared={darkDeclared}
+            ramp={ramps.dark}
+            darkEnd={shapes.dark.darkEnd}
+            choices={DARK_SCHEME_END_CHOICES}
+            shipped={DARK_REFERENCE_SHAPE.darkEnd}
+            build={buildDarkRamp}
+            onDarkEnd={(darkEnd) => setShape('dark', { darkEnd })}
+          >
+            Seventeen rungs, evenly 0.05 apart below the 100 — half
+            light&rsquo;s step, because these bases sit at lightness 0.75 and
+            the scale has to cover ground in both directions from there. Its
+            pale end is a TEXT colour rather than a wash.
+          </SchemePanel>
+        </TabPanel>
+      </Tabs>
+
+      <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
+        <Button as={Link} to={stepPath('brand-colours')}>
+          Back to the colours
+        </Button>
+        <Button as={Link} to={stepPath('roles')}>
+          Point the roles
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * ONE THEME'S RAMP AND ITS PALETTE — everything a tab panel holds.
+ *
+ * EXTRACTED BECAUSE THE TWO PANELS ARE THE SAME PAGE ON DIFFERENT DATA, and two
+ * copies of a control whose job is to show WHY an option is unavailable would be two
+ * places for that wiring to fall out of step. What differs is passed in — the bases,
+ * the alias map, the ramp, the options and the BUILDER, because the two scales have
+ * different steps and neither builder can serve the other.
+ */
+function SchemePanel({
+  scheme,
+  bases,
+  declared,
+  ramp,
+  darkEnd,
+  choices,
+  shipped,
+  build,
+  onDarkEnd,
+  children,
+}: {
+  readonly scheme: Scheme;
+  readonly bases: Parameters<typeof generatePalette>[0];
+  readonly declared: ReadonlyMap<string, string>;
+  readonly ramp: Ramp;
+  readonly darkEnd: number;
+  readonly choices: readonly number[];
+  readonly shipped: number;
+  readonly build: (shape: { darkEnd: number }) => Ramp;
+  readonly onDarkEnd: (darkEnd: number) => void;
+  /** What this scale is, in prose. */
+  readonly children: ReactNode;
+}) {
+  const palette = useMemo(() => generatePalette(bases, ramp), [bases, ramp]);
+  const steps = useMemo(() => ramp.map((rung) => rung.step), [ramp]);
+
+  // ONE PROBE PER OPTION, memoised on the bases. Each option is built and then put
+  // through the real validator for THIS theme's alias map, so an option that would
+  // produce a theme the contract refuses is disabled with the reason — the control
+  // cannot hand a person a theme that fails on step four, and it does not guess.
+  //
+  // Not cheap: three themes per panel, eighty-four roles each, every palette
+  // bisected into sRGB. Paid once per change of bases rather than once per click.
+  const verdicts = useMemo(
+    () =>
+      choices.map((option) =>
+        probeShape(declared, bases, build({ darkEnd: option })),
+      ),
+    [choices, declared, bases, build],
+  );
+
+  return (
+    <div style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
+      <Fieldset>
+        <FieldsetLegend>The darkest rung</FieldsetLegend>
+        <FieldsetContent>
+          {/* `justify-items: start` because the track is `inline-flex` and a grid
+              item STRETCHES by default — without it the segments spread across the
+              whole column and read as a toolbar rather than as a choice. */}
+          <div
+            style={{
+              display: 'grid',
+              justifyItems: 'start',
+              gap: 'var(--fm-space-stack-s)',
+            }}
+          >
+            <SegmentedControl
+              name={`${scheme}-dark-end`}
+              value={String(darkEnd)}
+              onValueChange={(next) => onDarkEnd(Number(next))}
+            >
+              {choices.map((option, i) => (
+                <SegmentedControlItem
+                  key={option}
+                  value={String(option)}
+                  disabled={!verdicts[i]?.allowed}
+                  // THE REASON IS ASSOCIATED WITH THE INPUT rather than merely
+                  // printed near it: a disabled segment says nothing on its own, and
+                  // "why is this greyed out" is the question the control has to
+                  // answer.
+                  aria-describedby={
+                    verdicts[i]?.allowed ? undefined : `${scheme}-end-${option}`
+                  }
+                >
+                  {option.toFixed(2)}
+                </SegmentedControlItem>
+              ))}
+            </SegmentedControl>
+
+            <p style={note}>{children}</p>
+
+            {choices
+              .map((option, i) => [option, verdicts[i]] as const)
+              .filter(([, verdict]) => verdict && !verdict.allowed)
+              .map(([option, verdict]) => (
+                <p key={option} id={`${scheme}-end-${option}`} style={note}>
+                  <strong>{option.toFixed(2)}</strong> is not available for your{' '}
+                  {scheme} colours: {verdict?.reason}
+                </p>
+              ))}
+          </div>
         </FieldsetContent>
       </Fieldset>
-
-      {/* A RULE BETWEEN THE VALUE AND THE VIEW. Without it the two controls read as
-          one group of settings, which is the confusion this whole rearrangement was
-          about: one of them changes the theme, the other only changes what is on
-          screen. */}
-      <Separator />
-
-      {/* THE SCHEME TOGGLE BELONGS TO THE TABLE, and it sat above the ramp control
-          until somebody looked at the page. Two different kinds of thing were
-          adjacent: "how far does the ramp go" is a VALUE a person is choosing, and
-          "which palette am I looking at" is a VIEW. Worse, picking dark made the
-          whole ramp panel disappear, because that panel shapes the light ramp only —
-          so a view control was silently switching a value control off.
-
-          Now it is where what it changes is: beside the swatches. The ramp control
-          stays put and says which ramp it shapes. */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          gap: 'var(--fm-space-inline-s)',
-        }}
-      >
-        <SegmentedControl
-          label="Palette shown"
-          name="scheme"
-          value={scheme}
-          onValueChange={(next) => setScheme(next as Scheme)}
-        >
-          <SegmentedControlItem value="light">Light</SegmentedControlItem>
-          <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
-        </SegmentedControl>
-        <p style={note}>
-          Both themes are exported. A dark theme is not the light one inverted:
-          it restates its bases at lightness 0.75 and takes seventeen rungs of
-          0.05 where light takes eleven — those fourteen colours are on step
-          one, and its ramp is stated whole rather than offered.
-        </p>
-      </div>
 
       <table
         style={{
@@ -290,9 +260,9 @@ export default function Palette() {
             paddingTop: 'var(--fm-space-stack-s)',
           }}
         >
-          The generated {scheme} palette — seven families, {steps.length} rungs
-          each, lightness {shown[0]?.lightness.toFixed(3)} down to{' '}
-          {(shown.at(-1)?.lightness ?? 0).toFixed(2)}.
+          Seven families, {steps.length} rungs each, lightness{' '}
+          {ramp[0]?.lightness.toFixed(3)} down to {darkEnd.toFixed(2)}. The
+          design system ships {shipped.toFixed(2)}.
         </caption>
         <thead>
           <tr>
@@ -332,7 +302,6 @@ export default function Palette() {
                       // The palest rungs sit at the same lightness as the page —
                       // dark's 25 is 0.985 and so is `--fm-color-background` — so
                       // without a border a whole column rendered as empty cells.
-                      // Seen only by looking at the page.
                       border: '1px solid var(--fm-color-border)',
                       background: palette[family][step],
                     }}
@@ -343,15 +312,6 @@ export default function Palette() {
           ))}
         </tbody>
       </table>
-
-      <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-        <Button as={Link} to={stepPath('brand-colours')}>
-          Back to the colours
-        </Button>
-        <Button as={Link} to={stepPath('roles')}>
-          Point the roles
-        </Button>
-      </div>
-    </section>
+    </div>
   );
 }

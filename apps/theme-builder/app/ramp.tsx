@@ -1,4 +1,6 @@
 import type { Ramp } from '@fmmenchi/theme';
+
+import type { Scheme } from './declarations';
 import {
   createContext,
   useCallback,
@@ -239,6 +241,19 @@ export const REFERENCE_SHAPE: RampShape = { darkEnd: 0.26 };
  */
 export const DARK_END_CHOICES: readonly number[] = [0.34, 0.3, 0.26];
 
+/**
+ * The dark theme's, and it needed its own list because its scale is its own: it
+ * bottoms out at 0.25 rather than 0.26 and has fifteen rungs below the 100 rather
+ * than nine.
+ *
+ * THE DARK RAMP GETS A CONTROL AT ALL because an earlier version of this file was
+ * wrong about it. It said dark's ends "have no role pointing at them, so a control
+ * over them would move nothing" — true of the 25 and the 1500 themselves, and beside
+ * the point: moving the end RE-SPACES every rung between it and the 100, and
+ * `-subtle` in dark points at the 1400. So it moves plenty.
+ */
+export const DARK_SCHEME_END_CHOICES: readonly number[] = [0.35, 0.3, 0.25];
+
 /*
  * THE PALE END WAS A CONTROL AND IS NOT ANY MORE, and it was removed for a reason
  * that only became true when the 50 got a consumer.
@@ -322,26 +337,87 @@ export function buildRamp(shape: RampShape): Ramp {
   ];
 }
 
+/** Dark's rungs from the 100 down — fifteen of them, where light has nine. */
+const DARK_MAIN_STEPS: readonly number[] = [
+  100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400,
+  1500,
+];
+
+/** Dark's 100, the fixed top of its evenly-spaced part. */
+const DARK_MAIN_TOP = 0.95;
+
+/**
+ * The dark ramp a shape describes — the same idea as `buildRamp` and NOT the same
+ * function, because almost nothing about the two scales coincides.
+ *
+ * Dark's 100 sits at 0.95 where light's is at 0.90, it takes fifteen rungs below that
+ * where light takes nine, its base is ON the scale at the 500, and its two pale rungs
+ * are text colours at 0.985 and 0.97 rather than washes at 0.975 and 0.95. A single
+ * parameterised builder would take a scheme and branch on it in six places, which is
+ * two functions wearing one name.
+ *
+ * The chroma factors are carried by STEP from `DARK_REFERENCE_RAMP`, safe for the
+ * same one-directional reason light's are: every offered end is at or above the
+ * shipped one, and moving up raises the gamut ceiling underneath every factor.
+ */
+export function buildDarkRamp(shape: RampShape): Ramp {
+  const gap = (DARK_MAIN_TOP - shape.darkEnd) / (DARK_MAIN_STEPS.length - 1);
+  const rungOf = (step: number) =>
+    DARK_REFERENCE_RAMP.find((rung) => rung.step === step);
+
+  return [
+    ...DARK_REFERENCE_RAMP.filter((rung) => rung.step < 100),
+    ...DARK_MAIN_STEPS.map((step, i) => {
+      const reference = rungOf(step);
+      const lightness = Number((DARK_MAIN_TOP - gap * i).toFixed(4));
+      return reference && reference.chroma !== undefined
+        ? { step, lightness, chroma: reference.chroma }
+        : { step, lightness, chromaFactor: reference?.chromaFactor ?? 1 };
+    }),
+  ];
+}
+
 interface RampStore {
-  readonly shape: RampShape;
-  /** The ramp that shape describes — memoised, since it is rebuilt on every render. */
-  readonly ramp: Ramp;
-  readonly setShape: (shape: RampShape) => void;
+  /** One shape per scheme: the two scales are edited independently. */
+  readonly shapes: Readonly<Record<Scheme, RampShape>>;
+  /** The ramps those shapes describe — memoised, since they rebuild on every render. */
+  readonly ramps: Readonly<Record<Scheme, Ramp>>;
+  readonly setShape: (scheme: Scheme, shape: RampShape) => void;
   readonly reset: () => void;
 }
 
 const RampContext = createContext<RampStore | undefined>(undefined);
 
-export function RampProvider({ children }: { children: ReactNode }) {
-  const [shape, setShape] = useState<RampShape>(REFERENCE_SHAPE);
+/** What the dark preset ships, and what its control opens on. */
+export const DARK_REFERENCE_SHAPE: RampShape = { darkEnd: 0.25 };
 
-  const replace = useCallback((next: RampShape) => setShape(next), []);
-  const reset = useCallback(() => setShape(REFERENCE_SHAPE), []);
-  const ramp = useMemo(() => buildRamp(shape), [shape]);
+export function RampProvider({ children }: { children: ReactNode }) {
+  const [shapes, setShapes] = useState<Record<Scheme, RampShape>>({
+    light: REFERENCE_SHAPE,
+    dark: DARK_REFERENCE_SHAPE,
+  });
+
+  const replace = useCallback(
+    (scheme: Scheme, next: RampShape) =>
+      setShapes((current) => ({ ...current, [scheme]: next })),
+    [],
+  );
+  const reset = useCallback(
+    () => setShapes({ light: REFERENCE_SHAPE, dark: DARK_REFERENCE_SHAPE }),
+    [],
+  );
+
+  const ramps = useMemo(
+    () => ({
+      light: buildRamp(shapes.light),
+      dark: buildDarkRamp(shapes.dark),
+    }),
+    [shapes],
+  );
 
   const value = useMemo(
-    () => ({ shape, ramp, setShape: replace, reset }),
-    [shape, ramp, replace, reset],
+    () => ({ shapes, ramps, setShape: replace, reset }),
+    [shapes, ramps, replace, reset],
   );
 
   return <RampContext.Provider value={value}>{children}</RampContext.Provider>;

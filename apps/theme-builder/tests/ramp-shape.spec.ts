@@ -129,7 +129,11 @@ describe('the ramp shape', () => {
 
 describe('probing a shape against real bases', () => {
   it('allows the shipped shape for the shipped bases', () => {
-    const verdict = probeShape(DECLARED, REFERENCE_BASES, REFERENCE_SHAPE);
+    const verdict = probeShape(
+      DECLARED,
+      REFERENCE_BASES,
+      buildRamp(REFERENCE_SHAPE),
+    );
 
     // The reason is read first: a bare `allowed` failure says nothing, and the
     // validator's own message is the whole diagnosis.
@@ -143,7 +147,10 @@ describe('probing a shape against real bases', () => {
     // segment greyed out for no stated reason is worse than one not offered at all.
     const refused = GRID.map(
       ([label, bases]) =>
-        [label, probeShape(DECLARED, bases, { darkEnd: 0.34 })] as const,
+        [
+          label,
+          probeShape(DECLARED, bases, buildRamp({ darkEnd: 0.34 })),
+        ] as const,
     ).filter(([, verdict]) => !verdict.allowed);
 
     expect(refused.length).toBeGreaterThan(0);
@@ -161,7 +168,11 @@ describe('probing a shape against real bases', () => {
     // control is meant to discover that, not to have it pinned. What must hold is
     // that a verdict comes back at all: `generateTheme` throws on a hole, and a probe
     // that propagated it would crash the page instead of greying out one segment.
-    const lighter = probeShape(DECLARED, REFERENCE_BASES, { darkEnd: 0.3 });
+    const lighter = probeShape(
+      DECLARED,
+      REFERENCE_BASES,
+      buildRamp({ darkEnd: 0.3 }),
+    );
 
     expect(typeof lighter.allowed).toBe('boolean');
     expect(lighter.allowed || Boolean(lighter.reason)).toBe(true);
@@ -182,7 +193,11 @@ describe('probing a shape against real bases', () => {
       'var(--fm-palette-primary-1500)',
     );
 
-    const verdict = probeShape(repointed, REFERENCE_BASES, { darkEnd: 0.26 });
+    const verdict = probeShape(
+      repointed,
+      REFERENCE_BASES,
+      buildRamp({ darkEnd: 0.26 }),
+    );
 
     expect(verdict.allowed).toBe(false);
     expect(verdict.reason).toContain('primary-1500');
