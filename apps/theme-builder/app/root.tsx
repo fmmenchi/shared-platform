@@ -175,16 +175,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
             }}
           >
             <Separator />
-            {/* THE EMOJI ARE `aria-hidden`, and that is the accessible choice rather
-                than the lazy one. "love" and "coffee" are already the words, so a
-                screen reader announcing "love, red heart" and "coffee, hot beverage"
-                says each fact twice — and an emoji that duplicates adjacent text is
-                the textbook case for hiding it. An emoji carrying meaning ALONE would
-                need the opposite: `role="img"` and a label. */}
+            {/* THE EMOJI ARE LABELLED, and they were `aria-hidden` one commit ago.
+                Both are right, in their own case, and the case changed when the words
+                went: while "love" and "coffee" were written out the emoji duplicated
+                them, so announcing "love, red heart" said each fact twice and hiding
+                them was correct. Carrying the meaning ALONE they are content — hidden,
+                the line would be read as "Built by @fmmenchi with and", which is not
+                a sentence.
+
+                So `role="img"` and a label each. The label is the WORD the emoji
+                replaced, not a description of the picture: "love", not "yellow
+                heart" — a reader wants the sentence, not the glyph. */}
             <p style={{ margin: 0, maxWidth: 'var(--fm-size-prose)' }}>
-              Built by <code>@fmmenchi</code> with love{' '}
-              <span aria-hidden="true">❤️</span> and coffee{' '}
-              <span aria-hidden="true">☕</span>
+              Built by <code>@fmmenchi</code> with{' '}
+              <span role="img" aria-label="love">
+                💛
+              </span>{' '}
+              and{' '}
+              <span role="img" aria-label="coffee">
+                ☕
+              </span>
             </p>
           </footer>
         </AppLayout>
