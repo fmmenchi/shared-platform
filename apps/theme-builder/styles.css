@@ -13,4 +13,78 @@
  */
 @import '@fmmenchi/tokens/styles/tailwind.css';
 @import '@fmmenchi/tokens/styles/baseline.css';
+/*
+ * THE DARK PRESET, so the shell can follow the system. It selects on
+ * `[data-theme='dark']`, which `theme-choice.ts` puts on `<html>` — before the first
+ * paint from an inline script, and afterwards from the header's switcher. It was not
+ * imported at all before this, which is why the shell was light whatever the OS said.
+ * The preview rail is untouched by it: `ThemeScope` sets the roles inline, and inline
+ * wins over a preset.
+ */
+@import '@fmmenchi/tokens/styles/presets/dark.css';
 @import '@fmmenchi/ui/style.css';
+
+/*
+ * THE RAIL'S PLACEMENT — the one thing ADR-0034 leaves to the app — and the shell's
+ * shape while the rail is docked.
+ *
+ * THE PAGE HAD TWO SCROLLBARS. `AppLayout`'s model is "the page scrolls, the columns
+ * stick", and the rail followed it: sticky, capped at `100dvh`. But the rail's content
+ * is taller than any window, so the cap WAS its height, the grid row grew to it, and
+ * the document measured header + 100dvh + footer whatever the step held — a page
+ * scrollbar whose only job was to reach a footer the rail had pushed below the fold,
+ * beside the rail's own. Reported with a screenshot: "quella esterna non ha senso".
+ *
+ * SO, WHILE DOCKED, THE SHELL IS THE WINDOW and `main` is what scrolls. `AppLayout`'s
+ * own stylesheet calls this the more SPECIALISED shape — "suits an operator panel,
+ * wrong for a page" — and that is a description of this app: a builder with a docked
+ * preview is an operator panel, not a page. The grid is pinned to `100dvh` (it already
+ * has `min-block-size: 100dvh`; this closes the top), `main` becomes the scroll
+ * container, and the rail — a stretched item in a `1fr` row that is now DEFINITE — gets
+ * exactly the bound `SidePanel`'s `max-block-size: 100%` was waiting for. No sticky, no
+ * `dvh` on the rail: the design system's own panel behaviour, unaided.
+ *
+ * BELOW THE SWAP the page scrolls as the shell intends — a phone's address bar retracts,
+ * the footer is reachable — and the rail is a row under `main`, capped at a screen so
+ * it scrolls inside itself rather than adding eleven sections to the page.
+ *
+ * `@variant @xl` IS THE SHELL'S OWN SWAP, not a breakpoint written here: the tokens
+ * define `--container-xl` once and `app-layout.module.css` swaps on that same variant.
+ * Two widths in two files was the failure this avoids. The grid is reached as THE
+ * SHELL'S CHILD THAT HOLDS `main` (`:has(> main)`) because its class is hashed in the
+ * design system's module — and not as `> *`, which was the first spelling: the shell
+ * has a second child, the skip link, absolutely positioned after the grid, and giving
+ * THAT a window's height put the page back to 2029px. Measured.
+ */
+.theme-builder-rail {
+  max-block-size: 100dvh;
+}
+
+@variant @xl {
+  .theme-builder-shell > :has(> main) {
+    block-size: 100dvh;
+  }
+
+  .theme-builder-main {
+    min-block-size: 0;
+    overflow-y: auto;
+    /* AND IT HAS TO BE A CONTAINING BLOCK, which is the half that is not obvious.
+       A scroll container does NOT clip an absolutely positioned descendant whose
+       containing block is outside it — and `main` is `position: static`, so step
+       three's visually-hidden spans (`position: absolute`, one per table row)
+       resolved against the initial containing block and escaped. Measured with
+       everything else already right: `main` scrolled, the grid was 900px, `body`
+       measured 900 — and `html.scrollHeight` was 12646, a page scrollbar for the
+       twelve thousand pixels of screen-reader text hanging off the root.
+
+       `SidePanel` had the same defect and it was fixed THERE rather than here:
+       its own stylesheet promised it "becomes the containing block for absolutely
+       positioned ones" while it was `static`, so the promise is now true for every
+       consumer. This one is the app's, because `main` is the app's to place. */
+    position: relative;
+  }
+
+  .theme-builder-rail {
+    max-block-size: 100%;
+  }
+}

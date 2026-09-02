@@ -39,7 +39,9 @@ import { isPreviewOpen, withPreview } from './preview-open';
 import { RampProvider } from './ramp';
 import { RoleOverridesProvider } from './role-overrides';
 import { STEPS, pathOf, slugOf } from './steps';
+import { BOOT_SCRIPT } from './theme-choice';
 import { ThemePreview } from './theme-preview';
+import { ThemeSwitcher } from './theme-switcher';
 import stylesheet from '../styles.css?url';
 
 export const meta: MetaFunction = () => [
@@ -71,14 +73,17 @@ export const links: LinksFunction = () => [
 ];
 
 /**
- * THE SHELL IS ON THE REFERENCE THEME, always.
+ * THE SHELL IS ON THE DESIGN SYSTEM'S OWN THEME — light or dark as the system says,
+ * or as the header's switcher pins it — and NEVER on the draft.
  *
  * The chrome — the header, the navigation, the wizard's controls, everything a
- * person clicks — renders under `:root`, which is `@fmmenchi/tokens`' own theme.
- * Only the preview subtree is wrapped in the draft. The reason is a failure mode
- * rather than tidiness: a draft with a contrast pair below its floor would
- * otherwise take down the controls that would fix it, and a builder you cannot read
- * is a builder you cannot recover from.
+ * person clicks — renders under `:root` or under `[data-theme='dark']`, which are
+ * `@fmmenchi/tokens`' two shipped presets (`theme-choice.ts` decides which). Only
+ * the preview subtree is wrapped in the draft. The reason is a failure mode rather
+ * than tidiness: a draft with a contrast pair below its floor would otherwise take
+ * down the controls that would fix it, and a builder you cannot read is a builder
+ * you cannot recover from. That argument was once read as "the shell is light,
+ * always"; it is about the DRAFT, and says nothing against dark mode.
  *
  * EVERY REGION IS THE DESIGN SYSTEM'S. `AppLayout` asks what is there rather than
  * taking props: a `<header>`, an `AppLayoutNav`, an `AppLayoutMain` and a
@@ -155,10 +160,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const railOpen = isPreviewOpen(search);
 
   return (
-    <html lang="en">
+    // `suppressHydrationWarning` because `BOOT_SCRIPT` has already put `data-theme`
+    // on this element by the time React compares it with what the server sent — and
+    // the server, which does not know the choice, sent none. The mismatch is the
+    // design, not a defect; see `theme-choice.ts`.
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* BEFORE THE STYLESHEET, and inline: the theme has to be decided before
+            anything paints, or a person who chose dark sees a light page for a
+            frame. A module script or a deferred one runs after first paint; only an
+            inline classic script runs here. What it does is one line, kept in step
+            with the hook by `tests/theme-choice.spec.tsx`. */}
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
         <Meta />
         <Links />
       </head>
@@ -219,6 +234,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 1040px, and the step keeps 60% of the shell minus the nav in between.
                 Under the shell's own `@xl` the rail stacks under `main` anyway. */}
             <AppLayout
+              // The class is how `styles.css` reaches the shell's grid (`> *`) to
+              // pin it to the window while the rail is docked — see there.
+              className="theme-builder-shell"
               style={
                 {
                   '--fm-size-aside': 'clamp(26rem, 40cqi, 32rem)',
@@ -297,13 +315,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 A SECOND NAV LANDMARK, which is why `label` is required and why both
                 have one: a page with two unnamed navigations gives a screen reader
                 user a list of things all called "navigation". */}
-                <Nav label="View">
-                  <NavLink asChild current={railOpen}>
-                    <Link to={withPreview(pathname, search, !railOpen)}>
-                      Show the preview
-                    </Link>
-                  </NavLink>
-                </Nav>
+                {/* THE TWO THINGS THAT ARE NOT STEPS, side by side: the shell's theme
+                (a question, so a radio group — `ThemeSwitcher`) and the preview (a
+                navigation, so a link). Same row, different components, and the
+                difference is the point: ADR-0025's line between the two runs
+                through this header. */}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 'var(--fm-space-inline-m)',
+                    alignItems: 'center',
+                  }}
+                >
+                  <ThemeSwitcher />
+                  <Nav label="View">
+                    <NavLink asChild current={railOpen}>
+                      <Link to={withPreview(pathname, search, !railOpen)}>
+                        Show the preview
+                      </Link>
+                    </NavLink>
+                  </Nav>
+                </div>
               </header>
 
               <AppLayoutNav label="Main">
@@ -364,7 +397,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </Nav>
               </AppLayoutNav>
 
-              <AppLayoutMain>{children}</AppLayoutMain>
+              {/* The class makes `main` the scroll container while the rail is
+                docked (`styles.css`); below the swap it changes nothing. */}
+              <AppLayoutMain className="theme-builder-main">
+                {children}
+              </AppLayoutMain>
 
               {/* THE PREVIEW, DOCKED — a region of the shell rather than a box inside
                 the content, which is what it was first and read as a card floating in
@@ -387,28 +424,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <SidePanel
                   label="Your theme"
                   aria-labelledby="preview-rail-heading"
+                  /* PLACEMENT LIVES IN `styles.css`, not here, because it differs
+                     either side of the shell's swap and an inline style cannot ask
+                     a container query. It was `align-self: start; position: sticky;
+                     max-block-size: 100dvh` inline — the shell's "page scrolls,
+                     column sticks" model — and that gave the page a second scrollbar
+                     for as long as the rail was open: the rail's content is taller
+                     than any window, so the cap became the row's height and the
+                     document was header + 100dvh + footer on every step. Docked, the
+                     shell is now the window and `main` scrolls; see the stylesheet. */
+                  className="theme-builder-rail"
                   style={{
                     borderRadius: 0,
                     borderBlock: 'none',
                     borderInlineEnd: 'none',
-                    /* WHAT MAKES IT A RAIL RATHER THAN A LONG COLUMN, and the
-                       panel cannot supply it: `SidePanel` brings
-                       `max-block-size: 100%`, which resolves against the box it is
-                       given — and a grid row sized by its tallest item is no bound
-                       at all. Measured without these three: 9313px tall, with
-                       `scrollHeight === clientHeight`, so it stretched the page
-                       instead of scrolling and the step scrolled away with it.
-
-                       `align-self: start` stops the item filling its row, `sticky`
-                       keeps it in view while the step scrolls past, and `100dvh` is
-                       the bound the panel's own `overflow` was waiting for. All
-                       three are PLACEMENT, which ADR-0034 leaves to the app for
-                       exactly this reason: only this file knows the rail should be
-                       as tall as the window. */
-                    alignSelf: 'start',
-                    position: 'sticky',
-                    insetBlockStart: 0,
-                    maxBlockSize: '100dvh',
                   }}
                 >
                   <div

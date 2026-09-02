@@ -9,6 +9,10 @@ that file into a consumer's repo. Nothing depends on this app.
 pnpm nx dev @fmmenchi/theme-builder     # http://localhost:4201
 ```
 
+The app itself follows your system's light or dark theme, and the switcher in the header can pin
+either. The preview beside the steps always shows the theme **you** are building, whichever the
+shell wears.
+
 ## Why it exists
 
 So that **our theme and your theme cannot differ in kind.** The design system's own colours are not

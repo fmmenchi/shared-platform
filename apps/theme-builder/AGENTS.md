@@ -75,17 +75,46 @@ existed only for that second host and went with it.
   tab stop a scroll container needs ([ADR-0034](../../doc/adr/0034-a-side-panel-is-not-a-drawer.md)).
   It is NON-MODAL, which is the whole reason it can be there: verified in a browser, with the rail
   open a role select behind it has no `inert` ancestor and re-pointing one moves the rail's swatches.
-- **The app supplies `align-self: start`, `position: sticky` and `max-block-size: 100dvh`.** Without
-  them the rail was 9313px tall with `scrollHeight === clientHeight`: `SidePanel`'s
-  `max-block-size: 100%` has nothing to resolve against in a grid row sized by its tallest item, so
-  it stretched the page instead of scrolling. Placement is the app's, per the ADR.
+- **DOCKED, THE SHELL IS THE WINDOW AND `main` SCROLLS** (`styles.css`, under the shell's own
+  `@variant @xl`). The rail followed the shell's "page scrolls, column sticks" model first — sticky,
+  capped at `100dvh` — and that put TWO scrollbars on every step: the rail's content is taller than
+  any window, so the cap was its height, the row grew to it, and the document measured
+  header + 100dvh + footer whatever the step held ("quella esterna non ha senso", with a screenshot).
+  `AppLayout`'s stylesheet names the viewport-locked shape the specialised one, "an operator panel,
+  wrong for a page" — which is what this app is. So the grid is pinned to `100dvh`, `main` gets
+  `overflow-y: auto`, and the rail, a stretched item in a row that is now definite, needs nothing
+  but `SidePanel`'s own `max-block-size: 100%`. Below the swap the page scrolls as the shell intends
+  and the rail is a row under `main` capped at a screen. Placement is the app's, per the ADR — and it
+  is in the stylesheet rather than inline because it differs either side of a container query.
+  Without any bound at all the rail was 9313px tall with `scrollHeight === clientHeight`.
 - **One control per state.** The header's `Show the preview` link opens it (marked `current` while
   it is open); the rail's `×` closes it. Both are LINKS that add or drop `?preview=1`, so the browser
   can do it — middle-click, no JavaScript. `preview-open.ts` owns the param's spelling, because it is
   a fact about the URL rather than about the shell.
 
+**THE SHELL FOLLOWS THE SYSTEM'S THEME, UNLESS PINNED.** `theme-choice.ts` holds a three-way choice —
+`system` (default) / `light` / `dark` — in `localStorage`, and applies it as `[data-theme='dark']` on
+`<html>` (light is the attribute's ABSENCE: `:root` is the light theme). The shell was the reference
+theme, light, always, argued from "a draft whose contrast fails must not take down the controls" —
+right about the DRAFT, silent about dark mode, and the dark preset was not even imported
+(`styles.css` does now). Two readers of the choice, kept in step by `tests/theme-choice.spec.tsx`:
+
+- **`BOOT_SCRIPT`**, inline in `<head>`, runs before the first paint so a stored `dark` never flashes
+  light. It is built from the same constants (key, values, query) as the TypeScript, and the spec
+  RUNS the string in jsdom against `resolveScheme` for every choice × system preference. `<html>`
+  carries `suppressHydrationWarning` because the script has set the attribute before React looks.
+- **`useThemeChoice`**, a `useSyncExternalStore` over storage (server snapshot `system`, so hydration
+  renders what the server did), with an effect that applies the resolved scheme and follows
+  `matchMedia` while the choice is `system`. Not `useState` seeded from storage: that is state set in
+  an effect and a hydration mismatch, both.
+- **The preview is untouched**: `ThemeScope` sets the roles inline and inline beats a preset, and no
+  component stylesheet reads a palette rung directly (checked). The rail shows THEIR dark while the
+  shell wears the design system's.
+
 **THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
-holds the one thing that is not a step, the preview toggle. The preview was a fifth sidebar item
+holds the two things that are not steps: the theme switcher (`theme-switcher.tsx`, a
+`SegmentedControl` — it answers a question, so this time the radio group IS the right component) and
+the preview toggle. The preview was a fifth sidebar item
 under a hairline rule, the same shape as the steps, while a `Badge` in the header reported which
 mode you were in without being able to change it: one concept in two places, and the preview reading
 as a step it is not (nothing is decided there, and it is reachable at any time).
