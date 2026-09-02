@@ -102,40 +102,78 @@ interface BasesStore {
   /** The dark set at once, for the same reason the light one is written at once. */
   readonly setDarkBases: (bases: Bases) => void;
   /**
-   * Re-derive the dark seven from the light seven as they stand now.
+   * Re-derive the dark seven from the light seven as they stand now, and go back to
+   * FOLLOWING them.
    *
-   * NOT AUTOMATIC ON A LIGHT CHANGE, which was the first shape and is wrong: it would
-   * silently discard dark colours a person had typed the moment they went back and
-   * nudged a light one. An explicit action is the only version that cannot lose work.
+   * The reason this exists is unchanged — a person who typed dark colours must not
+   * lose them because they nudged a light one — but "never automatic" was too strong
+   * a reading of it, and the export is where that showed. Measured: change the light
+   * primary to `#1f5fa8` and hand the pair of files over, and the dark one still
+   * carried `oklch(0.75 0.1015 254.87)`, the derivation of the REFERENCE blue, not
+   * `oklch(0.75 0.1107 254.58)`, the derivation of the brand. Half the handoff was
+   * the design system's own colours, silently.
+   *
+   * So the dark seven FOLLOW the light seven until somebody edits one of them, and
+   * stop the moment they do — which is the whole of what the old rule was protecting.
+   * Untouched, there is no work to lose; touched, nothing overwrites it. This action
+   * is now how a person goes back to following, and `darkFollowsLight` is how the
+   * page says which of the two states it is in, because a value that moves on its own
+   * has to be visibly explained.
    */
   readonly deriveFromLight: () => void;
+  /**
+   * Whether the dark seven are still the derivation of the light seven, moving with
+   * them — false once anybody has typed one.
+   */
+  readonly darkFollowsLight: boolean;
   readonly reset: () => void;
 }
 
 const BasesContext = createContext<BasesStore | undefined>(undefined);
 
+/** The dark seven these light seven suggest, as hex the colour inputs can hold. */
+function derived(light: Bases): Bases {
+  return Object.fromEntries(
+    Object.entries(deriveDarkBases(light, DARK_BASE_LIGHTNESS)).map(
+      ([family, value]) => [family, toHex(value)],
+    ),
+  ) as Bases;
+}
+
 export function BasesProvider({ children }: { children: ReactNode }) {
   const [bases, setBases] = useState<Bases>(REFERENCE_BASES);
   const [darkBases, setDarkBases] = useState<Bases>(REFERENCE_DARK_BASES);
+  // FALSE ONLY ONCE SOMEBODY HAS TYPED A DARK COLOUR. Until then the dark seven are
+  // the derivation and nothing else, so following the light seven cannot lose work —
+  // and not following them shipped the reference brand's dark theme (see
+  // `deriveFromLight`).
+  const [darkFollowsLight, setDarkFollowsLight] = useState(true);
 
-  const replace = useCallback((next: Bases) => setBases(next), []);
-  const replaceDark = useCallback((next: Bases) => setDarkBases(next), []);
-
-  const deriveFromLight = useCallback(
-    () =>
-      setDarkBases(
-        Object.fromEntries(
-          Object.entries(deriveDarkBases(bases, DARK_BASE_LIGHTNESS)).map(
-            ([family, value]) => [family, toHex(value)],
-          ),
-        ) as Bases,
-      ),
-    [bases],
+  const replace = useCallback(
+    (next: Bases) => {
+      setBases(next);
+      if (darkFollowsLight) setDarkBases(derived(next));
+    },
+    [darkFollowsLight],
   );
+
+  // A HAND EDIT, which is the one thing that stops the following. `deriveFromLight`
+  // writes the same state through the setter directly, so re-deriving is not mistaken
+  // for typing.
+  const replaceDark = useCallback((next: Bases) => {
+    setDarkBases(next);
+    setDarkFollowsLight(false);
+  }, []);
+
+  const deriveFromLight = useCallback(() => {
+    setDarkBases(derived(bases));
+    setDarkFollowsLight(true);
+  }, [bases]);
 
   const reset = useCallback(() => {
     setBases(REFERENCE_BASES);
     setDarkBases(REFERENCE_DARK_BASES);
+    setDarkFollowsLight(true);
   }, []);
 
   const value = useMemo(
@@ -145,9 +183,18 @@ export function BasesProvider({ children }: { children: ReactNode }) {
       setBases: replace,
       setDarkBases: replaceDark,
       deriveFromLight,
+      darkFollowsLight,
       reset,
     }),
-    [bases, darkBases, replace, replaceDark, deriveFromLight, reset],
+    [
+      bases,
+      darkBases,
+      replace,
+      replaceDark,
+      deriveFromLight,
+      darkFollowsLight,
+      reset,
+    ],
   );
 
   return (

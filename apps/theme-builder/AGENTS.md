@@ -20,15 +20,25 @@ pnpm nx build @fmmenchi/theme-builder
 
 ## The four steps, and what each owns
 
-| step                         | owns                                                                   |
-| :--------------------------- | :--------------------------------------------------------------------- |
-| 1 `routes/steps/colours.tsx` | the seven bases, as one form validated as a SET                        |
-| 2 `routes/steps/palette.tsx` | the ramp's two ends, and the palette they produce                      |
-| 3 `routes/steps/roles.tsx`   | every role re-pointable, with the measured ratio of each declared pair |
-| 4 `routes/steps/review.tsx`  | the validator's verdict, and the download                              |
+| step                               | owns                                                                       |
+| :--------------------------------- | :------------------------------------------------------------------------- |
+| 1 `routes/steps/brand-colours.tsx` | the fourteen bases — light and dark, a tab each — light validated as a SET |
+| 2 `routes/steps/palette.tsx`       | the ramp's ends and the palette they produce, per theme                    |
+| 3 `routes/steps/roles.tsx`         | every role re-pointable, per theme, with each declared pair measured       |
+| 4 `routes/steps/review.tsx`        | the validator's verdict, and the download                                  |
 
-State lives in providers wired in `root.tsx`: `bases.tsx`, `ramp.tsx`, `role-overrides.tsx`,
-`draft-theme.tsx`. Each throws outside its provider — "no value" and "not wired" must not look alike.
+State lives in providers wired in `root.tsx`: `bases.tsx`, `ramp.tsx`, `role-overrides.tsx`. Each
+throws outside its provider — "no value" and "not wired" must not look alike. `theme-scope.tsx`
+applies a resolved theme to a subtree and holds no state (it replaced `draft-theme.tsx`, which held
+the draft as a CSS string nothing ever wrote).
+
+**EVERY LINK IN THIS APP MUST BE THE ROUTER'S.** The state above is in memory, so one full document
+load is the whole wizard gone. The sidebar in `root.tsx` was `<NavLink href>` on the design system's
+component and therefore plain anchors: measured, every click reloaded, a brand colour set to
+`#aa3311` came back `#3072c1`, and the theme exported afterwards was the design system's own. The
+design system was not wrong to render an anchor — it reads the router off `UiProvider`, and that
+sidebar renders in `Layout`, ABOVE the route tree, so the port can never be in scope there. Hence
+`asChild` with React Router's own `Link` per call, and `current` stays the app's.
 
 ## Rules
 
@@ -90,11 +100,23 @@ what it produces. Before that they followed no rule at all — measured, neither
 gamut ceiling at L 0.75 (3.16x spread) nor a fraction of the light chroma (2.02x) — so there was
 nothing to compute a brand's dark colours from.
 
-- **The dark bases are EDITABLE**, on step 2 beside the palette they produce, defaulting to the
-  derivation. `deriveFromLight()` is an explicit action and never automatic: re-deriving on every
-  light change would silently discard dark colours a person had typed.
+- **The dark bases are EDITABLE**, on step 1 in their own tab, and until somebody edits one they
+  **FOLLOW the light seven** — `setBases` re-derives them, `darkFollowsLight` says whether it still
+  will, and the panel states which of the two it is. "Never automatic" was the rule here first, and
+  the export is where it was caught: change the light primary to `#1f5fa8` and the dark file still
+  carried the derivation of the REFERENCE blue, chroma 0.1007 where the brand's is 0.1107 — half the
+  handoff was the design system's colours, silently. Following costs nothing while the dark seven are
+  still the derivation, which is exactly when there is no work to lose; the first hand edit stops it
+  for good, which is the whole of what the old rule protected. `deriveFromLight()` is how a person
+  goes back to following, and it is disabled while they already do. `tests/bases-store.spec.tsx`
+  holds both halves — verified by mutation: dropping the follow fails three of its tests, dropping
+  the stop fails two.
 - **`DARK_REFERENCE_RAMP` is stated whole**, not offered as a `RampShape`. Its two ends have no role
   pointing at them, so a control over them would probe two matrices to move nothing.
+- **Step three's overrides are PER SCHEME**, one map each, and a light one is never carried into
+  dark: the two themes point their roles at different rungs — `-subtle` at the 1400 in dark where
+  light's is at the 50 — so the same choice would mean a different colour. Step 4 validates BOTH and
+  labels which scheme each violation is from.
 - **`tests/dark.spec.ts` holds the claim**: the app's default dark bases are the shipped ones, the
   dark ramp reproduces every one of the seventeen shipped rungs, and the theme validates.
 - **Step 4's `--scheme` field is gone.** It was a false choice — the generator emits `--scheme` as
@@ -103,11 +125,14 @@ nothing to compute a brand's dark colours from.
 
 ## Known gaps
 
-- **STEP THREE'S OVERRIDES ARE LIGHT-ONLY.** A role re-pointed there is not carried into the dark
-  theme, and it must not be: the dark preset points its roles at different rungs — `-subtle` at the
-  1400 where light's is at the 50 — so "primary-subtle goes to the 200" means a different colour in
-  each theme and carrying it across would be a guess. The dark theme uses the design system's own
-  dark alias map unchanged. Step 4 validates BOTH and labels which scheme each violation is from.
+- **A role's rung menu offers EVERY family, not just the role's own.** Deliberate: a role
+  legitimately points outside its family — every `-foreground` is `neutral-0`, and `background`,
+  `border` and `muted` are neutral too — so filtering to one family would make the commonest case
+  impossible. It is also not derivable from the name: `--fm-color-error` and `--fm-color-destructive`
+  both point into `negative`, so a filter would need a role→family table, a second home for a
+  relation `vars.css` already states. The plausible family IS readable from the declaration a role
+  starts on, so ORDERING the menu by it (own family, then neutral, then the rest) would answer the
+  complaint without forbidding a deliberate cross-family choice. Not done yet.
 - **The 25 (light) and the 1500 (dark) have no role pointing at them.** Deliberate headroom, and
   what makes the pale end of step 2 nearly free: the only thing `paleRungs: 0` breaks is the eight
   chromatic `-subtle` roles that now name the 50, which `probeShape` reports as an unavailable

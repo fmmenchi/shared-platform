@@ -1,4 +1,5 @@
 import {
+  Link,
   Links,
   Meta,
   Outlet,
@@ -147,18 +148,38 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   The steps are repeated here at all because the stepper is chrome for
                   ORIENTATION and reads best as a row. Two views of one list, both
                   from `STEPS`. */}
+              {/* `asChild` WITH THE ROUTER'S OWN LINK, and this was `href` on a bare
+                  `NavLink` until the wizard was walked with a probe in the page.
+                  Measured: every click here was a FULL DOCUMENT LOAD, so each one
+                  threw away the whole wizard — a brand colour set to `#aa3311` came
+                  back `#3072c1`, the reference, and the theme exported afterwards was
+                  the design system's own rather than the one somebody had built.
+
+                  The design system was not wrong to render a plain anchor. It reads
+                  the app's router off `UiProvider`, and this sidebar lives in
+                  `Layout`, ABOVE the route tree — so the provider that supplies the
+                  `Link` port is inside `{children}` and can never be in scope here.
+                  With no router to ask, a plain anchor is the only honest thing left,
+                  and a plain anchor is a page load.
+
+                  So the router arrives per call instead, which the design system
+                  documents as the CHECKED alternative to the port: the element is
+                  right there, so TypeScript sees which link it is. `current` stays
+                  ours — React Router's `NavLink` would compute a second
+                  `aria-current`, and two current pages in one nav is a bug this file
+                  already has a comment about, twelve lines up. */}
               {STEPS.map((step) => (
                 <NavLink
                   key={step.slug}
-                  href={pathOf(step)}
+                  asChild
                   current={!onPreview && step.slug === currentStep}
                 >
-                  {step.label}
+                  <Link to={pathOf(step)}>{step.label}</Link>
                 </NavLink>
               ))}
               <Separator />
-              <NavLink href="/preview" current={onPreview}>
-                Preview
+              <NavLink asChild current={onPreview}>
+                <Link to="/preview">Preview</Link>
               </NavLink>
             </Nav>
           </AppLayoutNav>

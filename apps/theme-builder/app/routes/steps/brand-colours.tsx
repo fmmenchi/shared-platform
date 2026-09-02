@@ -54,8 +54,14 @@ import { stepPath } from '../../steps';
  * so that set is store-backed and the schema checks it as a closed-over value.
  */
 export default function BrandColours() {
-  const { bases, darkBases, setBases, setDarkBases, deriveFromLight } =
-    useBases();
+  const {
+    bases,
+    darkBases,
+    setBases,
+    setDarkBases,
+    deriveFromLight,
+    darkFollowsLight,
+  } = useBases();
   const navigate = useNavigate();
 
   const [tab, setTab] = useState<Scheme>('light');
@@ -141,20 +147,34 @@ export default function BrandColours() {
                   color: 'var(--fm-color-muted-foreground)',
                 }}
               >
-                Suggested from the light ones — same hue, restated at lightness
-                0.75, keeping each one&rsquo;s share of the chroma sRGB allows
-                there. Edit any of them: a brand with a real dark palette has
-                colours of its own.
+                {darkFollowsLight ? (
+                  <>
+                    These <strong>follow the light seven</strong> — same hue,
+                    restated at lightness 0.75, keeping each one&rsquo;s share
+                    of the chroma sRGB allows there. Change a light colour and
+                    these change with it. Edit one here and they stop following,
+                    because a brand with a real dark palette has colours of its
+                    own.
+                  </>
+                ) : (
+                  <>
+                    These are <strong>yours</strong> and no longer follow the
+                    light seven, so changing a light colour will not move them.
+                    Re-deriving puts them back to the suggestion and starts them
+                    following again.
+                  </>
+                )}
               </p>
 
-              {/* IN THIS PANEL because it is about these colours, and NOT automatic
-                  on a light change: re-deriving on every edit would silently discard
-                  dark colours a person had typed. An explicit action is the only
-                  version that cannot lose work. */}
+              {/* IN THIS PANEL because it is about these colours.
+                  DISABLED WHILE THEY ALREADY FOLLOW, because then it has nothing to
+                  do: the derivation is what they hold. Offering it anyway would be a
+                  button whose only honest label is "no change". */}
               <Button
                 type="button"
                 variant="secondary"
                 onClick={deriveFromLight}
+                disabled={darkFollowsLight}
                 style={{ justifySelf: 'start' }}
               >
                 Re-derive from the light seven
