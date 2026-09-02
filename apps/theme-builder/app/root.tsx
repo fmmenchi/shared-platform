@@ -14,7 +14,6 @@ import { UiProvider } from '@fmmenchi/ui';
 import { AppLayout } from '@fmmenchi/ui/app-layout';
 import { AppLayoutMain } from '@fmmenchi/ui/app-layout-main';
 import { AppLayoutNav } from '@fmmenchi/ui/app-layout-nav';
-import { Badge } from '@fmmenchi/ui/badge';
 import { Nav } from '@fmmenchi/ui/nav';
 import { NavLink } from '@fmmenchi/ui/nav-link';
 import { Separator } from '@fmmenchi/ui/separator';
@@ -28,7 +27,7 @@ import {
 import { BasesProvider } from './bases';
 import { RampProvider } from './ramp';
 import { RoleOverridesProvider } from './role-overrides';
-import { STEPS, pathOf, slugOf } from './steps';
+import { FIRST_STEP, STEPS, pathOf, slugOf, stepPath } from './steps';
 import stylesheet from '../styles.css?url';
 
 export const meta: MetaFunction = () => [
@@ -72,9 +71,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // design system's `NavLink` falls back to working out the location itself, which
   // the server does not have — so the class and `aria-current` would differ between
   // the two renders. Read from the router instead: it knows the path on both sides.
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const onPreview = pathname === '/preview';
   const currentStep = slugOf(pathname);
+
+  /*
+   * WHERE "BUILDING" GOES BACK TO — the step somebody left, not the first one.
+   *
+   * `slugOf` answers with the first step for any path it does not know, `/preview`
+   * included, which is right for a stepper and useless here: a person who was on
+   * step three, looked at their theme and came back would land on step one. Losing
+   * somebody's place is the same class of defect as the sidebar reloading the
+   * document, only quieter.
+   *
+   * SO THE PREVIEW LINK CARRIES IT AND THE URL HOLDS IT. Remembering it in state was
+   * the first version and it was worse twice over: `setState` inside an effect is the
+   * cascading-render anti-pattern the lint rule refuses, and a memory in this
+   * component is gone the moment somebody reloads or opens a shared `/preview` link,
+   * with nothing to say why "Building" now points at step one. As a search param it
+   * is a fact about how you got here, so it survives both.
+   *
+   * VALIDATED against `STEPS` rather than handed to `stepPath`, because it arrives
+   * from the URL: a hand-typed `?from=whatever` answers with the first step instead
+   * of throwing a page away.
+   */
+  const from = new URLSearchParams(search).get('from');
+  const buildingStep = onPreview
+    ? (STEPS.find((step) => step.slug === from)?.slug ?? FIRST_STEP.slug)
+    : currentStep;
 
   return (
     <html lang="en">
@@ -118,9 +142,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 @fmmenchi/ui
               </span>
             </div>
-            <Badge variant={onPreview ? 'accent' : 'primary'}>
-              {onPreview ? 'Preview' : 'Building'}
-            </Badge>
+            {/* THE MODE, AND THE CONTROL FOR IT, IN ONE PLACE. This was a `Badge`
+                saying "Building" or "Preview" while the thing that changed it was a
+                fifth item in the sidebar, under a hairline rule and the same shape as
+                the four steps — so the header stated a mode it could not change, the
+                sidebar changed it without saying so, and the preview read as a step.
+                It is not one: nothing is decided there, and it is reachable at any
+                time.
+
+                TWO LINKS, NOT A `SegmentedControl`, which is what a mode switch looks
+                like and the wrong component for this. That one is a radio group
+                (ADR-0025) and the design system draws the line itself — "a tab list
+                navigates the page, a radio group answers a question". These navigate,
+                so they are links: they work without JavaScript, they open in a new tab
+                on a middle click, and they are announced as what they are. `Tabs` is
+                out for the other half of the same sentence — it swaps a panel on one
+                page rather than moving between two routes.
+
+                A SECOND NAV LANDMARK, which is why `label` is required and why both
+                have one: a page with two unnamed navigations gives a screen reader
+                user a list of things all called "navigation". */}
+            <Nav label="View">
+              <NavLink asChild current={!onPreview}>
+                <Link to={stepPath(buildingStep)}>Building</Link>
+              </NavLink>
+              <NavLink asChild current={onPreview}>
+                <Link to={`/preview?from=${buildingStep}`}>Preview</Link>
+              </NavLink>
+            </Nav>
           </header>
 
           <AppLayoutNav label="Main">
@@ -134,10 +183,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   It was not.
 
                   A disclosure is right for a section you collapse AWAY from
-                  something. There is nothing else in this sidebar: the steps are its
-                  content. Four links and a preview do not need a lid, and there is
-                  no `defaultOpen` to ask for — which is the correct API for that
-                  component and the wrong component for this job.
+                  something. There is nothing else in this sidebar: the four steps ARE
+                  its content — the preview left it for the header, where the mode it
+                  changes was already being reported. Four links do not need a lid, and
+                  there is no `defaultOpen` to ask for — which is the correct API for
+                  that component and the wrong component for this job.
 
                   THERE IS ALSO NO "BUILD" LINK, and there was one. It pointed at `/`,
                   which was step one's route — so it and "Brand colours" were two
@@ -177,10 +227,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link to={pathOf(step)}>{step.label}</Link>
                 </NavLink>
               ))}
-              <Separator />
-              <NavLink asChild current={onPreview}>
-                <Link to="/preview">Preview</Link>
-              </NavLink>
             </Nav>
           </AppLayoutNav>
 

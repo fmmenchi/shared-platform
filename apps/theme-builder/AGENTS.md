@@ -40,6 +40,20 @@ design system was not wrong to render an anchor — it reads the router off `UiP
 sidebar renders in `Layout`, ABOVE the route tree, so the port can never be in scope there. Hence
 `asChild` with React Router's own `Link` per call, and `current` stays the app's.
 
+**THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
+holds the MODE — `Building` / `Preview` — as two links marked with `current`. The preview was a fifth
+sidebar item under a hairline rule, the same shape as the steps, while a `Badge` in the header
+reported which mode you were in without being able to change it: one concept in two places, and the
+preview reading as a step it is not (nothing is decided there, and it is reachable at any time).
+
+- **Links, NOT a `SegmentedControl`**, which is what a mode switch looks like and the wrong component:
+  that is a radio group (ADR-0025) and the design system draws the line itself — "a tab list navigates
+  the page, a radio group answers a question". `Tabs` is out for the other half of the same sentence.
+- **`/preview?from=<slug>` is how "Building" gets you back to the step you left.** In state it was
+  worse twice: `setState` in an effect is the cascading-render anti-pattern the lint rule refuses, and
+  a memory here dies on a reload or a shared `/preview` link. The param is validated against `STEPS`,
+  so `?from=whatever` lands on step one rather than throwing.
+
 ## Rules
 
 - **THE APP HOLDS NO CONTRACT AND NO RULES.** `@fmmenchi/theme` owns what a theme is and whether one
