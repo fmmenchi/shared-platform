@@ -316,10 +316,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 have one: a page with two unnamed navigations gives a screen reader
                 user a list of things all called "navigation". */}
                 {/* THE TWO THINGS THAT ARE NOT STEPS, side by side: the shell's theme
-                (a question, so a radio group — `ThemeSwitcher`) and the preview (a
+                (a state you press, so a toggle — `ThemeSwitcher`) and the preview (a
                 navigation, so a link). Same row, different components, and the
                 difference is the point: ADR-0025's line between the two runs
-                through this header. */}
+                through this header. The theme was a radio group of three until the
+                third option turned out to be the default — see `theme-choice.ts`. */}
                 <div
                   style={{
                     display: 'flex',

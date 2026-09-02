@@ -1,15 +1,15 @@
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Scheme } from '../app/declarations';
 import {
   BOOT_SCRIPT,
+  SCHEMES,
   STORAGE_KEY,
-  THEME_CHOICES,
   applyScheme,
-  isThemeChoice,
+  isScheme,
   resolveScheme,
-  useThemeChoice,
-  type ThemeChoice,
+  useScheme,
 } from '../app/theme-choice';
 
 /**
@@ -21,6 +21,10 @@ import {
  * and both system preferences, and compared with `resolveScheme`, the TypeScript
  * the hook uses. A drift between them is exactly the bug a flash-free switcher
  * would otherwise ship: right after hydration, wrong for the first frame.
+ *
+ * THE UNPINNED CASE IS `null` and gets its own tests rather than riding along with
+ * the pinned two, because it is the state the whole two-state UI rests on: there is
+ * no button for it, so nothing else would catch it regressing.
  */
 
 /** jsdom has no `matchMedia`; this one answers the dark query as told. */
@@ -50,15 +54,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
   // AND the spies: the "storage unavailable" case mocks `Storage.prototype.getItem`
   // to throw, and without this the hook tests after it read a storage that throws
-  // and fall back to `system` — two failures that were about test hygiene, not the
+  // and fall back to unpinned — two failures that were about test hygiene, not the
   // hook. Measured.
   vi.restoreAllMocks();
 });
 
 describe('resolveScheme', () => {
-  it('follows the system only when asked to', () => {
-    expect(resolveScheme('system', true)).toBe('dark');
-    expect(resolveScheme('system', false)).toBe('light');
+  it('follows the system only when nothing is pinned', () => {
+    expect(resolveScheme(null, true)).toBe('dark');
+    expect(resolveScheme(null, false)).toBe('light');
     expect(resolveScheme('light', true)).toBe('light');
     expect(resolveScheme('dark', false)).toBe('dark');
   });
@@ -80,33 +84,44 @@ describe('the boot script', () => {
   // eslint-disable-next-line no-new-func -- executing BOOT_SCRIPT is the subject under test
   const run = () => new Function(BOOT_SCRIPT)();
 
+  const applied = (): Scheme =>
+    document.documentElement.hasAttribute('data-theme') ? 'dark' : 'light';
+
   it.each(
-    THEME_CHOICES.flatMap((choice) =>
-      [true, false].map((dark) => [choice, dark] as const),
+    SCHEMES.flatMap((scheme) =>
+      [true, false].map((dark) => [scheme, dark] as const),
     ),
   )(
     'agrees with resolveScheme for %s when system dark is %s',
-    (choice, dark) => {
+    (scheme, dark) => {
       systemPrefersDark(dark);
-      window.localStorage.setItem(STORAGE_KEY, choice);
+      window.localStorage.setItem(STORAGE_KEY, scheme);
 
       run();
 
-      const applied = document.documentElement.hasAttribute('data-theme')
-        ? 'dark'
-        : 'light';
-      expect(applied).toBe(resolveScheme(choice, dark));
+      expect(applied()).toBe(resolveScheme(scheme, dark));
     },
   );
 
-  it('treats a stored value that is not a choice as system', () => {
+  it.each([true, false])(
+    'follows the system when nothing is stored and system dark is %s',
+    (dark) => {
+      systemPrefersDark(dark);
+
+      run();
+
+      expect(applied()).toBe(resolveScheme(null, dark));
+    },
+  );
+
+  it('treats a stored value that is not a scheme as unpinned', () => {
     systemPrefersDark(true);
     window.localStorage.setItem(STORAGE_KEY, 'sepia');
 
     run();
 
     expect(document.documentElement.dataset['theme']).toBe('dark');
-    expect(isThemeChoice('sepia')).toBe(false);
+    expect(isScheme('sepia')).toBe(false);
   });
 
   it('does not throw when storage is unavailable', () => {
@@ -119,60 +134,64 @@ describe('the boot script', () => {
   });
 });
 
-describe('useThemeChoice', () => {
+describe('useScheme', () => {
   function mount() {
     const seen: {
-      current: readonly [ThemeChoice, (n: ThemeChoice) => void] | null;
+      current: readonly [Scheme, (n: Scheme) => void] | null;
     } = {
       current: null,
     };
     function Probe() {
-      seen.current = useThemeChoice();
+      seen.current = useScheme();
       return null;
     }
     render(<Probe />);
     return {
-      get choice() {
+      get scheme() {
         return seen.current?.[0];
       },
-      set(next: ThemeChoice) {
+      set(next: Scheme) {
         seen.current?.[1](next);
       },
     };
   }
 
-  it('starts on system, applies what the system prefers, and follows it changing', () => {
+  it('reports what the system prefers, and follows it changing', () => {
     const system = systemPrefersDark(true);
     const h = mount();
 
-    expect(h.choice).toBe('system');
+    // The RESOLVED scheme, which is the whole reason the hook returns this and not
+    // the stored choice: the toggle has no `system` state left to render.
+    expect(h.scheme).toBe('dark');
     expect(document.documentElement.dataset['theme']).toBe('dark');
 
     act(() => system.flip(false));
+    expect(h.scheme).toBe('light');
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
 
-  it('pins a choice, persists it, and stops following the system', () => {
+  it('pins a scheme, persists it, and stops following the system', () => {
     const system = systemPrefersDark(false);
     const h = mount();
 
     act(() => h.set('dark'));
 
-    expect(h.choice).toBe('dark');
+    expect(h.scheme).toBe('dark');
     expect(window.localStorage.getItem(STORAGE_KEY)).toBe('dark');
     expect(document.documentElement.dataset['theme']).toBe('dark');
 
     act(() => system.flip(true));
     act(() => system.flip(false));
+    expect(h.scheme).toBe('dark');
     expect(document.documentElement.dataset['theme']).toBe('dark');
   });
 
-  it('reads a choice stored before it mounted', () => {
+  it('reads a scheme pinned before it mounted', () => {
     systemPrefersDark(true);
     window.localStorage.setItem(STORAGE_KEY, 'light');
     const h = mount();
 
-    expect(h.choice).toBe('light');
+    expect(h.scheme).toBe('light');
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
   });
 });
