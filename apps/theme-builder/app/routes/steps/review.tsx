@@ -17,7 +17,7 @@ import { useThemedDeclarations } from '../../role-overrides';
 import { buildThemeFile } from '../../export-theme';
 import { exportSchema, type ExportValues } from '../../export.schema';
 import { useRamp } from '../../ramp';
-import { stepPath } from '../../steps';
+import { useStepLink } from '../../steps';
 
 /**
  * STEP FOUR — read what the theme measures, then hand it over.
@@ -40,6 +40,7 @@ import { stepPath } from '../../steps';
  * asking a person to find out from CI.
  */
 export default function Review() {
+  const stepLink = useStepLink();
   const { bases, darkBases } = useBases();
   // THE SHAPE CHOSEN ON STEP TWO, not the reference: the file a person downloads has
   // to be the theme they were shown.
@@ -213,7 +214,7 @@ export default function Review() {
           <Button type="submit" disabled={!passes}>
             Download both theme files
           </Button>
-          <Button as={Link} to={stepPath('roles')} variant="secondary">
+          <Button as={Link} to={stepLink('roles')} variant="secondary">
             Back to the roles
           </Button>
         </div>

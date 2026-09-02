@@ -20,7 +20,7 @@ import { useBases } from '../../bases';
 import { useDeclarations, type Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
-import { stepPath } from '../../steps';
+import { useStepLink } from '../../steps';
 import {
   homeFamilyOf,
   orderRungOptions,
@@ -99,6 +99,7 @@ export default function Roles() {
 
 function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
   const { bases, darkBases } = useBases();
+  const stepLink = useStepLink();
   const theBases = scheme === 'dark' ? darkBases : bases;
   const declared = useThemedDeclarations(scheme);
   // THE DESIGN SYSTEM'S OWN declarations too, not just the re-pointed ones: a role's
@@ -212,10 +213,10 @@ function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
       )}
 
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-        <Button as={Link} to={stepPath('palette')} variant="secondary">
+        <Button as={Link} to={stepLink('palette')} variant="secondary">
           Back to the palette
         </Button>
-        <Button as={Link} to={stepPath('review')}>
+        <Button as={Link} to={stepLink('review')}>
           Review and export
         </Button>
       </div>

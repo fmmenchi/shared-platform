@@ -26,7 +26,7 @@ import {
   useRamp,
 } from '../../ramp';
 import { useThemedDeclarations } from '../../role-overrides';
-import { stepPath } from '../../steps';
+import { useStepLink } from '../../steps';
 
 /** Small print — a description, or a refusal. */
 const note = {
@@ -64,6 +64,7 @@ const note = {
  * at the 500.
  */
 export default function Palette() {
+  const stepLink = useStepLink();
   const { bases, darkBases } = useBases();
   const { shapes, ramps, setShape } = useRamp();
   // THE RE-POINTED ones for light: an override is a changed declaration, so a person
@@ -131,10 +132,10 @@ export default function Palette() {
       </Tabs>
 
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
-        <Button as={Link} to={stepPath('brand-colours')}>
+        <Button as={Link} to={stepLink('brand-colours')}>
           Back to the colours
         </Button>
-        <Button as={Link} to={stepPath('roles')}>
+        <Button as={Link} to={stepLink('roles')}>
           Point the roles
         </Button>
       </div>

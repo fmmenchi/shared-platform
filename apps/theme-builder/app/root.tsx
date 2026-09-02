@@ -391,7 +391,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       asChild
                       current={step.slug === currentStep}
                     >
-                      <Link to={pathOf(step)}>{step.label}</Link>
+                      <Link to={withPreview(pathOf(step), search, railOpen)}>
+                        {step.label}
+                      </Link>
                     </NavLink>
                   ))}
                 </Nav>

@@ -3,7 +3,7 @@ import { Stepper } from '@fmmenchi/ui/stepper';
 import { StepperItem } from '@fmmenchi/ui/stepper-item';
 import { NavLink, Outlet, useLocation } from 'react-router';
 
-import { STEPS, pathOf, slugOf, statusOf } from '../steps';
+import { STEPS, slugOf, statusOf, useStepLink } from '../steps';
 
 /**
  * THE WIZARD — the chrome every step shares, on the reference theme.
@@ -36,6 +36,7 @@ import { STEPS, pathOf, slugOf, statusOf } from '../steps';
 export default function Build() {
   const { pathname } = useLocation();
   const current = slugOf(pathname);
+  const stepLink = useStepLink();
 
   return (
     <div
@@ -57,7 +58,7 @@ export default function Build() {
           return (
             <StepperItem key={step.slug} status={status}>
               {status === 'complete' ? (
-                <NavLink to={pathOf(step)}>{step.label}</NavLink>
+                <NavLink to={stepLink(step.slug)}>{step.label}</NavLink>
               ) : (
                 step.label
               )}
