@@ -113,7 +113,10 @@ export default function BrandColours() {
           </TabList>
 
           <TabPanel value="light">
-            <FieldsetContent orientation="horizontal">
+            <FieldsetContent
+              orientation="horizontal"
+              className="theme-builder-bases"
+            >
               {FAMILIES.map((family) => (
                 <FormColorPicker key={family} name={family} label={family} />
               ))}
@@ -122,7 +125,10 @@ export default function BrandColours() {
 
           <TabPanel value="dark">
             <div style={{ display: 'grid', gap: 'var(--fm-space-stack-s)' }}>
-              <FieldsetContent orientation="horizontal">
+              <FieldsetContent
+                orientation="horizontal"
+                className="theme-builder-bases"
+              >
                 {FAMILIES.map((family) => (
                   <Field key={family} label={family}>
                     <ColorPicker
