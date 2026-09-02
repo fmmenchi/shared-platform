@@ -1,7 +1,7 @@
 import { PALETTE_FAMILIES } from '@fmmenchi/theme';
 import { describe, expect, it } from 'vitest';
 
-import { REFERENCE_BASES } from '../app/bases';
+import { REFERENCE_BASES, REFERENCE_DARK_BASES } from '../app/bases';
 import { makeBasesSchema } from '../app/bases.schema';
 import { hydrateDeclarations } from '../app/declarations';
 import { readDeclarations } from '../app/declarations.server';
@@ -25,14 +25,37 @@ import { readDeclarations } from '../app/declarations.server';
  * every assertion below a statement about the fixture: "the shipped brand passes"
  * only means something if the roles and the greys are the ones that ship.
  */
-const schema = makeBasesSchema(hydrateDeclarations(readDeclarations()).light);
+const declared = hydrateDeclarations(readDeclarations());
+const schema = makeBasesSchema(
+  declared.light,
+  declared.dark,
+  REFERENCE_DARK_BASES,
+);
 
-const issuesOf = (values: Record<string, string>) => {
+/**
+ * THE FORM HOLDS FOURTEEN COLOURS IN TWO GROUPS, so a fixture is
+ * `{ light, dark }` — and the dark seven default to what `deriveDarkBases` produces
+ * from the light ones, which is what the app opens on.
+ *
+ * The seven used to be flat here, when the dark set lived on step two beside the
+ * palette. That was a convenience for the schema and a confusion for the person
+ * using it: "what are your brand colours" answered in two places, the second on a
+ * step named after something else.
+ */
+/**
+ * The LIGHT seven, which are the fields. The dark seven are closed over by the
+ * schema rather than submitted — see `bases.schema.ts` for why the design system's
+ * own binding rules put them there — so a fixture is just the light set.
+ */
+const both = (light: Record<string, string> = REFERENCE_BASES) => light;
+
+const issuesOf = (values: unknown) => {
   const result = schema.safeParse(values);
   return result.success ? [] : result.error.issues;
 };
 
-const messagesFor = (values: Record<string, string>, field: string) =>
+/** Issues on one field, named the way the form names it: `light.primary`. */
+const messagesFor = (values: unknown, field: string) =>
   issuesOf(values)
     .filter((issue) => issue.path[0] === field)
     .map((issue) => issue.message);
@@ -43,18 +66,48 @@ describe('the bases schema', () => {
     // built from is broken in a way no amount of "it validates" makes up for — and
     // it would be refusing it on the strength of a whole generated theme, so this
     // also proves the generate-and-measure path end to end.
-    const issues = issuesOf({ ...REFERENCE_BASES });
+    const issues = issuesOf(both());
 
     expect(
       issues,
-      issues.map((i) => `${String(i.path[0])}: ${i.message}`).join('\n'),
+      issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('\n'),
     ).toEqual([]);
   });
 
   it('refuses a value the picker could not have produced', () => {
     expect(
-      messagesFor({ ...REFERENCE_BASES, primary: 'red' }, 'primary'),
+      messagesFor(both({ ...REFERENCE_BASES, primary: 'red' }), 'primary'),
     ).toEqual([expect.stringContaining('six hex digits')]);
+  });
+
+  it('does NOT blame a light field for a dark problem', () => {
+    // The cost of the dark set not being form fields, pinned so nobody "fixes" it by
+    // attributing anyway: a dark violation names its family in the MESSAGE and lands
+    // on the form, because a path of `warning` would send the error summary to the
+    // LIGHT warning picker — the wrong swatch for the problem.
+    const broken = makeBasesSchema(declared.light, declared.dark, {
+      ...REFERENCE_DARK_BASES,
+      warning: 'not a colour',
+    });
+    const result = broken.safeParse(REFERENCE_BASES);
+
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    for (const issue of result.error.issues) {
+      expect(issue.path, `blamed a field: ${issue.path.join('.')}`).toEqual([]);
+    }
+  });
+
+  it('checks the DARK seven against dark’s own map and ramp', () => {
+    // Not against light's. `-subtle` points at the 1400 in dark and at the 50 in
+    // light, so measuring the dark bases through light's alias map would judge a
+    // pair nobody sees — a theme that validates and looks wrong.
+    const issues = issuesOf(both());
+
+    expect(
+      issues.filter((i) => i.path[0] === 'dark'),
+      'the shipped dark seven must pass their own contract',
+    ).toEqual([]);
   });
 
   it('does NOT refuse two families for being similar', () => {
@@ -65,7 +118,7 @@ describe('the bases schema', () => {
     // built from. The distance between two families is a designer's business.
     const clash = { ...REFERENCE_BASES, success: REFERENCE_BASES.accent };
 
-    expect(issuesOf(clash)).toEqual([]);
+    expect(issuesOf(both(clash))).toEqual([]);
   });
 
   it('ACCEPTS any base, because lightness is anchored absolutely', () => {
@@ -75,7 +128,7 @@ describe('the bases schema', () => {
     // guarantee hold across brands instead of moving with each one. A pale yellow
     // primary therefore yields a readable theme, and refusing it would be wrong.
     for (const primary of ['#ffe680', '#000000', '#ffffff', '#ff00ff']) {
-      const issues = issuesOf({ ...REFERENCE_BASES, primary });
+      const issues = issuesOf(both({ ...REFERENCE_BASES, primary }));
       expect(
         issues,
         `${primary}: ${issues.map((i) => i.message).join('; ')}`,
@@ -88,7 +141,7 @@ describe('the bases schema', () => {
     // `generatePalette` cannot produce because the greys are STATED (ADR-0032). Read
     // rather than generated, or `generateTheme` throws for every possible input —
     // measured, including on the shipped bases.
-    expect(issuesOf({ ...REFERENCE_BASES })).toEqual([]);
+    expect(issuesOf(both())).toEqual([]);
   });
 
   it('asks about every family the contract has', () => {

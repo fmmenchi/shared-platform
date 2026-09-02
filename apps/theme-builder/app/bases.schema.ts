@@ -9,7 +9,7 @@ import {
 } from '@fmmenchi/theme';
 import { z } from 'zod';
 
-import { REFERENCE_RAMP } from './ramp';
+import { DARK_REFERENCE_RAMP, REFERENCE_RAMP } from './ramp';
 
 /**
  * WHAT A SCHEMA CAN SAY ABOUT SEVEN COLOURS, AND WHAT IT CANNOT.
@@ -67,10 +67,32 @@ const shape = Object.fromEntries(
 const basesObject = z.object(shape);
 
 /**
- * The seven fields, named by the families. Derived from the object schema, so a
+ * The seven FIELDS, named by the families. Derived from the object schema, so a
  * family added to the contract changes this type without an edit here.
  */
 export type BasesValues = z.infer<typeof basesObject>;
+
+/** One scheme's worth of colours, which is what the store holds per theme. */
+export type SchemeBases = z.infer<typeof basesObject>;
+
+/**
+ * THE DARK SEVEN ARE CHECKED, NOT TYPED IN HERE, and the split is the design system's
+ * own instruction rather than a shortcut.
+ *
+ * They live on the same step — they are brand colours, and a person answers "what are
+ * your brand colours" once — but they are STORE-BACKED pickers rather than form
+ * fields, because they have an action beside them: "re-derive from the light ones",
+ * which only means anything against live values. `FormColorPicker` omits `onChange`
+ * and `value` on purpose ("the call site winning `onChange` does not override the
+ * binding, it severs it") and tells a caller what to do instead: compose `Field` and
+ * the control and bind them yourself. That is what step one does for the dark set.
+ *
+ * So the dark colours reach this schema as a VALUE, closed over, and their violations
+ * land on the form rather than on a specific picker. That is the cost, stated: a dark
+ * problem names the family in its message but the error summary cannot link to the
+ * swatch. Worth it against the alternative, which was asking for the same colours on
+ * two different steps.
+ */
 
 /**
  * WHICH FIELD TO BLAME FOR A ROLE — the app's own question, answered from the
@@ -116,54 +138,97 @@ const familyOf = (
  * about a PAIR of roles rather than about one colour — and the pair may span two
  * families.
  */
-export function makeBasesSchema(declared: Declarations) {
+export function makeBasesSchema(
+  declared: Declarations,
+  darkDeclared: Declarations,
+  darkBases: Record<PaletteFamily, string>,
+) {
   return basesObject.superRefine((values, ctx) => {
-    const bases = values as Record<PaletteFamily, string>;
-
-    let theme;
-    try {
-      // ONE CALL. `generateTheme` reads the aliases and the stated greys out of the
-      // declarations and generates the brand's ramps itself — the app assembled that
-      // by hand for a while and got it wrong, omitting the greys, which made every
-      // set of bases fail.
-      theme = generateTheme(declared, bases, REFERENCE_RAMP);
-    } catch (error) {
-      // A rung the ramp does not reach. Not attributable to one field, so it goes
-      // on the form rather than being pinned to a colour that may be blameless.
-      ctx.addIssue({
-        code: 'custom',
-        path: [],
-        message: `These colours do not make a theme: ${(error as Error).message}`,
-      });
-      return;
-    }
-
-    const violations = validateTheme(theme);
-    if (violations.length === 0) return;
-
-    // ATTRIBUTED BACK TO A FIELD, which is what makes a message useful rather than
-    // merely true. Anything that cannot be traced to one of the seven lands on the
-    // form.
-    //
-    // Deduplicated, because one bad base breaks several pairs at once — fill ×
-    // foreground, hover × foreground, active × foreground — and the same sentence
-    // three times reads as three problems.
-    const seen = new Set<string>();
-    for (const violation of violations) {
-      const roles = violation.pair ?? (violation.role ? [violation.role] : []);
-      const target = roles
-        .map((role) => familyOf(declared, role as ColorRole))
-        .find((family) => family !== undefined && family in bases);
-
-      const key = `${target ?? ''}:${violation.message}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      ctx.addIssue({
-        code: 'custom',
-        path: target ? [target] : [],
-        message: violation.message,
-      });
-    }
+    // BOTH THEMES, EACH AGAINST ITS OWN ALIAS MAP AND ITS OWN RAMP. Checking the dark
+    // seven against light's map would generate a theme that validates and looks
+    // wrong: `-subtle` points at the 1400 there and at the 50 here, so the pair being
+    // measured would not be the pair a person sees.
+    refineScheme(
+      ctx,
+      'light',
+      values as Record<PaletteFamily, string>,
+      declared,
+      REFERENCE_RAMP,
+      true,
+    );
+    refineScheme(
+      ctx,
+      'dark',
+      darkBases,
+      darkDeclared,
+      DARK_REFERENCE_RAMP,
+      false,
+    );
   });
+}
+
+/**
+ * One scheme's worth of checking, and the reason it is a function is that the two
+ * halves must not share a `seen` set: the same message from light and from dark is
+ * two problems, on two different fields, and deduplicating across them would hide
+ * one.
+ */
+function refineScheme(
+  ctx: z.RefinementCtx,
+  scheme: 'light' | 'dark',
+  bases: Record<PaletteFamily, string>,
+  declared: Declarations,
+  ramp: typeof REFERENCE_RAMP,
+  /** Whether these colours are FIELDS, and can therefore be blamed individually. */
+  attributable: boolean,
+) {
+  let theme;
+  try {
+    // ONE CALL. `generateTheme` reads the aliases and the stated greys out of the
+    // declarations and generates the brand's ramps itself — the app assembled that
+    // by hand for a while and got it wrong, omitting the greys, which made every
+    // set of bases fail.
+    theme = generateTheme(declared, bases, ramp);
+  } catch (error) {
+    // A rung the ramp does not reach, or a value that is not a colour at all. Not
+    // attributable to one field either way — and for the DARK set there is no field
+    // to attribute to — so it goes on the form.
+    ctx.addIssue({
+      code: 'custom',
+      path: [],
+      message: `These ${scheme} colours do not make a theme: ${(error as Error).message}`,
+    });
+    return;
+  }
+
+  const violations = validateTheme(theme);
+  if (violations.length === 0) return;
+
+  // ATTRIBUTED BACK TO A FIELD, which is what makes a message useful rather than
+  // merely true. Anything that cannot be traced to one of the seven lands on the
+  // form.
+  //
+  // Deduplicated, because one bad base breaks several pairs at once — fill ×
+  // foreground, hover × foreground, active × foreground — and the same sentence
+  // three times reads as three problems.
+  const seen = new Set<string>();
+  for (const violation of violations) {
+    const roles = violation.pair ?? (violation.role ? [violation.role] : []);
+    const target = roles
+      .map((role) => familyOf(declared, role as ColorRole))
+      .find((family) => family !== undefined && family in bases);
+
+    const key = `${target ?? ''}:${violation.message}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    ctx.addIssue({
+      code: 'custom',
+      // NAMED BY SCHEME AND FAMILY, so the error summary links to the field that
+      // can actually be changed — `dark.warning` and not `warning`, which would
+      // point at the light picker for a dark problem.
+      path: target ? [scheme, target] : [scheme],
+      message: `${scheme}: ${violation.message}`,
+    });
+  }
 }

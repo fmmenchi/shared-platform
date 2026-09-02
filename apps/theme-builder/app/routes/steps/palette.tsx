@@ -1,6 +1,5 @@
 import { generatePalette } from '@fmmenchi/theme';
 import { Button } from '@fmmenchi/ui/button';
-import { ColorPicker } from '@fmmenchi/ui/color-picker';
 import { Fieldset } from '@fmmenchi/ui/fieldset';
 import { FieldsetContent } from '@fmmenchi/ui/fieldset-content';
 import { FieldsetLegend } from '@fmmenchi/ui/fieldset-legend';
@@ -167,7 +166,7 @@ function RampEnd({
  * a value that did not exist when the stylesheet was written.
  */
 export default function Palette() {
-  const { bases, darkBases, setDarkBases, deriveFromLight } = useBases();
+  const { bases, darkBases } = useBases();
   const { shape, ramp, setShape } = useRamp();
 
   /**
@@ -253,56 +252,6 @@ export default function Palette() {
           </div>
         </FieldsetContent>
       </Fieldset>
-
-      {dark && (
-        <Fieldset>
-          <FieldsetLegend>The dark seven</FieldsetLegend>
-          <FieldsetContent orientation="horizontal">
-            {FAMILIES.map((family) => (
-              <label
-                key={family}
-                style={{
-                  display: 'grid',
-                  gap: 'var(--fm-space-stack-s)',
-                  fontSize: 'var(--fm-text-sm)',
-                }}
-              >
-                {family}
-                <ColorPicker
-                  value={darkBases[family]}
-                  onChange={(event) =>
-                    setDarkBases({
-                      ...darkBases,
-                      [family]: event.currentTarget.value,
-                    })
-                  }
-                />
-              </label>
-            ))}
-          </FieldsetContent>
-          <div
-            style={{
-              display: 'grid',
-              gap: 'var(--fm-space-stack-s)',
-              marginBlockStart: 'var(--fm-space-stack-s)',
-              justifyItems: 'start',
-            }}
-          >
-            <p style={note}>
-              Suggested from your light colours — same hue, restated at
-              lightness 0.75, keeping each one&rsquo;s share of the chroma sRGB
-              allows there. That share is what &ldquo;how saturated is this
-              brand&rdquo; means; an absolute chroma is not, since the same
-              number is 78% of the ceiling at 0.55 and about 54% of it at 0.75.
-              Edit any of them: a brand with a real dark palette has colours of
-              its own.
-            </p>
-            <Button type="button" variant="secondary" onClick={deriveFromLight}>
-              Re-derive from the light colours
-            </Button>
-          </div>
-        </Fieldset>
-      )}
 
       {/* THE RAMP CONTROL IS LIGHT-ONLY, and saying so beats hiding it silently. The
           dark ramp's two ends have no role pointing at them — the 25 and the 1500 are
