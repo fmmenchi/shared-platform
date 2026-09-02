@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import {
   Link,
   Links,
@@ -37,7 +38,7 @@ import { readDeclarations } from './declarations.server';
 import { isPreviewOpen, withPreview } from './preview-open';
 import { RampProvider } from './ramp';
 import { RoleOverridesProvider } from './role-overrides';
-import { FIRST_STEP, STEPS, pathOf, slugOf, stepPath } from './steps';
+import { STEPS, pathOf, slugOf } from './steps';
 import { ThemePreview } from './theme-preview';
 import stylesheet from '../styles.css?url';
 
@@ -58,6 +59,15 @@ export const meta: MetaFunction = () => [
  */
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesheet },
+  /*
+   * THE SAME MARK AS THE BLOG, copied verbatim from `dev-blog` rather than redrawn:
+   * one identity across the sites, and a second drawing of one glyph is a second
+   * thing to keep in step. It is an SVG, so it is one file at every size.
+   *
+   * `.ico` stays beside it for the browsers and crawlers that ask for `/favicon.ico`
+   * by convention without reading the document at all.
+   */
+  { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
 ];
 
 /**
@@ -147,31 +157,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   // same thing beside it would be the same component twice on one screen.
   const railOpen = !onPreview && isPreviewOpen(search);
 
-  /*
-   * WHERE "BUILDING" GOES BACK TO — the step somebody left, not the first one.
-   *
-   * `slugOf` answers with the first step for any path it does not know, `/preview`
-   * included, which is right for a stepper and useless here: a person who was on
-   * step three, looked at their theme and came back would land on step one. Losing
-   * somebody's place is the same class of defect as the sidebar reloading the
-   * document, only quieter.
-   *
-   * SO THE PREVIEW LINK CARRIES IT AND THE URL HOLDS IT. Remembering it in state was
-   * the first version and it was worse twice over: `setState` inside an effect is the
-   * cascading-render anti-pattern the lint rule refuses, and a memory in this
-   * component is gone the moment somebody reloads or opens a shared `/preview` link,
-   * with nothing to say why "Building" now points at step one. As a search param it
-   * is a fact about how you got here, so it survives both.
-   *
-   * VALIDATED against `STEPS` rather than handed to `stepPath`, because it arrives
-   * from the URL: a hand-typed `?from=whatever` answers with the first step instead
-   * of throwing a page away.
-   */
-  const from = new URLSearchParams(search).get('from');
-  const buildingStep = onPreview
-    ? (STEPS.find((step) => step.slug === from)?.slug ?? FIRST_STEP.slug)
-    : currentStep;
-
   return (
     <html lang="en">
       <head>
@@ -210,7 +195,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
           }}
         >
           <Stores declarations={declarations}>
-            <AppLayout>
+            {/* THE RAIL IS WIDER THAN THE SHELL'S DEFAULT, and it is retuned rather
+                than overridden: `--fm-size-aside` is a TOKEN precisely so a consumer
+                can, which `app-layout.module.css` says in as many words — "a
+                sidebar's width is a measurement, so it is a TOKEN, retuned by a theme
+                exactly the way a colour is".
+
+                18rem is right for a details pane and wrong for this: at 288px the
+                preview's own buttons wrapped, so `Confirm`, `Disabled`, `solid` and
+                `soft` came out on three lines and a row of components stopped looking
+                like a row. 26rem holds them. */}
+            <AppLayout style={{ '--fm-size-aside': '26rem' } as CSSProperties}>
               <header
                 style={{
                   display: 'flex',
@@ -230,7 +225,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     alignItems: 'baseline',
                   }}
                 >
-                  <strong>Theme builder</strong>
+                  {/* THE BLOG'S OWN WORDMARK, and its treatment rather than an
+                      approximation of it: mono, bold, with the `.com` in the accent —
+                      which is `--fm-color-primary` here and `text-primary` there, the
+                      same ROLE either side. So it follows the theme being built, like
+                      everything else in this chrome.
+
+                      It is a link to nothing yet: this app has no home page, and an
+                      anchor to `/` would land on a redirect to step one, which is a
+                      logo that quietly restarts your work. */}
+                  <span
+                    style={{
+                      fontFamily: 'var(--fm-font-mono)',
+                      fontSize: 'var(--fm-text-base)',
+                      fontWeight: 'var(--fm-font-weight-bold)',
+                    }}
+                  >
+                    fabiomenchicchi
+                    <span style={{ color: 'var(--fm-color-primary)' }}>
+                      .com
+                    </span>
+                  </span>
                   {/* What it builds FOR, said once and in the chrome rather than on
                   every page: a person arriving cold needs to know whose theme this
                   is before they know what a rung is. */}
@@ -240,7 +255,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       fontSize: 'var(--fm-text-sm)',
                     }}
                   >
-                    @fmmenchi/ui
+                    Theme builder · @fmmenchi/ui
                   </span>
                 </div>
                 {/* THE MODE, AND THE CONTROL FOR IT, IN ONE PLACE. This was a `Badge`
@@ -264,11 +279,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 have one: a page with two unnamed navigations gives a screen reader
                 user a list of things all called "navigation". */}
                 <Nav label="View">
-                  <NavLink asChild current={!onPreview}>
-                    <Link to={stepPath(buildingStep)}>Building</Link>
-                  </NavLink>
-                  <NavLink asChild current={onPreview}>
-                    <Link to={`/preview?from=${buildingStep}`}>Preview</Link>
+                  <NavLink asChild current={onPreview || railOpen}>
+                    <Link
+                      to={
+                        onPreview
+                          ? '/preview'
+                          : withPreview(pathname, search, !railOpen)
+                      }
+                    >
+                      Show the preview
+                    </Link>
                   </NavLink>
                 </Nav>
               </header>
@@ -392,30 +412,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <Heading level={2} size="h3" id="preview-rail-heading">
                       Your theme
                     </Heading>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 'var(--fm-space-inline-s)',
-                        alignItems: 'baseline',
-                      }}
+                    {/* ONE CONTROL, AND IT IS A GLYPH. `aria-label` carries the name
+                      because the × cannot: `icon` and `iconEnd` on `Button` are
+                      DECORATIVE by contract, and a lone "×" read aloud is
+                      "multiplication sign". So the visible mark and the announced name
+                      are set separately, which is the only way an icon-only control is
+                      honest.
+
+                      It is a LINK, not a button: closing the rail is dropping a search
+                      param, so the browser can do it — middle-click, the status bar, no
+                      JavaScript at all. */}
+                    <Button
+                      as={Link}
+                      to={withPreview(pathname, search, false)}
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Hide the preview"
                     >
-                      <Button
-                        as={Link}
-                        to={`/preview?from=${currentStep}`}
-                        variant="ghost"
-                        size="sm"
-                      >
-                        Full width
-                      </Button>
-                      <Button
-                        as={Link}
-                        to={withPreview(pathname, search, false)}
-                        variant="ghost"
-                        size="sm"
-                      >
-                        Hide
-                      </Button>
-                    </div>
+                      ×
+                    </Button>
                   </div>
 
                   <ThemePreview sectionLevel={3} />

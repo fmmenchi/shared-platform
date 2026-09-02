@@ -1,10 +1,8 @@
-import { Button } from '@fmmenchi/ui/button';
 import { Heading } from '@fmmenchi/ui/heading';
 import { Stepper } from '@fmmenchi/ui/stepper';
 import { StepperItem } from '@fmmenchi/ui/stepper-item';
-import { Link, NavLink, Outlet, useLocation } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 
-import { isPreviewOpen, withPreview } from '../preview-open';
 import { STEPS, pathOf, slugOf, statusOf } from '../steps';
 
 /**
@@ -31,13 +29,13 @@ import { STEPS, pathOf, slugOf, statusOf } from '../steps';
  * above too, which collapsed the second copy of this loader that `routes/preview.tsx`
  * was carrying.
  *
- * What is left here is the step's own chrome, plus the one control that belongs to
- * the page rather than to the rail: opening it.
+ * What is left here is the step's own chrome and nothing else. The control that opens
+ * the rail went up to the header too: it was a button in this heading row beside
+ * `Building`, which made two ways to ask for one thing in one screen.
  */
 export default function Build() {
-  const { pathname, search } = useLocation();
+  const { pathname } = useLocation();
   const current = slugOf(pathname);
-  const railOpen = isPreviewOpen(search);
 
   return (
     <div
@@ -47,36 +45,7 @@ export default function Build() {
         padding: 'var(--fm-space-inset-l)',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 'var(--fm-space-inline-m)',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Heading level={1}>Build a theme</Heading>
-
-        {/* THE OPEN CONTROL IS HERE, beside the work, because that is what it is
-            about: it opens the rail on THIS page rather than going anywhere. The
-            header's `Building`/`Preview` pair is the other thing — the full-width
-            page, where all eleven sections are worth reading.
-
-            AND ONLY WHEN CLOSED. It said "Hide the preview" while the rail was open,
-            which put two Hide controls on one screen — this one and the rail's own. A
-            panel's close belongs IN the panel, where somebody looks for it; what is
-            left up here is the one thing the rail cannot offer, being opened. */}
-        {!railOpen && (
-          <Button
-            as={Link}
-            to={withPreview(pathname, search, true)}
-            variant="secondary"
-          >
-            Show the preview
-          </Button>
-        )}
-      </div>
+      <Heading level={1}>Build a theme</Heading>
 
       {/* `aria-label` rather than a `label` prop: the design system's stepper
         names itself from its own localized copy ("Progress") and takes an

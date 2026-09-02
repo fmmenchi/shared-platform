@@ -151,10 +151,11 @@ export default function BrandColours() {
                   <>
                     These <strong>follow the light seven</strong> — same hue,
                     restated at lightness 0.75, keeping each one&rsquo;s share
-                    of the chroma sRGB allows there. Change a light colour and
-                    these change with it. Edit one here and they stop following,
-                    because a brand with a real dark palette has colours of its
-                    own.
+                    of the chroma sRGB allows there. They move when you{' '}
+                    <strong>check and continue</strong>, which is when the light
+                    seven are committed — until then a light edit is not in them
+                    yet. Edit one here and they stop following, because a brand
+                    with a real dark palette has colours of its own.
                   </>
                 ) : (
                   <>
@@ -166,15 +167,27 @@ export default function BrandColours() {
                 )}
               </p>
 
-              {/* IN THIS PANEL because it is about these colours.
-                  DISABLED WHILE THEY ALREADY FOLLOW, because then it has nothing to
-                  do: the derivation is what they hold. Offering it anyway would be a
-                  button whose only honest label is "no change". */}
+              {/* IN THIS PANEL because it is about these colours, and NEVER DISABLED
+                  — it was, while the dark seven still followed, on the grounds that
+                  re-deriving would then change nothing.
+
+                  That reasoning was about the STORE and the person is looking at the
+                  FORM. The light seven are form fields, committed by "Check and
+                  continue"; the dark seven are store-backed and live. So editing a
+                  light colour leaves the store untouched, the dark seven correctly
+                  unchanged, and this button correctly disabled — while the screen
+                  plainly shows new light colours and stale dark ones. Reported as
+                  exactly that: "bloccato anche quando modifico i light".
+
+                  A control somebody believes should work and cannot is worse than one
+                  that occasionally changes nothing, so the honest state is enabled.
+                  The asymmetry underneath it — one half of this step committed on
+                  submit, the other live — is the real defect, and it is recorded in
+                  AGENTS.md rather than papered over here. */}
               <Button
                 type="button"
                 variant="secondary"
                 onClick={deriveFromLight}
-                disabled={darkFollowsLight}
                 style={{ justifySelf: 'start' }}
               >
                 Re-derive from the light seven
