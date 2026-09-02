@@ -158,6 +158,49 @@ export function useThemedDeclarations(scheme: Scheme = 'light'): Declarations {
 }
 
 /**
+ * THE FAMILY A DECLARATION POINTS INTO — `primary` for `var(--fm-palette-primary-700)`
+ * and for `oklch(from var(--fm-palette-primary-700) l c h / 0.4)` alike — or nothing,
+ * for a colour stated outright.
+ *
+ * Read off the design system's OWN declaration of a role, this is the family the role
+ * "belongs to" as far as anything can be said to: not derivable from the name
+ * (`--fm-color-error` and `--fm-color-destructive` both point into `negative`), and not
+ * worth a table here, because `vars.css` already states the relation and a table would
+ * be its second home.
+ */
+export function homeFamilyOf(
+  declaration: string | undefined,
+): string | undefined {
+  if (declaration === undefined) return undefined;
+  return /--fm-palette-([a-z]+)-\d+/.exec(declaration)?.[1];
+}
+
+/**
+ * ONE ROLE'S MENU: the same families, put in the order that role reads them.
+ *
+ * The menu offers EVERY family, and that is deliberate — a role legitimately points
+ * outside its own: every `-foreground` is `neutral-0`, and `background`, `border` and
+ * `muted` are neutral too, so a filter would make the commonest case impossible. But
+ * a flat alphabetical list buried the answer a person nearly always wants under
+ * `accent`, `info`, `negative`… So the role's own family comes first, `neutral` second
+ * (the family a role most often reaches across to), and the rest keep the order they
+ * arrived in. Nothing is hidden; the same options, sorted by likelihood.
+ *
+ * A pure function on the shared list rather than a hook per role, because the options
+ * are one scheme's fact and the order is one role's — computing the list eighty-four
+ * times would be the two conflated.
+ */
+export function orderRungOptions<
+  T extends readonly [family: string, ...unknown[]],
+>(families: readonly T[], home: string | undefined): readonly T[] {
+  const rank = (family: string) =>
+    family === home ? 0 : family === 'neutral' ? 1 : 2;
+  // A copy, then `sort`, which is stable (ES2019), so the rest keep their incoming
+  // alphabetical order. Not `toSorted`: the app's `lib` is ES2019.
+  return [...families].sort(([a], [b]) => rank(a) - rank(b));
+}
+
+/**
  * Every rung one scheme's stylesheet declares, by family, in step order — the options
  * a role can be pointed at.
  *

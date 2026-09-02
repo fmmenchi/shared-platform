@@ -17,11 +17,13 @@ import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
-import type { Scheme } from '../../declarations';
+import { useDeclarations, type Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
 import { stepPath } from '../../steps';
 import {
+  homeFamilyOf,
+  orderRungOptions,
   useRoleOverrides,
   useRungOptions,
   useThemedDeclarations,
@@ -99,6 +101,11 @@ function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
   const { bases, darkBases } = useBases();
   const theBases = scheme === 'dark' ? darkBases : bases;
   const declared = useThemedDeclarations(scheme);
+  // THE DESIGN SYSTEM'S OWN declarations too, not just the re-pointed ones: a role's
+  // menu is ordered by the family it STARTS in, and that must not move when a person
+  // re-points it — a menu that reshuffled under the choice just made would be worse
+  // than one with no order at all.
+  const pristine = useDeclarations(scheme);
   const { overrides, setOverride, reset, count } = useRoleOverrides(scheme);
   const { ramps } = useRamp();
   const families = useRungOptions(scheme);
@@ -189,6 +196,7 @@ function RolesPanel({ scheme }: { readonly scheme: Scheme }) {
             roles={group.roles}
             theme={theme}
             declared={declared}
+            pristine={pristine}
             overrides={overrides}
             setOverride={setOverride}
             families={families}
@@ -322,11 +330,22 @@ function Pairs({
   );
 }
 
-/** One select per role: where it points, and everywhere it could. */
+/**
+ * One select per role: where it points, and everywhere it could.
+ *
+ * EVERYWHERE, IN THE ORDER THIS ROLE READS IT. The menu offers every family — a role
+ * legitimately points outside its own, every `-foreground` being `neutral-0` — but it
+ * used to list them alphabetically, so `primary`'s own rungs sat under `accent`,
+ * `info`, `negative` and `neutral`. `orderRungOptions` puts the family the role starts
+ * in first and `neutral` second; nothing is filtered. "Starts in" is read off
+ * `pristine`, the design system's declaration, so re-pointing a role does not
+ * reshuffle the menu under the choice just made.
+ */
 function Knobs({
   roles,
   theme,
   declared,
+  pristine,
   overrides,
   setOverride,
   families,
@@ -334,6 +353,7 @@ function Knobs({
   roles: readonly ColorRole[];
   theme: Record<string, string>;
   declared: ReadonlyMap<string, string>;
+  pristine: ReadonlyMap<string, string>;
   overrides: Readonly<Record<string, string>>;
   setOverride: (role: ColorRole, rung: string) => void;
   families: ReadonlyArray<readonly [string, readonly string[]]>;
@@ -358,6 +378,10 @@ function Knobs({
         const alpha = withAlpha?.[2];
         const overridden = overrides[colorVar(role)] !== undefined;
         const colour = theme[role];
+        const menu = orderRungOptions(
+          families,
+          homeFamilyOf(pristine.get(colorVar(role))),
+        );
 
         return (
           <label
@@ -404,7 +428,7 @@ function Knobs({
                       : undefined
                   }
                 >
-                  {families.map(([family, steps]) => (
+                  {menu.map(([family, steps]) => (
                     <optgroup key={family} label={family}>
                       {steps.map((step) => (
                         <option
