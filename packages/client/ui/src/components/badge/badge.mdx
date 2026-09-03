@@ -56,6 +56,7 @@ The `icon` slot is decorative (`aria-hidden`, sized to the text) next to a visib
 - **Not a live region.** A Badge does not announce itself, by design. For a count that changes and
   must be announced, the consumer wraps it in their own `aria-live` region — the DS doesn't presume
   when an update is important.
-- **Interactive belongs elsewhere.** A clickable or removable badge is a Tag/Chip (a real
-  `<button>` with its own focus and label), not this component.
+- **Interactive belongs elsewhere.** A clickable or removable badge is a `Tag` (a real `<button>`
+  with its own focus and label), not this component — and `Tag` requires the removal, which is where
+  that boundary is drawn rather than described (ADR-0035).
 - **Forced colors:** a border restores the pill boundary when system colours flatten the fills.

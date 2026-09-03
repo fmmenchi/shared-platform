@@ -1,0 +1,42 @@
+/*
+ * TagList styles — the set's layout, and nothing about how a tag looks.
+ * Colours ONLY through semantic role tokens, motion ONLY through the motion
+ * tokens: the `lint-css` gate enforces both.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+@layer fmmenchi {
+  .list {
+    /* WRAPPING, not scrolling. A row of tags that scrolls sideways hides the
+       ones a reader has already chosen behind a gesture nobody discovers, and
+       the count a screen reader announced ("list, 6 items") then disagrees with
+       what the eye can find. Height is the cheap axis on every screen this
+       package supports. */
+    @apply flex flex-wrap items-center gap-internal-s;
+
+    /* It takes the focus when the last tag is removed (see the component), and
+       a ring around the whole set is right: it is where the reader now is.
+       `focus-visible` so a mouse-driven removal that ends here draws nothing —
+       the same three utilities every focusable thing in this package uses. */
+    @apply focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2;
+
+    /* The UA gives a `<ul>` a marker and a block of inline padding for it.
+       Both go: these items are pills in a row, and a bullet beside each would
+       be the list's shape stated twice — once for the eye, wrongly, and once
+       for the accessibility tree, correctly. The tree keeps its list, and it
+       keeps it because the component writes `role="list"` back on: WebKit drops
+       list semantics from a list with no markers.
+
+       The same three utilities in the same order as `Breadcrumb` and `Stepper`,
+       which is the package's spelling for this reset rather than a third one. */
+    @apply m-0 list-none p-0;
+  }
+
+  /* The ring is drawn with `outline-ring`, a colour that forced colours
+     discards — the same restoration `Button` makes, for the same reason. */
+  @media (forced-colors: active) {
+    .list:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}
