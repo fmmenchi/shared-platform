@@ -95,6 +95,54 @@
        page", which the flat UA popup never had. */
     @apply rounded-md border p-1 shadow-lg;
     @apply bg-input text-input-foreground border-input-border;
+
+    /*
+     * ENTRY ONLY, and keyed off `:popover-open` — the platform's own state
+     * rather than a copy of it. The same four lines `MenuContent`,
+     * `PopoverContent` and `Tooltip` already carry, at the same
+     * `--fm-duration-xs`: a list that fades in beside a menu that snaps would
+     * be two systems on one page, which is the thing this component's header
+     * comment says it exists to avoid.
+     *
+     * The EXIT is not missing, it is impossible: a popover's `beforetoggle` in
+     * the closing direction is `cancelable: false` in all three engines, so
+     * nothing can delay the close long enough to animate it (ADR-0009, and the
+     * tooltip's stylesheet records the measurement). Only `Dialog` can, because
+     * a `<dialog>`'s `cancel` IS cancelable.
+     *
+     * `@starting-style` is Baseline "newly" (ADR-0010, progressive
+     * enhancement): where it is missing the list simply appears, which is what
+     * it did everywhere until this rule. No `use-baseline` disable comment,
+     * because that rule explicitly does not read `*.module.css`.
+     */
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+  }
+
+  /*
+   * THE CLOSED STATE CARRIES THE ZERO, and this is the one place this file
+   * departs from `MenuContent`, which puts a bare `opacity: 0` on the base
+   * rule. The reason is the engine this component ALREADY guards for by name
+   * in JavaScript (`combobox.component.tsx`: Firefox shipped the Popover API
+   * in 125 against a stated 121, and an unguarded `matches(':popover-open')`
+   * took the whole page down there). `:popover-open` is an INVALID SELECTOR
+   * where the API is missing, so the whole closed-state rule below is dropped
+   * at parse time — and a bare `opacity: 0` on the base rule would survive it,
+   * leaving a list that is invisible and still hit-testable. Carried on the
+   * closed state instead, the zero and the `display: none` drop TOGETHER, and
+   * that engine gets exactly what it got before this stylesheet learned to
+   * fade: a list that is always there. Broken either way, but visibly rather
+   * than invisibly — and here the surface IS the control.
+   */
+  .surface:popover-open {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .surface:popover-open {
+      opacity: 0;
+    }
   }
 
   /* The rows' own box, so the surface can also hold the empty message — which
@@ -104,8 +152,11 @@
     display: contents;
   }
 
+  /* THE CLOSED STATE, both halves of it — see the note above the open one for
+     why the zero lives here rather than on the base rule. */
   .surface:not(:popover-open) {
     display: none;
+    opacity: 0;
   }
 
   /*
@@ -193,6 +244,18 @@
     .option {
       min-block-size: 2.75rem;
       @apply flex items-center;
+    }
+  }
+
+  /*
+   * Reduced motion: the fade carries no movement, so nothing here is a
+   * vestibular trigger — but the duration goes to zero anyway, which is what
+   * every other surface in the package does with its own entry. A person who
+   * has asked for less motion gets the list at once.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .surface {
+      transition-duration: var(--fm-duration-none);
     }
   }
 

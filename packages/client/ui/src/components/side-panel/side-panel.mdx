@@ -60,6 +60,39 @@ Two things to know before styling a child: this is a scroll container, so it cli
 `position: sticky` descendant to itself, and it becomes the containing block for an absolutely
 positioned one.
 
+### It arrives, and leaving is yours
+
+The panel fades in when it is rendered — `@starting-style` on the first style update after the node
+is inserted, `--fm-duration-xs`, and nothing at all under `prefers-reduced-motion`. It is a **fade
+and not a slide** for the same reason there is no `side`: which column the panel lands in is the
+grid's business, and a movement would have to guess a direction it does not know.
+
+Two limits worth stating rather than discovering. The content beside it **reflows the instant the
+node exists** — that column belongs to your grid, and nothing inside the panel can animate a track it
+does not own. And the **exit is yours**, because there is no `open` prop: React removes the node, so
+by the time the panel is "closing" there is nothing left to animate. `animateExit` is exported for
+exactly this — hold the node, await it, then drop the state:
+
+```tsx
+import { animateExit } from '@fmmenchi/ui';
+
+const close = async () => {
+  if (panel.current)
+    await animateExit(panel.current, { preset: 'fade', duration: 'xs' });
+  setShowing(false);
+};
+```
+
+`duration: 'xs'` on purpose: the default is `m`, which would leave the panel taking 350ms to go and
+100ms to arrive. It reads the motion tokens off the element, honours `prefers-reduced-motion`, and
+resolves on cancel too, so a double click cannot leave it hanging.
+
+**Drop the state in the same continuation, as above.** The animation does not fill: the moment it
+resolves the panel is back at full opacity — measured, and instantly rather than fading back, since
+removing it changes nothing the cascade computed. Nothing paints in between while the state update
+follows immediately; defer that update behind another `await` or a transition and the panel flashes
+back before it goes.
+
 ## What it does not have
 
 - **No `open`.** Whether a panel exists right now is the app's state; the app renders one or does
