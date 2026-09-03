@@ -23,10 +23,13 @@
     /* The UA gives a `<ul>` a marker and a block of inline padding for it.
        Both go: these items are pills in a row, and a bullet beside each would
        be the list's shape stated twice — once for the eye, wrongly, and once
-       for the accessibility tree, correctly. The tree keeps its list. */
-    list-style: none;
-    margin: 0;
-    padding: 0;
+       for the accessibility tree, correctly. The tree keeps its list, and it
+       keeps it because the component writes `role="list"` back on: WebKit drops
+       list semantics from a list with no markers.
+
+       The same three utilities in the same order as `Breadcrumb` and `Stepper`,
+       which is the package's spelling for this reset rather than a third one. */
+    @apply m-0 list-none p-0;
   }
 
   /* The ring is drawn with `outline-ring`, a colour that forced colours

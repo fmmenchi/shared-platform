@@ -2,7 +2,9 @@ import { cn } from '../../util/cn.js';
 import { useMessages } from '../../i18n/provider.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { Button } from '../button/button.component.js';
+import { useTagListPart } from '../tag-list/tag-list.context.js';
 import { RemoveGlyph } from './remove-glyph.component.js';
+import { labelOf } from './tag.label.js';
 import { tagMessages } from './tag.messages.js';
 import type { TagProps } from './tag.types.js';
 import styles from './tag.module.css';
@@ -49,14 +51,16 @@ function Tag(props: TagProps) {
   const { className, children, onRemove, name, ...rest } = props;
   const t = useMessages(tagMessages);
 
-  // THE LABEL AS A SENTENCE CAN HOLD IT. A string is the ordinary case and
-  // needs nothing from the consumer; a number is a real label too (a count, a
-  // year), and `String()` is what the DOM would have rendered anyway.
-  const text =
-    name ??
-    (typeof children === 'string' || typeof children === 'number'
-      ? String(children)
-      : undefined);
+  // An `<li>` outside a list is markup nothing maps to a list item, and the ✕
+  // then has no `TagList` to catch the focus it destroys — so the part warns by
+  // name, the way twelve other families here do.
+  useTagListPart('Tag');
+
+  // THE LABEL AS A SENTENCE CAN HOLD IT — `name` when given, otherwise whatever
+  // the children amount to in words. Blank counts as absent in both: a `name`
+  // that arrived as `''` from a consumer's `?? ''` would otherwise ship
+  // "Remove " AND silence the warning written to prevent exactly that.
+  const text = labelOf(name) ?? labelOf(children);
 
   // A LIST OF BUTTONS ALL CALLED "REMOVE" is a list nobody can navigate: a
   // screen reader user tabbing through eight of them is told the same word
@@ -65,7 +69,7 @@ function Tag(props: TagProps) {
   // is the only protection, the same shape as `Badge`'s icon-only guard.
   useDevWarning(
     text === undefined,
-    'Tag: the remove control is named from the tag’s text, and these children are not a string — pass `name` so it reads "Remove <value>" rather than "Remove".',
+    'Tag: the remove control is named from the tag’s text, and these children are not words — pass `name` so it reads "Remove <value>" rather than "Remove".',
   );
 
   return (
@@ -82,12 +86,19 @@ function Tag(props: TagProps) {
         aria-label={
           text === undefined ? t('removeUnnamed') : t('remove', { name: text })
         }
-        onClick={() => onRemove()}
+        // A BLOCK BODY, and it is not a style choice. An expression body RETURNS
+        // what `onRemove` returned, and `Button` sniffs a thenable there to run
+        // its own pending state: measured, an `async onRemove` — the idiomatic
+        // shape for the round trip this component invites — turned the ✕ into a
+        // disabled spinner announcing "Loading" until the request settled.
+        onClick={() => {
+          onRemove();
+        }}
         className={styles.remove}
         // The hook `TagList` reads to put the focus somewhere when this button
-        // destroys itself. An attribute rather than a context: the list has to
-        // find these in DOM ORDER after one of them is gone, which is a
-        // question about the document, not about React's tree.
+        // destroys itself. An attribute rather than a value on the context: the
+        // list has to find these in DOM ORDER after one of them is gone, which
+        // is a question about the document, not about React's tree.
         data-tag-remove=""
       />
     </li>

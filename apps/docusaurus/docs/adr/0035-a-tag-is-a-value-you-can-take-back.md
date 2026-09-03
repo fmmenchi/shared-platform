@@ -4,9 +4,11 @@
 - **Date:** 2026-09-03
 - **Deciders:** Fabio Menchicchi
 
-> The third boundary ADR, and the same shape as the other two:
-> [ADR-0024](./0024-toggle-switch-checkbox-boundary.md) separated three controls that look alike, and
-> [ADR-0025](./0025-one-of-many-is-a-radio-group.md) separated answering a question from navigating.
+> The fourth boundary ADR, and the same shape as the other three:
+> [ADR-0024](./0024-toggle-switch-checkbox-boundary.md) separated three controls that look alike,
+> [ADR-0025](./0025-one-of-many-is-a-radio-group.md) separated answering a question from navigating,
+> and [ADR-0034](./0034-a-side-panel-is-not-a-drawer.md) separated two side surfaces by what the page
+> can still do.
 > This one separates a label that is only a label from a value the reader can remove — and says why
 > the word "chip" is not the name for it. Nothing here changes `Badge`, `Toggle` or `ChoiceField`; it
 > says what is NOT them, under the admission test
@@ -16,11 +18,11 @@
 
 Three pages already shipped in this package promise a component that does not exist:
 
-| where                             | what it promises                                                                 |
-| --------------------------------- | -------------------------------------------------------------------------------- |
-| `badge.mdx`                       | "a clickable or removable badge is a Tag/Chip (a real component, not a variant)" |
-| `select.mdx:59`                   | several options, many → **a combobox with chips**                                |
-| [ADR-0028](./0028-combobox.md) §5 | multiple selection ships **with chips**, each removable and keyboard-reachable   |
+| where                             | what it promises                                                                                                     |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `badge.mdx`                       | "A clickable or removable badge is a Tag/Chip (a real `<button>` with its own focus and label), not this component." |
+| `select.mdx:59`                   | several options, many → **a combobox with chips**                                                                    |
+| [ADR-0028](./0028-combobox.md) §5 | multiple selection ships **with chips**, each removable and keyboard-reachable                                       |
 
 That is the strongest reason this design system's roadmap accepts — a written contract waiting on a
 component — and it is waiting three times. The question is not whether to build it. It is **what
@@ -59,8 +61,9 @@ gone it has nothing left to move the focus with.
 
 A tag is a value the reader can take back. The prop is the admission test rather than a description
 of one: remove the removal and nothing is left that `Badge` does not already do — a `<span>` whose
-text is its accessible name. An optional `onRemove` would make half the call sites a Badge with extra
-steps, and the two would drift into look-alikes with no rule to separate them.
+text is its accessible name. `badge.mdx` sends the interactive case away by naming what it must have,
+"a real `<button>` with its own focus and label", and a `Tag` with an optional `onRemove` has neither
+on half its call sites; the two would then drift into look-alikes with no rule to separate them.
 
 The name is `Tag`, not `Chip`: it names the meaning (a label attached to something, sometimes
 removable) rather than the shape, and it is the name React Aria and Spectrum — the a11y-first
@@ -76,11 +79,22 @@ which ones. Each `Tag` is an `<li>`, the shape `BreadcrumbLink` and `StepperItem
 The list, being the only thing still standing after a tag goes, performs the recovery: focus lands on
 the remove control that took the departing one's place — the tag after it, or the last one when the
 last was removed — and on the list itself when the last tag goes, the same rescue `AppLayoutNav`
-performs when the form holding the focus is destroyed. Two refusals come with it:
+performs when the form holding the focus is destroyed.
 
-- **nothing moves when the focus was not inside the list.** In Safari a pressed button does not take
-  focus, so after a mouse click the reader's focus is still where they left it, and moving it would be
-  stealing it;
+What it watches is a **DOM mutation**, not its own render. The state holding the tags may live below
+the list — `Tag` renders the `<li>`, so a wrapper between them adds no markup — and a removal then
+re-renders only that wrapper. A rescue hung on the list's own render does nothing at all in that
+composition, silently, in the one case the component exists for.
+
+Three refusals come with it:
+
+- **nothing moves unless the reader was on the control that was pressed.** In Safari a pressed button
+  does not take focus at all, so a mouse click there must move nothing — and asking merely whether
+  the focus was somewhere in the list is one scope too wide: it drags the focus off a DIFFERENT tag
+  the reader deliberately chose;
+- **nothing moves if the reader has since gone elsewhere.** A deferred removal leaves time for that,
+  so the entitlement is checked at the rescue rather than at the click: `<body>` — where the browser
+  leaves the focus when it destroys the focused element — or somewhere still inside this list;
 - **nothing moves until the tag is really gone.** The removal is the app's to perform and it may
   refuse it or take a round trip over it, so the recovery reads the DOM rather than trusting the click.
 

@@ -11,7 +11,7 @@
 @layer fmmenchi {
   .tag {
     @apply inline-flex items-center gap-internal-xs;
-    @apply rounded-full text-sm whitespace-nowrap;
+    @apply rounded-full text-sm;
     /* The `secondary` PAIR, not a colour picked to look right: it is a declared
        AA combination that `tokens.test.ts` checks for every preset, and it is
        the same pair `Button`'s secondary variant paints — so a tag beside a
@@ -24,26 +24,88 @@
        direction rather than staying on the right in Arabic. */
     @apply ps-3 pe-1;
 
+    /* IT HOLDS TEXT SOMEBODY TYPED, which no other component here does — a
+       pasted search term, an email, a filename, a Welsh place name. It was
+       `whitespace-nowrap`, and a flex item's `min-width` defaults to its
+       min-content: with nowrap that IS the whole string, so one long value
+       could neither shrink nor wrap and pushed the page into a horizontal
+       scrollbar at 320px (WCAG 1.4.10 Reflow), which is the exact property the
+       page claims for this component. So it wraps inside the pill instead, and
+       a single unbroken token breaks rather than escaping.
+
+       `anywhere` and not `break-word`: only the first one lets the intrinsic
+       min-content shrink too, which is what stops the item from setting a floor
+       its container cannot meet. */
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+
     /* No fixed height: the button inside is the tallest thing here, and it is
        already 2rem — 2.75rem under a coarse pointer, which is where the whole
        tag grows to meet a finger. A height declared here would fight that and
        win, and the target-size policy would be quietly lost. */
   }
 
-  /* The ✕ itself. Sized in `em` so it follows the button's own text scale, the
-     same contract the injected-icon port states — a glyph that is 12px at every
-     zoom level is a glyph that stops matching its label. */
-  .glyph {
-    inline-size: 0.75em;
-    block-size: 0.75em;
+  /* WHAT `display` TOOK AWAY. `hidden` is an attribute the props advertise
+     (`ComponentPropsWithRef<'li'>`), and the UA implements it with
+     `display: none` — which ANY author display declaration beats, including the
+     `inline-flex` above. Measured: a hidden tag was fully visible, and its
+     remove control was still a tab stop. `TabPanel` carries the same guard for
+     the same reason. It matters here because "show five, collapse the rest"
+     is the canonical overflow pattern for a row of tags, and it is implemented
+     by setting `hidden` on the ones that do not fit. */
+  .tag[hidden] {
+    display: none !important;
   }
 
+  /*
+   * THE REMOVE CONTROL, and the three things it has to take back from the
+   * `ghost` Button it composes.
+   *
+   * `font-size: inherit` — the `sm` size sets a smaller type scale, and the
+   * icon slot is 1em of THAT, so the ✕ came out at 9px beside 14px text:
+   * three quarters of every other glyph in the package.
+   * `table-filter-trigger` records the identical defect, in the identical
+   * composition, and fixes it with the same two lines.
+   *
+   * `color: inherit` — `ghost` paints `text-foreground`, the page's colour,
+   * while the pill has declared a PAIR of its own. Inheriting keeps the ✕
+   * inside that pair under every preset.
+   *
+   * `border-radius` — the pill's end cap is a semicircle, and a `rounded-md`
+   * square inside it pushes its corners past the edge the moment it is
+   * hovered. Round, so it sits in the cap.
+   */
   .remove {
-    /* The ghost button paints nothing until it is hovered, so on the tag's own
-       fill it is the label's colour and not the page's. `currentColor` rather
-       than a role of its own: the tag already declared an AA pair, and a
-       control that picked its own foreground could leave that pair. */
-    color: currentColor;
+    font-size: inherit;
+    color: inherit;
+    /* `rounded-full` rather than a `--fm-radius-*`: there is no `full` token,
+       and this is the same utility the pill itself uses. */
+    @apply rounded-full;
+  }
+
+  /*
+   * THE HOVER AND ACTIVE FILLS, which the ghost variant paints from the PAGE's
+   * roles: `bg-muted` is near-white, and on this pill the foreground is white —
+   * measured at about 1.1:1, so the ✕ disappeared exactly when the pointer
+   * reached it. WCAG 1.4.11 asks 3:1 of a control's only indicator.
+   *
+   * The pill's own family instead: `secondary-hover` and `secondary-active` are
+   * declared against `secondary-foreground`, which is what this control now
+   * inherits.
+   *
+   * SCOPED THROUGH `.tag` DELIBERATELY. `.remove:hover` and the variant's
+   * `.ghost:hover` have the SAME specificity and live in the same layer, so the
+   * winner would be whichever the bundle emitted last — a coin toss that no
+   * test can see. One more class settles it in the cascade rather than in the
+   * build.
+   */
+  .tag .remove:hover {
+    background-color: var(--fm-color-secondary-hover);
+  }
+
+  .tag .remove:active {
+    background-color: var(--fm-color-secondary-active);
   }
 
   /*

@@ -18,6 +18,8 @@ import { Table } from '../components/table/table.component.js';
 import { Breadcrumb } from '../components/breadcrumb/breadcrumb.component.js';
 import { BreadcrumbLink } from '../components/breadcrumb-link/breadcrumb-link.component.js';
 import { Calendar } from '../components/calendar/calendar.component.js';
+import { Tag } from '../components/tag/tag.component.js';
+import { TagList } from '../components/tag-list/tag-list.component.js';
 
 /**
  * THE TARGET-SIZE POLICY, in one place because it belongs to the family rather
@@ -103,6 +105,14 @@ describe('every control this package draws, under a coarse pointer', () => {
         <Breadcrumb>
           <BreadcrumbLink href="#crumb">Crumb</BreadcrumbLink>
         </Breadcrumb>
+        {/* The remove control composes `Button size="sm"`, so it inherits this
+            rule rather than restating it — and that is exactly why it belongs
+            in this list: the inheritance is what a well-meant `height` in
+            `tag.module.css` would silently take away, and the tag's own source
+            claims membership here in as many words. */}
+        <TagList label="Tags">
+          <Tag onRemove={() => undefined}>Milano</Tag>
+        </TagList>
       </>,
     );
 
@@ -117,6 +127,7 @@ describe('every control this package draws, under a coarse pointer', () => {
       screen.getByRole('tab', { name: 'One' }),
       screen.getByRole('button', { name: 'Sortable' }),
       screen.getByRole('link', { name: 'Crumb' }),
+      screen.getByRole('button', { name: 'Remove Milano' }),
       // A day in the calendar grid. It restates the coarse-pointer rule in its
       // own stylesheet, which is the drift this file exists to catch — 42 of
       // them per month, and every one is a target.

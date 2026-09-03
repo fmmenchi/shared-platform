@@ -3,16 +3,17 @@
 exports[`Tag > matches the rendered snapshot 1`] = `
 <ul
   aria-label="Selected cities"
-  class="_list_1fnnm_4"
+  class="_list_b2jhu_4"
+  role="list"
   tabindex="-1"
 >
   <li
-    class="_tag_iiws6_3"
+    class="_tag_hzryp_3"
   >
     Milano
     <button
       aria-label="Remove Milano"
-      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _iconOnly_m60i6_198 _remove_iiws6_20"
+      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _iconOnly_m60i6_198 _remove_hzryp_21"
       data-tag-remove=""
       type="button"
     >
@@ -21,7 +22,6 @@ exports[`Tag > matches the rendered snapshot 1`] = `
       >
         <svg
           aria-hidden="true"
-          class="_glyph_iiws6_16"
           viewBox="0 0 12 12"
         >
           <path

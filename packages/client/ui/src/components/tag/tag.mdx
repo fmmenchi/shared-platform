@@ -17,8 +17,16 @@ how many there are and the keyboard can drop any of them without a mouse.
 | `TagList` | the set — a `<ul>`, and the owner of the focus a removal destroys          |
 | `Tag`     | one value — an `<li>` holding the label and the control that takes it back |
 
-`Tag` renders an `<li>`, so it belongs inside a `TagList`. That is the same shape `BreadcrumbLink`
-and `StepperItem` already have: the part renders the item, the family renders the list.
+`Tag` renders an `<li>`, so it belongs inside a `TagList` — it warns in development when it is not.
+That is the same shape `BreadcrumbLink` and `StepperItem` already have: the part renders the item,
+the family renders the list.
+
+`TagList` takes one prop of its own, **`label`** (`string`, optional): what this set of tags IS —
+"Active filters", "Selected cities". It is optional where `Nav`'s and `SidePanel`'s are required,
+because a list is not a landmark: an unnamed one is not offered to a screen reader user in a list of
+things all called the same word. Pass it whenever a page holds two of these, and prefer an
+`aria-labelledby` pointing at a heading the reader can already see. Everything else it does not
+consume reaches the `<ul>`.
 
 ## Props
 
@@ -49,8 +57,6 @@ Other design systems gather all five rows under the word "chip" — Material nam
 
 ### The focus is the point
 
-<Canvas of={TagStories.Wrapping} />
-
 Press the ✕ and the button holding the focus stops existing. Left alone, the browser drops focus to
 `<body>`: the next `Tab` starts the page again from the top, so a keyboard user clearing four
 filters is sent back to the skip link four times. Nothing about that is visible to a mouse.
@@ -60,16 +66,30 @@ tag after it, or the last one when the last was removed — so clearing a list i
 exactly the way a mouse user clicks the same spot. When the last tag goes, the list itself takes the
 focus rather than the document.
 
-Two things it deliberately does not do: it moves nothing when the focus was **not inside it** (in
-Safari a pressed button does not take focus, and stealing it from wherever the reader actually is
-would be worse than doing nothing), and it moves nothing until the tag is **really gone** — refuse
-the removal, or take a network round trip over it, and nothing jumps.
+Three things it deliberately does not do:
+
+- it moves nothing unless the reader was **on the control that was pressed**. Safari does not focus a
+  pressed button at all, so a mouse click there must move nothing;
+- it moves nothing if the reader has **since gone elsewhere** — a removal that takes a round trip
+  leaves time for that, and the focus they have moved to is theirs;
+- it moves nothing until the tag is **really gone**: refuse the removal, or take a network round trip
+  over it, and nothing jumps.
 
 ### The set wraps, it does not scroll
+
+<Canvas of={TagStories.Wrapping} />
 
 A row of tags that scrolls sideways hides choices the reader has already made behind a gesture
 nobody discovers — and the count a screen reader announced then disagrees with what the eye can
 find. Height is the cheap axis.
+
+A tag's own text wraps too, and breaks if it has to. It is the one component here whose words are
+**typed by somebody** — a pasted search term, an email, a filename — and a pill that could neither
+shrink nor wrap pushes the page into a horizontal scrollbar at 320px (WCAG 1.4.10).
+
+If you want "show five, collapse the rest", the native `hidden` attribute works on a `Tag`: it is
+honoured explicitly, because a component that declares `display` would otherwise beat the browser's
+own rule and leave your hidden tags visible — with their remove controls still in the tab order.
 
 ### Rich children need `name`
 
@@ -84,7 +104,12 @@ Omit it and the control falls back to "Remove", with a development warning. Eigh
 "Remove" is a list a screen reader user cannot navigate, and axe cannot flag it — every one of them
 _has_ a name.
 
+### Beside the control that fills it
+
 <Canvas of={TagStories.WithTheControlThatFillsIt} />
+
+The pill paints `Button`'s own `secondary` pair, so a tag and the control that adds to it read as one
+system under any preset — and the ✕ inside it takes that pair too, rather than the page's colours.
 
 ### There are no variants
 
