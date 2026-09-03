@@ -507,3 +507,7 @@ export { FormColorPicker } from './components/form-color-picker/form-color-picke
 export type { FormColorPickerProps } from './components/form-color-picker/form-color-picker.types.js';
 export { SidePanel } from './components/side-panel/side-panel.component.js';
 export type { SidePanelProps } from './components/side-panel/side-panel.types.js';
+export { TagList } from './components/tag-list/tag-list.component.js';
+export type { TagListProps } from './components/tag-list/tag-list.types.js';
+export { Tag } from './components/tag/tag.component.js';
+export type { TagProps } from './components/tag/tag.types.js';

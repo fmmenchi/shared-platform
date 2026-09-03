@@ -694,6 +694,18 @@
       "types": "./dist/components/side-panel/index.d.ts",
       "import": "./dist/side-panel.js",
       "default": "./dist/side-panel.js"
+    },
+    "./tag-list": {
+      "@fmmenchi/source": "./src/components/tag-list/index.ts",
+      "types": "./dist/components/tag-list/index.d.ts",
+      "import": "./dist/tag-list.js",
+      "default": "./dist/tag-list.js"
+    },
+    "./tag": {
+      "@fmmenchi/source": "./src/components/tag/index.ts",
+      "types": "./dist/components/tag/index.d.ts",
+      "import": "./dist/tag.js",
+      "default": "./dist/tag.js"
     }
   },
   "nx": {

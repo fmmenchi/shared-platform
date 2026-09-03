@@ -24,7 +24,7 @@ sibling folder of its family and is documented on the family's page, not its own
 | **Navigation**    | `Nav` (+ Group, Link) · `Tabs` (+ `Tab`, `TabList`, `TabPanel`) · `Pagination` · `Breadcrumb` (+ Link) · `Stepper` (+ Item)                                                                                                                                                     |
 | **Layout**        | `AppLayout` (+ Main, Nav, NavColumn, NavDrawer) · `Card` (+ Title, Cover, Actions) · `SidePanel`                                                                                                                                                                                |
 | **Feedback**      | `Alert` · `Toast` (+ Region) · `Progress` · `Skeleton`                                                                                                                                                                                                                          |
-| **Data display**  | `Avatar` · `Badge` · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                                                                                          |
+| **Data display**  | `Avatar` · `Badge` · `Tag` (+ `TagList`) · `Numeric` · `Time` · `Table` (+ Head, Body, Foot, Row, Cell, HeaderCell, Toolbar)                                                                                                                                                    |
 | **Utilities**     | `VisuallyHidden` · `Separator`                                                                                                                                                                                                                                                  |
 
 Several groups are one component wide, and thinness alone is not the signal — `Utilities` is
@@ -54,6 +54,18 @@ already decided the order: several-of-many with chips (which needs the
 one-name-to-many-controls port shape, now merged), option groups, and the states
 of data arriving. Those are commits on a shipped component rather than a
 decision this page has to make.
+
+`Tag` then shipped on the strongest reason this page has, the same one that
+moved `Combobox`: a written contract waiting, three times over. `Badge`'s own
+page had said since it shipped that "a clickable or removable badge is a
+Tag/Chip (a real component, not a variant)", `select.mdx`'s table sent people to
+"a combobox with chips", and ADR-0028 named the chips as the next commit on the
+combobox. All three now point at something that exists — and the multi-select
+they were pointing at is unblocked rather than done, which keeps it a commit on
+a shipped component rather than a decision for this page. What `Tag` cost is
+recorded in [ADR-0035](../../adr/0035-a-tag-is-a-value-you-can-take-back.md),
+because the boundary it draws — against `Badge` on one side and `Toggle` on the
+other — is the kind that is easy to cross by accident.
 
 So the two remaining questions are back to what they were:
 

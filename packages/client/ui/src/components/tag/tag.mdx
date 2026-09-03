@@ -1,0 +1,121 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as TagStories from './tag.stories.tsx';
+
+<Meta of={TagStories} />
+
+# Tag
+
+A value the reader put there, and can take back — the filters that are on, the people invited, the
+cities chosen. The set is a real list and the removal is a real button, so a screen reader is told
+how many there are and the keyboard can drop any of them without a mouse.
+
+## Anatomy
+
+| part      | what it is                                                                 |
+| --------- | -------------------------------------------------------------------------- |
+| `TagList` | the set — a `<ul>`, and the owner of the focus a removal destroys          |
+| `Tag`     | one value — an `<li>` holding the label and the control that takes it back |
+
+`Tag` renders an `<li>`, so it belongs inside a `TagList`. That is the same shape `BreadcrumbLink`
+and `StepperItem` already have: the part renders the item, the family renders the list.
+
+## Props
+
+<Controls of={TagStories.Default} />
+
+## Usage
+
+<Canvas of={TagStories.Default} />
+
+### Which one?
+
+One question, asked of the value rather than of the look: **can the reader take it out?**
+
+| what you are showing                                          | reach for                          |
+| ------------------------------------------------------------- | ---------------------------------- |
+| a value the reader chose and can remove — filters, recipients | `Tag` inside a `TagList`           |
+| a status, a category, a count — nothing to press              | `Badge`                            |
+| a criterion you switch on and off in place                    | `Toggle`                           |
+| one of a small set of choices                                 | `ChoiceField` · `SegmentedControl` |
+| an action                                                     | `Button`                           |
+
+`onRemove` is **required**, which is where that first row is drawn rather than described: a label
+you cannot remove is a `Badge`, and an optional prop would have made this a Badge with extra steps
+on half its call sites. If you find yourself passing `onRemove={() => {}}`, you wanted a `Badge`.
+
+Other design systems gather all five rows under the word "chip" — Material names four kinds of them
+— and three of those are components this package already has. The name is the refusal.
+
+### The focus is the point
+
+<Canvas of={TagStories.Wrapping} />
+
+Press the ✕ and the button holding the focus stops existing. Left alone, the browser drops focus to
+`<body>`: the next `Tab` starts the page again from the top, so a keyboard user clearing four
+filters is sent back to the skip link four times. Nothing about that is visible to a mouse.
+
+`TagList` catches it. Focus lands on the remove control that took the departing one's place — the
+tag after it, or the last one when the last was removed — so clearing a list is Enter, Enter, Enter,
+exactly the way a mouse user clicks the same spot. When the last tag goes, the list itself takes the
+focus rather than the document.
+
+Two things it deliberately does not do: it moves nothing when the focus was **not inside it** (in
+Safari a pressed button does not take focus, and stealing it from wherever the reader actually is
+would be worse than doing nothing), and it moves nothing until the tag is **really gone** — refuse
+the removal, or take a network round trip over it, and nothing jumps.
+
+### The set wraps, it does not scroll
+
+A row of tags that scrolls sideways hides choices the reader has already made behind a gesture
+nobody discovers — and the count a screen reader announced then disagrees with what the eye can
+find. Height is the cheap axis.
+
+### Rich children need `name`
+
+<Canvas of={TagStories.RichChildren} />
+
+The remove control is named from the tag's own words: "Remove Milano". A string child (or a number)
+gives it those words for free. Anything richer — an avatar beside a name, a highlighted match — has
+no string for that sentence to hold, so pass `name`. It is never drawn: it is the same label, in the
+form a sentence can take.
+
+Omit it and the control falls back to "Remove", with a development warning. Eight buttons all called
+"Remove" is a list a screen reader user cannot navigate, and axe cannot flag it — every one of them
+_has_ a name.
+
+<Canvas of={TagStories.WithTheControlThatFillsIt} />
+
+### There are no variants
+
+No colour, no size, no `disabled`. A tag is the value the reader put there, and a set of those reads
+as one thing; the axes exist on `Badge`, where the colour IS the meaning (overdue, live, draft). If
+a real case needs one here, it can be added without breaking anyone — which is not true of removing
+one that was added on a guess.
+
+## Accessibility
+
+- **A list, announced as one.** `TagList` is a `<ul>` and each `Tag` an `<li>`, so a screen reader
+  says "list, 3 items" before the reader walks them — how many filters are on, before which ones.
+  The `<ul>`'s markers and indentation are taken off in CSS; the accessibility tree keeps its list.
+- **The removal is named with the value.** "Remove Milano", from one localized string with the name
+  interpolated into it — never `"Remove" + " " + name`, because the word order belongs to the
+  language and a translator who cannot move the name cannot translate the sentence.
+- **The removal is reachable from the keyboard.** Every remove control is a real `<button>` and a
+  real tab stop; `Enter` and `Space` are the platform's. There is no roving tabstop and no `grid`
+  pattern — those collapse a hundred tags into one stop at the cost of an interaction model the
+  reader has to learn, and a handful of tags does not need it.
+- **Focus survives a removal**, which is the component's main reason to exist — see above.
+- **The list takes a focus ring**, but only from the keyboard (`:focus-visible`), so the rescue after
+  a mouse-driven removal does not draw one.
+- **Forced colors:** the fill that separates one tag from the next is discarded there, so a border
+  restores the boundary — otherwise two tags in a row read as one run of text. The remove control's
+  own treatment is `Button`'s.
+- **Target size:** the remove control is a `Button`, so it is 44px under a coarse pointer like every
+  other control this package draws, and the tag grows with it.
+
+## i18n
+
+`Tag` owns one string, colocated: the remove control's name — `Remove {name}`, with `Remove` as the
+complete sentence used when there are no words to put in it. English, Italian and Arabic ship with
+the package; an app can override `tag.remove` through the i18n port without touching the component.

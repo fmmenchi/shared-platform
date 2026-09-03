@@ -1,0 +1,61 @@
+/*
+ * Tag styles — CSS Modules authored with Tailwind. Colours ONLY through
+ * semantic role tokens, motion ONLY through var(--fm-duration-*)/var(--fm-ease-*):
+ * the `lint-css` gate enforces both. `@reference` resolves `@apply` at THIS
+ * library's build; the output references var(--fm-*), so presets re-theme it.
+ */
+@reference '@fmmenchi/tokens/styles/tailwind.css';
+
+/* All DS rules ship inside the `fmmenchi` cascade layer (ADR-0011) so a
+   consumer's unlayered css overrides them without a specificity war. */
+@layer fmmenchi {
+  .tag {
+    @apply inline-flex items-center gap-internal-xs;
+    @apply rounded-full text-sm whitespace-nowrap;
+    /* The `secondary` PAIR, not a colour picked to look right: it is a declared
+       AA combination that `tokens.test.ts` checks for every preset, and it is
+       the same pair `Button`'s secondary variant paints — so a tag beside a
+       button reads as one system under any theme. */
+    @apply bg-secondary text-secondary-foreground;
+
+    /* ASYMMETRIC ON PURPOSE. The remove control is a round button that brings
+       its own box; giving the end side a full inset would sit that box in a
+       pocket of empty pill. Logical, so the short side follows the writing
+       direction rather than staying on the right in Arabic. */
+    @apply ps-3 pe-1;
+
+    /* No fixed height: the button inside is the tallest thing here, and it is
+       already 2rem — 2.75rem under a coarse pointer, which is where the whole
+       tag grows to meet a finger. A height declared here would fight that and
+       win, and the target-size policy would be quietly lost. */
+  }
+
+  /* The ✕ itself. Sized in `em` so it follows the button's own text scale, the
+     same contract the injected-icon port states — a glyph that is 12px at every
+     zoom level is a glyph that stops matching its label. */
+  .glyph {
+    inline-size: 0.75em;
+    block-size: 0.75em;
+  }
+
+  .remove {
+    /* The ghost button paints nothing until it is hovered, so on the tag's own
+       fill it is the label's colour and not the page's. `currentColor` rather
+       than a role of its own: the tag already declared an AA pair, and a
+       control that picked its own foreground could leave that pair. */
+    color: currentColor;
+  }
+
+  /*
+   * FORCED COLOURS flattens the fill, and with it the only thing saying where
+   * one tag ends and the next begins — two tags in a row become one run of
+   * text. A border restores the boundary, the same answer `Badge` gives for the
+   * same loss. The button inside keeps its own treatment, which `Button`
+   * already answers for.
+   */
+  @media (forced-colors: active) {
+    .tag {
+      border: 1px solid CanvasText;
+    }
+  }
+}
