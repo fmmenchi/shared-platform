@@ -43,6 +43,59 @@
        That chaining is the one way a non-modal panel can still disturb the
        content it sits beside. */
     overscroll-behavior-block: contain;
+
+    /*
+     * IT ARRIVES RATHER THAN APPEARING — the only entry in the package that is
+     * not a popover's, and it works for the same reason theirs do: a
+     * `@starting-style` gives the first style update a value to come from, and
+     * here that first update is the element being INSERTED, not a `display`
+     * change. There is no `open` prop (see the component's doc), so insertion
+     * is the only event there is.
+     *
+     * A FADE AND NOT A SLIDE, and that is the component's own refusal rather
+     * than restraint: it takes no `side`, because which column it lands in is
+     * the grid's business. A movement would have to guess a direction, and a
+     * panel that slides in from the right while the layout put it on the left
+     * is worse than one that does not move at all.
+     *
+     * WHAT THIS CANNOT COVER, said plainly: the content beside it reflows the
+     * instant the node exists, because the column belongs to the app's grid and
+     * nothing inside the panel can animate a track it does not own. The fade
+     * stops the panel from snapping; it does not stop the neighbour from
+     * moving.
+     *
+     * THE EXIT IS THE APP'S, for the same reason: React removes the node, so
+     * there is nothing left to animate. `animateExit` is exported for exactly
+     * this — hold the node, await it, then drop the state. Documented on the
+     * component's page.
+     *
+     * `--fm-duration-xs` because every entry in this package is `xs`, the
+     * `Dialog`'s included, and the Dialog is the largest surface we ship. One
+     * page holding a panel and a dialog should not show two speeds.
+     */
+    opacity: 1;
+    transition-property: opacity;
+    transition-duration: var(--fm-duration-xs);
+    transition-timing-function: var(--fm-ease-enter);
+  }
+
+  /* Baseline "newly" (ADR-0010, progressive enhancement): where it is missing
+     the panel simply appears, which is what it did before this rule. */
+  @starting-style {
+    .sidePanel {
+      opacity: 0;
+    }
+  }
+
+  /*
+   * Reduced motion: the fade carries no movement, so it is not itself a
+   * vestibular trigger — the duration goes to zero anyway, which is what every
+   * other surface in the package does with its entry.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .sidePanel {
+      transition-duration: var(--fm-duration-none);
+    }
   }
 
   @media (forced-colors: active) {
