@@ -1,3 +1,19 @@
+## 0.7.15 (2026-09-03)
+
+### 🚀 Features
+
+- **ui:** a tag is a value you can take back ([27a23fe](https://github.com/fmmenchi/shared-platform/commit/27a23fe))
+
+### 🩹 Fixes
+
+- **ui:** the tag's remove control sits in the middle of the cap ([57c74cd](https://github.com/fmmenchi/shared-platform/commit/57c74cd))
+- **ui:** what the adversarial review found in the tag ([3a2b5ec](https://github.com/fmmenchi/shared-platform/commit/3a2b5ec))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.7.14 (2026-09-03)
 
 ### 🚀 Features
