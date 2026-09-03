@@ -1,3 +1,23 @@
+## 0.7.14 (2026-09-03)
+
+### 🚀 Features
+
+- **ui:** a side panel arrives, and says what leaving costs ([d62851c](https://github.com/fmmenchi/shared-platform/commit/d62851c))
+- **ui:** the combobox's list arrives like every other surface ([dd35c88](https://github.com/fmmenchi/shared-platform/commit/dd35c88))
+
+### 🩹 Fixes
+
+- **ui:** what the review found in the two entries ([984215d](https://github.com/fmmenchi/shared-platform/commit/984215d))
+
+### 🔥 Performance
+
+- **ui:** the combobox's rows arrive when the list opens ([c34dbb1](https://github.com/fmmenchi/shared-platform/commit/c34dbb1))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.7.13 (2026-09-02)
 
 ### 🚀 Features
