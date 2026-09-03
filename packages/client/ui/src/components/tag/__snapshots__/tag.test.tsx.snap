@@ -8,12 +8,12 @@ exports[`Tag > matches the rendered snapshot 1`] = `
   tabindex="-1"
 >
   <li
-    class="_tag_hzryp_3"
+    class="_tag_1iwb3_3"
   >
     Milano
     <button
       aria-label="Remove Milano"
-      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _iconOnly_m60i6_198 _remove_hzryp_21"
+      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _iconOnly_m60i6_198 _remove_1iwb3_22"
       data-tag-remove=""
       type="button"
     >
