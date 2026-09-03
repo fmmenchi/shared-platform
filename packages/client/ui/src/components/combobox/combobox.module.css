@@ -115,12 +115,26 @@
      * it did everywhere until this rule. No `use-baseline` disable comment,
      * because that rule explicitly does not read `*.module.css`.
      */
-    opacity: 0;
     transition-property: opacity;
     transition-duration: var(--fm-duration-xs);
     transition-timing-function: var(--fm-ease-enter);
   }
 
+  /*
+   * THE CLOSED STATE CARRIES THE ZERO, and this is the one place this file
+   * departs from `MenuContent`, which puts a bare `opacity: 0` on the base
+   * rule. The reason is the engine this component ALREADY guards for by name
+   * in JavaScript (`combobox.component.tsx`: Firefox shipped the Popover API
+   * in 125 against a stated 121, and an unguarded `matches(':popover-open')`
+   * took the whole page down there). `:popover-open` is an INVALID SELECTOR
+   * where the API is missing, so the whole closed-state rule below is dropped
+   * at parse time — and a bare `opacity: 0` on the base rule would survive it,
+   * leaving a list that is invisible and still hit-testable. Carried on the
+   * closed state instead, the zero and the `display: none` drop TOGETHER, and
+   * that engine gets exactly what it got before this stylesheet learned to
+   * fade: a list that is always there. Broken either way, but visibly rather
+   * than invisibly — and here the surface IS the control.
+   */
   .surface:popover-open {
     opacity: 1;
   }
@@ -138,8 +152,11 @@
     display: contents;
   }
 
+  /* THE CLOSED STATE, both halves of it — see the note above the open one for
+     why the zero lives here rather than on the base rule. */
   .surface:not(:popover-open) {
     display: none;
+    opacity: 0;
   }
 
   /*

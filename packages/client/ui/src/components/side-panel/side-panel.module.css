@@ -69,9 +69,21 @@
      * this — hold the node, await it, then drop the state. Documented on the
      * component's page.
      *
-     * `--fm-duration-xs` because every entry in this package is `xs`, the
-     * `Dialog`'s included, and the Dialog is the largest surface we ship. One
-     * page holding a panel and a dialog should not show two speeds.
+     * `--fm-duration-xs` to match the surfaces a panel actually shares a page
+     * with: `Dialog`, `Popover`, `Menu`, `Tooltip` and `Combobox` all enter at
+     * `xs`, the Dialog — the largest of them — included. It is NOT every entry
+     * here: `Toast` enters at `--fm-duration-m`, and its own doc argues for
+     * that tier, but a toast arrives unbidden at the edge of the screen while
+     * a panel is the answer to something you just clicked.
+     *
+     * Naming the deviation rather than hiding it: `xs` is annotated
+     * "micro-feedback" and the doctrine sizes duration by SURFACE, so a 32rem
+     * rail on the micro tier reads as the wrong tier by that rule alone. It is
+     * chosen anyway, because the alternative is one page showing two speeds for
+     * two surfaces that open the same way — and because the reflow beside it
+     * (below) is instant no matter what this number says. A longer fade would
+     * only widen the gap between the panel arriving and the layout having
+     * already moved.
      */
     opacity: 1;
     transition-property: opacity;
