@@ -1,3 +1,18 @@
+## 0.7.17 (2026-09-04)
+
+### 🚀 Features
+
+- **ui:** a bound combobox can hold a set ([5c61f3f](https://github.com/fmmenchi/shared-platform/commit/5c61f3f))
+
+### 🩹 Fixes
+
+- **ui:** what the adversarial review found in the bound set ([266e307](https://github.com/fmmenchi/shared-platform/commit/266e307))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.7.16 (2026-09-04)
 
 ### 🚀 Features
