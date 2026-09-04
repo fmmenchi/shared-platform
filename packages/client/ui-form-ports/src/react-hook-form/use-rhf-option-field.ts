@@ -24,9 +24,16 @@ import { toFieldMessages } from './rhf-messages.js';
  * there is no ref at all, so a library cannot focus the field from an error
  * summary and cannot write a value back into it.
  */
+/** The stored value as a list of keys, or `undefined` when it is not one. */
+function asKeys(stored: unknown): readonly string[] | undefined {
+  return Array.isArray(stored) && stored.every((one) => typeof one === 'string')
+    ? (stored as readonly string[])
+    : undefined;
+}
+
 export function createRhfOptionField(): UseFormOptionField {
   return function useRhfOptionField(name) {
-    const { register, control, setValue } = useFormContext();
+    const { register, control, setValue, getValues } = useFormContext();
     const { errors } = useFormState({ control, name });
     const registered = register(name);
 
@@ -34,6 +41,11 @@ export function createRhfOptionField(): UseFormOptionField {
       // `value` LAST, after the spread: it is the one thing that differs per
       // control, and react-hook-form's own registration carries none of it.
       option: (value) => ({ ...registered, value }),
+      // WHAT IT HOLDS, and this library is the reason the port has this member
+      // at all: `register()` returns a name, handlers and a ref — no `checked`
+      // — so a control asking `option(value)` per candidate learns nothing, and
+      // a field holding two keys drew none.
+      values: asKeys(getValues(name)),
       // THE WHOLE LIST, because a carrier that unmounts sends nothing and this
       // library keeps a store: measured, it kept the key of a control that had
       // gone, and stored in the order it was TOLD rather than the document's.

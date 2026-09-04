@@ -160,6 +160,11 @@ function Combobox<T>(props: ComboboxProps<T>) {
   // yourself where either matters.
   const [seededByBinding] = useState<readonly string[] | undefined>(() => {
     if (!many || optionBinding === null) return undefined;
+    // THE BINDING'S OWN ANSWER FIRST. It is the only one that can be right for
+    // a key whose row has not been fetched, it needs no pass over `items`, and
+    // it is the only one a ref-based library can give at all — its option bag
+    // carries no `checked`.
+    if (optionBinding.values !== undefined) return optionBinding.values;
     return items
       .filter((item) => {
         // BOTH ANSWERS, because the port allows both: a controlled adapter
@@ -616,16 +621,31 @@ function Combobox<T>(props: ComboboxProps<T>) {
         // the dialog — but stopping it unconditionally was the opposite defect:
         // an untouched combobox with the focus swallowed every Escape and the
         // dialog could not be dismissed at all.
-        if (showing) {
+        // THE PLATFORM'S OWN STATE, not our mirror of it — the package's first
+        // rule about facts. A mirror can go stale; `:popover-open` cannot.
+        const open = surface.current?.matches(':popover-open') ?? showing;
+        if (open) {
           event.stopPropagation();
           setShowing(false);
           return;
         }
-        if (typed === '' && chosen === null && picked.length === 0) return;
+        // ESCAPE NEVER TAKES A SET AWAY, and that is a decision rather than a
+        // gap. On one value it clears the field, which is what Escape does to a
+        // text box and is one pick to redo. A set is not a text box: six
+        // choices made one at a time would go on a keystroke people press to
+        // dismiss things, with nothing to undo it. The tags are how a set is
+        // emptied — one ✕ at a time, each of them reversible by picking again.
+        //
+        // It is also what a measurement asked for. Against the BUILT package —
+        // the ports suite is the only thing that consumes `dist` — three picks
+        // then one Escape came back with nothing chosen, because this branch
+        // ran when the list was in fact open. Reading the platform above closes
+        // that door; not clearing a set closes the corridor.
+        if (many) return;
+        if (typed === '' && chosen === null) return;
         event.stopPropagation();
         setTyped('');
         setChosen(null);
-        if (many && picked.length > 0) choose(NO_KEYS);
         setSearching(false);
         return;
       }
@@ -678,7 +698,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
         tag that drew nothing would be a value the reader cannot see or remove.
       */}
       {many && picked.length > 0 ? (
-        <TagList label={t('list')} className={styles.tags}>
+        <TagList label={t('chosen')} className={styles.tags}>
           {picked.map((key) => {
             const item = items.find((candidate) => getKey(candidate) === key);
             const label = item === undefined ? key : getLabel(item);

@@ -27,6 +27,8 @@ export interface OptionBinding {
    * update.
    */
   setValues?: (values: readonly string[]) => void;
+  /** What the field already holds — see `BoundOptionField.values`. */
+  values?: readonly string[];
 }
 
 const OptionBindingContext = createContext<OptionBinding | null>(null);

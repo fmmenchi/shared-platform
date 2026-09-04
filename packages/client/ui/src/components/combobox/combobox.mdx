@@ -74,7 +74,10 @@ Three things change, and each has a reason you can feel:
   The query clears after each pick for the same reason;
 - **each choice becomes a `Tag`** above the field. `Backspace` in an empty box
   takes the last one back — but never while there is text, where it belongs to
-  the text.
+  the text. **`Escape` never takes a set away**: it closes the list and stops
+  there. On one value Escape clears the field, which is one pick to redo; six
+  choices made one at a time are not, and there is nothing to undo it with. The
+  tags are how a set is emptied.
 
 The tags sit **above** the field rather than inside it, and that is structural
 rather than a look: this component renders no wrapper element on purpose, so

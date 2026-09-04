@@ -187,6 +187,40 @@ describe('FormCombobox', () => {
       await expectNoA11yViolations(container);
     });
 
+    it('keeps the selection when one Escape closes the list', async () => {
+      // BOUND, which is the difference: unbound this already passes. Measured
+      // in the ports app against a real adapter, three picks then one Escape
+      // came back with nothing chosen at all.
+      const three = [...CITIES, { id: '3', name: 'Napoli' }];
+      render(
+        <form>
+          <BoundToASet held={[]}>
+            <FormCombobox
+              {...wiring}
+              items={three}
+              multiple
+              name="cities"
+              label="Cities"
+            />
+          </BoundToASet>
+        </form>,
+      );
+
+      await browser.click(field());
+      await browser.click(screen.getByRole('option', { name: 'Milano' }));
+      await browser.click(screen.getByRole('option', { name: 'Torino' }));
+      await browser.click(screen.getByRole('option', { name: 'Napoli' }));
+      expect(
+        screen.queryAllByRole('listitem').map((n) => n.textContent),
+      ).toEqual(['Milano', 'Torino', 'Napoli']);
+
+      await browser.keyboard('{Escape}');
+
+      expect(
+        screen.queryAllByRole('listitem').map((n) => n.textContent),
+      ).toEqual(['Milano', 'Torino', 'Napoli']);
+    });
+
     it('shows the field errors, like the single half does', () => {
       render(
         <BoundToASet held={[]} errors={['Pick at least one.']}>

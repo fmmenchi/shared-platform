@@ -122,18 +122,43 @@ describe('Combobox, several of many', () => {
     await waitFor(() => expect(tags()).toEqual(['Milano']));
   });
 
-  it('Escape clears the whole selection once the list is closed', async () => {
+  it('one Escape only closes, whatever is already chosen', async () => {
+    // TWO KEYSTROKES, TWO JOBS: the first closes the list and the second
+    // clears. Measured against three choices, one Escape emptied the whole
+    // selection — the reader lost every pick with the keystroke they use to
+    // dismiss a list.
+    render(<Combobox {...wiring} multiple aria-label="Cities" />);
+
+    await browser.click(field());
+    await browser.click(row('Milano'));
+    await browser.click(row('Torino'));
+    await browser.click(row('Napoli'));
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+
+    await browser.keyboard('{Escape}');
+
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    expect(tags()).toEqual(['Milano', 'Torino', 'Napoli']);
+  });
+
+  it('Escape closes the list and never takes the set away', async () => {
+    // ON ONE VALUE Escape clears the field — one pick to redo. A set is not a
+    // text box: six choices made one at a time would go on a keystroke people
+    // press to dismiss things, with nothing to undo it. The tags are how a set
+    // is emptied, one ✕ at a time.
     render(<Combobox {...wiring} multiple aria-label="Cities" />);
 
     await browser.click(field());
     await browser.click(row('Milano'));
     await browser.click(row('Torino'));
 
-    // The first Escape closes the list; the second clears.
     await browser.keyboard('{Escape}');
-    await browser.keyboard('{Escape}');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    expect(tags()).toEqual(['Milano', 'Torino']);
 
-    await waitFor(() => expect(tags()).toEqual([]));
+    // And a second one, with the list already closed, still takes nothing.
+    await browser.keyboard('{Escape}');
+    expect(tags()).toEqual(['Milano', 'Torino']);
   });
 
   it('reports the keys in order, and follows a controlled value', async () => {

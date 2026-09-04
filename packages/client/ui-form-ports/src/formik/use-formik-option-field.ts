@@ -34,6 +34,13 @@ import type { FormFieldTypeOptions } from '../field-type.types.js';
  * answer in document order, so one port would give two answers. See
  * `checkedInGroup`.
  */
+/** The stored value as a list of keys, or `undefined` when it is not one. */
+function asKeys(stored: unknown): readonly string[] | undefined {
+  return Array.isArray(stored) && stored.every((one) => typeof one === 'string')
+    ? (stored as readonly string[])
+    : undefined;
+}
+
 export function createFormikOptionField(
   options: FormFieldTypeOptions = {},
 ): UseFormOptionField {
@@ -58,6 +65,9 @@ export function createFormikOptionField(
           : field.onChange,
         onBlur: field.onBlur,
       }),
+      // WHAT IT HOLDS, for a control that has to draw a set before anything is
+      // picked — the reader that matches the writer below.
+      values: asKeys(stored),
       // THE WHOLE LIST — see the port's own note. A carrier that unmounts sends
       // nothing, and this library keeps a store, so it has to be told rather
       // than left to infer. The same helper the checkbox branch above uses, and
