@@ -14,7 +14,11 @@ import {
 import { toMessages } from '../../form/messages.js';
 import { useBoundCarrier } from '../../form/use-bound-carrier.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import type { FormComboboxProps } from './form-combobox.types.js';
+import type {
+  FormComboboxMultipleProps,
+  FormComboboxProps,
+  FormComboboxSingleProps,
+} from './form-combobox.types.js';
 
 /**
  * A labelled combobox, already bound to the form library in scope:
@@ -66,7 +70,7 @@ function FormCombobox<T>(props: FormComboboxProps<T>) {
  * controlled one is told the whole list rather than having a value written into
  * one node. Both are things the per-field shape could not do for a set.
  */
-function BoundToASet<T>(props: FormComboboxProps<T>) {
+function BoundToASet<T>(props: FormComboboxMultipleProps<T>) {
   const { name, label, hint, ref, ...rest } = props;
   const binding = useBoundOptionField(name, 'FormCombobox');
   useBindingOwnedWarning(rest, 'FormCombobox');
@@ -90,22 +94,8 @@ function BoundToASet<T>(props: FormComboboxProps<T>) {
 }
 
 /** ONE OF MANY, bound — the shape this component had before it grew a second. */
-function BoundToOneValue<T>(props: FormComboboxProps<T>) {
-  // WHAT THE UNION DISCRIMINATES ON COMES OUT OF THE SPREAD, rather than being
-  // written over it: a discriminated union does not narrow through a spread, so
-  // anything left in `rest` re-widens what is written above it. The mode and the
-  // report are the two members whose type differs between the halves — the
-  // value and its seed are the binding's and never travel from the call site
-  // (`BindingOwned`), so they are not here to take out.
-  const {
-    name,
-    label,
-    hint,
-    ref,
-    multiple: _mode,
-    onValueChange: _report,
-    ...rest
-  } = props;
+function BoundToOneValue<T>(props: FormComboboxSingleProps<T>) {
+  const { name, label, hint, ref, ...rest } = props;
   const { control, errors } = useBoundField(name, 'FormCombobox');
   useBindingOwnedWarning(rest, 'FormCombobox');
   const messages = toMessages(errors);

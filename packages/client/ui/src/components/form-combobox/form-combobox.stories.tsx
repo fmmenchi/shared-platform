@@ -2,7 +2,10 @@ import { useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { FormCombobox } from './form-combobox.component.js';
 import { UiProvider } from '../../i18n/provider.js';
-import type { UseFormField } from '../../form/form-adapter.types.js';
+import type {
+  UseFormField,
+  UseFormOptionField,
+} from '../../form/form-adapter.types.js';
 
 interface City {
   id: string;
@@ -22,6 +25,7 @@ const CITIES: City[] = [
  */
 function DemoForm({ children }: { children: ReactNode }) {
   const [values, setValues] = useState<Record<string, string>>({ city: '' });
+  const [sets, setSets] = useState<Record<string, readonly string[]>>({});
   const useDemoField: UseFormField = (name) => ({
     control: {
       name,
@@ -32,6 +36,22 @@ function DemoForm({ children }: { children: ReactNode }) {
     },
     errors: name === 'city' && values.city === '' ? ['Pick a city.'] : [],
   });
+  /**
+   * THE OTHER PORT, because `multiple` binds through it — and this stub not
+   * existing was a defect rather than an omission: with only `field` in the
+   * adapter, flipping the `multiple` control threw, since `useBoundOptionField`
+   * refuses to fall back to a per-field binding a set cannot use.
+   */
+  const useDemoOptionField: UseFormOptionField = (name) => ({
+    option: (value) => ({
+      name,
+      value,
+      checked: (sets[name] ?? []).includes(value),
+      onChange: () => undefined,
+    }),
+    setValues: (next) => setSets((all) => ({ ...all, [name]: next })),
+    errors: [],
+  });
   return (
     <div
       style={{
@@ -41,11 +61,16 @@ function DemoForm({ children }: { children: ReactNode }) {
       }}
     >
       <UiProvider
-        adapters={{ i18n: { locale: 'en' }, form: { field: useDemoField } }}
+        adapters={{
+          i18n: { locale: 'en' },
+          form: { field: useDemoField, optionField: useDemoOptionField },
+        }}
       >
         {children}
       </UiProvider>
-      <output style={{ opacity: 0.7 }}>{JSON.stringify(values)}</output>
+      <output style={{ opacity: 0.7 }}>
+        {JSON.stringify({ ...values, ...sets })}
+      </output>
     </div>
   );
 }
@@ -98,6 +123,15 @@ type Story = StoryObj<typeof FormCombobox<City>>;
 
 /** Bound, labelled, and reporting to the binding on every pick. */
 export const Default: Story = {};
+
+/**
+ * SEVERAL OF MANY, bound through the option port — the only one that can hold a
+ * set. What the demo adapter stores is printed below the field, so a removal
+ * can be seen leaving the form's own value rather than only the screen.
+ */
+export const Multiple: Story = {
+  args: { multiple: true, name: 'cities', label: 'Cities' },
+};
 
 /** With a hint, and the error the demo adapter reports until something is chosen. */
 export const WithHint: Story = {

@@ -33,15 +33,23 @@ interface FormComboboxOwnProps {
  * called conditionally and `useBoundOptionField` throws where an adapter has no
  * `optionField`. The mode is structural rather than state: a control that
  * changed it mid-life would be a different control.
+ *
+ * EACH HALF IS NAMED, and that is not tidiness. Written as one type, the two
+ * components had to take the union and DISCARD whatever the halves typed
+ * differently — and a discarded prop is a prop that stops being forwarded:
+ * `onValueChange` was lost that way, silently, on the single half alone. Named,
+ * each component takes the half it serves, nothing is discarded, and the next
+ * prop that differs between them is a compile error at the call site rather
+ * than a hole nobody sees.
  */
+type Bound<Props> = FormComboboxOwnProps &
+  Omit<Props, keyof FormComboboxOwnProps | keyof BindingOwned | 'carrierRef'>;
+
+/** ONE OF MANY, bound — what the component was before it grew a second half. */
+export type FormComboboxSingleProps<T> = Bound<ComboboxSingleOnlyProps<T>>;
+
+/** SEVERAL OF MANY, bound through the option port. */
+export type FormComboboxMultipleProps<T> = Bound<ComboboxMultipleOnlyProps<T>>;
+
 export type FormComboboxProps<T> =
-  | (FormComboboxOwnProps &
-      Omit<
-        ComboboxSingleOnlyProps<T>,
-        keyof FormComboboxOwnProps | keyof BindingOwned | 'carrierRef'
-      >)
-  | (FormComboboxOwnProps &
-      Omit<
-        ComboboxMultipleOnlyProps<T>,
-        keyof FormComboboxOwnProps | keyof BindingOwned | 'carrierRef'
-      >);
+  FormComboboxSingleProps<T> | FormComboboxMultipleProps<T>;

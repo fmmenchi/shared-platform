@@ -108,6 +108,30 @@ const carrier = (container: HTMLElement) =>
   container.querySelector('[data-carrier]') as HTMLInputElement | null;
 
 describe('FormCombobox', () => {
+  it('still forwards `onValueChange`, which the union nearly took away', async () => {
+    // IT WAS LOST ONCE, silently: with both halves sharing one props type, the
+    // single one had to discard whatever the two typed differently, and a
+    // discarded prop is a prop that stops being forwarded. Each half has its
+    // own type now, and this is what says so out loud.
+    const reported = vi.fn();
+
+    render(
+      <Bound>
+        <FormCombobox
+          {...wiring}
+          name="city"
+          label="City"
+          onValueChange={reported}
+        />
+      </Bound>,
+    );
+
+    await browser.click(field());
+    await browser.click(screen.getByRole('option', { name: 'Torino' }));
+
+    expect(reported).toHaveBeenCalledWith('2');
+  });
+
   describe('several of many', () => {
     it('binds through the OPTION port and tells it the whole list', async () => {
       // The per-field binding cannot express a set — it returns one bag of
@@ -131,13 +155,10 @@ describe('FormCombobox', () => {
     it('draws one carrier per held key, through the binding', () => {
       const { container } = render(
         <BoundToASet held={['1', '2']}>
-          <FormCombobox
-            {...wiring}
-            multiple
-            name="cities"
-            label="Cities"
-            defaultValue={['1', '2']}
-          />
+          {/* NO `defaultValue`, and it would not compile: the starting value is
+              the BINDING's here (`BindingOwned`), which is the whole point —
+              the two tags below come from what the form already holds. */}
+          <FormCombobox {...wiring} multiple name="cities" label="Cities" />
         </BoundToASet>,
       );
 
@@ -150,6 +171,20 @@ describe('FormCombobox', () => {
       expect(
         [...carriers].every((one) => (one as HTMLInputElement).checked),
       ).toBe(true);
+    });
+
+    it('has no violations, with tags and an open list', async () => {
+      // The whole new surface — the tags, their remove controls, the multi
+      // selectable listbox — went in with no axe run of its own; the file's
+      // other a11y block covers the single half only.
+      const { container } = renderUi(
+        <BoundToASet held={['1']}>
+          <FormCombobox {...wiring} multiple name="cities" label="Cities" />
+        </BoundToASet>,
+      );
+
+      await browser.click(field());
+      await expectNoA11yViolations(container);
     });
 
     it('shows the field errors, like the single half does', () => {

@@ -150,13 +150,29 @@ function Combobox<T>(props: ComboboxProps<T>) {
   //
   // ONE PASS OVER `items`, at mount, and only when bound: the same list this
   // component already walks to filter on every keystroke.
-  const [seededByBinding] = useState<readonly string[] | undefined>(() =>
-    many && optionBinding !== null
-      ? items
-          .filter((item) => optionBinding.option(getKey(item)).checked === true)
-          .map(getKey)
-      : undefined,
-  );
+  //
+  // TWO LIMITS, both of them the port's rather than this component's, and both
+  // worth knowing before relying on the seed. The order is `items`' order, not
+  // the order the form holds the keys in — `option(value)` answers per value
+  // and cannot be asked for an order. And the answer is read ONCE: items that
+  // arrive later (a server search, a lazy list) are not re-asked, so a field
+  // seeded from a list that was empty at mount stays empty. Pass the selection
+  // yourself where either matters.
+  const [seededByBinding] = useState<readonly string[] | undefined>(() => {
+    if (!many || optionBinding === null) return undefined;
+    return items
+      .filter((item) => {
+        // BOTH ANSWERS, because the port allows both: a controlled adapter
+        // says `checked` and an uncontrolled one says `defaultChecked`. Asking
+        // only the first left three of the five with an empty seed — and an
+        // empty seed is worse than none, because the reader's first pick then
+        // hands `setValues` a list that does not contain the keys the form was
+        // already holding, and they are gone.
+        const answer = optionBinding.option(getKey(item));
+        return answer.checked === true || answer.defaultChecked === true;
+      })
+      .map(getKey);
+  });
   const manyDefault = many
     ? ((defaultValue as readonly string[] | undefined) ??
       seededByBinding ??
@@ -766,32 +782,44 @@ function Combobox<T>(props: ComboboxProps<T>) {
         the state and `defaultChecked` says so.
       */}
       {many && (name !== undefined || optionBinding !== null)
-        ? picked.map((key) =>
-            optionBinding === null ? (
-              <input
-                key={key}
-                type="checkbox"
-                className={styles.carrier}
-                tabIndex={-1}
-                aria-hidden="true"
-                defaultChecked
-                name={name}
-                form={form}
-                value={key}
-                readOnly
-              />
-            ) : (
-              <input
-                key={key}
-                type="checkbox"
-                className={styles.carrier}
-                tabIndex={-1}
-                aria-hidden="true"
-                form={form}
-                {...optionBinding.option(key)}
-              />
-            ),
-          )
+        ? picked.map((key) => (
+            <input
+              key={key}
+              // The binding's own props first — its `name`, its `ref`, its
+              // `onChange`. A ref-based library registers the node through
+              // this, and a controlled one hears changes through it.
+              {...(optionBinding === null
+                ? { name, value: key }
+                : optionBinding.option(key))}
+              // AND OURS AFTER IT, because these three are not the binding's to
+              // decide and it measurably gets two of them wrong:
+              //
+              // `type`, because an adapter answers it from the field TYPE a
+              // consumer declared — Conform emits `radio` for anything not
+              // declared `checkbox-group`, and a set of radios is mutually
+              // exclusive: picking the second key would silently drop the
+              // first.
+              //
+              // `checked`, because THE CARRIER'S EXISTENCE IS THE VALUE. Three
+              // of the five ports answer neither `checked` nor `defaultChecked`
+              // (react-hook-form's `register` bag carries no such thing), so
+              // taken from the bag the box mounts OFF and the form submits
+              // nothing at all. Where a store disagrees for a frame it is the
+              // store that is behind: `choose` has already told it the whole
+              // list.
+              //
+              // `readOnly`, so React does not warn about a checked box whose
+              // bag brought no `onChange` — nobody can reach these anyway.
+              type="checkbox"
+              value={key}
+              checked
+              readOnly
+              className={styles.carrier}
+              tabIndex={-1}
+              aria-hidden="true"
+              form={form}
+            />
+          ))
         : null}
       {name === undefined || many ? null : (
         <input
