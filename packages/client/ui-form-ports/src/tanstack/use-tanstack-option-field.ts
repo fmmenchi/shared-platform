@@ -28,6 +28,13 @@ import { toMessages } from './tanstack-messages.js';
  * `handleChange` takes the next VALUE, and what the next value is is exactly
  * the question a group asks.
  */
+/** The stored value as a list of keys, or `undefined` when it is not one. */
+function asKeys(stored: unknown): readonly string[] | undefined {
+  return Array.isArray(stored) && stored.every((one) => typeof one === 'string')
+    ? (stored as readonly string[])
+    : undefined;
+}
+
 export function createTanstackOptionField(
   form: AnyFormApi,
   options: FormFieldTypeOptions = {},
@@ -56,6 +63,9 @@ export function createTanstackOptionField(
         },
         onBlur: () => field.handleBlur(),
       }),
+      // WHAT IT HOLDS — see the port's own note; the reader that matches the
+      // writer below.
+      values: asKeys(stored),
       // THE WHOLE LIST — see the port's own note. The same handler the checkbox
       // branch above calls, given the finished list rather than a delta: a
       // carrier that unmounts sends no delta at all.

@@ -100,6 +100,23 @@ export interface BoundOptionField {
    * the same one. An adapter must store the list as given.
    */
   setValues?: (values: readonly string[]) => void;
+  /**
+   * THE KEYS THE FIELD ALREADY HOLDS — the reader that matches the writer
+   * above, and it exists because `option(value)` cannot do this job.
+   *
+   * A control drawing a set has to know what to draw BEFORE anything is
+   * picked: a form whose defaults name two cities must open showing two. Asked
+   * through `option`, that is one call per candidate — and it fails outright
+   * for a ref-based library, whose bag carries no `checked` at all
+   * (`register()` returns a name, handlers and a ref, nothing more). Measured:
+   * seeded that way, a react-hook-form field holding two keys drew none.
+   *
+   * OPTIONAL, like its writer, and for a different reason: a binding that reads
+   * the document has nothing to answer BEFORE the document exists — its value
+   * IS the carriers, and at mount there are none. Those adapters return
+   * `undefined` and the control starts empty, which is the truth there.
+   */
+  values?: readonly string[];
   /** What is wrong with the FIELD — see {@link FieldMessages}. Not per option. */
   errors?: FieldMessages;
 }

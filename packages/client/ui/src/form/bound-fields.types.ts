@@ -8,11 +8,24 @@ import type { FormSelectProps } from '../components/form-select/form-select.type
 import type { FormSwitchProps } from '../components/form-switch/form-switch.types.js';
 import type { FormSegmentedControlProps } from '../components/form-segmented-control/form-segmented-control.types.js';
 
-/** The same props, with `name` narrowed from `string` to what the form has. */
-export type WithFieldName<Props, Name extends string> = Omit<Props, 'name'> & {
-  /** The field name, as your form library knows it — and only one it knows. */
-  name: Name;
-};
+/**
+ * The same props, with `name` narrowed from `string` to what the form has.
+ *
+ * DISTRIBUTIVE — `Props extends unknown ? … : never` — because one of these
+ * props types is now a discriminated union (`FormCombobox`, which binds
+ * differently for one value and for a set). Applied to a union directly, `Omit`
+ * collapses it into a single object type and the discriminant widens: `multiple`
+ * came out `boolean | undefined` where each half says `true` or `false`, so the
+ * kit's re-typing stopped being assignable to the component it re-types. The
+ * conditional makes the mapping happen once per member instead, and the union
+ * survives.
+ */
+export type WithFieldName<Props, Name extends string> = Props extends unknown
+  ? Omit<Props, 'name'> & {
+      /** The field name, as your form library knows it — and only one it knows. */
+      name: Name;
+    }
+  : never;
 
 /**
  * The bound components, with their `name` checked against the form.

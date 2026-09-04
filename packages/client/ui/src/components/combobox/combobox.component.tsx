@@ -142,8 +142,46 @@ function Combobox<T>(props: ComboboxProps<T>) {
     ? null
     : ((defaultValue as string | null | undefined) ?? null);
   const manyValue = many ? (value as readonly string[] | undefined) : undefined;
+  // WHAT THE BINDING ALREADY HOLDS, read once at mount. A bound field's starting
+  // value is the form library's, not the call site's — and the option port
+  // answers it the only way it can, per value: `option(key).checked`. Without
+  // this the library held two keys while the control showed none, which is the
+  // divergence the whole carrier arrangement exists to prevent.
+  //
+  // ONE PASS OVER `items`, at mount, and only when bound: the same list this
+  // component already walks to filter on every keystroke.
+  //
+  // TWO LIMITS, both of them the port's rather than this component's, and both
+  // worth knowing before relying on the seed. The order is `items`' order, not
+  // the order the form holds the keys in — `option(value)` answers per value
+  // and cannot be asked for an order. And the answer is read ONCE: items that
+  // arrive later (a server search, a lazy list) are not re-asked, so a field
+  // seeded from a list that was empty at mount stays empty. Pass the selection
+  // yourself where either matters.
+  const [seededByBinding] = useState<readonly string[] | undefined>(() => {
+    if (!many || optionBinding === null) return undefined;
+    // THE BINDING'S OWN ANSWER FIRST. It is the only one that can be right for
+    // a key whose row has not been fetched, it needs no pass over `items`, and
+    // it is the only one a ref-based library can give at all — its option bag
+    // carries no `checked`.
+    if (optionBinding.values !== undefined) return optionBinding.values;
+    return items
+      .filter((item) => {
+        // BOTH ANSWERS, because the port allows both: a controlled adapter
+        // says `checked` and an uncontrolled one says `defaultChecked`. Asking
+        // only the first left three of the five with an empty seed — and an
+        // empty seed is worse than none, because the reader's first pick then
+        // hands `setValues` a list that does not contain the keys the form was
+        // already holding, and they are gone.
+        const answer = optionBinding.option(getKey(item));
+        return answer.checked === true || answer.defaultChecked === true;
+      })
+      .map(getKey);
+  });
   const manyDefault = many
-    ? ((defaultValue as readonly string[] | undefined) ?? NO_KEYS)
+    ? ((defaultValue as readonly string[] | undefined) ??
+      seededByBinding ??
+      NO_KEYS)
     : NO_KEYS;
 
   const [chosen, setChosen] = useControlled<string | null>({
@@ -583,16 +621,31 @@ function Combobox<T>(props: ComboboxProps<T>) {
         // the dialog — but stopping it unconditionally was the opposite defect:
         // an untouched combobox with the focus swallowed every Escape and the
         // dialog could not be dismissed at all.
-        if (showing) {
+        // THE PLATFORM'S OWN STATE, not our mirror of it — the package's first
+        // rule about facts. A mirror can go stale; `:popover-open` cannot.
+        const open = surface.current?.matches(':popover-open') ?? showing;
+        if (open) {
           event.stopPropagation();
           setShowing(false);
           return;
         }
-        if (typed === '' && chosen === null && picked.length === 0) return;
+        // ESCAPE NEVER TAKES A SET AWAY, and that is a decision rather than a
+        // gap. On one value it clears the field, which is what Escape does to a
+        // text box and is one pick to redo. A set is not a text box: six
+        // choices made one at a time would go on a keystroke people press to
+        // dismiss things, with nothing to undo it. The tags are how a set is
+        // emptied — one ✕ at a time, each of them reversible by picking again.
+        //
+        // It is also what a measurement asked for. Against the BUILT package —
+        // the ports suite is the only thing that consumes `dist` — three picks
+        // then one Escape came back with nothing chosen, because this branch
+        // ran when the list was in fact open. Reading the platform above closes
+        // that door; not clearing a set closes the corridor.
+        if (many) return;
+        if (typed === '' && chosen === null) return;
         event.stopPropagation();
         setTyped('');
         setChosen(null);
-        if (many && picked.length > 0) choose(NO_KEYS);
         setSearching(false);
         return;
       }
@@ -645,7 +698,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
         tag that drew nothing would be a value the reader cannot see or remove.
       */}
       {many && picked.length > 0 ? (
-        <TagList label={t('list')} className={styles.tags}>
+        <TagList label={t('chosen')} className={styles.tags}>
           {picked.map((key) => {
             const item = items.find((candidate) => getKey(candidate) === key);
             const label = item === undefined ? key : getLabel(item);
@@ -749,32 +802,44 @@ function Combobox<T>(props: ComboboxProps<T>) {
         the state and `defaultChecked` says so.
       */}
       {many && (name !== undefined || optionBinding !== null)
-        ? picked.map((key) =>
-            optionBinding === null ? (
-              <input
-                key={key}
-                type="checkbox"
-                className={styles.carrier}
-                tabIndex={-1}
-                aria-hidden="true"
-                defaultChecked
-                name={name}
-                form={form}
-                value={key}
-                readOnly
-              />
-            ) : (
-              <input
-                key={key}
-                type="checkbox"
-                className={styles.carrier}
-                tabIndex={-1}
-                aria-hidden="true"
-                form={form}
-                {...optionBinding.option(key)}
-              />
-            ),
-          )
+        ? picked.map((key) => (
+            <input
+              key={key}
+              // The binding's own props first — its `name`, its `ref`, its
+              // `onChange`. A ref-based library registers the node through
+              // this, and a controlled one hears changes through it.
+              {...(optionBinding === null
+                ? { name, value: key }
+                : optionBinding.option(key))}
+              // AND OURS AFTER IT, because these three are not the binding's to
+              // decide and it measurably gets two of them wrong:
+              //
+              // `type`, because an adapter answers it from the field TYPE a
+              // consumer declared — Conform emits `radio` for anything not
+              // declared `checkbox-group`, and a set of radios is mutually
+              // exclusive: picking the second key would silently drop the
+              // first.
+              //
+              // `checked`, because THE CARRIER'S EXISTENCE IS THE VALUE. Three
+              // of the five ports answer neither `checked` nor `defaultChecked`
+              // (react-hook-form's `register` bag carries no such thing), so
+              // taken from the bag the box mounts OFF and the form submits
+              // nothing at all. Where a store disagrees for a frame it is the
+              // store that is behind: `choose` has already told it the whole
+              // list.
+              //
+              // `readOnly`, so React does not warn about a checked box whose
+              // bag brought no `onChange` — nobody can reach these anyway.
+              type="checkbox"
+              value={key}
+              checked
+              readOnly
+              className={styles.carrier}
+              tabIndex={-1}
+              aria-hidden="true"
+              form={form}
+            />
+          ))
         : null}
       {name === undefined || many ? null : (
         <input

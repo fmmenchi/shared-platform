@@ -2,7 +2,11 @@ import { Field } from '../field/field.component.js';
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
 import { Combobox } from '../combobox/combobox.component.js';
-import { useBoundField } from '../../form/form-adapter.context.js';
+import {
+  useBoundField,
+  useBoundOptionField,
+} from '../../form/form-adapter.context.js';
+import { OptionBindingProvider } from '../../form/option-binding.context.js';
 import {
   useBindingOwnedWarning,
   withoutBindingOwned,
@@ -10,7 +14,11 @@ import {
 import { toMessages } from '../../form/messages.js';
 import { useBoundCarrier } from '../../form/use-bound-carrier.js';
 import { mergeRefs } from '../../primitives/merge-refs.js';
-import type { FormComboboxProps } from './form-combobox.types.js';
+import type {
+  FormComboboxMultipleProps,
+  FormComboboxProps,
+  FormComboboxSingleProps,
+} from './form-combobox.types.js';
 
 /**
  * A labelled combobox, already bound to the form library in scope:
@@ -32,7 +40,61 @@ import type { FormComboboxProps } from './form-combobox.types.js';
  * So what describes a native control this is not never travels; everything else
  * does.
  */
+/**
+ * TWO COMPONENTS BEHIND ONE NAME, and the mode chooses between them at the
+ * only moment it can: a hook may not be called conditionally, and the two halves
+ * bind through DIFFERENT PORTS — one value is a per-field binding, a set is the
+ * option binding, which is the only one that can say a whole list.
+ *
+ * Switching `multiple` therefore swaps the component rather than a branch, which
+ * is also the truth about it: the mode is structural, not state. A control that
+ * changed it mid-life would be a different control, the same way a controlled
+ * one that became uncontrolled would be.
+ */
 function FormCombobox<T>(props: FormComboboxProps<T>) {
+  return props.multiple === true ? (
+    <BoundToASet {...props} />
+  ) : (
+    <BoundToOneValue {...props} />
+  );
+}
+
+/**
+ * SEVERAL OF MANY, bound. The option port is the whole difference: it is called
+ * once for the FIELD, and the component inside draws one carrier per chosen key
+ * from it — plus `setValues`, which is how a library that keeps a store hears
+ * that a key has gone, since an unmounting carrier sends nothing.
+ *
+ * No `carrierRef` and no `useBoundCarrier` here, and neither is an omission: a
+ * ref-based library gets its ref through the option bag, on every carrier, and a
+ * controlled one is told the whole list rather than having a value written into
+ * one node. Both are things the per-field shape could not do for a set.
+ */
+function BoundToASet<T>(props: FormComboboxMultipleProps<T>) {
+  const { name, label, hint, ref, ...rest } = props;
+  const binding = useBoundOptionField(name, 'FormCombobox');
+  useBindingOwnedWarning(rest, 'FormCombobox');
+  const messages = toMessages(binding.errors);
+
+  return (
+    <Field label={label} invalid={messages.length > 0}>
+      {/* INSIDE the field and around the control, the way
+          `FormSegmentedControl` provides it: the component reads the binding
+          for what only the field knows — which keys the form holds, and how to
+          tell it about the next ones. */}
+      <OptionBindingProvider value={binding}>
+        <Combobox {...withoutBindingOwned(rest)} name={name} ref={ref} />
+      </OptionBindingProvider>
+      {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}
+      {messages.map((message) => (
+        <FieldError key={message}>{message}</FieldError>
+      ))}
+    </Field>
+  );
+}
+
+/** ONE OF MANY, bound — the shape this component had before it grew a second. */
+function BoundToOneValue<T>(props: FormComboboxSingleProps<T>) {
   const { name, label, hint, ref, ...rest } = props;
   const { control, errors } = useBoundField(name, 'FormCombobox');
   useBindingOwnedWarning(rest, 'FormCombobox');
@@ -83,6 +145,10 @@ function FormCombobox<T>(props: FormComboboxProps<T>) {
     <Field label={label} invalid={messages.length > 0}>
       <Combobox
         {...binding}
+        // SAID OUT LOUD: a spread does not narrow a discriminated union, and
+        // this half binds ONE value — without it TypeScript reads the seeded
+        // key below as a list.
+        multiple={false}
         // `name` is optional on the port's control, and without one the carrier
         // is nameless: nothing is submitted, and `FormErrorSummary` — which
         // finds a field by `name` — cannot reach it.

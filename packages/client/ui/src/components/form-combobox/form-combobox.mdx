@@ -36,6 +36,35 @@ The hint keeps its place before any error, however many errors there are.
 
 <Canvas of={FormComboboxStories.WithHint} />
 
+### Several of many, bound
+
+```tsx
+<FormCombobox
+  multiple
+  name="cities"
+  label="Cities"
+  items={cities}
+  getKey={(c) => c.id}
+  getLabel={(c) => c.name}
+/>
+```
+
+`multiple` binds through a **different port** — the option field, not the per-field
+one — and that is the whole difference rather than a detail. One value is one
+control with one bag of props; a set is N carriers under one name, and only the
+option port can say a whole list.
+
+It matters because **a removal is the absence of an element, so it has nobody to
+send an event for it**. Measured across five bindings: the two that read the
+document at submit were exact, and the three that keep a store were told when a
+carrier arrived and never told when one left — so the value kept a key the reader
+had removed. The field says its whole value instead (`setValues`), and the
+carriers went back to drawing it.
+
+The starting selection comes from the **library**, not from the call site: the
+binding is asked, once at mount, which of the items it already holds. So a form
+whose `defaultValues` name two cities opens with those two tags.
+
 ### Declare it in your field types
 
 ```ts

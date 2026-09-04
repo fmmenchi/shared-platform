@@ -242,6 +242,15 @@ export type ComboboxSingleOnlyProps<T> = ComboboxOwnProps<T> &
   ComboboxSingleProps &
   ComboboxRest<T>;
 
+/**
+ * The SEVERAL-OF-MANY half on its own, for a wrapper that binds a set — the
+ * mirror of `ComboboxSingleOnlyProps`, and it exists for the same reason: a
+ * discriminated union does not survive a bound wrapper's spread.
+ */
+export type ComboboxMultipleOnlyProps<T> = ComboboxOwnProps<T> &
+  ComboboxMultipleProps &
+  ComboboxRest<T>;
+
 /** Everything both halves share: the native attributes and the variants. */
 type ComboboxRest<T> = Omit<
   ComponentPropsWithRef<'input'>,

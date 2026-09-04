@@ -387,7 +387,13 @@ exact. The same fifteen assertions now pass for all five, where seven of them fa
 It also fixed the ordering for free: the caller knows the order the choices were made in and hands
 that list over, where `react-hook-form` had stored the order it happened to be told about.
 
-Proof 2 (creation, and what the bound value IS) is still outstanding.
+**Proof 2 is still outstanding, and multiple has shipped anyway** — said plainly rather than left to
+be noticed. This section asks for two proofs before the component ships: proof 1 is done and is what
+produced `setValues`; proof 2 — what the bound value IS once creation is on, so a schema can tell a
+key from a draft — has not been taken. What shipped is the selection, its carriers and both bindings;
+what has not been proven is the combination of `multiple` with `onCreate` against a real library.
+Until it is, that combination is unproven rather than supported, and this note is the record of the
+gate being crossed knowingly.
 
 And `@fmmenchi/ui` stays out of all of it: `Combobox` and `FormCombobox` bind to the **port**, never
 to a library. The alternative is a component per library per control, which is the multiplication
