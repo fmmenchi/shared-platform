@@ -16,11 +16,17 @@ import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
 import { useFieldControl } from '../field/field.context.js';
 import { useMessages } from '../../i18n/provider.js';
+import { useOptionBinding } from '../../form/option-binding.context.js';
 import { comboboxVariants } from './combobox.variants.js';
 import { comboboxMessages } from './combobox.messages.js';
 import { matches, says } from './combobox.filter.js';
 import type { ComboboxProps } from './combobox.types.js';
+import { Tag } from '../tag/tag.component.js';
+import { TagList } from '../tag-list/tag-list.component.js';
 import styles from './combobox.module.css';
+
+/** The empty selection, shared so an uncontrolled default never changes identity. */
+const NO_KEYS: readonly string[] = Object.freeze([]);
 
 /**
  * WHERE THE HIGHLIGHT IS — a row of the filtered list, or the offer to create.
@@ -89,8 +95,9 @@ function Combobox<T>(props: ComboboxProps<T>) {
     freeText = false,
     onCreate,
     canCreate,
+    multiple = false,
     value,
-    defaultValue = null,
+    defaultValue,
     onValueChange,
     query,
     defaultQuery = '',
@@ -114,6 +121,10 @@ function Combobox<T>(props: ComboboxProps<T>) {
   } = props;
 
   const t = useMessages(comboboxMessages);
+  // THE FIELD'S BINDING, when a bound wrapper is providing one. Null everywhere
+  // else, exactly like `SegmentedControlItem`'s — outside a wrapper the
+  // carriers are drawn by this component as they always were.
+  const optionBinding = useOptionBinding();
   const listId = useId();
   const optionId = (spot: Spot) =>
     `${listId}-${spot === 'create' ? 'create' : String(spot)}`;
@@ -122,10 +133,36 @@ function Combobox<T>(props: ComboboxProps<T>) {
   const visible = useRef<HTMLInputElement>(null);
   const surface = useRef<HTMLDivElement>(null);
 
+  // THE TWO VALUE SHAPES, split once here so nothing below asks twice. The
+  // props are a discriminated union and `multiple` is what discriminates them;
+  // these casts are that fact restated where a destructure has already lost it.
+  const many = multiple === true;
+  const oneValue = many ? undefined : (value as string | null | undefined);
+  const oneDefault = many
+    ? null
+    : ((defaultValue as string | null | undefined) ?? null);
+  const manyValue = many ? (value as readonly string[] | undefined) : undefined;
+  const manyDefault = many
+    ? ((defaultValue as readonly string[] | undefined) ?? NO_KEYS)
+    : NO_KEYS;
+
   const [chosen, setChosen] = useControlled<string | null>({
-    value,
-    defaultValue,
-    onChange: onValueChange,
+    value: oneValue,
+    defaultValue: oneDefault,
+    onChange: many
+      ? undefined
+      : (onValueChange as ((next: string | null) => void) | undefined),
+    name: 'Combobox',
+  });
+  // SEVERAL OF MANY, as an ordered list of keys. Both selections are declared
+  // whatever the mode: a hook cannot be conditional, and the one that is not in
+  // play is seeded empty and never written.
+  const [picked, setPicked] = useControlled<readonly string[]>({
+    value: manyValue,
+    defaultValue: manyDefault,
+    onChange: many
+      ? (onValueChange as ((next: readonly string[]) => void) | undefined)
+      : undefined,
     name: 'Combobox',
   });
   const [typed, setTyped] = useControlled<string>({
@@ -155,7 +192,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
   // `form.reset()` would restore the field to what it already holds. Every
   // later write goes through `setNativeValue` instead, which moves the value
   // and leaves the default where the form can reset back to it.
-  const [seed] = useState(() => defaultValue ?? value ?? '');
+  const [seed] = useState(() => oneDefault ?? oneValue ?? '');
   const [createdNothing, setCreatedNothing] = useState(false);
   // A ONE-SHOT LINE FOR THE LIVE REGION, held until the next keystroke. Only
   // the offer needs one — see the note in the catalogue.
@@ -189,7 +226,14 @@ function Combobox<T>(props: ComboboxProps<T>) {
   // what the field says. A parent driving a server search off `query` reads its
   // own state; the box shows the choice.
   const selected = items.find((item) => getKey(item) === chosen);
-  const text = searching || selected === undefined ? typed : getLabel(selected);
+  // IN MULTIPLE MODE THE BOX IS ALWAYS THE QUERY. There is no one label to show
+  // — a chosen key is drawn as a tag under the field, and writing the last pick
+  // into the box would make the next search start from somebody else's word.
+  const text = many
+    ? typed
+    : searching || selected === undefined
+      ? typed
+      : getLabel(selected);
 
   const shown =
     !searching || filter === false || typed === ''
@@ -401,6 +445,17 @@ function Combobox<T>(props: ComboboxProps<T>) {
     visible.current?.focus();
   };
 
+  /**
+   * THE ONE PLACE THE SELECTION MOVES, so the binding is never told half of a
+   * change. A carrier that unmounts sends no event of its own — that is the
+   * whole reason `setValues` exists on the port — so the list is handed over
+   * whole, in the order it is drawn in.
+   */
+  const choose = (next: readonly string[]) => {
+    setPicked(next);
+    optionBinding?.setValues?.(next);
+  };
+
   const pick = (spot: Spot) => {
     if (!editable) return;
     if (spot === 'create') {
@@ -413,6 +468,14 @@ function Combobox<T>(props: ComboboxProps<T>) {
       // one line; free text closes it by making the text the value; a
       // controlled `value` closes it from above. Nothing at all is a warning.
       const created = onCreate?.(typed);
+      if (typeof created === 'string' && many) {
+        // ADDED TO THE SET, and the query clears the way a pick does: the next
+        // thing typed is a new search, not an edit of the last creation.
+        choose(picked.includes(created) ? picked : [...picked, created]);
+        setTyped('');
+        setAnnounced(t('created', { query: typed }));
+        return;
+      }
       if (typeof created === 'string') {
         setChosen(created);
         // The row for it may not exist yet, so the query stays as the label
@@ -427,9 +490,30 @@ function Combobox<T>(props: ComboboxProps<T>) {
     }
     const item = shown[spot];
     if (!item) return;
+    if (many) {
+      // A TOGGLE, and the list STAYS OPEN. Picking several things out of one
+      // list means picking them one after another, and a list that closed on
+      // every pick would have to be reopened between each — which is also why
+      // the row keeps `aria-selected` rather than disappearing.
+      const key = getKey(item);
+      choose(
+        picked.includes(key)
+          ? picked.filter((held) => held !== key)
+          : [...picked, key],
+      );
+      // The query goes, so the next keystroke searches the whole list again
+      // rather than the one word already spent.
+      setTyped('');
+      return;
+    }
     setChosen(getKey(item));
     setTyped(getLabel(item));
     close();
+  };
+
+  /** Take one key out of the selection — what a tag's ✕ does. */
+  const drop = (key: string) => {
+    choose(picked.filter((held) => held !== key));
   };
 
   const move = (delta: number) => {
@@ -504,11 +588,23 @@ function Combobox<T>(props: ComboboxProps<T>) {
           setShowing(false);
           return;
         }
-        if (typed === '' && chosen === null) return;
+        if (typed === '' && chosen === null && picked.length === 0) return;
         event.stopPropagation();
         setTyped('');
         setChosen(null);
+        if (many && picked.length > 0) choose(NO_KEYS);
         setSearching(false);
+        return;
+      }
+      case 'Backspace': {
+        // THE LAST TAG, and only from an EMPTY box. Backspace belongs to the
+        // text a person is typing; taking it while there is any would delete a
+        // choice instead of a character, which is the same rule `Home` and
+        // `End` are refused under two cases up. Every combobox with chips does
+        // this, and it is the only way to undo the last pick without a pointer.
+        if (!many || typed !== '' || picked.length === 0) return;
+        event.preventDefault();
+        drop(picked[picked.length - 1] as string);
         return;
       }
       default:
@@ -523,6 +619,53 @@ function Combobox<T>(props: ComboboxProps<T>) {
     // group never rang, never showed invalid and never showed disabled. A
     // fragment is transparent to both.
     <>
+      {/*
+        THE CHOICES, AS TAGS — ABOVE the field, and outside it rather than
+        inside, both for structural reasons rather than taste.
+
+        ABOVE, because the list opens BELOW the field it is anchored to: drawn
+        underneath, the tags sat behind the open surface and a pointer could not
+        reach a single ✕ while the list was up. Measured — the test for it timed
+        out on an element the browser reported as never stable, which is what
+        "covered" looks like from outside.
+
+        OUTSIDE, because this component renders no wrapper on
+        purpose (see below): a box around the tags and the input
+        would put an element between `InputGroup` and its `.group > input`, and
+        the group would stop resetting the field, stop ringing on focus and stop
+        showing invalid — the exact defect the fragment exists to avoid. Inside
+        the box is where this belongs the day the group can express it.
+
+        `TagList` OWNS THE FOCUS a removal destroys: take out the third of six
+        and the focus lands on the one that took its place rather than on
+        `<body>`, which is the whole reason that component exists.
+
+        The label is the item's, and falls back to the KEY when no row carries
+        it — a selection can hold a key whose row has not been fetched, and a
+        tag that drew nothing would be a value the reader cannot see or remove.
+      */}
+      {many && picked.length > 0 ? (
+        <TagList label={t('list')} className={styles.tags}>
+          {picked.map((key) => {
+            const item = items.find((candidate) => getKey(candidate) === key);
+            const label = item === undefined ? key : getLabel(item);
+            return (
+              <Tag
+                key={key}
+                name={label}
+                onRemove={() => {
+                  drop(key);
+                  // The box keeps the focus: removing a choice is not leaving
+                  // the control, and the reader is most likely to type next.
+                  visible.current?.focus();
+                }}
+              >
+                {label}
+              </Tag>
+            );
+          })}
+        </TagList>
+      ) : null}
       <input
         // BEFORE the spreads, so a consumer can still say otherwise. A token is
         // a claim about what the field holds, and WCAG 1.3.5 (Identify Input
@@ -588,7 +731,52 @@ function Combobox<T>(props: ComboboxProps<T>) {
         `name` and `form` live HERE, on the node that actually contributes to the
         form; the visible field has no name and would associate nothing.
       */}
-      {name === undefined ? null : (
+      {/*
+        THE CARRIERS OF A SET — one per chosen key, which is the only way a list
+        is encoded natively: `FormData.getAll(name)` reads them in document
+        order, and this component draws them in the order the choices were made.
+
+        CHECKBOXES, sr-only, never reachable: a `type="hidden"` is in value mode
+        "default", so `form.reset()` restores it onto itself and the field comes
+        back holding what it held before — the same reason the single carrier is
+        a real control.
+        
+        THEY DRAW THE VALUE AND DO NOT REPORT IT. A library that keeps a store
+        is told the whole list through the port's `setValues` (see `choose`),
+        because a carrier that unmounts sends nothing at all. When a binding is
+        in scope its bag is spread — that is what gives a ref-based library its
+        `ref` and Conform its own props — and when there is none, the DOM owns
+        the state and `defaultChecked` says so.
+      */}
+      {many && (name !== undefined || optionBinding !== null)
+        ? picked.map((key) =>
+            optionBinding === null ? (
+              <input
+                key={key}
+                type="checkbox"
+                className={styles.carrier}
+                tabIndex={-1}
+                aria-hidden="true"
+                defaultChecked
+                name={name}
+                form={form}
+                value={key}
+                readOnly
+              />
+            ) : (
+              <input
+                key={key}
+                type="checkbox"
+                className={styles.carrier}
+                tabIndex={-1}
+                aria-hidden="true"
+                form={form}
+                {...optionBinding.option(key)}
+              />
+            ),
+          )
+        : null}
+      {name === undefined || many ? null : (
         <input
           ref={mergeRefs(setCarrier, carrierRef)}
           data-carrier=""
@@ -626,6 +814,10 @@ function Combobox<T>(props: ComboboxProps<T>) {
         <div
           id={listId}
           role="listbox"
+          // SAID ON THE LISTBOX, which is where ARIA 1.2 puts it: a reader is
+          // told the list takes several BEFORE walking it, rather than
+          // inferring it from a row that stayed selected.
+          aria-multiselectable={many ? true : undefined}
           // NAMED, because on iOS VoiceOver `aria-activedescendant` is not
           // supported at all and touch exploration is the only way through the
           // rows — into what would otherwise be an unnamed "list box".
@@ -660,7 +852,11 @@ function Combobox<T>(props: ComboboxProps<T>) {
                   key={getKey(item)}
                   id={optionId(index)}
                   role="option"
-                  aria-selected={getKey(item) === chosen}
+                  aria-selected={
+                    many
+                      ? picked.includes(getKey(item))
+                      : getKey(item) === chosen
+                  }
                   aria-setsize={rows}
                   aria-posinset={index + 1}
                   data-active={index === highlighted ? '' : undefined}

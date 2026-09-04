@@ -359,6 +359,36 @@ things are proven **before** the component ships:
    them unless the shape says which it is, so the value the adapter reports must carry that
    distinction rather than flattening both to a string.
 
+#### What proof 1 found (2026-09-03)
+
+It exists now, in `apps/ui-ports-validation/src/screens/carrier-count.test.tsx`, and **the answer is
+no** — which is what putting it before the component was for. Three scenarios (two keys added out of
+order, one removed from the middle of three, the only one removed), against all five bindings:
+
+| binding           | document order | a removal | the last one |
+| ----------------- | -------------- | --------- | ------------ |
+| React 19          | yes            | yes       | yes          |
+| Conform           | yes            | yes       | yes          |
+| Formik            | yes            | no        | no           |
+| TanStack Form     | yes            | no        | no           |
+| `react-hook-form` | no (told)      | no        | no           |
+
+The line runs between the bindings that READ THE DOCUMENT and the ones that KEEP A STORE: a store is
+told when a carrier arrives and never told when one leaves — an unmounting control dispatches
+nothing — so the value keeps a key the reader removed. `react-hook-form` adds the other half, storing
+in the order it was told rather than the document's.
+
+**What closed it.** The set-shaped binding, rather than the fallback: `BoundOptionField` gained one
+optional member, `setValues(values)` — the field says its whole value, and the carriers went back to
+drawing it rather than reporting it. Three adapters implement it in a line with the API their library
+already has; Conform and React 19 implement nothing, because they read the document and were already
+exact. The same fifteen assertions now pass for all five, where seven of them failed before.
+
+It also fixed the ordering for free: the caller knows the order the choices were made in and hands
+that list over, where `react-hook-form` had stored the order it happened to be told about.
+
+Proof 2 (creation, and what the bound value IS) is still outstanding.
+
 And `@fmmenchi/ui` stays out of all of it: `Combobox` and `FormCombobox` bind to the **port**, never
 to a library. The alternative is a component per library per control, which is the multiplication
 ADR-0008 exists to prevent.

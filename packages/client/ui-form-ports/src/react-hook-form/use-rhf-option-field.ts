@@ -26,7 +26,7 @@ import { toFieldMessages } from './rhf-messages.js';
  */
 export function createRhfOptionField(): UseFormOptionField {
   return function useRhfOptionField(name) {
-    const { register, control } = useFormContext();
+    const { register, control, setValue } = useFormContext();
     const { errors } = useFormState({ control, name });
     const registered = register(name);
 
@@ -34,6 +34,18 @@ export function createRhfOptionField(): UseFormOptionField {
       // `value` LAST, after the spread: it is the one thing that differs per
       // control, and react-hook-form's own registration carries none of it.
       option: (value) => ({ ...registered, value }),
+      // THE WHOLE LIST, because a carrier that unmounts sends nothing and this
+      // library keeps a store: measured, it kept the key of a control that had
+      // gone, and stored in the order it was TOLD rather than the document's.
+      // Both are the same cause, and both are fixed by being told the truth
+      // instead of having it inferred.
+      //
+      // `shouldDirty`, because a removal IS a change the form should know it
+      // has; validation stays on the form's own mode rather than being forced
+      // here, which is the consumer's decision (ADR-0013).
+      setValues: (values) => {
+        setValue(name, [...values], { shouldDirty: true });
+      },
       errors: toFieldMessages(errors[name] as FieldError | undefined),
     };
   };

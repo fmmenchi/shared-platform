@@ -19,6 +19,14 @@ import type { ControlPropsByTag } from './form-adapter.types.js';
 export interface OptionBinding {
   /** The bound props for the option with this value — see `UseFormOptionField`. */
   option: (value: string) => ControlPropsByTag['input'];
+  /**
+   * The field's whole value, for a set whose controls come and go — see
+   * `BoundOptionField.setValues`, of which this is the same member reaching the
+   * component that draws them. Optional here for the same reason it is
+   * optional there: an adapter whose library reads the document has nothing to
+   * update.
+   */
+  setValues?: (values: readonly string[]) => void;
 }
 
 const OptionBindingContext = createContext<OptionBinding | null>(null);

@@ -58,6 +58,13 @@ export function createFormikOptionField(
           : field.onChange,
         onBlur: field.onBlur,
       }),
+      // THE WHOLE LIST — see the port's own note. A carrier that unmounts sends
+      // nothing, and this library keeps a store, so it has to be told rather
+      // than left to infer. The same helper the checkbox branch above uses, and
+      // the order arrives already decided by the caller.
+      setValues: (values) => {
+        void helpers.setValue([...values]);
+      },
       // Gated on `touched`, exactly as the per-field binding is: the two must
       // agree about when a form starts speaking, or a group shouts while the
       // input beside it stays quiet.

@@ -1,6 +1,7 @@
-import { useState, type ComponentProps } from 'react';
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Combobox } from './combobox.component.js';
+import type { ComboboxProps } from './combobox.types.js';
 
 interface City {
   id: string;
@@ -29,6 +30,15 @@ const meta: Meta<typeof Combobox<City>> = {
   // The Props table is CURATED here (react-docgen can't derive a generic
   // component's signature) — every public prop with its type and default.
   argTypes: {
+    multiple: {
+      control: 'boolean',
+      description:
+        'Several of many. The choice becomes an ordered list of keys, the chosen rows stay selected with the list open, and each one is drawn as a removable `Tag` above the field — with one hidden carrier each, so `FormData.getAll(name)` reads the list.',
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+      },
+    },
     items: {
       description:
         'The options, in your own shape. Never fetched, sorted or cached here.',
@@ -107,7 +117,18 @@ export const RichRows: Story = {
  * answer is not filtered twice.
  */
 /** A real component, because hooks may not live in a `render` function. */
-function ControlledDemo(args: ComponentProps<typeof Combobox<City>>) {
+function ControlledDemo({
+  // TAKEN OUT OF THE SPREAD RATHER THAN OVERRIDDEN, because a discriminated
+  // union does not narrow through one: with the choice still in the bag,
+  // TypeScript cannot tell which half this is and reads a single key as a
+  // list. What is left is what both halves share, and this story supplies the
+  // rest itself.
+  multiple: _mode,
+  value: _value,
+  defaultValue: _default,
+  onValueChange: _report,
+  ...args
+}: ComboboxProps<City>) {
   const [value, setValue] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const chosen = CITIES.find((city) => city.id === value);
@@ -140,7 +161,14 @@ export const Controlled: Story = {
  * that returns nothing, it hid the divergence it was meant to show — the field
  * read "Bologna" over a form submitting an empty string.
  */
-function CreatableDemo(args: ComponentProps<typeof Combobox<City>>) {
+function CreatableDemo({
+  // The same narrowing the controlled demo explains, for the same reason.
+  multiple: _mode,
+  value: _value,
+  defaultValue: _default,
+  onValueChange: _report,
+  ...args
+}: ComboboxProps<City>) {
   const [extra, setExtra] = useState<City[]>([]);
   return (
     <Combobox
@@ -165,6 +193,18 @@ export const Creatable: Story = {
  */
 export const FreeText: Story = {
   args: { freeText: true, name: 'city' },
+};
+
+/**
+ * SEVERAL OF MANY. The list stays open as you pick, each choice becomes a tag
+ * above the field, and `Backspace` in an empty box takes the last one back.
+ *
+ * The tags are this package's own `Tag`, so removing one puts the focus on the
+ * tag that took its place rather than dropping it — and then hands it back to
+ * the field, which is where you are most likely to type next.
+ */
+export const Multiple: Story = {
+  args: { multiple: true, defaultValue: ['1', '3'] },
 };
 
 /** The three heights, matching every other control on the row. */

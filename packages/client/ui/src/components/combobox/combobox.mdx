@@ -29,7 +29,7 @@ that needs JavaScript.
 That last row is not a joke at our own expense: the platform's own combobox does
 the simple case with no JavaScript at all, and where it is enough it is the
 better answer. This component exists for what it cannot do — rows, search you
-control, and (next) several-of-many with chips.
+control, and several of many.
 
 <Canvas of={ComboboxStories.Default} />
 
@@ -53,6 +53,59 @@ returns results and the list is empty".
 ### In a form
 
 <Canvas of={ComboboxStories.InAForm} />
+
+### Several of many
+
+<Canvas of={ComboboxStories.Multiple} />
+
+`multiple` turns the choice into an **ordered list of keys**, and the order is
+the order they were picked — which is also the order the tags are drawn in, so
+what a reader sees and what the selection holds cannot disagree.
+
+Three things change, and each has a reason you can feel:
+
+- **the list stays open** as you pick, and a chosen row keeps `aria-selected`
+  rather than disappearing. Picking several out of one list means picking them
+  one after another; a list that closed would have to be reopened between each,
+  and picking a chosen row again takes it back out;
+- **the box is always the query.** With one value the field reads the chosen
+  item's label; with several there is no one label to show, and writing the last
+  pick into the box would make the next search start from somebody else's word.
+  The query clears after each pick for the same reason;
+- **each choice becomes a `Tag`** above the field. `Backspace` in an empty box
+  takes the last one back — but never while there is text, where it belongs to
+  the text.
+
+The tags sit **above** the field rather than inside it, and that is structural
+rather than a look: this component renders no wrapper element on purpose, so
+that inside an `InputGroup` the field is still `.group > input` and the group's
+resets, focus ring and invalid state still reach it. A box around the tags and
+the input would break exactly that. Above rather than below because the list
+opens downwards and would otherwise cover them — measured: with the list up, no
+pointer could reach a single ✕.
+
+#### In a form
+
+Each choice is carried by its own hidden checkbox under the field's `name`, which
+is the only way a list is encoded natively: `FormData.getAll('cities')` reads
+them in document order, and they are drawn in the order the choices were made.
+
+Bound through `@fmmenchi/ui-form-ports`, the same selection also reaches a form
+library that keeps its own store — and that half needed a port change rather
+than a component trick. **A removal is the absence of an element, so it has
+nobody to send an event for it**: measured across five bindings, the two that
+read the document at submit were exact and the three that keep a store were told
+when a carrier arrived and never told when one left, so the value kept a key the
+reader had removed. The option port now has `setValues`, the field says its whole
+value, and the carriers went back to what they are good at — drawing it.
+
+Unbound, read the selection wherever you like:
+
+```tsx
+const [cities, setCities] = useState<readonly string[]>([]);
+
+<Combobox {...wiring} multiple value={cities} onValueChange={setCities} />;
+```
 
 ### Sizes
 
@@ -202,7 +255,8 @@ parent that only ever sets a valid key keeps the stale one. If you control
 
 Decided in ADR-0028 and **not built**:
 
-- **several-of-many with chips** (the port shape it needs is merged);
+- **submitting a multiple selection** — see the section above for why, and what
+  to do instead;
 - **option groups**;
 - the **states of data arriving** — loading, empty-because-fetching, error.
 
