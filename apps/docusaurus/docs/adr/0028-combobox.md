@@ -359,6 +359,30 @@ things are proven **before** the component ships:
    them unless the shape says which it is, so the value the adapter reports must carry that
    distinction rather than flattening both to a string.
 
+#### What proof 1 found (2026-09-03)
+
+It exists now, in `apps/ui-ports-validation/src/screens/carrier-count.test.tsx`, and **the answer is
+no** — which is what putting it before the component was for. Three scenarios (two keys added out of
+order, one removed from the middle of three, the only one removed), against all five bindings:
+
+| binding           | document order | a removal | the last one |
+| ----------------- | -------------- | --------- | ------------ |
+| React 19          | yes            | yes       | yes          |
+| Conform           | yes            | yes       | yes          |
+| Formik            | yes            | no        | no           |
+| TanStack Form     | yes            | no        | no           |
+| `react-hook-form` | no (told)      | no        | no           |
+
+The line runs between the bindings that READ THE DOCUMENT and the ones that KEEP A STORE: a store is
+told when a carrier arrives and never told when one leaves — an unmounting control dispatches
+nothing — so the value keeps a key the reader removed. `react-hook-form` adds the other half, storing
+in the order it was told rather than the document's.
+
+So the fallback named above is now a live option rather than a hypothetical, and the alternative to
+it is a **set-shaped binding beside `option(value)`** that can say "this key is gone". That choice is
+not made here; this note only records that the measurement demanded by this section has been taken,
+and what it says. Proof 2 (creation, and what the bound value IS) is still outstanding.
+
 And `@fmmenchi/ui` stays out of all of it: `Combobox` and `FormCombobox` bind to the **port**, never
 to a library. The alternative is a component per library per control, which is the multiplication
 ADR-0008 exists to prevent.
