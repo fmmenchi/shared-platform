@@ -145,6 +145,15 @@
     }
   }
 
+  /* THE CHOICES, above the field — see the component for why above and not
+     below. Only a margin: everything about how a tag looks belongs to `Tag`,
+     and restating any of it here would be the second copy this package's own
+     rule refuses. `--fm-space-internal-s` is the gap the field and its help
+     text already sit on. */
+  .tags {
+    margin-block-end: var(--fm-space-internal-s);
+  }
+
   /* The rows' own box, so the surface can also hold the empty message — which
      may not live inside a `listbox` (ARIA 1.2 owns `option` and `group` there,
      and nothing else). */

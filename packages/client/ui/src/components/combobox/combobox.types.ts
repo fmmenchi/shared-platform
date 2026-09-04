@@ -101,12 +101,11 @@ interface ComboboxOwnProps<T> {
    * an unrelated reason. Prefer rules about the query itself.
    */
   canCreate?: (query: string, shown: readonly T[]) => boolean;
-  /** The chosen item's key — controlled. Pair with `onValueChange`. */
-  value?: string | null;
-  /** The chosen item's key at mount, when the component keeps it. */
-  defaultValue?: string | null;
-  /** The choice changed: a key, or `null` when it was cleared. */
-  onValueChange?: (value: string | null) => void;
+  /**
+   * Note: the choice itself — `value`, `defaultValue`, `onValueChange` — is not
+   * here. Its SHAPE depends on `multiple`, so it lives in the two interfaces
+   * below and TypeScript picks the right one from the flag.
+   */
   /** The typed text — controlled. Pair with `onQueryChange`. */
   query?: string;
   /** The typed text at mount, when the component keeps it. */
@@ -142,6 +141,49 @@ interface ComboboxOwnProps<T> {
    * visible input, which is where focus belongs.
    */
   carrierRef?: Ref<HTMLInputElement>;
+}
+
+/**
+ * ONE OF MANY. The choice is a key or nothing, and the field reads the chosen
+ * item's label once it has one.
+ */
+interface ComboboxSingleProps {
+  /**
+   * SEVERAL OF MANY. Off, and the flag is what splits the two value shapes
+   * below — a boolean rather than two components, because everything else about
+   * them is the same control (ADR-0028 §5).
+   */
+  multiple?: false;
+  /** The chosen item's key — controlled. Pair with `onValueChange`. */
+  value?: string | null;
+  /** The chosen item's key at mount, when the component keeps it. */
+  defaultValue?: string | null;
+  /** The choice changed: a key, or `null` when it was cleared. */
+  onValueChange?: (value: string | null) => void;
+}
+
+/**
+ * SEVERAL OF MANY, with the chosen keys drawn as removable tags under the
+ * field.
+ *
+ * The selection is an ORDERED LIST OF KEYS, not the package's `Selection`
+ * ({ mode, ids }) type: that one exists to say "ten thousand rows except these
+ * three" for a table whose ids are not on the client, and here `exclude` has no
+ * meaning while the order is visible — the tags are in it (ADR-0028 §5).
+ *
+ * THE ORDER IS THE ORDER THINGS WERE PICKED, and it is also the order the tags
+ * are drawn in, so what a reader sees and what a form would submit cannot
+ * disagree.
+ */
+interface ComboboxMultipleProps {
+  /** SEVERAL OF MANY. See the value shape it selects, above. */
+  multiple: true;
+  /** The chosen keys, in order — controlled. Pair with `onValueChange`. */
+  value?: readonly string[];
+  /** The chosen keys at mount, when the component keeps them. */
+  defaultValue?: readonly string[];
+  /** The selection changed: the keys, in order, after the change. */
+  onValueChange?: (value: readonly string[]) => void;
 }
 
 /**
@@ -183,8 +225,33 @@ interface ComboboxOwnProps<T> {
  * two would put two lists on one field.
  */
 export type ComboboxProps<T> = ComboboxOwnProps<T> &
-  Omit<
-    ComponentPropsWithRef<'input'>,
-    keyof ComboboxOwnProps<T> | 'type' | 'role' | 'list' | 'size' | 'children'
-  > &
+  (ComboboxSingleProps | ComboboxMultipleProps) &
+  ComboboxRest<T>;
+
+/**
+ * The ONE-OF-MANY half on its own, for a wrapper that can only bind a single
+ * value — `FormCombobox` today, because the form port cannot yet express a set
+ * whose members come and go (ADR-0028 §12).
+ *
+ * It exists because a discriminated union does not survive a spread: a bound
+ * wrapper builds one props bag and hands it over, and TypeScript cannot tell
+ * which branch that bag belongs to. Naming the branch is honest — the wrapper
+ * really is single-only — where a cast would have hidden it.
+ */
+export type ComboboxSingleOnlyProps<T> = ComboboxOwnProps<T> &
+  ComboboxSingleProps &
+  ComboboxRest<T>;
+
+/** Everything both halves share: the native attributes and the variants. */
+type ComboboxRest<T> = Omit<
+  ComponentPropsWithRef<'input'>,
+  | keyof ComboboxOwnProps<T>
+  | keyof ComboboxSingleProps
+  | keyof ComboboxMultipleProps
+  | 'type'
+  | 'role'
+  | 'list'
+  | 'size'
+  | 'children'
+> &
   ComboboxVariants;

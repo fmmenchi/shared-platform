@@ -1,5 +1,5 @@
-import type { ComponentProps, ReactNode } from 'react';
-import type { Combobox } from '../combobox/combobox.component.js';
+import type { ReactNode } from 'react';
+import type { ComboboxSingleOnlyProps } from '../combobox/combobox.types.js';
 import type { BindingOwned } from '../../form/binding-owned.types.js';
 
 interface FormComboboxOwnProps {
@@ -18,9 +18,16 @@ interface FormComboboxOwnProps {
  * `value` or an `onChange` passed here would not override the binding, it would
  * sever it. `ref` is the exception the two can share — it stays pointed at the
  * visible field, while the binding's own goes to the carrier.
+ *
+ * SINGLE-SELECT ONLY, and that is the form port's limit rather than this
+ * wrapper's taste: a set under one name needs the binding to hear a carrier
+ * LEAVE, and three of the five measurably do not (ADR-0028 §12, and the
+ * carrier-count proof in `apps/ui-ports-validation`). `multiple` is therefore
+ * not in this type at all — an unbound `Combobox` takes it and reports the
+ * selection through `onValueChange`.
  */
 export type FormComboboxProps<T> = FormComboboxOwnProps &
   Omit<
-    ComponentProps<typeof Combobox<T>>,
+    ComboboxSingleOnlyProps<T>,
     keyof FormComboboxOwnProps | keyof BindingOwned | 'carrierRef'
   >;

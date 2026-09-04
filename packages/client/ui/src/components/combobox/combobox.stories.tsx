@@ -29,6 +29,15 @@ const meta: Meta<typeof Combobox<City>> = {
   // The Props table is CURATED here (react-docgen can't derive a generic
   // component's signature) — every public prop with its type and default.
   argTypes: {
+    multiple: {
+      control: 'boolean',
+      description:
+        'Several of many. The choice becomes an ordered list of keys, the chosen rows stay selected with the list open, and each one is drawn as a removable `Tag` above the field. **Not submitted yet** — see the page.',
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+      },
+    },
     items: {
       description:
         'The options, in your own shape. Never fetched, sorted or cached here.',
@@ -165,6 +174,18 @@ export const Creatable: Story = {
  */
 export const FreeText: Story = {
   args: { freeText: true, name: 'city' },
+};
+
+/**
+ * SEVERAL OF MANY. The list stays open as you pick, each choice becomes a tag
+ * above the field, and `Backspace` in an empty box takes the last one back.
+ *
+ * The tags are this package's own `Tag`, so removing one puts the focus on the
+ * tag that took its place rather than dropping it — and then hands it back to
+ * the field, which is where you are most likely to type next.
+ */
+export const Multiple: Story = {
+  args: { multiple: true, defaultValue: ['1', '3'] },
 };
 
 /** The three heights, matching every other control on the row. */
