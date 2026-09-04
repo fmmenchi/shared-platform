@@ -61,6 +61,15 @@ const meta: Meta<typeof FormCombobox<City>> = {
     getLabel: (city: City) => city.name,
   },
   argTypes: {
+    multiple: {
+      control: 'boolean',
+      description:
+        'Several of many — bound through the OPTION port rather than the per-field one, since only that port can say a whole list. The starting selection comes from the binding.',
+      table: {
+        type: { summary: 'boolean' },
+        defaultValue: { summary: 'false' },
+      },
+    },
     name: {
       description:
         'The field name the binding is looked up by, and what the form submits.',

@@ -142,8 +142,25 @@ function Combobox<T>(props: ComboboxProps<T>) {
     ? null
     : ((defaultValue as string | null | undefined) ?? null);
   const manyValue = many ? (value as readonly string[] | undefined) : undefined;
+  // WHAT THE BINDING ALREADY HOLDS, read once at mount. A bound field's starting
+  // value is the form library's, not the call site's — and the option port
+  // answers it the only way it can, per value: `option(key).checked`. Without
+  // this the library held two keys while the control showed none, which is the
+  // divergence the whole carrier arrangement exists to prevent.
+  //
+  // ONE PASS OVER `items`, at mount, and only when bound: the same list this
+  // component already walks to filter on every keystroke.
+  const [seededByBinding] = useState<readonly string[] | undefined>(() =>
+    many && optionBinding !== null
+      ? items
+          .filter((item) => optionBinding.option(getKey(item)).checked === true)
+          .map(getKey)
+      : undefined,
+  );
   const manyDefault = many
-    ? ((defaultValue as readonly string[] | undefined) ?? NO_KEYS)
+    ? ((defaultValue as readonly string[] | undefined) ??
+      seededByBinding ??
+      NO_KEYS)
     : NO_KEYS;
 
   const [chosen, setChosen] = useControlled<string | null>({
