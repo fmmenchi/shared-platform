@@ -1,3 +1,18 @@
+## 0.0.78 (2026-09-04)
+
+### 🚀 Features
+
+- **form-ports:** the option field can say its whole value ([56b0281](https://github.com/fmmenchi/shared-platform/commit/56b0281))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/ui to 0.7.16
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.77 (2026-09-03)
 
 ### 🧱 Updated Dependencies

@@ -1,3 +1,16 @@
+## 0.7.16 (2026-09-04)
+
+### 🚀 Features
+
+- **ui:** the combobox's selection reaches a form ([e8ec125](https://github.com/fmmenchi/shared-platform/commit/e8ec125))
+- **form-ports:** the option field can say its whole value ([56b0281](https://github.com/fmmenchi/shared-platform/commit/56b0281))
+- **ui:** the combobox chooses several of many, and says what it cannot do ([4303aa4](https://github.com/fmmenchi/shared-platform/commit/4303aa4))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.7.15 (2026-09-03)
 
 ### 🚀 Features
