@@ -84,18 +84,22 @@ the input would break exactly that. Above rather than below because the list
 opens downwards and would otherwise cover them — measured: with the list up, no
 pointer could reach a single ✕.
 
-#### It does not submit yet
+#### In a form
 
-`name` does nothing while `multiple` is on, and says so in development. A set
-under one name needs the form binding to hear a carrier **leave**, and it does
-not: measured across five bindings in
-`apps/ui-ports-validation/src/screens/carrier-count.test.tsx`, the three that
-keep a store are told when a carrier arrives and never told when one goes — so
-the value keeps a key the reader removed, and the form posts something nobody
-asked for. ADR-0028 §12 put that proof in front of this work precisely so the
-component would not fake what the port refuses.
+Each choice is carried by its own hidden checkbox under the field's `name`, which
+is the only way a list is encoded natively: `FormData.getAll('cities')` reads
+them in document order, and they are drawn in the order the choices were made.
 
-So for now read the selection from `onValueChange` and post it yourself:
+Bound through `@fmmenchi/ui-form-ports`, the same selection also reaches a form
+library that keeps its own store — and that half needed a port change rather
+than a component trick. **A removal is the absence of an element, so it has
+nobody to send an event for it**: measured across five bindings, the two that
+read the document at submit were exact and the three that keep a store were told
+when a carrier arrived and never told when one left, so the value kept a key the
+reader had removed. The option port now has `setValues`, the field says its whole
+value, and the carriers went back to what they are good at — drawing it.
+
+Unbound, read the selection wherever you like:
 
 ```tsx
 const [cities, setCities] = useState<readonly string[]>([]);

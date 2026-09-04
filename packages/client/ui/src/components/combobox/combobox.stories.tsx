@@ -33,7 +33,7 @@ const meta: Meta<typeof Combobox<City>> = {
     multiple: {
       control: 'boolean',
       description:
-        'Several of many. The choice becomes an ordered list of keys, the chosen rows stay selected with the list open, and each one is drawn as a removable `Tag` above the field. **Not submitted yet** — see the page.',
+        'Several of many. The choice becomes an ordered list of keys, the chosen rows stay selected with the list open, and each one is drawn as a removable `Tag` above the field — with one hidden carrier each, so `FormData.getAll(name)` reads the list.',
       table: {
         type: { summary: 'boolean' },
         defaultValue: { summary: 'false' },

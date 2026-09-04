@@ -182,21 +182,62 @@ describe('Combobox, several of many', () => {
     expect(removeTag('404')).toBeInTheDocument();
   });
 
-  it('refuses `name` out loud, because the form half is not built', () => {
-    // The port cannot yet express a set whose members come and go — measured
-    // over five bindings in `apps/ui-ports-validation`. Shipping a carrier here
-    // would post a key the reader had removed, so there is no carrier and the
-    // warning says where to read the selection instead.
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  it('submits one carrier per choice, in the order they are drawn', async () => {
+    // The only way a list is encoded natively: `FormData.getAll` reads the
+    // document, and the carriers are drawn in the order the choices were made.
+    let posted: string[] = [];
 
-    const { container } = render(
-      <Combobox {...wiring} multiple name="cities" aria-label="Cities" />,
+    render(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          posted = new FormData(event.currentTarget).getAll(
+            'cities',
+          ) as string[];
+        }}
+      >
+        <Combobox {...wiring} multiple name="cities" aria-label="Cities" />
+        <button type="submit">Save</button>
+      </form>,
     );
 
-    expect(container.querySelector('[data-carrier]')).toBeNull();
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('`name` does nothing while `multiple` is on'),
+    await browser.click(field());
+    await browser.click(row('Napoli'));
+    await browser.click(row('Milano'));
+    await browser.keyboard('{Escape}');
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(posted).toEqual(['3', '1']));
+  });
+
+  it('stops submitting a choice that was taken back', async () => {
+    // The half a store cannot hear on its own: an unmounting carrier sends
+    // nothing. Here the document is the truth, so removing the tag is enough —
+    // and the port's `setValues` is what carries the same news to a library.
+    let posted: string[] = [];
+
+    render(
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          posted = new FormData(event.currentTarget).getAll(
+            'cities',
+          ) as string[];
+        }}
+      >
+        <Combobox {...wiring} multiple name="cities" aria-label="Cities" />
+        <button type="submit">Save</button>
+      </form>,
     );
+
+    await browser.click(field());
+    await browser.click(row('Milano'));
+    await browser.click(row('Torino'));
+    await browser.keyboard('{Escape}');
+    await browser.click(removeTag('Milano'));
+    await browser.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(posted).toEqual(['2']));
   });
 
   describe('accessibility (axe)', () => {

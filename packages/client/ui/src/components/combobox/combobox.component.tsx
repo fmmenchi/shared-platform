@@ -16,6 +16,7 @@ import { useDevWarning } from '../../primitives/use-dev-warning.js';
 import { useOpenMirror } from '../../primitives/use-open-mirror.js';
 import { useFieldControl } from '../field/field.context.js';
 import { useMessages } from '../../i18n/provider.js';
+import { useOptionBinding } from '../../form/option-binding.context.js';
 import { comboboxVariants } from './combobox.variants.js';
 import { comboboxMessages } from './combobox.messages.js';
 import { matches, says } from './combobox.filter.js';
@@ -120,6 +121,10 @@ function Combobox<T>(props: ComboboxProps<T>) {
   } = props;
 
   const t = useMessages(comboboxMessages);
+  // THE FIELD'S BINDING, when a bound wrapper is providing one. Null everywhere
+  // else, exactly like `SegmentedControlItem`'s — outside a wrapper the
+  // carriers are drawn by this component as they always were.
+  const optionBinding = useOptionBinding();
   const listId = useId();
   const optionId = (spot: Spot) =>
     `${listId}-${spot === 'create' ? 'create' : String(spot)}`;
@@ -200,18 +205,6 @@ function Combobox<T>(props: ComboboxProps<T>) {
   // had no accessible name at all.
   const fieldProps = useFieldControl(rest);
 
-  // THE FORM HALF OF MULTIPLE IS NOT BUILT, and it is refused loudly rather
-  // than half-shipped. A set under one name needs the binding to hear a carrier
-  // LEAVE, and it does not: measured across five bindings in
-  // `apps/ui-ports-validation/src/screens/carrier-count.test.tsx`, the three
-  // that keep a store are told when a carrier arrives and never told when one
-  // goes, so the value keeps a key the reader removed. ADR-0028 §12 put that
-  // proof in front of this work for exactly this reason. Until the port can say
-  // "this key is gone", multiple is a controlled selection and submits nothing.
-  useDevWarning(
-    many && name !== undefined,
-    'Combobox: `name` does nothing while `multiple` is on — the selection is not submitted yet, because the form port cannot yet express a set whose members come and go (ADR-0028 §12, and the carrier-count proof in apps/ui-ports-validation). Read the selection from `onValueChange` and post it yourself.',
-  );
   useDevWarning(
     name === undefined && (form !== undefined || carrierRef !== undefined),
     'Combobox: `form` or `carrierRef` was given but `name` was not, so the carrier that holds the choice is never rendered — nothing is submitted and the ref is never called.',
@@ -452,6 +445,17 @@ function Combobox<T>(props: ComboboxProps<T>) {
     visible.current?.focus();
   };
 
+  /**
+   * THE ONE PLACE THE SELECTION MOVES, so the binding is never told half of a
+   * change. A carrier that unmounts sends no event of its own — that is the
+   * whole reason `setValues` exists on the port — so the list is handed over
+   * whole, in the order it is drawn in.
+   */
+  const choose = (next: readonly string[]) => {
+    setPicked(next);
+    optionBinding?.setValues?.(next);
+  };
+
   const pick = (spot: Spot) => {
     if (!editable) return;
     if (spot === 'create') {
@@ -467,9 +471,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
       if (typeof created === 'string' && many) {
         // ADDED TO THE SET, and the query clears the way a pick does: the next
         // thing typed is a new search, not an edit of the last creation.
-        setPicked((current) =>
-          current.includes(created) ? current : [...current, created],
-        );
+        choose(picked.includes(created) ? picked : [...picked, created]);
         setTyped('');
         setAnnounced(t('created', { query: typed }));
         return;
@@ -494,10 +496,10 @@ function Combobox<T>(props: ComboboxProps<T>) {
       // every pick would have to be reopened between each — which is also why
       // the row keeps `aria-selected` rather than disappearing.
       const key = getKey(item);
-      setPicked((current) =>
-        current.includes(key)
-          ? current.filter((held) => held !== key)
-          : [...current, key],
+      choose(
+        picked.includes(key)
+          ? picked.filter((held) => held !== key)
+          : [...picked, key],
       );
       // The query goes, so the next keystroke searches the whole list again
       // rather than the one word already spent.
@@ -511,7 +513,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
 
   /** Take one key out of the selection — what a tag's ✕ does. */
   const drop = (key: string) => {
-    setPicked((current) => current.filter((held) => held !== key));
+    choose(picked.filter((held) => held !== key));
   };
 
   const move = (delta: number) => {
@@ -590,7 +592,7 @@ function Combobox<T>(props: ComboboxProps<T>) {
         event.stopPropagation();
         setTyped('');
         setChosen(null);
-        if (many && picked.length > 0) setPicked(NO_KEYS);
+        if (many && picked.length > 0) choose(NO_KEYS);
         setSearching(false);
         return;
       }
@@ -729,6 +731,51 @@ function Combobox<T>(props: ComboboxProps<T>) {
         `name` and `form` live HERE, on the node that actually contributes to the
         form; the visible field has no name and would associate nothing.
       */}
+      {/*
+        THE CARRIERS OF A SET — one per chosen key, which is the only way a list
+        is encoded natively: `FormData.getAll(name)` reads them in document
+        order, and this component draws them in the order the choices were made.
+
+        CHECKBOXES, sr-only, never reachable: a `type="hidden"` is in value mode
+        "default", so `form.reset()` restores it onto itself and the field comes
+        back holding what it held before — the same reason the single carrier is
+        a real control.
+        
+        THEY DRAW THE VALUE AND DO NOT REPORT IT. A library that keeps a store
+        is told the whole list through the port's `setValues` (see `choose`),
+        because a carrier that unmounts sends nothing at all. When a binding is
+        in scope its bag is spread — that is what gives a ref-based library its
+        `ref` and Conform its own props — and when there is none, the DOM owns
+        the state and `defaultChecked` says so.
+      */}
+      {many && (name !== undefined || optionBinding !== null)
+        ? picked.map((key) =>
+            optionBinding === null ? (
+              <input
+                key={key}
+                type="checkbox"
+                className={styles.carrier}
+                tabIndex={-1}
+                aria-hidden="true"
+                defaultChecked
+                name={name}
+                form={form}
+                value={key}
+                readOnly
+              />
+            ) : (
+              <input
+                key={key}
+                type="checkbox"
+                className={styles.carrier}
+                tabIndex={-1}
+                aria-hidden="true"
+                form={form}
+                {...optionBinding.option(key)}
+              />
+            ),
+          )
+        : null}
       {name === undefined || many ? null : (
         <input
           ref={mergeRefs(setCarrier, carrierRef)}

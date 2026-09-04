@@ -378,10 +378,16 @@ told when a carrier arrives and never told when one leaves — an unmounting con
 nothing — so the value keeps a key the reader removed. `react-hook-form` adds the other half, storing
 in the order it was told rather than the document's.
 
-So the fallback named above is now a live option rather than a hypothetical, and the alternative to
-it is a **set-shaped binding beside `option(value)`** that can say "this key is gone". That choice is
-not made here; this note only records that the measurement demanded by this section has been taken,
-and what it says. Proof 2 (creation, and what the bound value IS) is still outstanding.
+**What closed it.** The set-shaped binding, rather than the fallback: `BoundOptionField` gained one
+optional member, `setValues(values)` — the field says its whole value, and the carriers went back to
+drawing it rather than reporting it. Three adapters implement it in a line with the API their library
+already has; Conform and React 19 implement nothing, because they read the document and were already
+exact. The same fifteen assertions now pass for all five, where seven of them failed before.
+
+It also fixed the ordering for free: the caller knows the order the choices were made in and hands
+that list over, where `react-hook-form` had stored the order it happened to be told about.
+
+Proof 2 (creation, and what the bound value IS) is still outstanding.
 
 And `@fmmenchi/ui` stays out of all of it: `Combobox` and `FormCombobox` bind to the **port**, never
 to a library. The alternative is a component per library per control, which is the multiplication
