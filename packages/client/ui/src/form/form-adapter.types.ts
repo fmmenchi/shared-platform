@@ -65,6 +65,41 @@ export interface BoundOptionField {
    * `<input>`: a radio, a checkbox, or a hidden carrier.
    */
   option: (value: string) => ControlPropsByTag['input'];
+  /**
+   * THE WHOLE VALUE, replaced — for a field whose controls COME AND GO.
+   *
+   * `option` is a question a control asks about itself, and it is enough while
+   * the controls are fixed: a radio group and a set of checkboxes are all
+   * mounted from the first render, so each of them can speak, and a library
+   * learns the value from the events they send. A multi-select's carriers are
+   * not fixed. They appear as choices are made and disappear as they are taken
+   * back — and **a removal is the absence of an element, so it has nobody to
+   * send an event for it**.
+   *
+   * That is not a defect in any library, and it was measured rather than
+   * reasoned about: in
+   * `apps/ui-ports-validation/src/screens/carrier-count.test.tsx`, the two
+   * bindings that read the DOM at submit are exact, and the three that keep a
+   * store are told when a carrier arrives and never told when one leaves — so
+   * the value keeps a key the reader removed, and the form posts something
+   * nobody asked for. One of them also stores in the order it was TOLD rather
+   * than the document's, so two readers who picked the same two things in a
+   * different order submit different values.
+   *
+   * So the field says the whole truth instead. **The carriers draw the value;
+   * they do not report it** — they exist to encode it for `FormData` and for a
+   * page with no JavaScript, and this member is how a library that keeps a
+   * store hears the same thing.
+   *
+   * OPTIONAL, and legitimately so: an adapter whose library reads the document
+   * has nothing to update and implements nothing. One that keeps a store
+   * implements it in a line, with the API it already has for setting a field.
+   *
+   * THE ORDER IS THE CALLER'S, and it is meaningful: the component knows the
+   * order the choices were made in and the order it draws them in, and they are
+   * the same one. An adapter must store the list as given.
+   */
+  setValues?: (values: readonly string[]) => void;
   /** What is wrong with the FIELD — see {@link FieldMessages}. Not per option. */
   errors?: FieldMessages;
 }

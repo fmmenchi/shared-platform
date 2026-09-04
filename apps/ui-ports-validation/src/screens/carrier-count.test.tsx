@@ -48,20 +48,13 @@ import { useActionOptionField } from '@fmmenchi/ui-form-ports/react-19';
  * checkboxes under one name — which is what `<select multiple>` already is, and
  * would have asked nothing new of the port.
  *
- * IT DOES NOT HOLD, and that is this file's result. With no library at all the
- * model is exact: `FormData` reads the document, so the carriers ARE the value,
- * in document order, and the last one leaving empties the field. Every one of
- * the four bindings disagrees, each in its own way, and the disagreements are
- * asserted below at what they measurably do rather than at what they should.
- * ADR-0028 §12 put this proof BEFORE the component for exactly this outcome:
- * "building multiple against the existing shape would mean faking in the
- * component what the port refused to fake", and the port refuses.
+ * IT DID NOT HOLD, and closing that is what this file bought. With no library
+ * at all the model is exact: `FormData` reads the document, so the carriers ARE
+ * the value. Every binding that keeps a store disagreed — see the note over the
+ * assertions below for what each of them did, and why it was nobody's defect.
  *
- * So multiple does not ship on this shape. What comes next is a port-level
- * decision — a set-shaped binding beside `option(value)`, or the fallback the
- * ADR already names, where multiple binds through each library's controlled API
- * and the carriers stay for `FormData` and the no-JavaScript remainder. That is
- * a decision, not an implementation detail, which is why this file stops here.
+ * The port gained one optional member for it (`setValues` on the option field),
+ * and the assertions below are now the same three for all five.
  */
 
 const CITIES = ['Milano', 'Torino', 'Napoli'] as const;
@@ -172,6 +165,15 @@ function mergeRefs(
 /** The chips, and the two ways their number changes. */
 function Picker(props: { field: ReturnType<UseFormOptionField> }) {
   const [chosen, setChosen] = useState<readonly string[]>([]);
+
+  // THE WHOLE LIST, said to the binding on every change — the port member that
+  // exists because a carrier which unmounts sends nothing. An adapter whose
+  // library reads the document implements nothing and this is a no-op there.
+  const choose = (next: readonly string[]) => {
+    setChosen(next);
+    props.field.setValues?.(next);
+  };
+
   return (
     <>
       {CITIES.map((city) => (
@@ -179,14 +181,15 @@ function Picker(props: { field: ReturnType<UseFormOptionField> }) {
           key={city}
           type="button"
           onClick={() =>
-            setChosen((rest) =>
-              rest.includes(city)
-                ? rest
-                : // DOCUMENT ORDER IS THE DECLARED ORDER, not the order things
-                  // were picked: the uncontrolled bindings answer with
-                  // `FormData.getAll()`, which reads the document, and one port
-                  // cannot have two answers.
-                  CITIES.filter((c) => rest.includes(c) || c === city),
+            // DOCUMENT ORDER IS THE DECLARED ORDER, not the order things were
+            // picked: the uncontrolled bindings answer with `FormData.getAll()`,
+            // which reads the document, and one port cannot have two answers.
+            // Told to the binding as well, so the ones that keep a store hold
+            // the same order rather than the order they were told about.
+            choose(
+              chosen.includes(city)
+                ? chosen
+                : CITIES.filter((c) => chosen.includes(c) || c === city),
             )
           }
         >
@@ -197,7 +200,7 @@ function Picker(props: { field: ReturnType<UseFormOptionField> }) {
         <button
           key={city}
           type="button"
-          onClick={() => setChosen((rest) => rest.filter((c) => c !== city))}
+          onClick={() => choose(chosen.filter((c) => c !== city))}
         >
           Remove {city}
         </button>
@@ -336,128 +339,54 @@ const remove = (city: string) =>
 const save = () => browser.click(screen.getByRole('button', { name: 'Save' }));
 
 /**
- * WHAT THE FIVE ACTUALLY DO, measured — and the answer is sharper than "it
- * works" or "it does not".
+ * ONE CONTRACT, FIVE BINDINGS — which is this package's own test of whether a
+ * port leaks: if a library needed its own assertions, it would.
  *
- * Three scenarios, run against every binding: add two keys out of order; remove
- * one from the middle of three; remove the only one. What comes out:
+ * It did not always pass. The first version of this file measured the five
+ * against a set that the carriers alone reported, and the answer was no: the
+ * two bindings that read the document at submit were exact, and the three that
+ * keep a store were told when a carrier arrived and never told when one left,
+ * so the value kept a key the reader had removed. One of them also stored in
+ * the order it was TOLD rather than the document's, so two readers who picked
+ * the same two cities in a different order submitted different values.
  *
- *   React 19        document order yes · a removal yes · the last one yes
- *   Conform         document order yes · a removal yes · the last one yes
- *   Formik          document order yes · a removal NO  · the last one NO
- *   TanStack Form   document order yes · a removal NO  · the last one NO
- *   react-hook-form document order NO  · a removal NO  · the last one NO
+ * The cause was not a defect in any library. **A removal is the absence of an
+ * element, so it has nobody to send an event for it** — an unmounting control
+ * is silent by construction, and a store cannot hear silence.
  *
- * The line runs where you would expect once it is drawn. The two that READ THE
- * DOCUMENT are exact. The three that KEEP A STORE are told when a carrier
- * arrives and never told when one leaves — an unmounting control dispatches
- * nothing, so a store has no way to hear it, and the value then holds a key the
- * reader removed. That is a form posting something nobody asked for.
- *
- * react-hook-form adds the second half of the same cause: it stores in the order
- * it was TOLD, where the document says otherwise, so two readers who picked the
- * same two cities in a different order submit different values.
- *
- * WHAT IT DECIDES. Multiple does not ship on this shape — which is exactly what
- * ADR-0028 §12 put this proof in front of the component to find out: "building
- * multiple against the existing shape would mean faking in the component what
- * the port refused to fake". The next step is a port-level decision rather than
- * an implementation detail: a set-shaped binding beside `option(value)` that can
- * say "this key is gone", or the fallback the ADR already names, where multiple
- * binds through each library's controlled API and the carriers stay for
- * `FormData` and the no-JavaScript remainder.
- *
- * The rows marked NO are asserted below at what they measurably do. They are gap
- * records: each fails the day its adapter changes, which is when somebody should
- * read this file again.
+ * So the field says the whole truth instead, through `setValues` on the option
+ * port: the carriers DRAW the value and no longer report it. Three adapters
+ * implement it in a line with the API their library already has; the two that
+ * read the document implement nothing, because there is nothing to update.
+ * These assertions are what that bought.
  */
 
-const READS_THE_DOCUMENT: ReadonlyArray<[string, ComponentType]> = [
-  ['React 19', React19Screen],
-  ['Conform', ConformScreen],
-];
-
-const KEEPS_A_STORE: ReadonlyArray<[string, ComponentType]> = [
+const SCREENS: ReadonlyArray<[string, ComponentType]> = [
   ['react-hook-form', RhfScreen],
-  ['TanStack Form', TanstackScreen],
-  ['Formik', FormikScreen],
-];
-
-const ORDERS_BY_THE_DOCUMENT: ReadonlyArray<[string, ComponentType]> = [
-  ...READS_THE_DOCUMENT,
   ['Formik', FormikScreen],
   ['TanStack Form', TanstackScreen],
+  ['Conform', ConformScreen],
+  ['React 19', React19Screen],
 ];
 
-describe.each(ORDERS_BY_THE_DOCUMENT)(
-  'the order a dynamic set comes out in — %s',
-  (_name, Screen) => {
-    it('is the document’s, not the order the keys were picked', async () => {
-      render(<Screen />);
+describe.each(SCREENS)('a count that changes — %s', (_name, Screen) => {
+  it('holds every carrier that is mounted, in document order', async () => {
+    render(<Screen />);
 
-      await add('Napoli');
-      await add('Milano');
-      await save();
-
-      await waitFor(async () => {
-        expect((await saved()).cities).toEqual(['Milano', 'Napoli']);
-      });
-    });
-  },
-);
-
-describe('the order a dynamic set comes out in — react-hook-form', () => {
-  it('is the order it was TOLD, which the document contradicts', async () => {
-    // A GAP RECORD, not a contract: two readers picking the same two cities in
-    // a different order submit different values.
-    render(<RhfScreen />);
-
+    // PICKED OUT OF ORDER, stored in the declared one. The uncontrolled
+    // bindings answer with `FormData.getAll()`, which reads the document; the
+    // ones that keep a store are handed the same order rather than the order
+    // they happened to be told about.
     await add('Napoli');
     await add('Milano');
     await save();
 
     await waitFor(async () => {
-      expect((await saved()).cities).toEqual(['Napoli', 'Milano']);
+      expect((await saved()).cities).toEqual(['Milano', 'Napoli']);
     });
   });
-});
 
-describe.each(READS_THE_DOCUMENT)(
-  'a carrier that leaves — %s',
-  (_name, Screen) => {
-    it('takes exactly its own key with it', async () => {
-      render(<Screen />);
-
-      await add('Milano');
-      await add('Torino');
-      await add('Napoli');
-      await remove('Torino');
-      await save();
-
-      await waitFor(async () => {
-        expect((await saved()).cities).toEqual(['Milano', 'Napoli']);
-      });
-    });
-
-    it('leaves the field EMPTY when it was the last, not absent', async () => {
-      render(<Screen />);
-
-      await add('Milano');
-      await remove('Milano');
-      await save();
-
-      await waitFor(async () => {
-        expect((await saved()).cities).toEqual([]);
-      });
-    });
-  },
-);
-
-describe.each(KEEPS_A_STORE)('a carrier that leaves — %s', (_name, Screen) => {
-  it('is NOT noticed: the key it carried stays in the value', async () => {
-    // THE GAP THAT STOPS THE COMPONENT. An unmounting control dispatches
-    // nothing, so a store has no way to hear it — and the form then posts a key
-    // the reader removed.
+  it('loses exactly the carrier that was unmounted', async () => {
     render(<Screen />);
 
     await add('Milano');
@@ -467,11 +396,15 @@ describe.each(KEEPS_A_STORE)('a carrier that leaves — %s', (_name, Screen) => 
     await save();
 
     await waitFor(async () => {
-      expect((await saved()).cities).toEqual(['Milano', 'Torino', 'Napoli']);
+      expect((await saved()).cities).toEqual(['Milano', 'Napoli']);
     });
   });
 
-  it('leaves the last key behind too, so the field never empties', async () => {
+  it('comes back empty when the last carrier goes, not absent', async () => {
+    // THE CASE A FIXED SET CANNOT REACH: with nothing mounted under the name
+    // there is no entry in the `FormData` at all, so a server would see the
+    // field as MISSING rather than empty. Every binding now answers with an
+    // empty list instead.
     render(<Screen />);
 
     await add('Milano');
@@ -479,7 +412,7 @@ describe.each(KEEPS_A_STORE)('a carrier that leaves — %s', (_name, Screen) => 
     await save();
 
     await waitFor(async () => {
-      expect((await saved()).cities).toEqual(['Milano']);
+      expect((await saved()).cities).toEqual([]);
     });
   });
 });

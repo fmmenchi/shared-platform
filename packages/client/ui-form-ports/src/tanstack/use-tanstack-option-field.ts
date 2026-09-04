@@ -56,6 +56,12 @@ export function createTanstackOptionField(
         },
         onBlur: () => field.handleBlur(),
       }),
+      // THE WHOLE LIST — see the port's own note. The same handler the checkbox
+      // branch above calls, given the finished list rather than a delta: a
+      // carrier that unmounts sends no delta at all.
+      setValues: (values) => {
+        field.handleChange([...values]);
+      },
       errors: submitted || meta.isBlurred ? toMessages(meta.errors) : [],
     };
   };

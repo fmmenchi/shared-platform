@@ -1,6 +1,7 @@
-import { useState, type ComponentProps } from 'react';
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Combobox } from './combobox.component.js';
+import type { ComboboxProps } from './combobox.types.js';
 
 interface City {
   id: string;
@@ -116,7 +117,18 @@ export const RichRows: Story = {
  * answer is not filtered twice.
  */
 /** A real component, because hooks may not live in a `render` function. */
-function ControlledDemo(args: ComponentProps<typeof Combobox<City>>) {
+function ControlledDemo({
+  // TAKEN OUT OF THE SPREAD RATHER THAN OVERRIDDEN, because a discriminated
+  // union does not narrow through one: with the choice still in the bag,
+  // TypeScript cannot tell which half this is and reads a single key as a
+  // list. What is left is what both halves share, and this story supplies the
+  // rest itself.
+  multiple: _mode,
+  value: _value,
+  defaultValue: _default,
+  onValueChange: _report,
+  ...args
+}: ComboboxProps<City>) {
   const [value, setValue] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const chosen = CITIES.find((city) => city.id === value);
@@ -149,7 +161,14 @@ export const Controlled: Story = {
  * that returns nothing, it hid the divergence it was meant to show — the field
  * read "Bologna" over a form submitting an empty string.
  */
-function CreatableDemo(args: ComponentProps<typeof Combobox<City>>) {
+function CreatableDemo({
+  // The same narrowing the controlled demo explains, for the same reason.
+  multiple: _mode,
+  value: _value,
+  defaultValue: _default,
+  onValueChange: _report,
+  ...args
+}: ComboboxProps<City>) {
   const [extra, setExtra] = useState<City[]>([]);
   return (
     <Combobox
