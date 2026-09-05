@@ -437,11 +437,22 @@ function Knobs({
           families,
           homeFamilyOf(pristine.get(colorVar(role))),
         ).flatMap(([family, steps]) =>
-          steps.map((step) => ({
-            token: `--fm-palette-${family}-${step}`,
-            label: `${family}-${step}`,
-            colour: palette[family]?.[Number(step)],
-          })),
+          steps.map((step) => {
+            const token = `--fm-palette-${family}-${step}`;
+            return {
+              token,
+              label: `${family}-${step}`,
+              // TWO SOURCES, because the rungs have two origins. The seven brand
+              // families are GENERATED from the bases somebody is editing, so they
+              // must come from the palette. `neutral` is not generated — it is not
+              // even a `PALETTE_FAMILIES` member — it is stated outright in
+              // `vars.css`, the same greys in both schemes, so it comes from the
+              // declarations. Reading only the palette left all 35 neutral rungs
+              // `undefined`, which the swatch rendered as `transparent`: 35 empty
+              // outlines in a menu whose whole point is showing the colour.
+              colour: palette[family]?.[Number(step)] ?? pristine.get(token),
+            };
+          }),
         );
 
         return (
