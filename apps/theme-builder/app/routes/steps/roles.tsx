@@ -8,16 +8,13 @@ import {
 import { Alert } from '@fmmenchi/ui/alert';
 import { Button } from '@fmmenchi/ui/button';
 import { Heading } from '@fmmenchi/ui/heading';
-import { Tab } from '@fmmenchi/ui/tab';
-import { TabList } from '@fmmenchi/ui/tab-list';
-import { TabPanel } from '@fmmenchi/ui/tab-panel';
-import { Tabs } from '@fmmenchi/ui/tabs';
 import { Combobox } from '@fmmenchi/ui/combobox';
 import { wcagContrast } from 'culori';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
+import { useEditingScheme } from '../../editing-scheme';
 import { useDeclarations, type Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
@@ -71,6 +68,7 @@ import {
  * would let somebody point at a rung that does not exist there.
  */
 export default function Roles() {
+  const [scheme] = useEditingScheme();
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
       <Heading level={2}>Semantic roles</Heading>
@@ -82,18 +80,11 @@ export default function Roles() {
         Move a role to another rung and watch its pairs move with it.
       </p>
 
-      <Tabs defaultValue="light">
-        <TabList aria-label="Theme">
-          <Tab value="light">Light</Tab>
-          <Tab value="dark">Dark</Tab>
-        </TabList>
-        <TabPanel value="light">
-          <RolesPanel scheme="light" />
-        </TabPanel>
-        <TabPanel value="dark">
-          <RolesPanel scheme="dark" />
-        </TabPanel>
-      </Tabs>
+      {/* ONE PANEL, NOT BOTH. `TabPanel` stays mounted and goes `hidden` — the
+          APG's shape, and right for tabs — which meant this step rendered 168
+          comboboxes to show 84. A radio group has no such obligation: the theme
+          you are not editing is not on the page. */}
+      <RolesPanel scheme={scheme} />
     </section>
   );
 }

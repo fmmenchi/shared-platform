@@ -9,14 +9,13 @@ import { ChoiceField } from '@fmmenchi/ui/choice-field';
 import { Field } from '@fmmenchi/ui/field';
 import { Heading } from '@fmmenchi/ui/heading';
 import { Input } from '@fmmenchi/ui/input';
-import { SegmentedControl } from '@fmmenchi/ui/segmented-control';
-import { SegmentedControlItem } from '@fmmenchi/ui/segmented-control-item';
 import { Separator } from '@fmmenchi/ui/separator';
 import { Switch } from '@fmmenchi/ui/switch';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import { useBases } from './bases';
-import { type Scheme } from './declarations';
+import { useEditingScheme } from './editing-scheme';
+
 import { useRamp } from './ramp';
 import { ROLE_GROUPS } from './role-groups';
 import { useThemedDeclarations } from './role-overrides';
@@ -57,7 +56,7 @@ export function ThemePreview() {
   // THE RE-POINTED ones for dark too, since step three has a dark tab now.
   const darkDeclared = useThemedDeclarations('dark');
 
-  const [scheme, setScheme] = useState<Scheme>('light');
+  const [scheme] = useEditingScheme();
 
   const { theme, error } = useMemo(() => {
     try {
@@ -79,17 +78,6 @@ export function ThemePreview() {
     // NO PADDING HERE, because the host already has an opinion about it: a page
     // insets its content and `SidePanel` insets itself. Two of them was two of them.
     <div style={{ display: 'grid', gap: 'var(--fm-space-stack-l)' }}>
-      <SegmentedControl
-        label="Scheme"
-        name="preview-scheme"
-        value={scheme}
-        onValueChange={(next) => setScheme(next as Scheme)}
-        style={{ justifySelf: 'start' }}
-      >
-        <SegmentedControlItem value="light">Light</SegmentedControlItem>
-        <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
-      </SegmentedControl>
-
       {error !== null && (
         <Alert variant="error">
           These bases do not make a {scheme} theme, so this is the reference

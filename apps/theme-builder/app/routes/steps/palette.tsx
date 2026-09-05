@@ -6,14 +6,11 @@ import { FieldsetLegend } from '@fmmenchi/ui/fieldset-legend';
 import { Heading } from '@fmmenchi/ui/heading';
 import { SegmentedControl } from '@fmmenchi/ui/segmented-control';
 import { SegmentedControlItem } from '@fmmenchi/ui/segmented-control-item';
-import { Tab } from '@fmmenchi/ui/tab';
-import { TabList } from '@fmmenchi/ui/tab-list';
-import { TabPanel } from '@fmmenchi/ui/tab-panel';
-import { Tabs } from '@fmmenchi/ui/tabs';
 import { Link } from 'react-router';
 import { useMemo, type ReactNode } from 'react';
 
 import { FAMILIES, useBases } from '../../bases';
+import { useEditingScheme } from '../../editing-scheme';
 import { useDeclarations, type Scheme } from '../../declarations';
 import { probeShape } from '../../ramp-probe';
 import {
@@ -64,6 +61,7 @@ const note = {
  * at the 500.
  */
 export default function Palette() {
+  const [scheme] = useEditingScheme();
   const stepLink = useStepLink();
   const { bases, darkBases } = useBases();
   const { shapes, ramps, setShape } = useRamp();
@@ -86,50 +84,41 @@ export default function Palette() {
         behind them are on step one.
       </p>
 
-      <Tabs defaultValue="light">
-        <TabList aria-label="Theme">
-          <Tab value="light">Light</Tab>
-          <Tab value="dark">Dark</Tab>
-        </TabList>
-
-        <TabPanel value="light">
-          <SchemePanel
-            scheme="light"
-            bases={bases}
-            declared={lightDeclared}
-            ramp={ramps.light}
-            darkEnd={shapes.light.darkEnd}
-            choices={DARK_END_CHOICES}
-            shipped={REFERENCE_SHAPE.darkEnd}
-            build={buildRamp}
-            onDarkEnd={(darkEnd) => setShape('light', { darkEnd })}
-          >
-            Eleven rungs, evenly 0.08 apart below the 100 and compressing above
-            it. The design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)} at
-            the bottom, which is what the harshest of 144 test brands needs —
-            your own colours may allow more.
-          </SchemePanel>
-        </TabPanel>
-
-        <TabPanel value="dark">
-          <SchemePanel
-            scheme="dark"
-            bases={darkBases}
-            declared={darkDeclared}
-            ramp={ramps.dark}
-            darkEnd={shapes.dark.darkEnd}
-            choices={DARK_SCHEME_END_CHOICES}
-            shipped={DARK_REFERENCE_SHAPE.darkEnd}
-            build={buildDarkRamp}
-            onDarkEnd={(darkEnd) => setShape('dark', { darkEnd })}
-          >
-            Seventeen rungs, evenly 0.05 apart below the 100 — half
-            light&rsquo;s step, because these bases sit at lightness 0.75 and
-            the scale has to cover ground in both directions from there. Its
-            pale end is a TEXT colour rather than a wash.
-          </SchemePanel>
-        </TabPanel>
-      </Tabs>
+      {scheme === 'light' ? (
+        <SchemePanel
+          scheme="light"
+          bases={bases}
+          declared={lightDeclared}
+          ramp={ramps.light}
+          darkEnd={shapes.light.darkEnd}
+          choices={DARK_END_CHOICES}
+          shipped={REFERENCE_SHAPE.darkEnd}
+          build={buildRamp}
+          onDarkEnd={(darkEnd) => setShape('light', { darkEnd })}
+        >
+          Eleven rungs, evenly 0.08 apart below the 100 and compressing above
+          it. The design system ships {REFERENCE_SHAPE.darkEnd.toFixed(2)} at
+          the bottom, which is what the harshest of 144 test brands needs — your
+          own colours may allow more.
+        </SchemePanel>
+      ) : (
+        <SchemePanel
+          scheme="dark"
+          bases={darkBases}
+          declared={darkDeclared}
+          ramp={ramps.dark}
+          darkEnd={shapes.dark.darkEnd}
+          choices={DARK_SCHEME_END_CHOICES}
+          shipped={DARK_REFERENCE_SHAPE.darkEnd}
+          build={buildDarkRamp}
+          onDarkEnd={(darkEnd) => setShape('dark', { darkEnd })}
+        >
+          Seventeen rungs, evenly 0.05 apart below the 100 — half light&rsquo;s
+          step, because these bases sit at lightness 0.75 and the scale has to
+          cover ground in both directions from there. Its pale end is a TEXT
+          colour rather than a wash.
+        </SchemePanel>
+      )}
 
       <div style={{ display: 'flex', gap: 'var(--fm-space-inline-s)' }}>
         <Button as={Link} to={stepLink('brand-colours')}>
