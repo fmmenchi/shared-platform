@@ -1,4 +1,9 @@
-import { useFormContext, useFormState, type FieldError } from 'react-hook-form';
+import {
+  useFormContext,
+  useFormState,
+  useWatch,
+  type FieldError,
+} from 'react-hook-form';
 import type { UseFormOptionField } from '@fmmenchi/ui';
 import { toFieldMessages } from './rhf-messages.js';
 
@@ -33,8 +38,14 @@ function asKeys(stored: unknown): readonly string[] | undefined {
 
 export function createRhfOptionField(): UseFormOptionField {
   return function useRhfOptionField(name) {
-    const { register, control, setValue, getValues } = useFormContext();
+    const { register, control, setValue } = useFormContext();
     const { errors } = useFormState({ control, name });
+    // WATCHED, NOT READ. `getValues` answers from the store without
+    // subscribing, so a value this library was given from outside the control —
+    // an app's `setValue`, a draft loaded into the form — never re-rendered the
+    // field and the control kept showing the old choices. Measured: it was the
+    // only one of the five that did not follow.
+    const watched = useWatch({ control, name });
     const registered = register(name);
 
     return {
@@ -45,7 +56,7 @@ export function createRhfOptionField(): UseFormOptionField {
       // at all: `register()` returns a name, handlers and a ref — no `checked`
       // — so a control asking `option(value)` per candidate learns nothing, and
       // a field holding two keys drew none.
-      values: asKeys(getValues(name)),
+      values: asKeys(watched),
       // THE WHOLE LIST, because a carrier that unmounts sends nothing and this
       // library keeps a store: measured, it kept the key of a control that had
       // gone, and stored in the order it was TOLD rather than the document's.

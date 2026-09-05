@@ -85,6 +85,8 @@ function Screen(props: {
   saved: unknown;
   field: UseFormField;
   optionField: UseFormOptionField;
+  /** Writes the field the way an app does — a "clear all", a draft loaded. */
+  fromOutside?: () => void;
 }) {
   return (
     <UiProvider
@@ -95,6 +97,11 @@ function Screen(props: {
     >
       <FormCombobox {...wiring} multiple name="cities" label="Cities" />
       <button type="submit">Save</button>
+      {props.fromOutside === undefined ? null : (
+        <button type="button" onClick={props.fromOutside}>
+          Set from outside
+        </button>
+      )}
       {props.saved == null ? null : (
         <output data-testid="saved">{JSON.stringify(props.saved)}</output>
       )}
@@ -124,6 +131,7 @@ function RhfScreen({ seed = [] }: { seed?: string[] }) {
           saved={saved}
           field={useRhfField}
           optionField={useRhfOptionField}
+          fromOutside={() => form.setValue('cities', ['2'])}
         />
       </form>
     </FormProvider>
@@ -139,13 +147,16 @@ function FormikScreen({ seed = [] }: { seed?: string[] }) {
   const [saved, setSaved] = useState<unknown>(null);
   return (
     <Formik initialValues={{ cities: seed }} onSubmit={setSaved}>
-      <FormikForm>
-        <Screen
-          saved={saved}
-          field={formikField}
-          optionField={formikOptionField}
-        />
-      </FormikForm>
+      {(formik) => (
+        <FormikForm>
+          <Screen
+            saved={saved}
+            field={formikField}
+            optionField={formikOptionField}
+            fromOutside={() => void formik.setFieldValue('cities', ['2'])}
+          />
+        </FormikForm>
+      )}
     </Formik>
   );
 }
@@ -169,6 +180,7 @@ function TanstackScreen({ seed = [] }: { seed?: string[] }) {
         saved={saved}
         field={createTanstackField(form, { types: TYPES })}
         optionField={createTanstackOptionField(form, { types: TYPES })}
+        fromOutside={() => form.setFieldValue('cities', ['2'])}
       />
     </form>
   );
@@ -321,3 +333,28 @@ describe.each(SCREENS.filter(([name]) => name !== 'React 19'))(
     });
   },
 );
+
+/**
+ * WRITTEN FROM OUTSIDE THE CONTROL — an app's "clear all", a draft loaded into
+ * the form, a server round trip that rewrites the selection. Only the three
+ * that keep a store can do it: for the two that read the document the carriers
+ * ARE the value, so there is nothing to write into.
+ *
+ * It was outbound-only at first: the library moved and the control kept showing
+ * the old choices, which is the divergence the carriers exist to prevent
+ * arriving through the one door the mount-time seed does not cover.
+ */
+describe.each(
+  SCREENS.filter(([name]) => name !== 'React 19' && name !== 'Conform'),
+)('a bound multi-select, written from outside — %s', (_name, Bound) => {
+  it('follows the library after mount, not only at it', async () => {
+    render(<Bound seed={['1']} />);
+    await waitFor(() => expect(tags()).toEqual(['Milano']));
+
+    await browser.click(
+      screen.getByRole('button', { name: 'Set from outside' }),
+    );
+
+    await waitFor(() => expect(tags()).toEqual(['Torino']));
+  });
+});

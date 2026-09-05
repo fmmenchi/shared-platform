@@ -25,6 +25,16 @@ import { Tag } from '../tag/tag.component.js';
 import { TagList } from '../tag-list/tag-list.component.js';
 import styles from './combobox.module.css';
 
+/** Two key lists, same order, same members — the only equality that matters here. */
+function sameKeys(
+  a: readonly string[] | undefined,
+  b: readonly string[] | undefined,
+): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  return a.length === b.length && a.every((key, index) => key === b[index]);
+}
+
 /** The empty selection, shared so an uncontrolled default never changes identity. */
 const NO_KEYS: readonly string[] = Object.freeze([]);
 
@@ -203,6 +213,48 @@ function Combobox<T>(props: ComboboxProps<T>) {
       : undefined,
     name: 'Combobox',
   });
+
+  /**
+   * WHAT THE BINDING HOLDS NOW, followed after mount and not only at it.
+   *
+   * The seed above answers the first render; everything after it used to be
+   * ours alone, so an app writing the field from outside — a "clear all", a
+   * draft loaded into the form, a server round trip that rewrites the
+   * selection — moved the library and left the control showing the old choices.
+   * That is the divergence this whole carrier arrangement exists to prevent,
+   * arriving through the door the seed does not cover.
+   *
+   * IT CANNOT LOOP. Our own writes go out through `setValues` and come back as
+   * the same list, and the comparison is by CONTENT, so the effect finds
+   * nothing to do. It also cannot fight a binding that does not store what it
+   * is told: such a binding answers with its old list, this adopts it, and the
+   * disagreement is visible at once rather than at submit — which is the better
+   * of the two failures.
+   *
+   * The two bindings that read the document answer `undefined` here and are
+   * left alone: their value IS the carriers, and the carriers are drawn from
+   * what this component holds.
+   */
+  const held = optionBinding?.values;
+  // WHAT THE BINDING LAST SAID, so a re-render for any other reason does not
+  // re-assert a list the reader has since moved past. `useBoundCarrier` keeps
+  // the same guard for the single half and for the same reason, and dropping it
+  // was measured here: react-hook-form answers from a store that updates a
+  // render behind, so "differs from ours" was true for one frame after every
+  // pick — and the effect put the previous list back. Picking two cities left
+  // one.
+  const lastHeld = useRef(held);
+  useEffect(() => {
+    if (!many || held === undefined) return;
+    // THE BINDING HAS TO HAVE MOVED. Ours is not a vote here: we only adopt a
+    // list that is new to the binding, which is exactly the case the seed does
+    // not cover — an app writing the field from outside the control.
+    if (sameKeys(held, lastHeld.current)) return;
+    lastHeld.current = held;
+    if (sameKeys(held, picked)) return;
+    setPicked(held);
+  }, [many, held, picked, setPicked]);
+
   const [typed, setTyped] = useControlled<string>({
     value: query,
     defaultValue: defaultQuery,
