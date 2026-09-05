@@ -150,3 +150,5 @@ export {
   toPixels,
   REGISTERED_SECTIONS,
 } from './utils/emit-properties.js';
+export { emitTheme } from './utils/emit-theme.js';
+export type { ThemeArtefact } from './utils/emit-theme.js';
