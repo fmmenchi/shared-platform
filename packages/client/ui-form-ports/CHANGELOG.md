@@ -1,3 +1,18 @@
+## 0.0.80 (2026-09-05)
+
+### 🚀 Features
+
+- **ui:** a bound multi-select follows the form it is bound to ([547fe8b](https://github.com/fmmenchi/shared-platform/commit/547fe8b))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/ui to 0.7.18
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.79 (2026-09-04)
 
 ### 🧱 Updated Dependencies

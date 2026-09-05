@@ -1,3 +1,9 @@
+## 0.0.42 (2026-09-05)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/theme to 0.0.6
+
 ## 0.0.41 (2026-09-02)
 
 ### 🚀 Features

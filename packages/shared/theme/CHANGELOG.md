@@ -1,3 +1,14 @@
+## 0.0.6 (2026-09-05)
+
+### 🚀 Features
+
+- **theme:** emitTheme renders a theme file, so more than a generator can ([74fdfd1](https://github.com/fmmenchi/shared-platform/commit/74fdfd1))
+
+### ❤️ Thank You
+
+- Claude Opus 5 (1M context)
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.5 (2026-09-01)
 
 ### 🚀 Features
