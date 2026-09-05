@@ -35,6 +35,7 @@ import {
   type SerializedDeclarations,
 } from './declarations';
 import { readDeclarations } from './declarations.server';
+import { EditingSchemeSwitch } from './editing-scheme';
 import { isPreviewOpen, withPreview } from './preview-open';
 import { RampProvider } from './ramp';
 import { RoleOverridesProvider } from './role-overrides';
@@ -248,7 +249,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   display: 'flex',
                   flexWrap: 'wrap',
                   gap: 'var(--fm-space-inline-m)',
-                  alignItems: 'baseline',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: 'var(--fm-space-inset-m)',
                   borderBlockEnd:
@@ -452,11 +453,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       justifyContent: 'space-between',
                     }}
                   >
-                    {/* IT NAMES THE RAIL, via `aria-labelledby` above: what a screen
-                      reader announces is then the words on screen. */}
-                    <Heading level={2} size="h3" id="preview-rail-heading">
-                      Your theme
-                    </Heading>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 'var(--fm-space-inline-m)',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {/* IT NAMES THE RAIL, via `aria-labelledby` above: what a screen
+                        reader announces is then the words on screen. */}
+                      <Heading level={2} size="h3" id="preview-rail-heading">
+                        Your theme
+                      </Heading>
+                      {/* THE SAME CONTROL THE WIZARD'S TITLE CARRIES, over the same
+                        URL. It is here as well as there because step four has none —
+                        review answers for both themes — and the rail must still be
+                        steerable from that step. */}
+                      <EditingSchemeSwitch />
+                    </div>
                     {/* ONE CONTROL, AND IT IS A GLYPH. `aria-label` carries the name
                       because the × cannot: `icon` and `iconEnd` on `Button` are
                       DECORATIVE by contract, and a lone "×" read aloud is

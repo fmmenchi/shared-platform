@@ -1,4 +1,6 @@
 import { Heading } from '@fmmenchi/ui/heading';
+
+import { EditingSchemeSwitch } from '../editing-scheme';
 import { Stepper } from '@fmmenchi/ui/stepper';
 import { StepperItem } from '@fmmenchi/ui/stepper-item';
 import { NavLink, Outlet, useLocation } from 'react-router';
@@ -46,7 +48,27 @@ export default function Build() {
         padding: 'var(--fm-space-inset-l)',
       }}
     >
-      <Heading level={1}>Build a theme</Heading>
+      {/* THE SWITCH SITS WITH THE TITLE, one for the whole wizard rather than one
+          per step. It governs steps one to three alike, so repeating it three times
+          was three drawings of one control — the same mistake, one level up, that
+          `editing-scheme.tsx` records about the four states it replaced.
+
+          NOT ON STEP FOUR. Review validates BOTH themes and reports which scheme each
+          violation came from, so "the theme you are editing" has no answer there and a
+          two-state control would be a false statement. The rail keeps its own, so the
+          preview is still steerable from that step. */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 'var(--fm-space-inline-m)',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Heading level={1}>Build a theme</Heading>
+        {current !== 'review' && <EditingSchemeSwitch />}
+      </div>
 
       {/* `aria-label` rather than a `label` prop: the design system's stepper
         names itself from its own localized copy ("Progress") and takes an

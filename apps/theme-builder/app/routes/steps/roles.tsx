@@ -8,16 +8,13 @@ import {
 import { Alert } from '@fmmenchi/ui/alert';
 import { Button } from '@fmmenchi/ui/button';
 import { Heading } from '@fmmenchi/ui/heading';
-import { Tab } from '@fmmenchi/ui/tab';
-import { TabList } from '@fmmenchi/ui/tab-list';
-import { TabPanel } from '@fmmenchi/ui/tab-panel';
-import { Tabs } from '@fmmenchi/ui/tabs';
 import { Combobox } from '@fmmenchi/ui/combobox';
 import { wcagContrast } from 'culori';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 
 import { useBases } from '../../bases';
+import { useEditingScheme } from '../../editing-scheme';
 import { useDeclarations, type Scheme } from '../../declarations';
 import { useRamp } from '../../ramp';
 import { ROLE_GROUPS, UNGROUPED_PAIRS } from '../../role-groups';
@@ -71,6 +68,7 @@ import {
  * would let somebody point at a rung that does not exist there.
  */
 export default function Roles() {
+  const [scheme] = useEditingScheme();
   return (
     <section style={{ display: 'grid', gap: 'var(--fm-space-stack-m)' }}>
       <Heading level={2}>Semantic roles</Heading>
@@ -82,18 +80,11 @@ export default function Roles() {
         Move a role to another rung and watch its pairs move with it.
       </p>
 
-      <Tabs defaultValue="light">
-        <TabList aria-label="Theme">
-          <Tab value="light">Light</Tab>
-          <Tab value="dark">Dark</Tab>
-        </TabList>
-        <TabPanel value="light">
-          <RolesPanel scheme="light" />
-        </TabPanel>
-        <TabPanel value="dark">
-          <RolesPanel scheme="dark" />
-        </TabPanel>
-      </Tabs>
+      {/* ONE PANEL, NOT BOTH. `TabPanel` stays mounted and goes `hidden` — the
+          APG's shape, and right for tabs — which meant this step rendered 168
+          comboboxes to show 84. A radio group has no such obligation: the theme
+          you are not editing is not on the page. */}
+      <RolesPanel scheme={scheme} />
     </section>
   );
 }
@@ -437,11 +428,22 @@ function Knobs({
           families,
           homeFamilyOf(pristine.get(colorVar(role))),
         ).flatMap(([family, steps]) =>
-          steps.map((step) => ({
-            token: `--fm-palette-${family}-${step}`,
-            label: `${family}-${step}`,
-            colour: palette[family]?.[Number(step)],
-          })),
+          steps.map((step) => {
+            const token = `--fm-palette-${family}-${step}`;
+            return {
+              token,
+              label: `${family}-${step}`,
+              // TWO SOURCES, because the rungs have two origins. The seven brand
+              // families are GENERATED from the bases somebody is editing, so they
+              // must come from the palette. `neutral` is not generated — it is not
+              // even a `PALETTE_FAMILIES` member — it is stated outright in
+              // `vars.css`, the same greys in both schemes, so it comes from the
+              // declarations. Reading only the palette left all 35 neutral rungs
+              // `undefined`, which the swatch rendered as `transparent`: 35 empty
+              // outlines in a menu whose whole point is showing the colour.
+              colour: palette[family]?.[Number(step)] ?? pristine.get(token),
+            };
+          }),
         );
 
         return (

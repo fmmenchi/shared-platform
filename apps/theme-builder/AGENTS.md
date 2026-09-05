@@ -20,12 +20,12 @@ pnpm nx build @fmmenchi/theme-builder
 
 ## The four steps, and what each owns
 
-| step                               | owns                                                                       |
-| :--------------------------------- | :------------------------------------------------------------------------- |
-| 1 `routes/steps/brand-colours.tsx` | the fourteen bases — light and dark, a tab each — light validated as a SET |
-| 2 `routes/steps/palette.tsx`       | the ramp's ends and the palette they produce, per theme                    |
-| 3 `routes/steps/roles.tsx`         | every role re-pointable, per theme, with each declared pair measured       |
-| 4 `routes/steps/review.tsx`        | the validator's verdict, and the download                                  |
+| step                               | owns                                                                          |
+| :--------------------------------- | :---------------------------------------------------------------------------- |
+| 1 `routes/steps/brand-colours.tsx` | the fourteen bases — light and dark, one at a time — light validated as a SET |
+| 2 `routes/steps/palette.tsx`       | the ramp's ends and the palette they produce, per theme                       |
+| 3 `routes/steps/roles.tsx`         | every role re-pointable, per theme, with each declared pair measured          |
+| 4 `routes/steps/review.tsx`        | the validator's verdict, and the download                                     |
 
 State lives in providers wired in `root.tsx`: `bases.tsx`, `ramp.tsx`, `role-overrides.tsx`. Each
 throws outside its provider — "no value" and "not wired" must not look alike. `theme-scope.tsx`
@@ -114,6 +114,32 @@ right about the DRAFT, silent about dark mode, and the dark preset was not even 
   component stylesheet reads a palette rung directly (checked). The rail shows THEIR dark while the
   shell wears the design system's.
 
+**WHICH THEME YOU ARE EDITING IS ONE QUESTION, IN THE URL.** `editing-scheme.tsx` owns the
+`scheme` param and the `SegmentedControl` that writes it, and everything that needs the answer
+reads it there — steps one, two and three, and the preview rail.
+
+- **IT WAS ASKED FOUR TIMES.** Each of the three steps held its own `Tabs` with its own state, and
+  the rail held a fourth in a `useState`. Set step one to dark, walk to step three, and you were
+  editing light again with nothing on screen admitting the jump. The complaint was that there were
+  too many switches; the defect was that ONE question was drawn four times, so it read as four.
+- **A RADIO GROUP, NOT `Tabs`** — ADR-0025's own line, "a tab list navigates the page, a radio group
+  answers a question". Those tab lists navigated nothing: both panels were the same step. So the
+  component changes for the same reason the count does.
+- **IN THE URL** for the reasons `preview-open.ts` gives about its own param, plus one it does not
+  have to: `useStepLink` carries the whole query, so the scheme follows a step change with no
+  plumbing. `tests/editing-scheme.spec.tsx` holds that as a property of the pair.
+- **REPLACE, NOT PUSH.** Looking at the other theme is not somewhere you went, and a history stacked
+  with it would make Back mean "the other theme" instead of "the previous step".
+- **ONE PANEL RENDERS, NOT BOTH.** `TabPanel` stays mounted and goes `hidden`, which is right for
+  tabs and was making step three render 168 comboboxes to show 84. A radio group has no such
+  obligation. Measured: that page went from 385KB to 215KB.
+- **THE CONTROL APPEARS TWICE and that is not a second answer** — on the step and in the rail, both
+  over the URL. The rail keeps one because step four has none of its own and the rail must still be
+  steerable from there. Its `name` comes from `useId`: radios sharing a `name` are ONE group to the
+  browser, so a fixed name would have the two pairs uncheck each other.
+- **The rail no longer previews a theme you are not editing.** It could, and nobody used it; a
+  comparison is a feature (two themes side by side), not a fourth answer to one question.
+
 **THE CHROME SAYS WHAT IT DOES.** The sidebar holds the four STEPS and nothing else; the header
 holds the two things that are not steps: the theme switcher (`theme-switcher.tsx`, an icon `Button`)
 and the preview toggle.
@@ -201,7 +227,7 @@ what it produces. Before that they followed no rule at all — measured, neither
 gamut ceiling at L 0.75 (3.16x spread) nor a fraction of the light chroma (2.02x) — so there was
 nothing to compute a brand's dark colours from.
 
-- **The dark bases are EDITABLE**, on step 1 in their own tab, and until somebody edits one they
+- **The dark bases are EDITABLE**, on step 1 with the switch on dark, and until somebody edits one they
   **FOLLOW the light seven** — `setBases` re-derives them, `darkFollowsLight` says whether it still
   will, and the panel states which of the two it is. "Never automatic" was the rule here first, and
   the export is where it was caught: change the light primary to `#1f5fa8` and the dark file still
