@@ -22,7 +22,11 @@ Three pieces sharing one target name, `validate-themes`. Full arguments/options/
 [docs/reference/cli.md](./docs/reference/cli.md).
 
 - **generator `theme`** — writes `<projectRoot>/<directory>/<name>.css` (`--directory` default
-  `src/themes`): a COMPLETE `[data-theme='<name>']` assignment. **Two ways to get the values, one
+  `src/themes`): a COMPLETE `[data-theme='<name>']` assignment. **The text comes from
+  `emitTheme`** in `@fmmenchi/theme`, not from a template here: where the file GOES is this
+  generator's business, what it SAYS is knowledge about the contract. It was a literal in this file
+  until the theme builder needed to hand somebody the same bytes, and a second template would have
+  been a second renderer of one decision. **Two ways to get the values, one
   way to write them.** Without `--from` it scaffolds from the **installed** `@fmmenchi/tokens`
   `vars.css` (resolved at run time via `createRequire` from the consumer workspace root;
   `--tokensPath` escape hatch), and the file header records the tokens version. With

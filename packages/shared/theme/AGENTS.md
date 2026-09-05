@@ -48,8 +48,18 @@ up named like a builder:
 parse*      CSS text          -> declarations      parseTheme, parseCssVars
 to*         declarations      -> a typed structure  toTheme, toPalette, readAliases
 generate*   data              -> data               generatePalette, generateTheme
-emit*       data              -> the TEXT OF A FILE emitProperties
+emit*       data              -> the TEXT OF A FILE emitProperties, emitTheme
 ```
+
+**TWO EMITTERS.** `emitProperties` renders `properties.css` from the contract's NAMES;
+`emitTheme` renders a `[data-theme]` block from a contract's VALUES, which arrive as data — no
+number a designer chose lives here either way. `emitTheme` was a template literal inside
+`@fmmenchi/nx-theme-generator`, three lines above a `tree.write`, so the only renderer of a theme
+sat behind Nx's `Tree` API: nothing else could produce one and nothing could test the TEXT except by
+running a generator against a virtual filesystem. Extracting it is the same move `emitProperties`
+made out of tokens, for the same reason. Its header degrades — a generator knows who it is, which
+tokens version it read and what command checks the result; a download from a web page knows none of
+those and must not claim them.
 
 **THE EMITTERS LIVE HERE AND THE FILES THEY WRITE DO NOT.** `@fmmenchi/tokens` is an ARTEFACT
 package: it ships values and stylesheets, and the code that renders one of those stylesheets is
