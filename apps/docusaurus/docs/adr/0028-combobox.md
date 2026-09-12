@@ -184,6 +184,11 @@ inherits the solution instead of writing a fourth one.
 
 ### 4. It participates in forms through a hidden native carrier — the exception to ADR-0013
 
+> **Revised by [ADR-0029](./0029-multi-combobox.md) §2.** The carrier is a CSS-hidden, focusable
+> **text** input, not `<input type="hidden">`: measured, a hidden input is in value mode "default",
+> so `form.reset()` restores its current value onto itself and the field comes back holding the
+> choice that was just discarded. The exception this section authorises is unchanged.
+
 ADR-0013's guarantee is not styling: it is that the browser itself collects the form. A `<select>`
 submits with `FormData` with no JavaScript running at all. The visible `<input>` of a combobox holds
 the **query** ("mil"), not the value ("42"), so without something else the form would carry the
@@ -202,6 +207,11 @@ no selection — only whatever the server rendered into the carrier. That is the
 exception, it applies to this component alone, and it is why this ADR exists rather than a folder.
 
 ### 5. Single and multiple, with chips — and `Selection` is not reused
+
+> **Revised by [ADR-0029](./0029-multi-combobox.md) §1.** Both still ship, but as **two components
+> over a shared list layer** rather than one component with a mode — the difference between them is
+> not the cardinality of the value, it is the box: a fixed-height control against an elastic
+> container. The decision about `Selection` below is unchanged and still in force.
 
 Both ship. Multiple is not a later addition: `select.mdx` promises "a combobox with chips" in a
 table a consumer reads while choosing.

@@ -5,3 +5,9 @@ ops/*/
 plugins/*/
 server/*/
 shared/*/
+# `tools` was missing from this list, and the gap was not theoretical: a stale
+# `tools/figma-tokens/` — output of a package dropped in "chore: drop the figma
+# bridge" — sat untracked in a worktree until a `git add -A` swept it into an
+# unrelated commit. The six scopes here are `packages/*`; leaving one out means
+# that scope's generated docs are committable by accident.
+tools/*/
