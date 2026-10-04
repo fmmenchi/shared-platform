@@ -15,6 +15,7 @@ export type {
   ProjectChangelogs,
   ProjectsVersionData,
   ReleaseRecord,
+  WorkspaceRelease,
 } from './release-result.types.js';
 export type {
   ReleaseGroupTagConfig,

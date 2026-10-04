@@ -25,6 +25,7 @@ import { execFileSync } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -34,6 +35,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
+import { eventsFromReleases } from '@fmmenchi/notify';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, '..');
@@ -57,11 +59,16 @@ const git = (cwd: string, ...args: string[]) =>
  * plugin from the workspace root, and installing into a temp dir for every scenario would make
  * this test cost minutes instead of seconds.
  */
-function makeFixture(release: Record<string, unknown>): string {
+function makeFixture(
+  release: Record<string, unknown>,
+  packages: string[] = ['a'],
+): string {
   const dir = mkdtempSync(join(tmpdir(), 'fmmenchi-release-contract-'));
   fixtures.push(dir);
 
-  mkdirSync(join(dir, 'packages', 'a'), { recursive: true });
+  for (const name of packages) {
+    mkdirSync(join(dir, 'packages', name), { recursive: true });
+  }
   writeFileSync(
     join(dir, 'package.json'),
     JSON.stringify({ name: 'fixture', private: true }, null, 2),
@@ -80,14 +87,20 @@ function makeFixture(release: Record<string, unknown>): string {
   // projects whose graph node is a `lib` and is not private (`getDefaultProjects`), so without it
   // BOTH implementations die with "release group __default__ matches no projects" — equally, and
   // a comparison of two identical failures proves nothing.
-  writeFileSync(
-    join(dir, 'packages', 'a', 'package.json'),
-    JSON.stringify(
-      { name: 'pkg-a', version: '1.0.0', nx: { projectType: 'library' } },
-      null,
-      2,
-    ),
-  );
+  for (const name of packages) {
+    writeFileSync(
+      join(dir, 'packages', name, 'package.json'),
+      JSON.stringify(
+        {
+          name: `pkg-${name}`,
+          version: '1.0.0',
+          nx: { projectType: 'library' },
+        },
+        null,
+        2,
+      ),
+    );
+  }
   symlinkSync(
     join(workspaceRoot, 'node_modules'),
     join(dir, 'node_modules'),
@@ -101,6 +114,9 @@ function makeFixture(release: Record<string, unknown>): string {
   git(dir, 'add', '-A');
   git(dir, 'commit', '-m', 'chore: the workspace');
   git(dir, 'tag', 'pkg-a@1.0.0');
+  // The same starting point in the shape a fixed group tags it: nx's workspace changelog
+  // refuses to run without a previous tag matching the group's pattern.
+  git(dir, 'tag', 'v1.0.0');
 
   // The releasable change. `feat` so conventional commits resolves a minor bump.
   writeFileSync(
@@ -265,5 +281,57 @@ describe('fmmenchi-release agrees with `nx release`', () => {
     // Whatever the order, the operations themselves must still match one for one.
     const sorted = (commands: string[]) => [...commands].sort();
     expect(sorted(mine)).toEqual(sorted(nx));
+  });
+
+  // A FIXED GROUP: one tag for the whole set, one record per project. The record is right to
+  // list them all — publishing needs each one — and everything that read it used to fan one
+  // release out once per project: two announcements here, fourteen in the workspace that
+  // reported it. Only `pkg-a` has a commit of its own; `pkg-b` is released because the group is.
+  it('records a fixed group per project, and announces it once', () => {
+    const dir = makeFixture(
+      {
+        projectsRelationship: 'fixed',
+        releaseTag: { pattern: 'v{version}' },
+        git: { commit: true, tag: true },
+        version: {
+          conventionalCommits: true,
+          fallbackCurrentVersionResolver: 'disk',
+        },
+        changelog: {
+          // A file, because nx renders no workspace changelog at all for a config that
+          // asks for neither a file nor a hosted release — measured: the record came back
+          // with no `workspace` in it.
+          workspaceChangelog: {
+            createRelease: false,
+            file: '{workspaceRoot}/CHANGELOG.md',
+          },
+        },
+      },
+      ['a', 'b'],
+    );
+
+    expect(ours(dir)).toEqual(theirs(dir));
+
+    const record = JSON.parse(
+      readFileSync(join(dir, 'release-result.json'), 'utf-8'),
+    );
+    expect(record.releases.map((r: { project: string }) => r.project)).toEqual([
+      'pkg-a',
+      'pkg-b',
+    ]);
+    expect(new Set(record.releases.map((r: { tag: string }) => r.tag))).toEqual(
+      new Set(['v1.1.0']),
+    );
+
+    const events = eventsFromReleases(record.releases, {
+      app: 'fixture',
+      workspace: record.workspace,
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ app: 'fixture', version: '1.1.0' });
+    // The workspace changelog reached the announcement: its tag IS the group's tag.
+    expect(events[0]?.kind === 'release' && events[0].body).toContain(
+      'a thing worth releasing',
+    );
   });
 });

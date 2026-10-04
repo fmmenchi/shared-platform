@@ -70,6 +70,7 @@ import { publishableProjects, toReleaseRecords } from './release-result.js';
 import type {
   ProjectChangelogs,
   ProjectsVersionData,
+  WorkspaceRelease,
 } from './release-result.types.js';
 import { isPackageTag } from './tags.js';
 import { remoteReleaseProviderOf, tagsByProject } from './release-git.js';
@@ -347,10 +348,19 @@ if (!dryRun) {
   }
 }
 
+// The workspace changelog, handed over beside the records rather than copied into each one.
+// A fixed group on `workspaceChangelog` has no per-project notes at all, so without this its
+// one announcement would carry a title, a link and no changelog.
+const workspace: WorkspaceRelease | undefined = workspaceChangelog && {
+  version: workspaceChangelog.releaseVersion.rawVersion,
+  tag: workspaceChangelog.releaseVersion.gitTag,
+  notes: workspaceChangelog.contents,
+};
+
 const resultFile = process.env['RELEASE_RESULT_FILE'] ?? 'release-result.json';
 writeFileSync(
   resultFile,
-  `${JSON.stringify({ dryRun, releases: records }, null, 2)}\n`,
+  `${JSON.stringify({ dryRun, releases: records, ...(workspace ? { workspace } : {}) }, null, 2)}\n`,
 );
 
 // Transitional: the current SBOM/announce bricks still read a flat list of package tags.

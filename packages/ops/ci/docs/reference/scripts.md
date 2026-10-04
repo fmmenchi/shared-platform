@@ -32,6 +32,13 @@ and then **verified against the tags git really has** before anything downstream
 | `GITHUB_TOKEN`        | —                     | Passed through for tags and GitHub Releases                            |
 | `NODE_AUTH_TOKEN`     | —                     | Passed through for publishing                                          |
 
+**One entry per project, even when they share a tag.** A `fixed` release group cuts one tag for its
+whole set, and the record still lists every project in it — publishing needs each one. Whatever reads
+the record must therefore work **per tag**: one announcement, one SBOM, one `version`. When the
+consumer configured a workspace changelog the record also carries it once, beside the entries, as
+`workspace: { version, tag, notes }` — a fixed group has no per-project notes, and this is where its
+one announcement gets its changelog.
+
 **The record is neutral.** It names no message, channel or artifact: releasing and announcing are
 separate operations, so nothing message-shaped may live in the step that cannot be undone.
 

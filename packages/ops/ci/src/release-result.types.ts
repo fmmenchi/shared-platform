@@ -21,6 +21,18 @@ export interface ReleaseRecord {
   notes?: string;
 }
 
+/**
+ * The workspace changelog nx rendered, when the consumer configured one — recorded ONCE,
+ * beside the per-project records. A fixed release group on a workspace changelog has no
+ * per-project notes, and its one tag is this one.
+ */
+export interface WorkspaceRelease {
+  version: string;
+  /** The git tag nx cut for the workspace (`ReleaseVersion.gitTag`). */
+  tag: string;
+  notes: string;
+}
+
 /** The `projectsVersionData` shape `nx/release` returns — only what we read from it. */
 export type ProjectsVersionData = Record<
   string,
