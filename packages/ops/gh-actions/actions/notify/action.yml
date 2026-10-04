@@ -7,7 +7,7 @@ description: >-
 
 inputs:
   result-file:
-    description: A release record from the `release` brick — one announcement per released project.
+    description: A release record from the `release` brick — one announcement per released tag.
     required: false
     default: ''
   kind:
@@ -15,7 +15,10 @@ inputs:
     required: false
     default: ''
   app:
-    description: 'Single event: what the message is about (defaults to the repository name).'
+    description: >-
+      What the message is about (defaults to the repository name). For a single event, and
+      for a record's tag that several projects share — a tag of one project is announced
+      under that project's name.
     required: false
     default: ''
   message:
@@ -54,6 +57,7 @@ runs:
         RESULT_FILE: ${{ inputs.result-file }}
         KIND: ${{ inputs.kind }}
         APP: ${{ inputs.app || github.event.repository.name }}
+        NOTIFY_APP: ${{ inputs.app }}
         MESSAGE: ${{ inputs.message }}
         VERSION: ${{ inputs.version }}
         URL: ${{ inputs.url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
@@ -68,7 +72,7 @@ runs:
         fi
 
         if [ -n "$RESULT_FILE" ]; then
-          # Every released project, announced from the record the release step wrote. The
+          # Every released tag, announced from the record the release step wrote. The
           # record -> events mapping is tested code in @fmmenchi/notify, not shell.
           # Resolved above, then run as a script — not the bin (linked at install time,
           # skipped when its target does not exist yet) and not `node -e` (which leaves

@@ -135,8 +135,10 @@ deploy:
     - run: ./deploy.sh "${{ needs.release.outputs.version }}"
 ```
 
-`version` and `tag` are filled when exactly one project was released, and empty when zero or many —
-a monorepo releasing three packages has no single version, and the record is the answer there.
+`version` and `tag` are filled when exactly one **tag** was cut — a single project, or a fixed release
+group of many, which has one version however many projects it holds — and empty when zero or many: a
+monorepo releasing three independent packages has no single version, and the record is the answer
+there.
 
 :::
 

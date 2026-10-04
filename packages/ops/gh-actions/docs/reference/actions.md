@@ -119,15 +119,17 @@ survived exactly as long as nobody could switch this on. Pair it with `dry-run: 
 | :------------ | :--------------------------------------------------------- |
 | `result-file` | Path to the record — what the SBOM and notify bricks read. |
 | `released`    | How many projects were released (`0` when nothing was).    |
-| `version`     | The version, when exactly one project was released.        |
+| `version`     | The version, when exactly one tag was cut.                 |
 | `tag`         | The tag, on the same terms.                                |
 | `tags-file`   | Transitional: the released package tags, one per line.     |
 
 **Use `version`/`tag` instead of `git describe`.** A downstream job that re-derives the version from
 git needs `fetch-depth: 0`, a tag glob, and still answers with the PREVIOUS release on a push that
 released nothing — it cannot tell "just released 1.4.0" from "released nothing, and 1.4.0 is what
-was there before". These outputs come from what nx returned. They are empty when zero or many
-projects were released: a monorepo has no single version, and the record is the honest answer there.
+was there before". These outputs come from what nx returned. They are counted in **tags**, not
+projects: a fixed release group of fourteen projects has one tag and one version, so both are filled
+(and `released` is `14`). They are empty when zero or several tags were cut: independently versioned
+packages have no single version, and the record is the honest answer there.
 
 **Gate what follows on `released`**, or a run that released nothing still deploys, announces and
 uploads:
@@ -145,16 +147,23 @@ graph — `needs:` — because only the caller can express it.
 
 ## `attach-sbom`
 
-For each project in the release record, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy` and upload
+For each tag in the release record, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy` and upload
 it to that Release as `sbom.cdx.json`. The record carries the project and the version, so nothing here
 cuts either out of a tag. Every project with a package.json infers the `sbom` target, so this loop —
 the release record — is the entire policy about who gets one. Non-fatal per release: a generation or
 upload failure is a warning, because the release is already out and failing here helps nobody.
 
+**A tag several projects share gets one SBOM, from the project you name.** A fixed release group cuts
+one tag — one Release — for its whole set, so there is one bill of materials to attach: the one of the
+deliverable (the app), whose dependency closure already contains the libraries it uses. Pass it as
+`project`. Without it a shared tag gets no SBOM and a warning, rather than one per project uploaded
+over each other.
+
 | Input          | Type   | Default | Description                                                                  |
 | :------------- | :----- | :------ | :--------------------------------------------------------------------------- |
 | `result-file`  | string | `''`    | **Preferred.** The record from the `release` brick.                          |
 | `tags-file`    | string | `''`    | Deprecated. One `{project}@{version}` tag per line, split by string surgery. |
+| `project`      | string | `''`    | The project whose SBOM describes a tag shared by several projects.           |
 | `github-token` | string | –       | **Required.** Token with `contents: write`.                                  |
 
 ## `notify`
@@ -163,18 +172,22 @@ Deliver notifications to Slack via `@fmmenchi/notify` — every release in a rec
 describe here. It **fails when a message it was asked to send did not arrive** (delivered vs asked,
 counted), and skips green — loudly, with a `::notice::` — when the Slack secrets are absent.
 
+A record is announced **per tag**. A tag of one project is announced under that project's name; a tag
+several projects share — a fixed release group — is one release and one message, under `app`, with the
+workspace changelog when the record carries one.
+
 No project anywhere: an event carries its own identity (`app`), so nothing has to know which of your
 projects hosts a notification target.
 
-| Input                      | Type   | Default       | Description                                               |
-| :------------------------- | :----- | :------------ | :-------------------------------------------------------- |
-| `result-file`              | string | `''`          | A release record — one announcement per released project. |
-| `kind`                     | string | `''`          | Single event instead: `release` or `error`.               |
-| `app`                      | string | the repo name | Single event: what the message is about.                  |
-| `message` / `version`      | string | `''`          | Single event: the error text, or the released version.    |
-| `url`                      | string | this run      | Single event: where to read more.                         |
-| `repository-url`           | string | this repo     | Base URL used to form release links.                      |
-| `bot-token` / `channel-id` | string | `''`          | Slack secrets. Absent → skips green.                      |
+| Input                      | Type   | Default       | Description                                            |
+| :------------------------- | :----- | :------------ | :----------------------------------------------------- |
+| `result-file`              | string | `''`          | A release record — one announcement per released tag.  |
+| `kind`                     | string | `''`          | Single event instead: `release` or `error`.            |
+| `app`                      | string | the repo name | What the message is about.                             |
+| `message` / `version`      | string | `''`          | Single event: the error text, or the released version. |
+| `url`                      | string | this run      | Single event: where to read more.                      |
+| `repository-url`           | string | this repo     | Base URL used to form release links.                   |
+| `bot-token` / `channel-id` | string | `''`          | Slack secrets. Absent → skips green.                   |
 
 ## `notify-failure`
 
