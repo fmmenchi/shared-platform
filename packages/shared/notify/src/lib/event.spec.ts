@@ -145,13 +145,70 @@ describe('eventsFromReleases', () => {
     expect(event?.kind === 'release' && event.body).toBeUndefined();
   });
 
-  it('produces one event per released project — the batch notify expects', () => {
+  it('produces one event per tag — the batch notify expects', () => {
     expect(
       eventsFromReleases([
         ...released,
         { project: '@x/y', version: '1.0.0', tag: 'v1' },
       ]),
     ).toHaveLength(2);
+  });
+
+  // A FIXED GROUP: one tag, one record per project. Fourteen records were fourteen messages.
+  describe('when several projects share one tag', () => {
+    const fixed = [
+      { project: 'app', version: '2.0.0', tag: 'v2.0.0' },
+      { project: 'ui', version: '2.0.0', tag: 'v2.0.0' },
+      { project: 'core', version: '2.0.0', tag: 'v2.0.0' },
+    ];
+
+    it('announces the release once, under the app it was given', () => {
+      expect(
+        eventsFromReleases(fixed, {
+          app: 'andes-routes',
+          repositoryUrl: 'https://github.com/o/r',
+        }),
+      ).toEqual([
+        {
+          kind: 'release',
+          app: 'andes-routes',
+          version: '2.0.0',
+          url: 'https://github.com/o/r/releases/tag/v2.0.0',
+        },
+      ]);
+    });
+
+    it('names the projects when nobody said what the release is of', () => {
+      expect(eventsFromReleases(fixed)[0]?.app).toBe('app, ui, core');
+    });
+
+    it('carries the workspace changelog — a fixed group has no other', () => {
+      const [event] = eventsFromReleases(fixed, {
+        workspace: { version: '2.0.0', tag: 'v2.0.0', notes: '### all of it' },
+      });
+      expect(event?.kind === 'release' && event.body).toBe('### all of it');
+    });
+
+    it('leaves a workspace changelog off a tag it does not belong to', () => {
+      const [event] = eventsFromReleases(fixed, {
+        workspace: { version: '9.0.0', tag: 'v9.0.0', notes: '### other' },
+      });
+      expect(event?.kind === 'release' && event.body).toBeUndefined();
+    });
+  });
+
+  it('keeps a project its own notes over the workspace changelog', () => {
+    const [event] = eventsFromReleases(
+      [{ ...released[0]!, notes: '### mine' }],
+      {
+        workspace: {
+          version: '0.6.1',
+          tag: '@fmmenchi/ui@0.6.1',
+          notes: '### all',
+        },
+      },
+    );
+    expect(event?.kind === 'release' && event.body).toBe('### mine');
   });
 });
 

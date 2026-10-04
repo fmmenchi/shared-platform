@@ -147,8 +147,21 @@ export interface ReleasedProject {
   notes?: string;
 }
 
+/** The workspace-level changelog of a release, when the release step recorded one. */
+export interface ReleasedWorkspace {
+  version: string;
+  tag: string;
+  notes?: string;
+}
+
 /**
- * Turns a release record into release events.
+ * Turns a release record into release events — ONE PER TAG, not one per project.
+ *
+ * A fixed release group cuts one tag for its whole set while the record still lists every
+ * project in it, all with the same version and tag. Mapping the records one to one sent
+ * fourteen messages for one release, thirteen of them about projects with no change of
+ * their own. A tag is the release; a tag several projects share is announced once, under
+ * `options.app` (the repository), because it is no longer about any one of them.
  *
  * This is the notify side of the seam: the release step records what it did, in its own
  * neutral vocabulary, and the announcement is derived from that — here, in tested code,
@@ -160,22 +173,46 @@ export interface ReleasedProject {
  * so when the record started carrying its notes the announcements kept going out with a
  * title and a link and no changelog at all — the notes were present the whole time and
  * nothing was reading them.
+ *
+ * A fixed group on a workspace changelog has no per-project notes at all, so the record
+ * carries that changelog separately (`options.workspace`) and it is used for the tag it
+ * belongs to. A project's own notes win when the tag is that project's alone.
  */
 export function eventsFromReleases(
   released: readonly ReleasedProject[],
-  options: { repositoryUrl?: string } = {},
+  options: {
+    repositoryUrl?: string;
+    app?: string;
+    workspace?: ReleasedWorkspace;
+  } = {},
 ): NotifyEvent[] {
-  return released.map(({ project, version, tag, notes }) => ({
-    kind: 'release' as const,
-    app: project,
-    version,
-    ...(options.repositoryUrl
-      ? {
-          url: `${options.repositoryUrl.replace(/\/$/, '')}/releases/tag/${encodeURIComponent(tag)}`,
-        }
-      : {}),
-    ...(notes ? { body: notes } : {}),
-  }));
+  const byTag = new Map<string, ReleasedProject[]>();
+  for (const release of released) {
+    byTag.set(release.tag, [...(byTag.get(release.tag) ?? []), release]);
+  }
+
+  return [...byTag].map(([tag, projects]) => {
+    const shared = projects.length > 1;
+    const names = projects.map((p) => p.project);
+    const projectNotes = projects.find((p) => p.notes)?.notes;
+    const workspaceNotes =
+      options.workspace?.tag === tag ? options.workspace.notes : undefined;
+    const notes = shared
+      ? (workspaceNotes ?? projectNotes)
+      : (projectNotes ?? workspaceNotes);
+
+    return {
+      kind: 'release' as const,
+      app: shared ? (options.app ?? names.join(', ')) : (names[0] as string),
+      version: (projects[0] as ReleasedProject).version,
+      ...(options.repositoryUrl
+        ? {
+            url: `${options.repositoryUrl.replace(/\/$/, '')}/releases/tag/${encodeURIComponent(tag)}`,
+          }
+        : {}),
+      ...(notes ? { body: notes } : {}),
+    };
+  });
 }
 
 /**
