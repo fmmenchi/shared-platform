@@ -21,10 +21,14 @@ name: Security
 # workflow does not run this workflow, which is how a broken `nx --json` parse reached
 # main having never been executed: the scan silently stopped happening and only a
 # dependency change some commits later showed it.
+# `.trivyignore.yaml` is here for the same reason: it decides the outcome of the scan, so a PR
+# that only edits it — accepting a finding — must be the PR the scan runs on. It was missing,
+# and the first such PR showed no Security check at all.
 on:
   pull_request:
     paths:
       - 'pnpm-lock.yaml'
+      - '.trivyignore.yaml'
       - '**/package.json'
       - 'packages/plugins/trivy/**'
       - 'packages/ops/gh-actions/actions/trivy-scan/**'
@@ -32,6 +36,7 @@ on:
     branches: [main]
     paths:
       - 'pnpm-lock.yaml'
+      - '.trivyignore.yaml'
       - '**/package.json'
       - 'packages/plugins/trivy/**'
       - 'packages/ops/gh-actions/actions/trivy-scan/**'
