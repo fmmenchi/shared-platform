@@ -1,3 +1,14 @@
+## 0.2.4 (2026-10-05)
+
+### 🩹 Fixes
+
+- **nx-trivy:** a scan skips the git worktrees nested in the workspace ([e4d90c6](https://github.com/fmmenchi/shared-platform/commit/e4d90c6))
+
+### ❤️ Thank You
+
+- Claude Opus 5.5 (1M context)
+- fmmenchi @fmmenchi
+
 ## 0.2.3 (2026-08-31)
 
 This was a version bump only for @fmmenchi/nx-trivy to align it with other projects, there were no code changes.
