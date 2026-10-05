@@ -8,7 +8,7 @@ pnpm nx add @fmmenchi/nx-trivy   # installs + runs `init`: registers the plugin 
 ```
 
 That is the whole setup — no target to write. Registration makes the plugin infer `scan`,
-`scan-docker`, `scan-secrets` and `scan-secrets-docker` onto the **workspace root project** (the scan
+`scan-docker`, `scan-dev-deps`, `scan-dev-deps-docker`, `scan-secrets` and `scan-secrets-docker` onto the **workspace root project** (the scan
 runs from the root whatever hosts it, so one host is the right number):
 
 ```bash

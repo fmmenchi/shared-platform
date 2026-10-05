@@ -20,15 +20,17 @@ pnpm nx add @fmmenchi/nx-trivy
 ```
 
 There is no target to write. `nx add` runs the [`init` generator](../reference/generators.md), which
-registers the plugin in `nx.json` — and registration is what makes the plugin **infer** its four scan
+registers the plugin in `nx.json` — and registration is what makes the plugin **infer** its six scan
 targets onto the **workspace root project**:
 
-| Target                | What it runs                                   |
-| --------------------- | ---------------------------------------------- |
-| `scan`                | vulnerabilities, local `trivy` CLI             |
-| `scan-docker`         | vulnerabilities, via the `aquasec/trivy` image |
-| `scan-secrets`        | secrets, local CLI                             |
-| `scan-secrets-docker` | secrets, via the image                         |
+| Target                 | What it runs                                              |
+| ---------------------- | --------------------------------------------------------- |
+| `scan`                 | vulnerabilities, local `trivy` CLI                        |
+| `scan-docker`          | vulnerabilities, via the `aquasec/trivy` image            |
+| `scan-dev-deps`        | vulnerabilities, dev dependencies included, local CLI     |
+| `scan-dev-deps-docker` | vulnerabilities, dev dependencies included, via the image |
+| `scan-secrets`         | secrets, local CLI                                        |
+| `scan-secrets-docker`  | secrets, via the image                                    |
 
 They land on the root project because the scan runs from the workspace root whatever project hosts
 it, so one host is the right number — see [Concepts](../concepts/index.md). Ask the graph for its
