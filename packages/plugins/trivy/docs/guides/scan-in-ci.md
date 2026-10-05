@@ -17,7 +17,7 @@ install step.
 
 ## Step 1: Run the scan with the Docker runner
 
-`scan-docker` is one of the four targets the plugin infers onto the workspace root project once it is
+`scan-docker` is one of the targets the plugin infers onto the workspace root project once it is
 registered in `nx.json` (see [Run a scan](./run-a-scan.md)). It is a separate target rather than a
 `--runner=docker` flag because nx reserves `--runner` for tasks-runner selection, so that flag never
 reaches the executor.

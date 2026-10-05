@@ -22,7 +22,7 @@ pnpm nx g @fmmenchi/nx-trivy:init   # or run it by hand, any time
 
 1. **Registers the plugin in `nx.json`** (`plugins: ["@fmmenchi/nx-trivy"]`). This is the step that
    matters: target inference only runs for registered plugins, so without it the plugin is installed
-   and inert — and registration is what puts the four scan targets on your root project.
+   and inert — and registration is what puts the scan targets on your root project.
 2. **Seeds a `.trivyignore.yaml`** at the workspace root — the scan root, where Trivy auto-detects it
    under both runners. It ships with an empty `vulnerabilities: []` and the policy comment that keeps
    it from filling up (fix first, suppress only with a `statement` and an `expired_at`).

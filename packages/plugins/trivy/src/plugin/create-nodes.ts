@@ -24,7 +24,13 @@ const SECRET_SKIP_DIRS = [
 ];
 
 /**
- * The four scan targets, inferred onto the workspace root project.
+ * Trivy leaves dev dependencies out of a vulnerability scan unless asked. That is the right
+ * gate for what ships, and the wrong audit of what runs on a developer's machine and in CI.
+ */
+const DEV_DEPS = ['--include-dev-deps'];
+
+/**
+ * The six scan targets, inferred onto the workspace root project.
  *
  * Uncached, always: a scan goes red because the WORLD changed — a CVE published against a
  * dependency nobody touched — so a cache hit keyed on unchanged files would serve a green
@@ -46,6 +52,8 @@ export function scanTargets(): Targets {
   return {
     scan: scan({}),
     'scan-docker': scan({ runner: 'docker' }),
+    'scan-dev-deps': scan({ extraArgs: DEV_DEPS }),
+    'scan-dev-deps-docker': scan({ extraArgs: DEV_DEPS, runner: 'docker' }),
     'scan-secrets': scan(secret),
     'scan-secrets-docker': scan({ ...secret, runner: 'docker' }),
   };

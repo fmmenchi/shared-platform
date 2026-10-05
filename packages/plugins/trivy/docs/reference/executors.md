@@ -95,7 +95,7 @@ pnpm nx run @fmmenchi/ui:sbom [options]
 
 ## Targets
 
-The four scan targets below are **inferred onto the workspace root project** as soon as the plugin is
+The six scan targets below are **inferred onto the workspace root project** as soon as the plugin is
 registered in `nx.json` — nothing to hand-write. They are all **uncached**: a scan goes red because
 the world changed (a CVE was published against a dependency nobody touched), so a cache hit keyed on
 unchanged files would be a green that means nothing.
@@ -126,6 +126,23 @@ pnpm nx run <root-project>:scan-docker
 This is the `scan` executor with `runner: docker` in its **options**. nx reserves the `--runner`
 CLI flag for tasks-runner selection, so the docker runner is picked via a target (like this one) or
 a configuration — not `--runner=docker` on the command line.
+
+### `scan-dev-deps` / `scan-dev-deps-docker`
+
+The `scan` executor with `extraArgs: ["--include-dev-deps"]`. Trivy leaves dev dependencies out of a
+vulnerability scan unless asked, so `scan` and `scan-docker` answer "is what we ship vulnerable?" and
+this pair answers the wider "is anything we install vulnerable?" — the build tools, the test runner,
+everything that runs on a developer's machine and in CI. `-docker` uses the image.
+
+```bash
+pnpm nx run <root-project>:scan-dev-deps         # local
+pnpm nx run <root-project>:scan-dev-deps-docker  # via the aquasec/trivy image
+```
+
+They are separate targets so that the two questions can be asked at different moments: a PR gate on
+the default pair, a scheduled audit on this one. Expect the wider scan to be red more often, and more
+often for a finding with no fix yet — a dev-dependency tree is many times the size of the shipped one.
+Both read the same `.trivyignore.yaml`, so an entry written for the audit also applies to the gate.
 
 ### `scan-secrets` / `scan-secrets-docker`
 

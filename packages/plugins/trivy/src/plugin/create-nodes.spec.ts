@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { sbomTarget, scanTargets } from './create-nodes';
 
 describe('scanTargets', () => {
-  it('infers the four targets CI and the docs refer to by name', () => {
+  it('infers the six targets CI and the docs refer to by name', () => {
     expect(Object.keys(scanTargets())).toEqual([
       'scan',
       'scan-docker',
+      'scan-dev-deps',
+      'scan-dev-deps-docker',
       'scan-secrets',
       'scan-secrets-docker',
     ]);
@@ -25,8 +27,22 @@ describe('scanTargets', () => {
     const targets = scanTargets();
     expect(targets.scan.options?.runner).toBeUndefined();
     expect(targets['scan-docker'].options?.runner).toBe('docker');
+    expect(targets['scan-dev-deps'].options?.runner).toBeUndefined();
+    expect(targets['scan-dev-deps-docker'].options?.runner).toBe('docker');
     expect(targets['scan-secrets'].options?.runner).toBeUndefined();
     expect(targets['scan-secrets-docker'].options?.runner).toBe('docker');
+  });
+
+  it('includes dev dependencies only in the -dev-deps targets, so the default gate is unchanged', () => {
+    const targets = scanTargets();
+    expect(targets.scan.options?.extraArgs).toBeUndefined();
+    expect(targets['scan-docker'].options?.extraArgs).toBeUndefined();
+    expect(targets['scan-dev-deps'].options?.extraArgs).toEqual([
+      '--include-dev-deps',
+    ]);
+    expect(targets['scan-dev-deps-docker'].options?.extraArgs).toEqual([
+      '--include-dev-deps',
+    ]);
   });
 
   it('scans for secrets only in the -secrets targets, skipping vendored dirs', () => {

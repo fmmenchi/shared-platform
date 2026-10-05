@@ -15,6 +15,8 @@ pnpm nx lint @fmmenchi/nx-trivy
 pnpm nx test @fmmenchi/nx-trivy          # node vitest (arg builders)
 pnpm nx run @fmmenchi/source:scan            # vuln scan (local trivy CLI) — targets inferred on the ROOT project
 pnpm nx run @fmmenchi/source:scan-docker     # vuln scan via the aquasec/trivy image (no local CLI)
+pnpm nx run @fmmenchi/source:scan-dev-deps          # vuln scan, dev dependencies included (local)
+pnpm nx run @fmmenchi/source:scan-dev-deps-docker   # the same via the image
 pnpm nx run @fmmenchi/source:scan-secrets        # secret scan (local)
 pnpm nx run @fmmenchi/source:scan-secrets-docker # secret scan via the image
 pnpm nx run @fmmenchi/ui:sbom                # CycloneDX SBOM (inferred on every package.json project)
@@ -40,8 +42,11 @@ pnpm-lock.yaml` in an npm consumer (measured against a scratch npm workspace). T
   image — mounts the workspace at `/workspace`, needs only Docker). The vuln DB caches in a named
   volume by default; pass `cacheDir` to bind-mount a host dir instead so CI can persist it via
   `actions/cache`.
-- **Four scan targets inferred onto the ROOT project** by `createNodesV2` —
-  `scan`/`scan-docker` (vuln) and `scan-secrets`/`scan-secrets-docker` (the same executor with
+- **Six scan targets inferred onto the ROOT project** by `createNodesV2` —
+  `scan`/`scan-docker` (vuln), `scan-dev-deps`/`scan-dev-deps-docker` (vuln with
+  `--include-dev-deps` via `extraArgs`: Trivy leaves dev dependencies out unless asked, so the
+  default pair gates what ships and this pair audits the toolchain too) and
+  `scan-secrets`/`scan-secrets-docker` (the same executor with
   `scanners: secret`, skipping `node_modules`/`dist`/`build`/`.nx`/`.git` via `extraArgs` to avoid
   noise). All uncached: a scan goes red because the world changed, not because a file did. Every
   scan also skips git worktrees nested in the workspace — asked of git, never listed by hand: they
