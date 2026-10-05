@@ -1,3 +1,13 @@
+## 0.2.5 (2026-10-05)
+
+### 🚀 Features
+
+- **nx-trivy:** infer a scan pair that includes dev dependencies ([4ca7d2a](https://github.com/fmmenchi/shared-platform/commit/4ca7d2a))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.2.4 (2026-10-05)
 
 ### 🩹 Fixes
