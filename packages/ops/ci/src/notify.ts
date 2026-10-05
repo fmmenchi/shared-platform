@@ -18,7 +18,11 @@ import {
   slack,
 } from '@fmmenchi/notify';
 import { fetchRunJobs, runContextFromEnv, runUrl } from './run-failures.js';
-import type { NotifyEvent } from '@fmmenchi/notify';
+import type {
+  NotifyEvent,
+  ReleasedProject,
+  ReleasedWorkspace,
+} from '@fmmenchi/notify';
 
 const argValue = (name: string): string | undefined =>
   process.argv
@@ -77,12 +81,24 @@ if (fromRun) {
 
   events = [attachments.length > 0 ? { ...event, attachments } : event];
 } else {
-  events = releaseResult
-    ? eventsFromReleases(
-        (read(releaseResult) as { releases?: [] }).releases ?? [],
-        { repositoryUrl: process.env['NOTIFY_REPOSITORY_URL'] ?? '' },
-      )
-    : parseEvents(read(eventsFile as string));
+  if (releaseResult) {
+    const record = read(releaseResult) as {
+      releases?: ReleasedProject[];
+      workspace?: ReleasedWorkspace;
+    };
+    // The name a tag shared by several projects is announced under: the same one a failure
+    // of this repository is reported under.
+    const app =
+      process.env['NOTIFY_APP'] ||
+      process.env['GITHUB_REPOSITORY']?.split('/')[1];
+    events = eventsFromReleases(record.releases ?? [], {
+      repositoryUrl: process.env['NOTIFY_REPOSITORY_URL'] ?? '',
+      ...(app ? { app } : {}),
+      ...(record.workspace ? { workspace: record.workspace } : {}),
+    });
+  } else {
+    events = parseEvents(read(eventsFile as string));
+  }
 }
 
 const token = process.env['SLACK_BOT_TOKEN'];

@@ -22,7 +22,7 @@ Pin everything to an **exact** tag — `@gh-actions/v0.3.1`. No tag is ever move
   (`pnpm add -D @fmmenchi/nx-trivy @fmmenchi/ci`).
 - Those plugins are registered in the root **`nx.json` `plugins`** — `pnpm nx add @fmmenchi/nx-trivy`
   does it for you — so the scan / `announce-*` targets are inferred onto your workspace.
-- SBOMs need no wiring: every project with a package.json infers the target, and the release record decides which releases carry one.
+- SBOMs need no wiring: every project with a package.json infers the target, and the release record decides which releases carry one. The one exception is a `fixed` release group, whose single tag covers several projects: there `attach-sbom` needs `project`.
 - For **private** repos in the same org: _Settings → Actions → General → Access_ → allow other repos
   in the org to use these workflows/actions.
 

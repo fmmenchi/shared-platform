@@ -74,7 +74,7 @@
   order of the steps, never whether another repo's trunk receives commits.
 - **Slack, from its own job.** A GitHub Release created with `GITHUB_TOKEN` does NOT trigger
   `on: release` workflows, so the pipeline announces the releases itself — in an `announce` job that
-  `needs: release` and reads the release record from an artifact. One message per released project,
+  `needs: release` and reads the release record from an artifact. One message per released tag,
   and the job is RED when a message it was asked to send did not arrive. Secrets
   `SLACK_BOT_TOKEN`/`SLACK_CHANNEL_ID` absent → skips green, with a `::notice::` saying how many were
   not sent. Announcing is a separate job precisely so it can be re-run without re-releasing.

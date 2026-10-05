@@ -97,7 +97,7 @@ shell out to nx.
 | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.1.2` | pnpm + Node + frozen install (`registry-url` input for publishing jobs)                                  |
 | `.../gh-actions/actions/trivy-scan@gh-actions/v0.1.2`                              | vuln + secret scan via `@fmmenchi/nx-trivy`, per-day DB cache                                            |
-| `.../gh-actions/actions/attach-sbom@gh-actions/v0.1.2`                             | one CycloneDX SBOM per released project (`result-file`) → uploaded to each Release as `sbom.cdx.json`    |
+| `.../gh-actions/actions/attach-sbom@gh-actions/v0.1.2`                             | one CycloneDX SBOM per released tag (`result-file`) → uploaded to each Release as `sbom.cdx.json`        |
 | `.../gh-actions/actions/release@gh-actions/v0.1.2`                                 | run `nx release` and emit the record of what it released (`result-file`, `released`)                     |
 | `.../gh-actions/actions/notify@gh-actions/v0.1.2`                                  | announce every release in a record, or one event; RED when a message it was asked to send did not arrive |
 

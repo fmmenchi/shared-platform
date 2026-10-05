@@ -247,7 +247,7 @@ jobs:
           path: ${{ runner.temp }}
 
       # Supply-chain transparency for whoever consumes these packages: one CycloneDX SBOM
-      # per RELEASED project (the record names the project, so nothing parses a tag),
+      # per RELEASED tag (the record names the project, so nothing parses a tag),
       # generated from an nx-pruned lockfile and uploaded to that Release.
       - name: Attach SBOMs to the releases
         uses: ./packages/ops/gh-actions/actions/attach-sbom
@@ -276,7 +276,7 @@ jobs:
 
       # A GitHub Release created with the built-in GITHUB_TOKEN does NOT trigger other
       # workflows, so a `release: published` listener would never fire — announce from here.
-      # One message per released project, and the step is RED if a message it was asked to
+      # One message per released tag, and the step is RED if a message it was asked to
       # send did not arrive. Missing Slack secrets skip green, loudly.
       - name: Announce the releases
         uses: ./packages/ops/gh-actions/actions/notify

@@ -25,16 +25,18 @@ inputs:
 outputs:
   result-file:
     description: >-
-      Path to the release record: dryRun plus one entry per release (project, version, tag).
+      Path to the release record: dryRun plus one entry per released project (project,
+      version, tag) — several entries share a tag when a fixed group was released.
     value: ${{ steps.run.outputs.result-file }}
   released:
     description: How many projects were released (0 when nothing was).
     value: ${{ steps.run.outputs.released }}
   version:
     description: >-
-      The released version, when exactly one project was released — the single-project case,
-      where a caller would otherwise re-derive it with `git describe`. Empty for zero or many:
-      a monorepo has no single version, and must read the record.
+      The released version, when exactly one tag was cut — a single project, or a fixed
+      release group of many — where a caller would otherwise re-derive it with
+      `git describe`. Empty for zero or many tags: independently versioned projects have no
+      single version, and must read the record.
     value: ${{ steps.run.outputs.version }}
   tag:
     description: The released tag, on the same terms as `version`.
@@ -80,11 +82,12 @@ runs:
         # full-history checkout, a tag glob, and answers with the PREVIOUS tag on a push that
         # released nothing — a real bug, found in a consumer.
         #
-        # Single release only: with many, there is no such thing as "the" version, and the
-        # honest answer is empty plus a record to read.
+        # Single TAG only: with many, there is no such thing as "the" version, and the
+        # honest answer is empty plus a record to read. Counted in tags, not records — a
+        # fixed release group lists every project it holds, and has exactly one version.
         outputs=$(node -p "
           const r = JSON.parse(require('fs').readFileSync(process.env.RELEASE_RESULT_FILE, 'utf8')).releases;
-          const only = r.length === 1 ? r[0] : {};
+          const only = new Set(r.map((x) => x.tag)).size === 1 ? r[0] : {};
           ['released=' + r.length, 'version=' + (only.version ?? ''), 'tag=' + (only.tag ?? '')].join('\n');
         ")
         {
