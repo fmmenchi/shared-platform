@@ -75,7 +75,7 @@ runs:
           out="sbom.cdx.json"
           # No "does this project have an sbom target?" question any more: every project with
           # a package.json infers one (ADR-0031). What decides who gets a bill of materials is
-          # this loop — the release record — and nothing else.
+          # this loop — the release record, plus `project` for a tag several projects share.
           # `--packageVersion`, from the record: this job has its own fresh checkout, where
           # package.json still holds the PRE-release version (nx does not commit its bumps),
           # so without it the bill of materials names a version nobody shipped. It cannot be

@@ -149,15 +149,22 @@ graph — `needs:` — because only the caller can express it.
 
 For each tag in the release record, generate a CycloneDX SBOM via `@fmmenchi/nx-trivy` and upload
 it to that Release as `sbom.cdx.json`. The record carries the project and the version, so nothing here
-cuts either out of a tag. Every project with a package.json infers the `sbom` target, so this loop —
-the release record — is the entire policy about who gets one. Non-fatal per release: a generation or
-upload failure is a warning, because the release is already out and failing here helps nobody.
+cuts either out of a tag. Every project with a package.json infers the `sbom` target, so for a tag of
+one project this loop — the release record — is the entire policy about who gets one. Non-fatal per
+release: a generation or upload failure is a warning, because the release is already out and failing
+here helps nobody.
 
 **A tag several projects share gets one SBOM, from the project you name.** A fixed release group cuts
-one tag — one Release — for its whole set, so there is one bill of materials to attach: the one of the
-deliverable (the app), whose dependency closure already contains the libraries it uses. Pass it as
-`project`. Without it a shared tag gets no SBOM and a warning, rather than one per project uploaded
+one tag — one Release — for its whole set, and a Release holds one `sbom.cdx.json`. The record cannot
+say which project that Release is _of_, so you do: pass the deliverable as `project`. Without it a
+shared tag gets **no SBOM and a warning** (the step stays green), rather than one per project uploaded
 over each other.
+
+That SBOM is the bill of materials of **that one project** — its third-party dependencies. It is not a
+bill of materials of the group: the other members are not listed in it as components (measured: the
+SBOM of a project with a `workspace:*` dependency names 209 third-party components and not the sibling
+it depends on), and a member the named project does not depend on contributes nothing. One `project`
+also means one shared tag: a workspace with two fixed groups gets an SBOM on one of them.
 
 | Input          | Type   | Default | Description                                                                  |
 | :------------- | :----- | :------ | :--------------------------------------------------------------------------- |
@@ -174,7 +181,9 @@ counted), and skips green — loudly, with a `::notice::` — when the Slack sec
 
 A record is announced **per tag**. A tag of one project is announced under that project's name; a tag
 several projects share — a fixed release group — is one release and one message, under `app`, with the
-workspace changelog when the record carries one.
+workspace changelog when the record carries one (and no changelog otherwise: one member's notes do not
+speak for the group). Two shared tags in one record are named by their projects instead, since `app`
+twice would be two messages nobody can tell apart.
 
 No project anywhere: an event carries its own identity (`app`), so nothing has to know which of your
 projects hosts a notification target.

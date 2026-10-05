@@ -73,7 +73,8 @@ The targets land on _your_ projects two ways, and the bricks handle both:
   four scan targets onto your **workspace root project**.
 - **Generated**, when what you are writing down is a decision that cannot be derived — which today
   is nothing in this toolkit's path: even the `sbom` target is inferred, and the release record
-  decides who gets one ([ADR-0031](../../../adr/0031-being-describable-is-a-fact.md)).
+  decides who gets one (a tag shared by a `fixed` group is the exception — the record cannot say
+  which project that Release is of, so `attach-sbom` takes it as `project`) ([ADR-0031](../../../adr/0031-being-describable-is-a-fact.md)).
 
 Either way the brick asks the graph who owns the target (`nx show projects --with-target …`) and runs
 `<project>:<target>`, which works in any nx workspace. When the answer is empty the brick **fails**:

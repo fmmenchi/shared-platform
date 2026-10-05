@@ -25,7 +25,8 @@ inputs:
 outputs:
   result-file:
     description: >-
-      Path to the release record: dryRun plus one entry per release (project, version, tag).
+      Path to the release record: dryRun plus one entry per released project (project,
+      version, tag) — several entries share a tag when a fixed group was released.
     value: ${{ steps.run.outputs.result-file }}
   released:
     description: How many projects were released (0 when nothing was).

@@ -39,6 +39,7 @@ jobs:
   with:
     result-file: ${{ steps.release.outputs.result-file }}
     github-token: ${{ secrets.GITHUB_TOKEN }}
+    # project: my-app   # only for a `fixed` release group — which project its one Release is of
 - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/notify@gh-actions/v0.1.2
   with:
     result-file: ${{ steps.release.outputs.result-file }}
@@ -46,7 +47,8 @@ jobs:
     channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
 ```
 
-No brick names a project. Where a brick runs an nx target it asks the graph who owns it — inferred
+No brick names a project — with one exception, the `project` above: a `fixed` group's single tag
+covers several projects, and nothing in the record says which one its Release is of. Where a brick runs an nx target it asks the graph who owns it — inferred
 (`<root>:scan-docker`, `<project>:sbom`) — and where it runs a script it resolves the package's own
 entrypoint, which reads the same way in every workspace. When nothing owns a target, the brick fails with a message naming the
 command that fixes it, rather than passing quietly.
