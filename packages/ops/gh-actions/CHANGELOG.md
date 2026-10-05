@@ -1,3 +1,14 @@
+## 0.4.4 (2026-10-05)
+
+### 🩹 Fixes
+
+- **gh-actions:** the release bricks work per tag, not per record ([b21c485](https://github.com/fmmenchi/shared-platform/commit/b21c485))
+
+### ❤️ Thank You
+
+- Claude Opus 5.5 (1M context)
+- fmmenchi @fmmenchi
+
 ## 0.4.3 (2026-08-31)
 
 ### 🩹 Fixes

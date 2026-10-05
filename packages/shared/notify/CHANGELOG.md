@@ -1,3 +1,15 @@
+## 0.0.19 (2026-10-05)
+
+### 🩹 Fixes
+
+- **notify:** a shared tag never speaks with one project's notes ([a69f63e](https://github.com/fmmenchi/shared-platform/commit/a69f63e))
+- **notify:** a tag shared by several projects is announced once ([c8d7b87](https://github.com/fmmenchi/shared-platform/commit/c8d7b87))
+
+### ❤️ Thank You
+
+- Claude Opus 5.5 (1M context)
+- fmmenchi @fmmenchi
+
 ## 0.0.18 (2026-08-31)
 
 This was a version bump only for @fmmenchi/notify to align it with other projects, there were no code changes.

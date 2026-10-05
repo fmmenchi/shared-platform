@@ -1,3 +1,19 @@
+## 0.2.2 (2026-10-05)
+
+### 🩹 Fixes
+
+- **ci:** the workspace changelog is recorded under the tag that was cut ([99a9044](https://github.com/fmmenchi/shared-platform/commit/99a9044))
+- **ci:** the release record carries the workspace changelog ([daaa2d0](https://github.com/fmmenchi/shared-platform/commit/daaa2d0))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/notify to 0.0.19
+
+### ❤️ Thank You
+
+- Claude Opus 5.5 (1M context)
+- fmmenchi @fmmenchi
+
 ## 0.2.1 (2026-08-31)
 
 ### 🧱 Updated Dependencies
