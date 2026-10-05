@@ -189,6 +189,29 @@ describe('eventsFromReleases', () => {
       expect(event?.kind === 'release' && event.body).toBe('### all of it');
     });
 
+    // nx writes "version bump only, no code changes" for a member that was merely aligned.
+    // Taking the first project's notes announced that about a release with a feature in it.
+    it("never speaks for the release with one project's notes", () => {
+      const [event] = eventsFromReleases([
+        { ...fixed[0]!, notes: 'version bump only for app' },
+        { ...fixed[1]!, notes: '### the feature' },
+      ]);
+      expect(event?.kind === 'release' && event.body).toBeUndefined();
+    });
+
+    it('names the projects when two tags are shared — one name would be two identical messages', () => {
+      expect(
+        eventsFromReleases(
+          [
+            ...fixed,
+            { project: 'api', version: '2.0.0', tag: 'api-v2.0.0' },
+            { project: 'api-db', version: '2.0.0', tag: 'api-v2.0.0' },
+          ],
+          { app: 'andes-routes' },
+        ).map((event) => event.app),
+      ).toEqual(['app, ui, core', 'api, api-db']);
+    });
+
     it('leaves a workspace changelog off a tag it does not belong to', () => {
       const [event] = eventsFromReleases(fixed, {
         workspace: { version: '9.0.0', tag: 'v9.0.0', notes: '### other' },

@@ -70,3 +70,10 @@ export interface RunFailures {
   workflow?: string;
   jobs: readonly RunJob[];
 }
+
+/** The workspace-level changelog of a release, when the release step recorded one. */
+export interface ReleasedWorkspace {
+  version: string;
+  tag: string;
+  notes?: string;
+}

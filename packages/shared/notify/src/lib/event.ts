@@ -5,6 +5,7 @@ import type {
   Delivery,
   ErrorEvent,
   NotifyEvent,
+  ReleasedWorkspace,
   RunFailures,
 } from './event.types.js';
 
@@ -147,13 +148,6 @@ export interface ReleasedProject {
   notes?: string;
 }
 
-/** The workspace-level changelog of a release, when the release step recorded one. */
-export interface ReleasedWorkspace {
-  version: string;
-  tag: string;
-  notes?: string;
-}
-
 /**
  * Turns a release record into release events — ONE PER TAG, not one per project.
  *
@@ -161,7 +155,9 @@ export interface ReleasedWorkspace {
  * project in it, all with the same version and tag. Mapping the records one to one sent
  * fourteen messages for one release, thirteen of them about projects with no change of
  * their own. A tag is the release; a tag several projects share is announced once, under
- * `options.app` (the repository), because it is no longer about any one of them.
+ * `options.app` (the repository), because it is no longer about any one of them. That name
+ * is used only when the record holds ONE such tag: two fixed groups announced under the
+ * same repository name are two messages nobody can tell apart, so they name their projects.
  *
  * This is the notify side of the seam: the release step records what it did, in its own
  * neutral vocabulary, and the announcement is derived from that — here, in tested code,
@@ -176,7 +172,10 @@ export interface ReleasedWorkspace {
  *
  * A fixed group on a workspace changelog has no per-project notes at all, so the record
  * carries that changelog separately (`options.workspace`) and it is used for the tag it
- * belongs to. A project's own notes win when the tag is that project's alone.
+ * belongs to. A project's own notes win when the tag is that project's alone — and are
+ * NEVER used for a tag it shares: nx writes "this was a version bump only, there were no
+ * code changes" for a member that was only aligned, and picking one project's notes sent
+ * exactly that about a release whose feature was in another.
  */
 export function eventsFromReleases(
   released: readonly ReleasedProject[],
@@ -191,20 +190,25 @@ export function eventsFromReleases(
     byTag.set(release.tag, [...(byTag.get(release.tag) ?? []), release]);
   }
 
-  return [...byTag].map(([tag, projects]) => {
+  const groups = [...byTag.values()];
+  const oneSharedTag = groups.filter((g) => g.length > 1).length === 1;
+
+  return groups.map((projects) => {
+    const { tag, version, notes: ownNotes } = projects[0] as ReleasedProject;
     const shared = projects.length > 1;
-    const names = projects.map((p) => p.project);
-    const projectNotes = projects.find((p) => p.notes)?.notes;
     const workspaceNotes =
-      options.workspace?.tag === tag ? options.workspace.notes : undefined;
-    const notes = shared
-      ? (workspaceNotes ?? projectNotes)
-      : (projectNotes ?? workspaceNotes);
+      options.workspace && options.workspace.tag === tag
+        ? options.workspace.notes
+        : undefined;
+    const notes = shared ? workspaceNotes : ownNotes || workspaceNotes;
 
     return {
       kind: 'release' as const,
-      app: shared ? (options.app ?? names.join(', ')) : (names[0] as string),
-      version: (projects[0] as ReleasedProject).version,
+      app:
+        shared && oneSharedTag && options.app
+          ? options.app
+          : projects.map((p) => p.project).join(', '),
+      version,
       ...(options.repositoryUrl
         ? {
             url: `${options.repositoryUrl.replace(/\/$/, '')}/releases/tag/${encodeURIComponent(tag)}`,
