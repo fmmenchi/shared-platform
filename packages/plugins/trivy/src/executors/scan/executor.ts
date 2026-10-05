@@ -1,7 +1,7 @@
 import type { PromiseExecutor } from '@nx/devkit';
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative } from 'node:path';
 import type { ScanExecutorSchema } from './schema';
 
 const IGNOREFILE = '.trivyignore.yaml';
@@ -38,6 +38,45 @@ export function buildTrivyArgs(options: ScanExecutorSchema): string[] {
     ...(o.extraArgs ?? []),
     o.path,
   ];
+}
+
+/**
+ * `--skip-dirs` for every git worktree checked out INSIDE the workspace. Pure — takes the
+ * output of `git worktree list --porcelain`.
+ *
+ * A worktree is another checkout of the same repository, at another commit. Nested under the
+ * root (agent tooling puts them in `.claude/worktrees/`), each one brings its own lockfile, and
+ * `trivy fs` reads them all: measured here, ten worktrees turned 24 findings into 277, some of
+ * them — a `nanoid` fixed weeks earlier — true only of a stale branch. A scan of the workspace
+ * that reports another branch's dependencies sends someone to fix what is already fixed. CI
+ * never saw it, having one checkout, which is why the local run and the CI run disagreed.
+ *
+ * Asked of git rather than listed by hand: the tool that creates them knows where they are,
+ * and a hardcoded directory would be right for one agent and silent about the next.
+ */
+export function nestedWorktreeSkipArgs(
+  porcelain: string,
+  root: string,
+): string[] {
+  return porcelain
+    .split('\n')
+    .filter((line) => line.startsWith('worktree '))
+    .map((line) => relative(root, line.slice('worktree '.length)))
+    .filter((path) => path && !path.startsWith('..') && !isAbsolute(path))
+    .flatMap((path) => ['--skip-dirs', path]);
+}
+
+/** The worktree list, or nothing — not a git repository, or no git, is not this scan's failure. */
+function listWorktrees(root: string): string {
+  try {
+    return execFileSync('git', ['worktree', 'list', '--porcelain'], {
+      cwd: root,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return '';
+  }
 }
 
 const DOCKER_IMAGE = 'aquasec/trivy:0.72.0';
@@ -88,7 +127,14 @@ const runExecutor: PromiseExecutor<ScanExecutorSchema> = async (
   const ignorefile =
     options.ignorefile ??
     (existsSync(join(context.root, IGNOREFILE)) ? IGNOREFILE : undefined);
-  const trivyArgs = buildTrivyArgs({ ...options, ignorefile });
+  const trivyArgs = buildTrivyArgs({
+    ...options,
+    ignorefile,
+    extraArgs: [
+      ...(options.extraArgs ?? []),
+      ...nestedWorktreeSkipArgs(listWorktrees(context.root), context.root),
+    ],
+  });
   const runner = options.runner ?? 'local';
   const [bin, args] =
     runner === 'docker'

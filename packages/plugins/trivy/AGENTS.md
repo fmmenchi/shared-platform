@@ -43,7 +43,9 @@ pnpm-lock.yaml` in an npm consumer (measured against a scratch npm workspace). T
 - **Four scan targets inferred onto the ROOT project** by `createNodesV2` —
   `scan`/`scan-docker` (vuln) and `scan-secrets`/`scan-secrets-docker` (the same executor with
   `scanners: secret`, skipping `node_modules`/`dist`/`build`/`.nx`/`.git` via `extraArgs` to avoid
-  noise). All uncached: a scan goes red because the world changed, not because a file did. The root
+  noise). All uncached: a scan goes red because the world changed, not because a file did. Every
+  scan also skips git worktrees nested in the workspace — asked of git, never listed by hand: they
+  are other branches' lockfiles, and reading them reports findings that are not this checkout's. The root
   project is created if the workspace has none; its name comes from the root `package.json`
   (`@fmmenchi/source` here). The CI `security` job runs the two docker ones.
 - **`init` generator** — registers the plugin in `nx.json` (inference runs only for registered

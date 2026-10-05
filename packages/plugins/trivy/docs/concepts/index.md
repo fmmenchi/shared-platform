@@ -73,6 +73,13 @@ trivy fs --scanners vuln --severity CRITICAL,HIGH --format table --exit-code 1 .
 `ignorefile` is set; `extraArgs` are appended verbatim before the path. This builder is the
 unit-tested core — the shell-out around it needs no test of its own.
 
+One thing is added that no option asks for: a `--skip-dirs` for every **git worktree checked out
+inside the workspace** (`nestedWorktreeSkipArgs`, from `git worktree list --porcelain`). A nested
+worktree is another checkout of the same repository at another commit, with its own lockfile, and
+`trivy fs` reads them all — measured in this repository, ten of them turned 24 findings into 277, some
+true only of a stale branch. CI has one checkout and never saw it, which is how a local scan and the
+CI scan came to disagree. Outside a git repository nothing is added.
+
 ### The two runners
 
 The `runner` option selects how that argument vector is executed:
