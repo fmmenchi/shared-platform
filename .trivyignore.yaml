@@ -41,3 +41,81 @@ vulnerabilities:
   - id: CVE-2025-71330
     statement: 'No upstream fix for image-size at any version; build-time only, and the only images it reads are this repository’s own.'
     expired_at: 2026-12-31
+
+  # ── NX DECIDES ITS OWN STACK ──────────────────────────────────────────────────────────────
+  # nx depends on these three at EXACT versions (measured on 23.1.2 and on 23.2.1, the newest
+  # at the time: `axios: 1.18.1`, `smol-toml: 1.6.1`, `brace-expansion: 5.0.9`), and nothing
+  # else in this workspace resolves axios or smol-toml at all. A fix exists upstream for each,
+  # and an override would install it — by forcing a version on nx that nx did not choose and
+  # was not tested with, which is the "outside the dependent's range" case of AGENTS.md. So
+  # they stay where nx put them, visible here with the reason.
+  #
+  # WHAT REACHES THEM. nx is the build tool: it runs on a developer's machine and in CI, over
+  # this repository. axios carries nx's own requests (the remote cache, `nx migrate`), to hosts
+  # nx chooses; smol-toml parses config files in the workspace; brace-expansion expands the
+  # glob patterns written in nx.json and project configuration. None of it parses input from
+  # outside the repository, and none of it ships in a published `@fmmenchi/*` package.
+  #
+  # Every entry is pinned to the exact version by `purls`, so it retires ITSELF: the day nx
+  # moves the pin, the purl no longer matches and the scan speaks again if the new version is
+  # still affected. WHAT RETIRES THEM: an nx release that bumps the dependency.
+  - id: CVE-2026-101898
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). HTTP/2 proxy/DNS settings not applied — nx’s own requests, to hosts nx chooses.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-101901
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). DoS in HTTP/2 session initialisation — a build tool’s own client.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-101903
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). DoS via malformed data URLs — nx requests no caller-supplied URL here.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-101905
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). Socket hijack via an inherited createConnection — needs a polluted prototype inside the build process.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-101906
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). DoS via a crafted redirect hostname — from a host nx itself chose to call.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-101907
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). SSRF through redirects in the fetch adapter — no server here, and no caller-supplied URL.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-101909
+    purls: ['pkg:npm/axios@1.18.1']
+    statement: 'Pinned exactly by nx (fix: axios 1.20.0). DoS via a prototype-pollution gadget in form serialisation — needs a polluted prototype inside the build process.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-85730
+    purls: ['pkg:npm/smol-toml@1.6.1']
+    statement: 'Pinned exactly by nx (fix: smol-toml 1.7.1). DoS on a malformed TOML document — the only TOML it reads is this repository’s own.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-102276
+    purls: ['pkg:npm/brace-expansion@5.0.9']
+    statement: 'Pinned exactly by nx (fix: 5.0.10). Stack exhaustion on a crafted brace pattern — the patterns are the ones written in this repository.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-102278
+    purls: ['pkg:npm/brace-expansion@5.0.9']
+    statement: 'Pinned exactly by nx (fix: 5.0.11). Uncontrolled recursion on nested brace patterns — the patterns are the ones written in this repository.'
+    expired_at: 2026-12-31
+
+  # ── NO FIX UPSTREAM ───────────────────────────────────────────────────────────────────────
+  # Trivy reports both as `affected`: no fixed version exists at any version, so there is
+  # nothing for an override to point at. Pinned by `purls` like the block above, so a new
+  # release is scanned on its own merits. WHAT RETIRES THEM: an upstream release with the fix.
+  #
+  # braces 3.0.3 — pulled by chokidar and micromatch, i.e. file watching and glob matching in
+  # the build tooling, over patterns written in this repository's own configuration.
+  - id: CVE-2026-93687
+    purls: ['pkg:npm/braces@3.0.3']
+    statement: 'No upstream fix. Stack overflow on deeply nested patterns; build-time globbing over this repository’s own patterns.'
+    expired_at: 2026-12-31
+  # http-cache-semantics 4.2.0 — pulled by `got` (via cacheable-request), which fetches from
+  # the npm registry for Docusaurus' update check and downloads the swc binary for @swc/cli.
+  # A cache-directive information disclosure needs a shared cache in front of private
+  # responses; these are anonymous GETs of public files from a build.
+  - id: CVE-2026-93748
+    purls: ['pkg:npm/http-cache-semantics@4.2.0']
+    statement: 'No upstream fix. max-stale information disclosure; only anonymous GETs of public registry/release files, at build time.'
+    expired_at: 2026-12-31
