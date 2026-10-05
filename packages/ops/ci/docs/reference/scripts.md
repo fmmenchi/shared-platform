@@ -25,7 +25,7 @@ and then **verified against the tags git really has** before anything downstream
 
 | Environment variable  | Default               | What it is                                                             |
 | --------------------- | --------------------- | ---------------------------------------------------------------------- |
-| `RELEASE_RESULT_FILE` | `release-result.json` | The record: `{ dryRun, releases: [{ project, version, tag }] }`        |
+| `RELEASE_RESULT_FILE` | `release-result.json` | The record: `{ dryRun, releases: [{ project, version, tag }], … }`     |
 | `NEW_TAGS_FILE`       | `new_tags.txt`        | Transitional: the same records projected to package tags, one per line |
 | `RELEASE_DRY_RUN`     | unset                 | `true` rehearses the whole script without releasing (see below)        |
 | `RELEASE_VERBOSE`     | unset                 | `true` makes nx print the `git` commands it is about to run            |
@@ -37,7 +37,9 @@ whole set, and the record still lists every project in it — publishing needs e
 the record must therefore work **per tag**: one announcement, one SBOM, one `version`. When the
 consumer configured a workspace changelog the record also carries it once, beside the entries, as
 `workspace: { version, tag, notes }` — a fixed group has no per-project notes, and this is where its
-one announcement gets its changelog.
+one announcement gets its changelog. Its `tag` is the one the entries share (`toWorkspaceRelease`),
+not the one nx stamps on the changelog: nx forms that from the top-level tag pattern, which for a
+named group is a tag nobody cut. With several tags in the record there is no `workspace` at all.
 
 **The record is neutral.** It names no message, channel or artifact: releasing and announcing are
 separate operations, so nothing message-shaped may live in the step that cannot be undone.
@@ -78,6 +80,7 @@ accident and untestable by construction.
 
 ```ts
 toReleaseRecords(projectsVersionData, tagByProject, projectChangelogs?): ReleaseRecord[]
+toWorkspaceRelease(records, workspaceChangelogContents?): WorkspaceRelease | undefined
 publishableProjects(records, projectGraphNodes): ReleaseRecord[]
 ```
 

@@ -117,6 +117,7 @@ function makeFixture(
   // The same starting point in the shape a fixed group tags it: nx's workspace changelog
   // refuses to run without a previous tag matching the group's pattern.
   git(dir, 'tag', 'v1.0.0');
+  git(dir, 'tag', 'app-v1.0.0');
 
   // The releasable change. `feat` so conventional commits resolves a minor bump.
   writeFileSync(
@@ -290,8 +291,13 @@ describe('fmmenchi-release agrees with `nx release`', () => {
   it('records a fixed group per project, and announces it once', () => {
     const dir = makeFixture(
       {
-        projectsRelationship: 'fixed',
-        releaseTag: { pattern: 'v{version}' },
+        // A NAMED group, on purpose: nx tags it from the group's own pattern
+        // (`app-v{version}`) and stamps the workspace changelog from the top-level one
+        // (`v{version}`). The unnamed default group is the one shape where those are the same
+        // field, and a scenario on it proved nothing about the tag the notes are matched by.
+        groups: {
+          app: { projects: ['pkg-a', 'pkg-b'], projectsRelationship: 'fixed' },
+        },
         git: { commit: true, tag: true },
         version: {
           conventionalCommits: true,
@@ -320,7 +326,7 @@ describe('fmmenchi-release agrees with `nx release`', () => {
       'pkg-b',
     ]);
     expect(new Set(record.releases.map((r: { tag: string }) => r.tag))).toEqual(
-      new Set(['v1.1.0']),
+      new Set(['app-v1.1.0']),
     );
 
     const events = eventsFromReleases(record.releases, {
@@ -329,7 +335,7 @@ describe('fmmenchi-release agrees with `nx release`', () => {
     });
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({ app: 'fixture', version: '1.1.0' });
-    // The workspace changelog reached the announcement: its tag IS the group's tag.
+    // The workspace changelog reached the announcement, under the tag that was cut.
     expect(events[0]?.kind === 'release' && events[0].body).toContain(
       'a thing worth releasing',
     );

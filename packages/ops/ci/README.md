@@ -16,7 +16,7 @@ lockfile) releases everything. No affected pre-filter is needed; nx does the rig
 These scripts wrap the two bits nx doesn't give you:
 
 - **`release.js`** — releases via nx's programmatic API (`release()` from `nx/release`) and writes a
-  **record of what it did** to `RELEASE_RESULT_FILE`: `{ dryRun, releases: [{ project, version, tag }] }`,
+  **record of what it did** to `RELEASE_RESULT_FILE`: `{ dryRun, releases: [{ project, version, tag }], workspace? }`,
   asked of nx rather than inferred from a git-tag diff, with every tag verified against the tags git
   really has. It also projects the package tags to `NEW_TAGS_FILE` for the SBOM + announce steps that
   still read them (toolkit tags like `gh-actions/v*` stay out — see `isPackageTag`). The record names

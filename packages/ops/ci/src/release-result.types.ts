@@ -28,7 +28,7 @@ export interface ReleaseRecord {
  */
 export interface WorkspaceRelease {
   version: string;
-  /** The git tag nx cut for the workspace (`ReleaseVersion.gitTag`). */
+  /** The one tag the records share — the tag that was cut, not the changelog's own. */
   tag: string;
   notes: string;
 }

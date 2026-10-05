@@ -9,7 +9,11 @@
 // rehearsal, and re-derives what `projectsVersionData` already states. Keeping the corpse
 // exported made it look like a supported alternative. It was not.
 export { isPackageTag } from './tags.js';
-export { publishableProjects, toReleaseRecords } from './release-result.js';
+export {
+  publishableProjects,
+  toReleaseRecords,
+  toWorkspaceRelease,
+} from './release-result.js';
 export { remoteReleaseProviderOf, tagsByProject } from './release-git.js';
 export type {
   ProjectChangelogs,

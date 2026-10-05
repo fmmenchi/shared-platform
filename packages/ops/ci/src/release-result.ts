@@ -2,6 +2,7 @@ import type {
   ProjectChangelogs,
   ProjectsVersionData,
   ReleaseRecord,
+  WorkspaceRelease,
 } from './release-result.types.js';
 
 /**
@@ -49,6 +50,28 @@ export function toReleaseRecords(
       return [{ project, version, tag, ...(notes ? { notes } : {}) }];
     },
   );
+}
+
+/**
+ * The workspace changelog, attached to the tag the release actually cut.
+ *
+ * The tag comes from the RECORDS, not from the changelog nx returned. nx forms the workspace
+ * changelog's own tag from the top-level tag pattern, while a named release group is tagged
+ * from the group's (`{releaseGroupName}-v{version}` by default) — so for `groups: { app }`
+ * the changelog said `v1.1.0` about a release tagged `app-v1.1.0`, a tag nobody cut, and the
+ * announcement lost its notes without a word.
+ *
+ * A workspace changelog is the changelog of ONE release. When the records carry several
+ * tags it belongs to none of them in particular, and is left out rather than pinned on one.
+ */
+export function toWorkspaceRelease(
+  records: readonly ReleaseRecord[],
+  notes: string | undefined,
+): WorkspaceRelease | undefined {
+  const [first] = records;
+  if (!notes || !first) return undefined;
+  if (records.some((record) => record.tag !== first.tag)) return undefined;
+  return { version: first.version, tag: first.tag, notes };
 }
 
 /** A project graph, reduced to the one thing publishing depends on. */

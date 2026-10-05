@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { publishableProjects, toReleaseRecords } from './release-result.js';
+import {
+  publishableProjects,
+  toReleaseRecords,
+  toWorkspaceRelease,
+} from './release-result.js';
 
 const tags = new Map([
   ['@fmmenchi/ui', '@fmmenchi/ui@0.6.1'],
@@ -121,5 +125,40 @@ describe('publishableProjects', () => {
 
   it('is empty, not a crash, for a project missing from the graph', () => {
     expect(publishableProjects([record], {})).toEqual([]);
+  });
+});
+
+describe('toWorkspaceRelease', () => {
+  const group = [
+    { project: 'app', version: '1.1.0', tag: 'app-v1.1.0' },
+    { project: 'ui', version: '1.1.0', tag: 'app-v1.1.0' },
+  ];
+
+  // THE NAMED GROUP. nx tags it `app-v1.1.0` and stamps the workspace changelog `v1.1.0`,
+  // from a different pattern — so the tag must come from the records, which are what was cut.
+  it('takes the tag the records share, not one of its own', () => {
+    expect(toWorkspaceRelease(group, '## 1.1.0')).toEqual({
+      version: '1.1.0',
+      tag: 'app-v1.1.0',
+      notes: '## 1.1.0',
+    });
+  });
+
+  it('is absent when nx rendered no workspace changelog', () => {
+    expect(toWorkspaceRelease(group, undefined)).toBeUndefined();
+    expect(toWorkspaceRelease(group, '')).toBeUndefined();
+  });
+
+  it('is absent when the records carry several tags — it belongs to none of them', () => {
+    expect(
+      toWorkspaceRelease(
+        [...group, { project: 'x', version: '2.0.0', tag: 'x@2.0.0' }],
+        '## notes',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('is absent when nothing was released', () => {
+    expect(toWorkspaceRelease([], '## notes')).toBeUndefined();
   });
 });
