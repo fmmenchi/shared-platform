@@ -27,6 +27,12 @@
         ]
       }
     ],
+    "at-rule-prelude-no-invalid": [
+      true,
+      {
+        "ignoreAtRules": ["apply"]
+      }
+    ],
     "import-notation": null
   },
   "overrides": [
