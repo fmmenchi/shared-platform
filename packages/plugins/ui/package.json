@@ -63,8 +63,10 @@
     ]
   },
   "dependencies": {
-    "@nx/devkit": "23.2.1",
     "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@nx/devkit": "^23.1.1"
   },
   "generators": "./generators.json",
   "files": [
