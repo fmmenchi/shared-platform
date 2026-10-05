@@ -20,10 +20,13 @@ packages:
 overrides:
   react: 19.2.8
   react-dom: 19.2.8
-  axios: '>=1.18.0'
   'brace-expansion@1': '>=1.1.20 <2'
   'brace-expansion@2': '>=2.1.6 <3'
-  'brace-expansion@5': '>=5.0.9 <6'
+  # The 5.x line is fixed for minimatch ONLY, whose `^5.0.8` admits the patch. nx depends on
+  # the same line at an exact version: that copy is nx's to move, and an unscoped entry here
+  # would move it for nx (see NX DECIDES ITS OWN STACK in .trivyignore.yaml). `axios` used to
+  # have an entry in this block for the same reason it no longer does: only nx resolves it.
+  'minimatch@10>brace-expansion': '>=5.0.11 <6'
   fast-uri: '>=4.1.4 <5'
   'js-yaml@3': '>=3.15.1 <4'
   'js-yaml@4': '>=4.3.2 <5'
