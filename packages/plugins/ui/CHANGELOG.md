@@ -1,3 +1,13 @@
+## 0.0.16 (2026-10-05)
+
+### 🩹 Fixes
+
+- **plugins:** nx is the workspace's to choose, so the plugins ask for it as a peer ([cdbbaf2](https://github.com/fmmenchi/shared-platform/commit/cdbbaf2))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.0.15 (2026-08-31)
 
 This was a version bump only for @fmmenchi/nx-ui to align it with other projects, there were no code changes.

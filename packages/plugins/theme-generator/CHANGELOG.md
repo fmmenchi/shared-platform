@@ -1,3 +1,13 @@
+## 0.0.23 (2026-10-05)
+
+### 🩹 Fixes
+
+- **plugins:** nx is the workspace's to choose, so the plugins ask for it as a peer ([cdbbaf2](https://github.com/fmmenchi/shared-platform/commit/cdbbaf2))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.0.22 (2026-09-05)
 
 ### 🧱 Updated Dependencies
