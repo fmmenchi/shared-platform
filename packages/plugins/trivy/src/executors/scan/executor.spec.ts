@@ -1,4 +1,8 @@
-import { buildTrivyArgs, buildDockerArgs } from './executor';
+import {
+  buildTrivyArgs,
+  buildDockerArgs,
+  nestedWorktreeSkipArgs,
+} from './executor';
 
 describe('buildTrivyArgs', () => {
   it('defaults to a workspace-wide vuln scan that fails on CRITICAL/HIGH', () => {
@@ -92,5 +96,41 @@ describe('buildTrivyArgs — report output', () => {
 
   it('omits the flag entirely when no report is wanted', () => {
     expect(buildTrivyArgs({}).join(' ')).not.toContain('--output');
+  });
+});
+
+describe('nestedWorktreeSkipArgs', () => {
+  const porcelain = [
+    'worktree /repo',
+    'HEAD 39cc0af',
+    'branch refs/heads/main',
+    '',
+    'worktree /repo/.claude/worktrees/feat-x',
+    'HEAD 6ad7970',
+    'branch refs/heads/feat/x',
+    '',
+    'worktree /elsewhere/jobs/tmp/balance',
+    'HEAD bae067b',
+    'detached',
+    '',
+  ].join('\n');
+
+  // Another checkout of the same repository, at another commit: its lockfile is not this
+  // workspace's, and reading it reported findings that were true only of a stale branch.
+  it('skips a worktree checked out inside the workspace', () => {
+    expect(nestedWorktreeSkipArgs(porcelain, '/repo')).toEqual([
+      '--skip-dirs',
+      '.claude/worktrees/feat-x',
+    ]);
+  });
+
+  it('never skips the workspace itself, nor a worktree that lives outside it', () => {
+    const args = nestedWorktreeSkipArgs(porcelain, '/repo');
+    expect(args).not.toContain('');
+    expect(args.join(' ')).not.toContain('elsewhere');
+  });
+
+  it('adds nothing when git had nothing to say', () => {
+    expect(nestedWorktreeSkipArgs('', '/repo')).toEqual([]);
   });
 });
