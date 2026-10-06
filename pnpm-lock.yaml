@@ -428,6 +428,12 @@ importers:
         specifier: ^8.3.1
         version: 8.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
 
+  packages/client/share:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+
   packages/client/tokens:
     devDependencies:
       '@fmmenchi/theme':

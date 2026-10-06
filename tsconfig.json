@@ -53,6 +53,9 @@
     },
     {
       "path": "./apps/theme-builder"
+    },
+    {
+      "path": "./packages/client/share"
     }
   ],
   "compilerOptions": {}
