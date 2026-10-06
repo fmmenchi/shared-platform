@@ -1,0 +1,71 @@
+{
+  "name": "@fmmenchi/email",
+  "version": "0.0.1",
+  "description": "Transactional email as three seams — a template the app authors, a renderer (MJML), and a transport behind one interface (Resend over HTTP, a fake for tests).",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/server/email"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./mjml": {
+      "@fmmenchi/source": "./src/lib/renderers/mjml/index.ts",
+      "types": "./dist/lib/renderers/mjml/index.d.ts",
+      "import": "./dist/lib/renderers/mjml/index.js",
+      "default": "./dist/lib/renderers/mjml/index.js"
+    },
+    "./resend": {
+      "@fmmenchi/source": "./src/lib/transports/resend/index.ts",
+      "types": "./dist/lib/transports/resend/index.d.ts",
+      "import": "./dist/lib/transports/resend/index.js",
+      "default": "./dist/lib/transports/resend/index.js"
+    },
+    "./fake": {
+      "@fmmenchi/source": "./src/lib/transports/fake/index.ts",
+      "types": "./dist/lib/transports/fake/index.d.ts",
+      "import": "./dist/lib/transports/fake/index.js",
+      "default": "./dist/lib/transports/fake/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:server",
+      "type:util",
+      "doc:server"
+    ]
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "mjml": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "mjml": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/mjml": "^5.0.0",
+    "mjml": "^5.4.1"
+  }
+}
