@@ -2,7 +2,7 @@
 
 Share a page: the **intent link** of each channel, a **clipboard write** that reports whether it
 happened, and the **native share sheet** with its dismissal told apart from a failure.
-Framework-agnostic, browser-side, **no dependencies**.
+Framework-agnostic and browser-side.
 
 ```bash
 pnpm add @fmmenchi/share
@@ -28,11 +28,11 @@ import {
 const content = { url: 'https://example.com/blog/a-post', title: 'A post' };
 
 shareHref('x', content);
-// 'https://x.com/intent/post?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post&text=A%20post'
+// 'https://x.com/intent/tweet?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post&text=A%20post'
 
 SHARE_CHANNEL_NAMES.hackernews; // 'Hacker News'
 
-await copyText(content.url); // true ONLY for a write that went through
+await copyText(content.url); // true ONLY for a write that went through — call it from the click
 
 canShareNatively(); // false on a server — ask after mount
 await shareNatively(content); // 'shared' | 'cancelled' | 'unavailable' | 'failed'
@@ -46,6 +46,12 @@ app passes its own subset, in its own order.
 A relative url is not a link outside the page, and nothing here can know which origin was meant.
 Resolve it first — `new URL(path, SITE_URL).href` — and prefer the canonical origin to
 `window.location`.
+
+### What an outcome means
+
+`shared` is "the sheet took it", not "the reader shared it": on Windows the platform resolves as soon
+as the sheet opens. `cancelled` is an abort — the sheet was closed, or there was no target to offer.
+Neither `shareHref` nor `shareNatively` refuses an **empty** url; both go ahead without it.
 
 ### What is not here
 

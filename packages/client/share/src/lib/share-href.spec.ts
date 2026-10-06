@@ -12,7 +12,7 @@ describe('shareHref', () => {
       'https://wa.me/?text=Worth%20reading%20https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
     );
     expect(shareHref('x', content)).toBe(
-      'https://x.com/intent/post?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post&text=Worth%20reading',
+      'https://x.com/intent/tweet?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post&text=Worth%20reading',
     );
     expect(shareHref('facebook', content)).toBe(
       'https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
@@ -63,11 +63,68 @@ describe('shareHref', () => {
   });
 
   it('falls back to the title where no text was given', () => {
-    expect(shareHref('x', { url, title: 'A post' })).toContain(
-      '&text=A%20post',
+    for (const channel of ['whatsapp', 'x', 'telegram', 'bluesky'] as const) {
+      const href = shareHref(channel, { url, title: 'A post' });
+      const carried = [...new URL(href).searchParams.values()].join(' ');
+      expect(carried, channel).toContain('A post');
+    }
+  });
+
+  it('reads an empty or blank text as not given, as a form would send it', () => {
+    // `text ?? title` kept the `''` a CMS writes for an optional field, and the
+    // title was then never used: the link went out with no words at all.
+    for (const text of ['', '   ']) {
+      expect(shareHref('x', { url, title: 'A post', text })).toBe(
+        'https://x.com/intent/tweet?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post&text=A%20post',
+      );
+    }
+    expect(shareHref('hackernews', { url, title: ' ', text: 'x' })).toMatch(
+      /&t=x$/,
     );
-    expect(shareHref('whatsapp', { url, title: 'A post' })).toContain(
-      'text=A%20post%20https',
+  });
+
+  it('gives an email no subject for want of a title, and no words for want of a text', () => {
+    // No fallback either way: a subject is a title or nothing, and a title is
+    // not repeated in the body.
+    expect(shareHref('email', { url, text: 'Worth reading' })).toBe(
+      'mailto:?body=Worth%20reading%20https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
+    );
+    expect(shareHref('email', { url, title: 'A post' })).toBe(
+      'mailto:?subject=A%20post&body=https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
+    );
+  });
+
+  it('writes a line break in an email body as CRLF, which is what a mail client reads', () => {
+    for (const text of ['one\ntwo', 'one\r\ntwo', 'one\rtwo']) {
+      expect(shareHref('email', { url: 'https://e.com', text })).toBe(
+        'mailto:?body=one%0D%0Atwo%20https%3A%2F%2Fe.com',
+      );
+    }
+  });
+
+  it('does not throw on half an emoji, which is what a truncated title ends in', () => {
+    // `encodeURIComponent` throws a URIError on a lone surrogate, and this runs
+    // inside a render: one card with a clipped title would take the page down.
+    const title = 'Cusco in 3 days 🏔️'.slice(0, 17);
+
+    for (const channel of SHARE_CHANNELS) {
+      expect(() => shareHref(channel, { url, title }), channel).not.toThrow();
+    }
+    expect(shareHref('x', { url, title })).toContain(
+      'text=Cusco%20in%203%20days',
+    );
+  });
+
+  it('builds a link with no address for an empty url, without a stray space', () => {
+    // Not refused — it cannot throw from a render — but not padded either.
+    const content = { url: '', title: 'A post', text: 'Words' };
+
+    expect(shareHref('whatsapp', content)).toBe('https://wa.me/?text=Words');
+    expect(shareHref('bluesky', content)).toBe(
+      'https://bsky.app/intent/compose?text=Words',
+    );
+    expect(shareHref('email', content)).toBe(
+      'mailto:?subject=A%20post&body=Words',
     );
   });
 
@@ -80,7 +137,7 @@ describe('shareHref', () => {
 
   it('leaves out a field it has nothing for, rather than sending it empty', () => {
     expect(shareHref('x', { url })).toBe(
-      'https://x.com/intent/post?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
+      'https://x.com/intent/tweet?url=https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
     );
     expect(shareHref('email', { url })).toBe(
       'mailto:?body=https%3A%2F%2Fexample.com%2Fblog%2Fa-post',
@@ -93,9 +150,16 @@ describe('shareHref', () => {
 });
 
 describe('SHARE_CHANNEL_NAMES', () => {
-  it('names every channel', () => {
-    for (const channel of SHARE_CHANNELS) {
-      expect(SHARE_CHANNEL_NAMES[channel], channel).toBeTruthy();
-    }
+  it('spells each channel the way the channel does', () => {
+    expect(SHARE_CHANNEL_NAMES).toEqual({
+      whatsapp: 'WhatsApp',
+      x: 'X',
+      facebook: 'Facebook',
+      telegram: 'Telegram',
+      email: 'Email',
+      bluesky: 'Bluesky',
+      linkedin: 'LinkedIn',
+      hackernews: 'Hacker News',
+    });
   });
 });

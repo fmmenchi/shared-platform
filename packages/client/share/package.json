@@ -1,7 +1,7 @@
 {
   "name": "@fmmenchi/share",
   "version": "0.0.1",
-  "description": "Share a page: the intent link of each channel, a clipboard write that reports whether it happened, and the native share sheet with its dismissal told apart from a failure. Framework-agnostic, browser-side, no dependencies.",
+  "description": "Share a page: the intent link of each channel, a clipboard write that reports whether it happened, and the native share sheet with its dismissal told apart from a failure. Framework-agnostic, browser-side.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",

@@ -6,7 +6,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2023", "dom"],
+    "lib": ["es2023", "es2024.string", "dom"],
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

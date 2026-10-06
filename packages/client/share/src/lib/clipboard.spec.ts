@@ -29,9 +29,13 @@ describe('copyText', () => {
     await expect(copyText('https://example.com')).resolves.toBe(false);
   });
 
-  it('says no where there is no navigator at all: a server', async () => {
+  it('says no where there is no navigator at all', async () => {
     vi.stubGlobal('navigator', undefined);
 
+    await expect(copyText('https://example.com')).resolves.toBe(false);
+  });
+
+  it('says no on this server, unstubbed: Node has a navigator and no clipboard', async () => {
     await expect(copyText('https://example.com')).resolves.toBe(false);
   });
 });

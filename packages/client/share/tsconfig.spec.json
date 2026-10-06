@@ -10,7 +10,7 @@
       "vitest"
     ],
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2023", "dom"]
+    "lib": ["es2023", "es2024.string", "dom"]
   },
   "include": [
     "vite.config.ts",

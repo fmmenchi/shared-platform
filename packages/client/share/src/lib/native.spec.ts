@@ -11,9 +11,13 @@ afterEach(() => {
 });
 
 describe('canShareNatively', () => {
-  it('is false on a server, where there is no navigator', () => {
+  it('is false where there is no navigator at all', () => {
     vi.stubGlobal('navigator', undefined);
 
+    expect(canShareNatively()).toBe(false);
+  });
+
+  it('is false on this server, unstubbed: Node has a navigator and no sheet', () => {
     expect(canShareNatively()).toBe(false);
   });
 
@@ -60,6 +64,49 @@ describe('shareNatively', () => {
     vi.stubGlobal('navigator', { share });
 
     await expect(shareNatively(content)).resolves.toBe('cancelled');
+  });
+
+  it('reads the abort by its name, since the error may come from another realm', async () => {
+    // An iframe's navigator rejects with an error that is no instance of this
+    // realm's `Error`; `instanceof` reported that dismissal as a failure.
+    const share = vi.fn().mockRejectedValue({ name: 'AbortError' });
+    vi.stubGlobal('navigator', { share });
+
+    await expect(shareNatively(content)).resolves.toBe('cancelled');
+  });
+
+  it('still opens the sheet for content the browser says it would refuse', async () => {
+    // `canShare` is the caller's question to ask first. Asked here, a refusal
+    // would come back as `unavailable` — "there is no sheet" — which is false.
+    const share = vi.fn().mockRejectedValue(new TypeError('bad data'));
+    const canShare = vi.fn().mockReturnValue(false);
+    vi.stubGlobal('navigator', { share, canShare });
+
+    await expect(shareNatively(content)).resolves.toBe('failed');
+    expect(share).toHaveBeenCalledOnce();
+  });
+
+  it('hands over the three members and nothing else the object carries', async () => {
+    // A `ShareData` with `files` is assignable to `ShareContent`; this package
+    // does not share files and must not do so by accident.
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { share });
+    const data = { ...content, text: 'Words', files: [new Blob()], secret: 1 };
+
+    await shareNatively(data);
+
+    expect(share).toHaveBeenCalledWith({ ...content, text: 'Words' });
+  });
+
+  it('leaves out what was not given, the url included', async () => {
+    // The sheet reads `url: ''` as "the current page" — a fallback to
+    // window.location by another name — and a blank title as a title.
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { share });
+
+    await shareNatively({ url: '', title: '  ', text: 'Words' });
+
+    expect(share).toHaveBeenCalledWith({ text: 'Words' });
   });
 
   it('reports everything else as failed, instead of swallowing it', async () => {

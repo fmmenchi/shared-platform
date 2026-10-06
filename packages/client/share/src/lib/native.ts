@@ -1,4 +1,22 @@
+import { given } from './given.js';
 import type { NativeShareOutcome, ShareContent } from './share.types.js';
+
+/**
+ * What the platform is handed: the three members and nothing else the caller's
+ * object may carry (a `ShareData` with `files` is assignable to `ShareContent`),
+ * and only the ones that were given. An empty `url` is left out, because the
+ * sheet reads `''` as "the current page" — the fallback this package does not
+ * have.
+ */
+const shareData = (content: ShareContent): ShareData => {
+  const title = given(content.title);
+  const text = given(content.text);
+  return {
+    ...(content.url && { url: content.url }),
+    ...(title && { title }),
+    ...(text && { text }),
+  };
+};
 
 /**
  * Whether the browser has a share sheet — and, given the content, whether it
@@ -18,23 +36,25 @@ export function canShareNatively(content?: ShareContent): boolean {
   if (content === undefined || typeof navigator.canShare !== 'function') {
     return true;
   }
-  return navigator.canShare(content);
+  return navigator.canShare(shareData(content));
 }
 
 /**
- * Open the native share sheet. Never rejects: the reader closing the sheet is
- * `cancelled`, and only what is left over is `failed`. Call it from a click —
- * without a user gesture the browser refuses, and that is a `failed`.
+ * Open the native share sheet. Never rejects — see `NativeShareOutcome` for
+ * what each ending does and does not mean. Call it from a click: without a
+ * user gesture the browser refuses, and that is a `failed`.
  */
 export async function shareNatively(
   content: ShareContent,
 ): Promise<NativeShareOutcome> {
   if (!canShareNatively()) return 'unavailable';
   try {
-    await navigator.share(content);
+    await navigator.share(shareData(content));
     return 'shared';
   } catch (error) {
-    return error instanceof Error && error.name === 'AbortError'
+    /* By name, not `instanceof`: an error from another realm (an iframe's
+       navigator, a test's) is no instance of this realm's `Error`. */
+    return (error as { name?: unknown } | null)?.name === 'AbortError'
       ? 'cancelled'
       : 'failed';
   }

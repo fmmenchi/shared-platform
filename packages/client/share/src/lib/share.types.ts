@@ -15,8 +15,15 @@ export interface ShareContent {
 }
 
 /**
- * How a call to the native sheet ended. `cancelled` is the reader closing it,
- * which is not an error and must not be reported as one.
+ * How a call to the native sheet ended — as far as the platform lets on.
+ *
+ * - `shared`: the sheet TOOK the content. Not "the reader shared it": on
+ *   Windows the platform resolves as soon as the sheet opens, so a dismissal
+ *   there arrives as `shared` too. Do not count shares or say thanks on it.
+ * - `cancelled`: the platform reported an abort — the reader closed the sheet,
+ *   or there was no target to offer. Neither is an error to report.
+ * - `unavailable`: there is no sheet.
+ * - `failed`: everything else — no user gesture, content the sheet refused.
  */
 export type NativeShareOutcome =
   'shared' | 'cancelled' | 'unavailable' | 'failed';
