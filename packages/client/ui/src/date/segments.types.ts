@@ -66,6 +66,15 @@ export interface Masked {
   /** The canonical value it names, or `''` while it names none yet. */
   readonly iso: string;
   /**
+   * Where the caret belongs, when the pass removed a digit the BROWSER did not.
+   *
+   * One case: Delete over a separator. The browser took the literal and the
+   * typed text still holds the digit this pass then removed, so a caret counted
+   * from what was typed is off by that digit. Absent everywhere else, where the
+   * typed text already says where the caret is.
+   */
+  readonly caret?: number;
+  /**
    * WHERE EACH DIGIT OF `text` CAME FROM — its offset, and its index in the
    * typed digit stream, or `null` where the frame supplied it by padding.
    *

@@ -647,6 +647,7 @@ function TimeInput(props: TimeInputProps) {
                 caret,
                 composeWith(period),
                 drawWith(period),
+                how?.endsWith('Forward') ?? false,
               )
             : null;
           const masked = deleted ?? maskWith(typed, period, pasted);
@@ -664,7 +665,7 @@ function TimeInput(props: TimeInputProps) {
             // stream, and only the mask's own record of where each digit came
             // from puts the caret back beside the keystroke.
             const position = deleted
-              ? caretFor(frame, text, typed, caret)
+              ? (deleted.caret ?? caretFor(frame, text, typed, caret))
               : caretAfterMask(frame, typed, caret, masked);
             element.setSelectionRange(position, position);
           }

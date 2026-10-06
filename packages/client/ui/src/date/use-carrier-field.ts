@@ -72,7 +72,16 @@ export function useCarrierField<Value>(
   // makes the supported way to re-locale a subtree — left `01/02/2000` on
   // screen under a `mm/dd/yyyy` hint, meaning one day to the reader and another
   // to the carrier, until the next keystroke silently swapped them.
+  //
+  // AND ONLY THEN. An effect also re-runs when nothing moved at all — an
+  // `<Activity>` shown again re-mounts every effect under it — and this one
+  // could not tell: it cleared a half-typed date as if its numerals had changed
+  // under it, on the same node, in the same locale. What it was last drawn WITH
+  // is the only thing that says the locale moved.
+  const drawnWith = useRef(display);
   useEffect(() => {
+    if (drawnWith.current === display) return;
+    drawnWith.current = display;
     const element = field.current;
     if (element === null) return;
     const iso = carrier.current?.value ?? '';
@@ -334,6 +343,25 @@ export function useCarrierField<Value>(
       }
     };
   }, [display]);
+
+  // A DEFAULT THAT ARRIVES AFTER THE MOUNT — data that loaded late, which is an
+  // ordinary `defaultValue` going from empty to a value. React moves both nodes
+  // of an untouched field and goes through none of the doors above: no setter,
+  // no event. So the box said `12/08/2026` while this hook still believed it
+  // empty, and the first Backspace — mapped onto that empty string — fell
+  // through to the flow mask and stored `10/08/2026`, the exact defect
+  // `applyDeletion` was written to end. A box that no longer says what was last
+  // recorded is the only sign there is, and it is read here.
+  //
+  // After the doors, so that on the first commit the seed has already been
+  // recorded by them and this finds nothing to do.
+  useEffect(() => {
+    const element = carrier.current;
+    const target = field.current;
+    if (element === null || target === null) return;
+    if (target.value === shown.current) return;
+    arrive(element.value);
+  }, [seed]);
 
   const record = (text: string, iso: string) => {
     shown.current = text;

@@ -119,6 +119,14 @@ function laid<Part extends string>(
  * belongs at the digit after it. The implementation reads the mask's record of
  * the same events; agreeing is evidence rather than tautology, and the two
  * disagreed on 18 frames of 88 the first time this was run.
+ *
+ * WHAT IT IS AN ORACLE FOR, said because a review read the claim above as wider
+ * than it is: the CARET, given the text. The admission loop below is the mask's
+ * own, on purpose — it has to consume the stream the same way to know which
+ * slot a keystroke fell into — so it says nothing about whether the TEXT the
+ * mask produced is right. A sweep that agrees here has not shown that
+ * `0` typed beside a leading zero leaves the value alone; it does not, and that
+ * is open (see the record of that review).
  */
 function oracle<Part extends string>(
   frame: SegmentFrame<Part>,

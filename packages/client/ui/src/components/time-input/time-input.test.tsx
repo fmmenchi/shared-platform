@@ -338,6 +338,39 @@ describe('TimeInput', () => {
   });
 
   describe('editing', () => {
+    it('deletes FORWARD over the separator: the minute after it, not the hour before', async () => {
+      // The twin of the date field's: Delete and Backspace remove the same
+      // character over a literal, and only the key says which side was meant.
+      const { container } = renderUi(
+        <TimeInput name="opens" aria-label="Opens at" defaultValue="14:30" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Delete}');
+
+      expect(field.value).toBe('14:0');
+      expect(carrier(container)).toHaveValue('');
+      expect(field.selectionStart).toBe(3);
+    });
+
+    it('leaves the caret beside the deletion when the text is rewritten, not at the end', async () => {
+      // Nothing read the caret after a deletion the field rewrites, in either
+      // field. Backspace just past the `:` is one — see the date field's twin.
+      renderUi(
+        <TimeInput name="opens" aria-label="Opens at" defaultValue="14:30" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.click(field);
+      field.setSelectionRange(3, 3);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1:30');
+      expect(field.selectionStart).toBe(2);
+    });
+
     it('deletes the digit in front of a day period rather than doing nothing', async () => {
       // The rule a one-character separator hid: a twelve-hour field ends in a
       // WORD, so a Backspace lands five characters past the last digit. Under

@@ -817,6 +817,47 @@ assertion `expect(field.value).toBe('01/01/1999')` was replaced by `expect(selec
 one had not become unprovable, it had become FALSE. A test that is relaxed in the commit that breaks
 it cannot report the break. Prefer a mutant over a rationale.
 
+### And a ninth, which read the two commits the eight had not
+
+The caret commit above and a later one — "text that names nothing is an invalid control" — were
+written after the eight reviews and merged into the branch unread. A fresh reviewer ran both and
+returned twelve findings, eleven of them reproduced in a browser.
+
+**The validity feature is withdrawn, whole.** It made the field refuse a submit by default, with its
+own sentence, when its text named no value. [ADR-0013](./0013-form-controls-contract.md) says the
+controls here "own ZERO validation and ZERO form-state", and this ADR's own text still said a field
+that looks filled and posts nothing "is the app's to catch". The decision is that it stays the app's:
+the commit is gone from the branch rather than repaired, and with it seven of the twelve findings. It
+had also not held its own claims — a consumer's rule written the ordinary way
+(`setCustomValidity` from `onDateChange`) erased its message on every keystroke, which is the exact
+hole it was written to close. If it returns, it returns behind an ADR that supersedes 0013 in so many
+words.
+
+**Three defects in what remains are fixed, each with a test that failed first:**
+
+- A `defaultValue` that arrives after the mount — data that loaded late — moved both nodes of an
+  untouched field through none of the carrier's doors. The hook still believed the box empty, so the
+  first Backspace over the day of `12/08/2026` fell through to the flow mask and stored
+  `10/08/2026`: the defect `applyDeletion` exists to end, reached by another road.
+- `<Activity>` shown again re-runs every effect under it, and the one that re-displays on a locale
+  change could not tell the two apart: it cleared a half-typed date in a locale that had not moved.
+- Delete and Backspace remove the same character over a separator, and the deletion path took "the
+  digit in front" for both — so the key that deletes to the right ate the digit on the left.
+
+And one test that proved nothing is replaced: the caret after a deletion was read only where the
+browser's own text stood, and its caret with it. Sending the caret to the end on every rewritten
+deletion passed the suite; it is now read after a Backspace past the separator, in both fields.
+
+**ONE FINDING IS OPEN, and it is not small.** Typing into the MIDDLE of a full value goes through the
+flow mask, which pours one stream of digits back into the slots. `0` typed beside a leading zero —
+`0|8/12/2026` in `en-US` — leaves `0` and nothing else; replacing a selected day with `03` loses the
+month and the year on the first key. Nothing wrong is ever STORED — the carrier is empty throughout —
+which is why it was not fixed in a hurry: the small repair the review proposed (skip the digit the
+part refuses) keeps the first case and turns the second into shifted digits that can name a real,
+wrong date. What it needs is what deletions already have — an edit applied to the part it happened
+in — and that is a design, not a patch. The sweep that "settled" the caret does not cover it and
+never claimed the text: its oracle is an oracle for the caret given the text, and now says so.
+
 ## What would change this
 
 `::picker()` gaining a spec for date inputs would make the native popup themable and shrink what

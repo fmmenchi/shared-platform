@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { Activity } from 'react';
 import { screen } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { DateInput } from './date-input.component.js';
@@ -978,6 +979,120 @@ describe('DateInput', () => {
 
       await browser.fill(field, '12080000');
       expect(carrier(container).value).toBe('');
+    });
+  });
+
+  // Found by the adversarial review of the caret commit — each one run in a
+  // browser before it was written down here.
+  describe('what the box holds without having been typed into', () => {
+    it('is still editable when the default arrives after the mount', async () => {
+      // Data that loads late is an ordinary `defaultValue` going from empty to
+      // a date. React moves BOTH nodes for an untouched field, and tells nobody:
+      // the field went on believing the box was empty, so the first Backspace
+      // was mapped onto nothing, fell through to the flow mask, and re-poured
+      // the digits — `10/08/2026`, a different real day, stored in silence.
+      const onDateChange = vi.fn();
+      const { container, rerender } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue=""
+          onDateChange={onDateChange}
+        />,
+        { locale: 'it' },
+      );
+      rerender(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue="2026-08-12"
+          onDateChange={onDateChange}
+        />,
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      expect(field).toHaveValue('12/08/2026');
+      // The consumer is told, as for every other value that arrives from
+      // outside — a picker holding the date in state must not fall behind.
+      expect(onDateChange).toHaveBeenLastCalledWith({
+        year: 2026,
+        month: 8,
+        day: 12,
+      });
+
+      field.focus();
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('keeps a half-typed date when it is hidden and shown again', async () => {
+      // `<Activity>` re-runs effects without anything having changed. The
+      // effect that re-displays on a LOCALE change could not tell the two
+      // apart, and cleared the half-typed text as if the numerals had moved.
+      const view = (mode: 'visible' | 'hidden') => (
+        <Activity mode={mode}>
+          <DateInput name="dob" aria-label="Date of birth" />
+        </Activity>
+      );
+      const { container, rerender } = renderUi(view('visible'), {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '1208');
+      expect(field).toHaveValue('12/08/');
+
+      rerender(view('hidden'));
+      rerender(view('visible'));
+
+      const again = container.querySelector(
+        'input:not([data-carrier])',
+      ) as HTMLInputElement;
+      expect(again.value).toBe('12/08/');
+    });
+  });
+
+  describe('the two delete keys are not the same key', () => {
+    it('deletes FORWARD over a separator: the digit after it, not the one before', async () => {
+      // Delete at `12|/08/2026` removes the `/`, which has no digit of its own.
+      // The deletion path took "the digit in front of the cut" whichever key it
+      // was — so the key that deletes to the right ate the `2` on the left, and
+      // was indistinguishable from Backspace one place along.
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Delete}');
+
+      expect(field.value).toBe('12/8/2026');
+      expect(carrier(container).value).toBe('');
+      // Before the digit that is now next — a second Delete takes the `8`.
+      expect(field.selectionStart).toBe(3);
+    });
+
+    it('leaves the caret beside the deletion when the text is rewritten, not at the end', async () => {
+      // No test read the caret after a deletion the field REWRITES: sending it
+      // to the end of the field passed the whole suite. Backspace just past the
+      // separator is such a deletion — the browser took the `/`, the field puts
+      // it back and takes the digit before it — so the caret is ours to place.
+      // (Backspace over a digit is not: the browser's text already stands, and
+      // so does its caret, which is why a test on that one proved nothing.)
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(3, 3);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+      expect(field.selectionStart).toBe(2);
     });
   });
 

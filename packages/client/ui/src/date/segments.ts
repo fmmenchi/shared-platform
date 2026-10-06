@@ -81,6 +81,7 @@ export function applyDeletion<Part extends string>(
   caret: number,
   compose: (held: ReadonlyMap<Part, string>) => string,
   draw: DrawLiteral = ownValue,
+  forward = false,
 ): Masked | null {
   const placed = placeDigits(frame, before, draw);
   if (placed.length === 0) return null;
@@ -118,10 +119,16 @@ export function applyDeletion<Part extends string>(
   // the strict rule found nothing, removed nothing, and re-emitted the same
   // text: the key did nothing at all, for ever, which is the exact defect this
   // function was written to fix one frame earlier.
-  const removing =
-    cut.length > 0
-      ? cut
-      : placed.filter((digit) => digit.at + digit.size <= from).slice(-1);
+  //
+  // AND WHICH SIDE DEPENDS ON THE KEY. Backspace deletes towards the start and
+  // Delete towards the end, and over a literal they remove the SAME character,
+  // so the cut alone cannot tell them apart. Taking "the digit in front" for
+  // both made Delete at `12|/08/2026` eat the `2` behind the caret — the key
+  // that deletes to the right, deleting to the left.
+  const beyond = forward
+    ? placed.filter((digit) => digit.at >= to).slice(0, 1)
+    : placed.filter((digit) => digit.at + digit.size <= from).slice(-1);
+  const removing = cut.length > 0 ? cut : beyond;
   if (removing.length === 0) return null;
 
   const held = new Map<Part, string>();
@@ -158,7 +165,31 @@ export function applyDeletion<Part extends string>(
   // A deletion takes digits OUT of a string the frame already held, so the
   // surviving ones keep their places and the right-anchored `caretFor` below
   // is exact. There is no reflow to record.
-  return { text, iso: whole ? compose(held) : '', marks: [] };
+  const iso = whole ? compose(held) : '';
+  if (!forward || cut.length > 0) return { text, iso, marks: [] };
+
+  // EXCEPT HERE, where the digit removed is one the browser left in the typed
+  // text: `caretFor` counts the digits to the right of the caret in what was
+  // typed, and that count still includes it. The caret goes where that digit
+  // was — in front of the digits that followed it, which are the ones still
+  // there to count.
+  const gone = removing[0];
+  const ahead = placed.filter(
+    (digit) => gone !== undefined && digit.at > gone.at,
+  ).length;
+  let caretAt = text.length;
+  let seen = 0;
+  for (let at = text.length; at > 0 && seen < ahead;) {
+    // Walked backwards by code point: a numeral above the BMP is two units.
+    const low = text.charCodeAt(at - 1);
+    const size = low >= 0xdc00 && low <= 0xdfff && at > 1 ? 2 : 1;
+    at -= size;
+    if (frame.toAscii(text.slice(at, at + size)) !== '') {
+      seen += 1;
+      caretAt = at;
+    }
+  }
+  return { text, iso, marks: [], caret: caretAt };
 }
 
 /**

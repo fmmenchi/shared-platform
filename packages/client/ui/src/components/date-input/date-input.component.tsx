@@ -343,7 +343,15 @@ function DateInput(props: DateInputProps) {
               ? typed.length < shown.current.length
               : how.startsWith('delete');
           const deleted = deleting
-            ? applyDeletion(frame, shown.current, typed, caret, compose)
+            ? applyDeletion(
+                frame,
+                shown.current,
+                typed,
+                caret,
+                compose,
+                undefined,
+                how?.endsWith('Forward') ?? false,
+              )
             : null;
           const masked = deleted ?? mask(typed);
           const { text, iso } = masked;
@@ -360,7 +368,7 @@ function DateInput(props: DateInputProps) {
             // stream, and only the mask's own record of where each digit came
             // from puts the caret back beside the keystroke.
             const position = deleted
-              ? caretFor(frame, text, typed, caret)
+              ? (deleted.caret ?? caretFor(frame, text, typed, caret))
               : caretAfterMask(frame, typed, caret, masked);
             element.setSelectionRange(position, position);
           }
