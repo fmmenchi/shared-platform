@@ -1,0 +1,41 @@
+{
+  "name": "@fmmenchi/share",
+  "version": "0.0.1",
+  "description": "Share a page: the intent link of each channel, a clipboard write that reports whether it happened, and the native share sheet with its dismissal told apart from a failure. Framework-agnostic, browser-side.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmmenchi/shared-platform.git",
+    "directory": "packages/client/share"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@fmmenchi/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:client",
+      "type:util",
+      "doc:client"
+    ]
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  }
+}
