@@ -38,6 +38,10 @@ function Input(props: InputProps) {
     (type as string | undefined) === 'date',
     'Input: `type="date"` is refused (ADR-0027) — the native date control lays its segments out in the BROWSER\'s order, so on a page whose language your app declares it disagrees with every other date on it. Use `DateInput`, whose order follows the locale you gave `UiProvider`.',
   );
+  useDevWarning(
+    (type as string | undefined) === 'time',
+    'Input: `type="time"` is refused (ADR-0027) — the native time control draws the same 24-hour reading whatever locale the page declares, and follows the operating system rather than even the locale the engine reports, so on an `en-US` page it says `14:30` beside a `Time` saying `02:30 PM`. Use `TimeInput`, whose hour cycle follows the locale you gave `UiProvider`.',
+  );
   // Opt-in Field wiring: inside a <Field>, pick up id/aria-describedby/aria-invalid
   // (the consumer's own props still win); standalone, this is a no-op.
   const fieldProps = useFieldControl(rest);

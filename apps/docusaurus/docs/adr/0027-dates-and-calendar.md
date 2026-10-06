@@ -1,7 +1,7 @@
-# ADR 0027 — Dates: one field of ours, and a Calendar for what it cannot do
+# ADR 0027 — Dates and times: fields of ours, and a Calendar for what they cannot do
 
 - **Status:** proposed
-- **Date:** 2026-08-12 · amended 2026-08-13
+- **Date:** 2026-08-12 · amended 2026-08-13, 2026-08-15
 - **Deciders:** Fabio Menchicchi
 
 > **This replaces an earlier draft** (written 2026-08-11, never proposed, so never part of the
@@ -566,6 +566,297 @@ The end is then chosen by the next click. A single day chosen twice is a one-day
 NOT part of this. Each is a real product requirement somewhere and none of them is cross-app enough
 to earn a place yet (ADR-0008). `isDateDisabled` already refuses days one at a time, which is the
 primitive the rest would be built on.
+
+## Amendment: time has the same ceiling, and the roadmap said it did not
+
+This ADR left `type="time"` alone twice, and the roadmap wrote down why: _"it is **not** blocked the
+way `type="date"` is: that refusal exists because a date's segment ORDER contradicts the declared
+locale, and because there is a replacement to send people to. Neither is true of time yet."_
+
+**The first half of that is false, and it was never measured.** Both halves are now.
+
+### What the native time control does — measured
+
+The same question this ADR asked of `type="date"`, asked of `type="time"`, in the suite's real
+Chromium. Four `<input type="time" value="14:30">`, each wrapped in a `lang`, beside what `Intl`
+writes for that same declared locale:
+
+| declared locale | the native field draws | `Intl` writes |
+| --------------- | ---------------------- | ------------- |
+| `en-US`         | `14:30`                | `02:30 PM`    |
+| `it-IT`         | `14:30`                | `14:30`       |
+| `ja-JP`         | `14:30`                | `14:30`       |
+| `ar-EG`         | `14:30`                | `٠٢:٣٠ م`     |
+
+So on an `en-US` page a `Time` and a formatted `Table` cell say `02:30 PM` and the field beside them
+says `14:30`; on an `ar-EG` page everything else is in Arabic numerals and the field is in Latin.
+That is this ADR's founding complaint, reproduced for time.
+
+Three further measurements, because the shape of the ceiling matters more than the fact of it:
+
+- **`lang` moves nothing.** All four fields render identically and measure the same width — the same
+  result the date section recorded, by the same method.
+- **The hour cycle is not addressable.** There is no HTML attribute that asks for 12 or 24 hours,
+  and `shadowRoot` is `null`, so there is nothing to write CSS on and nothing to set.
+- **It does not even follow the locale the ENGINE reports.** `navigator.language` and
+  `Intl.DateTimeFormat().resolvedOptions()` both say `en-US`, whose resolved `hourCycle` is `h12` —
+  and the control still draws 24 hours. It follows the operating system's regional format.
+
+That last one makes it **worse than the date case**, not equal to it. A developer whose OS matches
+their page sees nothing wrong; the mismatch appears only for users whose settings differ from
+theirs, which is the definition of a defect that ships.
+
+### The decision, which is this ADR's own, applied again
+
+1. **`TimeInput` is built**, and it is the same shape as `DateInput`: one masked text field that
+   shows a time the way the declared locale writes it and stores `HH:mm` — the format the DOM, a
+   database and `Temporal.PlainTime.from()` all want. The carrier machinery, the mask, the caret
+   arithmetic and the external-write doors are the ones `DateInput` already has and paid for.
+2. **`FormTimeInput` is its bound twin**, symmetric with every other pair here.
+3. **`Input` refuses `type="time"`.** This is the SECOND exception to
+   [ADR-0013](./0013-form-controls-contract.md)'s transparency, and it is granted on the same two
+   conditions the first one was: the control is **wrong on the page** rather than merely duplicative,
+   and there is a replacement to send people to. The second condition is what was missing when this
+   ADR said _"there is no time field to send anyone to, and refusing it would be the same mistake"_.
+   It is not missing now.
+
+   The first exception's closing line stands and is honoured rather than cited: _"the next one must
+   argue for itself rather than cite this."_ The argument above is a measurement, not a precedent.
+
+### THE HOUR CYCLE comes from the locale, and can be overridden
+
+`Intl.DateTimeFormat(locale).resolvedOptions().hourCycle` is the answer, read the same way
+`DateInput` reads its segment order — so a page gets 12 or 24 hours because of what it declared, not
+because of what the reader's laptop is set to.
+
+A prop overrides it. An operations dashboard on an `en-US` page that wants 24 hours is a real
+consumer, the choice is a design decision rather than a locale one, and forcing them to change the
+page's locale to get it would be the tail wagging the dog.
+
+**AM/PM is COPY, not formatting**, and goes in the catalogues beside the date field's `gg`/`mm`/`aaaa`
+letters. `Intl` will tell you the day period for a locale, but what a 12-hour field shows in its
+third segment while it is being typed into is a word in a language.
+
+### SECONDS are opt-in, and precision is a prop rather than `step`
+
+`step` on the native control is doing two jobs at once — it sets the granularity of the spinner AND
+it decides whether a seconds segment exists — and it says both in seconds-as-a-number, so `step={1}`
+meaning "show seconds" is a fact you have to know rather than read. A `precision` of `'minute'` or
+`'second'` says the one thing this field needs to be told, and the stored value follows it: `HH:mm`
+or `HH:mm:ss`.
+
+### What is NOT built, and this is the part that differs from dates
+
+**There is no `Clock`, and no time equivalent of `Calendar`.** The whole reason `Calendar` exists is
+the first ceiling — `min`/`max` are an interval and not a set, so "these three days are booked"
+cannot be said to the platform at all. For time that argument does not hold in the same way:
+
+- the REGULAR case is expressible without a widget. "Every fifteen minutes from 09:00 to 17:00" is
+  an arithmetic progression, and a consumer who wants to offer exactly those slots renders them —
+  from their own data, which is where availability lives — as a `Select` or a list of buttons;
+- the IRREGULAR case is not a grid. A calendar is a fixed structure the design system must draw
+  because a month has a shape; a set of available times has no shape but its own list, and a list of
+  a consumer's data is a consumer's component.
+
+So a slot picker is composition, not a component here, and it stays that way until someone arrives
+with a case that is neither of those two. **`min`/`max`/`step` remain available on `TimeInput`** for
+validation, where they are honest, unlike on `DateInput` — a text field cannot enforce them, so the
+range check belongs to the consumer's schema either way, and the ADR says so rather than pretending.
+
+### `datetime-local`, `month` and `week` stay reachable, and that is a choice
+
+They present locale-dependent segments too, so the ceiling is theirs as much as it is `date`'s and
+`time`'s. They are not refused, and the reason is the condition this ADR set for the first
+exception and honoured for the second: **there has to be a replacement to send people to.** There is
+none for any of the three, and refusing a control while offering nothing takes the capability away.
+
+What that costs is stated rather than left implicit: a page can still put a `month` field beside a
+`Time` and get the same disagreement this amendment measured. If a consumer arrives with one, the
+answer is another field of ours or nothing — not a fourth exception on its own.
+
+### Consequences of this amendment
+
+- **A second `Input` exception**, and the allowlist grows by one more hand-maintained entry. Stated
+  again because it is the cost that compounds: the day the platform adds an input type, this list
+  has to be extended by hand or the type is silently unavailable.
+- **`Time` (the display component) and `TimeInput` must agree**, and now can — both read
+  `useFormatter()`. Before this they could not, which was the defect.
+- **The date family's machinery is reused rather than copied.** If the mask, the carrier or the
+  external-write doors turn out not to generalise, that is a finding to record here rather than a
+  reason to fork them — two copies of that code is the failure this repository has already measured
+  twice, on `DateInput` and `Calendar`.
+
+## Addendum: what building it actually found
+
+Written **after** the amendment above, because four things came out of the build that the decision
+could not have known, and one of them changes what the amendment claimed.
+
+**The machinery generalised, and the extraction proved it.** `DateInput` went from 936 lines to 440:
+`segments.ts` now holds the mask arithmetic — the flow mask, the positional deletion, the
+right-anchored caret — parameterised by a frame, and `use-carrier-field.ts` holds the carrier and its
+three external-write doors. Behaviour is unchanged and that is the evidence: 3528 tests and 157
+ports-validation tests green before and after, with no test touched. One generalisation was needed —
+**a literal is what the frame draws between the digits, not what the pattern fixed**, because a
+twelve-hour field draws `AM` or `PM` there and the value decides which.
+
+**Two defects came out of that shared code, and `DateInput` had both since it shipped.** Neither was
+reachable from a date frame, which is the reason they survived three adversarial reviews:
+
+- A deletion **inside a literal that is not touching a digit** removed nothing and re-emitted the
+  same text — the key did nothing at all, for ever. Invisible while every literal was one character
+  wide; a twelve-hour time ends in a WORD.
+- **Right-anchoring the caret slipped one place left whenever the frame was already full**, because
+  the mask drops the overflow off the right. Typing `1`,`7`,`4`,`5` at the head of a full `09:00`
+  put the caret back at 0 after every keystroke, so each digit landed in front of the last and the
+  field walked through `10:09`, `07:10`, `04:07` to `05:04`. On dates, `01011999` typed at the head
+  of `12/08/2026` did the same. Four wrong-but-valid values from four keystrokes spelling a real one.
+
+**The ISO recogniser could not come over, and that is the one place the two frames genuinely
+differ.** `2026-08-12` is a shape nobody's locale types by hand, so `DateInput` can recognise it at
+any keystroke. `14:30` is exactly what half the world's locales **draw**, so the same rule fired on
+the field's own half-typed contents — jumping a seconds field to `09:30:00` on the fourth keystroke,
+and silently committing AM on an `en-US` one. It now fires only on a paste, which the browser reports
+outright via `inputType`.
+
+**`Intl` had three surprises**, all measured across twenty locales before any code was written, and
+each would have been a defect visible in one language and nowhere else: `ko-KR` writes the day period
+**first** (`오후 02:30`); `fi-FI` separates with `.`; and **`h11` is a real cycle** — Japanese's —
+which writes midnight _and_ noon as `00`, told apart only by 午前/午後. All four cycles `Intl` reports
+are handled. The day period's two words come from `Intl` rather than from the message catalogue,
+which is the one place this component departs from `DateInput`'s split: the field shows the reader
+the very strings it will accept, in the script it will accept them in.
+
+**And the day period is never defaulted.** Until it is chosen the field names no time and
+`onTimeChange` reports `null` — `02:30` with an unspoken AM is a wrong-but-valid value, and an
+unchosen period is exactly as incomplete as a half-typed minute.
+
+### And what eight adversarial reviews found — including in the repairs
+
+Four reviewers went at the components, and four more at the repairs those first four produced. The
+second round is the one worth recording, because **most of what the first round's fix commit changed
+was wrong**, and it was wrong in a way this record should be able to warn the next person about.
+
+**One decision survives, and it is the one about `Intl`.** `resolvedOptions().hourCycle` is not
+enough to know a day period is drawn: `fr-CM` resolves `h12` and draws none, which made `09:30` and
+`21:30` the same three characters. The cycle now follows the PATTERN as well as the engine's answer.
+Swept across every locale tag `Intl` knows, that guard downgrades exactly two configurations, both
+`fr-CM`, and neither could have drawn a working period anyway — **0 regressions**.
+
+**The day period is matched as a WORD, by prefix, and nothing toggles.** The first repair scored each
+character on its own and let any letter shared by both words flip the half, so that no locale would be
+left unable to reach one. It was a disaster in the locale it was least excusable in: `AM` typed into
+an `en-US` field read the `A` as morning and the `M` — shared — as "the other one", storing half past
+two in the afternoon, while the field's own placeholder instructed the user to type exactly that.
+Measured over 5408 word-typing cases across 2704 day-period configurations: **4 wrong halves before
+that rule, 4215 after it.** Matching the accumulated letters against the words as prefixes reaches
+both halves everywhere the toggle did — `午前`/`午後` are told apart on their second character, `ak`'s
+`AN`/`ANW` by an exact word beating a prefix, `cs`'s `dop.`/`odp.` by order rather than by content —
+and Latin `a`/`p` remain the fallback for a keyboard that cannot type the locale's script.
+
+**And the rest of that fix commit was withdrawn.** Three changes are now back where they were,
+because the measurements say the repairs cost more than the defects:
+
+- **Refusing a reflow the frame cannot hold.** It looked right — one keystroke at the head of `09:00
+AM` used to leave the field holding the single character `0` — but it only moves the failure one
+  keystroke later: continuing to type still stores ten o'clock for the one o'clock the user spelled,
+  and in `it`, where no refusal fires at all, four keystrokes still store a different real time. It
+  also created three new failures of its own: eighteen dates in 365 where every digit key is dead at
+  one caret offset, a refused keystroke discarding the user's SELECTION, and a field that could never
+  be emptied once it had drawn a leading literal.
+- **Correcting the caret by what the mask CONSUMED** rather than by the frame's capacity. It fixes
+  the one keystroke that follows a padding insert and breaks typing a whole value in from the left:
+  `01011999` at the head of a full `12/08/2026` gives that date under the old rule and `01/10/1199`
+  under the new one. **This one has since been fixed properly — see below.**
+- **`setCustomValidity` on an incomplete field.** The direction is defensible — a partially filled
+  `input[type=date]` reports `badInput` and the browser stops the submit — but the implementation
+  pushed the invariant at three sites and violated it at four, so a locale change could leave a field
+  EMPTY, optional and permanently unsubmittable with the message stranded in the previous language.
+  It also takes the element's single `setCustomValidity` slot on a node handed to the consumer through
+  `ref`, silently erasing their own business-rule message. And the exemption it was justified by is
+  false: only Conform sets `noValidate` by default, while this repo's own `RhfForm` sets it too — so
+  the change reached the libraries that were fine and missed the recommended path entirely.
+
+### The caret, settled — by making the mask say where each digit came from
+
+Three rules were tried and two shipped a regression, in opposite directions, because both tried to
+DERIVE what had happened to a digit from a count: how many the frame had lost. The loss and the
+padding fall on different sides of the caret in different edits, and no single number says which.
+
+The mask now records, for every digit it draws, the offset it sits at and **the index it had in the
+typed stream — or `null` where the frame supplied it by padding**. The caret rule reads that record
+instead of inferring it: the digit the user just pressed is the last one before the caret, and the
+caret belongs at the digit after it, past whatever separator lies between. Where their keystroke did
+not survive at all — the frame was full and the overflow came off — the caret is left where it is,
+which was the last thing the two counting rules got wrong.
+
+Both contested cases now come out right at once, which neither counting rule could manage:
+`01011999` typed at the head of a full `12/08/2026` gives `01/01/1999`, and `9` at the head of an
+`en-US` `08/12/2026` puts the caret after the month the mask has just completed rather than in front
+of the digit just pressed. So does the story that started all of this: `0`,`1`,`0`,`5` at the head of
+`09:00` stores `01:05`, where the first version stored `00:10` and the version before it walked the
+field through four different real times.
+
+**It is checked against an ORACLE, not against itself.** `segments.test.ts` — which is also the first
+suite this shared engine has ever had — re-derives the answer by re-running the frame's own admission
+rules over the digit stream and watching for the moment the user's index is taken, then sweeps every
+digit at every offset of four whole values across seven date locales and eight time frames. Run the
+first time, the two disagreed on 18 of 88 frames — every one of them the same case, a keystroke that
+did not survive — and they disagree on none of the 9160 inserts now. Six mutants, each killing it.
+
+**What is left open, deliberately.** A masked field can still hold text that names nothing and be
+submitted as an empty string with no signal: `required` is satisfied by the visible text, and the
+carrier that holds the value is deliberately not `required` itself. That is a real gap and it is
+recorded as one rather than closed by the third version of a repair. Closing it needs a decision this
+record cannot make on its own — whether a design system may refuse a submit at all, and how a consumer
+turns that off for one field rather than for a whole form.
+
+**The lesson that generalises**, and the reason this section is longer than the fix it describes: two
+of the three withdrawn changes were shipped with a test that had been WEAKENED in the same diff. The
+assertion `expect(field.value).toBe('01/01/1999')` was replaced by `expect(selectionStart)
+.toBeGreaterThan(0)` under a comment explaining why the weaker one was more honest — and the stronger
+one had not become unprovable, it had become FALSE. A test that is relaxed in the commit that breaks
+it cannot report the break. Prefer a mutant over a rationale.
+
+### And a ninth, which read the two commits the eight had not
+
+The caret commit above and a later one — "text that names nothing is an invalid control" — were
+written after the eight reviews and merged into the branch unread. A fresh reviewer ran both and
+returned twelve findings, eleven of them reproduced in a browser.
+
+**The validity feature is withdrawn, whole.** It made the field refuse a submit by default, with its
+own sentence, when its text named no value. [ADR-0013](./0013-form-controls-contract.md) says the
+controls here "own ZERO validation and ZERO form-state", and this ADR's own text still said a field
+that looks filled and posts nothing "is the app's to catch". The decision is that it stays the app's:
+the commit is gone from the branch rather than repaired, and with it seven of the twelve findings. It
+had also not held its own claims — a consumer's rule written the ordinary way
+(`setCustomValidity` from `onDateChange`) erased its message on every keystroke, which is the exact
+hole it was written to close. If it returns, it returns behind an ADR that supersedes 0013 in so many
+words.
+
+**Three defects in what remains are fixed, each with a test that failed first:**
+
+- A `defaultValue` that arrives after the mount — data that loaded late — moved both nodes of an
+  untouched field through none of the carrier's doors. The hook still believed the box empty, so the
+  first Backspace over the day of `12/08/2026` fell through to the flow mask and stored
+  `10/08/2026`: the defect `applyDeletion` exists to end, reached by another road.
+- `<Activity>` shown again re-runs every effect under it, and the one that re-displays on a locale
+  change could not tell the two apart: it cleared a half-typed date in a locale that had not moved.
+- Delete and Backspace remove the same character over a separator, and the deletion path took "the
+  digit in front" for both — so the key that deletes to the right ate the digit on the left.
+
+And one test that proved nothing is replaced: the caret after a deletion was read only where the
+browser's own text stood, and its caret with it. Sending the caret to the end on every rewritten
+deletion passed the suite; it is now read after a Backspace past the separator, in both fields.
+
+**ONE FINDING IS OPEN, and it is not small.** Typing into the MIDDLE of a full value goes through the
+flow mask, which pours one stream of digits back into the slots. `0` typed beside a leading zero —
+`0|8/12/2026` in `en-US` — leaves `0` and nothing else; replacing a selected day with `03` loses the
+month and the year on the first key. Nothing wrong is ever STORED — the carrier is empty throughout —
+which is why it was not fixed in a hurry: the small repair the review proposed (skip the digit the
+part refuses) keeps the first case and turns the second into shifted digits that can name a real,
+wrong date. What it needs is what deletions already have — an edit applied to the part it happened
+in — and that is a design, not a patch. The sweep that "settled" the caret does not cover it and
+never claimed the text: its oracle is an oracle for the caret given the text, and now says so.
 
 ## What would change this
 

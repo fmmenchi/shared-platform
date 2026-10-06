@@ -247,6 +247,7 @@ export default defineConfig(() => ({
         'date-picker': 'src/components/date-picker/index.ts',
         calendar: 'src/components/calendar/index.ts',
         'date-input': 'src/components/date-input/index.ts',
+        'time-input': 'src/components/time-input/index.ts',
         numeric: 'src/components/numeric/index.ts',
         time: 'src/components/time/index.ts',
         'table-columns-menu': 'src/components/table-columns-menu/index.ts',
@@ -270,6 +271,7 @@ export default defineConfig(() => ({
         'form-segmented-control':
           'src/components/form-segmented-control/index.ts',
         'form-date-input': 'src/components/form-date-input/index.ts',
+        'form-time-input': 'src/components/form-time-input/index.ts',
         'segmented-control-item':
           'src/components/segmented-control-item/index.ts',
         'segmented-control': 'src/components/segmented-control/index.ts',

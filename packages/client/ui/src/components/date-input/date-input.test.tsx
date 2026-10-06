@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { Activity } from 'react';
 import { screen } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { DateInput } from './date-input.component.js';
@@ -425,6 +426,47 @@ describe('DateInput', () => {
       expect(field.value).toBe('1/08/2026');
     });
 
+    it('advances the caret when the frame is already full', async () => {
+      // FOUND FROM THE TIME FIELD, AND IT WAS HERE ALL ALONG. Typing in front of
+      // a whole date overflows the frame; the mask drops the surplus off the
+      // right, and the right-anchored caret slipped one place left with it —
+      // back to the start after every keystroke, so each digit was inserted in
+      // front of the last. Measured: `01011999` typed at the head of a full
+      // `12/08/2026` walked through four different real dates and stored the
+      // last of them in silence.
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('01011999');
+
+      expect(field.value).toBe('01/01/1999');
+    });
+
+    it('puts the caret past a part the mask has just completed', async () => {
+      // The half a count of losses gets wrong, and it needs a locale whose
+      // FIRST part has a floor above zero — `en-US` writes the month first, so
+      // a `9` at the head makes it `09` by supplying a zero nobody typed. The
+      // caret belongs after that month, not in front of the digit just pressed:
+      // counted against the frame's capacity it lands at 1, and every following
+      // keystroke then goes in on the wrong side of it.
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'en-US',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '08122026');
+      expect(field.value).toBe('08/12/2026');
+
+      field.setSelectionRange(0, 0);
+      await browser.keyboard('9');
+
+      expect(field.value).toBe('09/08/1220');
+      expect(field.selectionStart).toBe(3);
+    });
+
     it('can be emptied from the keyboard', async () => {
       const { container } = renderUi(
         <DateInput name="dob" aria-label="Date of birth" />,
@@ -577,6 +619,166 @@ describe('DateInput', () => {
 
       expect(carrier(container).value).toBe('1985-03-12');
       expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
+    });
+
+    it('repaints the field when the form it SITS IN is reset and its own is not', async () => {
+      // The mirror of the case above, and the one the door used to miss: the
+      // carrier is bound to `altrove` by `form=`, but the VISIBLE field has no
+      // name and therefore belongs to the form it sits in. The platform reverts
+      // each control through its own form, so a reset of `qui` put the box back
+      // to the seed and left the carrier on the typed value — `altrove` would
+      // have posted a date that was not on screen.
+      const { container } = renderUi(
+        <>
+          <form id="altrove" />
+          <form id="qui">
+            <DateInput
+              name="dob"
+              aria-label="Date of birth"
+              form="altrove"
+              defaultValue="1985-03-12"
+            />
+            <button type="reset">Annulla</button>
+          </form>
+        </>,
+        { locale: 'it' },
+      );
+      await browser.fill(screen.getByRole('textbox'), '01012000');
+
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+
+      // The value belongs to `altrove`, which was not reset, so it stands — and
+      // the box goes back to showing it rather than the seed the platform put
+      // there.
+      await vi.waitFor(() => {
+        expect(screen.getByRole('textbox')).toHaveValue('01/01/2000');
+      });
+      expect(carrier(container).value).toBe('2000-01-01');
+    });
+
+    it('can still be edited after a reset, rather than emptying on one Backspace', async () => {
+      // `shown` is what the deletion path reads as "the text before this
+      // keystroke". On a reset the platform reverts the visible field itself, so
+      // the repaint below is a no-op — and while `shown` was recorded only
+      // INSIDE that repaint, it kept the text that had just been discarded.
+      // Measured: the box correctly returned to `12/03/1985`, then one
+      // Backspace emptied the whole field, because the deletion was mapped onto
+      // a string with nothing in common with it.
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="1985-03-12"
+          />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '01012000');
+
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+      await vi.waitFor(() => {
+        expect(field).toHaveValue('12/03/1985');
+      });
+
+      // Focus is on the BUTTON after that click, and a keystroke goes where the
+      // focus is — a test that forgot this would be typing into the reset.
+      await browser.click(field);
+      field.setSelectionRange(field.value.length, field.value.length);
+      await browser.keyboard('{Backspace}');
+
+      expect(field).toHaveValue('12/03/198');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('still follows an external clear after a reset', async () => {
+      // The second symptom of the same staleness: an empty carrier is only
+      // obeyed when what is on screen is WHOLE, and that question was being
+      // asked about the discarded text. Measured: half-typed, then reset, then
+      // `setValue(name, '')` — the carrier emptied and the box went on showing
+      // a date the form no longer held.
+      const { container } = renderUi(
+        <form>
+          <DateInput
+            name="dob"
+            aria-label="Date of birth"
+            defaultValue="1985-03-12"
+          />
+          <button type="reset">Annulla</button>
+        </form>,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '0101');
+      expect(field).toHaveValue('01/01/');
+
+      await browser.click(screen.getByRole('button', { name: 'Annulla' }));
+      await vi.waitFor(() => {
+        expect(field).toHaveValue('12/03/1985');
+      });
+
+      carrier(container).value = '';
+      await vi.waitFor(() => {
+        expect(field).toHaveValue('');
+      });
+    });
+
+    it('says so when something writes it a value it cannot show', async () => {
+      // The setter commits the assignment before this component sees it, so the
+      // form posts whatever arrived. Reverting is not this component's call —
+      // the write came from outside with intent — but going silent is: the SEED
+      // path warns for this exact string, and the door did not.
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      const { container } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue="1985-03-12"
+        />,
+        { locale: 'it' },
+      );
+
+      carrier(container).value = 'tomorrow';
+
+      await vi.waitFor(() => {
+        expect(warn).toHaveBeenCalledWith(
+          expect.stringContaining('does not name anything it can show'),
+        );
+      });
+      // Unchanged, and that is the point of the warning: the box and the form
+      // disagree, and nobody but this line would ever say so.
+      expect(screen.getByRole('textbox')).toHaveValue('12/03/1985');
+      warn.mockRestore();
+    });
+
+    it('follows a clear written as null, which is what a library writes', async () => {
+      // `HTMLInputElement.value` is declared `[LegacyNullToEmptyString]`, so
+      // `node.value = null` puts `''` in the DOM — but the door was handed the
+      // ARGUMENT, stringified, and so saw the literal `'null'`. Measured: the
+      // carrier went empty, the box went on showing `12/03/1985`, and the
+      // consumer was told nothing at all.
+      const told = vi.fn();
+      const { container } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue="1985-03-12"
+          onDateChange={told}
+        />,
+        { locale: 'it' },
+      );
+
+      (carrier(container) as unknown as { value: unknown }).value = null;
+
+      await vi.waitFor(() => {
+        expect(screen.getByRole('textbox')).toHaveValue('');
+      });
+      expect(carrier(container).value).toBe('');
+      expect(told).toHaveBeenLastCalledWith(null);
     });
 
     it('leaves a half-typed field alone when the page REFUSES the reset', async () => {
@@ -777,6 +979,120 @@ describe('DateInput', () => {
 
       await browser.fill(field, '12080000');
       expect(carrier(container).value).toBe('');
+    });
+  });
+
+  // Found by the adversarial review of the caret commit — each one run in a
+  // browser before it was written down here.
+  describe('what the box holds without having been typed into', () => {
+    it('is still editable when the default arrives after the mount', async () => {
+      // Data that loads late is an ordinary `defaultValue` going from empty to
+      // a date. React moves BOTH nodes for an untouched field, and tells nobody:
+      // the field went on believing the box was empty, so the first Backspace
+      // was mapped onto nothing, fell through to the flow mask, and re-poured
+      // the digits — `10/08/2026`, a different real day, stored in silence.
+      const onDateChange = vi.fn();
+      const { container, rerender } = renderUi(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue=""
+          onDateChange={onDateChange}
+        />,
+        { locale: 'it' },
+      );
+      rerender(
+        <DateInput
+          name="dob"
+          aria-label="Date of birth"
+          defaultValue="2026-08-12"
+          onDateChange={onDateChange}
+        />,
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      expect(field).toHaveValue('12/08/2026');
+      // The consumer is told, as for every other value that arrives from
+      // outside — a picker holding the date in state must not fall behind.
+      expect(onDateChange).toHaveBeenLastCalledWith({
+        year: 2026,
+        month: 8,
+        day: 12,
+      });
+
+      field.focus();
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+      expect(carrier(container).value).toBe('');
+    });
+
+    it('keeps a half-typed date when it is hidden and shown again', async () => {
+      // `<Activity>` re-runs effects without anything having changed. The
+      // effect that re-displays on a LOCALE change could not tell the two
+      // apart, and cleared the half-typed text as if the numerals had moved.
+      const view = (mode: 'visible' | 'hidden') => (
+        <Activity mode={mode}>
+          <DateInput name="dob" aria-label="Date of birth" />
+        </Activity>
+      );
+      const { container, rerender } = renderUi(view('visible'), {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '1208');
+      expect(field).toHaveValue('12/08/');
+
+      rerender(view('hidden'));
+      rerender(view('visible'));
+
+      const again = container.querySelector(
+        'input:not([data-carrier])',
+      ) as HTMLInputElement;
+      expect(again.value).toBe('12/08/');
+    });
+  });
+
+  describe('the two delete keys are not the same key', () => {
+    it('deletes FORWARD over a separator: the digit after it, not the one before', async () => {
+      // Delete at `12|/08/2026` removes the `/`, which has no digit of its own.
+      // The deletion path took "the digit in front of the cut" whichever key it
+      // was — so the key that deletes to the right ate the `2` on the left, and
+      // was indistinguishable from Backspace one place along.
+      const { container } = renderUi(
+        <DateInput name="dob" aria-label="Date of birth" />,
+        { locale: 'it' },
+      );
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(2, 2);
+      await browser.keyboard('{Delete}');
+
+      expect(field.value).toBe('12/8/2026');
+      expect(carrier(container).value).toBe('');
+      // Before the digit that is now next — a second Delete takes the `8`.
+      expect(field.selectionStart).toBe(3);
+    });
+
+    it('leaves the caret beside the deletion when the text is rewritten, not at the end', async () => {
+      // No test read the caret after a deletion the field REWRITES: sending it
+      // to the end of the field passed the whole suite. Backspace just past the
+      // separator is such a deletion — the browser took the `/`, the field puts
+      // it back and takes the digit before it — so the caret is ours to place.
+      // (Backspace over a digit is not: the browser's text already stands, and
+      // so does its caret, which is why a test on that one proved nothing.)
+      renderUi(<DateInput name="dob" aria-label="Date of birth" />, {
+        locale: 'it',
+      });
+      const field = screen.getByRole('textbox') as HTMLInputElement;
+      await browser.fill(field, '12082026');
+
+      field.setSelectionRange(3, 3);
+      await browser.keyboard('{Backspace}');
+
+      expect(field.value).toBe('1/08/2026');
+      expect(field.selectionStart).toBe(2);
     });
   });
 

@@ -1,0 +1,148 @@
+import { Meta, Controls, Canvas } from '@storybook/addon-docs/blocks';
+
+import * as Stories from './time-input.stories.tsx';
+
+<Meta of={Stories} />
+
+# TimeInput
+
+One text field that shows a time **in the hour cycle your locale reads** and
+stores it as `HH:mm`. It is the design system's time field.
+
+It is **not** a wrapper around `<input type="time">`. That control is refused by
+`Input` (ADR-0027) for the one reason this component exists — and the reason is
+worse than the date one. Measured across engines: the native time control draws
+the same twenty-four-hour reading **whatever locale the page declares**, and it
+follows the operating system rather than even the locale the engine reports. So
+on an `en-US` page it says `14:30` beside a `Time` saying `02:30 PM`, and a user
+who reads one and types the other is twelve hours out.
+
+<Canvas of={Stories.Default} />
+
+## Props
+
+Every `Input` prop, plus `defaultTime`, `onTimeChange`, `precision` and
+`hourCycle`.
+
+<Controls of={Stories.Default} />
+
+## Usage
+
+### The same time, four locales
+
+<Canvas of={Stories.AcrossLocales} />
+
+One ISO value — `14:30` — under four locales, each beside the `Time` that
+renders it. The **cycle** moves, the **separator** moves, the **digits** move,
+and what is stored never does. All of it comes from
+`Intl.DateTimeFormat(locale)` with the locale `UiProvider` was given: the same
+one `useFormatter()` hands `Time` and `Numeric`, which is what keeps a page
+agreeing with itself. Three findings from that measurement are in the code
+rather than in an assumption:
+
+- **`ko-KR` writes the day period first** — `오후 02:30`. A field that appended
+  AM/PM would have been wrong in Korean and nowhere else.
+- **`fi-FI` separates with `.`**, not `:`. No separator is written down here.
+- **`h11` is a real cycle**, and it is Japanese's: it writes midnight _and_ noon
+  as `00`, told apart only by 午前/午後. All four cycles `Intl` reports are
+  handled.
+
+**To re-locale one part of a page**, nest a `UiProvider`. There is deliberately
+no `locale` prop, for the reason `DateInput` has none: it would let this field
+say `it` while the `Time` beside it says `en`.
+
+### The format hint
+
+<Canvas of={Stories.Placeholders} />
+
+The placeholder is assembled, not written down: the **letters** are
+design-system copy (`hh`, `سس`) and the **frame** is the locale's own pattern.
+The day period is the exception, and deliberately — its two words come from
+`Intl`, so the hint shows the reader the very strings the field will accept, in
+the script it will accept them in.
+
+The hint is also the field's `aria-describedby`, because a placeholder is the
+last thing an accessible description falls back to: the moment a `Field` supplies
+a hint or an error, the format would stop being announced at all.
+
+### Twelve-hour, and the half of the day
+
+<Canvas of={Stories.TheHalfOfTheDay} />
+
+Type `0230` and the field shows `02:30 AM/PM`; press `p` and it becomes
+`02:30 PM`, stored as `14:30`.
+
+**Nothing is assumed.** Until the half of the day is chosen the field names no
+time at all and `onTimeChange` reports `null` — because `02:30` with an unspoken
+AM is a _wrong-but-valid_ value, which is worse than an obviously incomplete one.
+An unchosen period is exactly as incomplete as a half-typed minute, and the field
+treats it the same way.
+
+**How to say it**: type the locale's own word, or any letter that belongs to one
+word and not the other, or Latin `a`/`p` — offered everywhere, because a keyboard
+is not a locale. First letters are _not_ the rule: `午前` and `午後` share theirs,
+and so do `오전` and `오후`.
+
+### Forcing the cycle
+
+<Canvas of={Stories.ForcedCycle} />
+
+`hourCycle` takes the four cycles `Intl` reports. Reach for it only where the
+locale genuinely cannot know — a timetable, a roster, a hospital chart that reads
+twenty-four-hour whatever the page's language is. Everywhere else the default is
+the answer, and overriding it re-creates the disagreement this component exists
+to remove.
+
+### Seconds
+
+<Canvas of={Stories.WithSeconds} />
+
+`precision="second"` adds the third part and stores `HH:mm:ss`. The default is
+`"minute"`, and it is a real distinction rather than a formatting one: `09:00`
+and `09:00:00` are the same instant and different **answers** — one was given to
+the minute and the other to the second — so a field that always posted `:00`
+would claim a precision it was never given.
+
+### What the form posts
+
+<Canvas of={Stories.WhatTheFormPosts} />
+
+The `name` lands on a hidden **carrier** beside the field, so `FormData` gets
+`HH:mm` whatever the reader saw. A server is never handed `02:30 PM` and asked
+which half of the day it meant.
+
+For a form library, use **`FormTimeInput`**: it binds the carrier through the
+form port, so `register`, `setValue`, `reset` and validation all reach the value
+rather than the text.
+
+### It is a clock reading, not an instant
+
+`TimeInput` holds a `CivilTime` — hour, minute, optionally second — and never a
+`Date`. `09:00` is when a shop opens; it is not a point on any timeline until a
+day and a zone are attached, and attaching them silently is how a 9am opening
+becomes 8am for half the world.
+
+The hour is **always 0–23** in the value, whatever the reader's clock shows.
+Twelve-hour is a fact about a locale, not about a time, and a model that stored
+`{ hour: 2, period: 'PM' }` would push that into every comparison and every sort.
+
+If a consumer hands over a full instant — `d.toISOString()`, the natural thing to
+write — the field takes the clock reading out of it and posts that, rather than
+starting empty while the form holds something it never showed.
+
+## Accessibility
+
+- **One textbox**, not two or three. A screen-reader user hears one field with
+  one value, and `Tab` moves past it once.
+- **Named by a `Field`**, which wires `aria-describedby` and `aria-invalid`. The
+  format hint merges with a `Field`'s own hint and error rather than displacing
+  them.
+- **The carrier is out of the accessibility tree** (`aria-hidden`, `tabindex=-1`)
+  but still focusable, so `FormErrorSummary` can send focus to the field by name;
+  focus lands there and hops straight to the visible input.
+- **`inputMode` follows the cycle**: `text` where there is a day period to type,
+  `numeric` where there is not. A numeric keypad has no `p` on it, so a
+  twelve-hour field with one would be impossible to complete on a phone.
+- **The format hint disappears when the field cannot be typed into** —
+  `readOnly`, or `announceFormat={false}`. Telling a reader to write something
+  into a control that refuses it is worse than saying nothing.
