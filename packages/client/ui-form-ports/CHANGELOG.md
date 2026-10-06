@@ -1,3 +1,17 @@
+## 0.0.82 (2026-10-06)
+
+### 🩹 Fixes
+
+- **ui:** what four adversarial reviews found in the time family ([31e3388](https://github.com/fmmenchi/shared-platform/commit/31e3388))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/ui to 0.7.20
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+
 ## 0.0.81 (2026-10-06)
 
 ### 🧱 Updated Dependencies

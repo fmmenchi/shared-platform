@@ -1,3 +1,24 @@
+## 0.7.20 (2026-10-06)
+
+### 🚀 Features
+
+- **ui:** the bound time field, covered against real libraries first ([f3e99fe](https://github.com/fmmenchi/shared-platform/commit/f3e99fe))
+- **ui:** a time field, and two defects the date one had all along ([10e0f27](https://github.com/fmmenchi/shared-platform/commit/10e0f27))
+- **ui:** a time is a clock reading, and Input stops pretending otherwise ([5f6574f](https://github.com/fmmenchi/shared-platform/commit/5f6574f))
+
+### 🩹 Fixes
+
+- **ui:** what a ninth review found in the date and time fields, and one thing it left open ([bbf39f3](https://github.com/fmmenchi/shared-platform/commit/bbf39f3))
+- **ui:** the typed kit holds FormColorPicker, which main shipped without it ([1c835d0](https://github.com/fmmenchi/shared-platform/commit/1c835d0))
+- **ui:** the caret, settled by making the mask say where each digit came from ([b0f9d3d](https://github.com/fmmenchi/shared-platform/commit/b0f9d3d))
+- **ui:** withdraw most of the last fix, which four reviews measured worse ([d262609](https://github.com/fmmenchi/shared-platform/commit/d262609))
+- **ui:** what four adversarial reviews found in the time family ([31e3388](https://github.com/fmmenchi/shared-platform/commit/31e3388))
+
+### ❤️ Thank You
+
+- Fabio Menchicchi @fmmenchi
+- fmmenchi @fmmenchi
+
 ## 0.7.19 (2026-10-06)
 
 ### 🩹 Fixes
