@@ -10,6 +10,7 @@ import type { FormTextareaProps } from '../components/form-textarea/form-textare
 import type { FormSelectProps } from '../components/form-select/form-select.types.js';
 import type { FormSwitchProps } from '../components/form-switch/form-switch.types.js';
 import type { FormSegmentedControlProps } from '../components/form-segmented-control/form-segmented-control.types.js';
+import type { FormColorPickerProps } from '../components/form-color-picker/form-color-picker.types.js';
 
 /**
  * The same props, with `name` narrowed from `string` to what the form has.
@@ -68,5 +69,8 @@ export interface BoundFields<Name extends string> {
   FormSwitch: (props: WithFieldName<FormSwitchProps, Name>) => ReactNode;
   FormSegmentedControl: (
     props: WithFieldName<FormSegmentedControlProps, Name>,
+  ) => ReactNode;
+  FormColorPicker: (
+    props: WithFieldName<FormColorPickerProps, Name>,
   ) => ReactNode;
 }

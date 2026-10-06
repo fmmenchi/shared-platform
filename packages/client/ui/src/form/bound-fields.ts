@@ -9,6 +9,7 @@ import { FormTimeInput } from '../components/form-time-input/form-time-input.com
 import { FormDatePicker } from '../components/form-date-picker/form-date-picker.component.js';
 import { FormDateRangePicker } from '../components/form-date-range-picker/form-date-range-picker.component.js';
 import { FormSegmentedControl } from '../components/form-segmented-control/form-segmented-control.component.js';
+import { FormColorPicker } from '../components/form-color-picker/form-color-picker.component.js';
 import type { BoundFields } from './bound-fields.types.js';
 
 /**
@@ -54,5 +55,6 @@ export function createBoundFields<
     FormSelect,
     FormSwitch,
     FormSegmentedControl,
+    FormColorPicker,
   };
 }
