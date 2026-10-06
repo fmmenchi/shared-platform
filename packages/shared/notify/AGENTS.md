@@ -37,7 +37,10 @@ Three layers — build a neutral notification, pick transport(s), send:
 
 ## Rules
 
-- **Adding a channel = a new `Transport`, not a new package** (`email(...)`, `webhook(...)`). Each
+- **Adding a channel = a new `Transport`, not a new package** (`email(...)`, `webhook(...)`). That
+  is about delivering a **`Notification`**: an alert sent by email is a transport here. An email
+  composed for a recipient from a template is a different concept and lives in `@fmmenchi/email`
+  ([ADR-0036](../../../apps/docusaurus/docs/adr/0036-transactional-email-is-its-own-layer.md)). Each
   transport implementation lives in its **own folder** under `lib/transports/<name>/` (Slack is
   `lib/transports/slack/`); the core (`notification`, `transport.types`, `notify`) stays channel-free.
   The neutral `Notification` is the seam; keep channel formatting inside its transport.
