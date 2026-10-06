@@ -1,4 +1,4 @@
-import { isValidElement } from 'react';
+import { Fragment, isValidElement } from 'react';
 import type { ElementType, ReactElement, ReactNode, Ref } from 'react';
 import { cn } from '../util/cn.js';
 import { mergeRefs } from './merge-refs.js';
@@ -131,6 +131,16 @@ function Slot(props: SlotProps): ReactNode {
   if (!valid) return children;
 
   const element = children as ReactElement<Props>;
+  // A FRAGMENT IS RENDERED UNTOUCHED, because it has no element to slot onto:
+  // it can carry neither the props nor the ref. Until React 19.3 that was true
+  // by itself — the props were refused, the ref was dropped, and every caller's
+  // "never received a ref" guard said so. 19.3 attaches the ref, as a
+  // `FragmentInstance`, which is not an element; the callers of this, all
+  // written against a node, crashed on it (`element.setAttribute is not a
+  // function`, in `useDescendants`). Decided here, before anything is merged,
+  // rather than by a condition on the `ref` attribute below: the compiler
+  // rejects that as reading a ref during render.
+  if (element.type === Fragment) return children;
   const Child = element.type as ElementType;
   // `element.props.ref`, not `element.ref`: in React 19 the ref IS a regular
   // prop, and reading the old field warns on every render.

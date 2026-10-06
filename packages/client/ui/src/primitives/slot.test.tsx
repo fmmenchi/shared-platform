@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createRef } from 'react';
+import { createElement, createRef, Fragment } from 'react';
 import { render, screen } from '@testing-library/react';
 import { Slot } from './slot.js';
 
@@ -82,6 +82,23 @@ describe('Slot', () => {
     );
     expect(ours.current).toBe(screen.getByRole('link'));
     expect(theirs.current).toBe(ours.current);
+  });
+
+  // React 19.3 gives a fragment a ref of its own: a `FragmentInstance`, not an
+  // element. Every caller of `Slot` is written against a node, and the first
+  // one to meet it — a `ToolbarItem` registering a descendant — crashed. On
+  // 19.2 and earlier this passes for free, because React drops the ref itself.
+  it('gives a fragment child no ref — it has no element to give', () => {
+    const ours = vi.fn();
+    // Built rather than written as `<>…</>`: a single-child fragment is what
+    // the lint rule calls useless, and that is the mistake under test.
+    render(
+      <Slot ref={ours}>
+        {createElement(Fragment, null, <button type="button">Go</button>)}
+      </Slot>,
+    );
+    expect(screen.getByRole('button', { name: 'Go' })).toBeInTheDocument();
+    expect(ours).not.toHaveBeenCalled();
   });
 
   it('lets the child win every other prop', () => {
