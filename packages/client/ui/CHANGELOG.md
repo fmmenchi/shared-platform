@@ -1,3 +1,13 @@
+## 0.7.19 (2026-10-06)
+
+### 🩹 Fixes
+
+- **ui:** a fragment child is rendered untouched, so react 19.3 cannot crash a slot ([b1a597d](https://github.com/fmmenchi/shared-platform/commit/b1a597d))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.7.18 (2026-09-05)
 
 ### 🚀 Features
