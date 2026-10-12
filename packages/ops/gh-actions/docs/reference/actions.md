@@ -221,9 +221,15 @@ used from a separate job (`needs:` + `if: failure()`) the failed jobs have concl
 the SAME job as the thing that broke — a weekly audit alerting on its own scan — that job cannot have
 concluded, because this step is part of it.
 
-**It fails when it finds nothing.** It was invoked because something went red, so an empty answer
-means the view is wrong — a token without `actions: read`, or a step placed before the jobs it
-reports on — and staying quiet would hide the original failure and this one together.
+**It looks again before believing an empty answer.** The jobs API trails the runner: asked in the
+moment after a step fails, it can still show that step with no conclusion. In the same-job shape that
+moment is exactly when this brick runs, so when nothing failed is found it asks again every 2s, for up
+to 30s. A failure visible on the first look — every use from a separate job — is reported at once.
+
+**It fails when it finds nothing.** It was invoked because something went red, so an answer still
+empty after the wait means the view is wrong — a token without `actions: read`, or a step placed
+before the jobs it reports on — and staying quiet would hide the original failure and this one
+together. The error prints the jobs and steps as the API last showed them.
 
 **Attachments arrive in the message's thread**, not loose in the channel, and an attachment that
 cannot be sent fails the step **after** the message is posted: an alert with no report is degraded, a
