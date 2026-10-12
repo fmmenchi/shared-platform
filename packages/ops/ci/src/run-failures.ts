@@ -1,5 +1,6 @@
-// Asks GitHub what failed in the current run. The only side effect here is the HTTP call:
-// what counts as a failure, and how it reads, is `eventFromRunFailures` in @fmmenchi/notify.
+// Asks GitHub what failed in the current run. The only side effects here are the HTTP call
+// and the waiting between two of them: what counts as a failure, and how it reads, is
+// `eventFromRunFailures` in @fmmenchi/notify.
 import type { RunJob } from '@fmmenchi/notify';
 
 /** The env a GitHub Actions step already has; named so the failure messages can be exact. */
@@ -88,4 +89,76 @@ export async function fetchRunJobs(context: RunContext): Promise<RunJob[]> {
       return jobs;
     }
   }
+}
+
+/** How long `findInRunJobs` keeps looking. `sleep` is a parameter so a test need not wait. */
+export interface LookOptions {
+  /** Total time spent WAITING between looks; the requests themselves are not counted. */
+  timeoutMs?: number;
+  intervalMs?: number;
+  sleep?: (ms: number) => Promise<void>;
+}
+
+/** What the looking ended with: the answer, and the evidence it was (not) found in. */
+export interface LookResult<T> {
+  found: T | null;
+  /** The jobs as the LAST look saw them — what an empty answer has to be explained with. */
+  jobs: RunJob[];
+  looks: number;
+}
+
+/**
+ * Looks at the run's jobs until `find` answers, or the time runs out.
+ *
+ * One look is not enough, and that was measured rather than supposed: the jobs API trails the
+ * runner. A step alerting on a failure in its OWN job asked 0.6s after the failed step ended
+ * (andes-routes run 38263838278), was shown a job with no failed step in it, and reported
+ * that nothing had failed — on the one run where something had. Asked again later, the same
+ * endpoint named the step. So an empty answer is looked at again before it is believed.
+ *
+ * Only the empty answer waits. A failure visible on the first look returns at once, which is
+ * every use from a separate job (`needs:` + `if: failure()`): those jobs have concluded.
+ *
+ * `find` decides and this function waits — it never inspects a job itself, so what counts as
+ * a failure stays in one pure place. When the time runs out the answer is still `null`, and
+ * the caller still has to fail on it: waiting makes the empty answer rarer, not acceptable.
+ */
+export async function findInRunJobs<T>(
+  context: RunContext,
+  find: (jobs: RunJob[]) => T | null,
+  {
+    timeoutMs = 30_000,
+    intervalMs = 2_000,
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  }: LookOptions = {},
+): Promise<LookResult<T>> {
+  for (let looks = 1, waited = 0; ; looks += 1, waited += intervalMs) {
+    const jobs = await fetchRunJobs(context);
+    const found = find(jobs);
+    if (found !== null || waited + intervalMs > timeoutMs) {
+      return { found, jobs, looks };
+    }
+    await sleep(intervalMs);
+  }
+}
+
+/**
+ * The jobs as the API showed them, one line each — for the error that says nothing was found.
+ *
+ * `status` is read here although `RunJob` does not declare it: the decision never needs it,
+ * but "the job was in_progress and its step had no conclusion" is exactly the sentence that
+ * tells a lagging view from a token that sees nothing.
+ */
+export function describeRunJobs(jobs: readonly RunJob[]): string {
+  const state = (item: { conclusion: string | null; status?: string }) =>
+    `${item.status ?? 'unknown'}/${item.conclusion ?? 'none'}`;
+  if (jobs.length === 0) return '  (the API listed no jobs at all)';
+  return jobs
+    .map((job) => {
+      const steps = (job.steps ?? [])
+        .map((step) => `${step.name}=${state(step)}`)
+        .join(', ');
+      return `  ${job.name} [${state(job)}]${steps ? `: ${steps}` : ''}`;
+    })
+    .join('\n');
 }
