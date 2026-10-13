@@ -1,3 +1,13 @@
+## 0.2.3 (2026-10-13)
+
+### 🩹 Fixes
+
+- **ci:** look again before believing an empty --fromRun answer ([b28eff2](https://github.com/fmmenchi/shared-platform/commit/b28eff2))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.2.2 (2026-10-05)
 
 ### 🩹 Fixes
