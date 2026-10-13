@@ -3,14 +3,12 @@ import { FieldDescription } from '../field-description/field-description.compone
 import { FieldError } from '../field-error/field-error.component.js';
 import { DatePicker } from '../date-picker/date-picker.component.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { useBoundField } from '../../form/form-adapter.context.js';
 import {
   useBindingOwnedWarning,
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
 import { toMessages } from '../../form/messages.js';
-import { useBoundCarrier } from '../../form/use-bound-carrier.js';
-import { mergeRefs } from '../../primitives/merge-refs.js';
+import { useBoundCarrierField } from '../../form/use-bound-carrier-field.js';
 import { useMessages } from '../../i18n/provider.js';
 import { datePickerMessages } from '../date-picker/date-picker.messages.js';
 import type { FormDatePickerProps } from './form-date-picker.types.js';
@@ -23,9 +21,9 @@ import type { FormDatePickerProps } from './form-date-picker.types.js';
  *       <FormDatePicker name="departure" label="Departure" />
  *     </UiProvider>
  *
- * It is `FormDateInput` with a calendar, and the routing below is the same
- * routing for the same reasons — read that component for why a binding's props
- * travel through a table rather than a spread.
+ * It is `FormDateInput` with a calendar, bound through the same
+ * `useBoundCarrierField` for the same reasons — read that hook for why a
+ * binding's props travel through a table rather than a spread.
  *
  * WHAT THIS ONE ADDS is the thing the hand-composed picker cannot have. In
  * `FormDateInput` the binding's ref goes to the carrier and a call site cannot
@@ -45,7 +43,7 @@ function FormDatePicker(props: FormDatePickerProps) {
   // the shared `withoutBindingOwned` guard, which warns AND removes.
   const { name, label, hint, ref, defaultDate, ...rest } =
     props as FormDatePickerProps & { defaultDate?: unknown };
-  const { control, errors } = useBoundField(name, 'FormDatePicker');
+  const bound = useBoundCarrierField(name, 'FormDatePicker');
   useBindingOwnedWarning(rest, 'FormDatePicker');
   // The type refuses `defaultDate`; this is for the callers the type does not
   // see, and for the same reason the shared guard exists at all.
@@ -53,7 +51,7 @@ function FormDatePicker(props: FormDatePickerProps) {
     defaultDate !== undefined,
     "FormDatePicker: `defaultDate` is the binding's to set, not the call site's — it would seed the DOM without telling your form library, which then validates an empty field and overwrites the seed. It was ignored; give the value to the library instead.",
   );
-  const messages = toMessages(errors);
+  const messages = toMessages(bound.errors);
 
   // THE TRIGGER TAKES ITS NAME FROM THE FIELD'S LABEL. The default names the
   // button by what it does — "Choose from a calendar" — which stops being a
@@ -71,62 +69,23 @@ function FormDatePicker(props: FormDatePickerProps) {
   const composed =
     typeof label === 'string' ? t('triggerFor', { field: label }) : undefined;
 
-  // THE SAME ROUTING TABLE `FormDateInput` uses, and it is not a shortcut for a
-  // spread: what describes a NATIVE CONTROL THIS IS NOT must never travel. A
-  // schema declaring `types: { departure: 'date' }` forwards `type="date"`,
-  // which would turn the visible field into a native picker whose ISO value the
-  // mask then re-segments into a different date; `pattern`, `min`, `max` and
-  // `step` arrive the same way and are checked against `12/08/2026`.
-  const {
-    value,
-    defaultValue,
-    ref: bindingRef,
-    type,
-    pattern,
-    min,
-    max,
-    step,
-    accept,
-    multiple,
-    checked,
-    defaultChecked,
-    ...binding
-  } = control;
-  // Narrowed to a string because `control` is typed for an `<input>`, where a
-  // value may also be a number or a list; an ISO date is neither.
-  const asString = (candidate: unknown) =>
-    typeof candidate === 'string' ? candidate : undefined;
-  const seed = asString(defaultValue) ?? asString(value);
-  // A CONTROLLED adapter hands over `value` and no ref, so nothing it does
-  // after the first render reaches the field — the seed above is a one-shot.
-  // This follows it onto the carrier, where the field is already watching.
-  const carrier = useBoundCarrier(asString(value));
-
   return (
     <Field label={label} invalid={messages.length > 0}>
       <DatePicker
-        {...binding}
-        // The fallback the spread quietly drops: `name` is optional on the
-        // port's control, and without one the carrier is nameless — nothing is
-        // submitted, and `FormErrorSummary` cannot find the field.
-        name={control.name ?? name}
-        // The adapter's starting value seeds an uncontrolled field, and arrives
-        // under either name depending on the library. Never passed through as
-        // `value`, which would control the visible field with an ISO string and
-        // show `2026-08-12` where the locale writes `12/08/2026`.
-        // No `value={undefined}` any more: `DatePicker` refuses the prop
-        // outright now, so there is nothing left to neutralise.
-        defaultValue={seed}
+        {...bound.binding}
+        name={bound.name}
+        // No `value={undefined}` here: `DatePicker` refuses the prop outright,
+        // so there is nothing left to neutralise.
+        defaultValue={bound.seed}
         {...withoutBindingOwned(rest)}
-        // TWO REFS, TWO JOBS. The binding's goes to the carrier, because a
-        // library reads `.value` off the element its ref was given and the
-        // visible field holds `12/08/2026`. The call site's goes to the visible
-        // input, which is where focus belongs. `DatePicker` merges a third of
-        // its own into the first, which is how the calendar writes the field.
         triggerLabel={
           (rest as { triggerLabel?: string }).triggerLabel ?? composed
         }
-        carrierRef={(node) => mergeRefs(carrier, bindingRef)(node)}
+        // The binding's ref is inside `carrierRef`; `DatePicker` merges a
+        // third of its own into it, which is how the calendar writes the
+        // field. The call site's goes to the visible input, where focus
+        // belongs.
+        carrierRef={bound.carrierRef}
         ref={ref}
       />
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}

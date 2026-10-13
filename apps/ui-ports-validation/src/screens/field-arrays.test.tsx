@@ -3,7 +3,12 @@ import { useState, type ComponentType } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent as browser } from 'vitest/browser';
 import { z } from 'zod';
-import { UiProvider, FormInput, createBoundFields } from '@fmmenchi/ui';
+import {
+  UiProvider,
+  FormInput,
+  FormErrorSummary,
+  createBoundFields,
+} from '@fmmenchi/ui';
 import {
   FormProvider,
   useFieldArray,
@@ -11,9 +16,15 @@ import {
   type FieldPath,
   type Resolver,
 } from 'react-hook-form';
-import { useRhfField } from '@fmmenchi/ui-form-ports/react-hook-form';
+import {
+  useRhfField,
+  useRhfErrors,
+} from '@fmmenchi/ui-form-ports/react-hook-form';
 import { Formik, Form as FormikForm, setIn } from 'formik';
-import { createFormikField } from '@fmmenchi/ui-form-ports/formik';
+import {
+  createFormikField,
+  useFormikErrors,
+} from '@fmmenchi/ui-form-ports/formik';
 import { useForm as useTanstackForm, useSelector } from '@tanstack/react-form';
 import {
   createTanstackField,
@@ -21,7 +32,10 @@ import {
 } from '@fmmenchi/ui-form-ports/tanstack';
 import { FormProvider as ConformProvider, useForm } from '@conform-to/react';
 import { parseWithZod } from '@conform-to/zod/v4';
-import { createConformField } from '@fmmenchi/ui-form-ports/conform';
+import {
+  createConformField,
+  createConformErrors,
+} from '@fmmenchi/ui-form-ports/conform';
 
 /**
  * REPEATED FIELDS — one suite, four libraries.
@@ -60,6 +74,17 @@ type GuestValues = z.infer<typeof GuestsSchema>;
  * under test. If a library needed something of its own in here, the port would
  * be leaking.
  */
+/**
+ * The summary names a row by its INDEX, read out of the name in whichever
+ * syntax the library writes it — `guests.1.name` or `guests[1].name`. That the
+ * same regex serves all four is the point: the summary's key and the field's
+ * `name` have to be the same string, or the link below focuses nothing.
+ */
+const labelFor = (name: string) => {
+  const index = /\d+/.exec(name)?.[0];
+  return index === undefined ? name : `Guest ${Number(index) + 1}`;
+};
+
 function GuestList(props: {
   rows: readonly Row[];
   onAdd: () => void;
@@ -67,6 +92,7 @@ function GuestList(props: {
 }) {
   return (
     <>
+      <FormErrorSummary labelFor={labelFor} />
       {props.rows.map((row, index) => (
         <div key={row.key}>
           <FormInput name={`${row.name}.name`} label={`Guest ${index + 1}`} />
@@ -119,7 +145,10 @@ function RhfGuests() {
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(setSaved)}>
         <UiProvider
-          adapters={{ i18n: { locale: 'en' }, form: { field: useRhfField } }}
+          adapters={{
+            i18n: { locale: 'en' },
+            form: { field: useRhfField, errors: useRhfErrors },
+          }}
         >
           <GuestList
             rows={fields.map((field, index) => ({
@@ -164,15 +193,23 @@ function FormikGuests() {
       {({ values, setFieldValue }) => (
         <FormikForm>
           <UiProvider
-            adapters={{ i18n: { locale: 'en' }, form: { field: formikField } }}
+            adapters={{
+              i18n: { locale: 'en' },
+              form: { field: formikField, errors: useFormikErrors },
+            }}
           >
             <GuestList
               // No row key of its own: the index is what Formik's own examples
               // use, and it holds because Formik is CONTROLLED — the value shown
               // comes from its state, whatever node React kept.
+              //
+              // IN DOTS, which is the syntax `FormikPath` types and the one the
+              // summary emits. Formik reads `guests[0]` just as well, but the
+              // summary finds a field by its `name`, so the two have to agree on
+              // one spelling — and the kit's is it.
               rows={values.guests.map((_, index) => ({
                 key: String(index),
-                name: `guests[${index}]`,
+                name: `guests.${index}`,
               }))}
               onAdd={() =>
                 void setFieldValue('guests', [...values.guests, { name: '' }])
@@ -271,7 +308,10 @@ function ConformGuests() {
   return (
     <ConformProvider context={form.context}>
       <UiProvider
-        adapters={{ i18n: { locale: 'en' }, form: { field: conformField } }}
+        adapters={{
+          i18n: { locale: 'en' },
+          form: { field: conformField, errors: createConformErrors(form) },
+        }}
       >
         <form id={form.id} onSubmit={form.onSubmit}>
           <GuestList
@@ -365,6 +405,28 @@ describe.each(SCREENS)(
         expect(guest(2)).toHaveAccessibleDescription(GUEST_REQUIRED),
       );
       expect(guest(1)).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('the summary lists the row under the name its field has, and its link reaches it', async () => {
+      // The two members of the port have to agree on what a row is CALLED:
+      // the summary finds the control by `[name="…"]`, so an adapter whose
+      // `errors` spell an index one way while its fields spell it another
+      // lists an entry whose link focuses nothing. Measured on Formik, whose
+      // summary wrote `guests[1].name` while its typed kit only knows
+      // `guests.1.name`.
+      render(<Screen />);
+
+      await browser.click(add());
+      await browser.click(add());
+      await browser.type(guest(1), 'Ada');
+      // guest 2 left empty
+      await browser.click(save());
+
+      const link = await screen.findByRole('link', {
+        name: `Guest 2: ${GUEST_REQUIRED}`,
+      });
+      await browser.click(link);
+      await waitFor(() => expect(guest(2)).toHaveFocus());
     });
   },
 );

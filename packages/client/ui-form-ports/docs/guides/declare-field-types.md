@@ -53,11 +53,23 @@ What the map must never do is reach the control — Conform shapes every prop by
 `type`, `pattern`, `min` and `max`, and `FormDateInput`/`FormTimeInput` drop precisely those. The
 shared suite declares both on purpose, because nothing inside the design system can see that work.
 
-## There is no `'radio'`
+## `'radio'` and `'checkbox-group'` go through the option binding
 
 A radio group is N controls sharing one name with a distinct value each, so the option's value
-cannot be expressed in a map keyed by field NAME. Advertising `'radio'` here would have meant a
-control that can never be selected. That binding needs its own shape — one name to many controls.
+cannot be expressed in a map keyed by field NAME — and it never had to be. It arrives as the argument
+to `option(value)` on the **option-field** binding (`createFormikOptionField`,
+`createTanstackOptionField`, `createConformOptionField`, `useRhfOptionField`,
+`useActionOptionField`), which is the shape `FormSegmentedControl` and a multiple `FormCombobox`
+bind through. The map then only has to say what KIND of field it is:
+
+- `'radio'` — one of many. The stored value is the chosen option.
+- `'checkbox-group'` — several of many, under one name. The stored value is a list, in document
+  order whichever library is underneath.
+
+Both are **refused by the per-field binding**: declared and then bound one-control-per-field, a
+group renders a single control that can never report which option is checked and submits nothing
+while looking complete, so `createFormikField` and its siblings throw on the first render and name
+the binding to use instead.
 
 ## Verify
 
