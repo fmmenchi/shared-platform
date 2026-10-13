@@ -1,3 +1,13 @@
+## 0.7.21 (2026-10-13)
+
+### 🩹 Fixes
+
+- **ui:** keep the private theme contract out of the published manifest ([970cf04](https://github.com/fmmenchi/shared-platform/commit/970cf04))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.7.20 (2026-10-06)
 
 ### 🚀 Features

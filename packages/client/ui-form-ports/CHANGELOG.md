@@ -1,3 +1,9 @@
+## 0.0.83 (2026-10-13)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/ui to 0.7.21
+
 ## 0.0.82 (2026-10-06)
 
 ### 🩹 Fixes
