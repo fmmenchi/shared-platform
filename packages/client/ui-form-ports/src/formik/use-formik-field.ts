@@ -93,13 +93,23 @@ export function useFormikErrors(): Readonly<Record<string, readonly string[]>> {
  * the only error the summary rendered nothing at all while the form refused to
  * submit. The summary exists precisely so nobody has to walk the form to find
  * out what failed.
+ *
+ * AN ARRAY ROW IS `guests.0.name`, IN DOTS — the one syntax `FormikPath` types,
+ * and so the one a field bound through the typed kit carries as its `name`.
+ * The first version wrote `guests[0].name`, which Formik also reads, and the
+ * two halves of this adapter then disagreed: `FormErrorSummary` finds a field
+ * by `[name="…"]`, so its link for a row's error focused nothing, and
+ * `labelFor` was asked about a string no field had. Formik's own `getIn`
+ * accepts either spelling, so nothing is lost by choosing the kit's.
  */
 function flatten(node: unknown, path = ''): Array<[string, string[]]> {
   if (typeof node === 'string') {
     return node === '' ? [] : [[path, [node]]];
   }
   if (Array.isArray(node)) {
-    return node.flatMap((child, index) => flatten(child, `${path}[${index}]`));
+    return node.flatMap((child, index) =>
+      flatten(child, path === '' ? String(index) : `${path}.${index}`),
+    );
   }
   if (node != null && typeof node === 'object') {
     return Object.entries(node).flatMap(([key, child]) =>
