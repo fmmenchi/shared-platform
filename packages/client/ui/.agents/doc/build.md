@@ -15,6 +15,12 @@
   Rules of React are enforced by `eslint-plugin-react-hooks` v7 `recommended-latest` — no ref
   read/write during render; keep code compiler-compatible (no manual memo needed).
 - **Tree-shaking**: the package is `sideEffects: ["**/*.css"]` — unused JS exports drop, CSS stays.
+- **`src/docs` never ships.** It is Storybook's (foundations pages, their helpers) and it imports
+  `@fmmenchi/theme`, which is private and therefore a `devDependency` here — never under
+  `dependencies`, where `0.7.20` had it and every external install 404'd (the
+  `fmmenchi/no-private-dependency` lint rule now fails the gate on that). The `dts` plugin
+  excludes `src/docs/**` so no declaration in the tarball imports a package the registry lacks.
+  Shipped code that needs the contract would have to bundle it, the way `nx-theme-generator` does.
 - **Per-component subpaths** — each component is its own build entry + export so a consumer imports
   only what it uses. **Adding a component:**
   1. `src/components/<name>/index.ts` (barrel re-exporting the component).

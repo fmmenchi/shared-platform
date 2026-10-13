@@ -85,6 +85,12 @@
   maps it.
 - Publishable package: `publishConfig`, `repository` with `directory`, `files: ["dist"]`, no
   `private`.
+- **A publishable manifest never names a private workspace package** under `dependencies`,
+  `peerDependencies` or `optionalDependencies` — `pnpm publish` rewrites `workspace:*` into a
+  version that is not on the registry, and the consumer's install 404s (`@fmmenchi/ui@0.7.20` did,
+  on `@fmmenchi/theme`). Dev-only use goes under `devDependencies`; shipped use is bundled, as
+  `@fmmenchi/nx-theme-generator` does. The `fmmenchi/no-private-dependency` lint rule
+  (`tools/eslint/`) fails the gate on it, reading each manifest through the same link publish does.
 - Publish auth: token with `write:packages` (`NODE_AUTH_TOKEN`, or Actions `GITHUB_TOKEN`).
 
 ## Commands

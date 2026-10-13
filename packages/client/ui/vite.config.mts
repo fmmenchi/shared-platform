@@ -207,6 +207,12 @@ export default defineConfig(() => ({
     dts({
       entryRoot: 'src',
       tsconfigPath: path.join(import.meta.dirname, 'tsconfig.lib.json'),
+      // `src/docs` is Storybook's — foundations pages and their helpers, which
+      // import `@fmmenchi/theme` (private, a devDependency). No entry reaches
+      // them and no `exports` subpath exposes them, yet without this line their
+      // declarations were in the tarball, one of them importing a package that
+      // does not exist on the registry. A shipped file must resolve.
+      exclude: ['src/docs/**'],
     }),
   ],
   build: {

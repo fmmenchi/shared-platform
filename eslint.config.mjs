@@ -1,4 +1,5 @@
 import nx from '@nx/eslint-plugin';
+import noPrivateDependency from './tools/eslint/no-private-dependency.mjs';
 
 export default [
   ...nx.configs['flat/base'],
@@ -144,6 +145,21 @@ export default [
     files: ['**/*.json'],
     // Override or add rules here
     rules: {},
+    languageOptions: {
+      parser: await import('jsonc-eslint-parser'),
+    },
+  },
+  {
+    // A PUBLISHED MANIFEST MUST NOT NAME A PRIVATE PACKAGE. `@fmmenchi/ui@0.7.20`
+    // shipped with `@fmmenchi/theme` (private, source-only) under `dependencies`,
+    // and every install outside this repo failed with a 404 — invisible from
+    // inside, where the workspace link resolves. The rule reads each manifest
+    // the way `pnpm publish` does (see tools/eslint/no-private-dependency.mjs).
+    files: ['**/package.json'],
+    plugins: {
+      fmmenchi: { rules: { 'no-private-dependency': noPrivateDependency } },
+    },
+    rules: { 'fmmenchi/no-private-dependency': 'error' },
     languageOptions: {
       parser: await import('jsonc-eslint-parser'),
     },
