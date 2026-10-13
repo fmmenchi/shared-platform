@@ -1,3 +1,13 @@
+## 0.7.22 (2026-10-13)
+
+### 🩹 Fixes
+
+- **ui:** one carrier binding for the five fields that route instead of spread ([5a91f20](https://github.com/fmmenchi/shared-platform/commit/5a91f20))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.7.21 (2026-10-13)
 
 ### 🩹 Fixes

@@ -1,3 +1,17 @@
+## 0.0.84 (2026-10-13)
+
+### 🩹 Fixes
+
+- **form-ports:** the formik summary names a row the way the typed kit does ([fc37a08](https://github.com/fmmenchi/shared-platform/commit/fc37a08))
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/ui to 0.7.22
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.0.83 (2026-10-13)
 
 ### 🧱 Updated Dependencies
