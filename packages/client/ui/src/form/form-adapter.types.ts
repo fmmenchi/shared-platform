@@ -31,12 +31,13 @@ export type UseFormField = (name: string) => BoundField;
  * `UseFormField` cannot express this and the shape says why: it returns one bag
  * of props, and here every control needs the SAME `name` with a DIFFERENT
  * `value`, plus a `checked` that only the current value can answer. The
- * workaround `FormSegmentedControl` ships today is the evidence — it binds the
- * GROUP, delegating `change` (which bubbles, so `event.target.value` is the
- * chosen option) and dropping `ref` outright, because there is no "the input" of
- * a radio group. That works for one-of-many and gives up two things: a library
- * cannot focus the field from an error summary, and a ref-based library cannot
- * write a value back into it at all.
+ * workaround `FormSegmentedControl` shipped before this shape existed is the
+ * evidence — it bound the GROUP, delegating `change` (which bubbles, so
+ * `event.target.value` is the chosen option) and dropping `ref` outright,
+ * because there is no "the input" of a radio group. That worked for one-of-many
+ * and gave up two things: a library could not focus the field from an error
+ * summary, and a ref-based library could not write a value back into it at
+ * all. It binds per option through this shape now, and gives up neither.
  *
  * THE HOOK IS STILL ONE PER FIELD. `option` is a plain function called during
  * render, once per rendered option — not a hook — so the rules of hooks hold

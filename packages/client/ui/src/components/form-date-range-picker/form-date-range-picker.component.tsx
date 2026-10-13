@@ -4,55 +4,14 @@ import { FieldsetContent } from '../fieldset-content/fieldset-content.component.
 import { FieldDescription } from '../field-description/field-description.component.js';
 import { FieldError } from '../field-error/field-error.component.js';
 import { DateRangePicker } from '../date-range-picker/date-range-picker.component.js';
-import { useBoundField } from '../../form/form-adapter.context.js';
 import {
   useBindingOwnedWarning,
   withoutBindingOwned,
 } from '../../form/binding-owned.js';
-import { useBoundCarrier } from '../../form/use-bound-carrier.js';
+import { useBoundCarrierField } from '../../form/use-bound-carrier-field.js';
 import { useDevWarning } from '../../primitives/use-dev-warning.js';
-import { mergeRefs } from '../../primitives/merge-refs.js';
 import { toMessages } from '../../form/messages.js';
-import type { BoundField } from '../../form/form-adapter.types.js';
 import type { FormDateRangePickerProps } from './form-date-range-picker.types.js';
-
-/** Narrowed to a string: `control` is typed for an `<input>`, where a value may
- *  also be a number or a list. An ISO date is neither. */
-const asString = (candidate: unknown) =>
-  typeof candidate === 'string' ? candidate : undefined;
-
-/**
- * THE ROUTING TABLE, once per end, and it is not a shortcut for a spread.
- *
- * What describes a NATIVE DATE CONTROL — which neither of these fields is —
- * must never travel: a schema declaring `types: { checkIn: 'date' }` forwards
- * `type="date"`, which turns a masked text field into a native picker whose ISO
- * value the mask then re-segments into a different date; `pattern`, `min`,
- * `max` and `step` arrive the same way and are checked against `12/08/2026`.
- */
-function route(control: BoundField['control']) {
-  const {
-    value,
-    defaultValue,
-    ref,
-    type,
-    pattern,
-    min,
-    max,
-    step,
-    accept,
-    multiple,
-    checked,
-    defaultChecked,
-    ...rest
-  } = control;
-  return {
-    binding: rest,
-    bindingRef: ref,
-    seed: asString(defaultValue) ?? asString(value),
-    held: asString(value),
-  };
-}
 
 /**
  * A labelled date range, already bound to the form library in scope:
@@ -70,7 +29,9 @@ function route(control: BoundField['control']) {
  * IT BINDS TWO FIELDS, which is what makes it the first of its kind here. The
  * port is a hook per field, so two fields are two calls of it — both
  * unconditional and in a fixed order, as the rules of hooks require and as the
- * port's own contract already asked for.
+ * port's own contract already asked for. `useBoundCarrierField` is that call,
+ * once per end, and it routes each end's bag the way `FormDateInput` routes
+ * its one: what describes a native date control never travels.
  *
  * THE SHELL IS A `Fieldset`, not a `Field`. `Field` gives its control an id and
  * expects one control to take it: measured with two, both inputs carried the
@@ -83,8 +44,8 @@ function FormDateRangePicker(props: FormDateRangePickerProps) {
 
   // TWO CALLS, in a fixed order, unconditionally — which is exactly what the
   // port asks of its consumers and why no new port shape was needed.
-  const start = useBoundField(startName, 'FormDateRangePicker');
-  const end = useBoundField(endName, 'FormDateRangePicker');
+  const start = useBoundCarrierField(startName, 'FormDateRangePicker');
+  const end = useBoundCarrierField(endName, 'FormDateRangePicker');
   useBindingOwnedWarning(rest, 'FormDateRangePicker');
   // TWO NAMES OR NOTHING. Given the same one twice, both hooks bind the same
   // field, two carriers post under one key, and the binding's ref ends on
@@ -95,15 +56,6 @@ function FormDateRangePicker(props: FormDateRangePickerProps) {
     startName === endName,
     `FormDateRangePicker: \`startName\` and \`endName\` are both "${startName}". A range is two values and posts as two entries, so each end needs its own name — with one, both carriers submit under it and a binding's ref lands on whichever field mounted last.`,
   );
-
-  const startRoute = route(start.control);
-  const endRoute = route(end.control);
-
-  // A CONTROLLED adapter hands over `value` and no ref, so nothing it does
-  // after the first render reaches the fields. This follows each end onto its
-  // own carrier, where the field is already watching.
-  const startCarrier = useBoundCarrier(startRoute.held);
-  const endCarrier = useBoundCarrier(endRoute.held);
 
   // BOTH ENDS' MESSAGES, in field order, under one group — and KEYED BY THEIR
   // END as well as their text. `toMessages` dedupes within one field and cannot
@@ -134,29 +86,23 @@ function FormDateRangePicker(props: FormDateRangePickerProps) {
           // picker for this one dropped `aria-invalid` from the accessibility
           // tree entirely, so a reader was told nothing at all.
           startFieldProps={{
-            ...startRoute.binding,
+            ...start.binding,
             'aria-invalid': toMessages(start.errors).length > 0 || undefined,
           }}
           endFieldProps={{
-            ...endRoute.binding,
+            ...end.binding,
             'aria-invalid': toMessages(end.errors).length > 0 || undefined,
           }}
-          startName={start.control.name ?? startName}
-          endName={end.control.name ?? endName}
+          startName={start.name}
+          endName={end.name}
           startLabel={startLabel}
           endLabel={endLabel}
-          defaultStart={startRoute.seed}
-          defaultEnd={endRoute.seed}
+          defaultStart={start.seed}
+          defaultEnd={end.seed}
           // EACH BINDING'S REF TO ITS OWN CARRIER, merged with the picker's own
-          // so the calendar can still write the fields. Built inside the
-          // callback rather than during render, which is where the compiler
-          // allows a ref to reach a function.
-          startCarrierRef={(node) =>
-            mergeRefs(startCarrier, startRoute.bindingRef)(node)
-          }
-          endCarrierRef={(node) =>
-            mergeRefs(endCarrier, endRoute.bindingRef)(node)
-          }
+          // so the calendar can still write the fields.
+          startCarrierRef={start.carrierRef}
+          endCarrierRef={end.carrierRef}
         />
       </FieldsetContent>
       {hint === undefined ? null : <FieldDescription>{hint}</FieldDescription>}

@@ -44,3 +44,69 @@ export function forTag<T extends object>(tag: ControlTag, props: T): T {
   for (const key of INPUT_ONLY) delete kept[key];
   return kept as T;
 }
+
+/**
+ * Props that describe the VALUE a binding holds, on a field whose visible
+ * control does not hold it.
+ *
+ * A carrier-based field (`DateInput`, `TimeInput`, `Combobox`, the pickers) is
+ * two nodes: a hidden carrier with the name and the canonical value, and a
+ * visible input showing something else — `12/08/2026` for `2026-08-12`,
+ * `02:30 PM` for `14:30`, a query for a key. An adapter that derives constraint
+ * attributes from the schema (Conform's `getInputProps` does, unconditionally)
+ * describes the VALUE, and every one of them is wrong on the visible field:
+ *
+ * - `type` turns the masked text field into the NATIVE control the component
+ *   exists to replace (ADR-0027), whose ISO value the mask then re-segments
+ *   into a different date. Declaring `types: { dob: 'date' }` is the natural
+ *   thing to write, and this is what keeps it harmless.
+ * - `pattern` is checked against the locale string, so one that can never
+ *   match blocks the submit for good; `min`, `max` and `step` are inert on a
+ *   text input, so the range goes silently unenforced.
+ * - `minLength` and `maxLength` are the sharpest: a key that is a UUID arrives
+ *   as `maxLength={36}` on the field holding the QUERY, which then truncates
+ *   typing at the length of a value the user never sees, and a `minLength`
+ *   blocks the submit with a native bubble pointing at text that is not the
+ *   value. The same holds for a time: `maxLength={5}` from `HH:mm` cuts
+ *   `02:30 PM` short.
+ *
+ * ONE LIST, because it was five. Each bound component carried its own copy of
+ * this as a destructuring, and they had drifted: `FormCombobox` dropped the two
+ * length constraints and the four date and time fields did not, so a schema
+ * `.length(5)` on a time was a defect on one component and not on its twin.
+ * The same shape as `withoutBindingOwned` and `forTag` above — the list is the
+ * rule, and it lives once.
+ *
+ * What is NOT here is as deliberate: `required`, `id` and `form` travel. A
+ * hand-picked allow-list once dropped all three, and a field rendered outside
+ * its `<form>` posts nothing without the last of them.
+ */
+const DESCRIBES_THE_VALUE = [
+  'type',
+  'pattern',
+  'min',
+  'max',
+  'step',
+  'accept',
+  'multiple',
+  'checked',
+  'defaultChecked',
+  'minLength',
+  'maxLength',
+] as const;
+
+/** The keys {@link forCarrier} removes — derived from the list, beside it. */
+export type DescribesTheValue = (typeof DESCRIBES_THE_VALUE)[number];
+
+/**
+ * The adapter's bag, minus what describes a native control the field is not.
+ * Typed as well as filtered, so a component spreading the result cannot pass
+ * `type` on to a control whose props refuse it.
+ */
+export function forCarrier<T extends object>(
+  props: T,
+): Omit<T, DescribesTheValue> {
+  const kept = { ...props } as Record<string, unknown>;
+  for (const key of DESCRIBES_THE_VALUE) delete kept[key];
+  return kept as Omit<T, DescribesTheValue>;
+}
