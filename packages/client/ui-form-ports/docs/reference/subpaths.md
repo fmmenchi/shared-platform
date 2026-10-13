@@ -13,13 +13,17 @@ export: you import the one library you use, and the other four never enter your 
 
 ## Summary
 
-| Subpath             | Needs                                  | Exports                                                                     |
-| ------------------- | -------------------------------------- | --------------------------------------------------------------------------- |
-| `./react-hook-form` | `react-hook-form` (optional peer)      | `createRhfField`, `useRhfField`, `useRhfErrors`, `RhfForm`, `createRhfForm` |
-| `./formik`          | `formik` (optional peer)               | `createFormikField`, `useFormikErrors`, `createFormikFields`, `FormikPath`  |
-| `./tanstack`        | `@tanstack/react-form` (optional peer) | `createTanstackField`, `createTanstackErrors`, `createTanstackFields`       |
-| `./conform`         | `@conform-to/react` (optional peer)    | `createConformField`, `createConformErrors`                                 |
-| `./react-19`        | nothing but React                      | `useActionField`, `useActionErrors`, `ActionErrorsProvider`, `ActionErrors` |
+| Subpath             | Needs                                  | Exports                                                                                                                  |
+| ------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `./react-hook-form` | `react-hook-form` (optional peer)      | `createRhfField`, `useRhfField`, `createRhfOptionField`, `useRhfOptionField`, `useRhfErrors`, `RhfForm`, `createRhfForm` |
+| `./formik`          | `formik` (optional peer)               | `createFormikField`, `createFormikOptionField`, `useFormikErrors`, `createFormikFields`, `FormikPath`                    |
+| `./tanstack`        | `@tanstack/react-form` (optional peer) | `createTanstackField`, `createTanstackOptionField`, `createTanstackErrors`, `createTanstackFields`                       |
+| `./conform`         | `@conform-to/react` (optional peer)    | `createConformField`, `createConformOptionField`, `createConformErrors`                                                  |
+| `./react-19`        | nothing but React                      | `useActionField`, `useActionOptionField`, `useActionErrors`, `ActionErrorsProvider`, `ActionErrors`                      |
+
+Every subpath also ships an **option-field** binding — one name drawn as many controls, for a radio
+group, a checkbox group, a `FormSegmentedControl` or a multiple `FormCombobox`. See
+[Declare field types](../guides/declare-field-types.md).
 
 `react`, `@fmmenchi/ui` are required peers. The four libraries are declared **optional**, so
 installing the package asks nothing of you beyond the one you chose.

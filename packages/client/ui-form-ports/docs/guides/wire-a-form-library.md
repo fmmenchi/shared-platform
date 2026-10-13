@@ -69,6 +69,31 @@ const optionField = createFormikOptionField({ types });
 Call the factory **outside** the component that renders the provider. Its result is a hook, and a
 hook created during render is a new function on every pass.
 
+That holds for react-hook-form and Formik, whose adapters read the library's own context, so one
+binding at the root serves every form below it. **TanStack and Conform are bound per form instance**:
+their factories take the form object (`createTanstackField(form, …)`, `createConformErrors(form)`),
+which only exists inside the component that calls `useForm`. There the provider sits inside that
+component and the binding is memoised on the form, so it is not recreated on every render:
+
+```tsx
+const form = useForm({ defaultValues, validators: { onSubmit: Schema } });
+const adapters = useMemo(
+  () => ({
+    i18n,
+    form: {
+      field: createTanstackField(form, { types }),
+      optionField: createTanstackOptionField(form, { types }),
+      errors: createTanstackErrors(form),
+    },
+  }),
+  [form],
+);
+
+<UiProvider adapters={adapters}>…</UiProvider>;
+```
+
+Swapping between the two groups therefore moves the provider, not just the import.
+
 ## A form, and a field
 
 The library keeps its own shape — `useForm`, `<FormProvider>`, `handleSubmit` are all still yours.
