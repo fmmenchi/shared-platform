@@ -225,13 +225,18 @@ export function eventsFromReleases(
  * A step and a job are BOTH inspected, and that is not belt-and-braces. Used from a separate
  * job (`needs:` + `if: failure()`) the failed jobs have concluded, so `job.conclusion` is the
  * signal; used from the SAME job as the thing that broke — a weekly audit alerting on its own
- * scan — that job is still `in_progress` while its failed step has already concluded. Reading
- * only one of the two would work in exactly one of the two shapes, and the other would send a
- * message naming nothing.
+ * scan — that job is still `in_progress`, so its failed step is the only signal there is.
+ * Reading only one of the two would work in exactly one of the two shapes, and the other
+ * would send a message naming nothing.
+ *
+ * "Its failed step" is what the API has PUBLISHED, not what the runner has finished: the two
+ * differ for a moment after a step ends, and in that moment the same-job shape legitimately
+ * yields null here. This function judges the jobs it is given and nothing else; looking again
+ * is the job of whoever fetched them (`findInRunJobs` in @fmmenchi/ci).
  *
  * Returns null when nothing failed. The caller must not treat that as success: it was invoked
  * because something went red, so an empty answer means the view is wrong (a token without
- * `actions: read`, a job not visible yet) and saying nothing would hide that twice over.
+ * `actions: read`, a step not published yet) and saying nothing would hide that twice over.
  */
 export function eventFromRunFailures(failures: RunFailures): ErrorEvent | null {
   const failed = failures.jobs.flatMap((job) => {

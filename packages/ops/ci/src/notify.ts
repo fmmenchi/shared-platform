@@ -17,7 +17,12 @@ import {
   parseEvents,
   slack,
 } from '@fmmenchi/notify';
-import { fetchRunJobs, runContextFromEnv, runUrl } from './run-failures.js';
+import {
+  describeRunJobs,
+  findInRunJobs,
+  runContextFromEnv,
+  runUrl,
+} from './run-failures.js';
 import type {
   NotifyEvent,
   ReleasedProject,
@@ -57,26 +62,45 @@ let events: NotifyEvent[];
 
 if (fromRun) {
   const context = runContextFromEnv(process.env);
-  const event = eventFromRunFailures({
-    app:
-      process.env['NOTIFY_APP'] ||
-      context.repository.split('/')[1] ||
-      context.repository,
-    url: runUrl(context),
-    ...(context.workflow ? { workflow: context.workflow } : {}),
-    jobs: await fetchRunJobs(context),
-  });
+  const app =
+    process.env['NOTIFY_APP'] ||
+    context.repository.split('/')[1] ||
+    context.repository;
+  // Looked at more than once when the answer is empty: the API trails the runner, and a step
+  // reporting on its own job asks before the failed step has been published as failed.
+  const {
+    found: event,
+    jobs,
+    looks,
+  } = await findInRunJobs(context, (seen) =>
+    eventFromRunFailures({
+      app,
+      url: runUrl(context),
+      ...(context.workflow ? { workflow: context.workflow } : {}),
+      jobs: seen,
+    }),
+  );
 
-  // Invoked because something went red, and nothing red found: the view is wrong — a token
-  // without `actions: read`, or a job not visible yet — and staying quiet would hide the
-  // original failure AND this one. Loud, with the run named.
+  // Invoked because something went red, and nothing red found even after waiting: the view is
+  // wrong — a token without `actions: read`, a step placed before the jobs it reports on, or
+  // an API further behind than the wait allows — and staying quiet would hide the
+  // original failure AND this one. Loud, with the run named and what was seen printed, so the
+  // next reader has the API's answer instead of a guess about it.
   if (!event) {
     console.error(
-      `::error::notify: --fromRun found no failed job or step in ${context.repository} run ${context.runId}. ` +
-        `Nothing was sent. Check that the token has \`actions: read\` and that this step runs after ` +
-        `the jobs it reports on.`,
+      `::error::notify: --fromRun found no failed job or step in ${context.repository} run ${context.runId} ` +
+        `after ${looks} look(s). Nothing was sent. Check that the token has \`actions: read\` and that this ` +
+        `step runs after the jobs it reports on.`,
+    );
+    console.error(
+      `notify: the run's jobs as last seen (status/conclusion):\n${describeRunJobs(jobs)}`,
     );
     process.exit(1);
+  }
+  if (looks > 1) {
+    console.log(
+      `notify: the failure was not visible at first — found on look ${looks}.`,
+    );
   }
 
   events = [attachments.length > 0 ? { ...event, attachments } : event];
