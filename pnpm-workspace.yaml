@@ -48,6 +48,17 @@ overrides:
   'joi@17': '>=17.13.7 <18'
   'svgo@3': '>=3.3.5 <4'
   'webpack-dev-middleware@7': '>=7.4.6 <8'
+  # The 2026-10-19 audit, same shape — each fix is a patch inside every dependent's range:
+  #   compression 1.8.1 (CVE-2026-87776)    ← @react-router/serve, webpack-dev-server `^1.8.1`
+  #   proxy-addr 2.0.7 (CVE-2026-90711, CRITICAL) ← express `~2.0.7`
+  #   shell-quote 1.10.0 (CVE-2026-102422, CRITICAL) ← launch-editor `^1.8.4`
+  #   source-map-js 1.2.1 (CVE-2026-93749)  ← @eslint/css-tree, @tailwindcss/node `^1.2.1`, css-tree `^1.0.1`
+  # tinypool, from the same audit, is NOT here: its fix is a major outside Docusaurus' range —
+  # see .trivyignore.yaml.
+  'compression@1': '>=1.8.2 <2'
+  'proxy-addr@2': '>=2.0.8 <3'
+  'shell-quote@1': '>=1.11.0 <2'
+  'source-map-js@1': '>=1.2.2 <2'
 allowBuilds:
   nx: true
   '@swc/core': true
