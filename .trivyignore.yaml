@@ -100,6 +100,27 @@ vulnerabilities:
     statement: 'Pinned exactly by nx (fix: 5.0.11). Uncontrolled recursion on nested brace patterns — the patterns are the ones written in this repository.'
     expired_at: 2026-12-31
 
+  # ── FIX OUTSIDE THE DEPENDENT'S RANGE ─────────────────────────────────────────────────────
+  # tinypool 1.1.1 — two prototype-pollution-to-RCE bugs in the worker options. Fixed only in
+  # 2.1.1/2.1.2; the 1.x line has no patch, and its one dependent, @docusaurus/core (3.10.2,
+  # still `latest`), declares `^1.0.2`. An override would force a major on Docusaurus — the
+  # "outside the range" case of AGENTS.md — and it cannot be PROVEN here, because nothing in
+  # this workspace runs that code: Docusaurus constructs its Tinypool only when
+  # `future.faster.ssgWorkerThreads` is on, and docusaurus.config.ts sets no `future` flags,
+  # so the docs build renders on the current thread and never imports tinypool.
+  #
+  # WHAT RETIRES THIS: a Docusaurus release on tinypool >=2.1.2 (or a 1.x patch). Pinned by
+  # purl so a new version is scanned on its own. Turning on `future.faster` / `future.v4`
+  # makes the pool reachable — re-read these two entries before doing it.
+  - id: CVE-2026-104848
+    purls: ['pkg:npm/tinypool@1.1.1']
+    statement: 'Fix only in tinypool 2.x, outside Docusaurus’ ^1.0.2. Unreached: the SSG thread pool is off (no future.faster flag), the docs build never imports tinypool.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-104849
+    purls: ['pkg:npm/tinypool@1.1.1']
+    statement: 'Fix only in tinypool 2.x, outside Docusaurus’ ^1.0.2. Unreached: the SSG thread pool is off (no future.faster flag), the docs build never imports tinypool.'
+    expired_at: 2026-12-31
+
   # ── NO FIX UPSTREAM ───────────────────────────────────────────────────────────────────────
   # Trivy reports both as `affected`: no fixed version exists at any version, so there is
   # nothing for an override to point at. Pinned by `purls` like the block above, so a new
