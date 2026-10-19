@@ -222,7 +222,7 @@ jobs:
       # and the record itself as an artifact — which is what makes "Re-run failed jobs"
       # able to re-announce a release without re-releasing it.
       - name: Publish the release record
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-result
           path: ${{ steps.release.outputs.result-file }}
@@ -241,7 +241,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./packages/ops/gh-actions/actions/setup
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release-result
           path: ${{ runner.temp }}
@@ -269,7 +269,7 @@ jobs:
       # reported success anyway.
       - run: pnpm nx build @fmmenchi/ci
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: release-result
           path: ${{ runner.temp }}
