@@ -52,11 +52,11 @@
     "@tanstack/react-form": ">=1.33.1 <2"
   },
   "devDependencies": {
-    "@conform-to/react": "^1.21.1",
+    "@conform-to/react": "^1.21.2",
     "@fmmenchi/ui": "workspace:*",
     "@tanstack/react-form": "^1.33.5",
     "formik": "^2.4.9",
-    "react-hook-form": "^7.89.0"
+    "react-hook-form": "^7.90.0"
   },
   "description": "Form-library implementations of @fmmenchi/ui's form ports — one subpath each.",
   "peerDependenciesMeta": {

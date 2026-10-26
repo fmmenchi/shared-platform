@@ -9,19 +9,19 @@
     ]
   },
   "dependencies": {
-    "@conform-to/react": "^1.21.1",
-    "@conform-to/zod": "^1.21.1",
+    "@conform-to/react": "^1.21.2",
+    "@conform-to/zod": "^1.21.2",
     "@fmmenchi/tokens": "workspace:*",
     "@fmmenchi/ui": "workspace:*",
     "@fmmenchi/ui-form-ports": "workspace:*",
     "@fmmenchi/ui-router-ports": "workspace:*",
     "@hookform/resolvers": "^5.9.1",
-    "react-hook-form": "^7.89.0",
-    "zod": "^4.6.5"
+    "react-hook-form": "^7.90.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tanstack/react-form": "^1.33.5",
-    "@tanstack/react-router": "^1.170.41",
+    "@tanstack/react-router": "^1.170.46",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "16.3.3",
     "@vitest/browser-playwright": "^4.1.11",
