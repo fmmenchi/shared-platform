@@ -54,7 +54,7 @@
     ]
   },
   "dependencies": {
-    "tslib": "^2.3.0"
+    "tslib": "^2.9.1"
   },
   "peerDependencies": {
     "mjml": "^5.0.0"
@@ -65,7 +65,7 @@
     }
   },
   "devDependencies": {
-    "@types/mjml": "^5.0.0",
+    "@types/mjml": "^5.4.2",
     "mjml": "^5.4.1"
   }
 }
