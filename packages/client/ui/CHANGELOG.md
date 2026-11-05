@@ -1,3 +1,11 @@
+## 0.7.23 (2026-11-05)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/formatting to 0.0.10
+- Updated @fmmenchi/tokens to 0.0.43
+- Updated @fmmenchi/theme to 0.0.7
+
 ## 0.7.22 (2026-10-13)
 
 ### 🩹 Fixes

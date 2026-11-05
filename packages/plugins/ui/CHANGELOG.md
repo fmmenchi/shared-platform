@@ -1,3 +1,7 @@
+## 0.0.17 (2026-11-05)
+
+This was a version bump only for @fmmenchi/nx-ui to align it with other projects, there were no code changes.
+
 ## 0.0.16 (2026-10-05)
 
 ### 🩹 Fixes

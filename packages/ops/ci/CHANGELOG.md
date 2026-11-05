@@ -1,3 +1,9 @@
+## 0.2.4 (2026-11-05)
+
+### 🧱 Updated Dependencies
+
+- Updated @fmmenchi/notify to 0.0.20
+
 ## 0.2.3 (2026-10-13)
 
 ### 🩹 Fixes

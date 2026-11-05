@@ -1,3 +1,7 @@
+## 0.2.7 (2026-11-05)
+
+This was a version bump only for @fmmenchi/nx-trivy to align it with other projects, there were no code changes.
+
 ## 0.2.6 (2026-10-05)
 
 ### 🩹 Fixes
