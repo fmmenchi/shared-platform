@@ -59,7 +59,7 @@ jobs:
       # accumulation of MEDIUMs becomes visible before one of them turns CRITICAL.
       - name: Keep the report as an artifact
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trivy-report
           path: trivy-report.json
