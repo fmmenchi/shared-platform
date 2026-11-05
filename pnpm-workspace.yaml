@@ -28,7 +28,7 @@ overrides:
   # have an entry in this block for the same reason it no longer does: only nx resolves it.
   'minimatch@10>brace-expansion': '>=5.0.11 <6'
   fast-uri: '>=4.1.4 <5'
-  'js-yaml@3': '>=3.15.1 <4'
+  'js-yaml@3': '>=3.15.2 <4'
   'js-yaml@4': '>=4.3.2 <5'
   # nanoid 3.3.16 → CVE-2026-67213 (infinite loop). Only the 3.x line is resolved here, pulled
   # by postcss for the docs site's build, and 3.3.17 is a PATCH inside postcss's own `^3.3.x`
@@ -45,9 +45,32 @@ overrides:
   #   webpack-dev-middleware 7.4.5 (CVE-2026-76844)        ← webpack-dev-server `^7.4.2`
   'piscina@4': '>=4.9.4 <5'
   '@xhmikosr/decompress@11': '>=11.1.4 <12'
-  'joi@17': '>=17.13.7 <18'
+  'joi@17': '>=17.13.9 <18'
   'svgo@3': '>=3.3.5 <4'
   'webpack-dev-middleware@7': '>=7.4.6 <8'
+  # The 2026-10-19 audit, same shape — each fix is a patch inside every dependent's range:
+  #   compression 1.8.1 (CVE-2026-87776)    ← @react-router/serve, webpack-dev-server `^1.8.1`
+  #   proxy-addr 2.0.7 (CVE-2026-90711, CRITICAL) ← express `~2.0.7`
+  #   shell-quote 1.10.0 (CVE-2026-102422, CRITICAL) ← launch-editor `^1.8.4`
+  #   source-map-js 1.2.1 (CVE-2026-93749)  ← @eslint/css-tree, @tailwindcss/node `^1.2.1`, css-tree `^1.0.1`
+  # tinypool, from the same audit, is NOT here: its fix is a major outside Docusaurus' range —
+  # see .trivyignore.yaml.
+  'compression@1': '>=1.8.2 <2'
+  'proxy-addr@2': '>=2.0.8 <3'
+  'shell-quote@1': '>=1.11.0 <2'
+  'source-map-js@1': '>=1.2.2 <2'
+  # 2026-11 audit: patches within the declared ranges. Nx pins follow-redirects exactly;
+  # only its axios and http-proxy consumers are overridden (see .trivyignore.yaml).
+  'body-parser@1': '>=1.20.9 <1.21'
+  'axios>follow-redirects': '>=1.16.2 <2'
+  'http-proxy>follow-redirects': '>=1.16.2 <2'
+  'launch-editor@2': '>=2.14.2 <3'
+  # Development dependencies: patch releases inside their consumers' declared ranges.
+  'dompurify@3': '>=3.4.17 <4'
+  'undici@6': '>=6.29.1 <7'
+  'undici@7': '>=7.30.1 <8'
+  'undici@8': '>=8.12.2 <9'
+  'vite-node>vite': '>=7.3.7 <8'
 allowBuilds:
   nx: true
   '@swc/core': true
