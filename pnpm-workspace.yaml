@@ -71,10 +71,6 @@ overrides:
   'undici@7': '>=7.30.1 <8'
   'undici@8': '>=8.12.2 <9'
   'vite-node>vite': '>=7.3.7 <8'
-  # The newer schema-utils asks for webpack ^5.112 as a peer; Docusaurus pins 5.105.2.
-  # Keep its existing compatible schema-utils rather than force a different webpack.
-  'webpack>schema-utils': 4.3.3
-  'terser-webpack-plugin>schema-utils': 4.3.3
 allowBuilds:
   nx: true
   '@swc/core': true
