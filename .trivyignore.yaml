@@ -100,6 +100,21 @@ vulnerabilities:
     statement: 'Pinned exactly by nx (fix: 5.0.11). Uncontrolled recursion on nested brace patterns — the patterns are the ones written in this repository.'
     expired_at: 2026-12-31
 
+  # Nx 23.2.1 pins follow-redirects to 1.16.0 exactly. Other dependents accept the
+  # fixed 1.16.2 and are overridden; retire these when Nx updates its pin.
+  - id: CVE-2026-111755
+    purls: ['pkg:npm/follow-redirects@1.16.0']
+    statement: 'Pinned exactly by Nx; fixed in 1.16.2. Other dependents are upgraded separately.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-111756
+    purls: ['pkg:npm/follow-redirects@1.16.0']
+    statement: 'Pinned exactly by Nx; fixed in 1.16.2. Other dependents are upgraded separately.'
+    expired_at: 2026-12-31
+  - id: CVE-2026-116689
+    purls: ['pkg:npm/follow-redirects@1.16.0']
+    statement: 'Pinned exactly by Nx; fixed in 1.16.2. Other dependents are upgraded separately.'
+    expired_at: 2026-12-31
+
   # ── FIX OUTSIDE THE DEPENDENT'S RANGE ─────────────────────────────────────────────────────
   # tinypool 1.1.1 — two prototype-pollution-to-RCE bugs in the worker options. Fixed only in
   # 2.1.1/2.1.2; the 1.x line has no patch, and its one dependent, @docusaurus/core (3.10.2,
