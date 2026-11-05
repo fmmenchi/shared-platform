@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { nxReadySignal } from '@nx/vite/plugins/nx-ready-signal.plugin';
 
 export default defineConfig(() => ({
   root: import.meta.dirname,
@@ -19,7 +20,11 @@ export default defineConfig(() => ({
   // FILE by that name and fails with an ENOENT that names the app rather than the
   // import. The bridge itself defines no values — it maps token names onto Tailwind's
   // theme — so this is what makes the tokens reachable as utilities.
-  plugins: [tailwindcss(), !process.env.VITEST && reactRouter()],
+  plugins: [
+    tailwindcss(),
+    !process.env.VITEST && reactRouter(),
+    nxReadySignal(),
+  ],
   /*
    * OUR OWN PACKAGES ARE NOT EXTERNAL, and the dev server does not start without
    * this. Vite externalises anything under `node_modules` for SSR — a workspace

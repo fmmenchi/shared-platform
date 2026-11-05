@@ -61,7 +61,7 @@ with the usual Nx hierarchy: `feature → ui/data-access → util`.
 
 | Concern  | Choice                                                 |
 | -------- | ------------------------------------------------------ |
-| Monorepo | Nx 23, pnpm 11 workspaces, TS project references       |
+| Monorepo | Nx 24, pnpm 11 workspaces, TS project references       |
 | Language | TypeScript 6 (strict, ES2022, NodeNext resolution)     |
 | Lint     | ESLint 9 flat config + module boundaries; Prettier     |
 | Commits  | Conventional Commits, enforced by commitlint + husky   |
