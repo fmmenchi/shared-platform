@@ -7,7 +7,7 @@ it before upgrading a dependency or diagnosing an odd build/CI failure, and **ad
 
 **At a glance** (see the ledger for the root cause + what unblocks each): standalone **major** bumps of
 
-- **`typescript`** — Nx 23 needs the programmatic compiler API that TS 7 dropped;
+- **`typescript`** — Nx needs the programmatic compiler API that TS 7 dropped;
 - **`@babel/*`** — `@nx/js` hard-pins `@babel/core@7`, so Babel-8 presets break the Storybook build;
 - **`eslint`** — `eslint-plugin-react`/`jsx-a11y`/`import` peer-cap at eslint 9;
 
