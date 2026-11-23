@@ -775,7 +775,7 @@
     "@fmmenchi/tokens": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "tslib": "^2.3.0"
+    "tslib": "^2.9.1"
   },
   "devDependencies": {
     "@fmmenchi/theme": "workspace:*",
