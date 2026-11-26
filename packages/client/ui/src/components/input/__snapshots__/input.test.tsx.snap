@@ -3,7 +3,7 @@
 exports[`Input > matches the rendered snapshot 1`] = `
 <input
   aria-label="q"
-  class="_input_17o63_4 _md_17o63_58"
+  class="_input_ld6a6_4 _md_ld6a6_58"
   type="text"
 />
 `;

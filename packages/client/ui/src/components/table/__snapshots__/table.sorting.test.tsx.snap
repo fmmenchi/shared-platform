@@ -3,10 +3,10 @@
 exports[`a sortable table > matches its markup 1`] = `
 <div>
   <table
-    class="_table_1d1o7_4"
+    class="_table_mna54_4"
   >
     <caption
-      class="_caption_1d1o7_12"
+      class="_caption_mna54_12"
     >
       Persone
     </caption>
@@ -17,13 +17,13 @@ exports[`a sortable table > matches its markup 1`] = `
           scope="col"
         >
           <button
-            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_1d1o7_86"
+            class="_button_dq0p2_37 _ghost_dq0p2_139 _sm_dq0p2_177 _sortTrigger_mna54_86"
             type="button"
           >
             Nome
             <svg
               aria-hidden="true"
-              class="_sortArrow_1d1o7_99"
+              class="_sortArrow_mna54_99"
               data-direction="asc"
               viewBox="0 0 12 12"
             >
@@ -40,7 +40,7 @@ exports[`a sortable table > matches its markup 1`] = `
             </svg>
           </button>
           <span
-            class="_srOnly_m60i6_229"
+            class="_srOnly_dq0p2_229"
             role="status"
           />
         </th>
@@ -50,13 +50,13 @@ exports[`a sortable table > matches its markup 1`] = `
           scope="col"
         >
           <button
-            class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177 _sortTrigger_1d1o7_86"
+            class="_button_dq0p2_37 _ghost_dq0p2_139 _sm_dq0p2_177 _sortTrigger_mna54_86"
             type="button"
           >
             Età
             <svg
               aria-hidden="true"
-              class="_sortArrow_1d1o7_99"
+              class="_sortArrow_mna54_99"
               data-direction="none"
               viewBox="0 0 12 12"
             >
@@ -73,7 +73,7 @@ exports[`a sortable table > matches its markup 1`] = `
             </svg>
           </button>
           <span
-            class="_srOnly_m60i6_229"
+            class="_srOnly_dq0p2_229"
             role="status"
           />
         </th>
@@ -119,7 +119,7 @@ exports[`a sortable table > matches its markup 1`] = `
     </tbody>
   </table>
   <span
-    class="_visuallyHidden_tcu3i_3"
+    class="_visuallyHidden_dz3da_3"
     data-table-status=""
     role="status"
   />

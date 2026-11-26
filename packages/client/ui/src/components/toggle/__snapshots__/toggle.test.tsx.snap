@@ -3,7 +3,7 @@
 exports[`Toggle > matches the rendered snapshot 1`] = `
 <button
   aria-pressed="true"
-  class="_button_m60i6_37 _ghost_m60i6_139 _md_m60i6_183 _toggle_i57fb_3"
+  class="_button_dq0p2_37 _ghost_dq0p2_139 _md_dq0p2_183 _toggle_1b84l_3"
   type="button"
 >
   Bold

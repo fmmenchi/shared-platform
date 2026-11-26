@@ -2,15 +2,15 @@
 
 exports[`ChoiceField > matches the rendered snapshot 1`] = `
 <div
-  class="_choice_10cfb_3"
+  class="_choice_8b9c9_3"
 >
   <input
-    class="_checkbox_kjpik_4"
+    class="_checkbox_z9lnp_4"
     id="«react-id»"
     type="checkbox"
   />
   <label
-    class="_label_1ubmc_4"
+    class="_label_15bb0_4"
     for="«react-id»"
   >
     Accept the terms

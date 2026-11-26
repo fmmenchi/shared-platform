@@ -5,34 +5,34 @@ exports[`Breadcrumb > matches the rendered snapshot 1`] = `
   aria-label="Breadcrumb"
 >
   <ol
-    class="_list_woitp_3"
+    class="_list_qfss3_3"
   >
     <li
-      class="_item_lnflv_4"
+      class="_item_mzf0n_4"
     >
       <a
-        class="_link_lnflv_17"
+        class="_link_mzf0n_17"
         href="#home"
       >
         Home
       </a>
     </li>
     <li
-      class="_item_lnflv_4"
+      class="_item_mzf0n_4"
     >
       <a
-        class="_link_lnflv_17"
+        class="_link_mzf0n_17"
         href="#tea"
       >
         Tea
       </a>
     </li>
     <li
-      class="_item_lnflv_4"
+      class="_item_mzf0n_4"
     >
       <a
         aria-current="page"
-        class="_link_lnflv_17"
+        class="_link_mzf0n_17"
         href="#oolong"
       >
         Oolong

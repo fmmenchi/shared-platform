@@ -2,7 +2,7 @@
 
 exports[`Separator > matches the rendered snapshot 1`] = `
 <hr
-  class="_separator_1u6cd_3"
+  class="_separator_vxlbu_3"
   data-orientation="horizontal"
 />
 `;

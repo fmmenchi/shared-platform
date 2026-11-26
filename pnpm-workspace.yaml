@@ -18,8 +18,8 @@ packages:
 # resolved js-yaml **5.2.3**, and the `fast-uri: '>=3.1.4'` that was already in this file had
 # quietly carried a 3.x consumer to 4.1.1 the same way.
 overrides:
-  react: 19.2.8
-  react-dom: 19.2.8
+  react: 19.3.1
+  react-dom: 19.3.1
   'brace-expansion@1': '>=1.1.20 <2'
   'brace-expansion@2': '>=2.1.6 <3'
   # The 5.x line is fixed for minimatch ONLY, whose `^5.0.8` admits the patch. nx depends on

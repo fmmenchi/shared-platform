@@ -2,7 +2,7 @@
 
 exports[`InputGroup > matches the rendered snapshot 1`] = `
 <div
-  class="_group_n27cd_4"
+  class="_group_yt2dg_4"
 >
   <span
     aria-hidden="true"
@@ -11,7 +11,7 @@ exports[`InputGroup > matches the rendered snapshot 1`] = `
   </span>
   <input
     aria-label="Search"
-    class="_input_17o63_4 _md_17o63_58"
+    class="_input_ld6a6_4 _md_ld6a6_58"
     type="text"
   />
 </div>
