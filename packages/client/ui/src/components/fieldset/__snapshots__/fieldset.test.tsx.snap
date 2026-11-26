@@ -3,21 +3,21 @@
 exports[`Fieldset > matches the rendered snapshot 1`] = `
 <fieldset
   aria-describedby="«react-id»"
-  class="_fieldset_1wj81_3"
+  class="_fieldset_1xzxu_3"
 >
   <legend
-    class="_legend_1c9b5_4"
+    class="_legend_1h6hm_4"
   >
     Favourite colour
   </legend>
   <p
-    class="_description_11b4a_3"
+    class="_description_32d98_3"
     id="«react-id»"
   >
     Pick exactly one.
   </p>
   <div
-    class="_content_1cqsy_3 _vertical_1cqsy_6"
+    class="_content_6sm2i_3 _vertical_6sm2i_6"
   >
     <label>
       <input

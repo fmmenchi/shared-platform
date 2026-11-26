@@ -4,15 +4,15 @@ exports[`the table toolbar > matches its markup 1`] = `
 <div
   aria-describedby="«react-id»"
   aria-label="Table controls"
-  class="_bar_1us9o_3"
+  class="_bar_b4wd7_3"
   role="region"
 >
   <div
-    class="_summary_1us9o_15"
+    class="_summary_b4wd7_15"
   >
     <div />
     <div
-      class="_summary_1us9o_15"
+      class="_summary_b4wd7_15"
       id="«react-id»"
     >
       <span>
@@ -23,13 +23,13 @@ exports[`the table toolbar > matches its markup 1`] = `
   <div
     aria-describedby="«react-id»"
     aria-label="Table actions"
-    class="_toolbar_tdrgw_4 _actions_1us9o_26"
+    class="_toolbar_c1j6u_4 _actions_b4wd7_26"
     data-orientation="horizontal"
     role="toolbar"
     tabindex="-1"
   >
     <button
-      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177"
+      class="_button_dq0p2_37 _ghost_dq0p2_139 _sm_dq0p2_177"
       data-fm-descendant=""
       tabindex="0"
       type="button"
@@ -37,11 +37,11 @@ exports[`the table toolbar > matches its markup 1`] = `
       Select all 2,450
     </button>
     <span
-      class="_srOnly_m60i6_229"
+      class="_srOnly_dq0p2_229"
       role="status"
     />
     <button
-      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177"
+      class="_button_dq0p2_37 _ghost_dq0p2_139 _sm_dq0p2_177"
       data-fm-descendant=""
       tabindex="-1"
       type="button"
@@ -49,11 +49,11 @@ exports[`the table toolbar > matches its markup 1`] = `
       Clear selection
     </button>
     <span
-      class="_srOnly_m60i6_229"
+      class="_srOnly_dq0p2_229"
       role="status"
     />
     <button
-      class="_button_m60i6_37 _ghost_m60i6_139 _sm_m60i6_177"
+      class="_button_dq0p2_37 _ghost_dq0p2_139 _sm_dq0p2_177"
       data-fm-descendant=""
       tabindex="-1"
       type="button"
@@ -61,7 +61,7 @@ exports[`the table toolbar > matches its markup 1`] = `
       Elimina
     </button>
     <span
-      class="_srOnly_m60i6_229"
+      class="_srOnly_dq0p2_229"
       role="status"
     />
   </div>

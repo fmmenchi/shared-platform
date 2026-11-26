@@ -8,7 +8,7 @@ exports[`Slider > matches the rendered snapshot 1`] = `
     Volume
   </label>
   <input
-    class="_slider_13h2r_4"
+    class="_slider_1xl2e_4"
     id="volume"
     style="--slider-fill: 30%;"
     type="range"

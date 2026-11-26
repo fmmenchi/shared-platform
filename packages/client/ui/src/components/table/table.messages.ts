@@ -114,8 +114,7 @@ export const tableMessages = defineMessages('table', {
     sortCleared: 'تمت إزالة الترتيب، الترتيب الأصلي.',
     sortChanged: 'تغيّر الترتيب.',
     sortThen: 'ثم حسب {count} أخرى.',
-    sortedAscendingAt:
-      'مُرتَّب حسب {column}، تصاعديًا، الترتيب {rank} من {total}.',
+    sortedAscendingAt: 'مُرتَّب حسب {column}، تصاعديًا، الترتيب {rank} من {total}.',
     sortedDescendingAt:
       'مُرتَّب حسب {column}، تنازليًا، الترتيب {rank} من {total}.',
     sortRank: 'الترتيب {rank} من {total}',

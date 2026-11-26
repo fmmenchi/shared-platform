@@ -3,7 +3,7 @@
 exports[`Radio > matches the rendered snapshot 1`] = `
 <input
   aria-label="free"
-  class="_radio_15zap_4"
+  class="_radio_8dkoy_4"
   type="radio"
 />
 `;

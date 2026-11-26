@@ -3,7 +3,7 @@
 exports[`Progress > matches the rendered snapshot 1`] = `
 <progress
   aria-label="Upload"
-  class="_progress_1klob_3"
+  class="_progress_1m2e4_3"
   value="0.4"
 />
 `;

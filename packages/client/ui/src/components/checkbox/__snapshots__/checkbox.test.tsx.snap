@@ -3,7 +3,7 @@
 exports[`Checkbox > matches the rendered snapshot 1`] = `
 <input
   aria-label="accept"
-  class="_checkbox_kjpik_4"
+  class="_checkbox_z9lnp_4"
   type="checkbox"
 />
 `;

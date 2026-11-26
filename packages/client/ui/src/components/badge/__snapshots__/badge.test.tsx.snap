@@ -2,7 +2,7 @@
 
 exports[`Badge > matches the rendered snapshot 1`] = `
 <span
-  class="_badge_1aw7e_4 _success_1aw7e_76 _soft_1aw7e_44 _md_1aw7e_32"
+  class="_badge_hfgn9_4 _success_hfgn9_76 _soft_hfgn9_44 _md_hfgn9_32"
 >
   Active
 </span>

@@ -3,22 +3,22 @@
 exports[`a selectable table > matches its markup 1`] = `
 <div>
   <table
-    class="_table_1d1o7_4"
+    class="_table_mna54_4"
   >
     <caption
-      class="_caption_1d1o7_12"
+      class="_caption_mna54_12"
     >
       Persone
     </caption>
     <thead>
       <tr>
         <th
-          class="_selectCell_1d1o7_66"
+          class="_selectCell_mna54_66"
           scope="col"
         >
           <input
             aria-label="Select all rows"
-            class="_checkbox_kjpik_4"
+            class="_checkbox_z9lnp_4"
             type="checkbox"
           />
         </th>
@@ -38,11 +38,11 @@ exports[`a selectable table > matches its markup 1`] = `
     <tbody>
       <tr>
         <td
-          class="_selectCell_1d1o7_66"
+          class="_selectCell_mna54_66"
         >
           <input
             aria-label="Select Zurigo"
-            class="_checkbox_kjpik_4"
+            class="_checkbox_z9lnp_4"
             type="checkbox"
           />
         </td>
@@ -59,11 +59,11 @@ exports[`a selectable table > matches its markup 1`] = `
       </tr>
       <tr>
         <td
-          class="_selectCell_1d1o7_66"
+          class="_selectCell_mna54_66"
         >
           <input
             aria-label="Select Àosta"
-            class="_checkbox_kjpik_4"
+            class="_checkbox_z9lnp_4"
             type="checkbox"
           />
         </td>
@@ -80,11 +80,11 @@ exports[`a selectable table > matches its markup 1`] = `
       </tr>
       <tr>
         <td
-          class="_selectCell_1d1o7_66"
+          class="_selectCell_mna54_66"
         >
           <input
             aria-label="Select Milano"
-            class="_checkbox_kjpik_4"
+            class="_checkbox_z9lnp_4"
             type="checkbox"
           />
         </td>
@@ -102,7 +102,7 @@ exports[`a selectable table > matches its markup 1`] = `
     </tbody>
   </table>
   <span
-    class="_visuallyHidden_tcu3i_3"
+    class="_visuallyHidden_dz3da_3"
     data-table-status=""
     role="status"
   />
