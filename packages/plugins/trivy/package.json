@@ -62,8 +62,8 @@
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "@nx/devkit": "^24.0.4",
-    "@nx/js": "^24.0.4"
+    "@nx/devkit": "^23.1.1 || ^24.0.4",
+    "@nx/js": "^23.1.1 || ^24.0.4"
   },
   "executors": "./executors.json",
   "files": [
