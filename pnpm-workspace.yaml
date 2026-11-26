@@ -77,3 +77,5 @@ allowBuilds:
   esbuild: true
   unrs-resolver: false
   core-js: false
+# Refuse the install, rather than warn, on a Node outside the root `engines` range (.nvmrc).
+engineStrict: true
