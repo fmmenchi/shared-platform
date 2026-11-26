@@ -423,7 +423,9 @@ describe('the table toolbar', () => {
     // NOT `''`. Emptying a `role="status"` announces nothing — it implies
     // `aria-relevant="additions text"`, so a removal is not relevant — and every
     // row coming back is exactly the kind of change that has to be spoken.
-    await waitFor(() => expect(status()).toHaveTextContent(/Filters cleared/i));
+    await waitFor(() =>
+      expect(status()).toMatchTextContent(/Filters cleared/i),
+    );
   });
 
   it('costs one tab stop, not one per action', async () => {

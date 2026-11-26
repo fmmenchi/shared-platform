@@ -45,7 +45,7 @@ describe('AppLayout', () => {
     await browser.keyboard('{Tab}');
     const skip = document.activeElement as HTMLAnchorElement;
     expect(skip.tagName).toBe('A');
-    expect(skip).toHaveTextContent(/skip to content/i);
+    expect(skip).toMatchTextContent(/skip to content/i);
 
     const main = screen.getByRole('main');
     expect(skip.getAttribute('href')).toBe(`#${main.id}`);

@@ -59,11 +59,6 @@ export default defineConfig(() => ({
     watch: false,
     globals: true,
     environment: 'jsdom',
-    // Node 25+ puts its own `localStorage` getter on the global — `undefined` without
-    // `--localstorage-file` — and vitest's jsdom environment does not replace a global that is
-    // already there, so `window.localStorage` was undefined in every worker. The specs exercise the
-    // BROWSER's storage, so Node's is switched off. See known-issues.
-    execArgv: ['--no-experimental-webstorage'],
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {

@@ -134,7 +134,7 @@ describe('a sortable table', () => {
     // announces nothing at all: `role="status"` implies
     // `aria-relevant="additions text"`, so a removal is not relevant. Every row
     // moved and the one reader who could not see it was told nothing.
-    expect(status()).toHaveTextContent(/original order/i);
+    expect(status()).toMatchTextContent(/original order/i);
     // And no `aria-sort` claim survives the clear.
     expect(sorted()).toHaveLength(0);
   });
@@ -147,8 +147,8 @@ describe('a sortable table', () => {
     expect(status()).toHaveTextContent('');
 
     await browser.click(screen.getByRole('button', { name: /Nome/ }));
-    await waitFor(() => expect(status()).toHaveTextContent(/Nome/));
-    expect(status()).toHaveTextContent(/ascending/i);
+    await waitFor(() => expect(status()).toMatchTextContent(/Nome/));
+    expect(status()).toMatchTextContent(/ascending/i);
   });
 
   it('stays silent on arrival even when it arrives already sorted', async () => {
@@ -162,14 +162,14 @@ describe('a sortable table', () => {
     expect(status()).toHaveTextContent('');
 
     await browser.click(screen.getByRole('button', { name: /Nome/ }));
-    await waitFor(() => expect(status()).toHaveTextContent(/descending/i));
+    await waitFor(() => expect(status()).toMatchTextContent(/descending/i));
   });
 
   it('announces in the reader’s language', async () => {
     renderUi(<Sorted />, { locale: 'it' });
 
     await browser.click(screen.getByRole('button', { name: /Nome/ }));
-    await waitFor(() => expect(status()).toHaveTextContent(/crescente/));
+    await waitFor(() => expect(status()).toMatchTextContent(/crescente/));
   });
 
   it('sorts a domain column by the comparator it was given', async () => {
@@ -392,7 +392,7 @@ describe('what it refuses to do quietly', () => {
     render(<Labelled />);
     await browser.click(screen.getByRole('button', { name: /Nome/ }));
 
-    await waitFor(() => expect(status()).toHaveTextContent(/Sorted by Nome/));
+    await waitFor(() => expect(status()).toMatchTextContent(/Sorted by Nome/));
     expect(warn).not.toHaveBeenCalled();
     warn.mockRestore();
   });
