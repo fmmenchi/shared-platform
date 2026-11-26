@@ -219,7 +219,7 @@ describe('a column resize handle', () => {
     // It latched instead of resizing by zero, and it SAYS so: a mode nobody is
     // told about is a mode nobody knows they are in.
     await waitFor(() => expect(grip).toHaveAttribute('data-mode', 'adjust'));
-    expect(document.querySelector('[role="status"]')).toHaveTextContent(
+    expect(document.querySelector('[role="status"]')).toMatchTextContent(
       /Placing the border of Città/,
     );
 

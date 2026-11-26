@@ -60,7 +60,9 @@ vite.config.*.timestamp*
 vitest.config.*.timestamp*
 
 storybook-static
-# vitest browser-mode artifacts
+# vitest browser-mode artifacts (`.vitest/` is vitest 5's default for attachments, failure
+# screenshots and reporter output; `.vitest-attachments/` was vitest 4's)
+.vitest/
 .vitest-attachments/
 **/__screenshots__/
 

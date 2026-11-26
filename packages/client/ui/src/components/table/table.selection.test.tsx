@@ -152,7 +152,7 @@ describe('a selectable table', () => {
     await browser.click(
       screen.getByRole('checkbox', { name: 'Select all rows' }),
     );
-    await waitFor(() => expect(status()).toHaveTextContent(/cleared/i));
+    await waitFor(() => expect(status()).toMatchTextContent(/cleared/i));
   });
 
   it('does not speak because the DATA moved', async () => {

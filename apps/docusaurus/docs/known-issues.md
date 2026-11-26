@@ -108,22 +108,27 @@ no longer resolvable, so they survive into the HTML as literal paths and fail th
 build pass and encodes a local cache artifact in the repo — CI builds from a clean checkout and never
 sees the problem. If a link is genuinely broken, it fails after a clear too.
 
-## Node 26's `localStorage` hides jsdom's in vitest
+## `toHaveTextContent` is jest-dom's at runtime and vitest's in the types
 
-**Symptom.** Under Node 26 a jsdom spec fails with
-`TypeError: Cannot read properties of undefined (reading 'clear')` on `window.localStorage` — 13 of
-`@fmmenchi/theme-builder`'s 103 tests (all of `theme-choice.spec.tsx`), green under Node 24.
+**Symptom.** After vitest 5, `@fmmenchi/ui:typecheck` fails with
+`TS2345: Argument of type 'RegExp' is not assignable to parameter of type 'string | number | undefined'`
+on `expect(el).toHaveTextContent(/…/)`, while the same tests PASS.
 
-**Cause.** Since Node 25 Web Storage is on by default: `globalThis.localStorage` is an accessor that
-returns `undefined` unless `--localstorage-file` is given. Vitest's jsdom environment (4.1.12) does not
-overwrite a global that already exists, so jsdom's storage never reaches the window.
+**Cause.** Two matchers share the name. Browser mode ships its own jest-dom-compatible matchers, and
+vitest 5 made its `toHaveTextContent` STRICT (exact text, no `RegExp`), moving partial and `RegExp`
+checks to a new `toMatchTextContent`. The test setups still import `@testing-library/jest-dom/vitest`
+(ADR-0002), which overwrites the built-in at runtime with jest-dom's PERMISSIVE one — substring and
+`RegExp`. The types follow vitest's. Measured in the ui suite on vitest 5.1.1: with the import,
+`toHaveTextContent('Payment')` passes on "Payment failed"; without it, it fails;
+`toMatchTextContent` exists either way.
 
-**Fix.** `execArgv: ['--no-experimental-webstorage']` in the project's `test` config, which removes
-Node's accessor and lets jsdom's through. Only `theme-builder` touches storage today; any other jsdom
-project that starts to needs the same line.
+**Fix.** Partial and `RegExp` checks use `toMatchTextContent`, where runtime and types are the same
+matcher. **`toHaveTextContent('…')` stays a SUBSTRING check at runtime**, whatever vitest's docs say —
+it was one under vitest 4 too, so nothing regressed, but do not read a passing call as an exact match.
 
-**What retires it.** A vitest release whose jsdom environment replaces Node's Web Storage globals —
-check on the vitest 5 bump by dropping the line and running the suite under Node 26.
+**What retires it.** Deciding which matcher set the suite runs on — dropping the jest-dom import for
+vitest's built-ins (strict `toHaveTextContent`, every partial check moved to `toMatchTextContent`), or
+keeping jest-dom deliberately. That is ADR-0002's call, not a dependency bump's.
 
 ## Baseline exceptions in flight (ADR-0010)
 

@@ -61,7 +61,7 @@ describe('Stepper', () => {
     render(checkout);
     // Not "not started": the unmarked default is the point. A word here would
     // repeat down every remaining step of a ten-step wizard.
-    expect(items()[2]).toHaveTextContent(/^Payment$/);
+    expect(items()[2]).toMatchTextContent(/^Payment$/);
   });
 
   it('says a step failed, and paints it apart from the rest', () => {

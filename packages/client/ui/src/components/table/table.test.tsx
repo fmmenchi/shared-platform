@@ -296,7 +296,7 @@ describe('Table', () => {
       // Not opt-in: an empty `<tbody>` reads as "still loading" on screen, and
       // a screen reader hears "table, 2 columns, 1 row" with no hint that the
       // result set came back empty.
-      expect(screen.getByRole('cell')).toHaveTextContent(/no results/i);
+      expect(screen.getByRole('cell')).toMatchTextContent(/no results/i);
     });
   });
 
