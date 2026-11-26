@@ -30,7 +30,7 @@ never compiled — the doctrine's claim that "the published output ships already
 for all of them. With `7.29.7` every one compiles, the whole workspace builds, lints and typechecks,
 and the UI suite is green.
 
-So the root `devDependency` is held at `7.29.7`, not floated to `^8`. `@rolldown/plugin-babel`
+So the root `devDependency` is an exact pin on the 7 line (now `7.29.13`), not floated to `^8`. `@rolldown/plugin-babel`
 accepts either (`^7.29.0 || ^8.0.0-rc.1`), so nothing else asks for 8. Lift the pin when the
 compiler plugin declares Babel 8 support — the build will say whether it worked, because it now
 fails on any bailout (`panicThreshold: 'all_errors'`, see the ui package's build spoke).
