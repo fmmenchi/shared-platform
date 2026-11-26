@@ -46,7 +46,7 @@ jobs:
 
       - uses: fmmenchi/shared-platform/packages/ops/gh-actions/actions/setup@gh-actions/v0.2.0
         with:
-          node-version: '24' # your .nvmrc, if you pin one
+          node-version: '26' # your .nvmrc, if you pin one
           registry-url: https://npm.pkg.github.com # only for GitHub Packages installs
 
       - run: pnpm nx run <your-docs-project>:build
