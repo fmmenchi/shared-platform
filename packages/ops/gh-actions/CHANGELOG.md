@@ -1,3 +1,13 @@
+## 0.4.6 (2026-11-26)
+
+### 🚀 Features
+
+- **gh-actions:** default the setup action to node 26 ([567f793](https://github.com/fmmenchi/shared-platform/commit/567f793))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.4.5 (2026-11-05)
 
 This was a version bump only for @fmmenchi/gh-actions to align it with other projects, there were no code changes.
