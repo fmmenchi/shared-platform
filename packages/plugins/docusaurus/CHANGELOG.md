@@ -1,3 +1,13 @@
+## 0.0.22 (2026-11-26)
+
+### 🩹 Fixes
+
+- **deps:** accept nx 23 and 24 as the plugins' peer ([60812a2](https://github.com/fmmenchi/shared-platform/commit/60812a2))
+
+### ❤️ Thank You
+
+- fmmenchi @fmmenchi
+
 ## 0.0.21 (2026-11-05)
 
 This was a version bump only for @fmmenchi/nx-docusaurus to align it with other projects, there were no code changes.
