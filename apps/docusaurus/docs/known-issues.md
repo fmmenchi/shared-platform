@@ -11,35 +11,38 @@ Each entry says what breaks, why, what we do about it today, and what unblocks i
 whenever we hit something that a future contributor (or agent) would otherwise rediscover the hard
 way.
 
-## TypeScript 7 is not adoptable yet (Nx incompatibility)
+## TypeScript 7 runs side by side with TypeScript 6
 
-**Status:** blocked upstream · **Since:** 2026-07 · **Tracking:** [nrwl/nx#36306](https://github.com/nrwl/nx/issues/36306)
+**Status:** workaround in place · **Since:** 2026-11 · **Tracking:** [nrwl/nx#36104](https://github.com/nrwl/nx/issues/36104)
 
-Bumping `typescript` from 6.x to 7.x breaks the whole Nx plugin/inference layer:
+TypeScript 7 is the native (Go) compiler, and 7.0 ships **no in-process programmatic API**:
+`require('typescript')` on its own breaks Nx's plugin and inference layer (`tsModule.readConfigFile
+is not a function`), along with every other tool that reads the API.
 
+**What we do today.** Both are installed, as in
+[Nx's TypeScript 7 guide](https://nx.dev/docs/kb/typescript-7):
+
+```json
+"@typescript/native": "npm:typescript@~7.0.2",
+"typescript": "npm:@typescript/typescript6@~6.0.2"
 ```
-Failed to load 3 Nx plugin(s):
-  - @fmmenchi/nx-trivy:  tsModule.readConfigFile is not a function
-  - @fmmenchi/nx-notify: tsModule.readConfigFile is not a function
-  - @nx/storybook/plugin: Cannot convert undefined or null to object
-```
 
-**Why.** TypeScript 7 is the native (Go) compiler. Its 7.0 release **dropped the in-process
-programmatic API** — `require('typescript')` now exposes little more than `version`, so
-`ts.readConfigFile` / `ts.parseJsonConfigFileContent` / `ts.sys` are gone. Nx (and our own
-`createNodesV2` plugins) use those to read `tsconfig` files during graph inference, so they fail to
-load. TypeScript has said a new (different) programmatic API is expected in **7.1**.
+| Runs on 7.0 (`tsc`)                        | Still runs on 6.0 (the API, or `tsc6`)                  |
+| ------------------------------------------ | ------------------------------------------------------- |
+| the inferred `typecheck` and `build` tasks | Nx graph inference, typescript-eslint, Vite and its dts |
+|                                            | the `@nx/js:tsc` builds of the plugins                  |
 
-**What we do today.**
+- `nx.json` lists **both** packages in the `typecheck` `externalDependencies`: without
+  `@typescript/native` there, a compiler bump would not invalidate the cache.
+- An existing checkout can keep **stale `tsc` shims** under a package's `node_modules/.bin`, so
+  that package silently type-checks on 6.0. A clean install has none. Check with
+  `pnpm --dir packages/plugins/trivy exec tsc --version`; if it says 6, delete the `node_modules`
+  folders and reinstall.
+- typescript-eslint 8.74 declares an optional peer on a 7.1 build of `@typescript/native`, so
+  `pnpm peers check` reports it as unmet against 7.0.
 
-- `typescript` stays on **6.x**.
-- Dependabot **ignores `typescript` major bumps** (`.github/dependabot.yml`) so the broken PR isn't
-  re-proposed weekly.
-- We are on the latest **stable** Nx (23.1.0); no stable Nx release fixes this yet.
-
-**What unblocks it.** TypeScript 7.1 (programmatic API restored) **and** Nx support for it. When
-adopting, follow Nx's TypeScript 7 guide — a **side-by-side** setup (`typescript@6` for Nx's tooling,
-`typescript@7`/`tsgo` for the typecheck) — applied via `nx migrate`, **not** a standalone bump.
+**What retires it.** TypeScript 7.1 (a new, different API) **and** Nx, typescript-eslint and Vite
+adopting it. Then `typescript` goes back to a single dependency, via `nx migrate`.
 
 ## Babel 8 presets are not adoptable yet (Nx pins `@babel/core@7`)
 
