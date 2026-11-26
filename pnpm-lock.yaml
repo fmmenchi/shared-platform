@@ -534,10 +534,10 @@ importers:
         specifier: workspace:*
         version: link:../../shared/notify
       '@nx/devkit':
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(nx@24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23)))
       nx:
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23))
       tslib:
         specifier: ^2.3.0
@@ -548,7 +548,7 @@ importers:
   packages/plugins/docusaurus:
     dependencies:
       '@nx/devkit':
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(nx@24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23)))
       tslib:
         specifier: ^2.3.0
@@ -557,7 +557,7 @@ importers:
   packages/plugins/theme-generator:
     dependencies:
       '@nx/devkit':
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(nx@24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23)))
       apca-w3:
         specifier: ^0.1.9
@@ -576,10 +576,10 @@ importers:
   packages/plugins/trivy:
     dependencies:
       '@nx/devkit':
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(nx@24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23)))
       '@nx/js':
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(@babel/traverse@7.29.12)(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/cli@0.8.1(@swc/core@1.16.13(@swc/helpers@0.5.23)))(@swc/core@1.16.13(@swc/helpers@0.5.23))(nx@24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23)))
       tslib:
         specifier: ^2.3.0
@@ -588,7 +588,7 @@ importers:
   packages/plugins/ui:
     dependencies:
       '@nx/devkit':
-        specifier: ^24.0.4
+        specifier: ^23.1.1 || ^24.0.4
         version: 24.0.6(nx@24.0.6(@swc-node/register@1.12.1(@swc/core@1.16.13(@swc/helpers@0.5.23))(@swc/types@0.1.28)(typescript@6.0.3))(@swc/core@1.16.13(@swc/helpers@0.5.23)))
       tslib:
         specifier: ^2.3.0
