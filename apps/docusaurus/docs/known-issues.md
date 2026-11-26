@@ -108,6 +108,23 @@ no longer resolvable, so they survive into the HTML as literal paths and fail th
 build pass and encodes a local cache artifact in the repo — CI builds from a clean checkout and never
 sees the problem. If a link is genuinely broken, it fails after a clear too.
 
+## Node 26's `localStorage` hides jsdom's in vitest
+
+**Symptom.** Under Node 26 a jsdom spec fails with
+`TypeError: Cannot read properties of undefined (reading 'clear')` on `window.localStorage` — 13 of
+`@fmmenchi/theme-builder`'s 103 tests (all of `theme-choice.spec.tsx`), green under Node 24.
+
+**Cause.** Since Node 25 Web Storage is on by default: `globalThis.localStorage` is an accessor that
+returns `undefined` unless `--localstorage-file` is given. Vitest's jsdom environment (4.1.12) does not
+overwrite a global that already exists, so jsdom's storage never reaches the window.
+
+**Fix.** `execArgv: ['--no-experimental-webstorage']` in the project's `test` config, which removes
+Node's accessor and lets jsdom's through. Only `theme-builder` touches storage today; any other jsdom
+project that starts to needs the same line.
+
+**What retires it.** A vitest release whose jsdom environment replaces Node's Web Storage globals —
+check on the vitest 5 bump by dropping the line and running the suite under Node 26.
+
 ## Baseline exceptions in flight (ADR-0010)
 
 **Status:** living section · Newly-available features used as **graceful progressive enhancement**

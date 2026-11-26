@@ -62,7 +62,7 @@ pnpm + Node + a frozen install for an nx workspace.
 
 | Input          | Type   | Default | Description                                                |
 | :------------- | :----- | :------ | :--------------------------------------------------------- |
-| `node-version` | string | `24`    | Node version to set up.                                    |
+| `node-version` | string | `26`    | Node version to set up.                                    |
 | `registry-url` | string | `''`    | npm registry to configure (set only on jobs that publish). |
 
 ## `trivy-scan`
