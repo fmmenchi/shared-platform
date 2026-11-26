@@ -15,7 +15,7 @@
     "@fmmenchi/tokens": "workspace:*",
     "@fmmenchi/ui": "workspace:*",
     "@fmmenchi/ui-form-ports": "workspace:*",
-    "@hookform/resolvers": "^5.9.1",
+    "@hookform/resolvers": "^7.0.9",
     "@react-router/node": "^8.5.3",
     "@react-router/serve": "^8.5.3",
     "isbot": "^5.2.4",
@@ -29,7 +29,7 @@
     "@react-router/dev": "^8.5.3",
     "@tailwindcss/vite": "^4.3.5",
     "@testing-library/react": "16.3.3",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.2.0",
     "@types/react": "^19.3.1",
     "@types/react-dom": "^19.0.0",
     "culori": "^4.0.2"
